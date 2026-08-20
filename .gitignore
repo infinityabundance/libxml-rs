@@ -30,13 +30,19 @@ oracle/*.tar.xz
 # Receipts (generated during court runs)
 receipts/*.json
 
-# Large generated data
-atlas/api/**/*.json
-atlas/abi/**/*.json
-atlas/symbols/**/*.json
+# Large generated data (these are committed as archaeological records)
+# atlas/api/**/*.json
+# atlas/abi/**/*.json
+# atlas/symbols/**/*.json
 
 # Spec file - not part of the published crate
 libxml-rs-prompt.txt
+
+# Archaeology - upstream git clones (local development only)
+# These are large git repositories that should be cloned separately.
+# See atlas/SOURCES.md for clone instructions.
+archaeology/libxml2-git/
+archaeology/libxslt-git/
 
 # Cargo lock is committed for reproducible builds
 # Cargo.lock

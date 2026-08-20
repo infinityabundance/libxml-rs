@@ -9,7 +9,7 @@ homepage = "https://github.com/infinityabundance/libxml-rs"
 documentation = "https://docs.rs/libxml-rs"
 readme = "README.md"
 authors = ["libxml-rs Contributors"]
-categories = ["parser-implementations", "xml", "external-ffi-bindings"]
+categories = ["parser-implementations", "external-ffi-bindings"]
 keywords = ["xml", "xslt", "libxml2", "libxslt", "abi-compatible"]
 exclude = [
     "libxml-rs-prompt.txt",
