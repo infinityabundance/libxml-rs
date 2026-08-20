@@ -1,0 +1,58 @@
+{
+  "gaps": [
+    {
+      "reason": "not a release tag (file named tag)",
+      "tag": "ChangeLog"
+    },
+    {
+      "reason": "downstream snapshot tag",
+      "tag": "EAZEL-NAUTILUS-MS-AUG07"
+    },
+    {
+      "reason": "gnome release snapshot, not libxml release",
+      "tag": "FOR_GNOME_0_99_1"
+    },
+    {
+      "reason": "gnome release snapshot",
+      "tag": "GNOME_0_30"
+    },
+    {
+      "reason": "gnome release snapshot",
+      "tag": "GNOME_PRINT_0_24"
+    },
+    {
+      "reason": "downstream snapshot tag",
+      "tag": "GNUMERIC_FIRST_PUBLIC_RELEASE"
+    },
+    {
+      "reason": "branch point tag, not release",
+      "tag": "LIBXML2_2_5_x"
+    },
+    {
+      "reason": "test/release-candidate tag",
+      "tag": "LIBXML_TEST_2_0_0"
+    },
+    {
+      "reason": "1.x branch marker (alternate spelling)",
+      "tag": "LIB_XML_1_X"
+    },
+    {
+      "reason": "historical pre-refactor marker",
+      "tag": "PRE_MUCKUP"
+    },
+    {
+      "reason": "historical pre-refactor marker",
+      "tag": "PRE_MUCKUP2"
+    },
+    {
+      "reason": "historical pre-refactor marker",
+      "tag": "PRE_MUCKUP3"
+    },
+    {
+      "reason": "junk tag",
+      "tag": "help"
+    }
+  ],
+  "project": "libxml2",
+  "rule": "\u00a78: do not invent, do not silently skip; record the gap"
+}

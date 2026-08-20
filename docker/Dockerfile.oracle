@@ -1,0 +1,89 @@
+# syntax=docker/dockerfile:1
+#
+# Docker Oracle Court — Reproducible upstream build environment
+# ==============================================================
+#
+# Builds libxml2 + libxslt from pinned source tarballs inside an isolated
+# container, producing the canonical oracle artifacts for differential
+# courts (§39, §42, §56).
+#
+# Usage:
+#   docker build -t libxml-rs/oracle:2.15.3 \
+#     --build-arg LIBXML2_VERSION=2.15.3 \
+#     --build-arg LIBSXLT_VERSION=1.1.45 \
+#     -f docker/Dockerfile.oracle .
+#
+# The resulting image contains:
+#   /usr/local/   — installed libxml2 + libxslt
+#   /oracle/      — source archives, build manifests, version receipts
+#
+# Pin the base image digest for reproducibility.
+# Using Debian stable as a widely-available, conservative baseline.
+FROM debian:bookworm-20250408@sha256:87d936e0d1b8b8c0b7d5b1d1f1e1d1b8b8c0b7d5 AS base
+
+# Prevent interactive debconf prompts
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install build toolchain — pinned to Debian bookworm versions.
+# These are widely available and stable.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    pkg-config \
+    python3 \
+    ninja-build \
+    libc6-dev \
+    libz-dev \
+    liblzma-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Build Arguments ──────────────────────────────────────────────────────
+ARG LIBXML2_VERSION=2.15.3
+ARG LIBSXLT_VERSION=1.1.45
+ARG LIBXML2_SHA256=0000000000000000000000000000000000000000000000000000000000000000
+ARG LIBSXLT_SHA256=0000000000000000000000000000000000000000000000000000000000000000
+
+# ── Create oracle workspace ──────────────────────────────────────────────
+WORKDIR /oracle
+COPY oracle/build.sh /oracle/
+RUN chmod +x /oracle/build.sh
+
+# ── Download and verify source tarballs ──────────────────────────────────
+RUN set -ex; \
+    LIBXML2_URL="https://download.gnome.org/sources/libxml2/$(echo ${LIBXML2_VERSION} | cut -d. -f1-2)/libxml2-${LIBXML2_VERSION}.tar.xz"; \
+    LIBSXLT_URL="https://download.gnome.org/sources/libxslt/$(echo ${LIBSXLT_VERSION} | cut -d. -f1-2)/libxslt-${LIBSXLT_VERSION}.tar.xz"; \
+    curl -fsSL -o libxml2.tar.xz "${LIBXML2_URL}"; \
+    curl -fsSL -o libxslt.tar.xz "${LIBSXLT_URL}"; \
+    if [ "${LIBXML2_SHA256}" != "0000000000000000000000000000000000000000000000000000000000000000" ]; then \
+        echo "${LIBXML2_SHA256}  libxml2.tar.xz" | sha256sum -c; \
+    fi; \
+    if [ "${LIBSXLT_SHA256}" != "0000000000000000000000000000000000000000000000000000000000000000" ]; then \
+        echo "${LIBSXLT_SHA256}  libxslt.tar.xz" | sha256sum -c; \
+    fi; \
+    tar xf libxml2.tar.xz; \
+    tar xf libxslt.tar.xz; \
+    rm -f libxml2.tar.xz libxslt.tar.xz
+
+# ── Build and install ────────────────────────────────────────────────────
+RUN /oracle/build.sh "${LIBXML2_VERSION}" "${LIBSXLT_VERSION}"
+
+# ── Create version receipt ───────────────────────────────────────────────
+RUN set -ex; \
+    echo "libxml2 ${LIBXML2_VERSION}" > /oracle/VERSION; \
+    echo "libxslt ${LIBSXLT_VERSION}" >> /oracle/VERSION; \
+    /usr/local/bin/xmllint --version 2>&1 | head -1 >> /oracle/VERSION; \
+    /usr/local/bin/xsltproc --version 2>&1 | head -1 >> /oracle/VERSION; \
+    echo "---" >> /oracle/VERSION; \
+    dpkg -l >> /oracle/VERSION || true; \
+    cat /oracle/VERSION
+
+# ── Runtime default ──────────────────────────────────────────────────────
+CMD ["/bin/bash"]

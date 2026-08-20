@@ -1,0 +1,161 @@
+{
+  "note": "CVE marker tags in the git history point at the commit that fixed each CVE. Full CVE custody entries live in atlas/security-history.",
+  "project": "libxml2",
+  "records": [
+    {
+      "fix_commit": "e50ba8164eee06461c73cd8abb9b46aa0be81869",
+      "tag": "CVE-2013-2877",
+      "tag_date": "2014-05-09 17:05:24 +0800"
+    },
+    {
+      "fix_commit": "9cd1c3cfbd32655d60572c0a413e017260c854df",
+      "tag": "CVE-2014-0191",
+      "tag_date": "2014-05-09 16:51:06 +0800"
+    },
+    {
+      "fix_commit": "be2a7edaf289c5da74a4f9ed3a0b6c733e775230",
+      "tag": "CVE-2014-3660",
+      "tag_date": "2014-10-16 15:39:09 +0800"
+    },
+    {
+      "fix_commit": "213f1fe0d76d30eaed6e5853057defc43e6df2c9",
+      "tag": "CVE-2015-1819",
+      "tag_date": "2015-11-03 16:14:00 +0800"
+    },
+    {
+      "fix_commit": "69030714cde66d525a8884bda01b9e8f0abf8e1e",
+      "tag": "CVE-2015-5312",
+      "tag_date": "2015-11-20 11:19:01 +0800"
+    },
+    {
+      "fix_commit": "6360a31a84efe69d155ed96306b9a931a40beab9",
+      "tag": "CVE-2015-7497",
+      "tag_date": "2015-11-20 10:50:24 +0800"
+    },
+    {
+      "fix_commit": "afd27c21f6b36e22682b7da20d726bce2dcb2f43",
+      "tag": "CVE-2015-7498",
+      "tag_date": "2015-11-20 11:08:51 +0800"
+    },
+    {
+      "fix_commit": "28cd9cb747a94483f4aea7f0968d202c20bb4cfc",
+      "tag": "CVE-2015-7499-1",
+      "tag_date": "2015-11-20 15:15:48 +0800"
+    },
+    {
+      "fix_commit": "35bcb1d758ed70aa7b257c9c3b3ff55e54e3d0da",
+      "tag": "CVE-2015-7499-2",
+      "tag_date": "2015-11-20 15:14:49 +0800"
+    },
+    {
+      "fix_commit": "f1063fdbe7fa66332bbb76874101c2a7b51b519f",
+      "tag": "CVE-2015-7500",
+      "tag_date": "2015-11-20 16:10:14 +0800"
+    },
+    {
+      "fix_commit": "a7dfab7411cbf545f359dd3157e5df1eb0e7ce31",
+      "tag": "CVE-2015-7941_1",
+      "tag_date": "2015-11-03 16:11:58 +0800"
+    },
+    {
+      "fix_commit": "9b8512337d14c8ddf662fcb98b0135f225a1c489",
+      "tag": "CVE-2015-7941_2",
+      "tag_date": "2015-11-03 16:12:41 +0800"
+    },
+    {
+      "fix_commit": "bd0526e66a56e75a18da8c15c4750db8f801c52d",
+      "tag": "CVE-2015-7942",
+      "tag_date": "2015-11-03 16:08:41 +0800"
+    },
+    {
+      "fix_commit": "41ac9049a27f52e7a1f3b341f8714149fc88d450",
+      "tag": "CVE-2015-7942-2",
+      "tag_date": "2015-11-03 20:01:00 +0800"
+    },
+    {
+      "fix_commit": "f0709e3ca8f8947f2d91ed34e92e38a4c23eae63",
+      "tag": "CVE-2015-8035",
+      "tag_date": "2015-11-03 15:34:09 +0800"
+    },
+    {
+      "fix_commit": "8fb4a770075628d6441fb17a1e435100e2f3b1a2",
+      "tag": "CVE-2015-8242",
+      "tag_date": "2015-11-20 17:18:28 +0800"
+    },
+    {
+      "fix_commit": "709a952110e98621c9b78c4f26462a9d8333102e",
+      "tag": "CVE-2015-8317",
+      "tag_date": "2015-11-30 16:22:59 +0800"
+    },
+    {
+      "fix_commit": "a7a94612aa3b16779e2c74e1fa353b5d9786c602",
+      "tag": "CVE-2016-1762",
+      "tag_date": "2016-05-22 09:46:25 +0800"
+    },
+    {
+      "fix_commit": "0bcd05c5cd83dec3406c8f68b769b1d610c72f76",
+      "tag": "CVE-2016-1833",
+      "tag_date": "2016-05-23 16:34:38 +0800"
+    },
+    {
+      "fix_commit": "8fbbf5513d609c1770b391b99e33314cd0742704",
+      "tag": "CVE-2016-1834",
+      "tag_date": "2016-05-22 09:36:00 +0800"
+    },
+    {
+      "fix_commit": "38eae571111db3b43ffdeb05487c9f60551906fb",
+      "tag": "CVE-2016-1835",
+      "tag_date": "2016-05-23 16:37:47 +0800"
+    },
+    {
+      "fix_commit": "45752d2c334b50016666d8f0ec3691e2d680f0a0",
+      "tag": "CVE-2016-1836",
+      "tag_date": "2016-05-23 16:44:31 +0800"
+    },
+    {
+      "fix_commit": "11ed4a7a90d5ce156a18980a4ad4e53e77384852",
+      "tag": "CVE-2016-1837",
+      "tag_date": "2016-05-23 16:39:09 +0800"
+    },
+    {
+      "fix_commit": "db07dd613e461df93dde7902c6505629bf0734e9",
+      "tag": "CVE-2016-1838",
+      "tag_date": "2016-05-23 16:46:59 +0800"
+    },
+    {
+      "fix_commit": "a820dbeac29d330bae4be05d9ecd939ad6b4aa33",
+      "tag": "CVE-2016-1839",
+      "tag_date": "2016-05-23 16:47:42 +0800"
+    },
+    {
+      "fix_commit": "cbb271655cadeb8dbb258a64701d9a3a0c4835b4",
+      "tag": "CVE-2016-1840",
+      "tag_date": "2016-05-23 16:48:29 +0800"
+    },
+    {
+      "fix_commit": "bdd66182ef53fe1f7209ab6535fda56366bd7ac9",
+      "tag": "CVE-2016-3627",
+      "tag_date": "2016-05-23 16:33:08 +0800"
+    },
+    {
+      "fix_commit": "8f30bdff69edac9075f4663ce3b56b0c52d48ce6",
+      "tag": "CVE-2016-3705",
+      "tag_date": "2016-05-22 09:26:03 +0800"
+    },
+    {
+      "fix_commit": "b1d34de46a11323fccffa9fadeb33be670d602f5",
+      "tag": "CVE-2016-4449",
+      "tag_date": "2016-06-06 21:36:21 +0800"
+    },
+    {
+      "fix_commit": "c97750d11bb8b6f3303e7131fe526a61ac65bcfd",
+      "tag": "CVE-2016-4483",
+      "tag_date": "2016-05-23 16:50:07 +0800"
+    },
+    {
+      "fix_commit": "8598060bacada41a0eb09d95c97744ff4e428f8e",
+      "tag": "CVE-2021-3541",
+      "tag_date": "2021-05-13 15:00:03 +0200"
+    }
+  ]
+}

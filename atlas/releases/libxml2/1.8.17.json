@@ -1,0 +1,79 @@
+{
+  "_filled": [
+    "release_date",
+    "repository_commit",
+    "git_tag",
+    "version_macros",
+    "soname",
+    "build_system"
+  ],
+  "_pending": [
+    "source_checksum",
+    "archive_url",
+    "enabled_features",
+    "disabled_features",
+    "public_headers",
+    "exported_symbols",
+    "tests_available",
+    "known_cves",
+    "major_semantic_changes"
+  ],
+  "archive_url": {
+    "gnome": "https://download.gnome.org/sources/libxml2/1.8/libxml2-1.8.17.tar.xz",
+    "status": "inferred"
+  },
+  "build_system": {
+    "confidence": "known",
+    "primary": "autotools",
+    "secondary": "cmake"
+  },
+  "compiler_assumptions": {
+    "c99": true,
+    "confidence": "inferred"
+  },
+  "dependency_requirements": {
+    "libxml2": null
+  },
+  "disabled_features": null,
+  "documentation_source": "gtk-doc/doxygen in libxml2-1.8.17 tarball",
+  "enabled_features": null,
+  "exported_symbols": null,
+  "git_tag": "LIBXML_1_8_17",
+  "known_compatibility_fixes": [],
+  "known_cves": [],
+  "known_regressions": [],
+  "major_semantic_changes": [],
+  "platform_assumptions": {
+    "confidence": "known",
+    "macos": true,
+    "posix": true,
+    "windows": true
+  },
+  "prerelease": false,
+  "project": "libxml2",
+  "provenance_confidence": "known",
+  "public_headers": null,
+  "release_date": "2002-01-23 22:47:40 +0000",
+  "repository_commit": "ead1ea69da2cceea4018cb411971261f8952444c",
+  "soname": {
+    "confidence": "known",
+    "soname": "libxml.so.1"
+  },
+  "source_checksum": {
+    "note": "derive from release tarball when archived",
+    "status": "unknown"
+  },
+  "source_origin": "gitlab.gnome.org/GNOME/libxml2.git",
+  "tests_available": null,
+  "version": "1.8.17",
+  "version_macros": {
+    "LIBXML_DOTTED_VERSION": "1.8.17",
+    "LIBXML_VERSION": 10817,
+    "LIBXML_VERSION_EXTRA": "",
+    "LIBXML_VERSION_MAJOR": 1,
+    "LIBXML_VERSION_MICRO": 17,
+    "LIBXML_VERSION_MINOR": 8,
+    "LIBXML_VERSION_NUMBER": 10817,
+    "LIBXML_VERSION_STRING": "1817"
+  }
+}

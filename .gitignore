@@ -1,0 +1,42 @@
+# Rust build artifacts
+target/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor/IDE files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# OS files
+Thumbs.db
+.directory
+
+# Docker build artifacts
+docker/build/
+docker/*.tar.xz
+
+# Oracle build artifacts
+oracle/build/
+oracle/*.tar.xz
+
+# Receipts (generated during court runs)
+receipts/*.json
+
+# Large generated data
+atlas/api/**/*.json
+atlas/abi/**/*.json
+atlas/symbols/**/*.json
+
+# Spec file - not part of the published crate
+libxml-rs-prompt.txt
+
+# Cargo lock is committed for reproducible builds
+# Cargo.lock

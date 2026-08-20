@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "libxml-rs Court Casefile Schema (§43)",
+  "description": "Schema for differential court casefiles. Each casefile describes a single observable behavior comparison between the oracle (upstream libxml2/libxslt) and the candidate (libxml-rs).",
+  "type": "object",
+  "required": [
+    "case_id",
+    "surface",
+    "purpose",
+    "oracle_profile",
+    "observables",
+    "provenance"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Z]+-[A-Z]+-\\d{4}$",
+      "description": "Stable semantic ID, e.g. TREE-ADOPT-0001, PARSER-ENTITY-0042, XPATH-NUMBER-0024"
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "api", "abi", "parser", "sax", "tree", "entities", "namespaces",
+        "dtd", "validation", "xpath", "xpointer", "xinclude", "c14n",
+        "html", "reader", "writer", "encoding", "io", "catalog", "uri",
+        "dict", "hash", "list", "error", "globals", "threads", "memory",
+        "xslt-compile", "xslt-execute", "xslt-pattern", "xslt-sort",
+        "xslt-number", "xslt-keys", "xslt-extension", "exslt",
+        "cli-xmllint", "cli-xmlcatalog", "cli-xsltproc",
+        "abi-struct", "abi-enum", "abi-constant", "abi-symbol",
+        "header", "linker", "loader", "build-config",
+        "historical", "security", "quirk", "downstream"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What behavior this case exists to characterize"
+    },
+    "oracle_profile": {
+      "type": "string",
+      "description": "Oracle version identifier, e.g. libxml2-2.15.3, libxslt-1.1.45"
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "document": { "type": "string", "description": "Path to input document fixture" },
+        "stylesheet": { "type": "string", "description": "Path to XSLT stylesheet fixture" },
+        "expression": { "type": "string", "description": "XPath expression string" },
+        "options": {
+          "type": "object",
+          "description": "Parser/API option flags"
+        },
+        "environment": {
+          "type": "object",
+          "description": "Environment variables"
+        },
+        "argv": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Command-line arguments for CLI cases"
+        }
+      },
+      "minProperties": 1
+    },
+    "observables": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "return_value", "exit_status",
+          "stdout", "stderr", "stdout_hash", "stderr_hash",
+          "tree_topology", "sax_events", "callback_order",
+          "error_code", "error_domain", "error_level",
+          "error_message", "error_line", "error_column",
+          "node_count", "attribute_count", "namespace_count",
+          "byte_count", "allocation_count",
+          "ieee754_bits", "string_value", "boolean_value",
+          "node_set_order", "node_set_membership",
+          "resource_loads", "loader_callbacks",
+          "files_created", "files_modified",
+          "exit_status", "signal",
+          "serialized_bytes", "canonical_bytes",
+          "compile_success", "compile_diagnostics",
+          "template_selection", "template_mode", "template_priority"
+        ]
+      },
+      "minItems": 1
+    },
+    "normalization": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field", "reason"],
+        "properties": {
+          "field": { "type": "string" },
+          "reason": { "type": "string" },
+          "evidence": { "type": "string", "description": "Court reference proving nondeterminism" }
+        }
+      },
+      "description": "Normalization rules applied before comparison (§46)"
+    },
+    "provenance": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Source of this case: standard, upstream-test, issue-NNN, CVE-NNN, SRC-* reference"
+      },
+      "minItems": 1
+    },
+    "expected_oracle": {
+      "type": "object",
+      "description": "Pre-captured oracle output for this case",
+      "properties": {
+        "stdout_hash": { "type": "string" },
+        "stderr_hash": { "type": "string" },
+        "exit_status": { "type": "integer" },
+        "structured": {
+          "type": "object",
+          "description": "Structured observations (tree, SAX events, etc.)"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Arbitrary tags for categorizing/selecting cases"
+    }
+  }
+}

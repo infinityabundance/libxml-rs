@@ -1,0 +1,10 @@
+{
+  "gaps": [
+    {
+      "reason": "typo tag (LIXSLT) shadowing a real version",
+      "tag": "LIXSLT_0_5_0"
+    }
+  ],
+  "project": "libxslt",
+  "rule": "\u00a78: do not invent, do not silently skip; record the gap"
+}

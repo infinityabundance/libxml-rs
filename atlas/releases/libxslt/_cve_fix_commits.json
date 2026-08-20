@@ -1,0 +1,11 @@
+{
+  "note": "CVE marker tags in the git history point at the commit that fixed each CVE. Full CVE custody entries live in atlas/security-history.",
+  "project": "libxslt",
+  "records": [
+    {
+      "fix_commit": "7ca19df892ca22d9314e95d59ce2abdeff46b617",
+      "tag": "CVE-2015-7995",
+      "tag_date": "2015-10-29 19:36:08 +0800"
+    }
+  ]
+}

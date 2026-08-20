@@ -1,0 +1,68 @@
+{
+  "generated": "2026-08-20T00:00:00Z",
+  "generator": "manual update after apiatlas.py+symbols.py run",
+  "surfaces": {
+    "api_completeness": {
+      "libxml2": {
+        "version": "2.15.3",
+        "header_functions": 1403,
+        "dso_functions": 1658,
+        "in_both": 1344,
+        "in_headers_only": 53,
+        "in_dso_only": 290,
+        "internal_functions": 6,
+        "sax1_callbacks": 24,
+        "system_leaks": 0,
+        "header_globals": 17,
+        "dso_globals": 89,
+        "glob_in_both": 17,
+        "header_typedefs": 312,
+        "header_records": 76,
+        "header_enums": 39,
+        "header_enumerators": 1131,
+        "header_callbacks": 86,
+        "headers_processed": 45
+      },
+      "libxslt": {
+        "version": "1.1.45",
+        "header_functions": 231,
+        "dso_functions": 232,
+        "in_both": 225,
+        "in_headers_only": 6,
+        "in_dso_only": 7,
+        "internal_functions": 0,
+        "sax1_callbacks": 0,
+        "system_leaks": 0,
+        "header_globals": 12,
+        "dso_globals": 39,
+        "glob_in_both": 12,
+        "header_typedefs": 63,
+        "header_records": 16,
+        "header_enums": 7,
+        "header_enumerators": 65,
+        "header_callbacks": 17,
+        "headers_processed": 23
+      }
+    },
+    "abi_profiles": {
+      "libxml2_linux_x86_64": "initial baseline captured",
+      "libxslt_linux_x86_64": "initial baseline captured"
+    },
+    "historical_coverage": {
+      "libxml2_versions_cataloged": 183,
+      "libxslt_versions_cataloged": 92,
+      "api_snapshots_taken": ["libxml2-2.15.3", "libxslt-1.1.45"],
+      "deltas_computed": []
+    },
+    "tools": {
+      "manifest_py": "working — 183 libxml2 + 92 libxslt releases cataloged",
+      "profileconfig_py": "working — generates xmlversion.h/xsltconfig.h for distro profile",
+      "apiatlas_py": "working — extracts API surface via clang AST",
+      "symbols_py": "working — ABI ground-truth comparison via readelf",
+      "delta_py": "built — ready for multi-version diffing",
+      "court_runner_py": "built — ready for differential testing"
+    },
+    "docker_oracle": "Dockerfile and build script created, not yet built",
+    "courts": "schema and runner created, no cases executed yet"
+  }
+}

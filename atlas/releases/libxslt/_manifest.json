@@ -1,0 +1,631 @@
+{
+  "generated": "2026-08-20T05:36:16.891047+00:00",
+  "generator": "tools/archaeology/manifest.py",
+  "project": "libxslt",
+  "provenance_rule": "\u00a78 custody: known/inferred/unknown distinguished",
+  "versions": [
+    {
+      "file": "1.1.23.json",
+      "git_commit": "a91a7c57179a279c27e8310e8f497f967bd5d24f",
+      "git_tag": "1.1.23",
+      "release_date": "2008-04-08 17:17:46 +0000",
+      "version": "1.1.23"
+    },
+    {
+      "file": "1.1.24.json",
+      "git_commit": "ec5c63b43a285cb2a2d861ae5076a502d8cf875e",
+      "git_tag": "1.1.24",
+      "release_date": "2008-05-13 15:52:56 +0000",
+      "version": "1.1.24"
+    },
+    {
+      "file": "0.0.0.json",
+      "git_commit": "09793e0a934af4ec070be5921733d9442690d0cc",
+      "git_tag": "LIBXSLT_0_0_0",
+      "release_date": "2001-01-07 14:01:28 +0000",
+      "version": "0.0.0"
+    },
+    {
+      "file": "0.1.0.json",
+      "git_commit": "cb8dce6e56f1753c8de6031961b4d6d169170804",
+      "git_tag": "LIBXSLT_0_1_0",
+      "release_date": "2001-02-08 11:51:55 +0000",
+      "version": "0.1.0"
+    },
+    {
+      "file": "0.3.0.json",
+      "git_commit": "866f02736a2a179fea4b8e41c938706e31b54145",
+      "git_tag": "LIBXSLT_0_3_0",
+      "release_date": "2001-02-24 22:42:36 +0000",
+      "version": "0.3.0"
+    },
+    {
+      "file": "0.4.0.json",
+      "git_commit": "50506d9192a57db10688187dbced66acf80d3072",
+      "git_tag": "LIBXSLT_0_4_0",
+      "release_date": "2001-03-01 17:33:19 +0000",
+      "version": "0.4.0"
+    },
+    {
+      "file": "0.6.0.json",
+      "git_commit": "dee7f6243fb33a4040e1a2b5b2c60e428b56e92d",
+      "git_tag": "LIBXSLT_0_6_0",
+      "release_date": "2001-03-22 21:58:29 +0000",
+      "version": "0.6.0"
+    },
+    {
+      "file": "0.7.0.json",
+      "git_commit": "df1a13486bd026f83934f24cc79f92f52c258d91",
+      "git_tag": "LIBXSLT_0_7_0",
+      "release_date": "2001-04-10 10:11:06 +0000",
+      "version": "0.7.0"
+    },
+    {
+      "file": "0.8.0.json",
+      "git_commit": "ff93d48d31dbd9dc2d59192cae2a2004cc715594",
+      "git_tag": "LIBXSLT_0_8_0",
+      "release_date": "2001-04-22 20:58:30 +0000",
+      "version": "0.8.0"
+    },
+    {
+      "file": "0.9.0.json",
+      "git_commit": "0414c3c55aa8701312c26f756407b1196d0f5a7d",
+      "git_tag": "LIBXSLT_0_9_0",
+      "release_date": "2001-05-03 17:44:25 +0000",
+      "version": "0.9.0"
+    },
+    {
+      "file": "0.10.0.json",
+      "git_commit": "0643448255e9918a7bf81dc8577b0f8225a4e047",
+      "git_tag": "LIBXSLT_0_10_0",
+      "release_date": "2001-05-19 16:06:21 +0000",
+      "version": "0.10.0"
+    },
+    {
+      "file": "0.11.0.json",
+      "git_commit": "e2f31bbec979885e1c6762dfcdffd50c3c623c66",
+      "git_tag": "LIBXSLT_0_11_0",
+      "release_date": "2001-06-01 10:51:54 +0000",
+      "version": "0.11.0"
+    },
+    {
+      "file": "0.12.0.json",
+      "git_commit": "9083db034094cd8eb985ac0e677abe24bd0c8913",
+      "git_tag": "LIBXSLT_0_12_0",
+      "release_date": "2001-06-17 11:25:09 +0000",
+      "version": "0.12.0"
+    },
+    {
+      "file": "0.13.0.json",
+      "git_commit": "ca7b10420516e3cc1acded6b75e7ca31fc4b97ab",
+      "git_tag": "LIBXSLT_0_13_0",
+      "release_date": "2001-06-26 16:48:50 +0000",
+      "version": "0.13.0"
+    },
+    {
+      "file": "0.14.0.json",
+      "git_commit": "fbe4abe1b2a2fe1c4c7f80cb26331176940ebd05",
+      "git_tag": "LIBXSLT_0_14_0",
+      "release_date": "2001-07-05 23:02:43 +0000",
+      "version": "0.14.0"
+    },
+    {
+      "file": "1.0.0.json",
+      "git_commit": "732901867d7cd6ffd448425f61460d5fd64aceb6",
+      "git_tag": "LIBXSLT_1_0_0",
+      "release_date": "2001-07-10 16:08:10 +0000",
+      "version": "1.0.0"
+    },
+    {
+      "file": "1.0.2.json",
+      "git_commit": "307550093f660df6f9fd96bace12d9d701fbf702",
+      "git_tag": "LIBXSLT_1_0_2",
+      "release_date": "2001-08-15 13:21:46 +0000",
+      "version": "1.0.2"
+    },
+    {
+      "file": "1.0.3.json",
+      "git_commit": "e67a38803895dfe8b8ca4cb69196e6fe1b8a3fc0",
+      "git_tag": "LIBXSLT_1_0_3",
+      "release_date": "2001-08-23 23:17:43 +0000",
+      "version": "1.0.3"
+    },
+    {
+      "file": "1.0.4.json",
+      "git_commit": "538b4f8e2b54c1f9f7958b83b1eeec5b019e5d71",
+      "git_tag": "LIBXSLT_1_0_4",
+      "release_date": "2001-09-12 21:32:27 +0000",
+      "version": "1.0.4"
+    },
+    {
+      "file": "1.0.5.json",
+      "git_commit": "84bf82da0e3fbb4e51578fef06477078d248e90b",
+      "git_tag": "LIBXSLT_1_0_5",
+      "release_date": "2001-10-10 11:15:03 +0000",
+      "version": "1.0.5"
+    },
+    {
+      "file": "1.0.6.json",
+      "git_commit": "55416cd3b27c491155485bb9ff346d360c5d196e",
+      "git_tag": "LIBXSLT_1_0_6",
+      "release_date": "2001-10-30 14:27:20 +0000",
+      "version": "1.0.6"
+    },
+    {
+      "file": "1.0.7.json",
+      "git_commit": "431658d74a5f7435788b9743902ee69307b93538",
+      "git_tag": "LIBXSLT_1_0_7",
+      "release_date": "2001-11-10 14:10:56 +0000",
+      "version": "1.0.7"
+    },
+    {
+      "file": "1.0.8.json",
+      "git_commit": "28c19237e6f3a5148c760d8b783aa12ffdaa77ee",
+      "git_tag": "LIBXSLT_1_0_8",
+      "release_date": "2001-11-26 12:15:02 +0000",
+      "version": "1.0.8"
+    },
+    {
+      "file": "1.0.9.json",
+      "git_commit": "9244fa2f3c3bd10589f4c845a735345ba739db91",
+      "git_tag": "LIBXSLT_1_0_9",
+      "release_date": "2001-12-07 14:50:08 +0000",
+      "version": "1.0.9"
+    },
+    {
+      "file": "1.0.10.json",
+      "git_commit": "ce2f32af4ce51f51d7cd468dbf49f04d27e063fe",
+      "git_tag": "LIBXSLT_1_0_10",
+      "release_date": "2002-01-14 18:14:28 +0000",
+      "version": "1.0.10"
+    },
+    {
+      "file": "1.0.11.json",
+      "git_commit": "ada89dddea264bb41fd5c0c293ce989eb90ef4da",
+      "git_tag": "LIBXSLT_1_0_11",
+      "release_date": "2002-02-08 16:09:27 +0000",
+      "version": "1.0.11"
+    },
+    {
+      "file": "1.0.12.json",
+      "git_commit": "c99f3afb5f33ce2fae544767fcc471e2ad6ad110",
+      "git_tag": "LIBXSLT_1_0_12",
+      "release_date": "2002-02-11 18:54:47 +0000",
+      "version": "1.0.12"
+    },
+    {
+      "file": "1.0.13.json",
+      "git_commit": "ef2531fb9600e7fbbac254d2e2e7bb097489b5aa",
+      "git_tag": "LIBXSLT_1_0_13",
+      "release_date": "2002-03-08 16:52:34 +0000",
+      "version": "1.0.13"
+    },
+    {
+      "file": "1.0.14.json",
+      "git_commit": "073f51a7408de89931721bcfd5e382a1f0f09d39",
+      "git_tag": "LIBXSLT_1_0_14",
+      "release_date": "2002-03-18 20:34:23 +0000",
+      "version": "1.0.14"
+    },
+    {
+      "file": "1.0.16.json",
+      "git_commit": "7dd3a54ca00a080e57c3f7823c7b6018ffe00406",
+      "git_tag": "LIBXSLT_1_0_16",
+      "release_date": "2002-04-15 17:28:16 +0000",
+      "version": "1.0.16"
+    },
+    {
+      "file": "1.0.17.json",
+      "git_commit": "960e73de161383ba6d2c72155869ee3b8593187b",
+      "git_tag": "LIBXSLT_1_0_17",
+      "release_date": "2002-04-29 17:01:32 +0000",
+      "version": "1.0.17"
+    },
+    {
+      "file": "1.0.18.json",
+      "git_commit": "8bc5391717c0935c67ff8c831aa27cfd8803162b",
+      "git_tag": "LIBXSLT_1_0_18",
+      "release_date": "2002-05-27 21:25:43 +0000",
+      "version": "1.0.18"
+    },
+    {
+      "file": "1.0.19.json",
+      "git_commit": "e3f99973faa8a36bfa47600efaccee4c9c9b64b1",
+      "git_tag": "LIBXSLT_1_0_19",
+      "release_date": "2002-07-07 14:16:22 +0000",
+      "version": "1.0.19"
+    },
+    {
+      "file": "1.0.20.json",
+      "git_commit": "c1d306b3c309de20cddc70e92ab5c76ca924fe41",
+      "git_tag": "LIBXSLT_1_0_20",
+      "release_date": "2002-08-23 12:01:09 +0000",
+      "version": "1.0.20"
+    },
+    {
+      "file": "1.0.21.json",
+      "git_commit": "d28ad32c740b0313400491956791e4fc55d17f39",
+      "git_tag": "LIBXSLT_1_0_21",
+      "release_date": "2002-09-26 18:57:20 +0000",
+      "version": "1.0.21"
+    },
+    {
+      "file": "1.0.22.json",
+      "git_commit": "3cffe0b6ed3f67663555950af6d033cd854f1993",
+      "git_tag": "LIBXSLT_1_0_22",
+      "release_date": "2002-10-18 11:42:04 +0000",
+      "version": "1.0.22"
+    },
+    {
+      "file": "1.0.23.json",
+      "git_commit": "36ec239c2a443a8be5561b93705492100687c7fa",
+      "git_tag": "LIBXSLT_1_0_23",
+      "release_date": "2002-11-17 17:34:43 +0000",
+      "version": "1.0.23"
+    },
+    {
+      "file": "1.0.24.json",
+      "git_commit": "aaf8d3ad675ca03a3c77fd2c0e513ded01c4aa92",
+      "git_tag": "LIBXSLT_1_0_24",
+      "release_date": "2003-01-14 15:28:23 +0000",
+      "version": "1.0.24"
+    },
+    {
+      "file": "1.0.25.json",
+      "git_commit": "d9ac1f6752845257863c8a84c69a3c41cc08bac8",
+      "git_tag": "LIBXSLT_1_0_25",
+      "release_date": "2003-02-05 15:05:00 +0000",
+      "version": "1.0.25"
+    },
+    {
+      "file": "1.0.26.json",
+      "git_commit": "4a7d8d662e7105d6548b33c2dadb3af57dd0325a",
+      "git_tag": "LIBXSLT_1_0_26",
+      "release_date": "2003-02-10 16:47:44 +0000",
+      "version": "1.0.26"
+    },
+    {
+      "file": "1.0.27.json",
+      "git_commit": "44d74fd9371c895ea1a195fd8d0686c1fecb9937",
+      "git_tag": "LIBXSLT_1_0_27",
+      "release_date": "2003-02-24 22:50:35 +0000",
+      "version": "1.0.27"
+    },
+    {
+      "file": "1.0.28.json",
+      "git_commit": "0efbfa5cd2d8e67c6425d9a5b8fcc84a384a0ef1",
+      "git_tag": "LIBXSLT_1_0_28",
+      "release_date": "2003-03-24 23:46:53 +0000",
+      "version": "1.0.28"
+    },
+    {
+      "file": "1.0.29.json",
+      "git_commit": "d1cd5f6c7568df28621ec2a468d7e544fa3e98ca",
+      "git_tag": "LIBXSLT_1_0_29",
+      "release_date": "2003-04-01 11:45:10 +0000",
+      "version": "1.0.29"
+    },
+    {
+      "file": "1.0.30.json",
+      "git_commit": "3ef907d093c686976702767570d01c81c1f1bcbd",
+      "git_tag": "LIBXSLT_1_0_30",
+      "release_date": "2003-05-04 15:44:04 +0000",
+      "version": "1.0.30"
+    },
+    {
+      "file": "1.0.31.json",
+      "git_commit": "3bb60458b43ef4da9ec9af4bf325253637081d59",
+      "git_tag": "LIBXSLT_1_0_31",
+      "release_date": "2003-07-06 21:59:18 +0000",
+      "version": "1.0.31"
+    },
+    {
+      "file": "1.0.32.json",
+      "git_commit": "880b98c9e1b30ed40713ec430fc75fdbe48e9dde",
+      "git_tag": "LIBXSLT_1_0_32",
+      "release_date": "2003-08-09 22:24:34 +0000",
+      "version": "1.0.32"
+    },
+    {
+      "file": "1.0.33.json",
+      "git_commit": "fb4ce1d2f2ef62ba1b99ffdd56bd368e743c6a24",
+      "git_tag": "LIBXSLT_1_0_33",
+      "release_date": "2003-09-12 12:22:54 +0000",
+      "version": "1.0.33"
+    },
+    {
+      "file": "1.1.0.json",
+      "git_commit": "a7339040ed4172f5420ade87799d432bf046ec69",
+      "git_tag": "LIBXSLT_1_1_0",
+      "release_date": "2003-11-04 13:36:45 +0000",
+      "version": "1.1.0"
+    },
+    {
+      "file": "1.1.1.json",
+      "git_commit": "fa102e7613ba6aef76b7ee6a345b8b79f7cf84cd",
+      "git_tag": "LIBXSLT_1_1_1",
+      "release_date": "2003-12-10 16:46:11 +0000",
+      "version": "1.1.1"
+    },
+    {
+      "file": "1.1.2.json",
+      "git_commit": "58f11833f525bb6ef9911baa5c2a1da0ac0ea84d",
+      "git_tag": "LIBXSLT_1_1_2",
+      "release_date": "2003-12-24 14:17:26 +0000",
+      "version": "1.1.2"
+    },
+    {
+      "file": "1.1.3.json",
+      "git_commit": "675732396cf72da196292eaedd181c2a9b15bcf2",
+      "git_tag": "LIBXSLT_1_1_3",
+      "release_date": "2004-02-16 15:07:47 +0000",
+      "version": "1.1.3"
+    },
+    {
+      "file": "1.1.4.json",
+      "git_commit": "6d2a293795519b2844bf9665327ab6f33d485a6f",
+      "git_tag": "LIBXSLT_1_1_4",
+      "release_date": "2004-02-23 17:04:11 +0000",
+      "version": "1.1.4"
+    },
+    {
+      "file": "1.1.5.json",
+      "git_commit": "fc1000b58864ad6196bb3626006bb0c3f549af58",
+      "git_tag": "LIBXSLT_1_1_5",
+      "release_date": "2004-03-23 13:09:49 +0000",
+      "version": "1.1.5"
+    },
+    {
+      "file": "1.1.6.json",
+      "git_commit": "da7cda948de9d6f1dc16491d7bfe246a65ad79b6",
+      "git_tag": "LIBXSLT_1_1_6",
+      "release_date": "2004-04-18 22:41:10 +0000",
+      "version": "1.1.6"
+    },
+    {
+      "file": "1.1.7.json",
+      "git_commit": "95439b27148204f574121c288b0fe49fe638094f",
+      "git_tag": "LIBXSLT_1_1_7",
+      "release_date": "2004-05-17 04:14:57 +0000",
+      "version": "1.1.7"
+    },
+    {
+      "file": "1.1.8.json",
+      "git_commit": "ec9c2bdb0452a5397ae537d7cfbe6f16800c748e",
+      "git_tag": "LIBXSLT_1_1_8",
+      "release_date": "2004-07-05 19:55:11 +0000",
+      "version": "1.1.8"
+    },
+    {
+      "file": "1.1.9.json",
+      "git_commit": "ab4758c18dac44e74b8bc336875d668453fabe0c",
+      "git_tag": "LIBXSLT_1_1_9",
+      "release_date": "2004-08-22 15:19:27 +0000",
+      "version": "1.1.9"
+    },
+    {
+      "file": "1.1.10.json",
+      "git_commit": "e8b9a3d880ab72f748b6eb01a92ae2c910753d2f",
+      "git_tag": "LIBXSLT_1_1_10",
+      "release_date": "2004-08-31 13:57:45 +0000",
+      "version": "1.1.10"
+    },
+    {
+      "file": "1.1.11.json",
+      "git_commit": "33fa70d74d6da22bd447e2906bf7295e2ce51818",
+      "git_tag": "LIBXSLT_1_1_11",
+      "release_date": "2004-09-29 22:10:30 +0000",
+      "version": "1.1.11"
+    },
+    {
+      "file": "1.1.12.json",
+      "git_commit": "82ffb7507395806b025d6414f1b31f60affb614f",
+      "git_tag": "LIBXSLT_1_1_12",
+      "release_date": "2004-10-29 15:07:15 +0000",
+      "version": "1.1.12"
+    },
+    {
+      "file": "1.1.13.json",
+      "git_commit": "91cf35d84df69a384c69bac73ed3ab04a67e3d55",
+      "git_tag": "LIBXSLT_1_1_13",
+      "release_date": "2005-03-13 19:44:17 +0000",
+      "version": "1.1.13"
+    },
+    {
+      "file": "1.1.14.json",
+      "git_commit": "e8ed43e8f6bdc17b634e0feca045481c6737bf29",
+      "git_tag": "LIBXSLT_1_1_14",
+      "release_date": "2005-04-02 11:43:03 +0000",
+      "version": "1.1.14"
+    },
+    {
+      "file": "1.1.15.json",
+      "git_commit": "66cff3ae234b204a235c0c02575d6c2fc31161b0",
+      "git_tag": "LIBXSLT_1_1_15",
+      "release_date": "2005-09-04 23:07:34 +0000",
+      "version": "1.1.15"
+    },
+    {
+      "file": "1.1.16.json",
+      "git_commit": "e15f22b12b1d21529a474d21401dee393285d556",
+      "git_tag": "LIBXSLT_1_1_16",
+      "release_date": "2006-05-01 21:25:09 +0000",
+      "version": "1.1.16"
+    },
+    {
+      "file": "1.1.17.json",
+      "git_commit": "d9d50ec1505a65ccc62f692df28efe6112990d8a",
+      "git_tag": "LIBXSLT_1_1_17",
+      "release_date": "2006-06-06 15:17:10 +0000",
+      "version": "1.1.17"
+    },
+    {
+      "file": "1.1.18.json",
+      "git_commit": "951beb01d47c23b137180086456328112e672586",
+      "git_tag": "LIBXSLT_1_1_18",
+      "release_date": "2006-10-26 13:32:42 +0000",
+      "version": "1.1.18"
+    },
+    {
+      "file": "1.1.21.json",
+      "git_commit": "0ceabcf8b95560c186069a0df9135e4321360282",
+      "git_tag": "LIBXSLT_1_1_21",
+      "release_date": "2007-06-12 16:51:07 +0000",
+      "version": "1.1.21"
+    },
+    {
+      "file": "1.1.22.json",
+      "git_commit": "2896318613d0fd5b0ea52d5f4478d7dae932984e",
+      "git_tag": "LIBXSLT_1_1_22",
+      "release_date": "2007-08-23 15:32:58 +0000",
+      "version": "1.1.22"
+    },
+    {
+      "file": "1.1.25.json",
+      "git_commit": "51f625a10a828b8cb8cd87aa171a3c1d9049c72c",
+      "git_tag": "v1.1.25",
+      "release_date": "2009-09-17 17:22:19 +0200",
+      "version": "1.1.25"
+    },
+    {
+      "file": "1.1.26.json",
+      "git_commit": "2818aec36119907206bab050811e4ec8347ffa40",
+      "git_tag": "v1.1.26",
+      "release_date": "2009-09-24 16:41:57 +0200",
+      "version": "1.1.26"
+    },
+    {
+      "file": "1.1.27.json",
+      "git_commit": "a27de700182499da3d12a9d3209d12ee5e2c63f6",
+      "git_tag": "v1.1.27",
+      "release_date": "2012-09-12 14:39:22 +0800",
+      "version": "1.1.27"
+    },
+    {
+      "file": "1.1.28.json",
+      "git_commit": "195f644cf7b5e93208b033fa7c5501c41cf82f59",
+      "git_tag": "v1.1.28",
+      "release_date": "2012-11-21 15:24:41 +0800",
+      "version": "1.1.28"
+    },
+    {
+      "file": "1.1.29.json",
+      "git_commit": "9a1b3ddf6034aa2f6a30b4b7ea4bfc3c4037cd58",
+      "git_tag": "v1.1.29",
+      "release_date": "2016-05-24 10:00:18 +0800",
+      "version": "1.1.29"
+    },
+    {
+      "file": "1.1.30.json",
+      "git_commit": "bec1788d0627db0b510dcb337f989fae0440dbd5",
+      "git_tag": "v1.1.30",
+      "release_date": "2017-09-04 15:37:28 +0200",
+      "version": "1.1.30"
+    },
+    {
+      "file": "1.1.31.json",
+      "git_commit": "3c232593acff33f9645afa3aa8215e655a221096",
+      "git_tag": "v1.1.31",
+      "release_date": "2017-10-06 09:11:56 +0200",
+      "version": "1.1.31"
+    },
+    {
+      "file": "1.1.32.json",
+      "git_commit": "8307b072adb86c8064897f4c5e12e5ae142f3bff",
+      "git_tag": "v1.1.32",
+      "release_date": "2017-11-02 21:40:12 +0100",
+      "version": "1.1.32"
+    },
+    {
+      "file": "1.1.33.json",
+      "git_commit": "f1eb717f04d9cc297cc5e58e94b81ac96f47e741",
+      "git_tag": "v1.1.33",
+      "release_date": "2019-01-03 19:32:44 +0100",
+      "version": "1.1.33"
+    },
+    {
+      "file": "1.1.34.json",
+      "git_commit": "3653123f992db24cec417d12600f4c67388025e3",
+      "git_tag": "v1.1.34",
+      "release_date": "2019-10-30 21:05:09 +0100",
+      "version": "1.1.34"
+    },
+    {
+      "file": "1.1.35.json",
+      "git_commit": "50af4e65da712ceb59f98a7feeeab2ddc3324ab9",
+      "git_tag": "v1.1.35",
+      "release_date": "2022-02-16 17:56:39 +0100",
+      "version": "1.1.35"
+    },
+    {
+      "file": "1.1.36.json",
+      "git_commit": "bcd17763a9f371ec5c9bdce0ffa2f2eb3ef74c43",
+      "git_tag": "v1.1.36",
+      "release_date": "2022-08-17 15:40:34 +0200",
+      "version": "1.1.36"
+    },
+    {
+      "file": "1.1.37.json",
+      "git_commit": "5eca7fb65b7337409a02f9f94fde608edf7d1b0a",
+      "git_tag": "v1.1.37",
+      "release_date": "2022-08-29 16:56:20 +0200",
+      "version": "1.1.37"
+    },
+    {
+      "file": "1.1.38.json",
+      "git_commit": "b9196c0b357a903ad0a41cb4acce62cc1b0f2057",
+      "git_tag": "v1.1.38",
+      "release_date": "2023-05-08 13:15:48 +0200",
+      "version": "1.1.38"
+    },
+    {
+      "file": "1.1.39.json",
+      "git_commit": "743ab691bed98ed11ac99bbd9d903d59fb814ab8",
+      "git_tag": "v1.1.39",
+      "release_date": "2023-11-16 14:07:03 +0100",
+      "version": "1.1.39"
+    },
+    {
+      "file": "1.1.40.json",
+      "git_commit": "012781f7aab0cd9f5e10657936135ce6d6cd5119",
+      "git_tag": "v1.1.40",
+      "release_date": "2024-06-12 19:08:04 +0200",
+      "version": "1.1.40"
+    },
+    {
+      "file": "1.1.41.json",
+      "git_commit": "f156f9b9838b8ad389e5c6527dbe2e0582134ef8",
+      "git_tag": "v1.1.41",
+      "release_date": "2024-06-19 12:41:38 +0200",
+      "version": "1.1.41"
+    },
+    {
+      "file": "1.1.42.json",
+      "git_commit": "165219e5a3fc79cc4f529785e6e60f19a4b9222a",
+      "git_tag": "v1.1.42",
+      "release_date": "2024-07-04 18:34:15 +0200",
+      "version": "1.1.42"
+    },
+    {
+      "file": "1.1.43.json",
+      "git_commit": "71be7a32637760d769b193d95e0c745ecb86b679",
+      "git_tag": "v1.1.43",
+      "release_date": "2025-03-12 18:48:45 +0100",
+      "version": "1.1.43"
+    },
+    {
+      "file": "1.1.44.json",
+      "git_commit": "bd558135ce9b4202fd66d3bb1154ca711a268328",
+      "git_tag": "v1.1.44",
+      "release_date": "2025-11-25 10:17:45 -0600",
+      "version": "1.1.44"
+    },
+    {
+      "file": "1.1.45.json",
+      "git_commit": "35323d6a15f6e63c9919ddbc0abe64c90a0dd88a",
+      "git_tag": "v1.1.45",
+      "release_date": "2025-11-30 00:58:35 -0600",
+      "version": "1.1.45"
+    }
+  ]
+}

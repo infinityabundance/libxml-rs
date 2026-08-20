@@ -1,0 +1,19 @@
+{
+  "case_id": "API-VERSION-0001",
+  "surface": "api",
+  "purpose": "xmlInitParser and xmlCleanupParser can be called without crashing",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "document": "",
+    "expression": ""
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-test"
+  ]
+}

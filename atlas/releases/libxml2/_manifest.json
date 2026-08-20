@@ -1,0 +1,1275 @@
+{
+  "generated": "2026-08-20T05:37:09.174085+00:00",
+  "generator": "tools/archaeology/manifest.py",
+  "project": "libxml2",
+  "provenance_rule": "\u00a78 custody: known/inferred/unknown distinguished",
+  "versions": [
+    {
+      "file": "2.6.31.json",
+      "git_commit": "216850b27ecf0a48bff5802f04760f5bdf027bfc",
+      "git_tag": "LIBXML2.6.31",
+      "release_date": "2008-01-11 09:20:58 +0000",
+      "version": "2.6.31"
+    },
+    {
+      "file": "2.6.32.json",
+      "git_commit": "596da973eb47ae1c5fcec9e0085994a689648868",
+      "git_tag": "LIBXML2.6.32",
+      "release_date": "2008-04-08 14:58:41 +0000",
+      "version": "2.6.32"
+    },
+    {
+      "file": "2.7.0.json",
+      "git_commit": "1572425c2774b3fef6af062b87351a0e42c3e172",
+      "git_tag": "LIBXML2.7.0",
+      "release_date": "2008-08-30 15:01:04 +0000",
+      "version": "2.7.0"
+    },
+    {
+      "file": "2.7.1.json",
+      "git_commit": "a7036d93a0fd81c34e1d1f25b9a099454c8b8ac5",
+      "git_tag": "LIBXML2.7.1",
+      "release_date": "2008-09-01 14:50:19 +0000",
+      "version": "2.7.1"
+    },
+    {
+      "file": "2.7.2.json",
+      "git_commit": "7f4547cdbd76a2931553759fb433df88b8b99452",
+      "git_tag": "LIBXML2.7.2",
+      "release_date": "2008-10-03 07:58:23 +0000",
+      "version": "2.7.2"
+    },
+    {
+      "file": "2.7.3.json",
+      "git_commit": "97ff9b367a6428f7703aa7938595c03ad39652e0",
+      "git_tag": "LIBXML2.7.3",
+      "release_date": "2009-01-18 21:43:30 +0000",
+      "version": "2.7.3"
+    },
+    {
+      "file": "2.4.21.json",
+      "git_commit": "fc57b41cb14a9920fa73cbb9fa1e495047970f2b",
+      "git_tag": "LIBXML2_2_4_21",
+      "release_date": "2002-04-29 15:50:14 +0000",
+      "version": "2.4.21"
+    },
+    {
+      "file": "2.5.0.json",
+      "git_commit": "7b4b2f9d8fc712c49beaf75985161a130c77d13a",
+      "git_tag": "LIBXML2_2_5_0",
+      "release_date": "2003-01-06 13:11:20 +0000",
+      "version": "2.5.0"
+    },
+    {
+      "file": "2.5.7.json",
+      "git_commit": "92fc02cc52326430de4d7009b177e845fb69dba0",
+      "git_tag": "LIBXML2_2_5_7",
+      "release_date": "2003-04-24 23:12:35 +0000",
+      "version": "2.5.7"
+    },
+    {
+      "file": "2.5.8.json",
+      "git_commit": "560c2a441bf27f5b9d55252a70f3d5952d9ae351",
+      "git_tag": "LIBXML2_2_5_8",
+      "release_date": "2003-07-06 21:13:49 +0000",
+      "version": "2.5.8"
+    },
+    {
+      "file": "2.5.9.json",
+      "git_commit": "83ee40de7569cf3e4cb45080fc9c9cb337a1e8cd",
+      "git_tag": "LIBXML2_2_5_9",
+      "release_date": "2003-08-09 22:24:09 +0000",
+      "version": "2.5.9"
+    },
+    {
+      "file": "2.5.10.json",
+      "git_commit": "cfba2fe0bbbdd1158666fc1090c7f48c0fdb00e1",
+      "git_tag": "LIBXML2_2_5_10",
+      "release_date": "2003-08-15 00:33:43 +0000",
+      "version": "2.5.10"
+    },
+    {
+      "file": "2.5.11.json",
+      "git_commit": "b42dc2bb2d66d31d2f811ad72880b4ba655a8f58",
+      "git_tag": "LIBXML2_2_5_11",
+      "release_date": "2003-09-09 10:26:24 +0000",
+      "version": "2.5.11"
+    },
+    {
+      "file": "2.6.1.json",
+      "git_commit": "ceffd451992ced3747ecd7477d74e3c88d3ad681",
+      "git_tag": "LIBXML2_2_6_1",
+      "release_date": "2003-10-28 23:40:45 +0000",
+      "version": "2.6.1"
+    },
+    {
+      "file": "2.6.2.json",
+      "git_commit": "6d373a26fff17281ac1c872adae95b14727ca959",
+      "git_tag": "LIBXML2_2_6_2",
+      "release_date": "2003-11-04 10:26:43 +0000",
+      "version": "2.6.2"
+    },
+    {
+      "file": "2.6.3.json",
+      "git_commit": "c480c4ea56bbb5aad5ac991dafef5702dabb6360",
+      "git_tag": "LIBXML2_2_6_3",
+      "release_date": "2003-12-10 13:24:38 +0000",
+      "version": "2.6.3"
+    },
+    {
+      "file": "2.6.4.json",
+      "git_commit": "e6e59cdf33e02648fc8f33c357accadf2a657668",
+      "git_tag": "LIBXML2_2_6_4",
+      "release_date": "2003-12-24 11:56:44 +0000",
+      "version": "2.6.4"
+    },
+    {
+      "file": "2.6.5.json",
+      "git_commit": "189f46b18cf94b0c941f34138611dc56a16cc6f1",
+      "git_tag": "LIBXML2_2_6_5",
+      "release_date": "2004-01-25 21:03:04 +0000",
+      "version": "2.6.5"
+    },
+    {
+      "file": "2.6.6.json",
+      "git_commit": "5c9547e4f3173e92501d735193767705eab9ac31",
+      "git_tag": "LIBXML2_2_6_6",
+      "release_date": "2004-02-12 15:31:49 +0000",
+      "version": "2.6.6"
+    },
+    {
+      "file": "2.6.7.json",
+      "git_commit": "9291449d9e7ca7179a2b26182ef1ab375ff4731e",
+      "git_tag": "LIBXML2_2_6_7",
+      "release_date": "2004-02-23 16:33:21 +0000",
+      "version": "2.6.7"
+    },
+    {
+      "file": "2.6.8.json",
+      "git_commit": "252004df14b680d40c29e2ab479660162e15431e",
+      "git_tag": "LIBXML2_2_6_8",
+      "release_date": "2004-03-23 12:32:32 +0000",
+      "version": "2.6.8"
+    },
+    {
+      "file": "2.6.9.json",
+      "git_commit": "f70f7b2da92c10e551724fdc955c8b668e5ec0b6",
+      "git_tag": "LIBXML2_2_6_9",
+      "release_date": "2004-04-18 22:09:47 +0000",
+      "version": "2.6.9"
+    },
+    {
+      "file": "2.6.11.json",
+      "git_commit": "45cb0f41e457439d508f03a19d7a6c98d9803d9f",
+      "git_tag": "LIBXML2_2_6_11",
+      "release_date": "2004-07-05 17:45:35 +0000",
+      "version": "2.6.11"
+    },
+    {
+      "file": "2.6.12.json",
+      "git_commit": "b331fffbb90064c98e4e6ec5c08bfbe8efa17ffd",
+      "git_tag": "LIBXML2_2_6_12",
+      "release_date": "2004-08-22 14:21:57 +0000",
+      "version": "2.6.12"
+    },
+    {
+      "file": "2.6.13.json",
+      "git_commit": "d1de4a3da9e5364a37469108b932e5ad66055a5e",
+      "git_tag": "LIBXML2_2_6_13",
+      "release_date": "2004-08-31 13:43:07 +0000",
+      "version": "2.6.13"
+    },
+    {
+      "file": "2.6.14.json",
+      "git_commit": "210818b18aec4674f43b45143f4f4eed850c9e50",
+      "git_tag": "LIBXML2_2_6_14",
+      "release_date": "2004-09-29 15:50:37 +0000",
+      "version": "2.6.14"
+    },
+    {
+      "file": "2.6.15.json",
+      "git_commit": "c2f83d1fad48c4483f34213dcf6935e308e0c596",
+      "git_tag": "LIBXML2_2_6_15",
+      "release_date": "2004-10-27 22:59:21 +0000",
+      "version": "2.6.15"
+    },
+    {
+      "file": "2.6.16.json",
+      "git_commit": "c3d7cb4e582da89a442d6da32b13950af4cf7067",
+      "git_tag": "LIBXML2_2_6_16",
+      "release_date": "2004-11-10 14:34:45 +0000",
+      "version": "2.6.16"
+    },
+    {
+      "file": "2.6.18.json",
+      "git_commit": "57c000e33d0f970846aaa35d47a2b7faf5262032",
+      "git_tag": "LIBXML2_2_6_18",
+      "release_date": "2005-03-13 18:34:29 +0000",
+      "version": "2.6.18"
+    },
+    {
+      "file": "2.6.19.json",
+      "git_commit": "771971f2e5077482fce3d9c234455118f2352f73",
+      "git_tag": "LIBXML2_2_6_19",
+      "release_date": "2005-04-02 10:49:51 +0000",
+      "version": "2.6.19"
+    },
+    {
+      "file": "2.6.20.json",
+      "git_commit": "e4aaae2640843b4e1453f57c62a64d70faf95edb",
+      "git_tag": "LIBXML2_2_6_20",
+      "release_date": "2005-07-10 23:12:52 +0000",
+      "version": "2.6.20"
+    },
+    {
+      "file": "2.6.21.json",
+      "git_commit": "0bcc7f6ae97a8bd8615dfd9d3acf8188ab66580e",
+      "git_tag": "LIBXML2_2_6_21",
+      "release_date": "2005-09-04 21:39:03 +0000",
+      "version": "2.6.21"
+    },
+    {
+      "file": "2.6.22.json",
+      "git_commit": "33b20b70e2b0cc036bd23909fe262f816228f305",
+      "git_tag": "LIBXML2_2_6_22",
+      "release_date": "2005-09-12 21:43:20 +0000",
+      "version": "2.6.22"
+    },
+    {
+      "file": "2.6.23.json",
+      "git_commit": "6795260135a78da60182504a2d7efb4e3177eb57",
+      "git_tag": "LIBXML2_2_6_23",
+      "release_date": "2006-01-05 15:29:44 +0000",
+      "version": "2.6.23"
+    },
+    {
+      "file": "2.6.24.json",
+      "git_commit": "b2f8f1de7a02900f3e62a8170618ac35bd189269",
+      "git_tag": "LIBXML2_2_6_24",
+      "release_date": "2006-04-28 16:30:48 +0000",
+      "version": "2.6.24"
+    },
+    {
+      "file": "2.6.26.json",
+      "git_commit": "7cb3fa9d51a0a57d1e538854e4be84db82b75098",
+      "git_tag": "LIBXML2_2_6_26",
+      "release_date": "2006-06-06 15:27:46 +0000",
+      "version": "2.6.26"
+    },
+    {
+      "file": "2.6.27.json",
+      "git_commit": "c8338f1a52e7712dbba5e7c2fd5f76ecf01bf14f",
+      "git_tag": "LIBXML2_2_6_27",
+      "release_date": "2006-10-25 16:06:29 +0000",
+      "version": "2.6.27"
+    },
+    {
+      "file": "2.6.28.json",
+      "git_commit": "e61d75f11e1e061d0394db395937cd8cdad7d689",
+      "git_tag": "LIBXML2_2_6_28",
+      "release_date": "2007-05-28 14:16:33 +0000",
+      "version": "2.6.28"
+    },
+    {
+      "file": "2.6.29.json",
+      "git_commit": "9049c1c50a9e2454f2b43c988c6069631d313c1e",
+      "git_tag": "LIBXML2_2_6_29",
+      "release_date": "2007-06-12 21:13:54 +0000",
+      "version": "2.6.29"
+    },
+    {
+      "file": "2.6.30.json",
+      "git_commit": "22f476e0f2f5549e0a246be62a3affba276f4b75",
+      "git_tag": "LIBXML2_2_6_30",
+      "release_date": "2007-08-23 20:33:12 +0000",
+      "version": "2.6.30"
+    },
+    {
+      "file": "6.0.json",
+      "git_commit": "2189b59b1005976970ebadb65edbb289f9e091ff",
+      "git_tag": "LIBXML2_6_0",
+      "release_date": "2003-10-21 00:08:42 +0000",
+      "version": "6.0"
+    },
+    {
+      "file": "0.99.json",
+      "git_commit": "29fb727eb480f10010f37ca9e0b984bbd4dcae3b",
+      "git_tag": "LIBXML_0_99",
+      "release_date": "1998-12-07 06:04:53 +0000",
+      "version": "0.99"
+    },
+    {
+      "file": "1.5.0.json",
+      "git_commit": "424af3912493b654c46e569b06b7cd58cb2947c9",
+      "git_tag": "LIBXML_1_5_0",
+      "release_date": "1999-08-10 19:10:03 +0000",
+      "version": "1.5.0"
+    },
+    {
+      "file": "1.8.5.json",
+      "git_commit": "461a66c9428af63ee8de68fbb45deaf58c0f79fc",
+      "git_tag": "LIBXML_1_8_5",
+      "release_date": "2000-01-18 18:01:01 +0000",
+      "version": "1.8.5"
+    },
+    {
+      "file": "1.8.6.json",
+      "git_commit": "e41f2b74c53d9d97b51dfc1d20aa201e4b2c9201",
+      "git_tag": "LIBXML_1_8_6",
+      "release_date": "2000-01-30 20:00:07 +0000",
+      "version": "1.8.6"
+    },
+    {
+      "file": "1.8.8.json",
+      "git_commit": "08746ae6f0fe219b8c760ff6e85bddf9f39ac1ab",
+      "git_tag": "LIBXML_1_8_8",
+      "release_date": "2000-06-29 00:44:15 +0000",
+      "version": "1.8.8"
+    },
+    {
+      "file": "1.8.9.json",
+      "git_commit": "e98991955c4e6661ed1bfe8c84951ff6fd2ed1d6",
+      "git_tag": "LIBXML_1_8_9",
+      "release_date": "2000-07-10 10:10:55 +0000",
+      "version": "1.8.9"
+    },
+    {
+      "file": "1.8.10.json",
+      "git_commit": "7cb7a77c30b4d64a276c43f9c446be165e5b6b1e",
+      "git_tag": "LIBXML_1_8_10",
+      "release_date": "2000-09-02 08:28:20 +0000",
+      "version": "1.8.10"
+    },
+    {
+      "file": "1.8.10.json",
+      "git_commit": "c0408519798f2e10497cb46e4d01b53cc7a08ce6",
+      "git_tag": "LIBXML_1_8_10_REAL",
+      "release_date": "2000-09-06 23:28:33 +0000",
+      "version": "1.8.10"
+    },
+    {
+      "file": "1.8.12.json",
+      "git_commit": "73a4bfe95229a0f89ac9335a4f5f3960561d0158",
+      "git_tag": "LIBXML_1_8_12",
+      "release_date": "2001-05-04 07:38:19 +0000",
+      "version": "1.8.12"
+    },
+    {
+      "file": "1.8.14.json",
+      "git_commit": "146f50561fa2ad63cbf81571887b1e26101d64be",
+      "git_tag": "LIBXML_1_8_14",
+      "release_date": "2001-06-28 15:12:04 +0000",
+      "version": "1.8.14"
+    },
+    {
+      "file": "1.8.16.json",
+      "git_commit": "a1ac9b0c7a23734d77fdd9235cb385f0e8b70025",
+      "git_tag": "LIBXML_1_8_16",
+      "release_date": "2001-09-14 14:09:08 +0000",
+      "version": "1.8.16"
+    },
+    {
+      "file": "1.8.17.json",
+      "git_commit": "ead1ea69da2cceea4018cb411971261f8952444c",
+      "git_tag": "LIBXML_1_8_17",
+      "release_date": "2002-01-23 22:47:40 +0000",
+      "version": "1.8.17"
+    },
+    {
+      "file": "2.0.0.json",
+      "git_commit": "18b0ef6d41fdc3905e60fce0123f9ff5f48581da",
+      "git_tag": "LIBXML_2_0_0",
+      "release_date": "2000-04-12 13:52:48 +0000",
+      "version": "2.0.0"
+    },
+    {
+      "file": "2.1.0.json",
+      "git_commit": "c230410eadbada15092c04f92d01068af8a19f8d",
+      "git_tag": "LIBXML_2_1_0",
+      "release_date": "2000-06-29 00:43:27 +0000",
+      "version": "2.1.0"
+    },
+    {
+      "file": "2.1.1.json",
+      "git_commit": "663a607aa40e095a2e43a78a950a73a8ac1299dd",
+      "git_tag": "LIBXML_2_1_1",
+      "release_date": "2000-07-01 09:08:24 +0000",
+      "version": "2.1.1"
+    },
+    {
+      "file": "2.2.1.json",
+      "git_commit": "69f94a3b722e33fc980ee9e59a78f5ec26863d26",
+      "git_tag": "LIBXML_2_2_1",
+      "release_date": "2000-07-21 23:24:36 +0000",
+      "version": "2.2.1"
+    },
+    {
+      "file": "2.2.3.json",
+      "git_commit": "04698d9e1c56467007fcbb9472e5db67cf5938f5",
+      "git_tag": "LIBXML_2_2_3",
+      "release_date": "2000-09-17 16:00:22 +0000",
+      "version": "2.2.3"
+    },
+    {
+      "file": "2.2.4.json",
+      "git_commit": "3bff2b0e5d2428cff9778ae60d38476f6c58c43b",
+      "git_tag": "LIBXML_2_2_4",
+      "release_date": "2000-10-01 20:33:47 +0000",
+      "version": "2.2.4"
+    },
+    {
+      "file": "2.2.6.json",
+      "git_commit": "29a11cc696655f9ac841a5ca28b272e4150aafa1",
+      "git_tag": "LIBXML_2_2_6",
+      "release_date": "2000-10-25 13:32:39 +0000",
+      "version": "2.2.6"
+    },
+    {
+      "file": "2.2.7.json",
+      "git_commit": "a4964b75003d138d4643ab03e3e116a8453f8308",
+      "git_tag": "LIBXML_2_2_7",
+      "release_date": "2000-10-31 18:23:44 +0000",
+      "version": "2.2.7"
+    },
+    {
+      "file": "2.2.8.json",
+      "git_commit": "4e19074bc26bac984de1d8eb3e54a5aeee421af1",
+      "git_tag": "LIBXML_2_2_8",
+      "release_date": "2000-11-13 19:07:22 +0000",
+      "version": "2.2.8"
+    },
+    {
+      "file": "2.3.0.json",
+      "git_commit": "6a2e40604393375cf4c42c464a532dee0be82845",
+      "git_tag": "LIBXML_2_3_0",
+      "release_date": "2001-02-08 10:31:33 +0000",
+      "version": "2.3.0"
+    },
+    {
+      "file": "2.3.2.json",
+      "git_commit": "59a3bd3744b5e46e30ab63dc772bfe924ad81469",
+      "git_tag": "LIBXML_2_3_2",
+      "release_date": "2001-02-24 22:41:45 +0000",
+      "version": "2.3.2"
+    },
+    {
+      "file": "2.3.3.json",
+      "git_commit": "b402c07ca541924d89cd6ff49f99bd1b59097278",
+      "git_tag": "LIBXML_2_3_3",
+      "release_date": "2001-03-01 17:28:58 +0000",
+      "version": "2.3.3"
+    },
+    {
+      "file": "2.3.4.json",
+      "git_commit": "e356c280069914f0052891861a55fdfaff6dcf65",
+      "git_tag": "LIBXML_2_3_4",
+      "release_date": "2001-03-10 12:32:04 +0000",
+      "version": "2.3.4"
+    },
+    {
+      "file": "2.3.5.json",
+      "git_commit": "c7ad7ce598261a447cfceb7837219fcd93151336",
+      "git_tag": "LIBXML_2_3_5",
+      "release_date": "2001-03-22 21:45:29 +0000",
+      "version": "2.3.5"
+    },
+    {
+      "file": "2.3.6.json",
+      "git_commit": "fac26a1f9330f404a90a8f347c8d13fdf08dbba1",
+      "git_tag": "LIBXML_2_3_6",
+      "release_date": "2001-04-08 13:08:14 +0000",
+      "version": "2.3.6"
+    },
+    {
+      "file": "2.3.7.json",
+      "git_commit": "393df01cac24c7344ddcdc3b6968f893790c5e67",
+      "git_tag": "LIBXML_2_3_7",
+      "release_date": "2001-04-22 20:11:18 +0000",
+      "version": "2.3.7"
+    },
+    {
+      "file": "2.3.8.json",
+      "git_commit": "3bbbe6fa2a16ce1e1c1ff08725cf09857d7c0428",
+      "git_tag": "LIBXML_2_3_8",
+      "release_date": "2001-05-03 11:15:37 +0000",
+      "version": "2.3.8"
+    },
+    {
+      "file": "2.3.9.json",
+      "git_commit": "bed7b052a318695f5e0856f12fc0c86f66472cb3",
+      "git_tag": "LIBXML_2_3_9",
+      "release_date": "2001-05-19 14:59:49 +0000",
+      "version": "2.3.9"
+    },
+    {
+      "file": "2.3.10.json",
+      "git_commit": "b3a182e53326cce1438bc2951372ffc1ca4eb18c",
+      "git_tag": "LIBXML_2_3_10",
+      "release_date": "2001-06-01 09:28:09 +0000",
+      "version": "2.3.10"
+    },
+    {
+      "file": "2.3.11.json",
+      "git_commit": "6d473ed349020894228f29d334cba4749f9a7cea",
+      "git_tag": "LIBXML_2_3_11",
+      "release_date": "2001-06-17 10:32:52 +0000",
+      "version": "2.3.11"
+    },
+    {
+      "file": "2.3.12.json",
+      "git_commit": "823a77f8f9effd47b22715f66883bfd889c771ff",
+      "git_tag": "LIBXML_2_3_12",
+      "release_date": "2001-06-26 23:07:32 +0000",
+      "version": "2.3.12"
+    },
+    {
+      "file": "2.3.13.json",
+      "git_commit": "b37ecd0e51908bc9922fa37d1ec0aaaf9dc9d8e8",
+      "git_tag": "LIBXML_2_3_13",
+      "release_date": "2001-06-28 16:18:11 +0000",
+      "version": "2.3.13"
+    },
+    {
+      "file": "2.3.14.json",
+      "git_commit": "5b43fde43de0b9a507f25238ad6ff3aec7cdafb2",
+      "git_tag": "LIBXML_2_3_14",
+      "release_date": "2001-07-05 23:31:40 +0000",
+      "version": "2.3.14"
+    },
+    {
+      "file": "2.4.0.json",
+      "git_commit": "09ab7e1c1c943a6ba160037208c58a0dda3fe8ec",
+      "git_tag": "LIBXML_2_4_0",
+      "release_date": "2001-07-10 15:49:44 +0000",
+      "version": "2.4.0"
+    },
+    {
+      "file": "2.4.2.json",
+      "git_commit": "9a0b3d63c152fd11e2e49a308f4f102dc6043d97",
+      "git_tag": "LIBXML_2_4_2",
+      "release_date": "2001-08-15 12:58:03 +0000",
+      "version": "2.4.2"
+    },
+    {
+      "file": "2.4.3.json",
+      "git_commit": "e8f379330e16fcfae7d2737bbc22007b69cc3704",
+      "git_tag": "LIBXML_2_4_3",
+      "release_date": "2001-08-23 23:21:04 +0000",
+      "version": "2.4.3"
+    },
+    {
+      "file": "2.4.4.json",
+      "git_commit": "baa8854e4e005f7a58ee1b0aa306c978247da9a7",
+      "git_tag": "LIBXML_2_4_4",
+      "release_date": "2001-09-12 21:08:29 +0000",
+      "version": "2.4.4"
+    },
+    {
+      "file": "2.4.6.json",
+      "git_commit": "60087f30f3b4cf21de48f39181736e7d71e7a661",
+      "git_tag": "LIBXML_2_4_6",
+      "release_date": "2001-10-10 09:45:09 +0000",
+      "version": "2.4.6"
+    },
+    {
+      "file": "2.4.7.json",
+      "git_commit": "52dcab3999cc9c480b275bc3ddf66dbb66f92d68",
+      "git_tag": "LIBXML_2_4_7",
+      "release_date": "2001-10-30 12:51:17 +0000",
+      "version": "2.4.7"
+    },
+    {
+      "file": "2.4.11.json",
+      "git_commit": "bd9b0e8eedacd57d26bbe655d76a6bc858ab95ec",
+      "git_tag": "LIBXML_2_4_11",
+      "release_date": "2001-11-26 10:32:08 +0000",
+      "version": "2.4.11"
+    },
+    {
+      "file": "2.4.12.json",
+      "git_commit": "ef90ba7e3b530a8eb9ed27f57f0ced139b839780",
+      "git_tag": "LIBXML_2_4_12",
+      "release_date": "2001-12-07 14:24:22 +0000",
+      "version": "2.4.12"
+    },
+    {
+      "file": "2.4.13.json",
+      "git_commit": "af43f63aaabf0dc4b4a070773875d0927da3d8a2",
+      "git_tag": "LIBXML_2_4_13",
+      "release_date": "2002-03-08 15:05:20 +0000",
+      "version": "2.4.13"
+    },
+    {
+      "file": "2.4.14.json",
+      "git_commit": "07be19bb1e73b86bdd1014eb1d9f84cb7d08e9fa",
+      "git_tag": "LIBXML_2_4_14",
+      "release_date": "2002-02-08 14:20:35 +0000",
+      "version": "2.4.14"
+    },
+    {
+      "file": "2.4.16.json",
+      "git_commit": "5f4b5999b4eeda2ca68e6d9f54a3c534a8474b38",
+      "git_tag": "LIBXML_2_4_16",
+      "release_date": "2002-02-20 10:22:49 +0000",
+      "version": "2.4.16"
+    },
+    {
+      "file": "2.4.18.json",
+      "git_commit": "34ce8bece2f22cc99d25221b77315cd008f4866b",
+      "git_tag": "LIBXML_2_4_18",
+      "release_date": "2002-03-18 19:37:11 +0000",
+      "version": "2.4.18"
+    },
+    {
+      "file": "2.4.20.json",
+      "git_commit": "a7084cd57e055ac5f768c0d2aacd1bdab952798c",
+      "git_tag": "LIBXML_2_4_20",
+      "release_date": "2002-04-15 17:12:47 +0000",
+      "version": "2.4.20"
+    },
+    {
+      "file": "2.4.22.json",
+      "git_commit": "d5e22ef5802bc1d2d730cded59a700a88abfa47a",
+      "git_tag": "LIBXML_2_4_22",
+      "release_date": "2002-05-27 21:17:57 +0000",
+      "version": "2.4.22"
+    },
+    {
+      "file": "2.4.23.json",
+      "git_commit": "539638ba2359774d184bd87cf713c7e2afc23a8c",
+      "git_tag": "LIBXML_2_4_23",
+      "release_date": "2002-07-06 19:55:14 +0000",
+      "version": "2.4.23"
+    },
+    {
+      "file": "2.4.24.json",
+      "git_commit": "42766c0eea0fa40c7b721fa4c9cf56b4c484b4c7",
+      "git_tag": "LIBXML_2_4_24",
+      "release_date": "2002-08-22 20:52:17 +0000",
+      "version": "2.4.24"
+    },
+    {
+      "file": "2.4.25.json",
+      "git_commit": "e16b57406a96297a6ce39e509e06511c3c8a200e",
+      "git_tag": "LIBXML_2_4_25",
+      "release_date": "2002-09-26 17:50:03 +0000",
+      "version": "2.4.25"
+    },
+    {
+      "file": "2.4.26.json",
+      "git_commit": "4826743d1643bd01d5ceaeaf627b0d71b60beb2f",
+      "git_tag": "LIBXML_2_4_26",
+      "release_date": "2002-10-18 11:21:38 +0000",
+      "version": "2.4.26"
+    },
+    {
+      "file": "2.4.27.json",
+      "git_commit": "dad3f680e504b25b3bfd30a411adb55b4d0efe09",
+      "git_tag": "LIBXML_2_4_27",
+      "release_date": "2002-11-17 16:47:27 +0000",
+      "version": "2.4.27"
+    },
+    {
+      "file": "2.4.29.json",
+      "git_commit": "9b4bb4d07ab8f820fdc19a4fc7e8d7a39e159c66",
+      "git_tag": "LIBXML_2_4_29",
+      "release_date": "2002-12-11 19:28:47 +0000",
+      "version": "2.4.29"
+    },
+    {
+      "file": "2.4.30.json",
+      "git_commit": "2d45f52c14fe508f003b42dca81264147a0fcabc",
+      "git_tag": "LIBXML_2_4_30",
+      "release_date": "2002-12-12 12:33:43 +0000",
+      "version": "2.4.30"
+    },
+    {
+      "file": "2.5.1.json",
+      "git_commit": "e2830f1e65ddef63fc74a22addfea30d97ef8d65",
+      "git_tag": "LIBXML_2_5_1",
+      "release_date": "2003-01-08 17:47:49 +0000",
+      "version": "2.5.1"
+    },
+    {
+      "file": "2.5.2.json",
+      "git_commit": "72fef16e5c05224a81425b2ada12f4147b5194be",
+      "git_tag": "LIBXML_2_5_2",
+      "release_date": "2003-02-05 14:31:19 +0000",
+      "version": "2.5.2"
+    },
+    {
+      "file": "2.5.3.json",
+      "git_commit": "869fb32050e8e89c0c4848087970a58df9966f51",
+      "git_tag": "LIBXML_2_5_3",
+      "release_date": "2003-02-10 16:24:45 +0000",
+      "version": "2.5.3"
+    },
+    {
+      "file": "2.5.4.json",
+      "git_commit": "17bed98106ac388a6eae80515aae6957782d6029",
+      "git_tag": "LIBXML_2_5_4",
+      "release_date": "2003-02-24 20:11:43 +0000",
+      "version": "2.5.4"
+    },
+    {
+      "file": "2.5.5.json",
+      "git_commit": "9adc0469d4691e798ea4ad59b84c874cdea8b38d",
+      "git_tag": "LIBXML_2_5_5",
+      "release_date": "2003-03-24 18:39:54 +0000",
+      "version": "2.5.5"
+    },
+    {
+      "file": "2.5.6.json",
+      "git_commit": "c2d4a93d4f6ecc658e63ddc416be918318cea7a9",
+      "git_tag": "LIBXML_2_5_6",
+      "release_date": "2003-04-01 11:13:05 +0000",
+      "version": "2.5.6"
+    },
+    {
+      "file": "2.6.10.json",
+      "git_commit": "4e6fef4dab062b22d2e0386415a5218070952faa",
+      "git_tag": "LIBXML_2_6_10",
+      "release_date": "2004-05-17 03:53:59 +0000",
+      "version": "2.6.10"
+    },
+    {
+      "file": "1.1.json",
+      "git_commit": "011b63cb2034476017dde1d4ad5a6aea43b94066",
+      "git_tag": "LIB_XML_1_1",
+      "release_date": "1999-06-02 17:44:04 +0000",
+      "version": "1.1"
+    },
+    {
+      "file": "1.3.json",
+      "git_commit": "97fea18b7138caf76bf17d003f4985d8797d26f9",
+      "git_tag": "LIB_XML_1_3",
+      "release_date": "1999-06-26 23:07:37 +0000",
+      "version": "1.3"
+    },
+    {
+      "file": "1.4.json",
+      "git_commit": "1566d3a91b50e08f8bd928da5a06d9c53a99747f",
+      "git_tag": "LIB_XML_1_4",
+      "release_date": "1999-07-15 14:24:29 +0000",
+      "version": "1.4"
+    },
+    {
+      "file": "1.6.1.json",
+      "git_commit": "d2d38e9ab3691d11755857b87d83f2322b85d93d",
+      "git_tag": "LIB_XML_1_6_1",
+      "release_date": "1999-08-30 11:42:36 +0000",
+      "version": "1.6.1"
+    },
+    {
+      "file": "1.6.2.json",
+      "git_commit": "c08a2c6fd41773f55853c5d93a67a932c61511e9",
+      "git_tag": "LIB_XML_1_6_2",
+      "release_date": "1999-09-08 21:35:25 +0000",
+      "version": "1.6.2"
+    },
+    {
+      "file": "1.7.0.json",
+      "git_commit": "4ecf39f3e3e51df736cbb7bdc3d24739a786fb3b",
+      "git_tag": "LIB_XML_1_7_0",
+      "release_date": "1999-09-22 12:14:03 +0000",
+      "version": "1.7.0"
+    },
+    {
+      "file": "1.7.1.json",
+      "git_commit": "dd6b36766fb1cc83020cc12f226452ba2d640e35",
+      "git_tag": "LIB_XML_1_7_1",
+      "release_date": "1999-09-23 22:19:22 +0000",
+      "version": "1.7.1"
+    },
+    {
+      "file": "1.7.3.json",
+      "git_commit": "ad21944c30f85761a9339fe054e1f93e176b7152",
+      "git_tag": "LIB_XML_1_7_3",
+      "release_date": "1999-09-27 08:17:49 +0000",
+      "version": "1.7.3"
+    },
+    {
+      "file": "1.8.3.json",
+      "git_commit": "f3a7358dcae937caacd7149d080bf275e920ba69",
+      "git_tag": "LIB_XML_1_8_3",
+      "release_date": "2000-01-05 14:58:39 +0000",
+      "version": "1.8.3"
+    },
+    {
+      "file": "2.7.4.json",
+      "git_commit": "293416828e1467f877d9dd928f174dcf81b103bc",
+      "git_tag": "v2.7.4",
+      "release_date": "2009-09-10 18:32:25 +0200",
+      "version": "2.7.4"
+    },
+    {
+      "file": "2.7.5.json",
+      "git_commit": "7a896ce260d2447d405b4ae683bf9d643eef6cda",
+      "git_tag": "v2.7.5",
+      "release_date": "2009-09-24 18:40:22 +0200",
+      "version": "2.7.5"
+    },
+    {
+      "file": "2.7.6.json",
+      "git_commit": "96bb740e2102f103777f0a630d29ba88996dd80c",
+      "git_tag": "v2.7.6",
+      "release_date": "2009-10-06 18:39:12 +0200",
+      "version": "2.7.6"
+    },
+    {
+      "file": "2.7.7.json",
+      "git_commit": "bb5055f3875c5a3c45f4daa8058e35aab8c5ac3f",
+      "git_tag": "v2.7.7",
+      "release_date": "2010-03-15 16:22:23 +0100",
+      "version": "2.7.7"
+    },
+    {
+      "file": "2.7.8.json",
+      "git_commit": "4c2e7c651f6c2f0d1a74f350cbda95f7df3e7017",
+      "git_tag": "v2.7.8",
+      "release_date": "2010-11-04 18:36:36 +0100",
+      "version": "2.7.8"
+    },
+    {
+      "file": "2.8.0.json",
+      "git_commit": "c943f708f1853de4eb15e5a94cf0b35d108da87a",
+      "git_tag": "v2.8.0",
+      "release_date": "2012-05-23 17:12:47 +0800",
+      "version": "2.8.0"
+    },
+    {
+      "file": "2.9.0.json",
+      "git_commit": "38bbd3412d1c2a2016cf5a1a221ad4010216d28e",
+      "git_tag": "v2.9.0",
+      "release_date": "2012-09-11 15:02:09 +0800",
+      "version": "2.9.0"
+    },
+    {
+      "file": "2.9.1.json",
+      "git_commit": "f4e5a6994ed230dfa3fb5b5c3fd94c4993ef1ba7",
+      "git_tag": "v2.9.1",
+      "release_date": "2013-04-19 15:40:18 +0800",
+      "version": "2.9.1"
+    },
+    {
+      "file": "2.9.2.json",
+      "git_commit": "726f67e2f140f8d936dfe993bf9ded3180d750d2",
+      "git_tag": "v2.9.2",
+      "release_date": "2014-10-16 15:40:58 +0800",
+      "version": "2.9.2"
+    },
+    {
+      "file": "2.9.3.json",
+      "git_commit": "6657afe83a38278f124ace71dc85f60420beb2d5",
+      "git_tag": "v2.9.3",
+      "release_date": "2015-11-20 17:56:20 +0800",
+      "version": "2.9.3"
+    },
+    {
+      "file": "2.9.4.json",
+      "git_commit": "bdec2183f34b37ee89ae1d330c6ad2bb4d76605f",
+      "git_tag": "v2.9.4",
+      "release_date": "2016-05-23 16:06:06 +0800",
+      "version": "2.9.4"
+    },
+    {
+      "file": "2.9.5.json",
+      "git_commit": "2960178fe8f9fe690b7f8c1c49093ff54bb56934",
+      "git_tag": "v2.9.5",
+      "release_date": "2017-09-04 15:40:04 +0200",
+      "version": "2.9.5"
+    },
+    {
+      "file": "2.9.6.json",
+      "git_commit": "4b4d3d85165e6bfca23893cf98834c4bc747a96c",
+      "git_tag": "v2.9.6",
+      "release_date": "2017-10-06 09:02:29 +0200",
+      "version": "2.9.6"
+    },
+    {
+      "file": "2.9.7.json",
+      "git_commit": "bc5a5d658320c37e206fe4e7b525b4a24466d0c6",
+      "git_tag": "v2.9.7",
+      "release_date": "2017-11-02 21:27:59 +0100",
+      "version": "2.9.7"
+    },
+    {
+      "file": "2.9.8.json",
+      "git_commit": "18890f471c420411aa3c989e104d090966ec9dbf",
+      "git_tag": "v2.9.8",
+      "release_date": "2018-03-05 17:11:43 +0100",
+      "version": "2.9.8"
+    },
+    {
+      "file": "2.9.9.json",
+      "git_commit": "f8a8c1f59db355b46962577e7b74f1a1e8149dc6",
+      "git_tag": "v2.9.9",
+      "release_date": "2019-01-03 19:16:45 +0100",
+      "version": "2.9.9"
+    },
+    {
+      "file": "2.9.10.json",
+      "git_commit": "41a34e1f4ffae2ce401600dbb5fe43f8fe402641",
+      "git_tag": "v2.9.10",
+      "release_date": "2019-10-30 20:16:19 +0100",
+      "version": "2.9.10"
+    },
+    {
+      "file": "2.9.11.json",
+      "git_commit": "e1bcffea180d6cc0651757bb64284a763e0e2239",
+      "git_tag": "v2.9.11",
+      "release_date": "2021-05-13 15:37:45 +0200",
+      "version": "2.9.11"
+    },
+    {
+      "file": "2.9.12.json",
+      "git_commit": "b48e77cf4f6fa0792c5f4b639707a2b0675e461b",
+      "git_tag": "v2.9.12",
+      "release_date": "2021-05-13 20:58:54 +0200",
+      "version": "2.9.12"
+    },
+    {
+      "file": "2.9.13.json",
+      "git_commit": "a075d256fd9ff15590b86d981b75a50ead124fca",
+      "git_tag": "v2.9.13",
+      "release_date": "2022-02-20 13:44:07 +0100",
+      "version": "2.9.13"
+    },
+    {
+      "file": "2.9.14.json",
+      "git_commit": "7846b0a677f8d3ce72486125fa281e92ac9970e8",
+      "git_tag": "v2.9.14",
+      "release_date": "2022-05-02 14:05:32 +0200",
+      "version": "2.9.14"
+    },
+    {
+      "file": "2.10.0.json",
+      "git_commit": "ae383bdb74523ddaf831d7db0690173c25e483b3",
+      "git_tag": "v2.10.0",
+      "release_date": "2022-08-17 13:39:13 +0200",
+      "version": "2.10.0"
+    },
+    {
+      "file": "2.10.1.json",
+      "git_commit": "d85c4a01407b75eb4005256df106d121e766a1d8",
+      "git_tag": "v2.10.1",
+      "release_date": "2022-08-25 13:32:17 +0200",
+      "version": "2.10.1"
+    },
+    {
+      "file": "2.10.2.json",
+      "git_commit": "21b24b51608d471bb9f7c4225e23d0db2acecc52",
+      "git_tag": "v2.10.2",
+      "release_date": "2022-08-29 16:50:22 +0200",
+      "version": "2.10.2"
+    },
+    {
+      "file": "2.10.3.json",
+      "git_commit": "f507d167f1755b7eaea09fb1a44d29aab828b6d1",
+      "git_tag": "v2.10.3",
+      "release_date": "2022-10-14 14:47:06 +0200",
+      "version": "2.10.3"
+    },
+    {
+      "file": "2.10.4.json",
+      "git_commit": "223cb03a5d27b1b2393b266a8657443d046139d6",
+      "git_tag": "v2.10.4",
+      "release_date": "2023-04-11 14:00:58 +0200",
+      "version": "2.10.4"
+    },
+    {
+      "file": "2.11.0.json",
+      "git_commit": "f296934ade688baab79caf1c62a82149ad78accf",
+      "git_tag": "v2.11.0",
+      "release_date": "2023-04-28 14:44:03 +0200",
+      "version": "2.11.0"
+    },
+    {
+      "file": "2.11.1.json",
+      "git_commit": "ab9fea4ac0d494bcf68864e9be0574137e48a80e",
+      "git_tag": "v2.11.1",
+      "release_date": "2023-04-30 14:15:11 +0200",
+      "version": "2.11.1"
+    },
+    {
+      "file": "2.11.2.json",
+      "git_commit": "838bf42d54f94c8ff99b6e5022899a32875ed5d7",
+      "git_tag": "v2.11.2",
+      "release_date": "2023-05-05 15:35:28 +0200",
+      "version": "2.11.2"
+    },
+    {
+      "file": "2.11.3.json",
+      "git_commit": "787ae0390a3b90a76c2c54d6a18d7f1abe888c64",
+      "git_tag": "v2.11.3",
+      "release_date": "2023-05-11 13:17:13 +0200",
+      "version": "2.11.3"
+    },
+    {
+      "file": "2.11.4.json",
+      "git_commit": "2e9f7860a9cb8be29eca90b7409ef0278d30ef10",
+      "git_tag": "v2.11.4",
+      "release_date": "2023-05-18 21:44:21 +0200",
+      "version": "2.11.4"
+    },
+    {
+      "file": "2.11.5.json",
+      "git_commit": "2b998a4ffbdfea04fc6a620721abc690a15743af",
+      "git_tag": "v2.11.5",
+      "release_date": "2023-08-09 15:05:48 +0200",
+      "version": "2.11.5"
+    },
+    {
+      "file": "2.11.6.json",
+      "git_commit": "93f0179d9d0bcd0d053d2df3e2fd382e6dac6954",
+      "git_tag": "v2.11.6",
+      "release_date": "2023-11-16 13:10:27 +0100",
+      "version": "2.11.6"
+    },
+    {
+      "file": "2.11.7.json",
+      "git_commit": "8711320065405c4bb08aaccd4bd2881450b5ce41",
+      "git_tag": "v2.11.7",
+      "release_date": "2024-02-04 15:20:09 +0100",
+      "version": "2.11.7"
+    },
+    {
+      "file": "2.11.8.json",
+      "git_commit": "58a973c40ba927e5ad941789723da7c47a2d60e3",
+      "git_tag": "v2.11.8",
+      "release_date": "2024-05-13 12:04:46 +0200",
+      "version": "2.11.8"
+    },
+    {
+      "file": "2.11.9.json",
+      "git_commit": "954e851e1d8d1f4c1dfbdf043623b3c11a1c723c",
+      "git_tag": "v2.11.9",
+      "release_date": "2024-07-24 17:18:40 +0200",
+      "version": "2.11.9"
+    },
+    {
+      "file": "2.12.0.json",
+      "git_commit": "5e9b167dce73bd6a804ab107ae4c4b95e6849597",
+      "git_tag": "v2.12.0",
+      "release_date": "2023-11-16 13:28:55 +0100",
+      "version": "2.12.0"
+    },
+    {
+      "file": "2.12.1.json",
+      "git_commit": "f4ac9926a463ecb628f73049e4fd7ecced8fb7cf",
+      "git_tag": "v2.12.1",
+      "release_date": "2023-11-23 18:36:30 +0100",
+      "version": "2.12.1"
+    },
+    {
+      "file": "2.12.2.json",
+      "git_commit": "4d8fa5b292fc902268217fa0f7031e77e5437b5a",
+      "git_tag": "v2.12.2",
+      "release_date": "2023-12-05 21:00:11 +0100",
+      "version": "2.12.2"
+    },
+    {
+      "file": "2.12.3.json",
+      "git_commit": "30d22bec03893ad646907050959bdfe9e8000146",
+      "git_tag": "v2.12.3",
+      "release_date": "2023-12-12 15:57:50 +0100",
+      "version": "2.12.3"
+    },
+    {
+      "file": "2.12.4.json",
+      "git_commit": "8292f361458fcffe0bff515a385be02e9d35582c",
+      "git_tag": "v2.12.4",
+      "release_date": "2024-01-15 17:03:10 +0100",
+      "version": "2.12.4"
+    },
+    {
+      "file": "2.12.5.json",
+      "git_commit": "e189e9945317ad4c8603fa2300d11d11f5e2e335",
+      "git_tag": "v2.12.5",
+      "release_date": "2024-02-04 15:05:02 +0100",
+      "version": "2.12.5"
+    },
+    {
+      "file": "2.12.6.json",
+      "git_commit": "505e2e872e767405be565aa9d47ae9d6d5677f79",
+      "git_tag": "v2.12.6",
+      "release_date": "2024-03-15 12:32:33 +0100",
+      "version": "2.12.6"
+    },
+    {
+      "file": "2.12.7.json",
+      "git_commit": "0b6d8130737125ba45981d54be7f15fe398ad2e0",
+      "git_tag": "v2.12.7",
+      "release_date": "2024-05-13 11:53:04 +0200",
+      "version": "2.12.7"
+    },
+    {
+      "file": "2.12.8.json",
+      "git_commit": "83fce0a3f9ef22c90a980b03bb90cbd364d5c9ab",
+      "git_tag": "v2.12.8",
+      "release_date": "2024-06-12 13:12:50 +0200",
+      "version": "2.12.8"
+    },
+    {
+      "file": "2.12.9.json",
+      "git_commit": "00301f0fe8bccdb9945fb684e9bbd72449b961a5",
+      "git_tag": "v2.12.9",
+      "release_date": "2024-07-24 17:01:52 +0200",
+      "version": "2.12.9"
+    },
+    {
+      "file": "2.12.10.json",
+      "git_commit": "02d577715e1951cf114ca4e9adaf5605156c4f4c",
+      "git_tag": "v2.12.10",
+      "release_date": "2025-02-18 16:57:36 +0100",
+      "version": "2.12.10"
+    },
+    {
+      "file": "2.13.0.json",
+      "git_commit": "cdd2575f7fbab1d8162600f4048bc37503c80e28",
+      "git_tag": "v2.13.0",
+      "release_date": "2024-06-12 15:52:51 +0200",
+      "version": "2.13.0"
+    },
+    {
+      "file": "2.13.1.json",
+      "git_commit": "48dba1e21f8f1a7d8a817eaf65831396e74b78d2",
+      "git_tag": "v2.13.1",
+      "release_date": "2024-06-19 12:24:56 +0200",
+      "version": "2.13.1"
+    },
+    {
+      "file": "2.13.2.json",
+      "git_commit": "4b3f860e5420ade19a825dc7f4d75789489535ba",
+      "git_tag": "v2.13.2",
+      "release_date": "2024-07-04 17:30:07 +0200",
+      "version": "2.13.2"
+    },
+    {
+      "file": "2.13.3.json",
+      "git_commit": "3b1742b8391e966be780bdc43fdf959f7b3a118c",
+      "git_tag": "v2.13.3",
+      "release_date": "2024-07-24 15:26:24 +0200",
+      "version": "2.13.3"
+    },
+    {
+      "file": "2.13.4.json",
+      "git_commit": "60d3056c97067e6cb2125284878ed7c99c90ed81",
+      "git_tag": "v2.13.4",
+      "release_date": "2024-09-18 15:31:30 +0200",
+      "version": "2.13.4"
+    },
+    {
+      "file": "2.13.5.json",
+      "git_commit": "de918d45e1b2276a28a4cd32bcf556bef65284e4",
+      "git_tag": "v2.13.5",
+      "release_date": "2024-11-12 18:28:57 +0100",
+      "version": "2.13.5"
+    },
+    {
+      "file": "2.13.6.json",
+      "git_commit": "66453240c94b5cbd3e9ae9b32016fdafb13cdf18",
+      "git_tag": "v2.13.6",
+      "release_date": "2025-02-18 14:51:29 +0100",
+      "version": "2.13.6"
+    },
+    {
+      "file": "2.13.7.json",
+      "git_commit": "9b8fbe99ad14fe32c5dd5913743046d80cf347fe",
+      "git_tag": "v2.13.7",
+      "release_date": "2025-03-27 14:30:23 +0100",
+      "version": "2.13.7"
+    },
+    {
+      "file": "2.13.8.json",
+      "git_commit": "eb0a2f2b91566384f378d870ffcd69c0a24162cc",
+      "git_tag": "v2.13.8",
+      "release_date": "2025-04-17 13:38:50 +0200",
+      "version": "2.13.8"
+    },
+    {
+      "file": "2.13.9.json",
+      "git_commit": "04af2cabb9f859c198b8a553c028a87481199410",
+      "git_tag": "v2.13.9",
+      "release_date": "2025-09-08 16:32:14 +0200",
+      "version": "2.13.9"
+    },
+    {
+      "file": "2.14.0.json",
+      "git_commit": "a372cbf5821302ebaf757235b29ba812df78204d",
+      "git_tag": "v2.14.0",
+      "release_date": "2025-03-27 15:18:47 +0100",
+      "version": "2.14.0"
+    },
+    {
+      "file": "2.14.1.json",
+      "git_commit": "0f10a05d2e1043dcc178736b82277223a76eacc9",
+      "git_tag": "v2.14.1",
+      "release_date": "2025-04-03 16:33:17 +0200",
+      "version": "2.14.1"
+    },
+    {
+      "file": "2.14.2.json",
+      "git_commit": "0e145ae4881c2a05ae00128a3bd90d76d4dadc4b",
+      "git_tag": "v2.14.2",
+      "release_date": "2025-04-17 13:21:35 +0200",
+      "version": "2.14.2"
+    },
+    {
+      "file": "2.14.3.json",
+      "git_commit": "8d509f483dd5ce268b2fded9c738132c47d820d8",
+      "git_tag": "v2.14.3",
+      "release_date": "2025-05-13 16:32:51 +0200",
+      "version": "2.14.3"
+    },
+    {
+      "file": "2.14.4.json",
+      "git_commit": "4c6b2c3096b1da0d0780fe0b4f147e837140468d",
+      "git_tag": "v2.14.4",
+      "release_date": "2025-06-16 19:03:11 +0200",
+      "version": "2.14.4"
+    },
+    {
+      "file": "2.14.5.json",
+      "git_commit": "74f3154320df8950eceae4951975cc9dfc3a254d",
+      "git_tag": "v2.14.5",
+      "release_date": "2025-07-15 15:07:29 +0200",
+      "version": "2.14.5"
+    },
+    {
+      "file": "2.14.6.json",
+      "git_commit": "d23960a130c5bb82779c9405fbbf85e65fb3c57c",
+      "git_tag": "v2.14.6",
+      "release_date": "2025-09-08 16:34:29 +0200",
+      "version": "2.14.6"
+    },
+    {
+      "file": "2.15.0.json",
+      "git_commit": "0bea77c8289324483c0504d36ac730bb03f6a70b",
+      "git_tag": "v2.15.0",
+      "release_date": "2025-09-15 13:49:14 +0200",
+      "version": "2.15.0"
+    },
+    {
+      "file": "2.15.1.json",
+      "git_commit": "b7fa62cbe8ef0df5869e000d5b690bdedd07f33e",
+      "git_tag": "v2.15.1",
+      "release_date": "2025-10-16 17:47:52 +0200",
+      "version": "2.15.1"
+    },
+    {
+      "file": "2.15.2.json",
+      "git_commit": "3d840e17858de03a09fba8b202e3a89267d5795a",
+      "git_tag": "v2.15.2",
+      "release_date": "2026-03-04 10:37:52 +0100",
+      "version": "2.15.2"
+    },
+    {
+      "file": "2.15.3.json",
+      "git_commit": "c94eb0210183b9d7cb43f8e7fddc6be55843ef49",
+      "git_tag": "v2.15.3",
+      "release_date": "2026-04-16 10:03:42 +0200",
+      "version": "2.15.3"
+    }
+  ]
+}

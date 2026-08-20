@@ -1,0 +1,79 @@
+{
+  "_filled": [
+    "release_date",
+    "repository_commit",
+    "git_tag",
+    "version_macros",
+    "soname",
+    "build_system"
+  ],
+  "_pending": [
+    "source_checksum",
+    "archive_url",
+    "enabled_features",
+    "disabled_features",
+    "public_headers",
+    "exported_symbols",
+    "tests_available",
+    "known_cves",
+    "major_semantic_changes"
+  ],
+  "archive_url": {
+    "gnome": "https://download.gnome.org/sources/libxml2/2.6/libxml2-2.6.27.tar.xz",
+    "status": "inferred"
+  },
+  "build_system": {
+    "confidence": "known",
+    "primary": "autotools",
+    "secondary": "cmake"
+  },
+  "compiler_assumptions": {
+    "c99": true,
+    "confidence": "inferred"
+  },
+  "dependency_requirements": {
+    "libxml2": null
+  },
+  "disabled_features": null,
+  "documentation_source": "gtk-doc/doxygen in libxml2-2.6.27 tarball",
+  "enabled_features": null,
+  "exported_symbols": null,
+  "git_tag": "LIBXML2_2_6_27",
+  "known_compatibility_fixes": [],
+  "known_cves": [],
+  "known_regressions": [],
+  "major_semantic_changes": [],
+  "platform_assumptions": {
+    "confidence": "known",
+    "macos": true,
+    "posix": true,
+    "windows": true
+  },
+  "prerelease": false,
+  "project": "libxml2",
+  "provenance_confidence": "known",
+  "public_headers": null,
+  "release_date": "2006-10-25 16:06:29 +0000",
+  "repository_commit": "c8338f1a52e7712dbba5e7c2fd5f76ecf01bf14f",
+  "soname": {
+    "confidence": "known",
+    "soname": "libxml2.so.2"
+  },
+  "source_checksum": {
+    "note": "derive from release tarball when archived",
+    "status": "unknown"
+  },
+  "source_origin": "gitlab.gnome.org/GNOME/libxml2.git",
+  "tests_available": null,
+  "version": "2.6.27",
+  "version_macros": {
+    "LIBXML_DOTTED_VERSION": "2.6.27",
+    "LIBXML_VERSION": 20627,
+    "LIBXML_VERSION_EXTRA": "",
+    "LIBXML_VERSION_MAJOR": 2,
+    "LIBXML_VERSION_MICRO": 27,
+    "LIBXML_VERSION_MINOR": 6,
+    "LIBXML_VERSION_NUMBER": 20627,
+    "LIBXML_VERSION_STRING": "2627"
+  }
+}

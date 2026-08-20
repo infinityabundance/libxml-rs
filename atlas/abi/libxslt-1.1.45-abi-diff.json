@@ -1,0 +1,1543 @@
+{
+  "dso": "/usr/lib/libxslt.so.1",
+  "dso_functions_with_versions": {
+    "xsltAddKey": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAddStackElemList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAddTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAllocateExtra": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.12",
+      "visibility": "DEFAULT"
+    },
+    "xsltAllocateExtraCtxt": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.12",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyAttributeSet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyImports": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyOneTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyStripSpaces": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyStylesheet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyStylesheetUser": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltApplyTemplates": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAttrListTemplateProcess": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAttrTemplateProcess": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAttrTemplateValueProcess": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltAttrTemplateValueProcessNode": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltAttribute": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCalibrateAdjust": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCallTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCheckExtPrefix": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCheckExtURI": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltCheckRead": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltCheckWrite": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltChoose": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCleanupGlobals": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCleanupTemplates": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltComment": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCompMatchClearCache": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.34",
+      "visibility": "DEFAULT"
+    },
+    "xsltCompileAttr": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltCompilePattern": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltComputeSortResult": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltCopy": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCopyNamespace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCopyNamespaceList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCopyOf": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltCopyTextString": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.32",
+      "visibility": "DEFAULT"
+    },
+    "xsltCreateRVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltDebug": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDebugDumpExtensions": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltDebugGetDefaultTrace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.1",
+      "visibility": "DEFAULT"
+    },
+    "xsltDebugSetDefaultTrace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.1",
+      "visibility": "DEFAULT"
+    },
+    "xsltDecimalFormatGetByName": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDecimalFormatGetByQName": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltDefaultSortFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltDoSortFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDocumentComp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDocumentElem": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDocumentFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltDocumentSortFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltElementAvailableFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalAVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalAttrValueTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalGlobalVariables": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalOneUserParam": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalStaticAttrValueTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalTemplateString": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalUserParams": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalXPathPredicate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalXPathString": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltEvalXPathStringNs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtElementLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtModuleElementLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtModuleElementPreComputeLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.13",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtModuleFunctionLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtModuleTopLevelLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtensionInstructionResultFinalize": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtensionInstructionResultRegister": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltFindDocument": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFindElemSpaceHandling": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFindTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFlagRVTs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltForEach": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFormatNumberConversion": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFormatNumberFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeAVTList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeAttributeSetsHashes": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeCompMatchList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeCtxtExts": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeDocumentKeys": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeDocuments": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeExts": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeGlobalVariables": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeKeys": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeLocale": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.25",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeLocales": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.27",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeNamespaceAliasHashes": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeRVTs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeStackElemList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeStyleDocuments": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeStylePreComps": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeStylesheet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeTemplateHashes": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFreeTransformContext": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFunctionAvailableFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltFunctionNodeSet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGenerateIdFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetCNsProp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetDebuggerStatus": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.0",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetDefaultSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetExtData": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetExtInfo": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.32",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetKey": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetNamespace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetNsProp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetPlainNamespace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.7",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetProfileInformation": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetQNameURI": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetQNameURI2": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.5",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetSpecialNamespace": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetTemplate": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetUTF8Char": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGetXIncludeDefault": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltIf": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltInit": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitAllDocKeys": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.23",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitCtxtExts": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitCtxtKey": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitCtxtKeys": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitElemPreComp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltInitGlobals": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.25",
+      "visibility": "DEFAULT"
+    },
+    "xsltIsBlank": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltKeyFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltLoadDocument": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltLoadStyleDocument": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltLoadStylesheetPI": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltLocalVariablePop": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.20",
+      "visibility": "DEFAULT"
+    },
+    "xsltLocalVariablePush": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.20",
+      "visibility": "DEFAULT"
+    },
+    "xsltLocaleStrcmp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.25",
+      "visibility": "DEFAULT"
+    },
+    "xsltMessage": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNamespaceAlias": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNeedElemSpaceHandling": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewDocument": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewElemPreComp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewLocale": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.25",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewStyleDocument": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewStylesheet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNewTransformContext": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNextImport": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNormalizeCompSteps": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.33",
+      "visibility": "DEFAULT"
+    },
+    "xsltNumber": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltNumberFormat": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseGlobalParam": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseGlobalVariable": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetAttributeSet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetCallerParam": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetDoc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetFile": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetImport": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetImportedDoc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetInclude": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetOutput": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetParam": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetProcess": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetUser": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.34",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseStylesheetVariable": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltParseTemplateContent": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltPreComputeExtModuleElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltPrintErrorContext": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltProcessOneNode": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.26",
+      "visibility": "DEFAULT"
+    },
+    "xsltProcessingInstruction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltProfileStylesheet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltQuoteOneUserParam": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltQuoteUserParams": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterAllElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterAllExtras": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterAllFunctions": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtModule": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtModuleElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtModuleFull": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtModuleFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtModuleTopLevel": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtPrefix": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterExtras": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterLocalRVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterPersistRVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterTestModule": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRegisterTmpRVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.30",
+      "visibility": "DEFAULT"
+    },
+    "xsltReleaseRVT": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltResolveStylesheetAttributeSet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.16",
+      "visibility": "DEFAULT"
+    },
+    "xsltRunStylesheet": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltRunStylesheetUser": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.17",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveProfiling": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveResultTo": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveResultToFd": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveResultToFile": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveResultToFilename": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSaveResultToString": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltSecurityAllow": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSecurityForbid": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetCtxtParseOptions": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.2",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetCtxtSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetCtxtSortFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetDefaultSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetGenericDebugFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetGenericErrorFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetLoaderFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.9",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetSecurityPrefs": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetSortFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetTransformErrorFunc": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltSetXIncludeDefault": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltShutdownCtxtExts": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltShutdownExts": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSort": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSplitQName": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltStrxfrm": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.25",
+      "visibility": "DEFAULT"
+    },
+    "xsltStyleGetExtData": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltStylePreCompute": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltSystemPropertyFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltTemplateProcess": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltTestCompMatchList": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltText": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltTimestamp": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltTransformError": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.22",
+      "visibility": "DEFAULT"
+    },
+    "xsltUninit": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.18",
+      "visibility": "DEFAULT"
+    },
+    "xsltUnparsedEntityURIFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltUnregisterExtModule": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltUnregisterExtModuleElement": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltUnregisterExtModuleFunction": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltUnregisterExtModuleTopLevel": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltValueOf": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltVariableLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltXPathCompile": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.3",
+      "visibility": "DEFAULT"
+    },
+    "xsltXPathCompileFlags": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.1.27",
+      "visibility": "DEFAULT"
+    },
+    "xsltXPathFunctionLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    },
+    "xsltXPathGetTransformContext": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.13",
+      "visibility": "DEFAULT"
+    },
+    "xsltXPathVariableLookup": {
+      "bind": "GLOBAL",
+      "type": "FUNC",
+      "version": "LIBXML2_1.0.11",
+      "visibility": "DEFAULT"
+    }
+  },
+  "dso_globals_with_versions": {
+    "xslDebugStatus": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltDocDefaultLoader": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.1.9",
+      "visibility": "DEFAULT"
+    },
+    "xsltEngineVersion": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltExtMarker": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGenericDebug": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGenericDebugContext": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGenericError": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltGenericErrorContext": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltLibxmlVersion": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltLibxsltVersion": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltMaxDepth": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    },
+    "xsltMaxVars": {
+      "bind": "GLOBAL",
+      "type": "OBJECT",
+      "version": "LIBXML2_1.0.24",
+      "visibility": "DEFAULT"
+    }
+  },
+  "header_source": "/run/media/one/1tb_kingston1/libxml-rs/atlas/symbols/libxslt/1.1.45.json",
+  "in_dso_only_functions": [
+    "xsltCopyNamespace",
+    "xsltCopyNamespaceList",
+    "xsltFreeNamespaceAliasHashes",
+    "xsltGetNamespace",
+    "xsltGetPlainNamespace",
+    "xsltGetSpecialNamespace",
+    "xsltNamespaceAlias"
+  ],
+  "in_dso_only_globals": [
+    "LIBXML2_1.0.11",
+    "LIBXML2_1.0.12",
+    "LIBXML2_1.0.13",
+    "LIBXML2_1.0.16",
+    "LIBXML2_1.0.17",
+    "LIBXML2_1.0.18",
+    "LIBXML2_1.0.22",
+    "LIBXML2_1.0.24",
+    "LIBXML2_1.0.30",
+    "LIBXML2_1.0.32",
+    "LIBXML2_1.0.33",
+    "LIBXML2_1.1.0",
+    "LIBXML2_1.1.1",
+    "LIBXML2_1.1.18",
+    "LIBXML2_1.1.2",
+    "LIBXML2_1.1.20",
+    "LIBXML2_1.1.23",
+    "LIBXML2_1.1.24",
+    "LIBXML2_1.1.25",
+    "LIBXML2_1.1.26",
+    "LIBXML2_1.1.27",
+    "LIBXML2_1.1.3",
+    "LIBXML2_1.1.30",
+    "LIBXML2_1.1.34",
+    "LIBXML2_1.1.5",
+    "LIBXML2_1.1.7",
+    "LIBXML2_1.1.9"
+  ],
+  "in_headers_only_functions": [
+    "xslAddCall",
+    "xslDropCall",
+    "xslHandleDebugger",
+    "xsltSetCtxtLocaleHandlers",
+    "xsltSetDebuggerCallbacks",
+    "xsltSetDebuggerStatus"
+  ],
+  "in_headers_only_globals": [],
+  "internal_functions": [],
+  "project": "libxslt",
+  "sax1_callbacks": [],
+  "summary": {
+    "dso_functions_sax1": 0,
+    "dso_functions_total": 232,
+    "dso_globals_total": 39,
+    "glob_in_both": 12,
+    "glob_in_dso_only": 27,
+    "glob_in_headers_only": 0,
+    "header_functions_clean": 231,
+    "header_functions_internal": 0,
+    "header_functions_total": 231,
+    "header_globals_clean": 12,
+    "header_globals_system_leak": 0,
+    "header_globals_total": 12,
+    "header_system_leak": 0,
+    "in_both": 225,
+    "in_dso_only": 7,
+    "in_headers_only": 6
+  },
+  "system_leak_functions": [],
+  "system_leak_globals": [],
+  "version": "1.1.45"
+}

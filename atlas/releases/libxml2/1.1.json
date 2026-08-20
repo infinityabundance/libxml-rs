@@ -1,0 +1,79 @@
+{
+  "_filled": [
+    "release_date",
+    "repository_commit",
+    "git_tag",
+    "version_macros",
+    "soname",
+    "build_system"
+  ],
+  "_pending": [
+    "source_checksum",
+    "archive_url",
+    "enabled_features",
+    "disabled_features",
+    "public_headers",
+    "exported_symbols",
+    "tests_available",
+    "known_cves",
+    "major_semantic_changes"
+  ],
+  "archive_url": {
+    "gnome": "https://download.gnome.org/sources/libxml2/1.1/libxml2-1.1.tar.xz",
+    "status": "inferred"
+  },
+  "build_system": {
+    "confidence": "known",
+    "primary": "autotools",
+    "secondary": "cmake"
+  },
+  "compiler_assumptions": {
+    "c99": true,
+    "confidence": "inferred"
+  },
+  "dependency_requirements": {
+    "libxml2": null
+  },
+  "disabled_features": null,
+  "documentation_source": "gtk-doc/doxygen in libxml2-1.1 tarball",
+  "enabled_features": null,
+  "exported_symbols": null,
+  "git_tag": "LIB_XML_1_1",
+  "known_compatibility_fixes": [],
+  "known_cves": [],
+  "known_regressions": [],
+  "major_semantic_changes": [],
+  "platform_assumptions": {
+    "confidence": "known",
+    "macos": true,
+    "posix": true,
+    "windows": true
+  },
+  "prerelease": false,
+  "project": "libxml2",
+  "provenance_confidence": "known",
+  "public_headers": null,
+  "release_date": "1999-06-02 17:44:04 +0000",
+  "repository_commit": "011b63cb2034476017dde1d4ad5a6aea43b94066",
+  "soname": {
+    "confidence": "known",
+    "soname": "libxml.so.1"
+  },
+  "source_checksum": {
+    "note": "derive from release tarball when archived",
+    "status": "unknown"
+  },
+  "source_origin": "gitlab.gnome.org/GNOME/libxml2.git",
+  "tests_available": null,
+  "version": "1.1",
+  "version_macros": {
+    "LIBXML_DOTTED_VERSION": "1.1",
+    "LIBXML_VERSION": 10100,
+    "LIBXML_VERSION_EXTRA": "",
+    "LIBXML_VERSION_MAJOR": 1,
+    "LIBXML_VERSION_MICRO": 0,
+    "LIBXML_VERSION_MINOR": 1,
+    "LIBXML_VERSION_NUMBER": 10100,
+    "LIBXML_VERSION_STRING": "11"
+  }
+}

@@ -1,0 +1,123 @@
+[package]
+name = "libxml-rs"
+version = "0.1.0-alpha.1"
+edition = "2021"
+description = "Phase 0: Archaeological seizure of libxml2+libxslt behavior. Native-Rust forensic reimplementation — not yet functional."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/infinityabundance/libxml-rs"
+homepage = "https://github.com/infinityabundance/libxml-rs"
+documentation = "https://docs.rs/libxml-rs"
+readme = "README.md"
+authors = ["libxml-rs Contributors"]
+categories = ["parser-implementations", "xml", "external-ffi-bindings"]
+keywords = ["xml", "xslt", "libxml2", "libxslt", "abi-compatible"]
+exclude = [
+    "libxml-rs-prompt.txt",
+    "archaeology/",
+    "tools/",
+    "docker/",
+    "oracle/",
+    "courts/schema.json",
+    "courts/tools/",
+    ".gitignore",
+]
+autobins = false
+autotests = true
+autoexamples = false
+autobenches = false
+
+[lib]
+name = "libxml_rs"
+crate-type = ["cdylib", "staticlib", "rlib"]
+# We need to export C-compatible symbols
+# The actual C headers will be in include/
+
+[[bin]]
+name = "xmllint"
+path = "src/bin/xmllint.rs"
+
+[[bin]]
+name = "xmlcatalog"
+path = "src/bin/xmlcatalog.rs"
+
+[[bin]]
+name = "xsltproc"
+path = "src/bin/xsltproc.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+debug = true
+overflow-checks = true
+
+[features]
+default = ["libxml2", "libxslt", "xpath", "xinclude", "schemas", "catalog", "html", "c14n", "regexp", "reader", "writer", "debug", "threads"]
+libxml2 = []
+libxslt = []
+xpath = []
+xinclude = []
+schemas = []
+catalog = []
+html = []
+c14n = []
+regexp = []
+reader = []
+writer = []
+debug = []
+threads = []
+# Historical/version profiles
+legacy_parser = []
+thread_local_globals = []
+resource_loader_transition = []
+html_behavior_transition = []
+error_subsystem_transition = []
+
+[dependencies]
+# Core dependencies - minimal and well-justified
+libc = { version = "0.2", features = ["extra_traits"] }
+bitflags = "2.0"
+smallvec = "1.10"
+hashbrown = "0.14"
+once_cell = "1.19"
+parking_lot = "0.12"
+# For encoding support - we need to control this behavior ourselves for parity
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
+# For URI/IRI handling - we implement our own matching libxml2's behavior.
+# libxml2's URI parser is its own implementation, NOT a general URI library.
+# We will implement native Rust URI/IRI handling in src/xml/uri.
+# For regex - libxml2 uses its own regex engine, we'll implement native but may need this for transitional testing
+regex = { version = "1.10", optional = true }
+# For date/time in EXSLT
+chrono = { version = "0.4", features = ["std"], optional = true }
+# For arbitrary precision in XPath numbers
+num-bigint = { version = "0.4", optional = true }
+num-traits = { version = "0.2", optional = true }
+# For serialization
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+# For testing
+tempfile = { version = "3.8", optional = true }
+pretty_assertions = { version = "1.4", optional = true }
+# For fuzzing support
+arbitrary = { version = "1.3", optional = true }
+
+# Phase 0: build-dependencies (cc, bindgen, pkg-config) will be added when
+# the ABI compatibility layer requires C header compilation (Phase 1+).
+# They are intentionally absent during the archaeological phase.
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.0"
+quickcheck = "1.0"
+quickcheck_macros = "1.0"
+
+[workspace]
+# Single package, no workspace members
+
+[badges]
+maintenance = { status = "actively-developed" }

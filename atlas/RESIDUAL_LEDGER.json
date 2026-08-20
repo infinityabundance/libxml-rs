@@ -1,0 +1,66 @@
+{
+  "ledger": [
+    {
+      "id": "R-000001",
+      "status": "FIXED",
+      "surface": "tooling",
+      "discovery_date": "2026-08-20",
+      "component": "tools/archaeology/apiatlas.py",
+      "title": "#line directive mapping uses original source line number instead of preprocessed output line number",
+      "description": "The resolve_origin function used the original source line number from #line directives as the dict key. When multiple #line directives shared the same original line number (e.g., '# 1 \"xmlIO.h\"' at the start and '# 52 \"xmlIO.h\" 2' after an include), the later entry overwrote the earlier one. This caused declarations in the first part of a header to be attributed to a subsequently-included file, and declarations from included files to be attributed to the includer. The fix uses the actual preprocessed output line number (enumerate index) as the mapping key, which is always unique.",
+      "root_cause": "Dict key collision: line_map[orig_line] = filename overwrites when multiple #line directives share the same original line number but refer to different files at different positions in the preprocessed output.",
+      "fix": "Replaced dict with list of (preprocessed_output_line, filename) tuples. The preprocessed output line number (1-indexed enumerate index) is used as the key instead of the original source line number from the #line directive.",
+      "fix_commit": "current-session",
+      "courts": [],
+      "evidence": "45 system functions leaked into header inventory (stdio functions like fprintf, fopen, printf). ~840 functions captured vs expected ~900+. 9 globals captured vs expected ~89.",
+      "classification": "CANDIDATE_BUG"
+    },
+    {
+      "id": "R-000002",
+      "status": "FIXED",
+      "surface": "tooling",
+      "discovery_date": "2026-08-20",
+      "component": "tools/archaeology/apiatlas.py",
+      "title": "System header path filtering missing from declaration collector",
+      "description": "The collect function only checked whether the declaration's resolved origin started with the extracted header tree root. It did not filter declarations originating from known system paths (/usr/include/, /usr/lib/clang/, <built-in>). When the #line mapping or fallback resolved to a system path, the declaration could still pass the filter if the path happened to match (or if the fallback 'includedFrom' pointed to the libxml2 header). Added explicit system-path prefix filtering as a safety net.",
+      "root_cause": "No explicit filter for system header paths in the collect() function.",
+      "fix": "Added origin.startswith(('/usr/include/', '/usr/lib/', '<built-in>', '/usr/local/include/', '/usr/lib/clang/')) check before processing declarations.",
+      "fix_commit": "current-session",
+      "courts": [],
+      "evidence": "45 system functions in header inventory despite the hdr_root_str prefix check.",
+      "classification": "CANDIDATE_BUG"
+    },
+    {
+      "id": "R-000003",
+      "status": "FIXED",
+      "surface": "tooling",
+      "discovery_date": "2026-08-20",
+      "component": "tools/archaeology/symbols.py",
+      "title": "Internal __xml* functions not classified separately from missing API",
+      "description": "The symbols.py ABI diff tool listed internal __xml* function declarations (__xmlFree, __xmlMalloc, __xmlRealloc, __xmlMemStrdup, __xmlMallocAtomic, __xmlOutputBufferCreateFilename) in the 'in_headers_only' category alongside potentially missing API functions. These are legitimate function declarations in the public headers that serve as internal implementations behind the public function-pointer variables (xmlFree, xmlMalloc, etc.). They are intentionally not exported from the DSO and should be classified separately.",
+      "root_cause": "No classification for internal __xml* functions that are declared in headers but not intended for export.",
+      "fix": "Added INTERNAL_FUNCTIONS set and is_internal_function() predicate. Internal functions are now reported separately in the 'internal_functions' field, not mixed in with 'in_headers_only_functions'.",
+      "fix_commit": "current-session",
+      "courts": [],
+      "evidence": "6 __xml* functions appeared in 'in_headers_only' list: __xmlFree, __xmlMalloc, __xmlMallocAtomic, __xmlMemStrdup, __xmlRealloc, __xmlOutputBufferCreateFilename.",
+      "classification": "CANDIDATE_BUG"
+    },
+    {
+      "id": "R-000004",
+      "status": "FIXED",
+      "surface": "tooling",
+      "discovery_date": "2026-08-20",
+      "component": "tools/archaeology/symbols.py",
+      "title": "SAX1 callback names not classified separately from undocumented DSO exports",
+      "description": "The symbols.py ABI diff tool listed SAX1 callback names (internalSubset, isStandalone, startDocument, endElement, characters, etc.) in the 'in_dso_only' category. These are not individual exported functions — they are global function-pointer variables (fields of the xmlSAXHandler struct) that appear in the DSO symbol table as OBJECT type. They should be classified separately as SAX1 compatibility struct fields.",
+      "root_cause": "No classification for SAX1 callback struct fields that appear in DSO symbol tables but are not individual function declarations in headers.",
+      "fix": "Added SAX1_CALLBACK_NAMES set and is_sax1_callback() predicate. SAX1 callback names are now reported separately in the 'sax1_callbacks' field.",
+      "fix_commit": "current-session",
+      "courts": [],
+      "evidence": "32 SAX1 callback names appeared in 'in_dso_only' list.",
+      "classification": "CANDIDATE_BUG"
+    }
+  ],
+  "generated": "2026-08-20T00:00:00Z",
+  "generator": "tools/archaeology/apiatlas.py (manual update)"
+}

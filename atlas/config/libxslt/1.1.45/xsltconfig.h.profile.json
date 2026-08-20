@@ -1,0 +1,22 @@
+{
+  "generated_file": "xsltconfig.h",
+  "generator": "tools/archaeology/profileconfig.py",
+  "git_tag": "v1.1.45",
+  "options": {
+    "WITH_DEBUGGER": 1,
+    "WITH_MODULES": 1,
+    "WITH_PROFILER": 1,
+    "WITH_TRIO": 1,
+    "WITH_XSLT_DEBUG": 1
+  },
+  "profile": "distro",
+  "project": "libxslt",
+  "source_template": "libxslt/xsltconfig.h.in",
+  "special": {
+    "LIBXSLT_DEFAULT_PLUGINS_PATH": "/usr/lib/libxslt-plugins",
+    "LIBXSLT_VERSION_EXTRA": "",
+    "LIBXSLT_VERSION_NUMBER": "10145",
+    "VERSION": "1.1.45"
+  },
+  "version": "1.1.45"
+}
