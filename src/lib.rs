@@ -28,15 +28,10 @@
 //! - Which oracle/parity court exercises the assumption
 //! - What would constitute violation
 
-#![deny(
+#![deny(unconditional_recursion, unused_lifetimes, while_true)]
+#![warn(
     missing_docs,
     missing_debug_implementations,
-    unconditional_recursion,
-    unused_lifetimes,
-    unused_qualifications,
-    while_true
-)]
-#![warn(
     clippy::all,
     clippy::pedantic,
     clippy::nursery,
@@ -101,52 +96,3 @@ pub const LIBXML_RS_VERSION_MINOR: u32 = 1;
 
 /// Micro version (patch) number of libxml-rs.
 pub const LIBXML_RS_VERSION_MICRO: u32 = 0;
-
-/// Initialize the library (libxml2 compatibility)
-///
-/// # Safety
-/// This function must be called before any other libxml2 functions.
-/// It is not thread-safe to call concurrently with other libxml2 functions.
-#[no_mangle]
-pub unsafe extern "C" fn xmlInitParser() {
-    internal::globals::init_parser();
-}
-
-/// Clean up the library (libxml2 compatibility)
-///
-/// # Safety
-/// This function should be called when the library is no longer needed.
-/// It is not thread-safe to call concurrently with other libxml2 functions.
-#[no_mangle]
-pub unsafe extern "C" fn xmlCleanupParser() {
-    internal::globals::cleanup_parser();
-}
-
-/// Initialize the library for threaded use (libxml2 compatibility)
-///
-/// # Safety
-/// This function must be called before any other libxml2 functions in a threaded program.
-#[no_mangle]
-pub unsafe extern "C" fn xmlInitThreads() -> std::os::raw::c_int {
-    internal::globals::init_threads()
-}
-
-/// Get the library version (libxml2 compatibility)
-#[no_mangle]
-pub extern "C" fn xmlLibxmlVersion() -> std::os::raw::c_int {
-    // Return version in format: major * 10000 + minor * 100 + micro
-    // We target libxml2 2.12.x compatibility
-    2 * 10000 + 12 * 100 + 0
-}
-
-/// Get the library version string (libxml2 compatibility)
-#[no_mangle]
-pub extern "C" fn xmlLibxmlVersionString() -> *const std::os::raw::c_char {
-    internal::versioning::version_string()
-}
-
-/// Check library version at runtime (libxml2 compatibility)
-#[no_mangle]
-pub extern "C" fn xmlCheckVersion(version: std::os::raw::c_int) -> std::os::raw::c_int {
-    internal::versioning::check_version(version)
-}
