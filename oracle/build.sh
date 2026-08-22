@@ -72,13 +72,18 @@ tail -100 config.status >> /oracle/libxml2-config.txt
 cd "/oracle/libxslt-${LIBSXLT_VERSION}"
 
 # Configure against the just-built libxml2.
+# Ensure pkg-config can find libxml2's .pc file
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
+ldconfig 2>&1 || true
+# Use --with-libxml-prefix so configure finds xml2-config in /usr/local/bin
+# and uses it to set both CFLAGS and LIBS (including -lxml2).
+# Do NOT use --with-libxml-include-prefix or --with-libxml-libs-prefix
+# as those only set -I/-L without adding -lxml2 to the link line.
 ./configure \
     --prefix=/usr/local \
     --enable-shared \
     --enable-static \
     --with-libxml-prefix=/usr/local \
-    --with-libxml-include-prefix=/usr/local/include \
-    --with-libxml-libs-prefix=/usr/local/lib \
     --with-plugins \
     --without-debug \
     --without-mem-debug \

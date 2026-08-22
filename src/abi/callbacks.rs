@@ -449,3 +449,42 @@ pub type xmlModuleRegisterFunc = unsafe extern "C" fn(module: *mut c_void) -> c_
 
 /// Stream callback for pattern matching.
 pub type xmlStreamCtxtPtr = *mut c_void;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Hash Table Callbacks
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Deallocator function for hash table entries.
+///
+/// Called when removing an entry from a hash table.
+/// The function receives the payload and the name (key) of the entry.
+pub type xmlHashDeallocator =
+    unsafe extern "C" fn(payload: *mut c_void, name: *mut crate::abi::types::xmlChar);
+
+/// Copier function for hash table entries.
+///
+/// Called when copying a hash table. Returns a copy of the payload.
+pub type xmlHashCopier = unsafe extern "C" fn(
+    payload: *mut c_void,
+    name: *const crate::abi::types::xmlChar,
+) -> *mut c_void;
+
+/// Scanner function for hash table entries.
+///
+/// Called for each entry during xmlHashScan.
+pub type xmlHashScanner = unsafe extern "C" fn(
+    payload: *mut c_void,
+    data: *mut c_void,
+    name: *const crate::abi::types::xmlChar,
+);
+
+/// Full scanner function for hash table entries.
+///
+/// Called for each entry during xmlHashScanFull. Includes all three key parts.
+pub type xmlHashScannerFull = unsafe extern "C" fn(
+    payload: *mut c_void,
+    data: *mut c_void,
+    name: *const crate::abi::types::xmlChar,
+    name2: *const crate::abi::types::xmlChar,
+    name3: *const crate::abi::types::xmlChar,
+);

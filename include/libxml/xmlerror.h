@@ -1,0 +1,192 @@
+/**
+ * @file
+ *
+ * Error handling API for libxml-rs
+ */
+
+#ifndef __XML_ERROR_H__
+#define __XML_ERROR_H__
+
+#include <libxml/xmlversion.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    XML_ERR_NONE = 0,
+    XML_ERR_WARNING = 1,
+    XML_ERR_ERROR = 2,
+    XML_ERR_FATAL = 3
+} xmlErrorLevel;
+
+/* Error domains */
+#define XML_FROM_NONE 0
+#define XML_FROM_PARSER 1
+#define XML_FROM_TREE 2
+#define XML_FROM_NAMESPACE 3
+#define XML_FROM_DTD 4
+#define XML_FROM_HTML 5
+#define XML_FROM_MEMORY 6
+#define XML_FROM_OUTPUT 7
+#define XML_FROM_IO 8
+#define XML_FROM_FTP 9
+#define XML_FROM_HTTP 10
+#define XML_FROM_XINCLUDE 11
+#define XML_FROM_XPATH 12
+#define XML_FROM_XPOINTER 13
+#define XML_FROM_REGEXP 14
+#define XML_FROM_DATATYPE 15
+#define XML_FROM_SCHEMASP 16
+#define XML_FROM_SCHEMASV 17
+#define XML_FROM_RELAXNGP 18
+#define XML_FROM_RELAXNGV 19
+#define XML_FROM_CATALOG 20
+#define XML_FROM_C14N 21
+#define XML_FROM_XSLT 22
+#define XML_FROM_VALID 23
+#define XML_FROM_CHECK 24
+#define XML_FROM_WRITER 25
+#define XML_FROM_MODULE 26
+#define XML_FROM_I18N 27
+#define XML_FROM_SCHEMATRONV 28
+#define XML_FROM_BUFFER 29
+#define XML_FROM_URI 30
+
+/* Error codes */
+#define XML_ERR_OK 0
+#define XML_ERR_INTERNAL_ERROR 1
+#define XML_ERR_NO_MEMORY 2
+#define XML_ERR_DOCUMENT_START 3
+#define XML_ERR_DOCUMENT_EMPTY 4
+#define XML_ERR_DOCUMENT_END 5
+#define XML_ERR_INVALID_HEX_CHARREF 6
+#define XML_ERR_INVALID_DEC_CHARREF 7
+#define XML_ERR_INVALID_CHARREF 8
+#define XML_ERR_INVALID_CHAR 9
+#define XML_ERR_CHARREF_AT_EOF 10
+#define XML_ERR_CHARREF_IN_PROLOG 11
+#define XML_ERR_CHARREF_IN_EPILOG 12
+#define XML_ERR_CHARREF_IN_DTD 13
+#define XML_ERR_ENTITYREF_AT_EOF 14
+#define XML_ERR_ENTITYREF_IN_PROLOG 15
+#define XML_ERR_ENTITYREF_IN_EPILOG 16
+#define XML_ERR_ENTITYREF_IN_DTD 17
+#define XML_ERR_PEREF_AT_EOF 18
+#define XML_ERR_PEREF_IN_PROLOG 19
+#define XML_ERR_PEREF_IN_EPILOG 20
+#define XML_ERR_PEREF_IN_INT_SUBSET 21
+#define XML_ERR_ENTITYREF_NO_NAME 22
+#define XML_ERR_ENTITYREF_SEMICOL_MISSING 23
+#define XML_ERR_PEREF_NO_NAME 24
+#define XML_ERR_PEREF_SEMICOL_MISSING 25
+#define XML_ERR_UNDECLARED_ENTITY 26
+#define XML_WAR_UNDECLARED_ENTITY 27
+#define XML_ERR_UNPARSED_ENTITY 28
+#define XML_ERR_ENTITY_IS_EXTERNAL 29
+#define XML_ERR_ENTITY_IS_PARAMETER 30
+#define XML_ERR_UNKNOWN_ENCODING 31
+#define XML_ERR_UNSUPPORTED_ENCODING 32
+#define XML_ERR_STRING_NOT_STARTED 33
+#define XML_ERR_STRING_NOT_CLOSED 34
+#define XML_ERR_NS_DECL_ERROR 35
+#define XML_ERR_ENTITY_NOT_STARTED 36
+#define XML_ERR_ENTITY_NOT_FINISHED 37
+#define XML_ERR_LT_IN_ATTRIBUTE 38
+#define XML_ERR_ATTRIBUTE_NOT_STARTED 39
+#define XML_ERR_ATTRIBUTE_NOT_FINISHED 40
+#define XML_ERR_ATTRIBUTE_WITHOUT_VALUE 41
+#define XML_ERR_ATTRIBUTE_REDEFINED 42
+#define XML_ERR_LITERAL_NOT_STARTED 43
+#define XML_ERR_LITERAL_NOT_FINISHED 44
+#define XML_ERR_COMMENT_NOT_FINISHED 45
+#define XML_ERR_PI_NOT_STARTED 46
+#define XML_ERR_PI_NOT_FINISHED 47
+#define XML_ERR_NOTATION_NOT_STARTED 48
+#define XML_ERR_NOTATION_NOT_FINISHED 49
+#define XML_ERR_ATTLIST_NOT_STARTED 50
+#define XML_ERR_ATTLIST_NOT_FINISHED 51
+#define XML_ERR_MIXED_NOT_STARTED 52
+#define XML_ERR_MIXED_NOT_FINISHED 53
+#define XML_ERR_ELEMCONTENT_NOT_STARTED 54
+#define XML_ERR_ELEMCONTENT_NOT_FINISHED 55
+#define XML_ERR_XMLDECL_NOT_STARTED 56
+#define XML_ERR_XMLDECL_NOT_FINISHED 57
+#define XML_ERR_CONDSEC_NOT_STARTED 58
+#define XML_ERR_CONDSEC_NOT_FINISHED 59
+#define XML_ERR_EXT_SUBSET_NOT_FINISHED 60
+#define XML_ERR_DOCTYPE_NOT_FINISHED 61
+#define XML_ERR_MISPLACED_CDATA_END 62
+#define XML_ERR_CDATA_NOT_FINISHED 63
+#define XML_ERR_MISPLACED_XML_PI 64
+#define XML_ERR_XML_DECL_AT_EOF 65
+#define XML_ERR_XML_DECL_IN_PROLOG 66
+#define XML_ERR_XML_DECL_IN_EPILOG 67
+#define XML_ERR_XML_DECL_IN_DTD 68
+#define XML_ERR_NOT_WELL_BALANCED 69
+#define XML_ERR_EXTRA_CONTENT 70
+#define XML_ERR_INVALID_ENCODING 71
+#define XML_ERR_ENTITY_CHAR_ERROR 72
+#define XML_ERR_ENTITY_PE_INTERNAL 73
+#define XML_ERR_ENTITY_LOOP 74
+#define XML_ERR_ENTITY_BOUNDARY 75
+#define XML_ERR_INVALID_URI 76
+#define XML_ERR_URI_FRAGMENT 77
+#define XML_WAR_CATALOG_PI 78
+#define XML_ERR_NO_DTD 79
+#define XML_ERR_CONDSEC_INVALID 80
+#define XML_ERR_CONDSEC_INVALID_KEYWORD 81
+#define XML_ERR_INVALID_DECIMAL 82
+#define XML_ERR_INVALID_HEXIDECIMAL 83
+#define XML_ERR_INVALID_UNICODE 84
+#define XML_ERR_INVALID_NMTOKEN 85
+#define XML_ERR_INVALID_NAME 86
+#define XML_ERR_NAME_TOO_LONG 87
+#define XML_ERR_INVALID_ENUM 88
+#define XML_ERR_SPACE_REQUIRED 89
+#define XML_ERR_NAME_REQUIRED 90
+#define XML_ERR_NMTOKEN_REQUIRED 91
+#define XML_ERR_ATTRIBUTE_NOT_RESOLVED 92
+#define XML_ERR_LT_REQUIRED 93
+#define XML_ERR_GT_REQUIRED 94
+#define XML_ERR_TAG_NAME_MISMATCH 95
+#define XML_ERR_TAG_NOT_FINISHED 96
+#define XML_ERR_STANDALONE_VALUE 97
+#define XML_ERR_VERSION_MISSING 98
+
+/* Error structure */
+typedef struct _xmlError xmlError;
+typedef xmlError *xmlErrorPtr;
+struct _xmlError {
+    int domain;
+    int code;
+    char *message;
+    int level;
+    char *file;
+    int line;
+    char *str1;
+    char *str2;
+    char *str3;
+    int int1;
+    int int2;
+    void *ctxt;
+    void *node;
+};
+
+/* Callback types */
+typedef void (*xmlGenericErrorFunc)(void *ctx, const char *msg, ...);
+typedef void (*xmlStructuredErrorFunc)(void *ctx, xmlErrorPtr error);
+
+/* Functions */
+XMLPUBFUN void xmlSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handler);
+XMLPUBFUN void xmlSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc handler);
+XMLPUBFUN xmlErrorPtr xmlGetLastError(void);
+XMLPUBFUN int xmlCopyError(const xmlError *from, xmlError *to);
+XMLPUBFUN void xmlResetError(xmlError *err);
+XMLPUBFUN void xmlResetLastError(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __XML_ERROR_H__ */

@@ -19,7 +19,7 @@
 #
 # Pin the base image digest for reproducibility.
 # Using Debian stable as a widely-available, conservative baseline.
-FROM debian:bookworm-20250408@sha256:87d936e0d1b8b8c0b7d5b1d1f1e1d1b8b8c0b7d5 AS base
+FROM debian:bookworm@sha256:813017f3d62be4b5891a7acca6a01bdcd4b8513daa81b1ab99d3a50385b26931 AS base
 
 # Prevent interactive debconf prompts
 ENV DEBIAN_FRONTEND=noninteractive

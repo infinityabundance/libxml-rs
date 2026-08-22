@@ -35,6 +35,8 @@
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use core::ffi::c_void;
 use core::ptr;
@@ -107,7 +109,7 @@ pub unsafe extern "C" fn xmlInitThreads() -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlCleanupThreads() {
-    // Phase 1: no-op
+    crate::xml::threads::cleanup_threads();
 }
 
 /// Check whether the library has been initialized.
@@ -136,7 +138,7 @@ pub extern "C" fn xmlIsInitialized() -> c_int {
 /// This is an alias.
 #[no_mangle]
 pub unsafe extern "C" fn xmlLockLibrary() {
-    // Phase 1: no-op — Rust's type system handles data races.
+    crate::xml::threads::lock_library();
 }
 
 /// Unlock the library (libxml2 compat).
@@ -148,26 +150,12 @@ pub unsafe extern "C" fn xmlLockLibrary() {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlUnlockLibrary() {
-    // Phase 1: no-op
+    crate::xml::threads::unlock_library();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 4. Error Handling
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Last error, stored thread-locally.
-use core::cell::RefCell;
-use core::sync::atomic::AtomicPtr;
-use core::sync::atomic::Ordering as AtomicOrdering;
-
-thread_local! {
-    static LAST_ERROR: RefCell<Option<_xmlError>> = const { RefCell::new(None) };
-}
-
-static GENERIC_ERROR_CTX: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-static GENERIC_ERROR_FUNC: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-static STRUCTURED_ERROR_CTX: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-static STRUCTURED_ERROR_FUNC: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 
 /// Set the generic error handler.
 ///
@@ -186,11 +174,8 @@ pub unsafe extern "C" fn xmlSetGenericErrorFunc(
     ctx: *mut c_void,
     handler: Option<xmlGenericErrorFunc>,
 ) {
-    GENERIC_ERROR_CTX.store(ctx, AtomicOrdering::Release);
-    GENERIC_ERROR_FUNC.store(
-        handler.map_or(ptr::null_mut(), |f| f as *mut c_void),
-        AtomicOrdering::Release,
-    );
+    // SAFETY: Delegates to xml::errors with same safety contract.
+    unsafe { crate::xml::errors::set_generic_error_func(ctx, handler) };
 }
 
 /// Set the structured error handler.
@@ -209,11 +194,8 @@ pub unsafe extern "C" fn xmlSetStructuredErrorFunc(
     ctx: *mut c_void,
     handler: Option<xmlStructuredErrorFunc>,
 ) {
-    STRUCTURED_ERROR_CTX.store(ctx, AtomicOrdering::Release);
-    STRUCTURED_ERROR_FUNC.store(
-        handler.map_or(ptr::null_mut(), |f| f as *mut c_void),
-        AtomicOrdering::Release,
-    );
+    // SAFETY: Delegates to xml::errors with same safety contract.
+    unsafe { crate::xml::errors::set_structured_error_func(ctx, handler) };
 }
 
 /// Get the last error for the current thread.
@@ -228,11 +210,7 @@ pub unsafe extern "C" fn xmlSetStructuredErrorFunc(
 /// The returned pointer is valid until the next libxml2 call in this thread.
 #[no_mangle]
 pub extern "C" fn xmlGetLastError() -> *mut _xmlError {
-    LAST_ERROR.with(|last| {
-        let mut last = last.borrow_mut();
-        last.as_mut()
-            .map_or(ptr::null_mut(), |e| e as *mut _xmlError)
-    })
+    crate::xml::errors::get_last_error()
 }
 
 /// Get a copy of the last error for the current thread.
@@ -250,14 +228,8 @@ pub extern "C" fn xmlGetLastError() -> *mut _xmlError {
 /// - `from` and `to` must be valid pointers to `_xmlError` structs, or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError) -> c_int {
-    if from.is_null() || to.is_null() {
-        return -1;
-    }
-    // SAFETY: Caller guarantees both pointers are valid.
-    unsafe {
-        ptr::copy_nonoverlapping(from, to, 1);
-    }
-    0
+    // SAFETY: Delegates to xml::errors with same safety contract.
+    unsafe { crate::xml::errors::copy_error(from, to) }
 }
 
 /// Reset an error structure.
@@ -273,30 +245,8 @@ pub unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError
 /// - `err` must be a valid pointer to `_xmlError`, or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlResetError(err: *mut _xmlError) {
-    if err.is_null() {
-        return;
-    }
-    // SAFETY: Caller guarantees pointer is valid.
-    unsafe {
-        ptr::write(
-            err,
-            _xmlError {
-                domain: XML_FROM_NONE,
-                code: XML_ERR_OK as c_int,
-                message: ptr::null_mut(),
-                level: XML_ERR_NONE as c_int,
-                file: ptr::null_mut(),
-                line: 0,
-                str1: ptr::null_mut(),
-                str2: ptr::null_mut(),
-                str3: ptr::null_mut(),
-                int1: 0,
-                int2: 0,
-                ctxt: ptr::null_mut(),
-                node: ptr::null_mut(),
-            },
-        );
-    }
+    // SAFETY: Delegates to xml::errors with same safety contract.
+    unsafe { crate::xml::errors::reset_error(err) };
 }
 
 /// Raise a structured error.
@@ -330,51 +280,12 @@ pub unsafe extern "C" fn xmlRaiseError(
     int2: c_int,
     msg: *const c_char,
 ) {
-    // Phase 1: basic error reporting.
-    // Full implementation with variadic formatting will be in Phase 1+ when
-    // the errors module is implemented.
-
-    // Store the last error
-    let err = _xmlError {
-        domain,
-        code,
-        message: ptr::null_mut(), // will be set by errors module
-        level,
-        file: file as *mut c_char,
-        line,
-        str1: str1 as *mut c_char,
-        str2: str2 as *mut c_char,
-        str3: str3 as *mut c_char,
-        int1,
-        int2,
-        ctxt: ptr::null_mut(),
-        node: ptr::null_mut(),
-    };
-
-    LAST_ERROR.with(|last| {
-        *last.borrow_mut() = Some(err);
-    });
-
-    // Call the structured error handler if set
-    let structured_func = STRUCTURED_ERROR_FUNC.load(AtomicOrdering::Acquire);
-    if !structured_func.is_null() {
-        let ctx = STRUCTURED_ERROR_CTX.load(AtomicOrdering::Acquire);
-        let handler: xmlStructuredErrorFunc = unsafe { core::mem::transmute(structured_func) };
-        if let Some(err_ptr) =
-            LAST_ERROR.with(|last| last.borrow().as_ref().map(|e| e as *const _xmlError))
-        {
-            unsafe { handler(ctx, err_ptr) };
-        }
-    }
-
-    // Call the generic error handler if set (for warnings/errors)
-    let generic_func = GENERIC_ERROR_FUNC.load(AtomicOrdering::Acquire);
-    if !generic_func.is_null() && level != 0 {
-        let ctx = GENERIC_ERROR_CTX.load(AtomicOrdering::Acquire);
-        let handler: xmlGenericErrorFunc = unsafe { core::mem::transmute(generic_func) };
-        if !msg.is_null() {
-            unsafe { handler(ctx, msg) };
-        }
+    // SAFETY: Delegates to xml::errors with same safety contract.
+    unsafe {
+        crate::xml::errors::raise_error(
+            ctxt, ctxt2, ctxt3, ctxt4, ctxt5, domain, code, level, file, line, str1, str2, str3,
+            int1, int2, msg,
+        );
     }
 }
 
@@ -387,9 +298,7 @@ pub unsafe extern "C" fn xmlRaiseError(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlResetLastError() {
-    LAST_ERROR.with(|last| {
-        *last.borrow_mut() = None;
-    });
+    crate::xml::errors::reset_last_error();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -838,48 +747,7 @@ pub unsafe extern "C" fn xmlStrsub(str: *const xmlChar, start: c_int, len: c_int
 /// - Returns a newly allocated document. Caller must free with `xmlFreeDoc`.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewDoc(version: *const xmlChar) -> *mut _xmlDoc {
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    // Returns a minimal document structure.
-    let doc = unsafe { xmlMallocZero(size_of::<_xmlDoc>()) as *mut _xmlDoc };
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            doc,
-            _xmlDoc {
-                _private: ptr::null_mut(),
-                type_: XML_DOCUMENT_NODE as c_int,
-                name: ptr::null_mut(),
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: doc,
-                compression: 0,
-                standalone: -1,
-                intSubset: ptr::null_mut(),
-                extSubset: ptr::null_mut(),
-                oldNs: ptr::null_mut(),
-                version: if version.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(version)
-                },
-                encoding: ptr::null_mut(),
-                ids: ptr::null_mut(),
-                refs: ptr::null_mut(),
-                URL: ptr::null_mut(),
-                charset: 0,
-                dict: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                parseFlags: 0,
-                properties: 0,
-            },
-        );
-    }
-    doc
+    crate::xml::tree::new_doc(version)
 }
 
 /// Free a document.
@@ -895,24 +763,7 @@ pub unsafe extern "C" fn xmlNewDoc(version: *const xmlChar) -> *mut _xmlDoc {
 /// - `doc` must be a valid document pointer or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreeDoc(doc: *mut _xmlDoc) {
-    if doc.is_null() {
-        return;
-    }
-    // Phase 1: STUB — will recursively free the tree in xml/tree module.
-    // For now, just free the document structure itself.
-    unsafe {
-        let d = &*doc;
-        if !d.version.is_null() {
-            xmlFree(d.version as *mut c_void);
-        }
-        if !d.encoding.is_null() {
-            xmlFree(d.encoding as *mut c_void);
-        }
-        if !d.URL.is_null() {
-            xmlFree(d.URL as *mut c_void);
-        }
-        xmlFree(doc as *mut c_void);
-    }
+    crate::xml::tree::free_doc(doc);
 }
 
 /// Create a new node.
@@ -930,39 +781,7 @@ pub unsafe extern "C" fn xmlFreeDoc(doc: *mut _xmlDoc) {
 /// - Returns a newly allocated node. Caller must free with `xmlFreeNode`.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewNode(ns: *mut _xmlNs, name: *const xmlChar) -> *mut _xmlNode {
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    let node = unsafe { xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            node,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: XML_ELEMENT_NODE as c_int,
-                name: if name.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(name)
-                },
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: ptr::null_mut(),
-                ns: ns,
-                content: ptr::null_mut(),
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: 0,
-                extra: 0,
-            },
-        );
-    }
-    node
+    crate::xml::tree::new_node(ns, name)
 }
 
 /// Free a node.
@@ -979,20 +798,7 @@ pub unsafe extern "C" fn xmlNewNode(ns: *mut _xmlNs, name: *const xmlChar) -> *m
 /// - The node must NOT be part of a document tree (must be unlinked first).
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreeNode(node: *mut _xmlNode) {
-    if node.is_null() {
-        return;
-    }
-    // Phase 1: STUB — will recursively free the subtree in xml/tree module.
-    unsafe {
-        let n = &*node;
-        if !n.name.is_null() {
-            xmlFree(n.name as *mut c_void);
-        }
-        if !n.content.is_null() {
-            xmlFree(n.content as *mut c_void);
-        }
-        xmlFree(node as *mut c_void);
-    }
+    crate::xml::tree::free_node(node);
 }
 
 /// Unlink a node from its tree.
@@ -1008,33 +814,7 @@ pub unsafe extern "C" fn xmlFreeNode(node: *mut _xmlNode) {
 /// - `node` must be a valid node pointer or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlUnlinkNode(node: *mut _xmlNode) {
-    if node.is_null() {
-        return;
-    }
-    // Phase 1: STUB — will properly update parent/child/sibling links in xml/tree module.
-    unsafe {
-        let n = &mut *node;
-        // Update parent's children/last pointers
-        if !n.parent.is_null() {
-            let parent = &mut *n.parent;
-            if parent.children == node {
-                parent.children = n.next;
-            }
-            if parent.last == node {
-                parent.last = n.prev;
-            }
-        }
-        // Update sibling links
-        if !n.prev.is_null() {
-            (*(n.prev)).next = n.next;
-        }
-        if !n.next.is_null() {
-            (*(n.next)).prev = n.prev;
-        }
-        n.parent = ptr::null_mut();
-        n.next = ptr::null_mut();
-        n.prev = ptr::null_mut();
-    }
+    crate::xml::tree::unlink_node(node);
 }
 
 /// Add a child node.
@@ -1052,26 +832,7 @@ pub unsafe extern "C" fn xmlUnlinkNode(node: *mut _xmlNode) {
 /// - Returns pointer to the added child (borrowed).
 #[no_mangle]
 pub unsafe extern "C" fn xmlAddChild(parent: *mut _xmlNode, cur: *mut _xmlNode) -> *mut _xmlNode {
-    if parent.is_null() || cur.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will properly manage tree links in xml/tree module.
-    unsafe {
-        let c = &mut *cur;
-        let p = &mut *parent;
-
-        c.parent = parent;
-        c.next = ptr::null_mut();
-        c.prev = p.last;
-
-        if !p.last.is_null() {
-            (*(p.last)).next = cur;
-        } else {
-            p.children = cur;
-        }
-        p.last = cur;
-    }
-    cur
+    crate::xml::tree::add_child(parent, cur)
 }
 
 /// Add a sibling node.
@@ -1090,32 +851,7 @@ pub unsafe extern "C" fn xmlAddSibling(
     cur: *mut _xmlNode,
     sibling: *mut _xmlNode,
 ) -> *mut _xmlNode {
-    if cur.is_null() || sibling.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will properly manage tree links in xml/tree module.
-    unsafe {
-        let s = &mut *sibling;
-        let c = &mut *cur;
-
-        s.parent = c.parent;
-        s.prev = cur;
-        s.next = c.next;
-
-        if !c.next.is_null() {
-            (*(c.next)).prev = sibling;
-        }
-        c.next = sibling;
-
-        // Update parent's last if necessary
-        if !s.parent.is_null() {
-            let p = &mut *(s.parent);
-            if p.last == cur {
-                p.last = sibling;
-            }
-        }
-    }
-    sibling
+    crate::xml::tree::add_sibling(cur, sibling)
 }
 
 /// Create a new child element.
@@ -1143,21 +879,7 @@ pub unsafe extern "C" fn xmlNewChild(
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> *mut _xmlNode {
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    let node = unsafe { xmlNewNode(ns, name) };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    if !content.is_null() {
-        let text_node = unsafe { xmlNewText(content) };
-        if !text_node.is_null() {
-            unsafe { xmlAddChild(node, text_node) };
-        }
-    }
-    if !parent.is_null() {
-        unsafe { xmlAddChild(parent, node) };
-    }
-    node
+    crate::xml::tree::new_child(parent, ns, name)
 }
 
 /// Set the root element of a document.
@@ -1179,29 +901,7 @@ pub unsafe extern "C" fn xmlDocSetRootElement(
     doc: *mut _xmlDoc,
     root: *mut _xmlNode,
 ) -> *mut _xmlNode {
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    unsafe {
-        let d = &mut *doc;
-        let old_root = d.children;
-
-        // Clear existing children
-        d.children = ptr::null_mut();
-        d.last = ptr::null_mut();
-
-        // Set new root
-        if !root.is_null() {
-            let r = &mut *root;
-            r.parent = doc as *mut _xmlNode;
-            r.doc = doc;
-            d.children = root;
-            d.last = root;
-        }
-
-        old_root
-    }
+    crate::xml::tree::doc_set_root_element(doc, root)
 }
 
 /// Get the root element of a document.
@@ -1215,22 +915,7 @@ pub unsafe extern "C" fn xmlDocSetRootElement(
 /// Returns a borrowed pointer (do not free).
 #[no_mangle]
 pub extern "C" fn xmlDocGetRootElement(doc: *const _xmlDoc) -> *mut _xmlNode {
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        let d = &*doc;
-        // The root element is the first child of the document
-        let mut child = d.children;
-        while !child.is_null() {
-            let c = &*child;
-            if c.type_ == XML_ELEMENT_NODE as c_int {
-                return child;
-            }
-            child = c.next;
-        }
-        ptr::null_mut()
-    }
+    crate::xml::tree::doc_get_root_element(doc as *mut _xmlDoc)
 }
 
 /// Copy a node.
@@ -1247,68 +932,7 @@ pub extern "C" fn xmlDocGetRootElement(doc: *const _xmlDoc) -> *mut _xmlNode {
 /// Returns a newly allocated copy. Caller must free with `xmlFreeNode`.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCopyNode(node: *const _xmlNode, extended: c_int) -> *mut _xmlNode {
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    unsafe {
-        let src = &*node;
-        let copy = xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
-        if copy.is_null() {
-            return ptr::null_mut();
-        }
-        ptr::write(
-            copy,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: src.type_,
-                name: if src.name.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(src.name)
-                },
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: ptr::null_mut(),
-                ns: src.ns,
-                content: if src.content.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(src.content)
-                },
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: src.line,
-                extra: src.extra,
-            },
-        );
-        // Deep copy: copy children recursively
-        if extended != 0 {
-            let mut child = src.children;
-            let mut last_copied: *mut _xmlNode = ptr::null_mut();
-            while !child.is_null() {
-                let child_copy = xmlCopyNode(child, extended);
-                if !child_copy.is_null() {
-                    let cc = &mut *child_copy;
-                    cc.parent = copy;
-                    cc.prev = last_copied;
-                    if !last_copied.is_null() {
-                        (*(last_copied)).next = child_copy;
-                    } else {
-                        (*copy).children = child_copy;
-                    }
-                    last_copied = child_copy;
-                }
-                child = (*child).next;
-            }
-            (*copy).last = last_copied;
-        }
-        copy
-    }
+    crate::xml::tree::copy_node(node, extended)
 }
 
 /// Copy a document.
@@ -1322,32 +946,7 @@ pub unsafe extern "C" fn xmlCopyNode(node: *const _xmlNode, extended: c_int) -> 
 /// Returns a newly allocated copy. Caller must free with `xmlFreeDoc`.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCopyDoc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    unsafe {
-        let src = &*doc;
-        let new_doc = xmlNewDoc(src.version);
-        if new_doc.is_null() {
-            return ptr::null_mut();
-        }
-        let d = &mut *new_doc;
-        d.encoding = if src.encoding.is_null() {
-            ptr::null_mut()
-        } else {
-            xmlStrdup(src.encoding)
-        };
-        d.standalone = src.standalone;
-        d.compression = src.compression;
-        if recursive != 0 && !src.children.is_null() {
-            let root_copy = xmlCopyNode(src.children, 1);
-            if !root_copy.is_null() {
-                xmlDocSetRootElement(new_doc, root_copy);
-            }
-        }
-        new_doc
-    }
+    crate::xml::tree::copy_doc(doc, recursive)
 }
 
 /// Create a text node.
@@ -1362,38 +961,7 @@ pub unsafe extern "C" fn xmlCopyDoc(doc: *const _xmlDoc, recursive: c_int) -> *m
 /// If `content` is NULL, creates an empty text node.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewText(content: *const xmlChar) -> *mut _xmlNode {
-    let node = unsafe { xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            node,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: XML_TEXT_NODE as c_int,
-                name: b"text\0" as *const u8 as *mut xmlChar,
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: ptr::null_mut(),
-                ns: ptr::null_mut(),
-                content: if content.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(content)
-                },
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: 0,
-                extra: 0,
-            },
-        );
-    }
-    node
+    crate::xml::tree::new_text(content)
 }
 
 /// Create a new comment node.
@@ -1405,38 +973,7 @@ pub unsafe extern "C" fn xmlNewText(content: *const xmlChar) -> *mut _xmlNode {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewComment(content: *const xmlChar) -> *mut _xmlNode {
-    let node = unsafe { xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            node,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: XML_COMMENT_NODE as c_int,
-                name: b"comment\0" as *const u8 as *mut xmlChar,
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: ptr::null_mut(),
-                ns: ptr::null_mut(),
-                content: if content.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(content)
-                },
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: 0,
-                extra: 0,
-            },
-        );
-    }
-    node
+    crate::xml::tree::new_comment(content)
 }
 
 /// Create a new PI node.
@@ -1448,42 +985,7 @@ pub unsafe extern "C" fn xmlNewComment(content: *const xmlChar) -> *mut _xmlNode
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewPI(name: *const xmlChar, content: *const xmlChar) -> *mut _xmlNode {
-    let node = unsafe { xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            node,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: XML_PI_NODE as c_int,
-                name: if name.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(name)
-                },
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: ptr::null_mut(),
-                ns: ptr::null_mut(),
-                content: if content.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(content)
-                },
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: 0,
-                extra: 0,
-            },
-        );
-    }
-    node
+    crate::xml::tree::new_pi(name, content)
 }
 
 /// Create a new CDATA node.
@@ -1499,43 +1001,7 @@ pub unsafe extern "C" fn xmlNewCDataBlock(
     content: *const xmlChar,
     len: c_int,
 ) -> *mut _xmlNode {
-    let node = unsafe { xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode };
-    if node.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            node,
-            _xmlNode {
-                _private: ptr::null_mut(),
-                type_: XML_CDATA_SECTION_NODE as c_int,
-                name: b"cdata\0" as *const u8 as *mut xmlChar,
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: ptr::null_mut(),
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: doc,
-                ns: ptr::null_mut(),
-                content: if content.is_null() || len <= 0 {
-                    ptr::null_mut()
-                } else {
-                    let s = xmlMalloc((len + 1) as usize) as *mut xmlChar;
-                    if !s.is_null() {
-                        ptr::copy_nonoverlapping(content, s, len as usize);
-                        *s.add(len as usize) = 0;
-                    }
-                    s
-                },
-                properties: ptr::null_mut(),
-                nsDef: ptr::null_mut(),
-                psvi: ptr::null_mut(),
-                line: 0,
-                extra: 0,
-            },
-        );
-    }
-    node
+    crate::xml::tree::new_cdata_block(doc, content, len)
 }
 
 /// Create a new namespace definition.
@@ -1557,39 +1023,7 @@ pub unsafe extern "C" fn xmlNewNs(
     href: *const xmlChar,
     prefix: *const xmlChar,
 ) -> *mut _xmlNs {
-    // Phase 1: STUB — will be implemented in xml/namespaces module.
-    let ns = unsafe { xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs };
-    if ns.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            ns,
-            _xmlNs {
-                next: ptr::null_mut(),
-                type_: XML_LOCAL_NAMESPACE as c_int,
-                href: if href.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(href)
-                },
-                prefix: if prefix.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(prefix)
-                },
-                _private: ptr::null_mut(),
-                context: node as *mut _xmlDoc,
-            },
-        );
-        // Add to node's nsDef list
-        if !node.is_null() {
-            let n = &mut *node;
-            (*ns).next = n.nsDef as *mut _xmlNs;
-            n.nsDef = ns;
-        }
-    }
-    ns
+    crate::xml::tree::new_ns(node, href, prefix)
 }
 
 /// Set the namespace of a node.
@@ -1601,12 +1035,7 @@ pub unsafe extern "C" fn xmlNewNs(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlSetNs(node: *mut _xmlNode, ns: *mut _xmlNs) {
-    if node.is_null() {
-        return;
-    }
-    unsafe {
-        (*node).ns = ns;
-    }
+    crate::xml::tree::set_ns(node, ns);
 }
 
 /// Get the namespace of a node.
@@ -1621,8 +1050,7 @@ pub unsafe extern "C" fn xmlGetNsList(
     doc: *mut _xmlDoc,
     node: *const _xmlNode,
 ) -> *mut *mut _xmlNs {
-    // Phase 1: STUB — will be implemented in xml/namespaces module.
-    ptr::null_mut()
+    crate::xml::tree::get_ns_list(doc, node as *mut _xmlNode)
 }
 
 /// Search for a namespace by href.
@@ -1638,8 +1066,7 @@ pub unsafe extern "C" fn xmlSearchNs(
     node: *mut _xmlNode,
     nameSpace: *const xmlChar,
 ) -> *mut _xmlNs {
-    // Phase 1: STUB
-    ptr::null_mut()
+    crate::xml::tree::search_ns(doc, node, nameSpace)
 }
 
 /// Search for a namespace by href, using the full in-scope chain.
@@ -1655,8 +1082,7 @@ pub unsafe extern "C" fn xmlSearchNsByHref(
     node: *mut _xmlNode,
     href: *const xmlChar,
 ) -> *mut _xmlNs {
-    // Phase 1: STUB
-    ptr::null_mut()
+    crate::xml::tree::search_ns_by_href(doc, node, href)
 }
 
 /// Set a property (attribute) on a node.
@@ -1681,78 +1107,7 @@ pub unsafe extern "C" fn xmlSetProp(
     name: *const xmlChar,
     value: *const xmlChar,
 ) -> *mut _xmlAttr {
-    if node.is_null() || name.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    // Check if attribute already exists
-    let mut attr = unsafe { (*node).properties };
-    while !attr.is_null() {
-        let a = unsafe { &*attr };
-        if !a.name.is_null() && unsafe { xmlStrEqual(a.name, name) } != 0 {
-            // Update existing attribute value
-            unsafe {
-                if !a.children.is_null() {
-                    let text_node = &mut *a.children;
-                    if !text_node.content.is_null() {
-                        xmlFree(text_node.content as *mut c_void);
-                    }
-                    text_node.content = if value.is_null() {
-                        ptr::null_mut()
-                    } else {
-                        xmlStrdup(value)
-                    };
-                }
-            }
-            return attr;
-        }
-        attr = a.next as *mut _xmlAttr;
-    }
-
-    // Create new attribute
-    let new_attr = unsafe { xmlMallocZero(size_of::<_xmlAttr>()) as *mut _xmlAttr };
-    if new_attr.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            new_attr,
-            _xmlAttr {
-                _private: ptr::null_mut(),
-                type_: XML_ATTRIBUTE_NODE as c_int,
-                name: xmlStrdup(name),
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: node as *mut _xmlNode,
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: (*node).doc,
-                ns: ptr::null_mut(),
-                atype: XML_ATTRIBUTE_CDATA as c_int,
-                psvi: ptr::null_mut(),
-                id: ptr::null_mut(),
-            },
-        );
-
-        // Create text child for the value
-        if !value.is_null() {
-            let text = xmlNewText(value);
-            if !text.is_null() {
-                (*text).parent = new_attr as *mut _xmlNode;
-                (*new_attr).children = text;
-                (*new_attr).last = text;
-            }
-        }
-
-        // Link into the node's property list
-        let n = &mut *node;
-        (*new_attr).next = n.properties as *mut _xmlAttr;
-        if !n.properties.is_null() {
-            (*(n.properties)).prev = new_attr;
-        }
-        n.properties = new_attr;
-    }
-    new_attr
+    crate::xml::tree::set_prop(node, name, value)
 }
 
 /// Get a property value by name.
@@ -1766,27 +1121,7 @@ pub unsafe extern "C" fn xmlSetProp(
 /// Returns a newly allocated string. Caller must free with `xmlFree`.
 #[no_mangle]
 pub unsafe extern "C" fn xmlGetProp(node: *const _xmlNode, name: *const xmlChar) -> *mut xmlChar {
-    if node.is_null() || name.is_null() {
-        return ptr::null_mut();
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    let mut attr = unsafe { (*node).properties };
-    while !attr.is_null() {
-        let a = unsafe { &*attr };
-        if !a.name.is_null() && unsafe { xmlStrEqual(a.name, name) } != 0 {
-            // Get the value from the attribute's text child
-            let text = unsafe { a.children };
-            if !text.is_null() {
-                let t = unsafe { &*text };
-                if !t.content.is_null() {
-                    return unsafe { xmlStrdup(t.content) };
-                }
-            }
-            return unsafe { xmlStrdup(b"\0" as *const u8 as *const xmlChar) };
-        }
-        attr = unsafe { (*attr).next as *mut _xmlAttr };
-    }
-    ptr::null_mut()
+    crate::xml::tree::get_prop(node as *mut _xmlNode, name)
 }
 
 /// Get a namespaced property value.
@@ -1802,8 +1137,7 @@ pub unsafe extern "C" fn xmlGetNsProp(
     name: *const xmlChar,
     nameSpace: *const xmlChar,
 ) -> *mut xmlChar {
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    ptr::null_mut()
+    crate::xml::tree::get_ns_prop(node as *mut _xmlNode, name, nameSpace)
 }
 
 /// Set a namespaced property.
@@ -1821,9 +1155,7 @@ pub unsafe extern "C" fn xmlSetNsProp(
     name: *const xmlChar,
     value: *const xmlChar,
 ) -> *mut _xmlAttr {
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    // For now, delegate to xmlSetProp (ignoring namespace)
-    unsafe { xmlSetProp(node, name, value) }
+    crate::xml::tree::set_ns_prop(node, ns, name, value)
 }
 
 /// Remove a property by name.
@@ -1837,37 +1169,7 @@ pub unsafe extern "C" fn xmlSetNsProp(
 /// Returns 0 on success, -1 on error.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRemoveProp(attr: *mut _xmlAttr) -> c_int {
-    if attr.is_null() {
-        return -1;
-    }
-    // Phase 1: STUB — will be implemented in xml/tree module.
-    unsafe {
-        let a = &mut *attr;
-        // Unlink from parent node
-        if !a.parent.is_null() {
-            let parent = &mut *(a.parent);
-            if parent.properties == attr {
-                parent.properties = a.next;
-            }
-        }
-        // Update sibling links
-        if !a.prev.is_null() {
-            (*(a.prev)).next = a.next;
-        }
-        if !a.next.is_null() {
-            (*(a.next)).prev = a.prev;
-        }
-        // Free the attribute name
-        if !a.name.is_null() {
-            xmlFree(a.name as *mut c_void);
-        }
-        // Free the children (value text nodes)
-        if !a.children.is_null() {
-            xmlFreeNode(a.children);
-        }
-        xmlFree(attr as *mut c_void);
-    }
-    0
+    crate::xml::tree::remove_prop(attr)
 }
 
 /// Get a DTD from a document, creating one if needed.
@@ -1879,10 +1181,7 @@ pub unsafe extern "C" fn xmlRemoveProp(attr: *mut _xmlAttr) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlGetIntSubset(doc: *const _xmlDoc) -> *mut _xmlDtd {
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe { (*doc).intSubset }
+    crate::xml::tree::get_int_subset(doc)
 }
 
 /// Create a new DTD.
@@ -1900,50 +1199,7 @@ pub unsafe extern "C" fn xmlNewDtd(
     ExternalID: *const xmlChar,
     SystemID: *const xmlChar,
 ) -> *mut _xmlDtd {
-    // Phase 1: STUB — will be implemented in xml/dtd module.
-    let dtd = unsafe { xmlMallocZero(size_of::<_xmlDtd>()) as *mut _xmlDtd };
-    if dtd.is_null() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        ptr::write(
-            dtd,
-            _xmlDtd {
-                _private: ptr::null_mut(),
-                type_: XML_DTD_NODE as c_int,
-                name: if name.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(name)
-                },
-                children: ptr::null_mut(),
-                last: ptr::null_mut(),
-                parent: doc,
-                next: ptr::null_mut(),
-                prev: ptr::null_mut(),
-                doc: doc,
-                notations: ptr::null_mut(),
-                elements: ptr::null_mut(),
-                attributes: ptr::null_mut(),
-                entities: ptr::null_mut(),
-                ExternalID: if ExternalID.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(ExternalID)
-                },
-                SystemID: if SystemID.is_null() {
-                    ptr::null_mut()
-                } else {
-                    xmlStrdup(SystemID)
-                },
-                pentities: ptr::null_mut(),
-            },
-        );
-        if !doc.is_null() {
-            (*doc).intSubset = dtd;
-        }
-    }
-    dtd
+    crate::xml::tree::new_dtd(doc, name, ExternalID, SystemID)
 }
 
 /// Create a new entity.
@@ -1964,8 +1220,7 @@ pub unsafe extern "C" fn xmlNewEntity(
     SystemID: *const xmlChar,
     content: *const xmlChar,
 ) -> *mut _xmlEntity {
-    // Phase 1: STUB — will be implemented in xml/entities module.
-    ptr::null_mut()
+    crate::xml::tree::new_entity(doc, name, type_, ExternalID, SystemID, content)
 }
 
 /// Get an entity by name.
@@ -1980,8 +1235,7 @@ pub unsafe extern "C" fn xmlGetDocEntity(
     doc: *const _xmlDoc,
     name: *const xmlChar,
 ) -> *mut _xmlEntity {
-    // Phase 1: STUB — will be implemented in xml/entities module.
-    ptr::null_mut()
+    crate::xml::tree::get_doc_entity(doc, name)
 }
 
 /// Get a parameter entity by name.
@@ -1996,8 +1250,7 @@ pub unsafe extern "C" fn xmlGetParameterEntity(
     doc: *const _xmlDoc,
     name: *const xmlChar,
 ) -> *mut _xmlEntity {
-    // Phase 1: STUB
-    ptr::null_mut()
+    crate::xml::tree::get_parameter_entity(doc, name)
 }
 
 /// Get the line number of a node.
@@ -2008,11 +1261,8 @@ pub unsafe extern "C" fn xmlGetParameterEntity(
 /// long xmlGetLineNo(const xmlNode *node);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetLineNo(node: *const _xmlNode) -> c_uint {
-    if node.is_null() {
-        return 0;
-    }
-    unsafe { (*node).line as c_uint }
+pub extern "C" fn xmlGetLineNo(node: *const _xmlNode) -> c_int {
+    crate::xml::tree::get_line_no(node)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

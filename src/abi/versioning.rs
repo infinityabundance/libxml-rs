@@ -189,6 +189,19 @@ pub fn xsltLibxsltVersionString() -> *const c_char {
     LIBXSLT_VERSION_STRING.as_ptr() as *const c_char
 }
 
+/// Convert a C string pointer to a byte slice (NULL-safe).
+///
+/// # SAFETY
+///
+/// - `ptr` must be a valid null-terminated C string or NULL.
+pub unsafe fn c_str_to_bytes<'a>(ptr: *const c_char) -> Option<&'a [u8]> {
+    if ptr.is_null() {
+        return None;
+    }
+    let len = unsafe { libc::strlen(ptr) };
+    Some(unsafe { core::slice::from_raw_parts(ptr as *const u8, len) })
+}
+
 /// Check that the XSLT library version is at least `version`.
 ///
 /// # Returns
