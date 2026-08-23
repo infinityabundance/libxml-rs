@@ -1266,6 +1266,158 @@ pub extern "C" fn xmlGetLineNo(node: *const _xmlNode) -> c_int {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Serialization — xmlNodeDump, xmlDocDump, xmlSaveFile, etc.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Dump a node to a buffer.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlNodeDump(xmlBufferPtr buf, xmlDocPtr doc, xmlNodePtr cur, int level, int format);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlNodeDump(
+    buf: *mut _xmlBuffer,
+    doc: *mut _xmlDoc,
+    cur: *mut _xmlNode,
+    level: c_int,
+    format: c_int,
+) -> c_int {
+    if buf.is_null() || cur.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlNodeDump(buf, doc, cur, level, format)
+}
+
+/// Dump a document to a file pointer.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlDocDump(FILE *f, xmlDocPtr doc);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlDocDump(fp: *mut c_void, doc: *mut _xmlDoc) -> c_int {
+    if fp.is_null() || doc.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlDocDump(fp, doc)
+}
+
+/// Dump a document to memory with format.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlDocDumpFormatMemory(xmlDocPtr doc, xmlChar **mem, int *size, int format);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlDocDumpFormatMemory(
+    doc: *mut _xmlDoc,
+    mem: *mut *mut xmlChar,
+    size: *mut c_int,
+    format: c_int,
+) {
+    if doc.is_null() || mem.is_null() || size.is_null() {
+        return;
+    }
+    crate::xml::tree::xmlDocDumpFormatMemory(doc, mem, size, format)
+}
+
+/// Dump a document to memory (unformatted).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlDocDumpMemory(xmlDocPtr doc, xmlChar **mem, int *size);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlDocDumpMemory(
+    doc: *mut _xmlDoc,
+    mem: *mut *mut xmlChar,
+    size: *mut c_int,
+) {
+    if doc.is_null() || mem.is_null() || size.is_null() {
+        return;
+    }
+    crate::xml::tree::xmlDocDumpMemory(doc, mem, size)
+}
+
+/// Save a document to a file.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFile(const char *filename, xmlDocPtr cur);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSaveFile(filename: *const c_char, cur: *mut _xmlDoc) -> c_int {
+    if filename.is_null() || cur.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlSaveFile(filename, cur)
+}
+
+/// Save a document to a file with encoding.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFileEnc(const char *filename, xmlDocPtr cur, const char *encoding);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSaveFileEnc(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    encoding: *const c_char,
+) -> c_int {
+    if filename.is_null() || cur.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlSaveFileEnc(filename, cur, encoding)
+}
+
+/// Save a document to a file with format.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFormatFile(const char *filename, xmlDocPtr cur, int format);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSaveFormatFile(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    format: c_int,
+) -> c_int {
+    if filename.is_null() || cur.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlSaveFormatFile(filename, cur, format)
+}
+
+/// Save a document to a file with encoding and format.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFormatFileEnc(const char *filename, xmlDocPtr cur, const char *encoding, int format);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSaveFormatFileEnc(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    encoding: *const c_char,
+    format: c_int,
+) -> c_int {
+    if filename.is_null() || cur.is_null() {
+        return -1;
+    }
+    crate::xml::tree::xmlSaveFormatFileEnc(filename, cur, encoding, format)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 7. Parser — SAX, DOM, Push, Reader
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1986,8 +2138,15 @@ pub unsafe extern "C" fn xmlOutputBufferCreateFilename(
     encoder: *mut c_void,
     compression: c_int,
 ) -> *mut _xmlOutputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    let _ = compression;
+    if URI.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::io::output_buffer_create_filename(
+        URI,
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+        0,
+    )
 }
 
 /// Create an output buffer for a file descriptor.
@@ -2003,8 +2162,13 @@ pub unsafe extern "C" fn xmlOutputBufferCreateFd(
     fd: c_int,
     encoder: *mut c_void,
 ) -> *mut _xmlOutputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    if fd < 0 {
+        return ptr::null_mut();
+    }
+    crate::xml::io::output_buffer_create_fd(
+        fd,
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+    )
 }
 
 /// Create an output buffer from I/O callbacks.
@@ -2023,8 +2187,12 @@ pub unsafe extern "C" fn xmlOutputBufferCreateIO(
     ioctx: *mut c_void,
     encoder: *mut c_void,
 ) -> *mut _xmlOutputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    crate::xml::io::output_buffer_create_io(
+        iowrite,
+        ioclose,
+        ioctx,
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+    )
 }
 
 /// Free an output buffer.
@@ -2037,13 +2205,9 @@ pub unsafe extern "C" fn xmlOutputBufferCreateIO(
 #[no_mangle]
 pub unsafe extern "C" fn xmlOutputBufferClose(out: *mut _xmlOutputBuffer) -> c_int {
     if out.is_null() {
-        return 0;
+        return -1;
     }
-    // Phase 1: STUB
-    unsafe {
-        xmlFree(out as *mut c_void);
-    }
-    0
+    crate::xml::io::output_buffer_close(out)
 }
 
 /// Flush an output buffer.
@@ -2055,8 +2219,10 @@ pub unsafe extern "C" fn xmlOutputBufferClose(out: *mut _xmlOutputBuffer) -> c_i
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlOutputBufferFlush(out: *mut _xmlOutputBuffer) -> c_int {
-    // Phase 1: STUB
-    0
+    if out.is_null() {
+        return -1;
+    }
+    crate::xml::io::output_buffer_flush(out)
 }
 
 /// Write to an output buffer.
@@ -2072,8 +2238,10 @@ pub unsafe extern "C" fn xmlOutputBufferWrite(
     len: c_int,
     data: *const c_char,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    if out.is_null() || data.is_null() || len <= 0 {
+        return -1;
+    }
+    crate::xml::io::output_buffer_write(out, len, data)
 }
 
 /// Write a string to an output buffer.
@@ -2730,8 +2898,7 @@ pub extern "C" fn xmlListMerge(_list: *mut c_void, _list2: *mut c_void) {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlBufferCreate() -> *mut _xmlBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    crate::xml::io::buf_create(-1)
 }
 
 /// Create a new buffer of a given size.
@@ -2742,9 +2909,8 @@ pub extern "C" fn xmlBufferCreate() -> *mut _xmlBuffer {
 /// xmlBufferPtr xmlBufferCreateSize(size_t size);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferCreateSize(_size: usize) -> *mut _xmlBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlBufferCreateSize(size: usize) -> *mut _xmlBuffer {
+    crate::xml::io::buf_create(size as c_int)
 }
 
 /// Create a buffer from a static string.
@@ -2755,9 +2921,11 @@ pub extern "C" fn xmlBufferCreateSize(_size: usize) -> *mut _xmlBuffer {
 /// xmlBufferPtr xmlBufferCreateStatic(void *mem, size_t size);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferCreateStatic(_mem: *mut c_void, _size: usize) -> *mut _xmlBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlBufferCreateStatic(mem: *mut c_void, size: usize) -> *mut _xmlBuffer {
+    if mem.is_null() || size == 0 {
+        return ptr::null_mut();
+    }
+    crate::xml::io::buf_create_static(mem as *const xmlChar, size as c_int)
 }
 
 /// Free a buffer.
@@ -2768,8 +2936,8 @@ pub extern "C" fn xmlBufferCreateStatic(_mem: *mut c_void, _size: usize) -> *mut
 /// void xmlBufferFree(xmlBufferPtr buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferFree(_buf: *mut _xmlBuffer) {
-    // Phase 1: STUB
+pub extern "C" fn xmlBufferFree(buf: *mut _xmlBuffer) {
+    crate::xml::io::buf_free(buf)
 }
 
 /// Empty a buffer.
@@ -2780,8 +2948,16 @@ pub extern "C" fn xmlBufferFree(_buf: *mut _xmlBuffer) {
 /// void xmlBufferEmpty(xmlBufferPtr buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferEmpty(_buf: *mut _xmlBuffer) {
-    // Phase 1: STUB
+pub extern "C" fn xmlBufferEmpty(buf: *mut _xmlBuffer) {
+    if buf.is_null() {
+        return;
+    }
+    unsafe {
+        if !(*buf).content.is_null() {
+            *(*buf).content = 0;
+        }
+        (*buf).use_ = 0;
+    }
 }
 
 /// Get buffer content.
@@ -2792,9 +2968,8 @@ pub extern "C" fn xmlBufferEmpty(_buf: *mut _xmlBuffer) {
 /// xmlChar *xmlBufferContent(const xmlBuffer *buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferContent(_buf: *const _xmlBuffer) -> *mut xmlChar {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlBufferContent(buf: *const _xmlBuffer) -> *mut xmlChar {
+    crate::xml::io::buf_content(buf as *mut _xmlBuffer)
 }
 
 /// Get buffer length.
@@ -2805,9 +2980,8 @@ pub extern "C" fn xmlBufferContent(_buf: *const _xmlBuffer) -> *mut xmlChar {
 /// int xmlBufferLength(const xmlBuffer *buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferLength(_buf: *const _xmlBuffer) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlBufferLength(buf: *const _xmlBuffer) -> c_int {
+    crate::xml::io::buf_length(buf as *mut _xmlBuffer)
 }
 
 /// Write to a buffer.
@@ -2819,12 +2993,11 @@ pub extern "C" fn xmlBufferLength(_buf: *const _xmlBuffer) -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlBufferAdd(
-    _buf: *mut _xmlBuffer,
-    _str: *const xmlChar,
-    _len: c_int,
+    buf: *mut _xmlBuffer,
+    str: *const xmlChar,
+    len: c_int,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    crate::xml::io::buf_add(buf, str, len)
 }
 
 /// Write to a buffer at a position.
@@ -2836,12 +3009,27 @@ pub unsafe extern "C" fn xmlBufferAdd(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlBufferAddHead(
-    _buf: *mut _xmlBuffer,
-    _str: *const xmlChar,
-    _len: c_int,
+    buf: *mut _xmlBuffer,
+    str: *const xmlChar,
+    len: c_int,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    crate::xml::io::buf_add_head(buf, str, len)
+}
+
+/// Write a C string to a buffer.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlBufferCat(xmlBufferPtr buf, const xmlChar *str);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlBufferCat(buf: *mut _xmlBuffer, str: *const xmlChar) -> c_int {
+    if str.is_null() {
+        return -1;
+    }
+    let len = crate::xml::string::xml_strlen(str) as c_int;
+    crate::xml::io::buf_add(buf, str, len)
 }
 
 /// Set buffer allocation scheme.
@@ -2853,8 +3041,13 @@ pub unsafe extern "C" fn xmlBufferAddHead(
 ///                                    xmlBufferAllocationScheme scheme);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferSetAllocationScheme(_buf: *mut _xmlBuffer, _scheme: c_int) {
-    // Phase 1: STUB
+pub extern "C" fn xmlBufferSetAllocationScheme(buf: *mut _xmlBuffer, scheme: c_int) {
+    if buf.is_null() {
+        return;
+    }
+    unsafe {
+        (*buf).alloc = scheme;
+    }
 }
 
 /// Shrink buffer.
@@ -2865,9 +3058,27 @@ pub extern "C" fn xmlBufferSetAllocationScheme(_buf: *mut _xmlBuffer, _scheme: c
 /// int xmlBufferShrink(xmlBufferPtr buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferShrink(_buf: *mut _xmlBuffer, _len: c_int) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlBufferShrink(buf: *mut _xmlBuffer, len: c_int) -> c_int {
+    if buf.is_null() || len <= 0 {
+        return 0;
+    }
+    unsafe {
+        let b = &mut *buf;
+        let shrink_len = (len as c_uint).min(b.use_);
+        if shrink_len > 0 {
+            let remaining = b.use_ - shrink_len;
+            if remaining > 0 {
+                core::ptr::copy(
+                    b.content.add(shrink_len as usize),
+                    b.content,
+                    remaining as usize,
+                );
+            }
+            *b.content.add(remaining as usize) = 0;
+            b.use_ = remaining;
+        }
+    }
+    len
 }
 
 /// Grow buffer.
@@ -2878,9 +3089,13 @@ pub extern "C" fn xmlBufferShrink(_buf: *mut _xmlBuffer, _len: c_int) -> c_int {
 /// int xmlBufferGrow(xmlBufferPtr buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferGrow(_buf: *mut _xmlBuffer, _len: c_int) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlBufferGrow(buf: *mut _xmlBuffer, len: c_int) -> c_int {
+    if buf.is_null() || len <= 0 {
+        return 0;
+    }
+    let cur_use = unsafe { (*buf).use_ };
+    let new_size = cur_use + len as c_uint + 1;
+    crate::xml::io::buf_grow(buf, new_size)
 }
 
 /// Reserve buffer space.
@@ -2891,9 +3106,8 @@ pub extern "C" fn xmlBufferGrow(_buf: *mut _xmlBuffer, _len: c_int) -> c_int {
 /// int xmlBufferReserve(xmlBufferPtr buf, int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferReserve(_buf: *mut _xmlBuffer, _len: c_int) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlBufferReserve(buf: *mut _xmlBuffer, len: c_int) -> c_int {
+    xmlBufferGrow(buf, len)
 }
 
 /// Detach buffer content.
@@ -2904,9 +3118,17 @@ pub extern "C" fn xmlBufferReserve(_buf: *mut _xmlBuffer, _len: c_int) -> c_int 
 /// xmlChar *xmlBufferDetach(xmlBufferPtr buf);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferDetach(_buf: *mut _xmlBuffer) -> *mut xmlChar {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlBufferDetach(buf: *mut _xmlBuffer) -> *mut xmlChar {
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let content = (*buf).content;
+        (*buf).content = ptr::null_mut();
+        (*buf).use_ = 0;
+        (*buf).size = 0;
+        content
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2921,10 +3143,15 @@ pub extern "C" fn xmlBufferDetach(_buf: *mut _xmlBuffer) -> *mut xmlChar {
 /// xmlCharEncoding xmlGetCharEncoding(const char *name);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetCharEncoding(_name: *const c_char) -> c_int {
-    // Phase 1: STUB
-    // Return XML_CHAR_ENCODING_NONE = 0
-    0
+pub extern "C" fn xmlGetCharEncoding(name: *const c_char) -> c_int {
+    if name.is_null() {
+        return 0; // XML_CHAR_ENCODING_NONE
+    }
+    let name_bytes = unsafe {
+        let len = libc::strlen(name);
+        core::slice::from_raw_parts(name as *const u8, len)
+    };
+    crate::xml::encoding::encoding_from_name(name_bytes) as c_int
 }
 
 /// Find an encoding handler.
@@ -2935,9 +3162,11 @@ pub extern "C" fn xmlGetCharEncoding(_name: *const c_char) -> c_int {
 /// xmlCharEncodingHandlerPtr xmlFindCharEncodingHandler(const char *name);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlFindCharEncodingHandler(_name: *const c_char) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlFindCharEncodingHandler(name: *const c_char) -> *mut c_void {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::encoding::find_encoding_handler(name as *const xmlChar) as *mut c_void
 }
 
 /// Close an encoding handler.
@@ -2948,8 +3177,18 @@ pub extern "C" fn xmlFindCharEncodingHandler(_name: *const c_char) -> *mut c_voi
 /// int xmlCharEncCloseFunc(xmlCharEncodingHandlerPtr handler);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCharEncCloseFunc(_handler: *mut c_void) -> c_int {
-    // Phase 1: STUB
+pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
+    if handler.is_null() {
+        return -1;
+    }
+    // Free the encoding handler
+    unsafe {
+        let h = handler as *mut crate::abi::structs::_xmlCharEncodingHandler;
+        if !(*h).name.is_null() {
+            crate::abi::allocator::xmlFree((*h).name as *mut c_void);
+        }
+        crate::abi::allocator::xmlFree(handler);
+    }
     0
 }
 
@@ -2961,9 +3200,20 @@ pub extern "C" fn xmlCharEncCloseFunc(_handler: *mut c_void) -> c_int {
 /// int xmlCharEncInput(xmlParserInputBufferPtr input, int to);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCharEncInput(_input: *mut _xmlParserInputBuffer, _to: c_int) -> c_int {
-    // Phase 1: STUB
-    0
+pub unsafe extern "C" fn xmlCharEncInput(input: *mut _xmlParserInputBuffer, _to: c_int) -> c_int {
+    if input.is_null() {
+        return -1;
+    }
+    let handler = (*input).encoder as *mut crate::abi::structs::_xmlCharEncodingHandler;
+    if handler.is_null() {
+        return -1;
+    }
+    let raw = (*input).raw as *mut crate::abi::structs::_xmlBuffer;
+    let buf = (*input).buffer as *mut crate::abi::structs::_xmlBuffer;
+    if raw.is_null() || buf.is_null() {
+        return -1;
+    }
+    crate::xml::encoding::char_enc_in(handler, buf, raw)
 }
 
 /// Convert an output buffer's encoding.
@@ -2974,9 +3224,116 @@ pub extern "C" fn xmlCharEncInput(_input: *mut _xmlParserInputBuffer, _to: c_int
 /// int xmlCharEncOutput(xmlOutputBufferPtr output, int to);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCharEncOutput(_output: *mut _xmlOutputBuffer, _to: c_int) -> c_int {
-    // Phase 1: STUB
-    0
+pub unsafe extern "C" fn xmlCharEncOutput(output: *mut _xmlOutputBuffer, _to: c_int) -> c_int {
+    if output.is_null() {
+        return -1;
+    }
+    let handler = (*output).encoder as *mut crate::abi::structs::_xmlCharEncodingHandler;
+    if handler.is_null() {
+        return -1;
+    }
+    let buf = (*output).buffer as *mut crate::abi::structs::_xmlBuffer;
+    let conv = (*output).conv as *mut crate::abi::structs::_xmlBuffer;
+    if buf.is_null() || conv.is_null() {
+        return -1;
+    }
+    crate::xml::encoding::char_enc_out(handler, conv, buf)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// URI
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Parse a URI string.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlURIPtr xmlParseURI(const char *str);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlParseURI(str: *const c_char) -> *mut c_void {
+    crate::xml::uri::xmlParseURI(str)
+}
+
+/// Parse a URI string (raw version).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlURIPtr xmlParseURIRaw(const char *str, int raw);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlParseURIRaw(str: *const c_char, raw: c_int) -> *mut c_void {
+    let _ = raw;
+    crate::xml::uri::xmlParseURI(str)
+}
+
+/// Free a URI structure.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeURI(xmlURIPtr uri);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeURI(uri: *mut c_void) {
+    crate::xml::uri::xmlFreeURI(uri)
+}
+
+/// Create an empty URI.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlURIPtr xmlCreateURI(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCreateURI() -> *mut c_void {
+    crate::xml::uri::xmlCreateURI()
+}
+
+/// Save a URI structure to a string.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlSaveUri(xmlURIPtr uri);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSaveUri(uri: *mut c_void) -> *mut xmlChar {
+    crate::xml::uri::xmlSaveUri(uri)
+}
+
+/// Escape a URI string.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlURIEscapeStr(const xmlChar *str, const xmlChar *list);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlURIEscapeStr(
+    str: *const xmlChar,
+    list: *const xmlChar,
+) -> *mut xmlChar {
+    crate::xml::uri::xmlURIEscapeStr(str, list)
+}
+
+/// Unescape a URI string.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// char *xmlURIUnescapeString(const char *str, int len, char *target);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlURIUnescapeString(
+    str: *const c_char,
+    len: c_int,
+    target: *mut c_char,
+) -> *mut c_char {
+    crate::xml::uri::xmlURIUnescapeString(str, len, target)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3246,9 +3603,11 @@ pub extern "C" fn xmlXIncludeProcessFlags(_doc: *mut _xmlDoc, _flags: c_int) -> 
 /// xmlCatalogPtr xmlCatalogLoad(const char *catalogs);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCatalogLoad(_catalogs: *const c_char) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlCatalogLoad(catalogs: *const c_char) -> *mut c_void {
+    if catalogs.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::catalog::load_catalog(catalogs)
 }
 
 /// Resolve a public ID.
@@ -3259,9 +3618,11 @@ pub extern "C" fn xmlCatalogLoad(_catalogs: *const c_char) -> *mut c_void {
 /// xmlCharPtr xmlCatalogResolvePublic(const xmlChar *pubID);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCatalogResolvePublic(_pubID: *const xmlChar) -> *mut xmlChar {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlCatalogResolvePublic(pubID: *const xmlChar) -> *mut xmlChar {
+    if pubID.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::catalog::resolve_public(pubID)
 }
 
 /// Resolve a system ID.
@@ -3272,9 +3633,11 @@ pub unsafe extern "C" fn xmlCatalogResolvePublic(_pubID: *const xmlChar) -> *mut
 /// xmlCharPtr xmlCatalogResolveSystem(const xmlChar *sysID);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCatalogResolveSystem(_sysID: *const xmlChar) -> *mut xmlChar {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlCatalogResolveSystem(sysID: *const xmlChar) -> *mut xmlChar {
+    if sysID.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::catalog::resolve_system(sysID)
 }
 
 /// Resolve a URI.
@@ -3285,9 +3648,11 @@ pub unsafe extern "C" fn xmlCatalogResolveSystem(_sysID: *const xmlChar) -> *mut
 /// xmlCharPtr xmlCatalogResolveURI(const xmlChar *URI);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCatalogResolveURI(_URI: *const xmlChar) -> *mut xmlChar {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlCatalogResolveURI(URI: *const xmlChar) -> *mut xmlChar {
+    if URI.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::catalog::resolve_uri(URI)
 }
 
 /// Set catalog defaults.
@@ -3298,8 +3663,8 @@ pub unsafe extern "C" fn xmlCatalogResolveURI(_URI: *const xmlChar) -> *mut xmlC
 /// void xmlCatalogSetDefaults(xmlCatalogAllowValue allow);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCatalogSetDefaults(_allow: c_int) {
-    // Phase 1: STUB
+pub extern "C" fn xmlCatalogSetDefaults(allow: c_int) {
+    crate::xml::catalog::set_defaults(allow)
 }
 
 /// Get catalog defaults.
@@ -3311,8 +3676,7 @@ pub extern "C" fn xmlCatalogSetDefaults(_allow: c_int) {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlCatalogGetDefaults() -> c_int {
-    // Phase 1: STUB
-    0
+    crate::xml::catalog::get_defaults()
 }
 
 /// Add a catalog.
@@ -3324,12 +3688,14 @@ pub extern "C" fn xmlCatalogGetDefaults() -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogAdd(
-    _type: *const xmlChar,
-    _orig: *const xmlChar,
-    _replace: *const xmlChar,
+    type_: *const xmlChar,
+    orig: *const xmlChar,
+    replace: *const xmlChar,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    if type_.is_null() || orig.is_null() || replace.is_null() {
+        return -1;
+    }
+    crate::xml::catalog::add(type_, orig, replace)
 }
 
 /// Remove a catalog entry.
@@ -3340,9 +3706,11 @@ pub unsafe extern "C" fn xmlCatalogAdd(
 /// int xmlCatalogRemove(const xmlChar *value);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCatalogRemove(_value: *const xmlChar) -> c_int {
-    // Phase 1: STUB
-    0
+pub unsafe extern "C" fn xmlCatalogRemove(value: *const xmlChar) -> c_int {
+    if value.is_null() {
+        return 0;
+    }
+    crate::xml::catalog::remove(value)
 }
 
 /// Clean up the catalog subsystem.
@@ -3354,7 +3722,7 @@ pub unsafe extern "C" fn xmlCatalogRemove(_value: *const xmlChar) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlCatalogCleanup() {
-    // Phase 1: STUB
+    crate::xml::catalog::cleanup();
 }
 
 /// Convert an SGML catalog to XML.
@@ -3366,8 +3734,8 @@ pub extern "C" fn xmlCatalogCleanup() {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlCatalogConvert() -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: catalog::convert() allocates and builds an XML document tree.
+    unsafe { crate::xml::catalog::convert() }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

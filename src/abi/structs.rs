@@ -354,6 +354,38 @@ pub struct _xmlOutputBuffer {
     pub error: c_int,                                  // Error flag
 }
 
+// ── xmlCharEncodingHandler ───────────────────────────────────────────────
+//
+// Source: encoding.h
+
+/// Character encoding conversion handler.
+#[repr(C)]
+pub struct _xmlCharEncodingHandler {
+    pub name: *mut c_char,                              // Encoding name
+    pub input: c_int,                                   // Input xmlCharEncoding
+    pub output: c_int,                                  // Output xmlCharEncoding
+    pub input_func: Option<xmlCharEncodingInputFunc>,   // Input conversion func
+    pub output_func: Option<xmlCharEncodingOutputFunc>, // Output conversion func
+    pub iconv_in: *mut c_void,                          // Iconv descriptor for input
+    pub iconv_out: *mut c_void,                         // Iconv descriptor for output
+}
+
+// ── xmlBuf ──────────────────────────────────────────────────────────────
+//
+// Source: tree.h
+
+/// Buffer structure (modern replacement for xmlBuffer).
+#[repr(C)]
+pub struct _xmlBuf {
+    pub content: *mut xmlChar, // The buffer content UTF8
+    pub use_: c_uint,          // The buffer size used
+    pub size: c_uint,          // The buffer size
+    pub alloc: c_int,          // The realloc method
+    pub error: c_int,          // Error flag
+    pub buffer: c_int,         // Is this a buffer from xmlBuffer?
+    pub io: c_int,             // In IO mode?
+}
+
 // ── xmlSAXHandler ───────────────────────────────────────────────────────
 //
 // Source: parser.h
@@ -689,5 +721,7 @@ pub type xmlBufferPtr = *mut _xmlBuffer;
 pub type xmlXPathContextPtr = *mut _xmlXPathContext;
 pub type xmlXPathObjectPtr = *mut _xmlXPathObject;
 pub type xmlNodeSetPtr = *mut _xmlNodeSet;
+pub type xmlCharEncodingHandlerPtr = *mut _xmlCharEncodingHandler;
+pub type xmlBufPtr = *mut _xmlBuf;
 pub type xsltStylesheetPtr = *mut _xsltStylesheet;
 pub type xsltTransformContextPtr = *mut _xsltTransformContext;

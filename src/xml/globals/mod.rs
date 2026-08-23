@@ -371,7 +371,10 @@ pub unsafe fn init_parser() {
         // 2. Mark the library as initialized.
         versioning::set_initialized();
 
-        // 3. Initialize thread support.
+        // 3. Initialize encoding handlers.
+        crate::xml::encoding::init_encodings();
+
+        // 4. Initialize thread support.
         init_threads();
     }
 }
@@ -390,9 +393,12 @@ pub unsafe fn cleanup_parser() {
     if prev <= 1 {
         // Last cleanup — clean up all subsystems.
         // 1. Clean up catalog.
-        // (delegated to xmlCatalogCleanup when implemented)
+        crate::xml::catalog::cleanup();
 
-        // 2. Clean up memory.
+        // 2. Clean up encoding handlers.
+        crate::xml::encoding::cleanup_encodings();
+
+        // 3. Clean up memory.
         allocator::xmlCleanupMemory();
 
         // 3. Reset initialization state.
@@ -545,10 +551,13 @@ mod tests {
 
     #[test]
     fn test_catalog_defaults() {
-        assert_eq!(get_catalog_defaults(), 0);
+        // Save original value (may have been set by init_parser in other tests)
+        let orig = get_catalog_defaults();
         set_catalog_defaults(1);
         assert_eq!(get_catalog_defaults(), 1);
         set_catalog_defaults(0);
         assert_eq!(get_catalog_defaults(), 0);
+        // Restore
+        set_catalog_defaults(orig);
     }
 }

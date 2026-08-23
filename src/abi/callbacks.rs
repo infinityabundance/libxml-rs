@@ -20,7 +20,7 @@
 #![allow(non_camel_case_types)]
 
 use core::ffi::c_void;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_uchar, c_uint};
 
 use crate::abi::structs::*;
 
@@ -396,6 +396,30 @@ pub type xmlResourceLoader = unsafe extern "C" fn(
 // ═══════════════════════════════════════════════════════════════════════════════
 // Encoding Callbacks
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/// Character encoding input conversion function.
+///
+/// Converts from the handler's input encoding to UTF-8.
+/// `in` and `inlen` describe input; `out` and `outlen` describe output buffer.
+/// Returns the number of bytes written, or -1 on error.
+pub type xmlCharEncodingInputFunc = unsafe extern "C" fn(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int;
+
+/// Character encoding output conversion function.
+///
+/// Converts from UTF-8 to the handler's output encoding.
+/// `in` and `inlen` describe input; `out` and `outlen` describe output buffer.
+/// Returns the number of bytes written, or -1 on error.
+pub type xmlCharEncodingOutputFunc = unsafe extern "C" fn(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int;
 
 /// Character encoding conversion implementation.
 ///

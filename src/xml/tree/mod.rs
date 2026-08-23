@@ -46,6 +46,7 @@ use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::globals;
+use crate::xml::io;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // String Helpers
@@ -1806,8 +1807,894 @@ pub unsafe fn get_parameter_entity(doc: *const _xmlDoc, name: *const xmlChar) ->
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Tests
+// XML Serialization
 // ═══════════════════════════════════════════════════════════════════════════════
+//
+// Functions for serializing XML document/node trees to text.
+// All output is UTF-8.
+
+/// Entity replacement strings (as xmlChar byte slices).
+const ENTITY_LT: &[xmlChar] = b"&lt;";
+const ENTITY_GT: &[xmlChar] = b"&gt;";
+const ENTITY_AMP: &[xmlChar] = b"&amp;";
+const ENTITY_QUOT: &[xmlChar] = b"&quot;";
+const ENTITY_APOS: &[xmlChar] = b"&apos;";
+
+/// Indentation string (2 spaces).
+const INDENT: &[xmlChar] = b"  ";
+
+/// XML declaration.
+const XML_DECL: &[xmlChar] = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+
+/// Serialize text content with XML escaping.
+///
+/// Escapes `<`, `&`, and the `]]>` sequence.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `content` must be a valid pointer to `len` bytes of xmlChar data, or NULL.
+unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
+    if buf.is_null() || content.is_null() || len <= 0 {
+        return;
+    }
+
+    let mut i: c_int = 0;
+    while i < len {
+        let ch = unsafe { *content.add(i as usize) };
+
+        // Check for `]]>` sequence
+        if ch == b']'
+            && i + 2 < len
+            && unsafe { *content.add(i as usize + 1) == b']' }
+            && unsafe { *content.add(i as usize + 2) == b'>' }
+        {
+            // Write `]]&gt;` — escape the `>` that ends `]]>`
+            io::buf_add(buf, &ch as *const u8, 2); // write `]]`
+            io::buf_add(buf, ENTITY_GT.as_ptr(), ENTITY_GT.len() as c_int);
+            i += 3;
+            continue;
+        }
+
+        match ch {
+            b'<' => {
+                io::buf_add(buf, ENTITY_LT.as_ptr(), ENTITY_LT.len() as c_int);
+            }
+            b'&' => {
+                io::buf_add(buf, ENTITY_AMP.as_ptr(), ENTITY_AMP.len() as c_int);
+            }
+            _ => {
+                io::buf_add(buf, &ch as *const u8, 1);
+            }
+        }
+        i += 1;
+    }
+}
+
+/// Serialize an attribute value with XML escaping.
+///
+/// Escapes `<`, `&`, `"`, and the `]]>` sequence.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `value` must be a valid null-terminated xmlChar string, or NULL.
+unsafe fn serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar) {
+    if buf.is_null() || value.is_null() {
+        return;
+    }
+
+    let len = xml_strlen(value);
+    let mut i: c_int = 0;
+    while i < len {
+        let ch = unsafe { *value.add(i as usize) };
+
+        // Check for `]]>` sequence
+        if ch == b']'
+            && i + 2 < len
+            && unsafe { *value.add(i as usize + 1) == b']' }
+            && unsafe { *value.add(i as usize + 2) == b'>' }
+        {
+            // Write `]]&gt;` — escape the `>` that ends `]]>`
+            io::buf_add(buf, &ch as *const u8, 2); // write `]]`
+            io::buf_add(buf, ENTITY_GT.as_ptr(), ENTITY_GT.len() as c_int);
+            i += 3;
+            continue;
+        }
+
+        match ch {
+            b'<' => {
+                io::buf_add(buf, ENTITY_LT.as_ptr(), ENTITY_LT.len() as c_int);
+            }
+            b'&' => {
+                io::buf_add(buf, ENTITY_AMP.as_ptr(), ENTITY_AMP.len() as c_int);
+            }
+            b'"' => {
+                io::buf_add(buf, ENTITY_QUOT.as_ptr(), ENTITY_QUOT.len() as c_int);
+            }
+            _ => {
+                io::buf_add(buf, &ch as *const u8, 1);
+            }
+        }
+        i += 1;
+    }
+}
+
+/// Write indentation (2 spaces per level).
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+unsafe fn write_indent(buf: *mut _xmlBuffer, level: c_int) {
+    if buf.is_null() || level <= 0 {
+        return;
+    }
+    for _ in 0..level {
+        io::buf_add(buf, INDENT.as_ptr(), INDENT.len() as c_int);
+    }
+}
+
+/// Serialize a single node's start tag + attributes.
+///
+/// For elements with no children, writes a self-closing tag `<name/>`.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+unsafe fn serialize_start_tag(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+) {
+    if node.is_null() || buf.is_null() {
+        return;
+    }
+
+    let n = unsafe { &*node };
+
+    // Write `<`
+    io::buf_ccat(buf, b'<');
+
+    // Write element name with optional namespace prefix
+    if !n.ns.is_null() {
+        let ns = unsafe { &*n.ns };
+        if !ns.prefix.is_null() {
+            io::buf_cat(buf, ns.prefix);
+            io::buf_ccat(buf, b':');
+        }
+    }
+    if !n.name.is_null() {
+        io::buf_cat(buf, n.name);
+    }
+
+    // Write attributes
+    let mut attr = n.properties;
+    while !attr.is_null() {
+        let a = unsafe { &*attr };
+        io::buf_ccat(buf, b' ');
+
+        // Attribute name with optional namespace prefix
+        if !a.ns.is_null() {
+            let ans = unsafe { &*a.ns };
+            if !ans.prefix.is_null() {
+                io::buf_cat(buf, ans.prefix);
+                io::buf_ccat(buf, b':');
+            }
+        }
+        if !a.name.is_null() {
+            io::buf_cat(buf, a.name);
+        }
+
+        io::buf_add(buf, b"=\"" as *const u8, 2);
+
+        // Attribute value from child text node
+        if !a.children.is_null() {
+            let child = unsafe { &*a.children };
+            if child.type_ == XML_TEXT_NODE as c_int && !child.content.is_null() {
+                serialize_attr_value(buf, child.content);
+            }
+        }
+
+        io::buf_ccat(buf, b'"');
+
+        attr = a.next;
+    }
+
+    // Write namespace declarations
+    let mut ns_def = n.nsDef;
+    while !ns_def.is_null() {
+        let nd = unsafe { &*ns_def };
+        io::buf_add(buf, b" xmlns" as *const u8, 6);
+        if !nd.prefix.is_null() {
+            io::buf_ccat(buf, b':');
+            io::buf_cat(buf, nd.prefix);
+        }
+        io::buf_add(buf, b"=\"" as *const u8, 2);
+        if !nd.href.is_null() {
+            serialize_attr_value(buf, nd.href);
+        }
+        io::buf_ccat(buf, b'"');
+        ns_def = nd.next;
+    }
+
+    if n.children.is_null() {
+        // Self-closing tag
+        io::buf_add(buf, b"/>" as *const u8, 2);
+    } else {
+        io::buf_ccat(buf, b'>');
+    }
+}
+
+/// Serialize a single node's end tag.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+unsafe fn serialize_end_tag(node: *mut _xmlNode, buf: *mut _xmlBuffer) {
+    if node.is_null() || buf.is_null() {
+        return;
+    }
+
+    let n = unsafe { &*node };
+
+    io::buf_add(buf, b"</" as *const u8, 2);
+    if !n.ns.is_null() {
+        let ns = unsafe { &*n.ns };
+        if !ns.prefix.is_null() {
+            io::buf_cat(buf, ns.prefix);
+            io::buf_ccat(buf, b':');
+        }
+    }
+    if !n.name.is_null() {
+        io::buf_cat(buf, n.name);
+    }
+    io::buf_ccat(buf, b'>');
+}
+
+/// Check if a node is a "text-only" element (exactly one child which is a text node).
+unsafe fn is_text_only_element(node: *mut _xmlNode) -> bool {
+    if node.is_null() {
+        return false;
+    }
+    let n = unsafe { &*node };
+    if n.children.is_null() {
+        return false;
+    }
+    // Only one child?
+    if n.children != n.last {
+        return false;
+    }
+    let child = unsafe { &*n.children };
+    child.type_ == XML_TEXT_NODE as c_int
+}
+
+/// Recursively serialize a node tree to a buffer.
+///
+/// `buf` is an `_xmlBuffer*`, `format` controls indentation (non-zero = pretty-print).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+pub(crate) unsafe fn serialize_node(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+) {
+    if node.is_null() || buf.is_null() {
+        return;
+    }
+
+    let n = unsafe { &*node };
+
+    match n.type_ {
+        t if t == XML_ELEMENT_NODE as c_int => {
+            let is_text_only = is_text_only_element(node);
+
+            // Newline + indent before start tag (if formatting)
+            if format != 0 && level > 0 {
+                io::buf_ccat(buf, b'\n');
+                write_indent(buf, level);
+            }
+
+            serialize_start_tag(node, buf, format, level);
+
+            if !n.children.is_null() {
+                if !is_text_only && format != 0 {
+                    // Indent children for mixed/structured content
+                    let mut child = n.children;
+                    while !child.is_null() {
+                        serialize_node(child, buf, format, level + 1);
+                        child = unsafe { (*child).next };
+                    }
+                    io::buf_ccat(buf, b'\n');
+                    write_indent(buf, level);
+                } else {
+                    // Text-only or no formatting: serialize children inline
+                    let mut child = n.children;
+                    while !child.is_null() {
+                        serialize_node(child, buf, format, level + 1);
+                        child = unsafe { (*child).next };
+                    }
+                }
+                serialize_end_tag(node, buf);
+            }
+        }
+        t if t == XML_TEXT_NODE as c_int => {
+            serialize_text(buf, n.content, xml_strlen(n.content));
+        }
+        t if t == XML_CDATA_SECTION_NODE as c_int => {
+            io::buf_add(buf, b"<![CDATA[" as *const u8, 9);
+            serialize_text(buf, n.content, xml_strlen(n.content));
+            io::buf_add(buf, b"]]>" as *const u8, 3);
+        }
+        t if t == XML_COMMENT_NODE as c_int => {
+            if format != 0 && level > 0 {
+                io::buf_ccat(buf, b'\n');
+                write_indent(buf, level);
+            }
+            io::buf_add(buf, b"<!--" as *const u8, 4);
+            if !n.content.is_null() {
+                io::buf_cat(buf, n.content);
+            }
+            io::buf_add(buf, b"-->" as *const u8, 3);
+        }
+        t if t == XML_PI_NODE as c_int => {
+            if format != 0 && level > 0 {
+                io::buf_ccat(buf, b'\n');
+                write_indent(buf, level);
+            }
+            io::buf_add(buf, b"<?" as *const u8, 2);
+            if !n.name.is_null() {
+                io::buf_cat(buf, n.name);
+            }
+            if !n.content.is_null() && unsafe { *n.content != 0 } {
+                io::buf_ccat(buf, b' ');
+                io::buf_cat(buf, n.content);
+            }
+            io::buf_add(buf, b"?>" as *const u8, 2);
+        }
+        t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
+            // XML declaration
+            io::buf_add(buf, XML_DECL.as_ptr(), XML_DECL.len() as c_int);
+
+            // Newline after declaration when formatting
+            if format != 0 {
+                io::buf_ccat(buf, b'\n');
+            }
+
+            // Serialize children
+            let mut child = n.children;
+            while !child.is_null() {
+                serialize_node(child, buf, format, 0);
+                child = unsafe { (*child).next };
+            }
+            if format != 0 {
+                io::buf_ccat(buf, b'\n');
+            }
+        }
+        t if t == XML_DTD_NODE as c_int => {
+            // Skip DTD nodes in serialization for now
+        }
+        _ => {
+            // For unknown types, just write content if present
+            if !n.content.is_null() {
+                serialize_text(buf, n.content, xml_strlen(n.content));
+            }
+        }
+    }
+}
+
+/// Dump a document to a buffer.
+///
+/// Serializes the entire document tree into `buf`.
+/// Returns the number of bytes written, or -1 on error.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn doc_dump(buf: *mut _xmlBuffer, doc: *mut _xmlDoc) -> c_int {
+    if buf.is_null() || doc.is_null() {
+        return -1;
+    }
+
+    let before = io::buf_length(buf);
+    serialize_node(doc as *mut _xmlNode, buf, 0, 0);
+    let after = io::buf_length(buf);
+
+    if after < 0 || before < 0 {
+        return -1;
+    }
+    after - before
+}
+
+/// Dump a node tree to a buffer.
+///
+/// Serializes the node and its descendants into `buf`.
+/// `level` is the initial indentation level, `format` controls pretty-printing.
+/// Returns the number of bytes written, or -1 on error.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+pub(crate) unsafe fn node_dump(
+    buf: *mut _xmlBuffer,
+    doc: *mut _xmlDoc,
+    node: *mut _xmlNode,
+    level: c_int,
+    format: c_int,
+) -> c_int {
+    let _ = doc; // Used for entity resolution in full implementation
+    if buf.is_null() || node.is_null() {
+        return -1;
+    }
+
+    let before = io::buf_length(buf);
+    serialize_node(node, buf, format, level);
+    let after = io::buf_length(buf);
+
+    if after < 0 || before < 0 {
+        return -1;
+    }
+    after - before
+}
+
+/// Save a document to a file.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `filename` must be a valid null-terminated C string.
+pub(crate) unsafe fn save_doc_to_filename(
+    doc: *mut _xmlDoc,
+    filename: *const c_char,
+    compression: c_int,
+) -> c_int {
+    if doc.is_null() || filename.is_null() {
+        return -1;
+    }
+
+    let out = io::output_buffer_create_filename(filename, ptr::null_mut(), compression);
+    if out.is_null() {
+        return -1;
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        io::output_buffer_close(out);
+        return -1;
+    }
+
+    let ret = doc_dump(buf, doc);
+    if ret >= 0 {
+        // Flush the buffer content to the output
+        io::output_buffer_write_string(out, io::buf_content(buf) as *const c_char);
+        io::output_buffer_flush(out);
+    }
+
+    io::buf_free(buf);
+    io::output_buffer_close(out);
+    ret
+}
+
+/// Save a document to a file descriptor.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `fd` must be a valid open file descriptor.
+pub(crate) unsafe fn save_doc_to_fd(doc: *mut _xmlDoc, fd: c_int, compression: c_int) -> c_int {
+    if doc.is_null() || fd < 0 {
+        return -1;
+    }
+
+    let out = io::output_buffer_create_fd(fd, ptr::null_mut());
+    if out.is_null() {
+        return -1;
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        io::output_buffer_close(out);
+        return -1;
+    }
+
+    let ret = doc_dump(buf, doc);
+    if ret >= 0 {
+        io::output_buffer_write_string(out, io::buf_content(buf) as *const c_char);
+        io::output_buffer_flush(out);
+    }
+
+    io::buf_free(buf);
+    io::output_buffer_close(out);
+    ret
+}
+
+/// Save a document to an xmlBuffer.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+pub(crate) unsafe fn save_doc_to_buf(
+    doc: *mut _xmlDoc,
+    buf: *mut _xmlBuffer,
+    compression: c_int,
+) -> c_int {
+    let _ = compression;
+    if doc.is_null() || buf.is_null() {
+        return -1;
+    }
+
+    doc_dump(buf, doc)
+}
+
+/// Format (pretty-print) a document to a buffer.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+pub(crate) unsafe fn save_format_doc_to_buf(
+    doc: *mut _xmlDoc,
+    buf: *mut _xmlBuffer,
+    compression: c_int,
+) -> c_int {
+    let _ = compression;
+    if doc.is_null() || buf.is_null() {
+        return -1;
+    }
+
+    let before = io::buf_length(buf);
+    serialize_node(doc as *mut _xmlNode, buf, 1, 0);
+    let after = io::buf_length(buf);
+
+    if after < 0 || before < 0 {
+        return -1;
+    }
+    after - before
+}
+
+/// Dump a node to a null-terminated string.
+///
+/// Returns a pointer to the string (caller must free with `xmlFree`).
+/// Returns NULL on error.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+pub(crate) unsafe fn dump_node(node: *mut _xmlNode) -> *mut xmlChar {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+
+    serialize_node(node, buf, 0, 0);
+
+    let content = io::buf_content(buf);
+    if content.is_null() {
+        io::buf_free(buf);
+        return ptr::null_mut();
+    }
+
+    // Duplicate the string so we can free the buffer
+    let result = dup_xml_str(content);
+    io::buf_free(buf);
+    result
+}
+
+/// Dump a document to a null-terminated string.
+///
+/// Returns a pointer to the string (caller must free with `xmlFree`).
+/// Returns NULL on error.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn dump_doc(doc: *mut _xmlDoc) -> *mut xmlChar {
+    if doc.is_null() {
+        return ptr::null_mut();
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+
+    serialize_node(doc as *mut _xmlNode, buf, 0, 0);
+
+    let content = io::buf_content(buf);
+    if content.is_null() {
+        io::buf_free(buf);
+        return ptr::null_mut();
+    }
+
+    let result = dup_xml_str(content);
+    io::buf_free(buf);
+    result
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABI-compatible export wrappers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Dump a node to a buffer (ABI wrapper).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlNodeDump(xmlBufferPtr buf, xmlDocPtr doc, xmlNodePtr node, int level, int format);
+/// ```
+///
+/// # SAFETY
+///
+/// - All pointer arguments must be valid or NULL.
+pub(crate) unsafe fn xmlNodeDump(
+    buf: *mut _xmlBuffer,
+    doc: *mut _xmlDoc,
+    node: *mut _xmlNode,
+    level: c_int,
+    format: c_int,
+) -> c_int {
+    node_dump(buf, doc, node, level, format)
+}
+
+/// Dump a document to a FILE*.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlDocDump(FILE *fp, xmlDocPtr doc);
+/// ```
+///
+/// # SAFETY
+///
+/// - `fp` must be a valid FILE* pointer.
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn xmlDocDump(fp: *mut c_void, doc: *mut _xmlDoc) -> c_int {
+    if fp.is_null() || doc.is_null() {
+        return -1;
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        return -1;
+    }
+
+    let ret = doc_dump(buf, doc);
+    if ret < 0 {
+        io::buf_free(buf);
+        return -1;
+    }
+
+    let content = io::buf_content(buf);
+    let len = io::buf_length(buf);
+    if !content.is_null() && len > 0 {
+        let written = libc::fwrite(
+            content as *const c_void,
+            1,
+            len as usize,
+            fp as *mut libc::FILE,
+        );
+        io::buf_free(buf);
+        written as c_int
+    } else {
+        io::buf_free(buf);
+        0
+    }
+}
+
+/// Dump a document to memory (with format flag).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlDocDumpFormatMemory(xmlDocPtr doc, xmlChar **mem, int *size, int format);
+/// ```
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `mem` must be a valid pointer to an xmlChar* that will receive the allocated memory.
+/// - `size` must be a valid pointer to an int that will receive the size.
+pub(crate) unsafe fn xmlDocDumpFormatMemory(
+    doc: *mut _xmlDoc,
+    mem: *mut *mut xmlChar,
+    size: *mut c_int,
+    format: c_int,
+) {
+    if doc.is_null() || mem.is_null() || size.is_null() {
+        return;
+    }
+
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        unsafe {
+            *mem = ptr::null_mut();
+            *size = 0;
+        }
+        return;
+    }
+
+    serialize_node(doc as *mut _xmlNode, buf, format, 0);
+
+    let content = io::buf_content(buf);
+    let len = io::buf_length(buf);
+
+    if !content.is_null() && len > 0 {
+        // Allocate memory for the result (+1 for null terminator)
+        let result = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+        if !result.is_null() {
+            ptr::copy_nonoverlapping(content, result, len as usize);
+            *result.add(len as usize) = 0;
+            unsafe {
+                *mem = result;
+                *size = len;
+            }
+        } else {
+            unsafe {
+                *mem = ptr::null_mut();
+                *size = 0;
+            }
+        }
+    } else {
+        unsafe {
+            *mem = ptr::null_mut();
+            *size = 0;
+        }
+    }
+
+    io::buf_free(buf);
+}
+
+/// Dump a document to memory (unformatted).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlDocDumpMemory(xmlDocPtr doc, xmlChar **mem, int *size);
+/// ```
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `mem` must be a valid pointer to an xmlChar* that will receive the allocated memory.
+/// - `size` must be a valid pointer to an int that will receive the size.
+pub(crate) unsafe fn xmlDocDumpMemory(doc: *mut _xmlDoc, mem: *mut *mut xmlChar, size: *mut c_int) {
+    xmlDocDumpFormatMemory(doc, mem, size, 0)
+}
+
+/// Save a document to a file (ABI wrapper).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFile(const char *filename, xmlDocPtr cur);
+/// ```
+///
+/// # SAFETY
+///
+/// - `filename` must be a valid null-terminated C string.
+/// - `cur` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn xmlSaveFile(filename: *const c_char, cur: *mut _xmlDoc) -> c_int {
+    save_doc_to_filename(cur, filename, 0)
+}
+
+/// Save a document to a file with encoding.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFileEnc(const char *filename, xmlDocPtr cur, const char *encoding);
+/// ```
+///
+/// # SAFETY
+///
+/// - `filename` must be a valid null-terminated C string.
+/// - `cur` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `encoding` may be NULL (uses UTF-8).
+pub(crate) unsafe fn xmlSaveFileEnc(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    encoding: *const c_char,
+) -> c_int {
+    let _ = encoding; // Future: use encoding to set encoder on output buffer
+    save_doc_to_filename(cur, filename, 0)
+}
+
+/// Save a document to a file with format flag.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFormatFile(const char *filename, xmlDocPtr cur, int format);
+/// ```
+///
+/// # SAFETY
+///
+/// - `filename` must be a valid null-terminated C string.
+/// - `cur` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn xmlSaveFormatFile(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    format: c_int,
+) -> c_int {
+    let _ = format;
+    save_doc_to_filename(cur, filename, 0)
+}
+
+/// Save a document to a file with encoding and format flag.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSaveFormatFileEnc(const char *filename, xmlDocPtr cur, const char *encoding, int format);
+/// ```
+///
+/// # SAFETY
+///
+/// - `filename` must be a valid null-terminated C string.
+/// - `cur` must be a valid pointer to an `_xmlDoc`, or NULL.
+/// - `encoding` may be NULL (uses UTF-8).
+pub(crate) unsafe fn xmlSaveFormatFileEnc(
+    filename: *const c_char,
+    cur: *mut _xmlDoc,
+    encoding: *const c_char,
+    format: c_int,
+) -> c_int {
+    let _ = encoding;
+    let _ = format;
+    save_doc_to_filename(cur, filename, 0)
+}
+
+/// Get the compression mode of a document.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlGetDocCompressMode(xmlDocPtr doc);
+/// ```
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn xmlGetDocCompressMode(doc: *mut _xmlDoc) -> c_int {
+    if doc.is_null() {
+        return -1;
+    }
+    unsafe { (*doc).compression }
+}
+
+/// Set the compression mode of a document.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlSetDocCompressMode(xmlDocPtr doc, int mode);
+/// ```
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
+pub(crate) unsafe fn xmlSetDocCompressMode(doc: *mut _xmlDoc, mode: c_int) {
+    if doc.is_null() {
+        return;
+    }
+    unsafe {
+        (*doc).compression = mode;
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -2081,6 +2968,351 @@ mod tests {
             assert!(unlink_node(ptr::null_mut()) == ()); // Should not crash
             assert!(add_child(ptr::null_mut(), ptr::null_mut()).is_null());
             assert!(add_sibling(ptr::null_mut(), ptr::null_mut()).is_null());
+            free_doc(doc);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Serialization Tests
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// Helper: compare a buffer's content to an expected string.
+    unsafe fn buf_eq_str(buf: *mut _xmlBuffer, expected: &str) -> bool {
+        let content = io::buf_content(buf);
+        if content.is_null() {
+            return expected.is_empty();
+        }
+        let len = io::buf_length(buf) as usize;
+        if len != expected.len() {
+            return false;
+        }
+        let slice = unsafe { core::slice::from_raw_parts(content, len) };
+        slice == expected.as_bytes()
+    }
+
+    #[test]
+    fn test_serialize_empty_document() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            // Should have XML declaration
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_element_with_text() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            // Add text child
+            let text = new_text(c_str("hello world"));
+            add_child(root, text);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>hello world</root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_element_with_attributes() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            set_prop(root, c_str("id"), c_str("42"));
+            set_prop(root, c_str("name"), c_str("test"));
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root id=\"42\" name=\"test\"/>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_nested_elements() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let child = new_child(root, ptr::null_mut(), c_str("child"));
+            let grandchild = new_child(child, ptr::null_mut(), c_str("gc"));
+            let text = new_text(c_str("text"));
+            add_child(grandchild, text);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><child><gc>text</gc></child></root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_with_formatting() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let child = new_child(root, ptr::null_mut(), c_str("child"));
+            let text = new_text(c_str("text"));
+            add_child(child, text);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            serialize_node(doc as *mut _xmlNode, buf, 1, 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n  <child>text</child>\n</root>\n";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_escape_ampersand() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let text = new_text(c_str("a & b"));
+            add_child(root, text);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>a &amp; b</root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_escape_angle_brackets() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let text = new_text(c_str("x < y > z"));
+            add_child(root, text);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>x &lt; y > z</root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_comment() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let comment = new_comment(c_str("my comment"));
+            add_child(root, comment);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><!--my comment--></root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_pi() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let pi = new_pi(
+                c_str("xml-stylesheet"),
+                c_str("href=\"style.xsl\" type=\"text/xsl\""),
+            );
+            add_child(root, pi);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><?xml-stylesheet href=\"style.xsl\" type=\"text/xsl\"?></root>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_self_closing() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("empty"));
+            doc_set_root_element(doc, root);
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><empty/>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_dump_node_to_string() {
+        unsafe {
+            let node = new_node(ptr::null_mut(), c_str("foo"));
+            let text = new_text(c_str("bar"));
+            add_child(node, text);
+
+            let result = dump_node(node);
+            assert!(!result.is_null());
+
+            let len = xml_strlen(result);
+            let slice = unsafe { core::slice::from_raw_parts(result, len as usize) };
+            assert_eq!(slice, b"<foo>bar</foo>");
+
+            allocator::xmlFree(result as *mut c_void);
+            free_node(node);
+        }
+    }
+
+    #[test]
+    fn test_dump_doc_to_string() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let result = dump_doc(doc);
+            assert!(!result.is_null());
+
+            let len = xml_strlen(result);
+            let slice = unsafe { core::slice::from_raw_parts(result, len as usize) };
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root/>";
+            assert_eq!(slice, expected.as_bytes());
+
+            allocator::xmlFree(result as *mut c_void);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_xmlDocDumpFormatMemory() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            let mut mem: *mut xmlChar = ptr::null_mut();
+            let mut size: c_int = 0;
+
+            xmlDocDumpFormatMemory(doc, &mut mem, &mut size, 0);
+
+            assert!(!mem.is_null());
+            assert!(size > 0);
+
+            let slice = unsafe { core::slice::from_raw_parts(mem, size as usize) };
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root/>";
+            assert_eq!(slice, expected.as_bytes());
+
+            allocator::xmlFree(mem as *mut c_void);
+            free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_serialize_escape_attribute() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            // Attribute with special chars
+            set_prop(root, c_str("desc"), c_str("a < b & c \"quoted\""));
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+
+            let ret = doc_dump(buf, doc);
+            assert!(ret >= 0);
+
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root desc=\"a &lt; b &amp; c &quot;quoted&quot;\"/>";
+            assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
             free_doc(doc);
         }
     }
