@@ -1,0 +1,966 @@
+//! Default SAX2 handler — builds a DOM tree from SAX events (§20, §85 Phase 3).
+//!
+//! These are the default implementations that populate a `_xmlSAXHandler` when
+//! `xmlSAX2InitDefaultSAXHandler` is called. They reconstruct the document tree
+//! from the sequence of SAX callbacks, mirroring the upstream behavior of
+//! `xmlSAX2DefaultSAXHandler` / `xmlSAX2*` functions in libxml2's `SAX2.c`.
+//!
+//! # Architecture
+//!
+//! The parser context (`_xmlParserCtxt`) is stored as `userData` (the `ctx`
+//! pointer passed to every SAX callback). The default handlers use this context
+//! to:
+//!
+//! - Access the document being built (`myDoc`)
+//! - Manage the element stack (`nodeTab`, `nodeNr`, `nodeMax`)
+//! - Access the current element (`node`)
+//!
+//! # UPSTREAM-PARITY
+//!
+//! These functions correspond to the `xmlSAX2*` function family in upstream
+//! libxml2 (`SAX2.c`), which are the default SAX2 handlers installed by
+//! `xmlSAX2InitDefaultSAXHandler`.
+
+#![allow(non_snake_case)]
+
+use core::ffi::c_void;
+use core::ptr;
+use std::os::raw::{c_char, c_int, c_uint};
+
+use crate::abi::allocator;
+use crate::abi::callbacks::*;
+use crate::abi::structs::*;
+use crate::abi::types::xmlChar;
+use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
+use crate::abi::types::xmlElementType::*;
+use crate::xml::tree;
+
+/// Default SAX2 handlers that build a DOM tree from SAX events.
+pub(crate) mod default_sax_handler {
+    use super::*;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Helper: extract the parser context from the SAX user data pointer
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Extract the parser context from the SAX callback `ctx` pointer.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt` that was passed
+    ///   as `userData` to the SAX handler.
+    /// - The caller must ensure the context is still alive and valid.
+    unsafe fn ctxt_from_ctx(ctx: *mut c_void) -> *mut _xmlParserCtxt {
+        ctx as *mut _xmlParserCtxt
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Document lifecycle
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `startDocument` handler.
+    ///
+    /// Creates a new document and stores it in the parser context.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn startDocument(ctx: *mut c_void) {
+        // SAFETY: Caller guarantees `ctx` is a valid parser context.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+
+            // Create a new document with default version "1.0".
+            let doc = tree::new_doc(ptr::null());
+            if doc.is_null() {
+                return;
+            }
+
+            c.myDoc = doc;
+            c.wellFormed = 1;
+        }
+    }
+
+    /// Default `endDocument` handler.
+    ///
+    /// Finalizes the document (marks it well-formed if applicable).
+    /// Propagates version/encoding from the parser context to the document.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn endDocument(ctx: *mut c_void) {
+        // SAFETY: Caller guarantees `ctx` is a valid parser context.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if !c.myDoc.is_null() {
+                // Propagate version from context to document.
+                if !c.version.is_null() {
+                    if (*c.myDoc).version.is_null() {
+                        let dup = allocator::xmlMemStrdup(c.version as *const c_char);
+                        (*c.myDoc).version = dup as *mut xmlChar;
+                    }
+                }
+
+                // Propagate encoding from context to document.
+                if !c.encoding.is_null() {
+                    if (*c.myDoc).encoding.is_null() {
+                        let dup = allocator::xmlMemStrdup(c.encoding as *const c_char);
+                        (*c.myDoc).encoding = dup as *mut xmlChar;
+                    }
+                }
+
+                // Mark the document as well-formed if no errors occurred.
+                if c.wellFormed != 0 {
+                    (*(c.myDoc)).properties |= XML_DOC_WELLFORMED as c_int;
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Element stack operations (SAX2)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `startElementNs` handler.
+    ///
+    /// Creates a new element node, sets up namespaces, processes attributes,
+    /// and pushes the node onto the element stack.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `localname` must be a valid null-terminated string.
+    /// - `prefix` and `URI` may be NULL.
+    /// - `namespaces` points to an array of `2 * nb_namespaces` pointers, or NULL.
+    /// - `attributes` points to an array of `5 * nb_attributes` pointers, or NULL.
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe extern "C" fn startElementNs(
+        ctx: *mut c_void,
+        localname: *const xmlChar,
+        prefix: *const xmlChar,
+        URI: *const xmlChar,
+        nb_namespaces: c_int,
+        namespaces: *mut *const xmlChar,
+        nb_attributes: c_int,
+        nb_defaulted: c_int,
+        attributes: *mut *const xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || localname.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+
+            // Determine the parent node for this element.
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                // No parent — this is the root element. Add it to the document.
+                ptr::null_mut()
+            };
+
+            // Create the element node.
+            // We use the localname as the node name. The namespace will be set below.
+            let ns = if URI.is_null() && prefix.is_null() {
+                ptr::null_mut()
+            } else {
+                // Search for an existing namespace declaration on the parent chain
+                // that matches this prefix/URI combination.
+                tree::search_ns(c.myDoc, parent, prefix)
+            };
+
+            let node = tree::new_node(ns, localname);
+            if node.is_null() {
+                return;
+            }
+
+            // Set namespace on the node if provided.
+            if !URI.is_null() && ns.is_null() {
+                // Create a new namespace declaration on this element.
+                let new_ns = tree::new_ns(node, URI, prefix);
+                (*node).ns = new_ns;
+            }
+
+            // Process namespace declarations.
+            if nb_namespaces > 0 && !namespaces.is_null() {
+                let mut i: c_int = 0;
+                while i < nb_namespaces {
+                    let ns_prefix = *namespaces.add((i * 2) as usize);
+                    let ns_uri = *namespaces.add((i * 2 + 1) as usize);
+                    tree::new_ns(node, ns_uri, ns_prefix);
+                    i += 1;
+                }
+            }
+
+            // Process attributes.
+            if nb_attributes > 0 && !attributes.is_null() {
+                let mut i: c_int = 0;
+                while i < nb_attributes {
+                    let attr_idx = (i * 5) as usize;
+                    let attr_name = *attributes.add(attr_idx); // localname
+                    let attr_prefix = *attributes.add(attr_idx + 1); // prefix (or NULL)
+                    let attr_uri = *attributes.add(attr_idx + 2); // URI (or NULL)
+                    let attr_value_start = *attributes.add(attr_idx + 3); // start of value
+                    let attr_value_end = *attributes.add(attr_idx + 4); // past end of value
+
+                    if !attr_name.is_null() && !attr_value_start.is_null() {
+                        // Compute attribute value length.
+                        // If value_end is NULL, the value is null-terminated;
+                        // otherwise, value_end points past the last character.
+                        let value_len = if attr_value_end.is_null() {
+                            // Compute length from null-terminated string
+                            let mut len: isize = 0;
+                            unsafe {
+                                while *attr_value_start.offset(len) != 0 {
+                                    len += 1;
+                                }
+                            }
+                            len
+                        } else {
+                            attr_value_end.offset_from(attr_value_start)
+                        };
+                        if value_len > 0 {
+                            // Allocate a null-terminated copy of the attribute value.
+                            let value =
+                                allocator::xmlMalloc((value_len + 1) as usize) as *mut xmlChar;
+                            if !value.is_null() {
+                                ptr::copy_nonoverlapping(
+                                    attr_value_start,
+                                    value,
+                                    value_len as usize,
+                                );
+                                *value.add(value_len as usize) = 0;
+                                // Set the attribute.
+                                tree::set_prop(node, attr_name, value as *const xmlChar);
+                                allocator::xmlFree(value as *mut c_void);
+                            }
+                        }
+                    }
+                    i += 1;
+                }
+            }
+
+            // Add the node to the tree.
+            if !parent.is_null() {
+                tree::add_child(parent, node);
+            } else {
+                // This is the root element — attach it to the document.
+                if !c.myDoc.is_null() {
+                    tree::add_child(c.myDoc as *mut _xmlNode, node);
+                }
+            }
+
+            // Push the node onto the element stack.
+            c.node = node;
+            // Extend nodeTab if needed.
+            if c.nodeNr >= c.nodeMax {
+                let new_max = if c.nodeMax == 0 { 8 } else { c.nodeMax * 2 };
+                let new_size = (new_max as usize) * size_of::<*mut _xmlNode>();
+                let new_tab =
+                    allocator::xmlRealloc(c.nodeTab as *mut c_void, new_size) as *mut *mut _xmlNode;
+                if !new_tab.is_null() {
+                    c.nodeTab = new_tab;
+                    c.nodeMax = new_max;
+                }
+            }
+            if c.nodeNr < c.nodeMax && !c.nodeTab.is_null() {
+                *c.nodeTab.add(c.nodeNr as usize) = node;
+                c.nodeNr += 1;
+            }
+        }
+    }
+
+    /// Default `endElementNs` handler.
+    ///
+    /// Pops the current element from the element stack.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn endElementNs(
+        ctx: *mut c_void,
+        localname: *const xmlChar,
+        prefix: *const xmlChar,
+        URI: *const xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+
+            // Pop the element stack.
+            if c.nodeNr > 0 {
+                c.nodeNr -= 1;
+            }
+
+            // Update the current node pointer to the new top of stack.
+            if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                c.node = *c.nodeTab.add(idx);
+            } else {
+                c.node = ptr::null_mut();
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Content handlers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `characters` handler.
+    ///
+    /// Creates a text node and adds it to the current element.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `ch` must be a valid pointer to a buffer of at least `len` bytes.
+    pub unsafe extern "C" fn characters(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || ch.is_null() || len <= 0 {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+
+            // Determine the parent node (current element or document).
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                c.myDoc as *mut _xmlNode
+            };
+
+            if parent.is_null() {
+                return;
+            }
+
+            // Create a null-terminated copy of the character data.
+            let content = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+            if content.is_null() {
+                return;
+            }
+            ptr::copy_nonoverlapping(ch, content, len as usize);
+            *content.add(len as usize) = 0;
+
+            let text = tree::new_text(content as *const xmlChar);
+            allocator::xmlFree(content as *mut c_void);
+
+            if !text.is_null() {
+                tree::add_child(parent, text);
+            }
+        }
+    }
+
+    /// Default `ignorableWhitespace` handler.
+    ///
+    /// Behaves like `characters` — creates a text node from whitespace content.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `ch` must be a valid pointer to a buffer of at least `len` bytes.
+    pub unsafe extern "C" fn ignorableWhitespace(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+        // Delegate to characters handler — upstream libxml2 treats ignorable
+        // whitespace the same as regular character data by default.
+        // SAFETY: Same safety requirements as `characters`.
+        unsafe { characters(ctx, ch, len) };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Comment and PI handlers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `comment` handler.
+    ///
+    /// Creates a comment node and adds it to the current element or document.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `value` must be a valid null-terminated string or NULL.
+    pub unsafe extern "C" fn comment(ctx: *mut c_void, value: *const xmlChar) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                c.myDoc as *mut _xmlNode
+            };
+
+            if parent.is_null() {
+                return;
+            }
+
+            let comment_node = tree::new_comment(value);
+            if !comment_node.is_null() {
+                tree::add_child(parent, comment_node);
+            }
+        }
+    }
+
+    /// Default `processingInstruction` handler.
+    ///
+    /// Creates a PI node and adds it to the current element or document.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `target` and `data` must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn processingInstruction(
+        ctx: *mut c_void,
+        target: *const xmlChar,
+        data: *const xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || target.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                c.myDoc as *mut _xmlNode
+            };
+
+            if parent.is_null() {
+                return;
+            }
+
+            let pi_node = tree::new_pi(target, data);
+            if !pi_node.is_null() {
+                tree::add_child(parent, pi_node);
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CDATA handler
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `cdataBlock` handler.
+    ///
+    /// Creates a CDATA section node and adds it to the current element.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `value` must be a valid pointer to a buffer of at least `len` bytes.
+    pub unsafe extern "C" fn cdataBlock(ctx: *mut c_void, value: *const xmlChar, len: c_int) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || value.is_null() || len <= 0 {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                c.myDoc as *mut _xmlNode
+            };
+
+            if parent.is_null() {
+                return;
+            }
+
+            let cdata = tree::new_cdata_block(c.myDoc, value, len);
+            if !cdata.is_null() {
+                tree::add_child(parent, cdata);
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DTD / Subset handlers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `internalSubset` handler.
+    ///
+    /// Creates a DTD node for the internal subset.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name`, `ext_id`, `sys_id` must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn internalSubset(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        ext_id: *const xmlChar,
+        sys_id: *const xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+
+            if c.myDoc.is_null() {
+                return;
+            }
+
+            // Create a DTD node for the internal subset.
+            let dtd = tree::new_dtd(c.myDoc, name, ext_id, sys_id);
+            if !dtd.is_null() {
+                // The DTD is attached to the document as intSubset by new_dtd.
+                // Nothing further to do here.
+            }
+        }
+    }
+
+    /// Default `externalSubset` handler.
+    ///
+    /// Records the external subset reference.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name`, `ext_id`, `sys_id` must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn externalSubset(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        ext_id: *const xmlChar,
+        sys_id: *const xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+
+            if c.myDoc.is_null() {
+                return;
+            }
+
+            // If no internal subset was created, create a DTD with the external info.
+            if (*(c.myDoc)).intSubset.is_null() {
+                let dtd = tree::new_dtd(c.myDoc, name, ext_id, sys_id);
+                if !dtd.is_null() {
+                    (*(c.myDoc)).extSubset = dtd;
+                }
+            } else {
+                // Update the external IDs on the existing DTD.
+                let dtd = (*(c.myDoc)).intSubset;
+                if !ext_id.is_null() {
+                    let ext_copy = tree::xml_strlen(ext_id);
+                    // Only set if non-empty.
+                    if ext_copy > 0 {
+                        (*(c.myDoc)).extSubset = dtd;
+                    }
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Entity handlers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `entityDecl` handler.
+    ///
+    /// Creates an entity node and adds it to the document's entity table.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - All pointer arguments must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn entityDecl(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        type_: c_int,
+        pub_id: *const xmlChar,
+        sys_id: *const xmlChar,
+        content: *mut xmlChar,
+    ) {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if c.myDoc.is_null() {
+                return;
+            }
+
+            let _entity = tree::new_entity(
+                c.myDoc,
+                name,
+                type_,
+                pub_id,
+                sys_id,
+                content as *const xmlChar,
+            );
+            // The entity is added to the document's entities hash by new_entity.
+            // Nothing further to do here.
+        }
+    }
+
+    /// Default `attributeDecl` handler.
+    ///
+    /// Records an attribute declaration for the given element.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - All pointer arguments must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn attributeDecl(
+        ctx: *mut c_void,
+        elem: *const xmlChar,
+        fullname: *const xmlChar,
+        type_: c_int,
+        def: c_int,
+        default_value: *const xmlChar,
+        tree: *mut _xmlEnumeration,
+    ) {
+        // In the default handler, attribute declarations are recorded for DTD
+        // validation purposes. For now, this is a no-op — the DTD validation
+        // infrastructure is not yet implemented.
+        //
+        // # UPSTREAM-PARITY
+        //
+        // Upstream libxml2's xmlSAX2AttributeDecl creates an xmlAttribute node
+        // and adds it to the DTD's attribute declaration table. This will be
+        // implemented when DTD validation is added.
+    }
+
+    /// Default `elementDecl` handler.
+    ///
+    /// Records an element declaration for the given element.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name` must be a valid null-terminated string.
+    /// - `content` must be a valid pointer or NULL.
+    pub unsafe extern "C" fn elementDecl(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        type_: c_int,
+        content: *mut _xmlElementContent,
+    ) {
+        // No-op in the default handler — element declaration recording will be
+        // implemented alongside DTD validation.
+    }
+
+    /// Default `notationDecl` handler.
+    ///
+    /// Records a notation declaration.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - All pointer arguments must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn notationDecl(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        pub_id: *const xmlChar,
+        sys_id: *const xmlChar,
+    ) {
+        // No-op in the default handler — notation declarations will be
+        // implemented when DTD support is fully operational.
+    }
+
+    /// Default `unparsedEntityDecl` handler.
+    ///
+    /// Records an unparsed entity declaration.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - All pointer arguments must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn unparsedEntityDecl(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        pub_id: *const xmlChar,
+        sys_id: *const xmlChar,
+        notation: *const xmlChar,
+    ) {
+        // No-op in the default handler — unparsed entity declarations will be
+        // implemented when DTD support is fully operational.
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Entity resolution
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `resolveEntity` handler.
+    ///
+    /// Returns NULL — no external entity resolution by default.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `pub_id` and `sys_id` must be valid null-terminated strings or NULL.
+    pub unsafe extern "C" fn resolveEntity(
+        ctx: *mut c_void,
+        pub_id: *const xmlChar,
+        sys_id: *const xmlChar,
+    ) -> *mut _xmlParserInput {
+        // Default handler does not resolve entities — return NULL.
+        ptr::null_mut()
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Stub handlers (minimal implementations)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `isStandalone` handler.
+    ///
+    /// Returns -1 (standalone status unknown/not declared).
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn isStandalone(ctx: *mut c_void) -> c_int {
+        -1
+    }
+
+    /// Default `hasInternalSubset` handler.
+    ///
+    /// Returns 1 if the document has an internal subset, 0 otherwise.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn hasInternalSubset(ctx: *mut c_void) -> c_int {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return 0;
+        }
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if c.myDoc.is_null() {
+                return 0;
+            }
+            if (*(c.myDoc)).intSubset.is_null() {
+                0
+            } else {
+                1
+            }
+        }
+    }
+
+    /// Default `hasExternalSubset` handler.
+    ///
+    /// Returns 1 if the document has an external subset, 0 otherwise.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    pub unsafe extern "C" fn hasExternalSubset(ctx: *mut c_void) -> c_int {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() {
+            return 0;
+        }
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if c.myDoc.is_null() {
+                return 0;
+            }
+            if (*(c.myDoc)).extSubset.is_null() {
+                0
+            } else {
+                1
+            }
+        }
+    }
+
+    /// Default `getEntity` handler.
+    ///
+    /// Looks up an entity in the document's entity table.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name` must be a valid null-terminated string.
+    pub unsafe extern "C" fn getEntity(ctx: *mut c_void, name: *const xmlChar) -> *mut _xmlEntity {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if c.myDoc.is_null() {
+                return ptr::null_mut();
+            }
+            tree::get_doc_entity(c.myDoc, name)
+        }
+    }
+
+    /// Default `getParameterEntity` handler.
+    ///
+    /// Looks up a parameter entity in the document's entity table.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name` must be a valid null-terminated string.
+    pub unsafe extern "C" fn getParameterEntity(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+    ) -> *mut _xmlEntity {
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+            if c.myDoc.is_null() {
+                return ptr::null_mut();
+            }
+            tree::get_parameter_entity(c.myDoc, name)
+        }
+    }
+
+    /// Default `setDocumentLocator` handler.
+    ///
+    /// No-op — the default handler does not use the locator.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `loc` must be a valid pointer to an `_xmlSAXLocator`.
+    pub unsafe extern "C" fn setDocumentLocator(ctx: *mut c_void, loc: *mut _xmlSAXLocator) {
+        // No-op in the default handler.
+    }
+
+    /// Default `reference` handler.
+    ///
+    /// No-op — entity references are expanded by the parser before reaching
+    /// the default handler.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `name` must be a valid null-terminated string.
+    pub unsafe extern "C" fn reference(ctx: *mut c_void, name: *const xmlChar) {
+        // No-op — references are expanded by the parser in default mode.
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Error handlers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Default `warning` handler.
+    ///
+    /// Logs a warning message via the error reporting infrastructure.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `msg` must be a valid null-terminated C string.
+    pub unsafe extern "C" fn warning(ctx: *mut c_void, msg: *const c_char) {
+        // SAFETY: The context is guaranteed valid by the caller.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || msg.is_null() {
+            return;
+        }
+
+        // SAFETY: The message string is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+            c.nbWarnings += 1;
+            // In Phase 3, this will route through the structured error system.
+            // For now, the parser context tracks the error count.
+        }
+    }
+
+    /// Default `error` handler.
+    ///
+    /// Logs an error message via the error reporting infrastructure.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `msg` must be a valid null-terminated C string.
+    pub unsafe extern "C" fn error(ctx: *mut c_void, msg: *const c_char) {
+        // SAFETY: The context is guaranteed valid by the caller.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || msg.is_null() {
+            return;
+        }
+
+        // SAFETY: The message string is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+            c.nbErrors += 1;
+            c.wellFormed = 0;
+            // In Phase 3, this will route through the structured error system.
+        }
+    }
+
+    /// Default `fatalError` handler.
+    ///
+    /// Logs a fatal error message and marks the document as not well-formed.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
+    /// - `msg` must be a valid null-terminated C string.
+    pub unsafe extern "C" fn fatalError(ctx: *mut c_void, msg: *const c_char) {
+        // SAFETY: The context is guaranteed valid by the caller.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || msg.is_null() {
+            return;
+        }
+
+        // SAFETY: The message string is guaranteed valid by the caller.
+        unsafe {
+            let c = &mut *ctxt;
+            c.nbErrors += 1;
+            c.wellFormed = 0;
+            // In Phase 3, this will route through the structured error system.
+        }
+    }
+}

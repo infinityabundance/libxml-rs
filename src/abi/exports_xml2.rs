@@ -1286,9 +1286,29 @@ pub unsafe extern "C" fn xmlReadDoc(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB — will be implemented in xml/parser module.
-    // For now, returns NULL to indicate parse failure.
-    ptr::null_mut()
+    // SAFETY: cur must be a valid null-terminated xmlChar string if non-null.
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let len = crate::xml::string::xml_strlen(cur);
+    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    (*ctxt).options = options;
+    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
+        let doc = (*ctxt).myDoc;
+        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+        return doc;
+    }
+    let doc = (*ctxt).myDoc;
+    if !doc.is_null() {
+        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Read an XML document from a file.
@@ -1304,8 +1324,31 @@ pub unsafe extern "C" fn xmlReadFile(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: URL must be a valid C string or NULL.
+    if URL.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let input = match crate::xml::parser::helpers::input_from_file(URL) {
+        Ok(input) => input,
+        Err(_) => {
+            crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+    };
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    (*ctxt).options = options;
+    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
+        let doc = (*ctxt).myDoc;
+        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+        return doc;
+    }
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Read an XML document from memory.
@@ -1324,8 +1367,28 @@ pub unsafe extern "C" fn xmlReadMemory(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: buffer must be a valid pointer with at least `size` readable bytes.
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    (*ctxt).options = options;
+    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
+        let doc = (*ctxt).myDoc;
+        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+        return doc;
+    }
+    let doc = (*ctxt).myDoc;
+    if !doc.is_null() && !URL.is_null() {
+        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Read an XML document from a file descriptor.
@@ -1342,8 +1405,38 @@ pub unsafe extern "C" fn xmlReadFd(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: fd must be a valid open file descriptor.
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    // Read all data from the fd
+    let mut buf = Vec::new();
+    let mut tmp = [0u8; 4096];
+    loop {
+        let n = libc::read(fd, tmp.as_mut_ptr() as *mut c_void, tmp.len());
+        if n <= 0 {
+            break;
+        }
+        buf.extend_from_slice(&tmp[..n as usize]);
+    }
+    let input = crate::xml::parser::helpers::input_from_memory(
+        buf.as_ptr() as *const c_char,
+        buf.len() as c_int,
+    );
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    (*ctxt).options = options;
+    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
+        let doc = (*ctxt).myDoc;
+        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+        return doc;
+    }
+    let doc = (*ctxt).myDoc;
+    if !doc.is_null() && !URL.is_null() {
+        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Read an XML document from I/O callbacks.
@@ -1363,8 +1456,25 @@ pub unsafe extern "C" fn xmlReadIO(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: callbacks must be valid function pointers if non-NULL.
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let input = crate::xml::parser::helpers::input_from_io(ioread, ioclose, ioctx);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    (*ctxt).options = options;
+    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
+        let doc = (*ctxt).myDoc;
+        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+        return doc;
+    }
+    let doc = (*ctxt).myDoc;
+    if !doc.is_null() && !URL.is_null() {
+        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Parse an XML document (SAX1).
@@ -1380,8 +1490,29 @@ pub unsafe extern "C" fn xmlSAXParseDoc(
     cur: *const xmlChar,
     recovery: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: cur must be a valid null-terminated xmlChar string.
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+        (*ctxt).userData = (*ctxt).sax as *mut c_void;
+    }
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1; // XML_PARSE_RECOVER
+    }
+    let len = crate::xml::string::xml_strlen(cur);
+    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Parse an XML file (SAX1).
@@ -1397,8 +1528,34 @@ pub unsafe extern "C" fn xmlSAXParseFile(
     filename: *const c_char,
     recovery: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: filename must be a valid C string.
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+        (*ctxt).userData = (*ctxt).sax as *mut c_void;
+    }
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1;
+    }
+    let input = match crate::xml::parser::helpers::input_from_file(filename) {
+        Ok(input) => input,
+        Err(_) => {
+            crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+    };
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// Parse an XML document from memory (SAX1).
@@ -1416,8 +1573,28 @@ pub unsafe extern "C" fn xmlSAXParseMemory(
     size: c_int,
     recovery: c_int,
 ) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: buffer must be valid with at least `size` bytes.
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+        (*ctxt).userData = (*ctxt).sax as *mut c_void;
+    }
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1;
+    }
+    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
 }
 
 /// SAX user parse file.
@@ -1434,8 +1611,33 @@ pub unsafe extern "C" fn xmlSAXUserParseFile(
     user_data: *mut c_void,
     filename: *const c_char,
 ) -> c_int {
-    // Phase 1: STUB
-    -1
+    // SAFETY: filename must be a valid C string. sax and user_data may be NULL.
+    if filename.is_null() {
+        return -1;
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return -1;
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+    }
+    (*ctxt).userData = if !user_data.is_null() {
+        user_data
+    } else {
+        ctxt as *mut c_void
+    };
+    let input = match crate::xml::parser::helpers::input_from_file(filename) {
+        Ok(input) => input,
+        Err(_) => {
+            crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+            return -1;
+        }
+    };
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    let ret = crate::xml::parser::helpers::parse_document(ctxt);
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    ret
 }
 
 /// SAX user parse memory.
@@ -1453,8 +1655,27 @@ pub unsafe extern "C" fn xmlSAXUserParseMemory(
     buffer: *const c_char,
     size: c_int,
 ) -> c_int {
-    // Phase 1: STUB
-    -1
+    // SAFETY: buffer must be valid with at least `size` bytes.
+    if buffer.is_null() || size <= 0 {
+        return -1;
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return -1;
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+    }
+    (*ctxt).userData = if !user_data.is_null() {
+        user_data
+    } else {
+        ctxt as *mut c_void
+    };
+    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    let ret = crate::xml::parser::helpers::parse_document(ctxt);
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    ret
 }
 
 /// Parse an XML document from a string (DOM).
@@ -1466,8 +1687,11 @@ pub unsafe extern "C" fn xmlSAXUserParseMemory(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlParseDoc(cur: *const xmlChar) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: cur must be a valid null-terminated xmlChar string.
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    xmlReadDoc(cur, ptr::null(), ptr::null(), 0)
 }
 
 /// Parse an XML file (DOM).
@@ -1479,8 +1703,11 @@ pub unsafe extern "C" fn xmlParseDoc(cur: *const xmlChar) -> *mut _xmlDoc {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlParseFile(filename: *const c_char) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: filename must be a valid C string.
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    xmlReadFile(filename, ptr::null(), 0)
 }
 
 /// Parse an XML document from memory (DOM).
@@ -1492,8 +1719,11 @@ pub unsafe extern "C" fn xmlParseFile(filename: *const c_char) -> *mut _xmlDoc {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlParseMemory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: buffer must be valid with at least `size` bytes.
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    xmlReadMemory(buffer, size, ptr::null(), ptr::null(), 0)
 }
 
 /// Create a file parser context.
@@ -1505,8 +1735,23 @@ pub unsafe extern "C" fn xmlParseMemory(buffer: *const c_char, size: c_int) -> *
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateFileParserCtxt(filename: *const c_char) -> *mut _xmlParserCtxt {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: filename must be a valid C string.
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let input = match crate::xml::parser::helpers::input_from_file(filename) {
+        Ok(input) => input,
+        Err(_) => {
+            crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+    };
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    ctxt
 }
 
 /// Create a document parser context.
@@ -1518,8 +1763,18 @@ pub unsafe extern "C" fn xmlCreateFileParserCtxt(filename: *const c_char) -> *mu
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateDocParserCtxt(cur: *const xmlChar) -> *mut _xmlParserCtxt {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: cur must be a valid null-terminated xmlChar string.
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let len = crate::xml::string::xml_strlen(cur);
+    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    ctxt
 }
 
 /// Parse a document using an existing parser context.
@@ -1531,8 +1786,11 @@ pub unsafe extern "C" fn xmlCreateDocParserCtxt(cur: *const xmlChar) -> *mut _xm
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlParseDocument(ctxt: *mut _xmlParserCtxt) -> c_int {
-    // Phase 1: STUB
-    -1
+    // SAFETY: ctxt must be a valid parser context.
+    if ctxt.is_null() {
+        return -1;
+    }
+    crate::xml::parser::helpers::parse_document(ctxt)
 }
 
 /// Free a parser context.
@@ -1547,10 +1805,7 @@ pub unsafe extern "C" fn xmlFreeParserCtxt(ctxt: *mut _xmlParserCtxt) {
     if ctxt.is_null() {
         return;
     }
-    // Phase 1: STUB — will be implemented in xml/parser module.
-    unsafe {
-        xmlFree(ctxt as *mut c_void);
-    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
 }
 
 /// Set parser options.
@@ -1587,8 +1842,12 @@ pub unsafe extern "C" fn xmlParseChunk(
     size: c_int,
     terminate: c_int,
 ) -> c_int {
-    // Phase 1: STUB
-    -1
+    // SAFETY: ctxt must be a valid parser context.
+    // chunk may be NULL if terminate is set (finalize without data).
+    if ctxt.is_null() {
+        return -1;
+    }
+    crate::xml::parser::helpers::parse_chunk(ctxt, chunk, size, terminate)
 }
 
 /// Create a memory parser input buffer.
@@ -1604,8 +1863,11 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateMem(
     size: c_int,
     enc: c_int,
 ) -> *mut _xmlParserInputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: buffer must be valid with at least `size` bytes.
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    crate::xml::parser::helpers::alloc_parser_input_buffer()
 }
 
 /// Create a file parser input buffer.
@@ -1620,8 +1882,11 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateFilename(
     URI: *const c_char,
     enc: c_int,
 ) -> *mut _xmlParserInputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: URI must be a valid C string or NULL.
+    if URI.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::parser::helpers::alloc_parser_input_buffer()
 }
 
 /// Create an I/O parser input buffer.
@@ -1640,8 +1905,14 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateIO(
     ioctx: *mut c_void,
     enc: c_int,
 ) -> *mut _xmlParserInputBuffer {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: ioread must be a valid callback if Some. ioctx may be NULL.
+    let buf = crate::xml::parser::helpers::alloc_parser_input_buffer();
+    if !buf.is_null() {
+        (*buf).readcallback = ioread;
+        (*buf).closecallback = ioclose;
+        (*buf).context = ioctx;
+    }
+    buf
 }
 
 /// Free a parser input buffer.
@@ -1656,10 +1927,7 @@ pub unsafe extern "C" fn xmlFreeParserInputBuffer(buf: *mut _xmlParserInputBuffe
     if buf.is_null() {
         return;
     }
-    // Phase 1: STUB
-    unsafe {
-        xmlFree(buf as *mut c_void);
-    }
+    crate::xml::parser::helpers::free_parser_input_buffer(buf);
 }
 
 /// Create a new parser input.
@@ -1674,8 +1942,14 @@ pub unsafe extern "C" fn xmlNewInputFromFile(
     ctxt: *mut _xmlParserCtxt,
     filename: *const c_char,
 ) -> *mut _xmlParserInput {
-    // Phase 1: STUB
-    ptr::null_mut()
+    // SAFETY: filename must be a valid C string. ctxt may be NULL.
+    // This function allocates a _xmlParserInput. The caller owns it.
+    // Note: The InputBuffer backing data is NOT leaked here (no ctxt._private
+    // to store it). Use xmlCreateFileParserCtxt + xmlParseDocument instead.
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    crate::xml::parser::helpers::alloc_parser_input_buffer() as *mut _xmlParserInput
 }
 
 /// Free a parser input.
@@ -1690,10 +1964,7 @@ pub unsafe extern "C" fn xmlFreeInputStream(input: *mut _xmlParserInput) {
     if input.is_null() {
         return;
     }
-    // Phase 1: STUB
-    unsafe {
-        xmlFree(input as *mut c_void);
-    }
+    crate::xml::parser::helpers::free_parser_input(input);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -2,5 +2,9 @@
 //!
 //! SAX event recording and dispatch. Tracks exact event ordering, callback
 //! sequencing, and argument capture for forensic comparison.
-//!
-//! Phase 0: scaffolded. Implementation begins in Phase 3.
+
+pub(crate) mod default;
+pub(crate) mod dispatch;
+
+pub(crate) use dispatch::xmlSAX2InitDefaultSAXHandler;
+pub(crate) use dispatch::SaxDispatcher;

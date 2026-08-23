@@ -41,6 +41,7 @@ pub mod relaxng;
 pub mod sax;
 pub mod schemas;
 pub mod schematron;
+pub mod string;
 pub mod threads;
 pub mod tree;
 pub mod uri;
