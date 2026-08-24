@@ -138,7 +138,7 @@ fn generate_symlinks(artifact_dir: &Path) {
     // Use owned strings to avoid temporary lifetime issues
     let v2120 = artifact_dir.join("libxml2.so.2.12.0");
     let v2 = artifact_dir.join("libxml2.so.2");
-    let v = artifact_dir.join("libxml2.so");
+    let _v = artifact_dir.join("libxml2.so");
 
     create_symlink("libxml2.so.2.12.0", &actual_lib, artifact_dir);
     create_symlink("libxml2.so.2", &v2120, artifact_dir);
@@ -147,7 +147,7 @@ fn generate_symlinks(artifact_dir: &Path) {
     // Create libxslt.so symlinks
     let xslt1139 = artifact_dir.join("libxslt.so.1.1.39");
     let xslt1 = artifact_dir.join("libxslt.so.1");
-    let xslt = artifact_dir.join("libxslt.so");
+    let _xslt = artifact_dir.join("libxslt.so");
 
     create_symlink("libxslt.so.1.1.39", &actual_lib, artifact_dir);
     create_symlink("libxslt.so.1", &xslt1139, artifact_dir);

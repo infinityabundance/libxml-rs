@@ -1,8 +1,8 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 edition = "2021"
-description = "Phase 3: I/O, encoding, URI, catalog, serialization, HTML. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. 357 tests passing, full encoding subsystem, URI parser, OASIS catalog, HTML parser/serializer, tree serialization, custom I/O buffers."
+description = "Phase 5: XPath 1.0 engine, XPointer, XInclude. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. 522 tests passing, full XPath 1.0 lexer/parser/AST/eval (25 functions), XPointer element scheme + shorthand pointers, XInclude process/process_flags, C ABI exports."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"

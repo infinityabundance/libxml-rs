@@ -162,6 +162,22 @@ pub(crate) unsafe fn xml_strcat(str1: *const xmlChar, str2: *const xmlChar) -> *
     result
 }
 
+/// Convert a `*const xmlChar` to a Rust `String`.
+///
+/// Returns an empty string for NULL pointers.
+///
+/// # Safety
+///
+/// `str` must be NULL or point to a null-terminated sequence of bytes.
+#[inline]
+pub(crate) unsafe fn xmlstr_to_string(str: *const xmlChar) -> String {
+    if str.is_null() {
+        return String::new();
+    }
+    let bytes = xmlstr_to_bytes(str);
+    String::from_utf8_lossy(bytes).to_string()
+}
+
 /// Check if `str` starts with `prefix`.
 ///
 /// # Safety

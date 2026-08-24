@@ -40,18 +40,23 @@
 
 use core::ffi::c_void;
 use core::ptr;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
+use std::collections::HashMap;
+use std::ffi::CStr;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_uint};
 
+use crate::xml::xinclude;
+use crate::xml::xpath::ast::CompiledExpr;
+use crate::xml::xpath::context::XPathContext;
+use crate::xml::xpath::types::{NodeSet, XPathValue};
+use crate::xml::xpointer;
+
 use crate::abi::allocator::*;
 use crate::abi::callbacks::*;
-use crate::abi::ownership::*;
 use crate::abi::structs::*;
-use crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA;
-use crate::abi::types::xmlElementType::*;
-use crate::abi::types::xmlErrorLevel::XML_ERR_NONE;
 use crate::abi::types::*;
-use crate::abi::versioning::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. Initialization / Cleanup
@@ -3340,7 +3345,139 @@ pub unsafe extern "C" fn xmlURIUnescapeString(
 // 14. XPath
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ── Helper functions ────────────────────────────────────────────────────
+
+/// Convert an internal `XPathValue` to a C ABI `_xmlXPathObject`.
+///
+/// The returned pointer is heap-allocated via `xmlMallocZero` and must be
+/// freed with `xmlXPathFreeObject`.
+///
+/// # Safety
+///
+/// Must be called from a context where `xmlMalloc` is safe to call.
+unsafe fn xpath_to_object(val: XPathValue) -> *mut _xmlXPathObject {
+    let obj = xmlMallocZero(size_of::<_xmlXPathObject>()) as *mut _xmlXPathObject;
+    if obj.is_null() {
+        return ptr::null_mut();
+    }
+    match val {
+        XPathValue::NodeSet(ns) => {
+            (*obj).type_ = xmlXPathObjectType::XPATH_NODESET as c_int;
+            (*obj).nodesetval = ns.to_raw() as *mut c_void;
+        }
+        XPathValue::Boolean(b) => {
+            (*obj).type_ = xmlXPathObjectType::XPATH_BOOLEAN as c_int;
+            (*obj).boolval = if b { 1 } else { 0 };
+        }
+        XPathValue::Number(n) => {
+            (*obj).type_ = xmlXPathObjectType::XPATH_NUMBER as c_int;
+            (*obj).floatval = n;
+        }
+        XPathValue::String(s) => {
+            (*obj).type_ = xmlXPathObjectType::XPATH_STRING as c_int;
+            let bytes = s.as_bytes();
+            let len = bytes.len();
+            let buf = xmlMalloc(len + 1) as *mut xmlChar;
+            if !buf.is_null() {
+                ptr::copy_nonoverlapping(bytes.as_ptr(), buf, len);
+                *buf.add(len) = 0; // null terminator
+            }
+            (*obj).stringval = buf;
+        }
+    }
+    obj
+}
+
+/// Extract an internal `XPathValue` from a C ABI `_xmlXPathObject`.
+///
+/// # Safety
+///
+/// `obj` must be a valid, non-null pointer to a properly initialised
+/// `_xmlXPathObject`.
+unsafe fn object_to_xpathvalue(obj: *mut _xmlXPathObject) -> XPathValue {
+    let typ = (*obj).type_;
+    if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
+        let ns_ptr = (*obj).nodesetval as *mut _xmlNodeSet;
+        if ns_ptr.is_null() {
+            return XPathValue::NodeSet(NodeSet::new());
+        }
+        let node_nr = (*ns_ptr).nodeNr;
+        let node_tab = (*ns_ptr).nodeTab;
+        let mut ns = NodeSet::new();
+        if !node_tab.is_null() {
+            for i in 0..node_nr as isize {
+                let node = *node_tab.add(i as usize);
+                ns.push(node);
+            }
+        }
+        XPathValue::NodeSet(ns)
+    } else if typ == xmlXPathObjectType::XPATH_BOOLEAN as c_int {
+        XPathValue::Boolean((*obj).boolval != 0)
+    } else if typ == xmlXPathObjectType::XPATH_NUMBER as c_int {
+        XPathValue::Number((*obj).floatval)
+    } else if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+        let s_ptr = (*obj).stringval;
+        if s_ptr.is_null() {
+            XPathValue::String(String::new())
+        } else {
+            let s = CStr::from_ptr(s_ptr as *const c_char)
+                .to_string_lossy()
+                .into_owned();
+            XPathValue::String(s)
+        }
+    } else {
+        // Undefined / unknown type — return boolean false as a safe default.
+        XPathValue::Boolean(false)
+    }
+}
+
+// ── Compiled expression registry ────────────────────────────────────────
+//
+// Compiled XPath expressions are opaque pointers returned by xmlXPathCompile.
+// We store them in a global registry keyed by a monotonically increasing ID.
+
+static COMPILED_EXPRS: Lazy<Mutex<HashMap<u64, Box<CompiledExpr>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+static NEXT_COMPILED_KEY: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
+
+// ── C extension-function registry ──────────────────────────────────────
+//
+// C extension functions registered via xmlXPathRegisterFunc / RegisterFuncNS
+// are stored here because the Rust XPathFunction signature is incompatible
+// with the C xmlXPathFunction calling convention (the C function expects a
+// parser context, not pre-evaluated argument slices). The registration is
+// stored faithfully; invoking registered C functions from within the Rust
+// evaluator requires a bridge that is not yet implemented.
+
+type CXPathFunc = unsafe extern "C" fn(*mut c_void, c_int);
+
+/// Wrapper around `*mut c_void` that implements `Send` + `Sync` so it can
+/// be used as a key in a `Mutex`-protected global `HashMap`.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct SendSyncPtr(*mut c_void);
+unsafe impl Send for SendSyncPtr {}
+unsafe impl Sync for SendSyncPtr {}
+
+static C_FUNCTIONS: Lazy<Mutex<HashMap<(SendSyncPtr, String), CXPathFunc>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Rust-side wrapper that is registered in the internal XPathContext when a
+/// C extension function is registered. It looks up the C function pointer and
+/// attempts to call it, but the calling-convention mismatch means this is a
+/// stub that returns an error for now.
+fn c_func_stub(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+    Err(
+        "C extension function cannot be called from Rust evaluator without a parser-context bridge"
+            .to_string(),
+    )
+}
+
+// ── Public API ─────────────────────────────────────────────────────────
+
 /// Create a new XPath context.
+///
+/// Allocates a `_xmlXPathContext` and an internal `XPathContext`, storing
+/// the latter's pointer in the `extra` field.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3348,9 +3485,23 @@ pub unsafe extern "C" fn xmlURIUnescapeString(
 /// xmlXPathContextPtr xmlXPathNewContext(xmlDocPtr doc);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNewContext(_doc: *mut _xmlDoc) -> *mut _xmlXPathContext {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlXPathNewContext(doc: *mut _xmlDoc) -> *mut _xmlXPathContext {
+    let ctxt = xmlMallocZero(size_of::<_xmlXPathContext>()) as *mut _xmlXPathContext;
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // Initialise the C ABI context fields.
+    (*ctxt).doc = doc;
+    (*ctxt).node = ptr::null_mut();
+    (*ctxt).contextSize = 1;
+    (*ctxt).proximityPosition = 1;
+
+    // Create the internal XPathContext and store it in `extra`.
+    let internal = Box::new(XPathContext::new(doc));
+    (*ctxt).extra = Box::into_raw(internal) as *mut c_void;
+
+    ctxt
 }
 
 /// Free an XPath context.
@@ -3361,8 +3512,17 @@ pub unsafe extern "C" fn xmlXPathNewContext(_doc: *mut _xmlDoc) -> *mut _xmlXPat
 /// void xmlXPathFreeContext(xmlXPathContextPtr ctxt);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXPathFreeContext(_ctxt: *mut _xmlXPathContext) {
-    // Phase 1: STUB
+pub unsafe extern "C" fn xmlXPathFreeContext(ctxt: *mut _xmlXPathContext) {
+    if ctxt.is_null() {
+        return;
+    }
+    // Drop the internal XPathContext.
+    if !(*ctxt).extra.is_null() {
+        let _ = Box::from_raw((*ctxt).extra as *mut XPathContext);
+        (*ctxt).extra = ptr::null_mut();
+    }
+    // Free the C ABI context struct.
+    xmlFree(ctxt as *mut c_void);
 }
 
 /// Evaluate an XPath expression.
@@ -3375,14 +3535,29 @@ pub extern "C" fn xmlXPathFreeContext(_ctxt: *mut _xmlXPathContext) {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathEvalExpression(
-    _str: *const xmlChar,
-    _ctxt: *mut _xmlXPathContext,
+    str_: *const xmlChar,
+    ctxt: *mut _xmlXPathContext,
 ) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+    if str_.is_null() || ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let expr_str = match CStr::from_ptr(str_ as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+    let internal = (*ctxt).extra as *mut XPathContext;
+    if internal.is_null() {
+        return ptr::null_mut();
+    }
+    let internal = &mut *internal;
+
+    match crate::xml::xpath::evaluate_str(expr_str, internal) {
+        Some(val) => xpath_to_object(val),
+        None => ptr::null_mut(),
+    }
 }
 
-/// Evaluate an XPath expression (simplified).
+/// Evaluate an XPath expression (simplified alias).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3391,14 +3566,16 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathEval(
-    _str: *const xmlChar,
-    _ctxt: *mut _xmlXPathContext,
+    str_: *const xmlChar,
+    ctxt: *mut _xmlXPathContext,
 ) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+    xmlXPathEvalExpression(str_, ctxt)
 }
 
 /// Free an XPath object.
+///
+/// Releases the internal members (string buffer or node-set) and then frees
+/// the object struct itself.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3406,11 +3583,36 @@ pub unsafe extern "C" fn xmlXPathEval(
 /// void xmlXPathFreeObject(xmlXPathObjectPtr obj);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXPathFreeObject(_obj: *mut _xmlXPathObject) {
-    // Phase 1: STUB
+pub unsafe extern "C" fn xmlXPathFreeObject(obj: *mut _xmlXPathObject) {
+    if obj.is_null() {
+        return;
+    }
+    let typ = (*obj).type_;
+    // Free string storage.
+    if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+        if !(*obj).stringval.is_null() {
+            xmlFree((*obj).stringval as *mut c_void);
+            (*obj).stringval = ptr::null_mut();
+        }
+    }
+    // Free node-set storage.
+    if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
+        let ns = (*obj).nodesetval as *mut _xmlNodeSet;
+        if !ns.is_null() {
+            if !(*ns).nodeTab.is_null() {
+                xmlFree((*ns).nodeTab as *mut c_void);
+            }
+            xmlFree(ns as *mut c_void);
+        }
+        (*obj).nodesetval = ptr::null_mut();
+    }
+    xmlFree(obj as *mut c_void);
 }
 
 /// Compile an XPath expression.
+///
+/// Returns an opaque pointer that can be passed to `xmlXPathEvalExpression`
+/// (via the compiled-expr infrastructure) or freed with `xmlXPathFreeCompExpr`.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3418,9 +3620,26 @@ pub extern "C" fn xmlXPathFreeObject(_obj: *mut _xmlXPathObject) {
 /// xmlXPathCompExprPtr xmlXPathCompile(const xmlChar *str);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathCompile(_str: *const xmlChar) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
+    if str_.is_null() {
+        return ptr::null_mut();
+    }
+    let expr_str = match CStr::from_ptr(str_ as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    match crate::xml::xpath::compile(expr_str) {
+        Some(compiled) => {
+            let mut map = COMPILED_EXPRS.lock();
+            let mut counter = NEXT_COMPILED_KEY.lock();
+            let key = *counter;
+            *counter += 1;
+            map.insert(key, Box::new(compiled));
+            key as *mut c_void
+        }
+        None => ptr::null_mut(),
+    }
 }
 
 /// Free a compiled XPath expression.
@@ -3431,8 +3650,12 @@ pub unsafe extern "C" fn xmlXPathCompile(_str: *const xmlChar) -> *mut c_void {
 /// void xmlXPathFreeCompExpr(xmlXPathCompExprPtr comp);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXPathFreeCompExpr(_comp: *mut c_void) {
-    // Phase 1: STUB
+pub unsafe extern "C" fn xmlXPathFreeCompExpr(comp: *mut c_void) {
+    if comp.is_null() {
+        return;
+    }
+    let mut map = COMPILED_EXPRS.lock();
+    map.remove(&(comp as u64));
 }
 
 /// Register an XPath namespace.
@@ -3445,15 +3668,38 @@ pub extern "C" fn xmlXPathFreeCompExpr(_comp: *mut c_void) {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathRegisterNs(
-    _ctxt: *mut _xmlXPathContext,
-    _prefix: *const xmlChar,
-    _ns_uri: *const xmlChar,
+    ctxt: *mut _xmlXPathContext,
+    prefix: *const xmlChar,
+    ns_uri: *const xmlChar,
 ) -> c_int {
-    // Phase 1: STUB
+    if ctxt.is_null() || prefix.is_null() || ns_uri.is_null() {
+        return -1;
+    }
+    let internal = (*ctxt).extra as *mut XPathContext;
+    if internal.is_null() {
+        return -1;
+    }
+    let internal = &mut *internal;
+
+    let prefix_str = match CStr::from_ptr(prefix as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+    let uri_str = match CStr::from_ptr(ns_uri as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    internal.register_namespace(prefix_str, uri_str);
     0
 }
 
 /// Register an XPath function.
+///
+/// The C function pointer is stored in a side table keyed by the context.
+/// A Rust-side stub is registered in the internal context so that the Rust
+/// evaluator is aware of the function; however, calling the C function
+/// directly from the Rust evaluator is not yet supported.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3463,11 +3709,31 @@ pub unsafe extern "C" fn xmlXPathRegisterNs(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathRegisterFunc(
-    _ctxt: *mut _xmlXPathContext,
-    _name: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
+    ctxt: *mut _xmlXPathContext,
+    name: *const xmlChar,
+    f: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
 ) -> c_int {
-    // Phase 1: STUB
+    if ctxt.is_null() || name.is_null() {
+        return -1;
+    }
+    let internal = (*ctxt).extra as *mut XPathContext;
+    if internal.is_null() {
+        return -1;
+    }
+    let internal = &mut *internal;
+
+    let name_str = match CStr::from_ptr(name as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    if let Some(func) = f {
+        // Store the C function pointer in the side table.
+        let key = (SendSyncPtr((*ctxt).extra), name_str.to_string());
+        C_FUNCTIONS.lock().insert(key, func);
+        // Register a Rust stub so the evaluator knows the function exists.
+        internal.register_function(name_str, c_func_stub);
+    }
     0
 }
 
@@ -3482,12 +3748,45 @@ pub unsafe extern "C" fn xmlXPathRegisterFunc(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathRegisterFuncNS(
-    _ctxt: *mut _xmlXPathContext,
-    _name: *const xmlChar,
-    _ns_uri: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
+    ctxt: *mut _xmlXPathContext,
+    name: *const xmlChar,
+    ns_uri: *const xmlChar,
+    f: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
 ) -> c_int {
-    // Phase 1: STUB
+    if ctxt.is_null() || name.is_null() {
+        return -1;
+    }
+    let internal = (*ctxt).extra as *mut XPathContext;
+    if internal.is_null() {
+        return -1;
+    }
+    let internal = &mut *internal;
+
+    let name_str = match CStr::from_ptr(name as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+    let ns_str = if ns_uri.is_null() {
+        String::new()
+    } else {
+        match CStr::from_ptr(ns_uri as *const c_char).to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return -1,
+        }
+    };
+
+    // Use "{ns}:" prefix as part of the key to keep functions unique.
+    let qualified = if ns_str.is_empty() {
+        name_str.to_string()
+    } else {
+        format!("{{{}}}{}", ns_str, name_str)
+    };
+
+    if let Some(func) = f {
+        let key = (SendSyncPtr((*ctxt).extra), qualified.clone());
+        C_FUNCTIONS.lock().insert(key, func);
+        internal.register_function(&qualified, c_func_stub);
+    }
     0
 }
 
@@ -3501,15 +3800,30 @@ pub unsafe extern "C" fn xmlXPathRegisterFuncNS(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathRegisterVariable(
-    _ctxt: *mut _xmlXPathContext,
-    _name: *const xmlChar,
-    _value: *mut _xmlXPathObject,
+    ctxt: *mut _xmlXPathContext,
+    name: *const xmlChar,
+    value: *mut _xmlXPathObject,
 ) -> c_int {
-    // Phase 1: STUB
+    if ctxt.is_null() || name.is_null() || value.is_null() {
+        return -1;
+    }
+    let internal = (*ctxt).extra as *mut XPathContext;
+    if internal.is_null() {
+        return -1;
+    }
+    let internal = &mut *internal;
+
+    let name_str = match CStr::from_ptr(name as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    let xpath_val = object_to_xpathvalue(value);
+    internal.register_variable(name_str, xpath_val);
     0
 }
 
-/// Create an XPath object from a node set.
+/// Create an XPath object wrapping a single node in a node-set.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3517,12 +3831,16 @@ pub unsafe extern "C" fn xmlXPathRegisterVariable(
 /// xmlXPathObjectPtr xmlXPathNewNodeSet(xmlNodePtr val);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNewNodeSet(_val: *mut _xmlNode) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlXPathNewNodeSet(val: *mut _xmlNode) -> *mut _xmlXPathObject {
+    let ns = if val.is_null() {
+        NodeSet::new()
+    } else {
+        NodeSet::singleton(val)
+    };
+    xpath_to_object(XPathValue::NodeSet(ns))
 }
 
-/// Create an XPath object from a value.
+/// Create an XPath object from a C string value.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -3530,9 +3848,15 @@ pub unsafe extern "C" fn xmlXPathNewNodeSet(_val: *mut _xmlNode) -> *mut _xmlXPa
 /// xmlXPathObjectPtr xmlXPathNewCString(const xmlChar *val);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNewCString(_val: *const xmlChar) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlXPathNewCString(val: *const xmlChar) -> *mut _xmlXPathObject {
+    if val.is_null() {
+        return xpath_to_object(XPathValue::String(String::new()));
+    }
+    let s = match CStr::from_ptr(val as *const c_char).to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return ptr::null_mut(),
+    };
+    xpath_to_object(XPathValue::String(s))
 }
 
 /// Create an XPath number object.
@@ -3543,9 +3867,8 @@ pub unsafe extern "C" fn xmlXPathNewCString(_val: *const xmlChar) -> *mut _xmlXP
 /// xmlXPathObjectPtr xmlXPathNewFloat(double val);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXPathNewFloat(_val: f64) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlXPathNewFloat(val: f64) -> *mut _xmlXPathObject {
+    unsafe { xpath_to_object(XPathValue::Number(val)) }
 }
 
 /// Create an XPath boolean object.
@@ -3556,9 +3879,26 @@ pub extern "C" fn xmlXPathNewFloat(_val: f64) -> *mut _xmlXPathObject {
 /// xmlXPathObjectPtr xmlXPathNewBoolean(int val);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXPathNewBoolean(_val: c_int) -> *mut _xmlXPathObject {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlXPathNewBoolean(val: c_int) -> *mut _xmlXPathObject {
+    unsafe { xpath_to_object(XPathValue::Boolean(val != 0)) }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 14.5. XPointer
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Evaluate an XPointer expression.
+///
+/// Delegates to the xpointer module.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlXPtrEval(const xmlChar *expr, xmlDocPtr doc);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPtrEval(expr: *const c_char, doc: *mut _xmlDoc) -> *mut _xmlNode {
+    crate::xml::xpointer::xmlXPtrEval(expr, doc)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3573,9 +3913,8 @@ pub extern "C" fn xmlXPathNewBoolean(_val: c_int) -> *mut _xmlXPathObject {
 /// int xmlXIncludeProcess(xmlDocPtr doc);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXIncludeProcess(_doc: *mut _xmlDoc) -> c_int {
-    // Phase 1: STUB
-    -1
+pub unsafe extern "C" fn xmlXIncludeProcess(doc: *mut _xmlDoc) -> c_int {
+    crate::xml::xinclude::xinclude_process(doc)
 }
 
 /// Process XInclude nodes with flags.
@@ -3586,9 +3925,8 @@ pub extern "C" fn xmlXIncludeProcess(_doc: *mut _xmlDoc) -> c_int {
 /// int xmlXIncludeProcessFlags(xmlDocPtr doc, int flags);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlXIncludeProcessFlags(_doc: *mut _xmlDoc, _flags: c_int) -> c_int {
-    // Phase 1: STUB
-    -1
+pub unsafe extern "C" fn xmlXIncludeProcessFlags(doc: *mut _xmlDoc, flags: c_int) -> c_int {
+    crate::xml::xinclude::xinclude_process_flags(doc, flags)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

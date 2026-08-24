@@ -926,6 +926,68 @@ pub unsafe fn add_sibling(cur: *mut _xmlNode, elem: *mut _xmlNode) -> *mut _xmlN
     elem
 }
 
+/// Add a sibling node before another.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlAddPrevSibling(xmlNodePtr cur, xmlNodePtr elem);
+/// ```
+///
+/// Adds `elem` as the previous sibling of `cur`.
+/// Returns `elem`, or NULL on failure.
+///
+/// # SAFETY
+///
+/// - `cur` must be a valid pointer to an _xmlNode.
+/// - `elem` must be a valid pointer to an _xmlNode.
+pub unsafe fn add_sibling_before(cur: *mut _xmlNode, elem: *mut _xmlNode) -> *mut _xmlNode {
+    if cur.is_null() || elem.is_null() {
+        return ptr::null_mut();
+    }
+
+    let c = unsafe { &mut *cur };
+
+    // If elem is already linked, unlink it first
+    let e = unsafe { &mut *elem };
+    if !e.parent.is_null() || !e.prev.is_null() || !e.next.is_null() {
+        unlink_node(elem);
+    }
+
+    // Set parent
+    e.parent = c.parent;
+
+    // Link elem before cur
+    e.prev = c.prev;
+    e.next = cur;
+
+    if !c.prev.is_null() {
+        unsafe { (*c.prev).next = elem };
+    }
+    c.prev = elem;
+
+    // Update parent's first if needed
+    let parent = c.parent;
+    if !parent.is_null() && unsafe { (*parent).children } == cur {
+        unsafe { (*parent).children = elem };
+    }
+
+    // Update doc-level children if node is a direct doc child
+    let doc = c.doc;
+    if !doc.is_null() && parent.is_null() {
+        if unsafe { (*doc).children } == cur {
+            unsafe { (*doc).children = elem };
+        }
+    }
+
+    // Update doc
+    if !c.doc.is_null() && e.doc != c.doc {
+        propagate_doc(elem, c.doc);
+    }
+
+    elem
+}
+
 /// Create a new child element.
 ///
 /// # UPSTREAM-PARITY

@@ -22,7 +22,7 @@ use core::ffi::c_void;
 use core::ptr;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int};
 
 use parking_lot::RwLock;
 
