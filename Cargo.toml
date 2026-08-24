@@ -1,6 +1,6 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 edition = "2021"
 description = "Phase 5: XPath 1.0 engine, XPointer, XInclude. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. 522 tests passing, full XPath 1.0 lexer/parser/AST/eval (25 functions), XPointer element scheme + shorthand pointers, XInclude process/process_flags, C ABI exports."
 license = "MIT OR Apache-2.0"
