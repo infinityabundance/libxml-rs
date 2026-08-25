@@ -882,7 +882,7 @@ impl XmlParser {
             }
 
             let localname = Self::vec_to_cstr_null(_name);
-            let nb_namespaces = (ns_decls.len() * 2) as c_int;
+            let nb_namespaces = ns_decls.len() as c_int;
             let namespaces_ptr = if ns_vec.is_empty() {
                 ptr::null_mut()
             } else {

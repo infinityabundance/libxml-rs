@@ -1768,6 +1768,56 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
         allocator::xmlFree(d.SystemID as *mut c_void);
     }
 
+    // Free hash tables for declarations
+    unsafe extern "C" fn free_notation_wrapper(payload: *mut c_void, _name: *mut u8) {
+        crate::xml::dtd::free_notation(payload as *mut _xmlNotation);
+    }
+    unsafe extern "C" fn free_element_wrapper(payload: *mut c_void, _name: *mut u8) {
+        crate::xml::dtd::free_element(payload as *mut _xmlElement);
+    }
+    unsafe extern "C" fn free_attribute_wrapper(payload: *mut c_void, _name: *mut u8) {
+        crate::xml::dtd::free_attribute(payload as *mut _xmlAttribute);
+    }
+    unsafe extern "C" fn free_entity_wrapper(payload: *mut c_void, _name: *mut u8) {
+        crate::xml::entities::free_entity(payload as *mut _xmlEntity);
+    }
+
+    if !d.notations.is_null() {
+        crate::xml::hash::hash_free(
+            d.notations as *mut crate::xml::hash::HashTable,
+            Some(free_notation_wrapper),
+        );
+        d.notations = ptr::null_mut();
+    }
+    if !d.elements.is_null() {
+        crate::xml::hash::hash_free(
+            d.elements as *mut crate::xml::hash::HashTable,
+            Some(free_element_wrapper),
+        );
+        d.elements = ptr::null_mut();
+    }
+    if !d.attributes.is_null() {
+        crate::xml::hash::hash_free(
+            d.attributes as *mut crate::xml::hash::HashTable,
+            Some(free_attribute_wrapper),
+        );
+        d.attributes = ptr::null_mut();
+    }
+    if !d.entities.is_null() {
+        crate::xml::hash::hash_free(
+            d.entities as *mut crate::xml::hash::HashTable,
+            Some(free_entity_wrapper),
+        );
+        d.entities = ptr::null_mut();
+    }
+    if !d.pentities.is_null() {
+        crate::xml::hash::hash_free(
+            d.pentities as *mut crate::xml::hash::HashTable,
+            Some(free_entity_wrapper),
+        );
+        d.pentities = ptr::null_mut();
+    }
+
     // Free children
     if !d.children.is_null() {
         free_node_list(d.children);
@@ -1842,11 +1892,7 @@ pub unsafe fn new_entity(
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `name` must be a valid null-terminated string.
 pub unsafe fn get_doc_entity(doc: *const _xmlDoc, name: *const xmlChar) -> *mut _xmlEntity {
-    // Phase 1: minimal implementation. Full entity table lookup will be
-    // in Phase 2+ when the DTD module is implemented.
-    let _ = doc;
-    let _ = name;
-    ptr::null_mut()
+    crate::xml::entities::get_entity(doc as *mut _xmlDoc, name)
 }
 
 /// Get a parameter entity by name.
@@ -1862,10 +1908,7 @@ pub unsafe fn get_doc_entity(doc: *const _xmlDoc, name: *const xmlChar) -> *mut 
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `name` must be a valid null-terminated string.
 pub unsafe fn get_parameter_entity(doc: *const _xmlDoc, name: *const xmlChar) -> *mut _xmlEntity {
-    // Phase 1: minimal implementation.
-    let _ = doc;
-    let _ = name;
-    ptr::null_mut()
+    crate::xml::entities::get_parameter_entity(doc as *mut _xmlDoc, name)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

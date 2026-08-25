@@ -119,6 +119,22 @@ pub struct _xmlElementContent {
     pub prefix: *const xmlChar,          // Namespace prefix (deprecated)
 }
 
+// ── xmlElement (declaration) ────────────────────────────────────────────
+//
+// Source: tree.h lines 447-474
+
+/// Element declaration from DTD.
+#[repr(C)]
+pub struct _xmlElement {
+    pub name: *const xmlChar,             // Element name
+    pub type_: c_int,                     // xmlElementTypeVal
+    pub content: *mut _xmlElementContent, // Content model
+    pub attributes: *mut _xmlAttribute,   // Linked list of attribute declarations
+    pub prefix: *const xmlChar,           // Namespace prefix
+    pub next: *mut _xmlElement,           // Next in hash chain
+    pub _private: c_int,                  // Application data
+}
+
 // ── xmlNs ───────────────────────────────────────────────────────────────
 //
 // Source: tree.h lines 501-512
@@ -718,6 +734,11 @@ pub type xmlOutputBufferPtr = *mut _xmlOutputBuffer;
 pub type xmlSAXHandlerPtr = *mut _xmlSAXHandler;
 pub type xmlValidCtxtPtr = *mut _xmlValidCtxt;
 pub type xmlBufferPtr = *mut _xmlBuffer;
+pub type xmlElementPtr = *mut _xmlElement;
+pub type xmlElementContentPtr = *mut _xmlElementContent;
+pub type xmlNotationPtr = *mut _xmlNotation;
+pub type xmlEnumerationPtr = *mut _xmlEnumeration;
+pub type xmlAttributeDeclPtr = *mut _xmlAttribute;
 pub type xmlXPathContextPtr = *mut _xmlXPathContext;
 pub type xmlXPathObjectPtr = *mut _xmlXPathObject;
 pub type xmlNodeSetPtr = *mut _xmlNodeSet;
