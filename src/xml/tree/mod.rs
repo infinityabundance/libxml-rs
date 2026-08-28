@@ -1939,7 +1939,7 @@ const XML_DECL: &[xmlChar] = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 ///
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
 /// - `content` must be a valid pointer to `len` bytes of xmlChar data, or NULL.
-unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
+pub(crate) unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
     if buf.is_null() || content.is_null() || len <= 0 {
         return;
     }
@@ -1968,6 +1968,10 @@ unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_i
             b'&' => {
                 io::buf_add(buf, ENTITY_AMP.as_ptr(), ENTITY_AMP.len() as c_int);
             }
+            // UPSTREAM-PARITY: libxml2 does NOT escape `>` in text content.
+            // Per XML spec, `>` is only required to be escaped when it appears
+            // as `]]>` (handled above). libxml2's xmlNodeDumpOutput does not
+            // escape standalone `>` characters.
             _ => {
                 io::buf_add(buf, &ch as *const u8, 1);
             }
@@ -1984,7 +1988,7 @@ unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_i
 ///
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
 /// - `value` must be a valid null-terminated xmlChar string, or NULL.
-unsafe fn serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar) {
+pub(crate) unsafe fn serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar) {
     if buf.is_null() || value.is_null() {
         return;
     }

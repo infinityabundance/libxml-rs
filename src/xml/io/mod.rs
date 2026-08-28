@@ -34,7 +34,7 @@ use crate::xml::encoding;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Default buffer size for new buffers.
-const DEFAULT_BUFFER_SIZE: c_uint = 4000;
+pub(crate) const DEFAULT_BUFFER_SIZE: c_uint = 4000;
 
 /// Minimum buffer size.
 const MIN_BUFFER_SIZE: c_uint = 256;

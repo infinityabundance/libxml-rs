@@ -3,4 +3,3598 @@
 //! Cursor-based streaming reader with node type, depth, attribute traversal,
 //! namespace lookup, value retrieval, validation integration.
 //!
-//! Phase 0: scaffolded. Implementation begins in Phase 7.
+//! Implements the `xmlTextReader` API from libxml2, which provides a
+//! cursor-based streaming interface for reading XML documents. The reader
+//! parses the entire document into a tree on the first `Read()` call, then
+//! walks the tree in document order (depth-first traversal) generating
+//! node events for elements, text, comments, PIs, etc.
+//!
+//! # UPSTREAM-PARITY
+//!
+//! The reader API is defined in `libxml/xmlreader.h` and `libxml/xmlreader.c`.
+//! Key differences from upstream:
+//!
+//! - The reader parses the full document on first Read rather than using
+//!   a true streaming/event-driven parser. This simplifies the implementation
+//!   while preserving the observable API surface.
+//! - Pattern-based reader operations (xmlTextReaderPreservePattern, etc.)
+//!   are not yet implemented.
+
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
+use core::ffi::c_void;
+use core::ptr;
+use std::os::raw::{c_char, c_int};
+
+use crate::abi::allocator::xmlFree;
+use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
+use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode, _xmlParserCtxt, _xmlParserInputBuffer};
+
+use crate::abi::types::xmlElementType::*;
+use crate::abi::types::*;
+use crate::xml::parser::helpers::{
+    create_parser_ctxt, free_parser_ctxt, input_from_file, input_from_io, input_from_memory,
+    parse_document, setup_parser_input,
+};
+use crate::xml::parser::input::InputBuffer;
+use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes, xmlstr_to_string};
+use crate::xml::tree;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Reader Types (xmlreader.h)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Reader node types (xmlReaderTypes enum).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// typedef enum {
+///     XML_TEXTREADER_NONE = 0,
+///     XML_TEXTREADER_ELEMENT = 1,
+///     XML_TEXTREADER_ATTRIBUTE = 2,
+///     XML_TEXTREADER_TEXT = 3,
+///     XML_TEXTREADER_CDATA = 4,
+///     XML_TEXTREADER_ENTITY_REFERENCE = 5,
+///     XML_TEXTREADER_ENTITY = 6,
+///     XML_TEXTREADER_PROCESSING_INSTRUCTION = 7,
+///     XML_TEXTREADER_COMMENT = 8,
+///     XML_TEXTREADER_DOCUMENT = 9,
+///     XML_TEXTREADER_DOCUMENT_TYPE = 10,
+///     XML_TEXTREADER_DOCUMENT_FRAGMENT = 11,
+///     XML_TEXTREADER_NOTATION = 12,
+///     XML_TEXTREADER_WHITESPACE = 13,
+///     XML_TEXTREADER_SIGNIFICANT_WHITESPACE = 14,
+///     XML_TEXTREADER_END_ELEMENT = 15,
+///     XML_TEXTREADER_END_ENTITY = 16,
+///     XML_TEXTREADER_XML_DECLARATION = 17
+/// } xmlReaderTypes;
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub(crate) enum ReaderNodeType {
+    NONE = 0,
+    ELEMENT = 1,
+    ATTRIBUTE = 2,
+    TEXT = 3,
+    CDATA = 4,
+    ENTITY_REFERENCE = 5,
+    ENTITY = 6,
+    PROCESSING_INSTRUCTION = 7,
+    COMMENT = 8,
+    DOCUMENT = 9,
+    DOCUMENT_TYPE = 10,
+    DOCUMENT_FRAGMENT = 11,
+    NOTATION = 12,
+    WHITESPACE = 13,
+    SIGNIFICANT_WHITESPACE = 14,
+    END_ELEMENT = 15,
+    END_ENTITY = 16,
+    XML_DECLARATION = 17,
+}
+
+/// Reader read state (xmlTextReaderReadState enum).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// typedef enum {
+///     XML_TEXTREADER_NOT_INITIALIZED = 0,
+///     XML_TEXTREADER_INITIALIZED = 1,
+///     XML_TEXTREADER_READING = 2,
+///     XML_TEXTREADER_EOF = 3,
+///     XML_TEXTREADER_CLOSED = 4,
+///     XML_TEXTREADER_ERROR = 5
+/// } xmlTextReaderReadState;
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub(crate) enum ReadState {
+    NOT_INITIALIZED = 0,
+    INITIALIZED = 1,
+    READING = 2,
+    EOF = 3,
+    CLOSED = 4,
+    ERROR = 5,
+}
+
+/// Parser properties for xmlTextReaderGetParserProp / SetParserProp.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// typedef enum {
+///     XML_PARSER_LOADDTD = 1,
+///     XML_PARSER_DEFAULTATTRS = 2,
+///     XML_PARSER_VALIDATE = 3,
+///     XML_PARSER_SUBST_ENTITIES = 4
+/// } xmlParserProperties;
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub(crate) enum ParserProp {
+    LOADDTD = 1,
+    DEFAULTATTRS = 2,
+    VALIDATE = 3,
+    SUBST_ENTITIES = 4,
+}
+
+/// A traversal event in the document-order walk of the parsed tree.
+///
+/// Each event represents either entering a node (ELEMENT, TEXT, etc.) or
+/// exiting an element (END_ELEMENT). The `depth` is the element nesting
+/// depth at the time of the event.
+#[derive(Debug, Clone)]
+struct TraversalEvent {
+    /// The node this event refers to.
+    node: *mut _xmlNode,
+    /// Whether this is an "exit" event (END_ELEMENT).
+    is_end: bool,
+    /// The depth at this event (number of ancestor elements).
+    depth: i32,
+}
+
+/// Compute the element nesting depth of a node in the tree.
+///
+/// Counts the number of `XML_ELEMENT_NODE` ancestors.
+///
+/// # Safety
+///
+/// `node` must be a valid pointer to a node in a valid tree, or NULL.
+unsafe fn compute_depth(node: *mut _xmlNode) -> i32 {
+    if node.is_null() {
+        return 0;
+    }
+    let mut depth: i32 = 0;
+    // SAFETY: node is valid, and parent pointers form a tree.
+    let mut cur = unsafe { (*node).parent };
+    while !cur.is_null() {
+        // SAFETY: cur is valid.
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            depth += 1;
+        }
+        // SAFETY: cur's parent is valid.
+        cur = unsafe { (*cur).parent };
+    }
+    depth
+}
+
+/// Convert an `xmlElementType` to the corresponding `ReaderNodeType`.
+fn element_type_to_reader_type(etype: c_int) -> ReaderNodeType {
+    match etype {
+        x if x == XML_ELEMENT_NODE as c_int => ReaderNodeType::ELEMENT,
+        x if x == XML_ATTRIBUTE_NODE as c_int => ReaderNodeType::ATTRIBUTE,
+        x if x == XML_TEXT_NODE as c_int => ReaderNodeType::TEXT,
+        x if x == XML_CDATA_SECTION_NODE as c_int => ReaderNodeType::CDATA,
+        x if x == XML_ENTITY_REF_NODE as c_int => ReaderNodeType::ENTITY_REFERENCE,
+        x if x == XML_ENTITY_NODE as c_int => ReaderNodeType::ENTITY,
+        x if x == XML_PI_NODE as c_int => ReaderNodeType::PROCESSING_INSTRUCTION,
+        x if x == XML_COMMENT_NODE as c_int => ReaderNodeType::COMMENT,
+        x if x == XML_DOCUMENT_NODE as c_int => ReaderNodeType::DOCUMENT,
+        x if x == XML_DOCUMENT_TYPE_NODE as c_int => ReaderNodeType::DOCUMENT_TYPE,
+        x if x == XML_DOCUMENT_FRAG_NODE as c_int => ReaderNodeType::DOCUMENT_FRAGMENT,
+        x if x == XML_NOTATION_NODE as c_int => ReaderNodeType::NOTATION,
+        x if x == XML_DTD_NODE as c_int => ReaderNodeType::DOCUMENT_TYPE,
+        x if x == XML_NAMESPACE_DECL as c_int => ReaderNodeType::NONE,
+        _ => ReaderNodeType::NONE,
+    }
+}
+
+/// Check whether a text node consists entirely of whitespace.
+fn is_whitespace_only(text: &[u8]) -> bool {
+    text.iter()
+        .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// XmlTextReader — Internal Rust Type
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// The internal representation of an `xmlTextReader`.
+///
+/// This struct holds all state for the reader cursor: the parsed document,
+/// the current position in the traversal, attribute navigation state, and
+/// cached information about the current node.
+pub(crate) struct XmlTextReader {
+    /// The parsed XML document.
+    doc: *mut _xmlDoc,
+    /// The parser context used to parse the document (NULL after parsing).
+    ctxt: *mut _xmlParserCtxt,
+    /// The traversal events computed from the parsed tree.
+    events: Vec<TraversalEvent>,
+    /// Index into `events` for the current position.
+    event_index: usize,
+    /// Current read state.
+    state: ReadState,
+    /// The current node we're positioned on.
+    cur_node: *mut _xmlNode,
+    /// Current node type (reader node type).
+    node_type: ReaderNodeType,
+    /// Current depth.
+    depth: i32,
+    /// Cached name of the current node (xmlMalloc'd, NULL if none).
+    name: *mut xmlChar,
+    /// Cached value of the current node (xmlMalloc'd, NULL if none).
+    value: *mut xmlChar,
+    /// Number of attributes on the current element (-1 if not applicable).
+    attribute_count: i32,
+    /// Current attribute index (-1 = not on an attribute).
+    cur_attribute: i32,
+    /// Parser options bitmask.
+    options: c_int,
+    /// Document encoding string (xmlMalloc'd).
+    encoding: *mut xmlChar,
+    /// Document URL (xmlMalloc'd).
+    URL: *mut xmlChar,
+    /// Collected error messages.
+    errors: Vec<String>,
+    /// Whether the document has been parsed.
+    parsed: bool,
+}
+
+impl XmlTextReader {
+    /// Create a new reader with the given parser context and options.
+    ///
+    /// The reader takes ownership of the parser context. The document will be
+    /// parsed on the first call to `Read()`.
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid parser context created by `create_parser_ctxt`
+    /// and set up with input via `setup_parser_input`.
+    unsafe fn new(ctxt: *mut _xmlParserCtxt, URL: Option<&[u8]>, encoding: Option<&[u8]>) -> Self {
+        let url_ptr = URL
+            .map(|u| unsafe { bytes_to_xmlstr(u) })
+            .unwrap_or(ptr::null_mut());
+        let enc_ptr = encoding
+            .map(|e| unsafe { bytes_to_xmlstr(e) })
+            .unwrap_or(ptr::null_mut());
+
+        XmlTextReader {
+            doc: ptr::null_mut(),
+            ctxt,
+            events: Vec::new(),
+            event_index: 0,
+            state: ReadState::INITIALIZED,
+            cur_node: ptr::null_mut(),
+            node_type: ReaderNodeType::NONE,
+            depth: 0,
+            name: ptr::null_mut(),
+            value: ptr::null_mut(),
+            attribute_count: -1,
+            cur_attribute: -1,
+            options: 0,
+            encoding: enc_ptr,
+            URL: url_ptr,
+            errors: Vec::new(),
+            parsed: false,
+        }
+    }
+
+    /// Parse the document and build the event list.
+    ///
+    /// Returns 0 on success, -1 on error.
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid parser context with input set up.
+    unsafe fn parse_and_build_events(&mut self) -> c_int {
+        if self.ctxt.is_null() {
+            self.state = ReadState::ERROR;
+            self.errors.push("No parser context".to_string());
+            return -1;
+        }
+
+        // Set options on the context.
+        unsafe {
+            (*self.ctxt).options = self.options;
+        }
+
+        // Parse the document.
+        let result = unsafe { parse_document(self.ctxt) };
+
+        // Get the parsed document.
+        let doc = unsafe { (*self.ctxt).myDoc };
+        self.doc = doc;
+
+        // Free the parser context - we no longer need it.
+        if !self.ctxt.is_null() {
+            unsafe { free_parser_ctxt(self.ctxt) };
+        }
+        self.ctxt = ptr::null_mut();
+
+        if result != 0 || doc.is_null() {
+            self.state = ReadState::ERROR;
+            self.errors.push("Failed to parse document".to_string());
+            return -1;
+        }
+
+        // Set the encoding from the document if not already set.
+        if self.encoding.is_null() && !doc.is_null() {
+            // SAFETY: doc is valid.
+            let doc_enc = unsafe { (*doc).encoding };
+            if !doc_enc.is_null() {
+                self.encoding = unsafe { xml_strdup(doc_enc as *const xmlChar) };
+            }
+        }
+
+        // Build traversal events from the tree.
+        self.build_events();
+
+        self.parsed = true;
+        0
+    }
+
+    /// Walk the tree in document order and build traversal events.
+    ///
+    /// Generates events for all nodes (ELEMENT, TEXT, COMMENT, PI, etc.)
+    /// and END_ELEMENT events for elements.
+    fn build_events(&mut self) {
+        self.events.clear();
+
+        if self.doc.is_null() {
+            return;
+        }
+
+        // SAFETY: doc is valid.
+        let root = unsafe { (*self.doc).children };
+        if root.is_null() {
+            return;
+        }
+
+        // Walk the tree recursively, starting from the first child of the doc
+        // (which is the root element or document type node).
+        // SAFETY: The tree is valid and all pointers are valid.
+        unsafe {
+            self.walk_tree(root, 0);
+        }
+    }
+
+    /// Recursively walk a subtree and generate events.
+    ///
+    /// # Safety
+    ///
+    /// `node` must be a valid pointer to a node in the parsed tree.
+    unsafe fn walk_tree(&mut self, node: *mut _xmlNode, depth: i32) {
+        if node.is_null() {
+            return;
+        }
+
+        // SAFETY: node is valid.
+        let node_type = unsafe { (*node).type_ };
+
+        // For elements, generate an enter event and then recursively visit children,
+        // then generate an exit (END_ELEMENT) event.
+        if node_type == XML_ELEMENT_NODE as c_int {
+            self.events.push(TraversalEvent {
+                node,
+                is_end: false,
+                depth,
+            });
+
+            // Walk children.
+            // SAFETY: node's children are valid.
+            let mut child = unsafe { (*node).children };
+            while !child.is_null() {
+                let child_depth = depth + 1;
+                self.walk_tree(child, child_depth);
+                // SAFETY: child's next pointer is valid.
+                child = unsafe { (*child).next };
+            }
+
+            // Generate END_ELEMENT.
+            self.events.push(TraversalEvent {
+                node,
+                is_end: true,
+                depth,
+            });
+        } else if node_type == XML_TEXT_NODE as c_int
+            || node_type == XML_CDATA_SECTION_NODE as c_int
+            || node_type == XML_COMMENT_NODE as c_int
+            || node_type == XML_PI_NODE as c_int
+            || node_type == XML_ENTITY_REF_NODE as c_int
+        {
+            // Leaf nodes: text, CDATA, comment, PI, entity reference.
+            self.events.push(TraversalEvent {
+                node,
+                is_end: false,
+                depth,
+            });
+        } else {
+            // Other node types (ENTITY, NOTATION, DTD, etc.) — skip or just enter.
+            self.events.push(TraversalEvent {
+                node,
+                is_end: false,
+                depth,
+            });
+        }
+    }
+
+    /// Position the reader on the event at the given index.
+    ///
+    /// Updates all cached fields (name, value, depth, node_type, etc.).
+    fn position_at(&mut self, index: usize) {
+        if index >= self.events.len() {
+            self.state = ReadState::EOF;
+            self.cur_node = ptr::null_mut();
+            self.node_type = ReaderNodeType::NONE;
+            self.depth = 0;
+            self.clear_cached_name();
+            self.clear_cached_value();
+            self.attribute_count = -1;
+            self.cur_attribute = -1;
+            return;
+        }
+
+        // Copy event data before any mutable self access to avoid borrow conflicts.
+        let ev_node: *mut _xmlNode;
+        let ev_is_end: bool;
+        let ev_depth: i32;
+        {
+            let event = &self.events[index];
+            ev_node = event.node;
+            ev_is_end = event.is_end;
+            ev_depth = event.depth;
+        }
+
+        self.event_index = index;
+        self.cur_node = ev_node;
+        self.depth = ev_depth;
+
+        // SAFETY: node is valid.
+        let etype = unsafe { (*ev_node).type_ };
+
+        if ev_is_end {
+            self.node_type = ReaderNodeType::END_ELEMENT;
+        } else {
+            self.node_type = element_type_to_reader_type(etype);
+        }
+
+        // Cache name and value.
+        // SAFETY: ev_node is a valid node pointer.
+        unsafe { self.cache_name_and_value(ev_node, ev_is_end) };
+
+        // Count attributes if this is an element.
+        if etype == XML_ELEMENT_NODE as c_int && !ev_is_end {
+            // SAFETY: ev_node is a valid element node.
+            self.attribute_count = unsafe { self.count_attributes(ev_node) };
+        } else {
+            self.attribute_count = -1;
+        }
+
+        // Reset attribute cursor.
+        self.cur_attribute = -1;
+    }
+
+    /// Cache the name of the current node.
+    ///
+    /// # Safety
+    ///
+    /// `node` must be a valid node pointer or NULL.
+    unsafe fn cache_name_and_value(&mut self, node: *mut _xmlNode, is_end: bool) {
+        self.clear_cached_name();
+        self.clear_cached_value();
+
+        if node.is_null() {
+            return;
+        }
+
+        // SAFETY: node is valid.
+        let etype = unsafe { (*node).type_ };
+
+        // Determine name.
+        let name: *mut xmlChar = if is_end {
+            // For END_ELEMENT, the name is the element name.
+            // SAFETY: node is valid.
+            unsafe { (*node).name as *mut xmlChar }
+        } else {
+            if etype == XML_ELEMENT_NODE as c_int
+                || etype == XML_PI_NODE as c_int
+                || etype == XML_ENTITY_REF_NODE as c_int
+                || etype == XML_ENTITY_NODE as c_int
+                || etype == XML_DOCUMENT_TYPE_NODE as c_int
+                || etype == XML_NOTATION_NODE as c_int
+            {
+                // SAFETY: node is valid.
+                unsafe { (*node).name as *mut xmlChar }
+            } else if etype == XML_ATTRIBUTE_NODE as c_int {
+                // For attribute nodes accessed via MoveToAttribute.
+                ptr::null_mut()
+            } else {
+                ptr::null_mut()
+            }
+        };
+
+        if !name.is_null() {
+            // SAFETY: name is a valid null-terminated xmlChar string.
+            self.name = unsafe { xml_strdup(name as *const xmlChar) };
+        }
+
+        // Determine value.
+        let value: *mut xmlChar = if etype == XML_TEXT_NODE as c_int
+            || etype == XML_CDATA_SECTION_NODE as c_int
+            || etype == XML_COMMENT_NODE as c_int
+        {
+            // SAFETY: node is valid.
+            unsafe { (*node).content }
+        } else if etype == XML_PI_NODE as c_int {
+            // PI nodes store content as the PI value (after the target).
+            // SAFETY: node is valid.
+            unsafe { (*node).content }
+        } else if etype == XML_ENTITY_REF_NODE as c_int {
+            // Entity references may have content.
+            // SAFETY: node is valid.
+            unsafe { (*node).content }
+        } else {
+            ptr::null_mut()
+        };
+
+        if !value.is_null() {
+            // SAFETY: value is a valid null-terminated xmlChar string.
+            self.value = unsafe { xml_strdup(value as *const xmlChar) };
+        }
+    }
+
+    /// Count the number of attributes on an element node.
+    ///
+    /// # Safety
+    ///
+    /// `node` must be a valid element node pointer.
+    unsafe fn count_attributes(&self, node: *mut _xmlNode) -> i32 {
+        let mut count: i32 = 0;
+        // SAFETY: node is a valid element.
+        let mut prop = unsafe { (*node).properties };
+        while !prop.is_null() {
+            count += 1;
+            // SAFETY: prop is valid.
+            prop = unsafe { (*prop).next };
+        }
+        count
+    }
+
+    /// Free the cached name.
+    fn clear_cached_name(&mut self) {
+        if !self.name.is_null() {
+            // SAFETY: name was allocated by xmlMalloc (via xml_strdup).
+            unsafe { xmlFree(self.name as *mut c_void) };
+            self.name = ptr::null_mut();
+        }
+    }
+
+    /// Free the cached value.
+    fn clear_cached_value(&mut self) {
+        if !self.value.is_null() {
+            // SAFETY: value was allocated by xmlMalloc (via xml_strdup).
+            unsafe { xmlFree(self.value as *mut c_void) };
+            self.value = ptr::null_mut();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Navigation methods
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Read the next node in document order.
+    ///
+    /// Returns 1 if a node was read, 0 if no more nodes (EOF), -1 on error.
+    pub unsafe fn Read(&mut self) -> c_int {
+        if self.state == ReadState::ERROR || self.state == ReadState::CLOSED {
+            return -1;
+        }
+
+        // On first call, parse the document and build events.
+        if !self.parsed {
+            if self.parse_and_build_events() != 0 {
+                self.state = ReadState::ERROR;
+                return -1;
+            }
+            self.state = ReadState::READING;
+        }
+
+        if self.state == ReadState::EOF {
+            return 0;
+        }
+
+        // If we're positioned on an attribute, return to the element first.
+        if self.cur_attribute >= 0 {
+            self.cur_attribute = -1;
+            // Re-cache the element info.
+            if !self.cur_node.is_null() {
+                // SAFETY: cur_node is valid.
+                unsafe { self.cache_name_and_value(self.cur_node, false) };
+            }
+        }
+
+        // Advance to the next event.
+        // If no events, we're at EOF.
+        if self.events.is_empty() {
+            self.state = ReadState::EOF;
+            return 0;
+        }
+
+        // Determine the next event index to position on.
+        // If cur_node is NULL, this is the first Read() after parsing —
+        // position at event 0. On subsequent calls, advance to the next event.
+        // We use cur_node.is_null() rather than event_index checks because
+        // after position_at(0), event_index == 0 and state == READING, which
+        // is indistinguishable from the pre-read state.
+        let next_index = if self.cur_node.is_null() {
+            // First Read() after parsing — position at event 0.
+            0
+        } else {
+            self.event_index + 1
+        };
+
+        if next_index < self.events.len() {
+            self.position_at(next_index);
+            1
+        } else {
+            self.state = ReadState::EOF;
+            self.cur_node = ptr::null_mut();
+            self.node_type = ReaderNodeType::NONE;
+            self.depth = 0;
+            self.clear_cached_name();
+            self.clear_cached_value();
+            self.attribute_count = -1;
+            self.cur_attribute = -1;
+            0
+        }
+    }
+
+    /// Skip to the next sibling of the current node.
+    ///
+    /// Returns 1 on success, 0 if no more siblings, -1 on error.
+    pub unsafe fn Next(&mut self) -> c_int {
+        if self.state != ReadState::READING || self.cur_node.is_null() {
+            return -1;
+        }
+
+        // Find the next sibling by scanning forward through events
+        // until we find an event at the same depth that is NOT an END_ELEMENT.
+        let current_depth = self.depth;
+        let mut i = self.event_index + 1;
+
+        while i < self.events.len() {
+            let event = &self.events[i];
+            if event.depth == current_depth && !event.is_end {
+                self.position_at(i);
+                return 1;
+            }
+            i += 1;
+        }
+
+        0
+    }
+
+    /// Move to the parent element (if currently on an attribute).
+    ///
+    /// Returns 1 on success, 0 if not on an attribute, -1 on error.
+    pub unsafe fn MoveToElement(&mut self) -> c_int {
+        if self.cur_attribute < 0 {
+            return 0;
+        }
+        self.cur_attribute = -1;
+        if !self.cur_node.is_null() {
+            // SAFETY: cur_node is valid.
+            unsafe { self.cache_name_and_value(self.cur_node, false) };
+            self.node_type = ReaderNodeType::ELEMENT;
+        }
+        1
+    }
+
+    /// Move to an attribute by name.
+    ///
+    /// Returns 1 on success, 0 if attribute not found, -1 on error.
+    pub unsafe fn MoveToAttribute(&mut self, name: *const xmlChar) -> c_int {
+        if self.cur_node.is_null() {
+            return -1;
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return -1;
+        }
+
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        let mut index: i32 = 0;
+        while !prop.is_null() {
+            // SAFETY: prop is a valid attribute.
+            let prop_name = unsafe { (*prop).name };
+            if !prop_name.is_null() {
+                // Compare names.
+                // SAFETY: Both strings are null-terminated.
+                if unsafe { crate::xml::string::xml_strcmp(prop_name as *const xmlChar, name) == 0 }
+                {
+                    self.cur_attribute = index;
+                    // Cache attribute info.
+                    self.cache_attribute_info(prop);
+                    return 1;
+                }
+            }
+            index += 1;
+            // SAFETY: prop's next pointer is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        0
+    }
+
+    /// Move to an attribute by index.
+    ///
+    /// Returns 1 on success, 0 if index out of range, -1 on error.
+    pub unsafe fn MoveToAttributeNo(&mut self, index: c_int) -> c_int {
+        if self.cur_node.is_null() || index < 0 {
+            return -1;
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return -1;
+        }
+
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        let mut i: i32 = 0;
+        while !prop.is_null() {
+            if i == index {
+                self.cur_attribute = index;
+                // Cache attribute info.
+                self.cache_attribute_info(prop);
+                return 1;
+            }
+            i += 1;
+            // SAFETY: prop's next pointer is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        0
+    }
+
+    /// Move to the first attribute of the current element.
+    ///
+    /// Returns 1 on success, 0 if no attributes, -1 on error.
+    pub unsafe fn MoveToFirstAttribute(&mut self) -> c_int {
+        if self.cur_node.is_null() {
+            return -1;
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return -1;
+        }
+
+        // SAFETY: cur_node is an element.
+        let first_prop = unsafe { (*self.cur_node).properties };
+        if first_prop.is_null() {
+            return 0;
+        }
+
+        self.cur_attribute = 0;
+        // Cache attribute info.
+        self.cache_attribute_info(first_prop);
+        1
+    }
+
+    /// Move to the next attribute.
+    ///
+    /// Returns 1 on success, 0 if no more attributes, -1 on error.
+    pub unsafe fn MoveToNextAttribute(&mut self) -> c_int {
+        if self.cur_attribute < 0 || self.cur_node.is_null() {
+            return -1;
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return -1;
+        }
+
+        // Find the attribute at cur_attribute index.
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        let mut i: i32 = 0;
+        while !prop.is_null() && i <= self.cur_attribute {
+            if i == self.cur_attribute {
+                // Move to the next attribute.
+                // SAFETY: prop is a valid attribute.
+                let next_prop = unsafe { (*prop).next };
+                if next_prop.is_null() {
+                    return 0;
+                }
+                self.cur_attribute += 1;
+                self.cache_attribute_info(next_prop);
+                return 1;
+            }
+            i += 1;
+            // SAFETY: prop's next pointer is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        0
+    }
+
+    /// Cache the current position info for an attribute.
+    ///
+    /// # Safety
+    ///
+    /// `prop` must be a valid `_xmlAttr` pointer.
+    unsafe fn cache_attribute_info(&mut self, prop: *mut _xmlAttr) {
+        self.node_type = ReaderNodeType::ATTRIBUTE;
+        self.clear_cached_name();
+        self.clear_cached_value();
+
+        // SAFETY: prop is valid.
+        let attr = unsafe { &*prop };
+
+        // Name.
+        if !attr.name.is_null() {
+            // SAFETY: attr.name is null-terminated.
+            self.name = unsafe { xml_strdup(attr.name as *const xmlChar) };
+        }
+
+        // Value — the attribute's text content is in its child text node.
+        if !attr.children.is_null() {
+            // SAFETY: attr.children is a text node.
+            let val = unsafe { (*attr.children).content };
+            if !val.is_null() {
+                // SAFETY: val is null-terminated.
+                self.value = unsafe { xml_strdup(val as *const xmlChar) };
+            }
+        }
+    }
+
+    /// Move to the previous sibling.
+    ///
+    /// Returns 1 on success, 0 if no previous sibling, -1 on error.
+    pub unsafe fn Prev(&mut self) -> c_int {
+        if self.state != ReadState::READING || self.cur_node.is_null() {
+            return -1;
+        }
+
+        // Scan backward through events to find the previous sibling.
+        let current_depth = self.depth;
+        let mut i = if self.event_index > 0 {
+            self.event_index - 1
+        } else {
+            return 0;
+        };
+
+        loop {
+            let event = &self.events[i];
+            if event.depth == current_depth && !event.is_end {
+                self.position_at(i);
+                return 1;
+            }
+            if i == 0 {
+                break;
+            }
+            i -= 1;
+        }
+
+        0
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Information methods
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// Get the depth of the current node.
+    pub fn Depth(&self) -> c_int {
+        self.depth
+    }
+
+    /// Get the node type of the current node.
+    pub fn NodeType(&self) -> ReaderNodeType {
+        self.node_type
+    }
+
+    /// Get the name of the current node.
+    ///
+    /// Returns a pointer to a newly allocated string (caller must free with `xmlFree`),
+    /// or NULL if there is no name.
+    pub unsafe fn Name(&self) -> *mut xmlChar {
+        if self.name.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: name is a valid null-terminated xmlChar string.
+        unsafe { xml_strdup(self.name as *const xmlChar) }
+    }
+
+    /// Get the value of the current node.
+    ///
+    /// Returns a pointer to a newly allocated string (caller must free with `xmlFree`),
+    /// or NULL if there is no value.
+    pub unsafe fn Value(&self) -> *mut xmlChar {
+        if self.value.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: value is a valid null-terminated xmlChar string.
+        unsafe { xml_strdup(self.value as *const xmlChar) }
+    }
+
+    /// Get a constant pointer to the name (no copy).
+    ///
+    /// The returned pointer is valid only while the reader is alive and positioned
+    /// on the same node.
+    pub fn ConstName(&self) -> *const xmlChar {
+        self.name as *const xmlChar
+    }
+
+    /// Get a constant pointer to the value (no copy).
+    ///
+    /// The returned pointer is valid only while the reader is alive and positioned
+    /// on the same node.
+    pub fn ConstValue(&self) -> *const xmlChar {
+        self.value as *const xmlChar
+    }
+
+    /// Check if the current node has a value.
+    pub fn HasValue(&self) -> c_int {
+        if self.value.is_null() {
+            0
+        } else {
+            1
+        }
+    }
+
+    /// Check if the current node has attributes.
+    pub fn HasAttributes(&self) -> c_int {
+        if self.cur_node.is_null() {
+            return 0;
+        }
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return 0;
+        }
+        // SAFETY: cur_node is an element.
+        let props = unsafe { (*self.cur_node).properties };
+        if props.is_null() {
+            0
+        } else {
+            1
+        }
+    }
+
+    /// Check if the current element is an empty element (no children).
+    pub fn IsEmptyElement(&self) -> c_int {
+        if self.cur_node.is_null() {
+            return 0;
+        }
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return 0;
+        }
+        // SAFETY: cur_node is an element.
+        let children = unsafe { (*self.cur_node).children };
+        if children.is_null() {
+            1
+        } else {
+            0
+        }
+    }
+
+    /// Get the base URI of the current node.
+    ///
+    /// Returns a newly allocated string (caller must free with `xmlFree`),
+    /// or NULL if not available.
+    pub unsafe fn BaseUri(&self) -> *mut xmlChar {
+        // The base URI is typically the document URL.
+        if self.doc.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: doc is valid.
+        let url = unsafe { (*self.doc).URL };
+        if url.is_null() {
+            return ptr::null_mut();
+        }
+        // SAFETY: url is null-terminated.
+        unsafe { xml_strdup(url as *const xmlChar) }
+    }
+
+    /// Get the local name of the current node.
+    ///
+    /// For namespaced names, this strips the prefix.
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn LocalName(&self) -> *mut xmlChar {
+        if self.name.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: name is a valid null-terminated string.
+        let name_bytes = unsafe { xmlstr_to_bytes(self.name as *const xmlChar) };
+
+        // Find the colon separator.
+        if let Some(pos) = name_bytes.iter().position(|&b| b == b':') {
+            // Return everything after the colon.
+            let local = &name_bytes[pos + 1..];
+            if local.is_empty() {
+                return ptr::null_mut();
+            }
+            // SAFETY: bytes_to_xmlstr allocates via xmlMalloc.
+            unsafe { bytes_to_xmlstr(local) }
+        } else {
+            // No prefix, return the name as-is.
+            // SAFETY: xml_strdup allocates via xmlMalloc.
+            unsafe { xml_strdup(self.name as *const xmlChar) }
+        }
+    }
+
+    /// Get the namespace URI of the current node.
+    ///
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn NamespaceUri(&self) -> *mut xmlChar {
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is valid.
+        let ns = unsafe { (*self.cur_node).ns };
+        if ns.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: ns is valid.
+        let href = unsafe { (*ns).href };
+        if href.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: href is null-terminated.
+        unsafe { xml_strdup(href as *const xmlChar) }
+    }
+
+    /// Get the prefix of the current node.
+    ///
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn Prefix(&self) -> *mut xmlChar {
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is valid.
+        let ns = unsafe { (*self.cur_node).ns };
+        if ns.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: ns is valid.
+        let prefix = unsafe { (*ns).prefix };
+        if prefix.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: prefix is null-terminated.
+        unsafe { xml_strdup(prefix as *const xmlChar) }
+    }
+
+    /// Get the attribute count of the current element.
+    pub fn AttributeCount(&self) -> c_int {
+        self.attribute_count
+    }
+
+    /// Get the read state.
+    pub fn ReadState(&self) -> ReadState {
+        self.state
+    }
+
+    /// Get an attribute value by name.
+    ///
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn GetAttribute(&self, name: *const xmlChar) -> *mut xmlChar {
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        while !prop.is_null() {
+            // SAFETY: prop is valid.
+            let prop_name = unsafe { (*prop).name };
+            if !prop_name.is_null() {
+                // SAFETY: Both strings are null-terminated.
+                if unsafe { crate::xml::string::xml_strcmp(prop_name as *const xmlChar, name) == 0 }
+                {
+                    // Get the attribute value from its child text node.
+                    // SAFETY: prop's children is valid.
+                    let val = unsafe { (*prop).children };
+                    if !val.is_null() {
+                        // SAFETY: val's content is null-terminated.
+                        let content = unsafe { (*val).content };
+                        if !content.is_null() {
+                            // SAFETY: content is null-terminated.
+                            return unsafe { xml_strdup(content as *const xmlChar) };
+                        }
+                    }
+                    return ptr::null_mut();
+                }
+            }
+            // SAFETY: prop's next is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        ptr::null_mut()
+    }
+
+    /// Get an attribute value by index.
+    ///
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn GetAttributeNo(&self, index: c_int) -> *mut xmlChar {
+        if self.cur_node.is_null() || index < 0 {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        let mut i: i32 = 0;
+        while !prop.is_null() {
+            if i == index {
+                // SAFETY: prop is valid.
+                let val = unsafe { (*prop).children };
+                if !val.is_null() {
+                    // SAFETY: val's content is null-terminated.
+                    let content = unsafe { (*val).content };
+                    if !content.is_null() {
+                        // SAFETY: content is null-terminated.
+                        return unsafe { xml_strdup(content as *const xmlChar) };
+                    }
+                }
+                return ptr::null_mut();
+            }
+            i += 1;
+            // SAFETY: prop's next is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        ptr::null_mut()
+    }
+
+    /// Get an attribute value by local name and namespace URI.
+    ///
+    /// Returns a newly allocated string, or NULL.
+    pub unsafe fn GetAttributeNs(
+        &self,
+        localName: *const xmlChar,
+        namespaceURI: *const xmlChar,
+    ) -> *mut xmlChar {
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is valid.
+        let etype = unsafe { (*self.cur_node).type_ };
+        if etype != XML_ELEMENT_NODE as c_int {
+            return ptr::null_mut();
+        }
+
+        // SAFETY: cur_node is an element.
+        let mut prop = unsafe { (*self.cur_node).properties };
+        while !prop.is_null() {
+            // SAFETY: prop is valid.
+            let prop_local = unsafe { (*prop).name };
+            let prop_ns = unsafe { (*prop).ns };
+
+            // Check local name match.
+            if prop_local.is_null() {
+                // SAFETY: prop's next is valid.
+                prop = unsafe { (*prop).next };
+                continue;
+            }
+
+            // SAFETY: prop_local is null-terminated.
+            let name_match = unsafe {
+                crate::xml::string::xml_strcmp(prop_local as *const xmlChar, localName) == 0
+            };
+
+            if name_match {
+                // Check namespace URI match.
+                let ns_match = if namespaceURI.is_null() {
+                    prop_ns.is_null()
+                } else if prop_ns.is_null() {
+                    false
+                } else {
+                    // SAFETY: Both hrefs are null-terminated.
+                    unsafe {
+                        crate::xml::string::xml_strcmp(
+                            (*prop_ns).href as *const xmlChar,
+                            namespaceURI,
+                        ) == 0
+                    }
+                };
+
+                if ns_match {
+                    // SAFETY: prop is valid.
+                    let val = unsafe { (*prop).children };
+                    if !val.is_null() {
+                        // SAFETY: val's content is null-terminated.
+                        let content = unsafe { (*val).content };
+                        if !content.is_null() {
+                            // SAFETY: content is null-terminated.
+                            return unsafe { xml_strdup(content as *const xmlChar) };
+                        }
+                    }
+                    return ptr::null_mut();
+                }
+            }
+
+            // SAFETY: prop's next is valid.
+            prop = unsafe { (*prop).next };
+        }
+
+        ptr::null_mut()
+    }
+
+    /// Look up a namespace by prefix.
+    ///
+    /// Returns a newly allocated string with the namespace URI, or NULL.
+    pub unsafe fn LookupNamespace(&self, prefix: *const xmlChar) -> *mut xmlChar {
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
+
+        // Walk up the tree looking for a namespace declaration matching the prefix.
+        // SAFETY: cur_node is valid.
+        let mut cur = self.cur_node;
+        while !cur.is_null() {
+            // SAFETY: cur is valid.
+            let mut ns_def = unsafe { (*cur).nsDef };
+            while !ns_def.is_null() {
+                // SAFETY: ns_def is valid.
+                let ns_prefix = unsafe { (*ns_def).prefix };
+
+                let match_prefix = if prefix.is_null() || *prefix == 0 {
+                    // Looking for default namespace.
+                    ns_prefix.is_null()
+                } else if ns_prefix.is_null() {
+                    false
+                } else {
+                    // SAFETY: Both are null-terminated.
+                    unsafe {
+                        crate::xml::string::xml_strcmp(ns_prefix as *const xmlChar, prefix) == 0
+                    }
+                };
+
+                if match_prefix {
+                    // SAFETY: ns_def is valid.
+                    let href = unsafe { (*ns_def).href };
+                    if !href.is_null() {
+                        // SAFETY: href is null-terminated.
+                        return unsafe { xml_strdup(href as *const xmlChar) };
+                    }
+                    return ptr::null_mut();
+                }
+
+                // SAFETY: ns_def's next is valid.
+                ns_def = unsafe { (*ns_def).next };
+            }
+
+            // SAFETY: cur's parent is valid.
+            cur = unsafe { (*cur).parent };
+        }
+
+        ptr::null_mut()
+    }
+
+    /// Get a parser property.
+    pub fn GetParserProp(&self, prop: c_int) -> c_int {
+        match prop {
+            1 /* XML_PARSER_LOADDTD */ => {
+                if (self.options & XML_PARSE_DTDLOAD) != 0 { 1 } else { 0 }
+            }
+            2 /* XML_PARSER_DEFAULTATTRS */ => {
+                if (self.options & XML_PARSE_DTDATTR) != 0 { 1 } else { 0 }
+            }
+            3 /* XML_PARSER_VALIDATE */ => {
+                if (self.options & XML_PARSE_DTDVALID) != 0 { 1 } else { 0 }
+            }
+            4 /* XML_PARSER_SUBST_ENTITIES */ => {
+                if (self.options & XML_PARSE_NOENT) != 0 { 1 } else { 0 }
+            }
+            _ => -1,
+        }
+    }
+
+    /// Set a parser property.
+    pub fn SetParserProp(&mut self, prop: c_int, value: c_int) -> c_int {
+        match prop {
+            1 /* XML_PARSER_LOADDTD */ => {
+                if value != 0 {
+                    self.options |= XML_PARSE_DTDLOAD;
+                } else {
+                    self.options &= !XML_PARSE_DTDLOAD;
+                }
+                0
+            }
+            2 /* XML_PARSER_DEFAULTATTRS */ => {
+                if value != 0 {
+                    self.options |= XML_PARSE_DTDATTR;
+                } else {
+                    self.options &= !XML_PARSE_DTDATTR;
+                }
+                0
+            }
+            3 /* XML_PARSER_VALIDATE */ => {
+                if value != 0 {
+                    self.options |= XML_PARSE_DTDVALID;
+                } else {
+                    self.options &= !XML_PARSE_DTDVALID;
+                }
+                0
+            }
+            4 /* XML_PARSER_SUBST_ENTITIES */ => {
+                if value != 0 {
+                    self.options |= XML_PARSE_NOENT;
+                } else {
+                    self.options &= !XML_PARSE_NOENT;
+                }
+                0
+            }
+            _ => -1,
+        }
+    }
+
+    /// Get the current document.
+    pub fn CurrentDoc(&self) -> *mut _xmlDoc {
+        self.doc
+    }
+}
+
+impl Drop for XmlTextReader {
+    fn drop(&mut self) {
+        // Free cached strings.
+        self.clear_cached_name();
+        self.clear_cached_value();
+
+        // Free encoding and URL.
+        if !self.encoding.is_null() {
+            // SAFETY: encoding was allocated by xmlMalloc.
+            unsafe { xmlFree(self.encoding as *mut c_void) };
+            self.encoding = ptr::null_mut();
+        }
+        if !self.URL.is_null() {
+            // SAFETY: URL was allocated by xmlMalloc.
+            unsafe { xmlFree(self.URL as *mut c_void) };
+            self.URL = ptr::null_mut();
+        }
+
+        // Free the document if we own it.
+        if !self.doc.is_null() {
+            // SAFETY: doc was created by the parser, which allocates via xmlMalloc.
+            // We own the doc since we created it.
+            unsafe { tree::free_doc(self.doc) };
+            self.doc = ptr::null_mut();
+        }
+
+        // Free the parser context if still alive.
+        if !self.ctxt.is_null() {
+            // SAFETY: ctxt was created by create_parser_ctxt.
+            unsafe { free_parser_ctxt(self.ctxt) };
+            self.ctxt = ptr::null_mut();
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Reader construction helpers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Create a reader from a parser input buffer.
+///
+/// # Safety
+///
+/// `input` must be a valid `_xmlParserInputBuffer` pointer.
+unsafe fn reader_from_input(
+    input: *mut _xmlParserInputBuffer,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    if input.is_null() {
+        return ptr::null_mut();
+    }
+
+    // Create a parser context.
+    let ctxt = create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // Read all data from the input buffer using the read callback.
+    let mut data = Vec::new();
+    let mut tmp = [0u8; 4096];
+
+    // SAFETY: input is valid.
+    let read_cb = unsafe { (*input).readcallback };
+    let ioctx = unsafe { (*input).context };
+
+    if let Some(read) = read_cb {
+        loop {
+            // SAFETY: The read callback must be valid and ioctx must be a valid context.
+            let n = unsafe { read(ioctx, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int) };
+            if n <= 0 {
+                break;
+            }
+            data.extend_from_slice(&tmp[..n as usize]);
+        }
+    }
+
+    // Close the input if there's a close callback.
+    // SAFETY: input is valid.
+    let close_cb = unsafe { (*input).closecallback };
+    if let Some(close) = close_cb {
+        // SAFETY: The close callback must be valid.
+        unsafe { close(ioctx) };
+    }
+
+    // Create an InputBuffer from the data.
+    let input_buf = InputBuffer::from_memory(&data, None);
+
+    // Set up the parser context with the input.
+    setup_parser_input(ctxt, input_buf);
+
+    // Set options.
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    // Build URL and encoding strings.
+    let url_bytes = if URL.is_null() {
+        None
+    } else {
+        // SAFETY: URL is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(URL);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let enc_bytes = if encoding.is_null() {
+        None
+    } else {
+        // SAFETY: encoding is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(encoding);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    // Create the reader.
+    let mut reader = XmlTextReader::new(ctxt, url_bytes.as_deref(), enc_bytes.as_deref());
+    reader.options = options;
+
+    // Box and leak the reader to return a raw pointer.
+    Box::into_raw(Box::new(reader))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Public API functions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Create a new text reader from an input buffer.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlTextReaderPtr xmlNewTextReader(xmlParserInputBufferPtr input, const char *URI);
+/// ```
+///
+/// # Safety
+///
+/// - `input` must be a valid `_xmlParserInputBuffer` pointer or NULL.
+/// - `URI` must be a valid C string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewTextReader(
+    input: *mut _xmlParserInputBuffer,
+    URI: *const c_char,
+) -> *mut XmlTextReader {
+    // SAFETY: Forward to the helper.
+    unsafe { reader_from_input(input, URI, ptr::null(), 0) }
+}
+
+/// Create a text reader for a file.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlTextReaderPtr xmlReaderForFile(const char *filename, const char *encoding, int options);
+/// ```
+///
+/// # Safety
+///
+/// - `filename` must be a valid C string or NULL.
+/// - `encoding` must be a valid C string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderForFile(
+    filename: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+
+    // SAFETY: create_parser_ctxt returns a valid context or NULL.
+    let ctxt = unsafe { create_parser_ctxt() };
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // SAFETY: input_from_file reads the file; filename is a valid C string.
+    let input = match unsafe { input_from_file(filename) } {
+        Ok(input) => input,
+        Err(_) => {
+            // SAFETY: ctxt is valid.
+            unsafe { free_parser_ctxt(ctxt) };
+            return ptr::null_mut();
+        }
+    };
+
+    // SAFETY: ctxt and input are valid.
+    unsafe { setup_parser_input(ctxt, input) };
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    let enc_bytes = if encoding.is_null() {
+        None
+    } else {
+        // SAFETY: encoding is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(encoding);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let mut reader = XmlTextReader::new(ctxt, None, enc_bytes.as_deref());
+    reader.options = options;
+    Box::into_raw(Box::new(reader))
+}
+
+/// Create a text reader from memory.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlTextReaderPtr xmlReaderForMemory(const char *buffer, int size,
+///                                     const char *URL, const char *encoding, int options);
+/// ```
+///
+/// # Safety
+///
+/// - `buffer` must be a valid pointer with at least `size` readable bytes.
+/// - `URL` and `encoding` must be valid C strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderForMemory(
+    buffer: *const c_char,
+    size: c_int,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+
+    // SAFETY: create_parser_ctxt returns a valid context or NULL.
+    let ctxt = unsafe { create_parser_ctxt() };
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // SAFETY: input_from_memory copies the data; buffer and size are valid.
+    let input = unsafe { input_from_memory(buffer, size) };
+
+    // SAFETY: ctxt and input are valid.
+    unsafe { setup_parser_input(ctxt, input) };
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    let url_bytes = if URL.is_null() {
+        None
+    } else {
+        // SAFETY: URL is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(URL);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let enc_bytes = if encoding.is_null() {
+        None
+    } else {
+        // SAFETY: encoding is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(encoding);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let mut reader = XmlTextReader::new(ctxt, url_bytes.as_deref(), enc_bytes.as_deref());
+    reader.options = options;
+    Box::into_raw(Box::new(reader))
+}
+
+/// Create a text reader from a file descriptor.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlTextReaderPtr xmlReaderForFd(int fd, const char *URL,
+///                                 const char *encoding, int options);
+/// ```
+///
+/// # Safety
+///
+/// - `fd` must be a valid open file descriptor.
+/// - `URL` and `encoding` must be valid C strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderForFd(
+    fd: c_int,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    // SAFETY: create_parser_ctxt returns a valid context or NULL.
+    let ctxt = unsafe { create_parser_ctxt() };
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // Read all data from the fd.
+    let mut buf = Vec::new();
+    let mut tmp = [0u8; 4096];
+    loop {
+        // SAFETY: fd must be a valid open file descriptor.
+        let n = unsafe { libc::read(fd, tmp.as_mut_ptr() as *mut c_void, tmp.len()) };
+        if n <= 0 {
+            break;
+        }
+        buf.extend_from_slice(&tmp[..n as usize]);
+    }
+
+    // SAFETY: input_from_memory copies the buffer contents.
+    let input = unsafe { input_from_memory(buf.as_ptr() as *const c_char, buf.len() as c_int) };
+
+    // SAFETY: ctxt and input are valid.
+    unsafe { setup_parser_input(ctxt, input) };
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    let url_bytes = if URL.is_null() {
+        None
+    } else {
+        // SAFETY: URL is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(URL);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let enc_bytes = if encoding.is_null() {
+        None
+    } else {
+        // SAFETY: encoding is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(encoding);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let mut reader = XmlTextReader::new(ctxt, url_bytes.as_deref(), enc_bytes.as_deref());
+    reader.options = options;
+    Box::into_raw(Box::new(reader))
+}
+
+/// Create a text reader from I/O callbacks.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlTextReaderPtr xmlReaderForIO(xmlInputReadCallback ioread, xmlInputCloseCallback ioclose,
+///                                 void *ioctx, const char *URL,
+///                                 const char *encoding, int options);
+/// ```
+///
+/// # Safety
+///
+/// - `ioread` and `ioclose` must be valid function pointers or None.
+/// - `ioctx` must be a valid context pointer for the callbacks.
+/// - `URL` and `encoding` must be valid C strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderForIO(
+    ioread: Option<xmlInputReadCallback>,
+    ioclose: Option<xmlInputCloseCallback>,
+    ioctx: *mut c_void,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    // SAFETY: create_parser_ctxt returns a valid context or NULL.
+    let ctxt = unsafe { create_parser_ctxt() };
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+
+    // SAFETY: input_from_io reads all data via callbacks.
+    let input = unsafe { input_from_io(ioread, ioclose, ioctx) };
+
+    // SAFETY: ctxt and input are valid.
+    unsafe { setup_parser_input(ctxt, input) };
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    let url_bytes = if URL.is_null() {
+        None
+    } else {
+        // SAFETY: URL is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(URL);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let enc_bytes = if encoding.is_null() {
+        None
+    } else {
+        // SAFETY: encoding is a valid C string.
+        unsafe {
+            let cstr = std::ffi::CStr::from_ptr(encoding);
+            Some(cstr.to_bytes().to_vec())
+        }
+    };
+
+    let mut reader = XmlTextReader::new(ctxt, url_bytes.as_deref(), enc_bytes.as_deref());
+    reader.options = options;
+    Box::into_raw(Box::new(reader))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Navigation functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Advance the reader to the next node in document order.
+///
+/// Returns 1 on success, 0 if EOF, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderRead(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer returned by `xmlNewTextReader` or one of the
+/// `xmlReaderFor*` functions, or NULL (in which case -1 is returned).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderRead(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Read() }
+}
+
+/// Skip to the next sibling of the current node.
+///
+/// Returns 1 on success, 0 if no more siblings, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderNext(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderNext(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Next() }
+}
+
+/// Skip to the next sibling (same as xmlTextReaderNext).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderNextSibling(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderNextSibling(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Next() }
+}
+
+/// Skip to the previous sibling of the current node.
+///
+/// Returns 1 on success, 0 if no previous sibling, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderPrev(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderPrev(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Prev() }
+}
+
+/// Move the reader back to the parent element (from an attribute).
+///
+/// Returns 1 on success, 0 if not on an attribute, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderMoveToElement(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToElement(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).MoveToElement() }
+}
+
+/// Move to an attribute by name.
+///
+/// Returns 1 on success, 0 if not found, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderMoveToAttribute(xmlTextReaderPtr reader, const xmlChar *name);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL. `name` must be a valid C string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToAttribute(
+    reader: *mut XmlTextReader,
+    name: *const xmlChar,
+) -> c_int {
+    if reader.is_null() || name.is_null() {
+        return -1;
+    }
+    // SAFETY: reader and name are valid.
+    unsafe { (*reader).MoveToAttribute(name) }
+}
+
+/// Move to an attribute by index.
+///
+/// Returns 1 on success, 0 if not found, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderMoveToAttributeNo(xmlTextReaderPtr reader, int index);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToAttributeNo(
+    reader: *mut XmlTextReader,
+    index: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).MoveToAttributeNo(index) }
+}
+
+/// Move to the first attribute of the current element.
+///
+/// Returns 1 on success, 0 if no attributes, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderMoveToFirstAttribute(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToFirstAttribute(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).MoveToFirstAttribute() }
+}
+
+/// Move to the next attribute.
+///
+/// Returns 1 on success, 0 if no more attributes, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderMoveToNextAttribute(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToNextAttribute(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).MoveToNextAttribute() }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Information methods
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Get the attribute count of the current element.
+///
+/// Returns the number of attributes, or -1 if not on an element.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderAttributeCount(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderAttributeCount(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).AttributeCount() }
+}
+
+/// Get the depth of the current node.
+///
+/// Returns the depth (0 for root element), or -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderDepth(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderDepth(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Depth() }
+}
+
+/// Get the node type of the current node.
+///
+/// Returns one of the `xmlReaderTypes` constants, or -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderNodeType(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderNodeType(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).NodeType() as c_int }
+}
+
+/// Get the name of the current node.
+///
+/// Returns a newly allocated string (caller must free with `xmlFree`),
+/// or NULL if there is no name.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderName(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderName(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Name() }
+}
+
+/// Get the value of the current node.
+///
+/// Returns a newly allocated string (caller must free with `xmlFree`),
+/// or NULL if there is no value.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderValue(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderValue(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Value() }
+}
+
+/// Get a constant pointer to the name (no copy).
+///
+/// The returned pointer is valid only while the reader is alive and positioned
+/// on the same node.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// const xmlChar *xmlTextReaderConstName(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstName(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).ConstName() }
+}
+
+/// Get a constant pointer to the value (no copy).
+///
+/// The returned pointer is valid only while the reader is alive and positioned
+/// on the same node.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// const xmlChar *xmlTextReaderConstValue(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstValue(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).ConstValue() }
+}
+
+/// Get the base URI of the current node.
+///
+/// Returns a newly allocated string (caller must free with `xmlFree`),
+/// or NULL if not available.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderBaseUri(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderBaseUri(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).BaseUri() }
+}
+
+/// Get the local name of the current node.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderLocalName(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderLocalName(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).LocalName() }
+}
+
+/// Get the namespace URI of the current node.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderNamespaceUri(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderNamespaceUri(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).NamespaceUri() }
+}
+
+/// Get the prefix of the current node.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderPrefix(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderPrefix(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).Prefix() }
+}
+
+/// Check if the current node has a value.
+///
+/// Returns 1 if the node has a value, 0 otherwise.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderHasValue(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderHasValue(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return 0;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).HasValue() }
+}
+
+/// Check if the current node has attributes.
+///
+/// Returns 1 if the node has attributes, 0 otherwise.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderHasAttributes(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderHasAttributes(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return 0;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).HasAttributes() }
+}
+
+/// Check if the current element is an empty element (no children).
+///
+/// Returns 1 if empty, 0 otherwise.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderIsEmptyElement(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderIsEmptyElement(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return 0;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).IsEmptyElement() }
+}
+
+/// Get the read state.
+///
+/// Returns one of the `xmlTextReaderReadState` constants.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderReadState(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderReadState(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return ReadState::ERROR as c_int;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).ReadState() as c_int }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attribute access
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Get an attribute value by name.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderGetAttribute(xmlTextReaderPtr reader, const xmlChar *name);
+/// ```
+///
+/// # Safety
+///
+/// `reader` and `name` must be valid pointers or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetAttribute(
+    reader: *mut XmlTextReader,
+    name: *const xmlChar,
+) -> *mut xmlChar {
+    if reader.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader and name are valid.
+    unsafe { (*reader).GetAttribute(name) }
+}
+
+/// Get an attribute value by index.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderGetAttributeNo(xmlTextReaderPtr reader, int index);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetAttributeNo(
+    reader: *mut XmlTextReader,
+    index: c_int,
+) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).GetAttributeNo(index) }
+}
+
+/// Get an attribute value by local name and namespace URI.
+///
+/// Returns a newly allocated string, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderGetAttributeNs(xmlTextReaderPtr reader,
+///                                      const xmlChar *localName,
+///                                      const xmlChar *namespaceURI);
+/// ```
+///
+/// # Safety
+///
+/// `reader`, `localName`, and `namespaceURI` must be valid pointers or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetAttributeNs(
+    reader: *mut XmlTextReader,
+    localName: *const xmlChar,
+    namespaceURI: *const xmlChar,
+) -> *mut xmlChar {
+    if reader.is_null() || localName.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader, localName, and namespaceURI are valid.
+    unsafe { (*reader).GetAttributeNs(localName, namespaceURI) }
+}
+
+/// Look up a namespace by prefix.
+///
+/// Returns a newly allocated string with the namespace URI, or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlTextReaderLookupNamespace(xmlTextReaderPtr reader, const xmlChar *prefix);
+/// ```
+///
+/// # Safety
+///
+/// `reader` and `prefix` must be valid pointers or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderLookupNamespace(
+    reader: *mut XmlTextReader,
+    prefix: *const xmlChar,
+) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader and prefix are valid.
+    unsafe { (*reader).LookupNamespace(prefix) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parser properties
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Get a parser property.
+///
+/// Returns the property value (0 or 1), or -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderGetParserProp(xmlTextReaderPtr reader, int prop);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetParserProp(
+    reader: *mut XmlTextReader,
+    prop: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).GetParserProp(prop) }
+}
+
+/// Set a parser property.
+///
+/// Returns 0 on success, -1 on error.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderSetParserProp(xmlTextReaderPtr reader, int prop, int value);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetParserProp(
+    reader: *mut XmlTextReader,
+    prop: c_int,
+    value: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).SetParserProp(prop, value) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lifecycle
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Free a text reader.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeTextReader(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer returned by `xmlNewTextReader` or one of the
+/// `xmlReaderFor*` functions, or NULL (in which case this is a no-op).
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeTextReader(reader: *mut XmlTextReader) {
+    if reader.is_null() {
+        return;
+    }
+    // SAFETY: reader was created via Box::into_raw, so we reconstruct the Box
+    // and let it drop, which calls the Drop impl.
+    unsafe {
+        let _ = Box::from_raw(reader);
+    }
+}
+
+/// Setup/reinitialize a reader with new input.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextReaderSetup(xmlTextReaderPtr reader,
+///                        xmlParserInputBufferPtr input,
+///                        const char *URL, const char *encoding, int options);
+/// ```
+///
+/// # Safety
+///
+/// - `reader` must be a valid pointer or NULL.
+/// - `input` must be a valid `_xmlParserInputBuffer` pointer or NULL.
+/// - `URL` and `encoding` must be valid C strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetup(
+    reader: *mut XmlTextReader,
+    input: *mut _xmlParserInputBuffer,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+
+    // SAFETY: reader is valid.
+    let r = unsafe { &mut *reader };
+
+    // Reset the reader state.
+    r.clear_cached_name();
+    r.clear_cached_value();
+
+    // Free the old document.
+    if !r.doc.is_null() {
+        // SAFETY: doc was allocated by the parser.
+        unsafe { tree::free_doc(r.doc) };
+        r.doc = ptr::null_mut();
+    }
+
+    // Free old parser context.
+    if !r.ctxt.is_null() {
+        // SAFETY: ctxt was created by create_parser_ctxt.
+        unsafe { free_parser_ctxt(r.ctxt) };
+        r.ctxt = ptr::null_mut();
+    }
+
+    r.events.clear();
+    r.event_index = 0;
+    r.state = ReadState::INITIALIZED;
+    r.cur_node = ptr::null_mut();
+    r.node_type = ReaderNodeType::NONE;
+    r.depth = 0;
+    r.attribute_count = -1;
+    r.cur_attribute = -1;
+    r.options = options;
+    r.parsed = false;
+    r.errors.clear();
+
+    // Update URL.
+    if !r.URL.is_null() {
+        // SAFETY: URL was allocated by xmlMalloc.
+        unsafe { xmlFree(r.URL as *mut c_void) };
+        r.URL = ptr::null_mut();
+    }
+    if !URL.is_null() {
+        // SAFETY: URL is a valid C string.
+        let url_str = unsafe { std::ffi::CStr::from_ptr(URL) };
+        // SAFETY: bytes_to_xmlstr allocates via xmlMalloc.
+        r.URL = unsafe { bytes_to_xmlstr(url_str.to_bytes()) };
+    }
+
+    // Update encoding.
+    if !r.encoding.is_null() {
+        // SAFETY: encoding was allocated by xmlMalloc.
+        unsafe { xmlFree(r.encoding as *mut c_void) };
+        r.encoding = ptr::null_mut();
+    }
+    if !encoding.is_null() {
+        // SAFETY: encoding is a valid C string.
+        let enc_str = unsafe { std::ffi::CStr::from_ptr(encoding) };
+        // SAFETY: bytes_to_xmlstr allocates via xmlMalloc.
+        r.encoding = unsafe { bytes_to_xmlstr(enc_str.to_bytes()) };
+    }
+
+    // Create new parser context and set up input.
+    if !input.is_null() {
+        // SAFETY: create_parser_ctxt returns a valid context or NULL.
+        let ctxt = unsafe { create_parser_ctxt() };
+        if ctxt.is_null() {
+            return -1;
+        }
+
+        // Read all data from the input buffer.
+        let mut data = Vec::new();
+        let mut tmp = [0u8; 4096];
+
+        // SAFETY: input is valid.
+        let read_cb = unsafe { (*input).readcallback };
+        let ioctx = unsafe { (*input).context };
+
+        if let Some(read) = read_cb {
+            loop {
+                // SAFETY: callbacks are valid.
+                let n = unsafe { read(ioctx, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int) };
+                if n <= 0 {
+                    break;
+                }
+                data.extend_from_slice(&tmp[..n as usize]);
+            }
+        }
+
+        // Close the input.
+        let close_cb = unsafe { (*input).closecallback };
+        if let Some(close) = close_cb {
+            // SAFETY: close callback is valid.
+            unsafe { close(ioctx) };
+        }
+
+        let input_buf = InputBuffer::from_memory(&data, None);
+
+        // SAFETY: ctxt and input_buf are valid.
+        unsafe { setup_parser_input(ctxt, input_buf) };
+        unsafe {
+            (*ctxt).options = options;
+        }
+
+        r.ctxt = ctxt;
+    }
+
+    0
+}
+
+/// Get the current document from the reader.
+///
+/// Returns a pointer to the `_xmlDoc` or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlTextReaderCurrentDoc(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderCurrentDoc(reader: *mut XmlTextReader) -> *mut _xmlDoc {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).CurrentDoc() }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════════════════════════════════════════════
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::abi::allocator::xmlFree;
+    use core::ffi::c_void;
+    use std::os::raw::c_char;
+
+    /// Helper: create a reader from a string.
+    unsafe fn create_reader(xml: &str) -> *mut XmlTextReader {
+        let bytes = xml.as_bytes();
+        xmlReaderForMemory(
+            bytes.as_ptr() as *const c_char,
+            bytes.len() as c_int,
+            ptr::null(),
+            ptr::null(),
+            0,
+        )
+    }
+
+    /// Helper: free a reader.
+    unsafe fn free_reader(reader: *mut XmlTextReader) {
+        if !reader.is_null() {
+            xmlFreeTextReader(reader);
+        }
+    }
+
+    /// Helper: read through all nodes and collect their types and names.
+    unsafe fn collect_nodes(reader: *mut XmlTextReader) -> Vec<(ReaderNodeType, String, i32)> {
+        let mut result = Vec::new();
+        loop {
+            let ret = xmlTextReaderRead(reader);
+            if ret <= 0 {
+                break;
+            }
+            // SAFETY: reader is valid.
+            let r = &*reader;
+            let ntype = r.NodeType();
+            let name = if r.name.is_null() {
+                String::new()
+            } else {
+                xmlstr_to_string(r.name as *const xmlChar)
+            };
+            let depth = r.Depth();
+            result.push((ntype, name, depth));
+        }
+        result
+    }
+
+    // ─── Basic tests ───────────────────────────────────────────────────────
+
+    #[test]
+    fn test_create_reader_from_memory() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+            assert_eq!((*reader).ReadState(), ReadState::INITIALIZED);
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_read_simple_document() {
+        unsafe {
+            let reader = create_reader("<root><child>text</child></root>");
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            // Expected sequence:
+            // ELEMENT root (depth=0)
+            // ELEMENT child (depth=1)
+            // TEXT text (depth=2)
+            // END_ELEMENT child (depth=1)
+            // END_ELEMENT root (depth=0)
+
+            assert_eq!(nodes.len(), 5);
+            assert_eq!(nodes[0], (ReaderNodeType::ELEMENT, "root".to_string(), 0));
+            assert_eq!(nodes[1], (ReaderNodeType::ELEMENT, "child".to_string(), 1));
+            assert_eq!(nodes[2], (ReaderNodeType::TEXT, "".to_string(), 2));
+            assert_eq!(
+                nodes[3],
+                (ReaderNodeType::END_ELEMENT, "child".to_string(), 1)
+            );
+            assert_eq!(
+                nodes[4],
+                (ReaderNodeType::END_ELEMENT, "root".to_string(), 0)
+            );
+
+            assert_eq!((*reader).ReadState(), ReadState::EOF);
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_read_state_transitions() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+            assert_eq!((*reader).ReadState(), ReadState::INITIALIZED);
+
+            // First read.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).ReadState(), ReadState::READING);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!((*reader).Depth(), 0);
+
+            // Second read — should be END_ELEMENT.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
+
+            // Third read — EOF.
+            assert_eq!(xmlTextReaderRead(reader), 0);
+            assert_eq!((*reader).ReadState(), ReadState::EOF);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_null_reader_returns_error() {
+        unsafe {
+            assert_eq!(xmlTextReaderRead(ptr::null_mut()), -1);
+            assert_eq!(xmlTextReaderDepth(ptr::null_mut()), -1);
+            assert_eq!(xmlTextReaderNodeType(ptr::null_mut()), -1);
+            assert!(xmlTextReaderName(ptr::null_mut()).is_null());
+            assert!(xmlTextReaderValue(ptr::null_mut()).is_null());
+            assert_eq!(xmlTextReaderHasValue(ptr::null_mut()), 0);
+            assert_eq!(xmlTextReaderIsEmptyElement(ptr::null_mut()), 0);
+            assert_eq!(
+                xmlTextReaderReadState(ptr::null_mut()),
+                ReadState::ERROR as c_int
+            );
+        }
+    }
+
+    #[test]
+    fn test_xmlFreeTextReader_null() {
+        unsafe {
+            // Should not crash.
+            xmlFreeTextReader(ptr::null_mut());
+        }
+    }
+
+    #[test]
+    fn test_reader_name_and_value() {
+        unsafe {
+            let reader = create_reader("<root>hello</root>");
+            assert!(!reader.is_null());
+
+            // Read root element.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            let name = xmlTextReaderName(reader);
+            assert!(!name.is_null());
+            assert_eq!(xmlstr_to_string(name), "root");
+            xmlFree(name as *mut c_void);
+
+            assert_eq!(xmlTextReaderHasValue(reader), 0);
+
+            // Read text node.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::TEXT);
+            assert_eq!((*reader).HasValue(), 1);
+
+            let val = xmlTextReaderValue(reader);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_string(val), "hello");
+            xmlFree(val as *mut c_void);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_empty_element() {
+        unsafe {
+            let reader = create_reader("<empty/>");
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!((*reader).IsEmptyElement(), 1);
+            assert_eq!((*reader).HasAttributes(), 0);
+            assert_eq!((*reader).AttributeCount(), -1);
+
+            // END_ELEMENT.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_element_with_attributes() {
+        unsafe {
+            let reader = create_reader(r#"<root a="1" b="2"/>"#);
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!((*reader).HasAttributes(), 1);
+
+            // We know the attribute count if we've built the events properly.
+            // The count_attributes checks the element's properties list.
+            let attrs = xmlTextReaderAttributeCount(reader);
+            assert_eq!(attrs, 2);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_attribute_navigation() {
+        unsafe {
+            let reader = create_reader(r#"<root a="1" b="2"></root>"#);
+            assert!(!reader.is_null());
+
+            // Position on root element.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+
+            // Move to first attribute.
+            assert_eq!(xmlTextReaderMoveToFirstAttribute(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ATTRIBUTE);
+
+            let name = xmlTextReaderConstName(reader);
+            assert!(!name.is_null());
+            assert_eq!(xmlstr_to_bytes(name), b"a");
+
+            let val = xmlTextReaderConstValue(reader);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"1");
+
+            // Move to next attribute.
+            assert_eq!(xmlTextReaderMoveToNextAttribute(reader), 1);
+            let name = xmlTextReaderConstName(reader);
+            assert!(!name.is_null());
+            assert_eq!(xmlstr_to_bytes(name), b"b");
+            let val = xmlTextReaderConstValue(reader);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"2");
+
+            // No more attributes.
+            assert_eq!(xmlTextReaderMoveToNextAttribute(reader), 0);
+
+            // Move back to element.
+            assert_eq!(xmlTextReaderMoveToElement(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+
+            // Move to attribute by name.
+            assert_eq!(
+                xmlTextReaderMoveToAttribute(reader, b"a\0" as *const u8 as *const xmlChar),
+                1
+            );
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ATTRIBUTE);
+
+            // Move to attribute by index.
+            assert_eq!(xmlTextReaderMoveToElement(reader), 1);
+            assert_eq!(xmlTextReaderMoveToAttributeNo(reader, 1), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ATTRIBUTE);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_get_attribute() {
+        unsafe {
+            let reader = create_reader(r#"<root a="hello" b="world"/>"#);
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+
+            // Get attribute by name.
+            let val = xmlTextReaderGetAttribute(reader, b"a\0" as *const u8 as *const xmlChar);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"hello");
+            xmlFree(val as *mut c_void);
+
+            let val = xmlTextReaderGetAttribute(reader, b"b\0" as *const u8 as *const xmlChar);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"world");
+            xmlFree(val as *mut c_void);
+
+            // Non-existent attribute.
+            let val = xmlTextReaderGetAttribute(reader, b"c\0" as *const u8 as *const xmlChar);
+            assert!(val.is_null());
+
+            // Get attribute by index.
+            let val = xmlTextReaderGetAttributeNo(reader, 0);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"hello");
+            xmlFree(val as *mut c_void);
+
+            let val = xmlTextReaderGetAttributeNo(reader, 1);
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"world");
+            xmlFree(val as *mut c_void);
+
+            let val = xmlTextReaderGetAttributeNo(reader, 2);
+            assert!(val.is_null());
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_depth_tracking() {
+        unsafe {
+            let reader = create_reader("<a><b><c/></b></a>");
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            // ELEMENT a (0), ELEMENT b (1), ELEMENT c (2),
+            // END_ELEMENT c (2), END_ELEMENT b (1), END_ELEMENT a (0)
+            assert_eq!(nodes.len(), 6);
+            assert_eq!(nodes[0].2, 0); // a depth 0
+            assert_eq!(nodes[1].2, 1); // b depth 1
+            assert_eq!(nodes[2].2, 2); // c depth 2
+            assert_eq!(nodes[3].2, 2); // END c depth 2
+            assert_eq!(nodes[4].2, 1); // END b depth 1
+            assert_eq!(nodes[5].2, 0); // END a depth 0
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_multiple_siblings() {
+        unsafe {
+            let reader = create_reader("<root><a>A</a><b>B</b><c>C</c></root>");
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            // ELEMENT root(0), ELEMENT a(1), TEXT(2), END a(1),
+            // ELEMENT b(1), TEXT(2), END b(1),
+            // ELEMENT c(1), TEXT(2), END c(1),
+            // END root(0)
+            assert_eq!(nodes.len(), 11);
+
+            // Check the sibling elements.
+            assert_eq!(nodes[1], (ReaderNodeType::ELEMENT, "a".to_string(), 1));
+            assert_eq!(nodes[4], (ReaderNodeType::ELEMENT, "b".to_string(), 1));
+            assert_eq!(nodes[7], (ReaderNodeType::ELEMENT, "c".to_string(), 1));
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_next_skip_to_sibling() {
+        unsafe {
+            let reader = create_reader("<root><a>A</a><b>B</b><c>C</c></root>");
+            assert!(!reader.is_null());
+
+            // Read to first node (root element).
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+
+            // Read to a.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "a");
+
+            // Read to text of a.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::TEXT);
+
+            // Skip to next sibling — should skip END a and go to ELEMENT b.
+            assert_eq!(xmlTextReaderNext(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "b");
+
+            // Next again — should go to c.
+            assert_eq!(xmlTextReaderNext(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "c");
+
+            // Next again — no more siblings.
+            assert_eq!(xmlTextReaderNext(reader), 0);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_comment_and_pi_nodes() {
+        unsafe {
+            let xml = b"<?pi target?><root><!-- comment -->text</root>\0";
+            let reader = xmlReaderForMemory(
+                xml.as_ptr() as *const c_char,
+                (xml.len() - 1) as c_int,
+                ptr::null(),
+                ptr::null(),
+                0,
+            );
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            // PI, ELEMENT root, COMMENT, TEXT, END_ELEMENT root
+            // Note: PI appears as PROCESSING_INSTRUCTION node.
+            assert!(!nodes.is_empty());
+
+            // Check PI.
+            assert_eq!(nodes[0].0, ReaderNodeType::PROCESSING_INSTRUCTION);
+
+            // Check root element.
+            let root_idx = nodes
+                .iter()
+                .position(|(t, n, _)| *t == ReaderNodeType::ELEMENT && n == "root");
+            assert!(root_idx.is_some());
+
+            // Check comment.
+            let comment_idx = nodes
+                .iter()
+                .position(|(t, _, _)| *t == ReaderNodeType::COMMENT);
+            assert!(comment_idx.is_some());
+
+            // Check text.
+            let text_idx = nodes
+                .iter()
+                .position(|(t, _, _)| *t == ReaderNodeType::TEXT);
+            assert!(text_idx.is_some());
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_local_name() {
+        unsafe {
+            // We need a namespace-aware element. For now, test without namespace.
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            let local = xmlTextReaderLocalName(reader);
+            assert!(!local.is_null());
+            assert_eq!(xmlstr_to_bytes(local), b"root");
+            xmlFree(local as *mut c_void);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_base_uri() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            // Base URI should be NULL for memory-created readers.
+            let uri = xmlTextReaderBaseUri(reader);
+            assert!(uri.is_null());
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_lookup_namespace() {
+        unsafe {
+            let reader = create_reader(r#"<root xmlns:ns="http://example.com"><ns:child/></root>"#);
+            assert!(!reader.is_null());
+
+            // Read to root.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+
+            // Read to child (ns:child).
+            assert_eq!(xmlTextReaderRead(reader), 1);
+
+            // Lookup the "ns" prefix.
+            let uri = xmlTextReaderLookupNamespace(reader, b"ns\0" as *const u8 as *const xmlChar);
+            assert!(!uri.is_null());
+            assert_eq!(xmlstr_to_bytes(uri), b"http://example.com");
+            xmlFree(uri as *mut c_void);
+
+            // Lookup default namespace (NULL prefix).
+            let uri = xmlTextReaderLookupNamespace(reader, ptr::null());
+            assert!(uri.is_null());
+
+            // Lookup non-existent prefix.
+            let uri = xmlTextReaderLookupNamespace(
+                reader,
+                b"nonexistent\0" as *const u8 as *const xmlChar,
+            );
+            assert!(uri.is_null());
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_parser_properties() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+
+            // Get default properties.
+            assert_eq!(xmlTextReaderGetParserProp(reader, 1), 0); // LOADDTD
+            assert_eq!(xmlTextReaderGetParserProp(reader, 2), 0); // DEFAULTATTRS
+            assert_eq!(xmlTextReaderGetParserProp(reader, 3), 0); // VALIDATE
+            assert_eq!(xmlTextReaderGetParserProp(reader, 4), 0); // SUBST_ENTITIES
+
+            // Set and verify.
+            assert_eq!(xmlTextReaderSetParserProp(reader, 1, 1), 0);
+            assert_eq!(xmlTextReaderGetParserProp(reader, 1), 1);
+
+            assert_eq!(xmlTextReaderSetParserProp(reader, 4, 1), 0);
+            assert_eq!(xmlTextReaderGetParserProp(reader, 4), 1);
+
+            // Invalid property.
+            assert_eq!(xmlTextReaderGetParserProp(reader, 99), -1);
+            assert_eq!(xmlTextReaderSetParserProp(reader, 99, 1), -1);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_current_doc() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+
+            // Before reading, doc should be null.
+            assert!((*reader).CurrentDoc().is_null());
+
+            // After reading, doc should be available.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            let doc = xmlTextReaderCurrentDoc(reader);
+            assert!(!doc.is_null());
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_free_reader_after_read() {
+        unsafe {
+            let reader = create_reader("<root><child/></root>");
+            assert!(!reader.is_null());
+
+            // Read through the document.
+            while xmlTextReaderRead(reader) > 0 {}
+            assert_eq!((*reader).ReadState(), ReadState::EOF);
+
+            // Free should not crash.
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_reader_for_memory_null_buffer() {
+        unsafe {
+            let reader = xmlReaderForMemory(ptr::null(), 10, ptr::null(), ptr::null(), 0);
+            assert!(reader.is_null());
+        }
+    }
+
+    #[test]
+    fn test_reader_for_memory_empty_size() {
+        unsafe {
+            let data = b"<root/>";
+            let reader = xmlReaderForMemory(
+                data.as_ptr() as *const c_char,
+                0,
+                ptr::null(),
+                ptr::null(),
+                0,
+            );
+            assert!(reader.is_null());
+        }
+    }
+
+    #[test]
+    fn test_reader_for_file_not_found() {
+        unsafe {
+            let filename = b"/nonexistent/file.xml\0" as *const u8 as *const c_char;
+            let reader = xmlReaderForFile(filename, ptr::null(), 0);
+            assert!(reader.is_null());
+        }
+    }
+
+    #[test]
+    fn test_const_name_and_value() {
+        unsafe {
+            let reader = create_reader("<root>text</root>");
+            assert!(!reader.is_null());
+
+            // Root element.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            let cname = xmlTextReaderConstName(reader);
+            assert!(!cname.is_null());
+            assert_eq!(xmlstr_to_bytes(cname), b"root");
+
+            // Text node.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            let cval = xmlTextReaderConstValue(reader);
+            assert!(!cval.is_null());
+            assert_eq!(xmlstr_to_bytes(cval), b"text");
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_complex_nested_document() {
+        unsafe {
+            let xml = r#"<?xml version="1.0"?>
+<library>
+  <book id="1">
+    <title>XML Fundamentals</title>
+    <author>John Doe</author>
+  </book>
+  <book id="2">
+    <title>XSLT Recipes</title>
+    <author>Jane Smith</author>
+  </book>
+</library>"#;
+
+            let reader = create_reader(xml);
+            assert!(!reader.is_null());
+
+            let mut element_count = 0;
+            let mut end_element_count = 0;
+            let mut text_count = 0;
+            let mut pi_count = 0;
+
+            loop {
+                let ret = xmlTextReaderRead(reader);
+                if ret <= 0 {
+                    break;
+                }
+                match (*reader).NodeType() {
+                    ReaderNodeType::ELEMENT => element_count += 1,
+                    ReaderNodeType::END_ELEMENT => end_element_count += 1,
+                    ReaderNodeType::TEXT => text_count += 1,
+                    ReaderNodeType::PROCESSING_INSTRUCTION => pi_count += 1,
+                    _ => {}
+                }
+            }
+
+            // Elements: library, book(2), title(2), author(2) = 7
+            assert_eq!(element_count, 7);
+            // End elements: same count as elements
+            assert_eq!(end_element_count, 7);
+            // Text nodes: one per title and author = 4
+            assert_eq!(text_count, 4);
+            // PI: xml declaration is a PI in the tree
+            assert_eq!(pi_count, 1);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_setup_reinitialize() {
+        unsafe {
+            let reader = create_reader("<root/>");
+            assert!(!reader.is_null());
+
+            // Read through.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).ReadState(), ReadState::READING);
+
+            // Setup with new input (simulate re-initialization).
+            // For this test, we just verify the setup function exists and
+            // handles a NULL input gracefully (resetting the reader).
+            assert_eq!(
+                xmlTextReaderSetup(reader, ptr::null_mut(), ptr::null(), ptr::null(), 0),
+                0
+            );
+            assert_eq!((*reader).ReadState(), ReadState::INITIALIZED);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_has_attributes_on_non_element() {
+        unsafe {
+            let reader = create_reader("<root>text</root>");
+            assert!(!reader.is_null());
+
+            // Position on text node.
+            assert_eq!(xmlTextReaderRead(reader), 1); // root element
+            assert_eq!((*reader).HasAttributes(), 0); // 0 attributes on root
+            assert_eq!(xmlTextReaderRead(reader), 1); // text
+            assert_eq!((*reader).HasAttributes(), 0);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_prev_sibling() {
+        unsafe {
+            let reader = create_reader("<root><a/><b/><c/></root>");
+            assert!(!reader.is_null());
+
+            // Read through the document.
+            while xmlTextReaderRead(reader) > 0 {
+                // Skip to END_ELEMENT root or beyond.
+            }
+
+            // Can't go prev after EOF.
+            assert_eq!(xmlTextReaderPrev(reader), -1);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_move_to_attribute_no_not_on_element() {
+        unsafe {
+            let reader = create_reader("<root>text</root>");
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1); // root
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+
+            // Move to non-existent attribute index.
+            assert_eq!(xmlTextReaderMoveToAttributeNo(reader, 0), 0);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_get_attribute_ns() {
+        unsafe {
+            let reader = create_reader(r#"<root a="1" b="2"/>"#);
+            assert!(!reader.is_null());
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+
+            // Get attribute by local name only (namespaceURI is NULL).
+            let val = xmlTextReaderGetAttributeNs(
+                reader,
+                b"a\0" as *const u8 as *const xmlChar,
+                ptr::null(),
+            );
+            assert!(!val.is_null());
+            assert_eq!(xmlstr_to_bytes(val), b"1");
+            xmlFree(val as *mut c_void);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_mixed_content() {
+        unsafe {
+            let reader = create_reader("<root>before<child/>after</root>");
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            // ELEMENT root(0), TEXT "before"(1), ELEMENT child(1),
+            // END_ELEMENT child(1), TEXT "after"(1), END_ELEMENT root(0)
+            assert_eq!(nodes.len(), 6);
+            assert_eq!(nodes[0], (ReaderNodeType::ELEMENT, "root".to_string(), 0));
+            assert_eq!(nodes[1].0, ReaderNodeType::TEXT);
+            assert_eq!(nodes[2], (ReaderNodeType::ELEMENT, "child".to_string(), 1));
+            assert_eq!(nodes[4].0, ReaderNodeType::TEXT);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_error_handling_invalid_xml() {
+        unsafe {
+            // Malformed XML.
+            let data = b"<root><\0" as *const u8 as *const c_char;
+            let reader = xmlReaderForMemory(data, 7, ptr::null(), ptr::null(), 0);
+            assert!(!reader.is_null());
+
+            // Reading should fail.
+            let ret = xmlTextReaderRead(reader);
+            assert!(ret == -1 || ret == 0);
+
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_reader_with_options() {
+        unsafe {
+            let data = b"<root/>\0" as *const u8 as *const c_char;
+            let reader = xmlReaderForMemory(
+                data,
+                7,
+                ptr::null(),
+                ptr::null(),
+                XML_PARSE_NOENT | XML_PARSE_DTDLOAD,
+            );
+            assert!(!reader.is_null());
+
+            // Verify options were set.
+            assert_eq!((*reader).options & XML_PARSE_NOENT, XML_PARSE_NOENT);
+            assert_eq!((*reader).options & XML_PARSE_DTDLOAD, XML_PARSE_DTDLOAD);
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            free_reader(reader);
+        }
+    }
+
+    #[test]
+    fn test_reader_for_fd() {
+        unsafe {
+            // Create a temp file and test xmlReaderForFd.
+            let tmp = "/tmp/libxml_rs_test_reader_fd.xml";
+            let content = b"<root><data/></root>";
+            let fd = libc::open(
+                tmp.as_ptr() as *const c_char,
+                libc::O_WRONLY | libc::O_CREAT | libc::O_TRUNC,
+                0o644,
+            );
+            assert!(fd >= 0);
+            libc::write(fd, content.as_ptr() as *const c_void, content.len());
+            libc::close(fd);
+
+            // Open for reading.
+            let fd = libc::open(tmp.as_ptr() as *const c_char, libc::O_RDONLY, 0);
+            assert!(fd >= 0);
+
+            let reader = xmlReaderForFd(fd, ptr::null(), ptr::null(), 0);
+            assert!(!reader.is_null());
+
+            let nodes = collect_nodes(reader);
+            assert_eq!(nodes.len(), 4); // ELEMENT root, ELEMENT data, END data, END root
+
+            free_reader(reader);
+            libc::close(fd);
+            std::fs::remove_file(tmp).ok();
+        }
+    }
+
+    #[test]
+    fn test_reader_for_io() {
+        unsafe {
+            extern "C" fn io_read(context: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
+                if context.is_null() || buffer.is_null() || len <= 0 {
+                    return -1;
+                }
+                // SAFETY: context points to an IoCtx struct.
+                let ctx = unsafe { &mut *(context as *mut IoCtx) };
+                if ctx.pos >= ctx.data.len() {
+                    return 0;
+                }
+                let remaining = ctx.data.len() - ctx.pos;
+                let to_copy = if (remaining as c_int) < len {
+                    remaining
+                } else {
+                    len as usize
+                };
+                // SAFETY: buffer has at least `len` bytes of space.
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        ctx.data.as_ptr().add(ctx.pos),
+                        buffer as *mut u8,
+                        to_copy,
+                    );
+                }
+                ctx.pos += to_copy;
+                to_copy as c_int
+            }
+
+            extern "C" fn io_close(_context: *mut c_void) -> c_int {
+                0
+            }
+
+            struct IoCtx {
+                data: &'static [u8],
+                pos: usize,
+            }
+            let mut ctx = IoCtx {
+                data: b"<root/>",
+                pos: 0,
+            };
+
+            let reader = xmlReaderForIO(
+                Some(io_read),
+                Some(io_close),
+                &mut ctx as *mut IoCtx as *mut c_void,
+                ptr::null(),
+                ptr::null(),
+                0,
+            );
+            assert!(!reader.is_null());
+
+            // Read through the document.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            let cname = xmlTextReaderConstName(reader);
+            assert!(!cname.is_null());
+            assert_eq!(xmlstr_to_bytes(cname), b"root");
+
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
+
+            assert_eq!(xmlTextReaderRead(reader), 0); // EOF
+
+            free_reader(reader);
+        }
+    }
+}
