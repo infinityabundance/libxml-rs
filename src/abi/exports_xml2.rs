@@ -3758,6 +3758,16 @@ unsafe fn object_to_xpathvalue(obj: *mut _xmlXPathObject) -> XPathValue {
     }
 }
 
+/// Public wrapper for `object_to_xpathvalue` (used by the XSLT engine).
+///
+/// # Safety
+///
+/// `obj` must be a valid, non-null pointer to a properly initialised
+/// `_xmlXPathObject`.
+pub unsafe fn object_to_xpathvalue_pub(obj: *mut _xmlXPathObject) -> XPathValue {
+    object_to_xpathvalue(obj)
+}
+
 // ── Compiled expression registry ────────────────────────────────────────
 //
 // Compiled XPath expressions are opaque pointers returned by xmlXPathCompile.
@@ -3934,6 +3944,382 @@ pub unsafe extern "C" fn xmlXPathFreeObject(obj: *mut _xmlXPathObject) {
         (*obj).nodesetval = ptr::null_mut();
     }
     xmlFree(obj as *mut c_void);
+}
+
+/// Copy an XPath object (deep copy).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlXPathObjectPtr xmlXPathObjectCopy(xmlXPathObjectPtr val);
+/// ```
+///
+/// Oracle behavior: returns a newly allocated object with the same type
+/// and value. Node-sets are copied element-by-element; strings are
+/// duplicated; numbers and booleans are copied by value.
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathObjectCopy(val: *mut _xmlXPathObject) -> *mut _xmlXPathObject {
+    if val.is_null() {
+        return ptr::null_mut();
+    }
+    let typ = (*val).type_;
+    let obj = xmlMallocZero(size_of::<_xmlXPathObject>()) as *mut _xmlXPathObject;
+    if obj.is_null() {
+        return ptr::null_mut();
+    }
+    (*obj).type_ = typ;
+    if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
+        let src_ns = (*val).nodesetval as *mut _xmlNodeSet;
+        if !src_ns.is_null() {
+            let nr = (*src_ns).nodeNr;
+            let ns = xmlMallocZero(size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
+            if ns.is_null() {
+                xmlFree(obj as *mut c_void);
+                return ptr::null_mut();
+            }
+            (*ns).nodeNr = nr;
+            (*ns).nodeMax = nr;
+            if nr > 0 && !(*src_ns).nodeTab.is_null() {
+                let tab = xmlMalloc((nr as usize) * core::mem::size_of::<*mut _xmlNode>())
+                    as *mut *mut _xmlNode;
+                if tab.is_null() {
+                    xmlFree(ns as *mut c_void);
+                    xmlFree(obj as *mut c_void);
+                    return ptr::null_mut();
+                }
+                ptr::copy_nonoverlapping((*src_ns).nodeTab, tab, nr as usize);
+                (*ns).nodeTab = tab;
+            } else {
+                (*ns).nodeTab = ptr::null_mut();
+            }
+            (*obj).nodesetval = ns as *mut c_void;
+        }
+    } else if typ == xmlXPathObjectType::XPATH_BOOLEAN as c_int {
+        (*obj).boolval = (*val).boolval;
+    } else if typ == xmlXPathObjectType::XPATH_NUMBER as c_int {
+        (*obj).floatval = (*val).floatval;
+    } else if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+        let src = (*val).stringval;
+        if !src.is_null() {
+            let len = libc::strlen(src as *const libc::c_char);
+            let buf = xmlMalloc(len + 1) as *mut xmlChar;
+            if !buf.is_null() {
+                ptr::copy_nonoverlapping(src, buf, len);
+                *buf.add(len) = 0;
+            }
+            (*obj).stringval = buf;
+        }
+    }
+    obj
+}
+
+/// Cast an XPath object to its string value.
+///
+/// Returns a newly allocated string (caller frees with `xmlFree`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlXPathCastToString(xmlXPathObjectPtr val);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathCastToString(val: *mut _xmlXPathObject) -> *mut xmlChar {
+    if val.is_null() {
+        return ptr::null_mut();
+    }
+    let typ = (*val).type_;
+    let mut result: Vec<u8> = Vec::new();
+    if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+        if !(*val).stringval.is_null() {
+            let len = libc::strlen((*val).stringval as *const libc::c_char);
+            result.extend_from_slice(core::slice::from_raw_parts((*val).stringval, len));
+        }
+    } else if typ == xmlXPathObjectType::XPATH_NUMBER as c_int {
+        // Number → string conversion per XPath 1.0 §4.2:
+        // - NaN → "NaN"
+        // - +0/-0 → "0"
+        // - infinity → "Infinity" / "-Infinity"
+        // - integer → decimal representation without exponent
+        let n = (*val).floatval;
+        result.extend_from_slice(xml_number_to_string(n).as_bytes());
+    } else if typ == xmlXPathObjectType::XPATH_BOOLEAN as c_int {
+        result.extend_from_slice(if (*val).boolval != 0 {
+            b"true"
+        } else {
+            b"false"
+        });
+    } else if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
+        // String value of a node-set is the string value of the first node
+        // in document order (or empty if empty).
+        let ns = (*val).nodesetval as *mut _xmlNodeSet;
+        if !ns.is_null() && (*ns).nodeNr > 0 && !(*ns).nodeTab.is_null() {
+            let node = *(*ns).nodeTab;
+            if !node.is_null() {
+                let content = crate::xml::tree::node_get_content(node);
+                if !content.is_null() {
+                    let len = libc::strlen(content as *const libc::c_char);
+                    result.extend_from_slice(core::slice::from_raw_parts(content, len));
+                    xmlFree(content as *mut c_void);
+                }
+            }
+        }
+    }
+    // Allocate the C string.
+    let buf = xmlMalloc(result.len() + 1) as *mut xmlChar;
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+    if !result.is_empty() {
+        ptr::copy_nonoverlapping(result.as_ptr(), buf, result.len());
+    }
+    *buf.add(result.len()) = 0;
+    buf
+}
+
+/// Convert an XPath number to its string representation (XPath 1.0 §4.2).
+///
+/// Exposed as a helper; matches upstream `xmlXPathCastNumberToString`.
+pub fn xml_number_to_string(n: f64) -> String {
+    if n.is_nan() {
+        return "NaN".to_string();
+    }
+    if n.is_infinite() {
+        return if n > 0.0 {
+            "Infinity".to_string()
+        } else {
+            "-Infinity".to_string()
+        };
+    }
+    if n == 0.0 {
+        // Both +0 and -0 serialize as "0" per XPath 1.0.
+        return "0".to_string();
+    }
+    // Integer values serialize without a decimal point or exponent.
+    if n.fract() == 0.0 && n.abs() < 1e15 {
+        return format!("{:.0}", n);
+    }
+    // For other values, upstream uses %.15g-ish formatting with adjustments.
+    // Try to find the shortest representation that round-trips (%.17g then
+    // trim), which matches upstream's effective behavior for most inputs.
+    let mut s = format!("{:.15}", n);
+    // Trim trailing zeros and possible trailing dot.
+    if s.contains('.') {
+        while s.ends_with('0') {
+            s.pop();
+        }
+        if s.ends_with('.') {
+            s.pop();
+        }
+    }
+    if s == "-0" {
+        return "0".to_string();
+    }
+    s
+}
+
+/// Cast a C string to a number per XPath 1.0 §4.2 conversion rules.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// double xmlXPathCastStringToNumber(const xmlChar *val);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathCastStringToNumber(val: *const xmlChar) -> f64 {
+    if val.is_null() {
+        return f64::NAN;
+    }
+    let len = libc::strlen(val as *const libc::c_char);
+    let bytes = core::slice::from_raw_parts(val, len);
+    // Skip leading whitespace (XML whitespace per XPath 1.0).
+    let mut i = 0;
+    while i < bytes.len() && matches!(bytes[i], b' ' | b'\t' | b'\n' | b'\r') {
+        i += 1;
+    }
+    let s = &bytes[i..];
+    if s.is_empty() {
+        return f64::NAN;
+    }
+    // Parse an optional sign.
+    let (sign, rest) = match s[0] {
+        b'+' => (1.0f64, &s[1..]),
+        b'-' => (-1.0f64, &s[1..]),
+        _ => (1.0f64, s),
+    };
+    if rest.is_empty() {
+        return f64::NAN;
+    }
+    // Try full parse; if it fails (trailing junk), the value is NaN per spec.
+    // XPath 1.0: a string that does not conform to the Number production is NaN.
+    let num_str = core::str::from_utf8(rest);
+    match num_str {
+        Ok(s) => {
+            // Accept only valid Number productions: digits with optional
+            // fraction/exponent.
+            let valid = is_xpath_number(s);
+            if !valid {
+                f64::NAN
+            } else {
+                s.trim()
+                    .parse::<f64>()
+                    .map(|v| v * sign)
+                    .unwrap_or(f64::NAN)
+            }
+        }
+        Err(_) => f64::NAN,
+    }
+}
+
+/// Check whether a string conforms to the XPath 1.0 Number production.
+fn is_xpath_number(s: &str) -> bool {
+    let b = s.as_bytes();
+    if b.is_empty() {
+        return false;
+    }
+    let mut i = 0;
+    let mut saw_digit = false;
+    while i < b.len() && b[i].is_ascii_digit() {
+        saw_digit = true;
+        i += 1;
+    }
+    if i < b.len() && b[i] == b'.' {
+        i += 1;
+        while i < b.len() && b[i].is_ascii_digit() {
+            saw_digit = true;
+            i += 1;
+        }
+    }
+    if !saw_digit {
+        return false;
+    }
+    if i < b.len() && (b[i] == b'e' || b[i] == b'E') {
+        i += 1;
+        if i < b.len() && (b[i] == b'+' || b[i] == b'-') {
+            i += 1;
+        }
+        let mut saw_exp = false;
+        while i < b.len() && b[i].is_ascii_digit() {
+            saw_exp = true;
+            i += 1;
+        }
+        if !saw_exp {
+            return false;
+        }
+    }
+    i == b.len()
+}
+
+/// Compare two nodes in document order.
+///
+/// Returns negative if `node1` precedes `node2`, positive if it follows,
+/// 0 if they are the same node.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlXPathCmpNodes(xmlNodePtr node1, xmlNodePtr node2);
+/// ```
+///
+/// Oracle behavior: uses ancestor comparison — if one node is an ancestor
+/// of the other, the ancestor comes first; otherwise the nearest common
+/// ancestor's child order determines the result.
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xmlNode) -> c_int {
+    if node1.is_null() || node2.is_null() {
+        return 0;
+    }
+    if node1 == node2 {
+        return 0;
+    }
+    // Build ancestor chains.
+    let mut chain1: Vec<*mut _xmlNode> = Vec::new();
+    let mut chain2: Vec<*mut _xmlNode> = Vec::new();
+    let mut n = node1;
+    while !n.is_null() {
+        chain1.push(n);
+        n = (*n).parent as *mut _xmlNode;
+    }
+    let mut n = node2;
+    while !n.is_null() {
+        chain2.push(n);
+        n = (*n).parent as *mut _xmlNode;
+    }
+    // Find the nearest common ancestor.
+    let mut i = chain1.len();
+    let mut j = chain2.len();
+    while i > 0 && j > 0 && chain1[i - 1] == chain2[j - 1] {
+        i -= 1;
+        j -= 1;
+    }
+    if i == 0 && j == 0 {
+        return 0; // Same node (already handled) or disjoint trees treated as equal
+    }
+    if i == 0 {
+        return -1; // node1 is an ancestor of node2
+    }
+    if j == 0 {
+        return 1; // node2 is an ancestor of node1
+    }
+    // Compare sibling order at the divergence point.
+    let mut a = chain1[i - 1];
+    let mut b = chain2[j - 1];
+    // Climb to the same level.
+    while !a.is_null() && !b.is_null() {
+        let pa = (*a).parent as *mut _xmlNode;
+        let pb = (*b).parent as *mut _xmlNode;
+        if pa == pb {
+            break;
+        }
+        a = pa;
+        b = pb;
+    }
+    // Walk forward from the first child of the common parent.
+    let parent = (*a).parent as *mut _xmlNode;
+    let mut child = if parent.is_null() {
+        ptr::null_mut()
+    } else {
+        (*parent).children
+    };
+    while !child.is_null() {
+        if child == a {
+            return -1;
+        }
+        if child == b {
+            return 1;
+        }
+        child = (*child).next;
+    }
+    0
+}
+
+/// Create a node-set from a range of an existing node-set.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodeSetPtr xmlXPathNodeSetCreate(xmlNodePtr val);
+/// ```
+///
+/// With a null `val`, creates an empty node-set.
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathNodeSetCreate(val: *mut _xmlNode) -> *mut _xmlNodeSet {
+    let ns = xmlMallocZero(size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
+    if ns.is_null() {
+        return ptr::null_mut();
+    }
+    if val.is_null() {
+        return ns;
+    }
+    let tab = xmlMalloc(core::mem::size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
+    if tab.is_null() {
+        xmlFree(ns as *mut c_void);
+        return ptr::null_mut();
+    }
+    *tab = val;
+    (*ns).nodeTab = tab;
+    (*ns).nodeNr = 1;
+    (*ns).nodeMax = 1;
+    ns
 }
 
 /// Compile an XPath expression.

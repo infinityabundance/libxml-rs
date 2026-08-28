@@ -8,6 +8,63 @@ history is retained after fixing. This Markdown is generated from
 
 **0 open residuals.** All discovered tooling bugs have been fixed.
 
+## Phase 8 Residuals
+
+### R-000101: Parser did not resolve element/attribute namespaces (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xml/parser/state.rs`
+- **Surface:** parser / namespaces
+- **Oracle versions:** libxml2 2.x (SAX2 namespace processing is core behavior)
+- **Root cause:** `sax_start_element` passed the raw qualified name (e.g. `xsl:stylesheet`) as the SAX2 localname and always passed NULL prefix/URI, so the default tree builder never attached namespace pointers to elements or attributes. XSLT compilation therefore could not recognize `xsl:` instructions.
+- **Fix:** Split element QNames into prefix + localname, resolve prefixes against the element's namespace declarations (with the `xml` prefix special case), and pass resolved prefix/URI/namespace arrays to the SAX2 dispatcher.
+- **Regression courts:** XSLT end-to-end transform tests (`test_end_to_end_*`, `test_xslt_*`).
+
+### R-000102: XPath absolute paths evaluated from the root element (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xml/xpath/eval.rs`
+- **Surface:** XPath
+- **Root cause:** `eval_absolute_path` searched the document's children for a type-9 node (which never exists as a child), falling back to the root element. `/root/item` therefore looked for `root` *inside* the root element and returned empty.
+- **Fix:** The context node for absolute paths is now the document node itself (`doc as *mut _xmlNode`), matching XPath 1.0 `/` semantics.
+- **Regression courts:** `test_end_to_end_template_transform`, `test_xslt_variable_and_call_template`.
+
+### R-000103: Template content double-freed with stylesheet document (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xslt/templates/mod.rs`
+- **Surface:** memory / ownership
+- **Root cause:** `xsltFreeTemplate` freed the template's content tree, but template content nodes are owned by the stylesheet document (`style->doc`) and were freed a second time by `xsltFreeStylesheet`'s `xmlFreeDoc`.
+- **Fix:** `xsltFreeTemplate` no longer frees the content tree (matching upstream libxslt); the document owns those nodes. The template's heap-copied name/mode strings are freed.
+- **Regression courts:** `test_parse_stylesheet_memory` (double-free would abort).
+
+### R-000104: Result document version/encoding strings double-freed (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xslt/transform/mod.rs`
+- **Surface:** memory / ownership
+- **Root cause:** `xsltApplyStylesheetUser` pointed the result document's `version` at a static literal and copied the stylesheet's encoding/version pointers; `free_doc` frees those fields with `xmlFree`, causing invalid frees / double frees.
+- **Fix:** The result document's version/encoding are heap-copied with `xml_strdup`.
+- **Regression courts:** `test_end_to_end_*`.
+
+### R-000105: `node()`/`text()` etc. parsed as function calls (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xslt/patterns/mod.rs`
+- **Surface:** XSLT patterns
+- **Root cause:** Top-level `node()`, `text()`, `comment()`, `processing-instruction()` parse as `FunctionCall` nodes in the XPath AST, so `collect_steps`/`compute_expr_priority` treated them as unknown (priority 0.5, no match).
+- **Fix:** Translate bare node-test function calls into steps (child axis + node test) in `collect_steps` and map their priorities in `compute_expr_priority` (-0.25 for `node()`, 0.0 for the others).
+- **Regression courts:** pattern priority and compile tests.
+
+### R-000106: `match="/"` matched the root element (FIXED)
+
+- **Status:** FIXED (2026-08-28, Phase 8)
+- **Component:** `src/xslt/patterns/mod.rs`
+- **Surface:** XSLT patterns
+- **Root cause:** `"/"` parses as a bare `Self_/node()` step; the matcher treated it as matching any node, so the root template also matched the root element.
+- **Fix:** A bare `Self_/node()` step with no predicates and no other steps represents the document root pattern: empty steps with `is_absolute=true`, matching only document nodes.
+- **Regression courts:** `test_end_to_end_simplified_stylesheet`.
+
 ## Fixed Residuals
 
 ### R-000001: `#line` directive mapping uses wrong coordinate space

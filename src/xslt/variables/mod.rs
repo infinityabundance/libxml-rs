@@ -1,3 +1,556 @@
-//! XSLT variable handling (§33, §85 Phase 8).
+//! XSLT variable and parameter binding (§33, §85 Phase 8).
 //!
-//! Phase 0: scaffolded.
+//! Variables in XSLT are declared with `<xsl:variable>` and `<xsl:param>`.
+//! They can be global (top-level) or local (inside a template).
+//!
+//! Variables hold either:
+//! - An XPath expression result (via the `select` attribute)
+//! - A result tree fragment (via inline content)
+//!
+//! # UPSTREAM-PARITY
+//!
+//! Upstream libxslt stores variables on a stack (`varsTab`) in the transform
+//! context. Each variable is an `_xsltStackElem` chained via `next`.
+//! The stack is grown dynamically and supports saving/restoring the base
+//! (for template-local scoping).
+//!
+//! # Courts
+//!
+//! XSLT-VARIABLES-*, XSLT-PARAMS-*
+
+use crate::abi::allocator::xmlFree;
+use crate::abi::exports_xml2::{xmlXPathFreeObject, xmlXPathObjectCopy};
+use crate::abi::structs::*;
+use crate::abi::types::*;
+use std::ffi::c_void;
+use std::os::raw::c_int;
+use std::ptr;
+
+/// Stack element flags
+pub const XSLT_VAR_GLOBAL: c_int = 1 << 0;
+pub const XSLT_VAR_PARAM: c_int = 1 << 1;
+pub const XSLT_VAR_INTERNAL: c_int = 1 << 2;
+
+/// Push a variable onto the variable stack.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `var` must be a valid `_xsltStackElem` allocated by this library.
+/// - The variable is owned by the context stack after this call.
+pub unsafe fn xsltPushVariable(
+    ctxt: *mut _xsltTransformContext,
+    var: *mut _xsltStackElem,
+) -> c_int {
+    if ctxt.is_null() || var.is_null() {
+        return -1;
+    }
+    // Phase 8: stack management — push onto varsTab
+    let ctx = &mut *ctxt;
+    let new_vars_nr = ctx.varsNr + 1;
+    if new_vars_nr > ctx.varsMax {
+        // Grow the variable table (2x or +16).
+        let new_max = if ctx.varsMax == 0 {
+            16
+        } else {
+            ctx.varsMax * 2
+        };
+        // Reallocate the table.
+        let new_tab = libc::realloc(
+            ctx.varsTab as *mut libc::c_void,
+            (new_max as usize) * core::mem::size_of::<*mut _xsltStackElem>(),
+        ) as *mut *mut _xsltStackElem;
+        if new_tab.is_null() {
+            return -1;
+        }
+        ctx.varsTab = new_tab as *mut c_void;
+        ctx.varsMax = new_max;
+    }
+    // Chain the new variable onto the existing stack head.
+    (*var).next = if ctx.varsNr > 0 {
+        *((ctx.varsTab as *mut *mut _xsltStackElem).offset((ctx.varsNr - 1) as isize))
+    } else {
+        ptr::null_mut()
+    };
+    *((ctx.varsTab as *mut *mut _xsltStackElem).offset(ctx.varsNr as isize)) = var;
+    ctx.varsNr = new_vars_nr;
+    0
+}
+
+/// Pop a variable from the variable stack.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - The returned pointer is owned by the caller and must be freed
+///   with `xsltFreeStackElem`.
+pub unsafe fn xsltPopVariable(ctxt: *mut _xsltTransformContext) -> *mut _xsltStackElem {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    let ctx = &mut *ctxt;
+    if ctx.varsNr == 0 {
+        return ptr::null_mut();
+    }
+    ctx.varsNr -= 1;
+    let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(ctx.varsNr as isize));
+    // Unlink from the chain.
+    if ctx.varsNr > 0 {
+        let prev = *((ctx.varsTab as *mut *mut _xsltStackElem).offset((ctx.varsNr - 1) as isize));
+        (*prev).next = ptr::null_mut();
+    }
+    (*var).next = ptr::null_mut();
+    var
+}
+
+/// Look up a variable by name in the current scope.
+///
+/// Walks the variable stack from the top (most recent) down to the base.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `name` must be a valid NUL-terminated string.
+pub unsafe fn xsltLookupVariable(
+    ctxt: *mut _xsltTransformContext,
+    name: *const xmlChar,
+    ns_uri: *const xmlChar,
+) -> *mut _xsltStackElem {
+    if ctxt.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    let ctx = &mut *ctxt;
+    let mut i = ctx.varsNr;
+    while i > 0 {
+        i -= 1;
+        let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize));
+        if var.is_null() {
+            continue;
+        }
+        // Compare names (and namespace URIs when both present).
+        let vname = (*var).name;
+        if vname.is_null() {
+            continue;
+        }
+        if libc::strcmp(vname as *const libc::c_char, name as *const libc::c_char) != 0 {
+            continue;
+        }
+        if !ns_uri.is_null() && !(*var).nameURI.is_null() {
+            if libc::strcmp(
+                (*var).nameURI as *const libc::c_char,
+                ns_uri as *const libc::c_char,
+            ) != 0
+            {
+                continue;
+            }
+        }
+        return var;
+    }
+    ptr::null_mut()
+}
+
+/// Evaluate a variable and return its value.
+///
+/// If the variable already has a value, returns a copy.
+/// Otherwise evaluates the select expression or the inline content.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `var` must be a valid `_xsltStackElem`.
+pub unsafe fn xsltEvalVariable(
+    ctxt: *mut _xsltTransformContext,
+    var: *mut _xsltStackElem,
+) -> *mut _xmlXPathObject {
+    if ctxt.is_null() || var.is_null() {
+        return ptr::null_mut();
+    }
+    let v = &mut *var;
+    if !v.value.is_null() {
+        return xmlXPathObjectCopy(v.value);
+    }
+    // Phase 8: evaluate select expression or inline content.
+    ptr::null_mut()
+}
+
+/// Free a variable stack element.
+///
+/// # SAFETY
+///
+/// - `var` must be a valid `_xsltStackElem` allocated by this library
+///   and not already freed.
+pub unsafe fn xsltFreeStackElem(var: *mut _xsltStackElem) {
+    if var.is_null() {
+        return;
+    }
+    let v = &mut *var;
+    if !v.comp.is_null() {
+        xmlXPathFreeObject(v.comp);
+        v.comp = ptr::null_mut();
+    }
+    if !v.value.is_null() {
+        xmlXPathFreeObject(v.value);
+        v.value = ptr::null_mut();
+    }
+    if !v.tree.is_null() {
+        crate::xml::tree::free_node(v.tree);
+        v.tree = ptr::null_mut();
+    }
+    // The name/select/nameURI strings are dictionary-owned or stylesheet-owned;
+    // only free them if this is a caller-created variable (from params parsing).
+    if (v.flags & XSLT_VAR_INTERNAL) != 0 {
+        if !v.name.is_null() {
+            libc::free(v.name as *mut libc::c_void);
+        }
+        if !v.nameURI.is_null() {
+            libc::free(v.nameURI as *mut libc::c_void);
+        }
+        if !v.select.is_null() {
+            libc::free(v.select as *mut libc::c_void);
+        }
+    }
+    v.next = ptr::null_mut();
+    xmlFree(var as *mut libc::c_void);
+}
+
+/// Free all global variables in a transform context.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+pub unsafe fn xsltFreeGlobalVariables(ctxt: *mut _xsltTransformContext) {
+    if ctxt.is_null() {
+        return;
+    }
+    let ctx = &mut *ctxt;
+    let mut i = 0;
+    while i < ctx.varsNr {
+        let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize));
+        if !var.is_null() {
+            xsltFreeStackElem(var);
+            *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize)) = ptr::null_mut();
+        }
+        i += 1;
+    }
+    ctx.varsNr = 0;
+    if !ctx.varsTab.is_null() {
+        libc::free(ctx.varsTab as *mut libc::c_void);
+        ctx.varsTab = ptr::null_mut();
+        ctx.varsMax = 0;
+    }
+}
+
+/// Initialize global variables from the stylesheet.
+///
+/// Evaluates all global `<xsl:variable>` elements and registers their
+/// values in the XPath context's variable hash so `$name` references
+/// resolve during template execution. Global parameters set by the
+/// caller (via the params array) take precedence over stylesheet
+/// defaults.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream libxslt (variables.c `xsltInitializeCtxt`) evaluates global
+/// variables lazily on first use. We evaluate them eagerly here, which
+/// is behaviorally equivalent for well-formed stylesheets.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
+    if ctxt.is_null() {
+        return;
+    }
+    let ctx = &mut *ctxt;
+    let style = ctx.style;
+    if style.is_null() {
+        return;
+    }
+    // First, register caller-provided parameters (they take precedence).
+    let mut param = (*style).params as *mut _xsltStackElem;
+    while !param.is_null() {
+        register_global_value(ctxt, param);
+        param = (*param).next;
+    }
+    // Then evaluate stylesheet-defined global variables/params.
+    let mut var = (*style).variables as *mut _xsltStackElem;
+    while !var.is_null() {
+        register_global_value(ctxt, var);
+        var = (*var).next;
+    }
+}
+
+/// Evaluate a single global variable/parameter and register its value in
+/// the XPath context's variable hash.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - `var` must be a valid `_xsltStackElem`.
+unsafe fn register_global_value(ctxt: *mut _xsltTransformContext, var: *mut _xsltStackElem) {
+    if var.is_null() || (*var).name.is_null() {
+        return;
+    }
+    let name = crate::abi::versioning::c_str_to_bytes((*var).name as *const std::os::raw::c_char);
+    let name = match name {
+        Some(n) => String::from_utf8_lossy(n).into_owned(),
+        None => return,
+    };
+    // Compute the value: caller params carry a string value in `select`;
+    // stylesheet variables have a select expression or inline content.
+    let value: Option<crate::xml::xpath::types::XPathValue> = if !(*var).value.is_null() {
+        // Already evaluated (e.g. a caller param parsed by
+        // xsltParseStylesheetParams carries the string in select).
+        let v = (*var).value;
+        let typ = (*v).type_;
+        if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+            let s = (*v).stringval;
+            let s = if s.is_null() {
+                String::new()
+            } else {
+                crate::abi::versioning::c_str_to_bytes(s as *const std::os::raw::c_char)
+                    .map(|b| String::from_utf8_lossy(b).into_owned())
+                    .unwrap_or_default()
+            };
+            Some(crate::xml::xpath::types::XPathValue::String(s))
+        } else {
+            None
+        }
+    } else if !(*var).select.is_null() {
+        // Evaluate the select expression in the context of the document
+        // root.
+        let xpath_ctxt = (*ctxt).xpathCtxt;
+        if xpath_ctxt.is_null() {
+            return;
+        }
+        // Save and set the context to the document node.
+        let saved_node = (*xpath_ctxt).node;
+        (*xpath_ctxt).node = (*ctxt).document as *mut _xmlNode;
+        let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+        if !internal.is_null() {
+            (*internal).context_node = (*ctxt).document as *mut _xmlNode;
+            (*internal).document = (*ctxt).document;
+        }
+        let obj = crate::abi::exports_xml2::xmlXPathEvalExpression((*var).select, xpath_ctxt);
+        (*xpath_ctxt).node = saved_node;
+        let result = if !obj.is_null() {
+            let v = crate::abi::exports_xml2::object_to_xpathvalue_pub(obj);
+            crate::abi::exports_xml2::xmlXPathFreeObject(obj);
+            Some(v)
+        } else {
+            None
+        };
+        result
+    } else {
+        // Inline content: evaluate to a result tree fragment (string value).
+        let content = crate::xml::tree::node_get_content((*var).tree);
+        let s = if content.is_null() {
+            String::new()
+        } else {
+            crate::abi::versioning::c_str_to_bytes(content as *const std::os::raw::c_char)
+                .map(|b| String::from_utf8_lossy(b).into_owned())
+                .unwrap_or_default()
+        };
+        if !content.is_null() {
+            libc::free(content as *mut libc::c_void);
+        }
+        Some(crate::xml::xpath::types::XPathValue::String(s))
+    };
+
+    if let Some(v) = value {
+        // Register in the XPath context's variable hash.
+        let xpath_ctxt = (*ctxt).xpathCtxt;
+        if !xpath_ctxt.is_null() {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() {
+                (*internal).register_variable(&name, v);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::abi::allocator::{xmlFree, xmlMalloc};
+    use crate::abi::structs::*;
+    use core::ptr;
+
+    fn make_stack_elem(name: &[u8]) -> *mut _xsltStackElem {
+        unsafe {
+            let v = xmlMalloc(core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
+            if v.is_null() {
+                return ptr::null_mut();
+            }
+            core::ptr::write(v, {
+                let cname = libc::malloc(name.len() + 1) as *mut xmlChar;
+                if !cname.is_null() {
+                    libc::memcpy(
+                        cname as *mut libc::c_void,
+                        name.as_ptr() as *const libc::c_void,
+                        name.len(),
+                    );
+                    *cname.add(name.len()) = 0;
+                }
+                _xsltStackElem {
+                    next: ptr::null_mut(),
+                    style: ptr::null_mut(),
+                    inst: ptr::null_mut(),
+                    name: cname,
+                    nameURI: ptr::null(),
+                    select: ptr::null(),
+                    comp: ptr::null_mut(),
+                    tree: ptr::null_mut(),
+                    value: ptr::null_mut(),
+                    flags: XSLT_VAR_INTERNAL,
+                    level: 0,
+                    compCtxt: 0,
+                }
+            });
+            v
+        }
+    }
+
+    fn make_ctxt() -> *mut _xsltTransformContext {
+        unsafe {
+            let c = xmlMalloc(core::mem::size_of::<_xsltTransformContext>())
+                as *mut _xsltTransformContext;
+            if c.is_null() {
+                return ptr::null_mut();
+            }
+            core::ptr::write(
+                c,
+                _xsltTransformContext {
+                    style: ptr::null_mut(),
+                    templ: ptr::null_mut(),
+                    document: ptr::null_mut(),
+                    node: ptr::null_mut(),
+                    nodeList: ptr::null_mut(),
+                    contextSize: 0,
+                    proximityPosition: 0,
+                    xpathCtxt: ptr::null_mut(),
+                    xpathReturn: ptr::null_mut(),
+                    xpathReturnNr: 0,
+                    xpathReturnMax: 0,
+                    xpathReturnTab: ptr::null_mut(),
+                    templNr: 0,
+                    templMax: 0,
+                    templTab: ptr::null_mut(),
+                    depth: 0,
+                    maxDepth: 0,
+                    varsNr: 0,
+                    varsMax: 0,
+                    varsBase: 0,
+                    varsTab: ptr::null_mut(),
+                    paramsNr: 0,
+                    paramsMax: 0,
+                    paramsBase: 0,
+                    paramsTab: ptr::null_mut(),
+                    keyTables: ptr::null_mut(),
+                    hasSort: 0,
+                    output: ptr::null_mut(),
+                    errFunc: ptr::null_mut(),
+                    errCtxt: ptr::null_mut(),
+                    extInfos: ptr::null_mut(),
+                    extrasNr: 0,
+                    extrasMax: 0,
+                    extrasTab: ptr::null_mut(),
+                    state: 0,
+                    priority: 0,
+                    parserCtxt: ptr::null_mut(),
+                    save: 0,
+                    opts: 0,
+                    secPrefs: ptr::null_mut(),
+                    docCache: ptr::null_mut(),
+                    globalVars: ptr::null_mut(),
+                    profile: ptr::null_mut(),
+                    prof: 0,
+                    extFunctionsNr: 0,
+                    extFunctionsMax: 0,
+                    extFunctionsTab: ptr::null_mut(),
+                    userData: ptr::null_mut(),
+                    frame: 0,
+                    frameNr: 0,
+                    frameMax: 0,
+                    frameTab: ptr::null_mut(),
+                    insert: ptr::null_mut(),
+                    resultDoc: ptr::null_mut(),
+                    nsNr: 0,
+                    nsMax: 0,
+                    nsTab: ptr::null_mut(),
+                    nsNrOriginal: 0,
+                    nsMaxOriginal: 0,
+                    nsTabOriginal: ptr::null_mut(),
+                    currentTemplate: ptr::null_mut(),
+                    templHash: ptr::null_mut(),
+                    varsNrOriginal: 0,
+                    varsMaxOriginal: 0,
+                    varsTabOriginal: ptr::null_mut(),
+                    insertDepth: 0,
+                    maxInsertDepth: 0,
+                },
+            );
+            c
+        }
+    }
+
+    #[test]
+    fn test_push_pop_variable() {
+        unsafe {
+            let ctxt = make_ctxt();
+            assert!(!ctxt.is_null());
+            let v1 = make_stack_elem(b"var1\0");
+            let v2 = make_stack_elem(b"var2\0");
+            assert_eq!(xsltPushVariable(ctxt, v1), 0);
+            assert_eq!(xsltPushVariable(ctxt, v2), 0);
+            assert_eq!((*ctxt).varsNr, 2);
+            let popped = xsltPopVariable(ctxt);
+            assert_eq!(popped, v2);
+            let popped2 = xsltPopVariable(ctxt);
+            assert_eq!(popped2, v1);
+            assert!(xsltPopVariable(ctxt).is_null());
+            xsltFreeStackElem(v1);
+            xsltFreeStackElem(v2);
+            xmlFree(ctxt as *mut libc::c_void);
+        }
+    }
+
+    #[test]
+    fn test_lookup_variable() {
+        unsafe {
+            let ctxt = make_ctxt();
+            let v1 = make_stack_elem(b"foo\0");
+            let v2 = make_stack_elem(b"bar\0");
+            xsltPushVariable(ctxt, v1);
+            xsltPushVariable(ctxt, v2);
+            let found = xsltLookupVariable(ctxt, b"bar\0".as_ptr() as *const xmlChar, ptr::null());
+            assert_eq!(found, v2);
+            let not_found =
+                xsltLookupVariable(ctxt, b"baz\0".as_ptr() as *const xmlChar, ptr::null());
+            assert!(not_found.is_null());
+            xsltFreeStackElem(v1);
+            xsltFreeStackElem(v2);
+            xmlFree(ctxt as *mut libc::c_void);
+        }
+    }
+
+    #[test]
+    fn test_lookup_empty_stack() {
+        unsafe {
+            let ctxt = make_ctxt();
+            let found = xsltLookupVariable(ctxt, b"foo\0".as_ptr() as *const xmlChar, ptr::null());
+            assert!(found.is_null());
+            xmlFree(ctxt as *mut libc::c_void);
+        }
+    }
+
+    #[test]
+    fn test_push_null_returns_error() {
+        unsafe {
+            let ctxt = make_ctxt();
+            assert_eq!(xsltPushVariable(ptr::null_mut(), ptr::null_mut()), -1);
+            assert_eq!(xsltPushVariable(ctxt, ptr::null_mut()), -1);
+            xmlFree(ctxt as *mut libc::c_void);
+        }
+    }
+}

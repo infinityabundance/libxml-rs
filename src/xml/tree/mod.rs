@@ -347,6 +347,118 @@ pub fn get_line_no(node: *const _xmlNode) -> c_int {
     n.line as c_int
 }
 
+/// Get the content of a node, recursively concatenating child text.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlNodeGetContent(const xmlNode *cur);
+/// ```
+///
+/// Oracle behavior (tree.c `xmlNodeGetContent`):
+/// - For text/CDATA nodes: returns the content directly.
+/// - For element nodes: recursively concatenates the string values of
+///   children (text and CDATA; entity references are expanded via their
+///   content when available).
+/// - For attribute nodes: returns the attribute value (first child).
+/// - For comments/PIs: returns the content field.
+/// - For documents: returns content of the root element.
+/// - Returns NULL on error, empty string for empty nodes.
+///
+/// Returns a newly allocated string; caller frees with `xmlFree`.
+pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let typ = (*node).type_;
+    let mut result: Vec<u8> = Vec::new();
+    match typ {
+        t if t == XML_TEXT_NODE as c_int
+            || t == XML_CDATA_SECTION_NODE as c_int
+            || t == XML_COMMENT_NODE as c_int
+            || t == XML_PI_NODE as c_int =>
+        {
+            if !(*node).content.is_null() {
+                let len = crate::abi::exports_xml2::xmlStrlen((*node).content);
+                result
+                    .extend_from_slice(core::slice::from_raw_parts((*node).content, len as usize));
+            }
+        }
+        t if t == XML_ATTRIBUTE_NODE as c_int => {
+            // Attribute: content is the value (first text child).
+            if !(*node).children.is_null() {
+                let child = (*node).children;
+                if !(*child).content.is_null() {
+                    let len = crate::abi::exports_xml2::xmlStrlen((*child).content);
+                    result.extend_from_slice(core::slice::from_raw_parts(
+                        (*child).content,
+                        len as usize,
+                    ));
+                }
+            }
+        }
+        t if t == XML_ENTITY_REF_NODE as c_int => {
+            // Entity reference: expand via entity content.
+            let name = (*node).name;
+            if !name.is_null() && !(*node).doc.is_null() {
+                let ent = crate::xml::tree::get_doc_entity((*node).doc, name);
+                if !ent.is_null() && !(*ent).content.is_null() {
+                    let len = crate::abi::exports_xml2::xmlStrlen((*ent).content);
+                    result.extend_from_slice(core::slice::from_raw_parts(
+                        (*ent).content,
+                        len as usize,
+                    ));
+                }
+            }
+        }
+        t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
+            let root = doc_get_root_element(node as *mut _xmlDoc);
+            if !root.is_null() {
+                let sub = node_get_content(root);
+                if !sub.is_null() {
+                    let len = crate::abi::exports_xml2::xmlStrlen(sub);
+                    result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
+                    allocator::xmlFree(sub as *mut c_void);
+                }
+            }
+        }
+        _ => {
+            // Element and everything else: concatenate child text content.
+            let mut child = (*node).children;
+            while !child.is_null() {
+                let ctype = (*child).type_;
+                if ctype == XML_TEXT_NODE as c_int || ctype == XML_CDATA_SECTION_NODE as c_int {
+                    if !(*child).content.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen((*child).content);
+                        result.extend_from_slice(core::slice::from_raw_parts(
+                            (*child).content,
+                            len as usize,
+                        ));
+                    }
+                } else if ctype == XML_ENTITY_REF_NODE as c_int {
+                    let sub = node_get_content(child);
+                    if !sub.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen(sub);
+                        result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
+                        allocator::xmlFree(sub as *mut c_void);
+                    }
+                }
+                child = (*child).next;
+            }
+        }
+    }
+    // Allocate the C string.
+    let buf = allocator::xmlMalloc(result.len() + 1) as *mut xmlChar;
+    if buf.is_null() {
+        return ptr::null_mut();
+    }
+    if !result.is_empty() {
+        ptr::copy_nonoverlapping(result.as_ptr(), buf, result.len());
+    }
+    *buf.add(result.len()) = 0;
+    buf
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Node Operations
 // ═══════════════════════════════════════════════════════════════════════════════

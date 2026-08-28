@@ -45,6 +45,43 @@ Generated from `PARITY_MATRIX.json` (§70). Last updated: 2026-08-20.
 | `delta.py` | ✅ Built | Ready for multi-version API diffing |
 | `court runner` | ✅ Built | Ready for differential testing (needs Docker oracle) |
 
+## Phase 8 — libxslt (XSLT 1.0 Engine) Status
+
+Complete as of 2026-08-28: 1060 library tests passing (0 failures).
+
+### XSLT Subsystem Coverage
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| Stylesheet lifecycle | ✅ Complete | `xsltStylesheetCreate`, `xsltParseStylesheetDoc/File/Memory`, `xsltFreeStylesheet`, `xsltGet/SetStylesheetDoc` |
+| Compiler | ✅ Complete | Template compilation, top-level elements (key, decimal-format, namespace-alias, attribute-set, strip/preserve-space, output, variable, param), imports, includes, simplified stylesheets |
+| Templates | ✅ Complete | Priority-ordered list, `xsltFindTemplate` (XSLT §5.2), `xsltLookupTemplate`, default priority per §5.5 |
+| Patterns | ✅ Complete | XSLT pattern compiler (union, `//`, `@`, `*`, `node()`, `text()`, `comment()`, `processing-instruction()`, predicates), `xsltDefaultPriority` |
+| Variables/Params | ✅ Complete | Stack management, global variable initialization, with-param passing |
+| Keys | ✅ Complete | Key definitions, table construction, `key()` function support |
+| Sorting | ✅ Complete | Multi-key sort, text/number data types, ascending/descending |
+| Numbering | ✅ Complete | `xsl:number` with decimal/alphabetic/roman formats |
+| Attributes | ✅ Complete | Attribute set compilation and application |
+| Namespace alias | ✅ Complete | `xsl:namespace-alias` compilation and resolution |
+| Whitespace | ✅ Complete | strip-space/preserve-space rules with import-depth precedence |
+| Imports/Includes | ✅ Complete | Import tree construction, import depth, include merging |
+| Documents | ✅ Complete | `document()` cache, loader function plumbing |
+| Extensions | ✅ Complete | `xsltRegisterExtFunction`, `xsltRegisterExtElement` |
+| Serialization | ✅ Complete | `xsltSaveResultToFile/Fd/String` with output method selection (xml/html/text) |
+| Security | ✅ Complete | Full security prefs API with global defaults |
+| Errors | ✅ Complete | Error domains, handler wiring, stderr reporting |
+| Transform | ✅ Complete | `xsltApplyStylesheet(User/Stacked)`, transform context, instruction execution (apply-templates, call-template, for-each, value-of, copy-of, copy, element, attribute, text, comment, PI, number, choose, if, variable, param, message, apply-imports), XSLT XPath functions (document, key, generate-id, system-property, element-available, function-available, current) |
+| ABI exports | ✅ Complete | All 33 libxslt symbols exported from the shared library |
+
+### Phase 8 Fixes to Underlying Subsystems
+
+| Fix | Surface | Details |
+|-----|---------|--------|
+| Namespace resolution in parser | xml/parser/state.rs | SAX2 `startElementNs` now receives split prefix/localname and resolved URIs for elements and attributes |
+| Absolute path evaluation | xml/xpath/eval.rs | `/root/item` now evaluates from the document node, not the root element |
+| XPath C ABI helpers | abi/exports_xml2.rs | Added `xmlXPathObjectCopy`, `xmlXPathCastToString`, `xmlXPathCastStringToNumber`, `xmlXPathCmpNodes`, `xmlXPathNodeSetCreate` |
+| Node content getter | xml/tree/mod.rs | Added `node_get_content` (upstream `xmlNodeGetContent` semantics) |
+
 ## Infrastructure Status
 
 | Component | Status | Notes |

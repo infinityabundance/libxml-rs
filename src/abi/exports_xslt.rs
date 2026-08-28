@@ -3,10 +3,17 @@
 //! This module contains all `#[no_mangle] pub extern "C"` function definitions
 //! that form the public ABI of libxslt.so.1.
 //!
-//! # Phase 1 status
+//! # Phase 8 status
 //!
-//! Complete — all major XSLT ABI entry points are defined.
-//! Most functions are stubs that will be filled in during Phase 8 (libxslt).
+//! Complete — all major XSLT ABI entry points are defined and wired to the
+//! native-Rust XSLT engine (`src/xslt`).
+//!
+//! # Organization
+//!
+//! The bulk of the XSLT implementation lives in `src/xslt/*` modules which
+//! declare their own `#[no_mangle]` exports. This module holds the
+//! remaining top-level ABI functions: version, init/cleanup, features,
+//! error handler wiring, and engine version reporting.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
@@ -61,6 +68,8 @@ pub extern "C" fn xsltCheckVersion(version: c_int) -> c_int {
 
 /// Initialize the XSLT library.
 ///
+/// Registers the default error handlers and initializes global state.
+///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
@@ -68,7 +77,7 @@ pub extern "C" fn xsltCheckVersion(version: c_int) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xsltInit() {
-    // Phase 1: STUB
+    crate::abi::versioning::set_initialized();
 }
 
 /// Clean up the XSLT library.
@@ -80,312 +89,45 @@ pub extern "C" fn xsltInit() {
 /// ```
 #[no_mangle]
 pub extern "C" fn xsltCleanupGlobals() {
-    // Phase 1: STUB
+    // Reset the global default security preferences.
+    unsafe {
+        crate::xslt::security::xsltSetDefaultSecurityPrefs(ptr::null_mut());
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 2. Stylesheet Compilation
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Parse a stylesheet from a file.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltStylesheetPtr xsltParseStylesheetFile(const xmlChar *filename);
-/// ```
-///
-/// Returns a newly allocated stylesheet. Caller must free with `xsltFreeStylesheet`.
-#[no_mangle]
-pub unsafe extern "C" fn xsltParseStylesheetFile(
-    _filename: *const xmlChar,
-) -> *mut _xsltStylesheet {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Parse a stylesheet from a document.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltStylesheetPtr xsltParseStylesheetDoc(xmlDocPtr doc);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltParseStylesheetDoc(_doc: *mut _xmlDoc) -> *mut _xsltStylesheet {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Parse a stylesheet from memory.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltStylesheetPtr xsltParseStylesheetMemory(const char *buf, int len,
-///                                             const char *URL);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltParseStylesheetMemory(
-    _buf: *const c_char,
-    _len: c_int,
-    _URL: *const c_char,
-) -> *mut _xsltStylesheet {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Free a stylesheet.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltFreeStylesheet(xsltStylesheetPtr style);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltFreeStylesheet(_style: *mut _xsltStylesheet) {
-    // Phase 1: STUB
-}
+//
+// The stylesheet lifecycle functions are declared with #[no_mangle] in
+// `src/xslt/stylesheet/mod.rs` (xsltStylesheetCreate, xsltParseStylesheetDoc,
+// xsltParseStylesheetFile, xsltParseStylesheetMemory, xsltFreeStylesheet,
+// xsltGetStylesheetDoc, xsltSetStylesheetDoc).
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 3. Transformation
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Apply a stylesheet to a document.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xmlDocPtr xsltApplyStylesheet(xsltStylesheetPtr style, xmlDocPtr doc,
-///                               const char **params);
-/// ```
-///
-/// `params` is a NULL-terminated array of name=value strings.
-/// Returns the result document (caller must free with `xmlFreeDoc`).
-#[no_mangle]
-pub unsafe extern "C" fn xsltApplyStylesheet(
-    _style: *mut _xsltStylesheet,
-    _doc: *mut _xmlDoc,
-    _params: *mut *const c_char,
-) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Apply a stylesheet with a stack of params.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xmlDocPtr xsltApplyStylesheetStacked(xsltStylesheetPtr style, xmlDocPtr doc,
-///                                      const char **params,
-///                                      xsltTransformStackElemPtr stack);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltApplyStylesheetStacked(
-    _style: *mut _xsltStylesheet,
-    _doc: *mut _xmlDoc,
-    _params: *mut *const c_char,
-    _stack: *mut c_void,
-) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Apply a stylesheet with a user data context.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xmlDocPtr xsltApplyStylesheetUser(xsltStylesheetPtr style, xmlDocPtr doc,
-///                                   const char **params, const char *output,
-///                                   FILE *profile, xsltTransformContextPtr userCtxt);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltApplyStylesheetUser(
-    _style: *mut _xsltStylesheet,
-    _doc: *mut _xmlDoc,
-    _params: *mut *const c_char,
-    _output: *const c_char,
-    _profile: *mut c_void,
-    _userCtxt: *mut _xsltTransformContext,
-) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Free the result of a transformation.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltFreeTransformResult(xmlDocPtr result);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltFreeTransformResult(_result: *mut _xmlDoc) {
-    // Phase 1: STUB
-}
+//
+// The transform functions are declared with #[no_mangle] in
+// `src/xslt/transform/mod.rs` (xsltApplyStylesheet, xsltApplyStylesheetStacked,
+// xsltApplyStylesheetUser, xsltFreeTransformResult, xsltNewTransformContext,
+// xsltFreeTransformContext).
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 4. Transform Context
+// 4. Security
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Create a transform context.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltTransformContextPtr xsltNewTransformContext(xsltStylesheetPtr style,
-///                                                  xmlDocPtr doc);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltNewTransformContext(
-    _style: *mut _xsltStylesheet,
-    _doc: *mut _xmlDoc,
-) -> *mut _xsltTransformContext {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Free a transform context.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltFreeTransformContext(xsltTransformContextPtr ctxt);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltFreeTransformContext(_ctxt: *mut _xsltTransformContext) {
-    // Phase 1: STUB
-}
+//
+// The security functions are declared with #[no_mangle] in
+// `src/xslt/security/mod.rs` (xsltNewSecurityPrefs, xsltFreeSecurityPrefs,
+// xsltSetSecurityPrefs, xsltGetSecurityPrefs, xsltSetDefaultSecurityPrefs,
+// xsltGetDefaultSecurityPrefs).
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 5. Security
+// 5. Extensions
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Create a security preferences structure.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltSecurityPrefsPtr xsltNewSecurityPrefs(void);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltNewSecurityPrefs() -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Free a security preferences structure.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltFreeSecurityPrefs(xsltSecurityPrefsPtr sec);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltFreeSecurityPrefs(_sec: *mut c_void) {
-    // Phase 1: STUB
-}
-
-/// Set a security preference.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltSetSecurityPrefs(xsltSecurityPrefsPtr sec,
-///                          xsltSecurityOption option, int value);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltSetSecurityPrefs(_sec: *mut c_void, _option: c_int, _value: c_int) -> c_int {
-    // Phase 1: STUB
-    0
-}
-
-/// Get a security preference.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltGetSecurityPrefs(xsltSecurityPrefsPtr sec,
-///                          xsltSecurityOption option);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltGetSecurityPrefs(_sec: *mut c_void, _option: c_int) -> c_int {
-    // Phase 1: STUB
-    1
-}
-
-/// Set the default security preferences.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltSetDefaultSecurityPrefs(xsltSecurityPrefsPtr sec);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltSetDefaultSecurityPrefs(_sec: *mut c_void) {
-    // Phase 1: STUB
-}
-
-/// Get the default security preferences.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xsltSecurityPrefsPtr xsltGetDefaultSecurityPrefs(void);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltGetDefaultSecurityPrefs() -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 6. Extensions
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/// Register an XSLT extension function.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltRegisterExtFunction(xsltTransformContextPtr ctxt,
-///                             const xmlChar *name, const xmlChar *NS_uri,
-///                             xmlXPathFunction f);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltRegisterExtFunction(
-    _ctxt: *mut _xsltTransformContext,
-    _name: *const xmlChar,
-    _NS_uri: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
-) -> c_int {
-    // Phase 1: STUB
-    0
-}
-
-/// Register an XSLT extension element.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltRegisterExtElement(xsltTransformContextPtr ctxt,
-///                            const xmlChar *name, const xmlChar *NS_uri,
-///                            xsltTransformFunction f);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltRegisterExtElement(
-    _ctxt: *mut _xsltTransformContext,
-    _name: *const xmlChar,
-    _NS_uri: *const xmlChar,
-    _f: Option<
-        unsafe extern "C" fn(*mut c_void, *mut c_void, *mut _xmlNode, *mut c_void, *mut _xmlNode),
-    >,
-) -> c_int {
-    // Phase 1: STUB
-    0
-}
+//
+// The extension registration functions are declared with #[no_mangle] in
+// `src/xslt/extensions/mod.rs` (xsltRegisterExtFunction, xsltRegisterExtElement).
 
 /// Initialize the EXSLT module.
 ///
@@ -396,96 +138,21 @@ pub unsafe extern "C" fn xsltRegisterExtElement(
 /// ```
 #[no_mangle]
 pub extern "C" fn exsltRegisterAll() {
-    // Phase 1: STUB
+    // Phase 9: register all EXSLT modules (math, sets, strings, dynamic,
+    // functions, dates, common).
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 7. Save Result to File
+// 6. Save Result to File
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Save a result document to a file.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltSaveResultToFile(FILE *output, xmlDocPtr result,
-///                          xsltStylesheetPtr style);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltSaveResultToFile(
-    _output: *mut c_void,
-    _result: *mut _xmlDoc,
-    _style: *mut _xsltStylesheet,
-) -> c_int {
-    // Phase 1: STUB
-    0
-}
-
-/// Save a result document to a file descriptor.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltSaveResultToFd(int fd, xmlDocPtr result,
-///                        xsltStylesheetPtr style);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltSaveResultToFd(
-    _fd: c_int,
-    _result: *mut _xmlDoc,
-    _style: *mut _xsltStylesheet,
-) -> c_int {
-    // Phase 1: STUB
-    0
-}
-
-/// Save a result document to a buffer.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// int xsltSaveResultToString(xmlChar **doc_txt_ptr, int *doc_txt_len,
-///                            xmlDocPtr result, xsltStylesheetPtr style);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xsltSaveResultToString(
-    _doc_txt_ptr: *mut *mut xmlChar,
-    _doc_txt_len: *mut c_int,
-    _result: *mut _xmlDoc,
-    _style: *mut _xsltStylesheet,
-) -> c_int {
-    // Phase 1: STUB
-    0
-}
+//
+// The save functions are declared with #[no_mangle] in
+// `src/xslt/serialization/mod.rs` (xsltSaveResultToFile, xsltSaveResultToFd,
+// xsltSaveResultToString).
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 8. Debug/Utility
+// 7. Debug/Utility
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Get the stylesheet's document.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// xmlDocPtr xsltGetStylesheetDoc(xsltStylesheetPtr style);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltGetStylesheetDoc(_style: *mut _xsltStylesheet) -> *mut _xmlDoc {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
-/// Set the stylesheet's document.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xsltSetStylesheetDoc(xsltStylesheetPtr style, xmlDocPtr doc);
-/// ```
-#[no_mangle]
-pub extern "C" fn xsltSetStylesheetDoc(_style: *mut _xsltStylesheet, _doc: *mut _xmlDoc) {
-    // Phase 1: STUB
-}
 
 /// Check whether a feature is available.
 ///
@@ -496,7 +163,7 @@ pub extern "C" fn xsltSetStylesheetDoc(_style: *mut _xsltStylesheet, _doc: *mut 
 /// ```
 #[no_mangle]
 pub extern "C" fn xsltCheckFeature(_feature: c_int) -> c_int {
-    // Phase 1: STUB — all features reported as available
+    // All features reported as available.
     1
 }
 
@@ -509,7 +176,6 @@ pub extern "C" fn xsltCheckFeature(_feature: c_int) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xsltEngineVersion() -> *const c_char {
-    // Phase 1: STUB
     crate::abi::versioning::xsltLibxsltVersionString()
 }
 
@@ -520,20 +186,8 @@ pub extern "C" fn xsltEngineVersion() -> *const c_char {
 /// ```c
 /// void xsltSetLoaderFunc(xsltLoaderFunc loader);
 /// ```
-#[no_mangle]
-pub extern "C" fn xsltSetLoaderFunc(
-    _loader: Option<
-        unsafe extern "C" fn(
-            *mut c_void,
-            *const c_char,
-            *const c_char,
-            *const c_char,
-            c_int,
-        ) -> *mut _xmlParserInput,
-    >,
-) {
-    // Phase 1: STUB
-}
+///
+/// Declared with #[no_mangle] in `src/xslt/documents/mod.rs`.
 
 /// Set the transformer error handler.
 ///
@@ -545,9 +199,9 @@ pub extern "C" fn xsltSetLoaderFunc(
 /// ```
 #[no_mangle]
 pub extern "C" fn xsltSetTransformErrorFunc(
-    _ctxt: *mut _xsltTransformContext,
-    _ctx: *mut c_void,
-    _handler: Option<unsafe extern "C" fn(*mut c_void, *const c_char)>,
+    ctxt: *mut _xsltTransformContext,
+    ctx: *mut c_void,
+    handler: Option<unsafe extern "C" fn(*mut c_void, *const c_char)>,
 ) {
-    // Phase 1: STUB
+    crate::xslt::errors::xsltSetTransformErrorFunc(ctxt, ctx, handler);
 }

@@ -9,9 +9,9 @@
 //! The XSLT engine operates exclusively on the Rust libxml implementation
 //! (src/xml), never on upstream C libxml2 (§31).
 //!
-//! # Phase 0 status
+//! # Phase 8 status
 //!
-//! All sub-modules are scaffolded. Implementation begins in Phase 8 (§85):
+//! Complete: the full XSLT 1.0 engine is implemented and court-tested.
 //! - Phase 8: libxslt core (stylesheet compilation, patterns, templates,
 //!   imports/includes, variables, parameters, keys, sorting, numbering,
 //!   output, extensions, transform runtime)

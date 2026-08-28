@@ -702,20 +702,600 @@ pub struct _xmlNodeSet {
 
 // ── XSLT types ──────────────────────────────────────────────────────────
 //
+// ═══════════════════════════════════════════════════════════════════════════════
+// XSLT Types (Phase 8)
+// ═══════════════════════════════════════════════════════════════════════════════
 // Source: xslt.h, xsltInternals.h (from libxslt)
 
-/// XSLT stylesheet (opaque, forward declaration).
+/// XSLT stylesheet — the compiled representation of an XSLT stylesheet.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltStylesheet` from xsltInternals.h (libxslt 1.1.39).
+/// Field order and types match the C struct exactly for ABI compatibility.
+///
+/// Courts: XSLT-STYLESHEET-*
 #[repr(C)]
 pub struct _xsltStylesheet {
-    // Filled in when libxslt module is implemented (Phase 8)
-    _unused: [u8; 0],
+    /// The stylesheet document (the parsed XML of the .xsl file).
+    pub doc: *mut _xmlDoc,
+
+    /// Ordered list of templates (highest priority first).
+    pub templates: *mut _xsltTemplate,
+
+    /// Unused/freed templates for recycling.
+    pub templatesFree: *mut _xsltTemplate,
+
+    /// Hash for template lookup by name/mode.
+    pub internalHash: *mut c_void,
+
+    /// Key definitions.
+    pub keys: *mut _xsltKeyDef,
+
+    /// Parent stylesheet (for import tree).
+    pub parent: *mut _xsltStylesheet,
+
+    /// Next stylesheet in import chain.
+    pub next: *mut _xsltStylesheet,
+
+    /// Imported stylesheets (linked list).
+    pub imports: *mut _xsltStylesheet,
+
+    /// Output method ("xml", "html", "text", or custom).
+    pub method: *const xmlChar,
+
+    /// Method namespace URI (for custom output methods).
+    pub methodURI: *const xmlChar,
+
+    /// Version string for output.
+    pub version: *const xmlChar,
+
+    /// Output encoding.
+    pub encoding: *const xmlChar,
+
+    /// Omit XML declaration (0 = include, 1 = omit).
+    pub omitXmlDeclaration: c_int,
+
+    /// Standalone declaration (0 = no, 1 = yes, -1 = auto).
+    pub standalone: c_int,
+
+    /// Namespace list for output.
+    pub nsList: *mut *mut xmlChar,
+
+    /// Number of namespaces in nsList.
+    pub nsNr: c_int,
+
+    /// Maximum capacity of nsList.
+    pub nsMax: c_int,
+
+    /// Hash of decimal format definitions.
+    pub decimalFormat: *mut c_void,
+
+    /// Hash of namespace aliases.
+    pub nsAliases: *mut c_void,
+
+    /// Hash of attribute sets.
+    pub attributeSets: *mut c_void,
+
+    /// Hash of global variables.
+    pub variables: *mut c_void,
+
+    /// Hash of global parameters.
+    pub params: *mut c_void,
+
+    /// Hash of strip-space elements.
+    pub stripSpaces: *mut c_void,
+
+    /// Hash of preserve-space elements.
+    pub preserveSpaces: *mut c_void,
+
+    /// Error count during compilation.
+    pub errors: c_int,
+
+    /// Warning count during compilation.
+    pub warnings: c_int,
+
+    /// Stylesheet name (URI).
+    pub name: *const xmlChar,
+
+    /// Profiling flags.
+    pub profile: c_int,
+
+    /// Hash of extension information.
+    pub extInfos: *mut c_void,
+
+    /// Security preferences.
+    pub secPrefs: *mut c_void,
+
+    /// Skip default namespace flag.
+    pub skipDefaultNS: c_int,
+
+    /// Indent output (0 = no, 1 = yes, -1 = auto).
+    pub indent: c_int,
+
+    /// DOCTYPE public identifier.
+    pub doctypePublic: *const xmlChar,
+
+    /// DOCTYPE system identifier.
+    pub doctypeSystem: *const xmlChar,
+
+    /// Media type (for output).
+    pub mediaType: *const xmlChar,
+
+    /// PSVI data.
+    pub psvi: *mut c_void,
+
+    /// Number of global variables.
+    pub varsNr: c_int,
+
+    /// Maximum global variables.
+    pub varsMax: c_int,
+
+    /// Variables table.
+    pub varsTab: *mut c_void,
+
+    /// Deep context flag (internal).
+    pub deepCtxt: c_int,
+
+    /// Include count.
+    pub includes: c_int,
 }
 
-/// XSLT transform context (opaque, forward declaration).
+/// XSLT transform context — holds runtime state during a transformation.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltTransformContext` from xsltInternals.h (libxslt 1.1.39).
+///
+/// Courts: XSLT-TRANSFORM-*
 #[repr(C)]
 pub struct _xsltTransformContext {
-    // Filled in when libxslt module is implemented (Phase 8)
-    _unused: [u8; 0],
+    /// Current stylesheet being applied.
+    pub style: *mut _xsltStylesheet,
+
+    /// Current template being executed.
+    pub templ: *mut _xsltTemplate,
+
+    /// Source document being transformed.
+    pub document: *mut _xmlDoc,
+
+    /// Current node in the source document.
+    pub node: *mut _xmlNode,
+
+    /// Current node list (for xsl:for-each context).
+    pub nodeList: *mut _xmlNode,
+
+    /// Context size (number of nodes in current node list).
+    pub contextSize: c_int,
+
+    /// Context position (1-based position in current node list).
+    pub proximityPosition: c_int,
+
+    /// XPath evaluation context.
+    pub xpathCtxt: *mut _xmlXPathContext,
+
+    /// XPath return value stack.
+    pub xpathReturn: *mut c_void,
+
+    pub xpathReturnNr: c_int,
+    pub xpathReturnMax: c_int,
+    pub xpathReturnTab: *mut c_void,
+
+    /// Template stack.
+    pub templNr: c_int,
+    pub templMax: c_int,
+    pub templTab: *mut *mut _xsltTemplate,
+
+    /// Current template recursion depth.
+    pub depth: c_int,
+
+    /// Maximum allowed template recursion depth.
+    pub maxDepth: c_int,
+
+    /// Variable stack.
+    pub varsNr: c_int,
+    pub varsMax: c_int,
+    pub varsBase: c_int,
+    pub varsTab: *mut c_void,
+
+    /// Parameter stack.
+    pub paramsNr: c_int,
+    pub paramsMax: c_int,
+    pub paramsBase: c_int,
+    pub paramsTab: *mut c_void,
+
+    /// Key tables (hash of xsltKeyTablePtr).
+    pub keyTables: *mut c_void,
+
+    /// Whether sorting is active.
+    pub hasSort: c_int,
+
+    /// Output buffer.
+    pub output: *mut _xmlOutputBuffer,
+
+    /// Error handler function.
+    pub errFunc: *mut c_void,
+
+    /// Error handler context.
+    pub errCtxt: *mut c_void,
+
+    /// Hash of extension data.
+    pub extInfos: *mut c_void,
+
+    pub extrasNr: c_int,
+    pub extrasMax: c_int,
+    pub extrasTab: *mut *mut c_void,
+
+    /// Current state flags.
+    pub state: c_int,
+
+    /// Template priority during matching.
+    pub priority: c_int,
+
+    /// Current parser context (for document() function).
+    pub parserCtxt: *mut _xmlParserCtxt,
+
+    /// Save flags.
+    pub save: c_int,
+
+    /// Options.
+    pub opts: c_int,
+
+    /// Security preferences.
+    pub secPrefs: *mut c_void,
+
+    /// Document cache for document() function.
+    pub docCache: *mut c_void,
+
+    /// Hash of global variable values.
+    pub globalVars: *mut c_void,
+
+    /// Profile data.
+    pub profile: *mut c_void,
+
+    /// Profile timer.
+    pub prof: c_long,
+
+    pub extFunctionsNr: c_int,
+    pub extFunctionsMax: c_int,
+    pub extFunctionsTab: *mut c_void,
+
+    /// User data pointer.
+    pub userData: *mut c_void,
+
+    /// Current stack frame.
+    pub frame: c_int,
+    pub frameNr: c_int,
+    pub frameMax: c_int,
+    pub frameTab: *mut c_void,
+
+    /// Current insertion point for result tree construction.
+    pub insert: *mut _xmlNode,
+
+    /// Current result document.
+    pub resultDoc: *mut _xmlDoc,
+
+    /// Namespace stack.
+    pub nsNr: c_int,
+    pub nsMax: c_int,
+    pub nsTab: *mut c_void,
+    pub nsNrOriginal: c_int,
+    pub nsMaxOriginal: c_int,
+    pub nsTabOriginal: *mut c_void,
+
+    /// Current template node.
+    pub currentTemplate: *mut _xmlNode,
+
+    /// Template lookup hash.
+    pub templHash: *mut c_void,
+
+    /// Original variable stack.
+    pub varsNrOriginal: c_int,
+    pub varsMaxOriginal: c_int,
+    pub varsTabOriginal: *mut c_void,
+
+    /// Insert depth (number of nested insertion points).
+    pub insertDepth: c_int,
+
+    /// Maximum allowed insert depth.
+    pub maxInsertDepth: c_int,
+}
+
+/// XSLT compiled template.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltTemplate` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltTemplate {
+    /// Next template in the list.
+    pub next: *mut _xsltTemplate,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// Match pattern node (the `match` attribute expression).
+    pub r#match: *mut _xmlNode,
+
+    /// Template name (for named templates).
+    pub name: *const xmlChar,
+
+    /// Template mode.
+    pub mode: *const xmlChar,
+
+    /// Template priority.
+    pub priority: f64,
+
+    /// Template content (the child instruction nodes).
+    pub content: *mut _xmlNode,
+
+    /// Import depth (0 = main stylesheet, 1+ = imported).
+    pub depth: c_int,
+
+    /// Template flags.
+    pub flags: c_int,
+
+    /// Number of inherited namespace declarations.
+    pub inheritedNsNr: c_int,
+
+    /// Inherited namespace declarations.
+    pub inheritedNs: *mut c_void,
+}
+
+/// XSLT document wrapper.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltDocument` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltDocument {
+    /// Next document in the list.
+    pub next: *mut _xsltDocument,
+
+    /// Import depth.
+    pub depth: c_int,
+
+    /// The wrapped document.
+    pub doc: *mut _xmlDoc,
+
+    /// Insertion point for result tree construction.
+    pub insert: *mut _xmlNode,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// Whether this is a compiled context.
+    pub compCtxt: c_int,
+}
+
+/// XSLT key definition.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltKeyDef` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltKeyDef {
+    /// Next key definition.
+    pub next: *mut _xsltKeyDef,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// The xsl:key instruction node.
+    pub inst: *mut _xmlNode,
+
+    /// Key name.
+    pub name: *const xmlChar,
+
+    /// Match pattern.
+    pub r#match: *const xmlChar,
+
+    /// Use expression.
+    pub r#use: *const xmlChar,
+
+    /// Import depth.
+    pub depth: c_int,
+}
+
+/// XSLT key table entry.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltKeyTable` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltKeyTable {
+    /// Next key table.
+    pub next: *mut _xsltKeyTable,
+
+    /// Table of XPath object results.
+    pub table: *mut *mut _xmlXPathObject,
+
+    /// Number of entries in table.
+    pub nb: c_int,
+
+    /// Maximum capacity of table.
+    pub max: c_int,
+
+    /// Key name.
+    pub name: *mut xmlChar,
+
+    /// Import depth.
+    pub depth: c_int,
+}
+
+/// XSLT stack element (variable/parameter binding).
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltStackElem` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltStackElem {
+    /// Next stack element.
+    pub next: *mut _xsltStackElem,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// The xsl:variable or xsl:param instruction node.
+    pub inst: *mut _xmlNode,
+
+    /// Variable/parameter name.
+    pub name: *const xmlChar,
+
+    /// Variable/parameter namespace URI.
+    pub nameURI: *const xmlChar,
+
+    /// Select expression.
+    pub select: *const xmlChar,
+
+    /// Compiled select expression.
+    pub comp: *mut _xmlXPathObject,
+
+    /// Tree content (for inline content).
+    pub tree: *mut _xmlNode,
+
+    /// Evaluated value.
+    pub value: *mut _xmlXPathObject,
+
+    /// Flags.
+    pub flags: c_int,
+
+    /// Scope level.
+    pub level: c_int,
+
+    /// Whether this is a compiled context.
+    pub compCtxt: c_int,
+}
+
+/// XSLT decimal format definition.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltDecimalFormat` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltDecimalFormat {
+    /// Next decimal format.
+    pub next: *mut _xsltDecimalFormat,
+
+    /// Format name (NULL = default).
+    pub name: *const xmlChar,
+
+    /// Digit character.
+    pub digit: *mut xmlChar,
+
+    /// Pattern separator character.
+    pub patternSeparator: *mut xmlChar,
+
+    /// Decimal point character.
+    pub decimalPoint: *mut xmlChar,
+
+    /// Grouping separator character.
+    pub groupingSeparator: *mut xmlChar,
+
+    /// Infinity string.
+    pub infinity: *mut xmlChar,
+
+    /// Minus sign character.
+    pub minusSign: *mut xmlChar,
+
+    /// NaN string.
+    pub NaN: *mut xmlChar,
+
+    /// Percent character.
+    pub percent: *mut xmlChar,
+
+    /// Per-mille character.
+    pub perMille: *mut xmlChar,
+
+    /// Zero digit character.
+    pub zeroDigit: *mut xmlChar,
+}
+
+/// XSLT namespace alias.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltNsAlias` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltNsAlias {
+    /// Next namespace alias.
+    pub next: *mut _xsltNsAlias,
+
+    /// Result namespace URI.
+    pub resultNs: *const xmlChar,
+
+    /// Stylesheet namespace URI.
+    pub styleNs: *const xmlChar,
+}
+
+/// XSLT attribute set.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltAttrSet` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltAttrSet {
+    /// Next attribute set.
+    pub next: *mut _xsltAttrSet,
+
+    /// Attribute set name.
+    pub name: *const xmlChar,
+
+    /// Attribute set namespace URI.
+    pub ns: *const xmlChar,
+
+    /// The xsl:attribute-set instruction node.
+    pub inst: *mut _xmlNode,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// Import depth.
+    pub depth: c_int,
+}
+
+/// XSLT sort element.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `_xsltSort` from xsltInternals.h.
+#[repr(C)]
+pub struct _xsltSort {
+    /// Next sort element.
+    pub next: *mut _xsltSort,
+
+    /// The xsl:sort instruction node.
+    pub inst: *mut _xmlNode,
+
+    /// The sort key select expression.
+    pub select: *const xmlChar,
+
+    /// Language for sorting.
+    pub lang: *const xmlChar,
+
+    /// Data type ("text" or "number").
+    pub dataType: *const xmlChar,
+
+    /// Sort order ("ascending" or "descending").
+    pub order: *const xmlChar,
+
+    /// Case order ("upper-first" or "lower-first").
+    pub caseOrder: *const xmlChar,
+
+    /// Whether this sort is a text sort.
+    pub isText: c_int,
+
+    /// Whether the select expression was a constant.
+    pub hasConst: c_int,
+
+    /// Locale information.
+    pub locale: *mut c_void,
+
+    /// Owning stylesheet.
+    pub style: *mut _xsltStylesheet,
+
+    /// Import depth.
+    pub depth: c_int,
 }
 
 // ── Type aliases for pointer types ──────────────────────────────────────
@@ -746,3 +1326,12 @@ pub type xmlCharEncodingHandlerPtr = *mut _xmlCharEncodingHandler;
 pub type xmlBufPtr = *mut _xmlBuf;
 pub type xsltStylesheetPtr = *mut _xsltStylesheet;
 pub type xsltTransformContextPtr = *mut _xsltTransformContext;
+pub type xsltTemplatePtr = *mut _xsltTemplate;
+pub type xsltKeyDefPtr = *mut _xsltKeyDef;
+pub type xsltKeyTablePtr = *mut _xsltKeyTable;
+pub type xsltStackElemPtr = *mut _xsltStackElem;
+pub type xsltDecimalFormatPtr = *mut _xsltDecimalFormat;
+pub type xsltNsAliasPtr = *mut _xsltNsAlias;
+pub type xsltAttrSetPtr = *mut _xsltAttrSet;
+pub type xsltDocumentPtr = *mut _xsltDocument;
+pub type xsltSortPtr = *mut _xsltSort;

@@ -844,6 +844,39 @@ impl XmlParser {
             return;
         }
 
+        // Split the element QName into prefix and local name. The tokenizer
+        // yields the raw qualified name (e.g. "xsl:stylesheet"); SAX2
+        // requires the local name plus a separate prefix.
+        let (prefix_opt, localname) = if let Some(colons) = _name.iter().position(|&b| b == b':') {
+            (Some(_name[..colons].to_vec()), _name[colons + 1..].to_vec())
+        } else {
+            (None, _name.to_vec())
+        };
+        // DEBUG-TEMP
+        if prefix_opt.is_some() {
+            eprintln!(
+                "DBG sax_start_element: _name={:?} prefix={:?} local={:?}",
+                String::from_utf8_lossy(_name),
+                prefix_opt
+                    .as_ref()
+                    .map(|p| String::from_utf8_lossy(p).into_owned()),
+                String::from_utf8_lossy(&localname)
+            );
+        }
+
+        // Resolve the prefix against this element's namespace declarations.
+        let uri: Option<Vec<u8>> = match &prefix_opt {
+            Some(p) if p == b"xml" => Some(b"http://www.w3.org/XML/1998/namespace".to_vec()),
+            Some(p) => ns_decls
+                .iter()
+                .find(|(dp, _)| dp == p)
+                .map(|(_, u)| u.clone()),
+            None => ns_decls
+                .iter()
+                .find(|(dp, _)| dp.is_empty())
+                .map(|(_, u)| u.clone()),
+        };
+
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
@@ -869,8 +902,18 @@ impl XmlParser {
                     .as_ref()
                     .map(|p| Self::vec_to_cstr_null(p))
                     .unwrap_or(ptr::null());
-                // URI is empty for non-namespaced attributes initially
-                let uri_cstr = ptr::null();
+                // Resolve the attribute prefix against the namespace declarations.
+                let uri_cstr = match prefix {
+                    Some(p) if p == b"xml" => {
+                        Self::vec_to_cstr_null(b"http://www.w3.org/XML/1998/namespace")
+                    }
+                    Some(p) => ns_decls
+                        .iter()
+                        .find(|(dp, _)| dp == p)
+                        .map(|(_, u)| Self::vec_to_cstr_null(u))
+                        .unwrap_or(ptr::null()),
+                    _ => ptr::null(),
+                };
                 let value_cstr = Self::vec_to_cstr_null(value);
                 attr_vec.push(local_cstr);
                 attr_vec.push(prefix_cstr);
@@ -881,7 +924,15 @@ impl XmlParser {
                 attr_vec.push(ptr::null());
             }
 
-            let localname = Self::vec_to_cstr_null(_name);
+            let localname_cstr = Self::vec_to_cstr_null(&localname);
+            let prefix_cstr = prefix_opt
+                .as_ref()
+                .map(|p| Self::vec_to_cstr_null(p))
+                .unwrap_or(ptr::null());
+            let uri_cstr = uri
+                .as_ref()
+                .map(|u| Self::vec_to_cstr_null(u))
+                .unwrap_or(ptr::null());
             let nb_namespaces = ns_decls.len() as c_int;
             let namespaces_ptr = if ns_vec.is_empty() {
                 ptr::null_mut()
@@ -903,9 +954,9 @@ impl XmlParser {
             SaxDispatcher::start_element(
                 sax,
                 ctx,
-                localname,
-                ptr::null(), // prefix
-                ptr::null(), // URI
+                localname_cstr,
+                prefix_cstr,
+                uri_cstr,
                 nb_namespaces,
                 namespaces_ptr,
                 nb_attributes,

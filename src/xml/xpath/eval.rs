@@ -63,15 +63,11 @@ fn eval_absolute_path(ctx: &mut XPathContext, expr: &Expr) -> Result<XPathValue,
     }
 
     unsafe {
-        let root = (*doc).children;
-        // Find the document node (type 9) or root element
-        let mut doc_node = root;
-        while !doc_node.is_null() && (*doc_node).type_ != 9 {
-            doc_node = (*doc_node).next;
-        }
-        if doc_node.is_null() {
-            doc_node = root;
-        }
+        // The document node is the _xmlDoc cast to _xmlNode (type 9).
+        // Absolute paths like `/root/item` select relative to the
+        // document node itself, NOT the root element. This matches
+        // XPath 1.0: `/` selects the document root node.
+        let doc_node = doc as *mut _xmlNode;
 
         // Set context to document node and evaluate the path
         let saved_node = ctx.context_node;
