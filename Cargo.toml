@@ -1,6 +1,6 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 edition = "2021"
 description = "Phase 7: C14N, XML Reader/Writer, Regex, Automata, Debug. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. 957 tests passing, C14N (inclusive+exclusive), XML Reader (full tree+stream+attribute traversal), XML Writer (document+element+attribute+PI+comment), Regex (44 tests: NFA, anchors, char classes, quantifiers, determinism, incremental execution), Automata (state machine infrastructure), Debug (tree dump, ls, attr dump), all prior surfaces."
 license = "MIT OR Apache-2.0"
