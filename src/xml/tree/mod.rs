@@ -1968,10 +1968,12 @@ pub(crate) unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlCha
             b'&' => {
                 io::buf_add(buf, ENTITY_AMP.as_ptr(), ENTITY_AMP.len() as c_int);
             }
-            // UPSTREAM-PARITY: libxml2 does NOT escape `>` in text content.
-            // Per XML spec, `>` is only required to be escaped when it appears
-            // as `]]>` (handled above). libxml2's xmlNodeDumpOutput does not
-            // escape standalone `>` characters.
+            b'>' => {
+                // UPSTREAM-PARITY: libxml2 escapes `>` to `&gt;` in text content.
+                // While the XML spec only requires escaping `>` in `]]>`, libxml2's
+                // xmlNodeDumpOutput escapes all `>` characters via xmlEscapeEntities.
+                io::buf_add(buf, ENTITY_GT.as_ptr(), ENTITY_GT.len() as c_int);
+            }
             _ => {
                 io::buf_add(buf, &ch as *const u8, 1);
             }
@@ -3258,7 +3260,7 @@ mod tests {
             let ret = doc_dump(buf, doc);
             assert!(ret >= 0);
 
-            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>x &lt; y > z</root>";
+            let expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>x &lt; y &gt; z</root>";
             assert!(buf_eq_str(buf, expected));
 
             io::buf_free(buf);

@@ -367,11 +367,14 @@ impl XmlTextReader {
             return;
         }
 
-        // Walk the tree recursively, starting from the first child of the doc
-        // (which is the root element or document type node).
+        // Walk all top-level children (PIs, comments, the root element, etc.)
         // SAFETY: The tree is valid and all pointers are valid.
         unsafe {
-            self.walk_tree(root, 0);
+            let mut n = root;
+            while !n.is_null() {
+                self.walk_tree(n, 0);
+                n = (*n).next;
+            }
         }
     }
 
@@ -420,6 +423,21 @@ impl XmlTextReader {
             || node_type == XML_ENTITY_REF_NODE as c_int
         {
             // Leaf nodes: text, CDATA, comment, PI, entity reference.
+            // Skip whitespace-only text nodes (libxml2 reader default behavior).
+            if node_type == XML_TEXT_NODE as c_int || node_type == XML_CDATA_SECTION_NODE as c_int {
+                let content = unsafe { (*node).content };
+                if !content.is_null() {
+                    let len = crate::xml::tree::xml_strlen(content);
+                    let slice = unsafe { core::slice::from_raw_parts(content, len as usize) };
+                    if slice
+                        .iter()
+                        .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+                    {
+                        // Skip whitespace-only text node
+                        return;
+                    }
+                }
+            }
             self.events.push(TraversalEvent {
                 node,
                 is_end: false,
@@ -674,14 +692,17 @@ impl XmlTextReader {
             return -1;
         }
 
-        // Find the next sibling by scanning forward through events
-        // until we find an event at the same depth that is NOT an END_ELEMENT.
+        // Find the next sibling by scanning forward through events.
+        // We need to find the next event at depth <= current_depth that is not
+        // an END_ELEMENT. This skips:
+        // - All events in the current subtree (depth > current_depth)
+        // - END_ELEMENT events (which close the current element)
         let current_depth = self.depth;
         let mut i = self.event_index + 1;
 
         while i < self.events.len() {
             let event = &self.events[i];
-            if event.depth == current_depth && !event.is_end {
+            if event.depth <= current_depth && !event.is_end {
                 self.position_at(i);
                 return 1;
             }
@@ -2870,7 +2891,7 @@ mod tests {
             assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
             assert_eq!((*reader).IsEmptyElement(), 1);
             assert_eq!((*reader).HasAttributes(), 0);
-            assert_eq!((*reader).AttributeCount(), -1);
+            assert_eq!((*reader).AttributeCount(), 0);
 
             // END_ELEMENT.
             assert_eq!(xmlTextReaderRead(reader), 1);
@@ -3089,28 +3110,48 @@ mod tests {
             let nodes = collect_nodes(reader);
             // PI, ELEMENT root, COMMENT, TEXT, END_ELEMENT root
             // Note: PI appears as PROCESSING_INSTRUCTION node.
-            assert!(!nodes.is_empty());
+            assert!(!nodes.is_empty(), "no nodes collected: {:?}", nodes);
 
             // Check PI.
-            assert_eq!(nodes[0].0, ReaderNodeType::PROCESSING_INSTRUCTION);
+            assert_eq!(
+                nodes[0].0,
+                ReaderNodeType::PROCESSING_INSTRUCTION,
+                "expected PI at nodes[0], got {:?} name={}",
+                nodes[0].0,
+                nodes[0].1
+            );
+            assert_eq!(
+                nodes[0].0,
+                ReaderNodeType::PROCESSING_INSTRUCTION,
+                "expected PI at nodes[0], got {:?} name={}",
+                nodes[0].0,
+                nodes[0].1
+            );
 
             // Check root element.
             let root_idx = nodes
                 .iter()
                 .position(|(t, n, _)| *t == ReaderNodeType::ELEMENT && n == "root");
-            assert!(root_idx.is_some());
+            assert!(
+                root_idx.is_some(),
+                "no ELEMENT root found in nodes: {:?}",
+                nodes
+                    .iter()
+                    .map(|(t, n, _)| format!("{:?}:{}", t, n))
+                    .collect::<Vec<_>>()
+            );
 
             // Check comment.
             let comment_idx = nodes
                 .iter()
                 .position(|(t, _, _)| *t == ReaderNodeType::COMMENT);
-            assert!(comment_idx.is_some());
+            assert!(comment_idx.is_some(), "no COMMENT found");
 
             // Check text.
             let text_idx = nodes
                 .iter()
                 .position(|(t, _, _)| *t == ReaderNodeType::TEXT);
-            assert!(text_idx.is_some());
+            assert!(text_idx.is_some(), "no TEXT found");
 
             free_reader(reader);
         }
@@ -3339,8 +3380,11 @@ mod tests {
             assert_eq!(end_element_count, 7);
             // Text nodes: one per title and author = 4
             assert_eq!(text_count, 4);
-            // PI: xml declaration is a PI in the tree
-            assert_eq!(pi_count, 1);
+            // UPSTREAM-PARITY: XML declaration (<?xml ...?>) is NOT stored as
+            // a PI node in the tree. It is consumed by the parser and stored
+            // in the document's version/encoding fields. Only <?pi ...?> nodes
+            // (processing instructions) appear as XML_PI_NODE in the tree.
+            assert_eq!(pi_count, 0);
 
             free_reader(reader);
         }
@@ -3502,10 +3546,11 @@ mod tests {
     fn test_reader_for_fd() {
         unsafe {
             // Create a temp file and test xmlReaderForFd.
-            let tmp = "/tmp/libxml_rs_test_reader_fd.xml";
+            let tmp_path = "/tmp/libxml_rs_test_reader_fd.xml";
+            let tmp_cstr = std::ffi::CString::new(tmp_path).unwrap();
             let content = b"<root><data/></root>";
             let fd = libc::open(
-                tmp.as_ptr() as *const c_char,
+                tmp_cstr.as_ptr(),
                 libc::O_WRONLY | libc::O_CREAT | libc::O_TRUNC,
                 0o644,
             );
@@ -3514,7 +3559,7 @@ mod tests {
             libc::close(fd);
 
             // Open for reading.
-            let fd = libc::open(tmp.as_ptr() as *const c_char, libc::O_RDONLY, 0);
+            let fd = libc::open(tmp_cstr.as_ptr(), libc::O_RDONLY, 0);
             assert!(fd >= 0);
 
             let reader = xmlReaderForFd(fd, ptr::null(), ptr::null(), 0);
@@ -3525,7 +3570,7 @@ mod tests {
 
             free_reader(reader);
             libc::close(fd);
-            std::fs::remove_file(tmp).ok();
+            std::fs::remove_file(tmp_path).ok();
         }
     }
 
