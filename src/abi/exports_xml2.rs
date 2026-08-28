@@ -4561,10 +4561,7 @@ pub unsafe extern "C" fn xmlSetValidErrors(
 /// int xmlValidateDocument(xmlValidCtxtPtr ctxt, xmlDocPtr doc);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateDocument(
-    ctxt: *mut _xmlValidCtxt,
-    doc: *mut _xmlDoc,
-) -> c_int {
+pub unsafe extern "C" fn xmlValidateDocument(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_int {
     crate::xml::validation::validate_document(ctxt, doc)
 }
 
@@ -4629,10 +4626,7 @@ pub unsafe extern "C" fn xmlValidateAttributeDecl(
 /// int xmlValidateAttributeValue(int type, const xmlChar *value);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateAttributeValue(
-    atype: c_int,
-    value: *const xmlChar,
-) -> c_int {
+pub unsafe extern "C" fn xmlValidateAttributeValue(atype: c_int, value: *const xmlChar) -> c_int {
     crate::xml::validation::validate_attribute_value(atype, value)
 }
 
@@ -4770,10 +4764,7 @@ pub unsafe extern "C" fn xmlValidateNames(value: *const xmlChar) -> c_int {
 /// int xmlValidateRoot(xmlValidCtxtPtr ctxt, xmlDocPtr doc);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateRoot(
-    ctxt: *mut _xmlValidCtxt,
-    doc: *mut _xmlDoc,
-) -> c_int {
+pub unsafe extern "C" fn xmlValidateRoot(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_int {
     crate::xml::validation::validate_root(ctxt, doc)
 }
 
@@ -4803,10 +4794,7 @@ pub unsafe extern "C" fn xmlValidateContent(
 /// int xmlIsMixedElement(xmlDocPtr doc, const xmlChar *name);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlIsMixedElement(
-    doc: *mut _xmlDoc,
-    name: *const xmlChar,
-) -> c_int {
+pub unsafe extern "C" fn xmlIsMixedElement(doc: *mut _xmlDoc, name: *const xmlChar) -> c_int {
     crate::xml::validation::is_mixed_element(doc, name)
 }
 
@@ -4818,10 +4806,7 @@ pub unsafe extern "C" fn xmlIsMixedElement(
 /// int xmlIsEmptyElement(xmlDocPtr doc, const xmlChar *name);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlIsEmptyElement(
-    doc: *mut _xmlDoc,
-    name: *const xmlChar,
-) -> c_int {
+pub unsafe extern "C" fn xmlIsEmptyElement(doc: *mut _xmlDoc, name: *const xmlChar) -> c_int {
     crate::xml::validation::is_empty_element(doc, name)
 }
 
@@ -4851,10 +4836,7 @@ pub unsafe extern "C" fn xmlValidateDtd(
 /// int xmlValidateDtdFinal(xmlValidCtxtPtr ctxt, xmlDocPtr doc);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateDtdFinal(
-    ctxt: *mut _xmlValidCtxt,
-    doc: *mut _xmlDoc,
-) -> c_int {
+pub unsafe extern "C" fn xmlValidateDtdFinal(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_int {
     crate::xml::validation::validate_dtd_final(ctxt, doc)
 }
 
@@ -4881,40 +4863,6 @@ pub unsafe extern "C" fn xmlValidateEnumeration(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Dump a document to a file for debugging.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xmlDebugDumpDocument(FILE *output, xmlDocPtr doc);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xmlDebugDumpDocument(_output: *mut c_void, _doc: *mut _xmlDoc) {
-    // Phase 1: STUB
-}
-
-/// Dump a node for debugging.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xmlDebugDumpNode(FILE *output, xmlNodePtr node);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xmlDebugDumpNode(_output: *mut c_void, _node: *mut _xmlNode) {
-    // Phase 1: STUB
-}
-
-/// Dump a node for debugging (recursive).
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void xmlDebugDumpNodeList(FILE *output, xmlNodePtr node);
-/// ```
-#[no_mangle]
-pub unsafe extern "C" fn xmlDebugDumpNodeList(_output: *mut c_void, _node: *mut _xmlNode) {
-    // Phase 1: STUB
-}
 
 /// Get the path to the current executable.
 ///
