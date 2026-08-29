@@ -316,6 +316,55 @@ impl SaxDispatcher {
     /// - `ctx` must be a valid context pointer.
     /// - All pointer arguments must satisfy the requirements of whichever callback
     ///   is actually invoked (SAX1 or SAX2).
+    /// SAX1 start-element entry (upstream SAX2.c `xmlSAX2StartElement`):
+    /// invokes the handler's SAX1 `startElement` callback with the given name
+    /// and SAX1 attribute array.
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid parser context pointer.
+    /// - `name` must be a valid null-terminated name.
+    /// - `atts` must be a SAX1 attribute array (NULL-terminated pairs) or NULL.
+    pub unsafe fn sax1_start_element(
+        ctx: *mut c_void,
+        name: *const xmlChar,
+        atts: *mut *const xmlChar,
+    ) {
+        // SAFETY: ctx is a valid parser context.
+        let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+        unsafe {
+            if ctxt.is_null() || (*ctxt).sax.is_null() {
+                return;
+            }
+            let cb = (*(*ctxt).sax).startElement;
+            if let Some(cb) = cb {
+                // SAFETY: the SAX1 callback contract; name/atts valid.
+                cb(ctx, name, atts);
+            }
+        }
+    }
+
+    /// SAX1 end-element entry (upstream SAX2.c `xmlSAX2EndElement`).
+    ///
+    /// # SAFETY
+    ///
+    /// - `ctx` must be a valid parser context pointer.
+    /// - `name` must be a valid null-terminated name.
+    pub unsafe fn sax1_end_element(ctx: *mut c_void, name: *const xmlChar) {
+        // SAFETY: ctx is a valid parser context.
+        let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+        unsafe {
+            if ctxt.is_null() || (*ctxt).sax.is_null() {
+                return;
+            }
+            let cb = (*(*ctxt).sax).endElement;
+            if let Some(cb) = cb {
+                // SAFETY: the SAX1 callback contract; name valid.
+                cb(ctx, name);
+            }
+        }
+    }
+
     #[inline]
     pub unsafe fn start_element(
         sax: &_xmlSAXHandler,

@@ -94,6 +94,150 @@ pub unsafe extern "C" fn xmlInitGlobals() {
     // Globals are statically initialized in the candidate.
 }
 
+/// Upstream `xmlInitializeGlobalState` (globals.c) — initializes a
+/// `xmlGlobalState` struct; the candidate keeps no global-state struct, so
+/// this is a no-op for ABI compatibility.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlInitializeGlobalState(xmlGlobalStatePtr gs);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
+    // No-op: the candidate's globals are statically initialized.
+}
+
+/// Upstream `xmlInitializeDict` (dict.c) — ensures the dictionary
+/// subsystem is initialized; no-op in the candidate (lazy init).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlInitializeDict(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlInitializeDict() -> c_int {
+    0
+}
+
+/// Upstream `xmlInitializePredefinedEntities` (entities.c) — the
+/// predefined entities (&amp; &lt; &gt; &quot; &apos;) are built lazily by
+/// the candidate; no-op.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlInitializePredefinedEntities(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlInitializePredefinedEntities() {
+    // No-op: predefined entities are resolved on demand.
+}
+
+/// Upstream `xmlCleanupPredefinedEntities` (entities.c) — no-op in the
+/// candidate (no global entity table to release).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlCleanupPredefinedEntities(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCleanupPredefinedEntities() {
+    // No-op.
+}
+
+/// Upstream `xmlDefaultSAXHandlerInit` (SAX2.c) — fills the
+/// `xmlDefaultSAXHandler` global. The candidate's default handler is built
+/// on demand; this initializes the exported default-handler global when it
+/// is added (currently tracked in R-000135). No-op for now.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlDefaultSAXHandlerInit(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlDefaultSAXHandlerInit() {
+    // The candidate builds default handlers on demand; the exported
+    // xmlDefaultSAXHandler global is part of the R-000135 data closure.
+}
+
+/// Set the default SAX version (upstream SAX2.c `xmlSAXDefaultVersion`):
+/// returns the previous default; -1 when the version is not 1 or 2.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSAXDefaultVersion(int version);
+/// ```
+static SAX2_DEFAULT_VERSION: core::sync::atomic::AtomicI32 = core::sync::atomic::AtomicI32::new(2);
+#[no_mangle]
+pub extern "C" fn xmlSAXDefaultVersion(version: c_int) -> c_int {
+    use core::sync::atomic::Ordering;
+    let ret = SAX2_DEFAULT_VERSION.load(Ordering::Relaxed);
+    if version != 1 && version != 2 {
+        return -1;
+    }
+    SAX2_DEFAULT_VERSION.store(version, Ordering::Relaxed);
+    ret
+}
+
+/// Initialize a SAX handler for a given SAX version (upstream SAX2.c
+/// `xmlSAXVersion`): fills the handler with the default callbacks and sets
+/// `initialized` (XML_SAX2_MAGIC for version 2, 1 for version 1).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSAXVersion(xmlSAXHandler *hdlr, int version);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAXVersion(
+    hdlr: *mut crate::abi::structs::_xmlSAXHandler,
+    version: c_int,
+) -> c_int {
+    if hdlr.is_null() {
+        return -1;
+    }
+    if version != 1 && version != 2 {
+        return -1;
+    }
+    // SAFETY: hdlr is non-NULL and writable.
+    unsafe {
+        crate::xml::sax::dispatch::xmlSAX2InitDefaultSAXHandler(hdlr);
+        let h = &mut *hdlr;
+        if version == 2 {
+            h.initialized = crate::abi::constants::XML_SAX2_MAGIC as c_uint;
+        } else {
+            h.initialized = 1;
+        }
+    }
+    0
+}
+
+/// Upstream `xmlHasFeature` (parser.c): returns 1 when the library was
+/// compiled with the requested feature. The candidate enables the full
+/// feature set (see include/libxml/xmlversion.h), so every known feature
+/// reports 1; unknown features report 0.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlHasFeature(xmlFeature feature);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlHasFeature(feature: c_int) -> c_int {
+    // xmlFeature enum values (upstream xmlversion.h): XML_WITH_* run 1..24
+    // (XML_WITH_THREAD=1 ... XML_WITH_MODULES=24).
+    if (1..=24).contains(&feature) {
+        1
+    } else {
+        0
+    }
+}
+
 /// Clean up the global variables module (upstream globals.h).
 ///
 /// # UPSTREAM-PARITY
@@ -122,6 +266,116 @@ pub unsafe extern "C" fn xmlCleanupGlobals() {
 #[no_mangle]
 pub unsafe extern "C" fn xmlCleanupParser() {
     crate::internal::globals::cleanup_parser();
+}
+
+/// Create a simple mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlMutexPtr xmlNewMutex(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlNewMutex() -> *mut c_void {
+    crate::xml::threads::new_mutex()
+}
+
+/// Free a simple mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeMutex(xmlMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeMutex(tok: *mut c_void) {
+    crate::xml::threads::free_mutex(tok);
+}
+
+/// Lock a simple mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlMutexLock(xmlMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMutexLock(tok: *mut c_void) {
+    crate::xml::threads::mutex_lock(tok);
+}
+
+/// Unlock a simple mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlMutexUnlock(xmlMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMutexUnlock(tok: *mut c_void) {
+    crate::xml::threads::mutex_unlock(tok);
+}
+
+/// Create a recursive mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlRMutexPtr xmlNewRMutex(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlNewRMutex() -> *mut c_void {
+    crate::xml::threads::new_rmutex()
+}
+
+/// Free a recursive mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeRMutex(xmlRMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeRMutex(tok: *mut c_void) {
+    crate::xml::threads::free_rmutex(tok);
+}
+
+/// Lock a recursive mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlRMutexLock(xmlRMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRMutexLock(tok: *mut c_void) {
+    crate::xml::threads::rmutex_lock(tok);
+}
+
+/// Unlock a recursive mutex (upstream threads.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlRMutexUnlock(xmlRMutexPtr tok);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRMutexUnlock(tok: *mut c_void) {
+    crate::xml::threads::rmutex_unlock(tok);
+}
+
+/// Check the thread-local storage (upstream threads.h `xmlCheckThreadLocalStorage`):
+/// returns 0 when TLS is functional, -1 otherwise. The candidate uses Rust
+/// thread-locals which are always functional.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlCheckThreadLocalStorage(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCheckThreadLocalStorage() -> c_int {
+    0
 }
 
 /// Initialize threading support.
@@ -6686,6 +6940,52 @@ pub unsafe extern "C" fn xmlSAX2GetParameterEntity(
     name: *const xmlChar,
 ) -> *mut crate::abi::structs::_xmlEntity {
     crate::xml::sax::default::default_sax_handler::getParameterEntity(ctx, name)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetLineNumber` — public entry point of the
+/// default handler (SAX locator callback).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetLineNumber(ctx: *mut c_void) -> c_int {
+    crate::xml::sax::default::default_sax_handler::getLineNumber(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetColumnNumber`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetColumnNumber(ctx: *mut c_void) -> c_int {
+    crate::xml::sax::default::default_sax_handler::getColumnNumber(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetPublicId`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetPublicId(ctx: *mut c_void) -> *const xmlChar {
+    crate::xml::sax::default::default_sax_handler::getPublicId(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetSystemId`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetSystemId(ctx: *mut c_void) -> *const xmlChar {
+    crate::xml::sax::default::default_sax_handler::getSystemId(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2StartElement` — SAX1 start-element entry point.
+/// The candidate parser dispatches through the SAX2 (namespaced) callbacks;
+/// this wrapper maps to the SAX1 handler when installed.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2StartElement(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    atts: *mut *const xmlChar,
+) {
+    // The parser core invokes startElementNs; the SAX1 shim is provided by
+    // the dispatch layer. When this entry point is installed directly on a
+    // handler, route through the internal SAX1 path.
+    crate::xml::sax::dispatch::SaxDispatcher::sax1_start_element(ctx, name, atts);
+}
+
+/// Upstream SAX2.c `xmlSAX2EndElement` — SAX1 end-element entry point.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2EndElement(ctx: *mut c_void, name: *const xmlChar) {
+    crate::xml::sax::dispatch::SaxDispatcher::sax1_end_element(ctx, name);
 }
 
 /// Upstream SAX2.c `xmlSAX2SetDocumentLocator` — public entry point of the default handler.

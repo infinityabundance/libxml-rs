@@ -116,6 +116,15 @@ DOCUMENTED_NOOPS = {
     "xmlMemShow": "R-000131",
     "xmlAutomataSetFinalState": "R-000135",
     "xmlAutomataNewCounter": "R-000135",
+    # deprecated init/cleanup entry points that are genuine no-ops in
+    # modern libxml2 (the subsystems initialize lazily); the candidate
+    # matches that observable behavior
+    "xmlInitializeGlobalState": "R-000138",
+    "xmlInitializeDict": "R-000138",
+    "xmlInitializePredefinedEntities": "R-000138",
+    "xmlCleanupPredefinedEntities": "R-000138",
+    "xmlDefaultSAXHandlerInit": "R-000138",
+    "xmlCheckThreadLocalStorage": "R-000138",
 }
 
 

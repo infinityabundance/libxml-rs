@@ -1170,6 +1170,30 @@
      "status": "OPEN"
     }
    ]
+  },
+  {
+   "id": "R-000138",
+   "status": "OPEN",
+   "phase": "11.1-I",
+   "title": "Deprecated init/cleanup entry points are no-ops (xmlInitializeGlobalState, xmlInitializeDict, xmlInitializePredefinedEntities, xmlCleanupPredefinedEntities, xmlDefaultSAXHandlerInit, xmlCheckThreadLocalStorage)",
+   "surface": "DSO function exports",
+   "component": [
+    "src/abi/exports_xml2.rs"
+   ],
+   "discovery_date": "2026-08-29",
+   "root_cause": "Modern libxml2 keeps these as genuine no-ops (subsystems initialize lazily; xmlDefaultSAXHandlerInit fills a global handler the candidate builds on demand; xmlCheckThreadLocalStorage always passes with Rust thread-locals). The candidate exports them with matching no-op behavior; the only observable difference is xmlDefaultSAXHandlerInit not populating the (still missing) xmlDefaultSAXHandler global, tracked in R-000135.",
+   "fix": "Monitor: when xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator globals are added (R-000135 closure), xmlDefaultSAXHandlerInit must populate xmlDefaultSAXHandler. Otherwise close as documented intentional no-ops.",
+   "evidence": [
+    "atlas/PARITY_OBLIGATIONS.json (EXPORTED_NOOP)"
+   ],
+   "classification": "INTENTIONAL_SAFE_DIVERGENCE",
+   "history": [
+    {
+     "date": "2026-08-29",
+     "event": "discovered during 11.1-I closure",
+     "status": "OPEN"
+    }
+   ]
   }
  ]
 }

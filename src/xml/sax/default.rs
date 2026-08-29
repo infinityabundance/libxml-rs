@@ -1104,6 +1104,67 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `name` must be a valid null-terminated string.
+    /// SAX locator callback: public ID (upstream SAX2.c
+    /// `xmlSAX2GetPublicId` returns NULL).
+    pub unsafe extern "C" fn getPublicId(_ctx: *mut c_void) -> *const xmlChar {
+        ptr::null()
+    }
+
+    /// SAX locator callback: system ID (upstream SAX2.c
+    /// `xmlSAX2GetSystemId` returns the input filename).
+    pub unsafe extern "C" fn getSystemId(ctx: *mut c_void) -> *const xmlChar {
+        if ctx.is_null() {
+            return ptr::null();
+        }
+        // SAFETY: ctx is a valid parser context.
+        let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+        unsafe {
+            if (*ctxt).input.is_null() {
+                return ptr::null();
+            }
+            let filename = (*(*ctxt).input).filename;
+            if filename.is_null() {
+                ptr::null()
+            } else {
+                filename as *const xmlChar
+            }
+        }
+    }
+
+    /// SAX locator callback: current line (upstream SAX2.c
+    /// `xmlSAX2GetLineNumber` returns the input stream's line).
+    pub unsafe extern "C" fn getLineNumber(ctx: *mut c_void) -> c_int {
+        if ctx.is_null() {
+            return 0;
+        }
+        // SAFETY: ctx is a valid parser context.
+        let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+        unsafe {
+            if (*ctxt).input.is_null() {
+                0
+            } else {
+                (*(*ctxt).input).line
+            }
+        }
+    }
+
+    /// SAX locator callback: current column (upstream SAX2.c
+    /// `xmlSAX2GetColumnNumber` returns the input stream's column).
+    pub unsafe extern "C" fn getColumnNumber(ctx: *mut c_void) -> c_int {
+        if ctx.is_null() {
+            return 0;
+        }
+        // SAFETY: ctx is a valid parser context.
+        let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+        unsafe {
+            if (*ctxt).input.is_null() {
+                0
+            } else {
+                (*(*ctxt).input).col
+            }
+        }
+    }
+
     pub unsafe extern "C" fn reference(ctx: *mut c_void, name: *const xmlChar) {
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
         if ctxt.is_null() || name.is_null() {

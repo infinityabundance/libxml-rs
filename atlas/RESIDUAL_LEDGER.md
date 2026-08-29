@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**8 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000131, R-000135, R-000136
+**9 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000131, R-000135, R-000136, R-000138
 
 ## Phase 0 Residuals
 
