@@ -167,18 +167,6 @@ pub(crate) mod default_sax_handler {
         unsafe {
             let c = &mut *ctxt;
 
-            // DEBUG-TEMP
-            if !prefix.is_null() {
-                let p = crate::abi::versioning::c_str_to_bytes(prefix as *const c_char);
-                eprintln!(
-                    "DBG startElementNs: local={:?} prefix={:?} URI_null={} nodeNr={}",
-                    crate::abi::versioning::c_str_to_bytes(localname as *const c_char),
-                    p,
-                    URI.is_null(),
-                    c.nodeNr
-                );
-            }
-
             // Determine the parent node for this element.
             let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
                 let idx = (c.nodeNr - 1) as usize;

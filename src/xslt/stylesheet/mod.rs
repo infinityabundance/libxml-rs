@@ -24,6 +24,7 @@
 use crate::abi::allocator::xmlFree;
 use crate::abi::exports_xml2::{xmlReadFile, xmlReadMemory};
 use crate::abi::structs::*;
+use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::tree::free_doc;
 use std::ffi::c_void;
@@ -280,6 +281,140 @@ pub unsafe extern "C" fn xsltParseStylesheetFile(filename: *const xmlChar) -> *m
         // it returned null it freed the doc. Do not double-free.
         return ptr::null_mut();
     }
+    style
+}
+
+/// Parse the `xml-stylesheet` processing instruction value and extract the
+/// `type` and `href` pseudo-attributes (upstream `xsltParseStylesheetPI`,
+/// xslt.c 1.1.45).
+///
+/// Returns the href when the type is `text/xml`, `text/xsl` or
+/// `application/xslt+xml`; NULL otherwise.
+unsafe fn parse_stylesheet_pi(value: *const xmlChar) -> *mut xmlChar {
+    if value.is_null() {
+        return ptr::null_mut();
+    }
+    let bytes = crate::abi::versioning::c_str_to_bytes(value as *const c_char).unwrap_or(b"");
+    let s = String::from_utf8_lossy(bytes);
+    let mut is_xml = false;
+    let mut href: Option<String> = None;
+    let mut cur = 0usize;
+    let b = s.as_bytes();
+    while cur < b.len() {
+        // Skip blanks.
+        while cur < b.len() && (b[cur] == b' ' || b[cur] == b'\t' || b[cur] == b'\n') {
+            cur += 1;
+        }
+        if cur >= b.len() {
+            break;
+        }
+        // token = value
+        let start = cur;
+        while cur < b.len() && b[cur] != b'=' && b[cur] != b' ' && b[cur] != b'\t' {
+            cur += 1;
+        }
+        let token = &s[start..cur];
+        while cur < b.len() && (b[cur] == b' ' || b[cur] == b'\t') {
+            cur += 1;
+        }
+        if cur >= b.len() || b[cur] != b'=' {
+            continue;
+        }
+        cur += 1;
+        while cur < b.len() && (b[cur] == b' ' || b[cur] == b'\t') {
+            cur += 1;
+        }
+        if cur >= b.len() || (b[cur] != b'\'' && b[cur] != b'"') {
+            continue;
+        }
+        let quote = b[cur];
+        cur += 1;
+        let vstart = cur;
+        while cur < b.len() && b[cur] != quote {
+            cur += 1;
+        }
+        let val = s[vstart..cur].to_string();
+        if cur < b.len() {
+            cur += 1;
+        }
+        if token.eq_ignore_ascii_case("type") {
+            if val.eq_ignore_ascii_case("text/xml")
+                || val.eq_ignore_ascii_case("text/xsl")
+                || val.eq_ignore_ascii_case("application/xslt+xml")
+            {
+                is_xml = true;
+            } else {
+                return ptr::null_mut();
+            }
+        } else if token.eq_ignore_ascii_case("href") && href.is_none() {
+            href = Some(val);
+        }
+    }
+    if !is_xml {
+        return ptr::null_mut();
+    }
+    match href {
+        Some(h) => {
+            let mut v = h.into_bytes();
+            v.push(0);
+            let p = libc::malloc(v.len()) as *mut xmlChar;
+            if !p.is_null() {
+                libc::memcpy(
+                    p as *mut libc::c_void,
+                    v.as_ptr() as *const libc::c_void,
+                    v.len(),
+                );
+            }
+            p
+        }
+        None => ptr::null_mut(),
+    }
+}
+
+/// Load a stylesheet referenced by an `xml-stylesheet` PI in the document
+/// (upstream `xsltLoadStylesheetPI`, xslt.c 1.1.45).
+///
+/// Only the external-reference case is supported; embedded stylesheets
+/// (fragment identifiers) return NULL — see RESIDUAL R-XSLT-EMBEDDED-PI.
+///
+/// # Safety
+///
+/// `doc` must be a valid document pointer.
+#[no_mangle]
+pub unsafe extern "C" fn xsltLoadStylesheetPI(doc: *mut _xmlDoc) -> *mut _xsltStylesheet {
+    if doc.is_null() {
+        return ptr::null_mut();
+    }
+    let mut child = (*doc).children;
+    let mut href: *mut xmlChar = ptr::null_mut();
+    while !child.is_null() && (*child).type_ != XML_ELEMENT_NODE as c_int {
+        if (*child).type_ == XML_PI_NODE as c_int
+            && !(*child).name.is_null()
+            && crate::abi::versioning::c_str_to_bytes((*child).name as *const c_char).unwrap_or(b"")
+                == b"xml-stylesheet"
+        {
+            let h = parse_stylesheet_pi((*child).content);
+            if !h.is_null() {
+                href = h;
+                break;
+            }
+        }
+        child = (*child).next;
+    }
+    if href.is_null() {
+        return ptr::null_mut();
+    }
+    // Only the external href case is supported.
+    let href_bytes = crate::abi::versioning::c_str_to_bytes(href as *const c_char)
+        .unwrap_or(b"")
+        .to_vec();
+    libc::free(href as *mut libc::c_void);
+    if href_bytes.starts_with(b"#") {
+        return ptr::null_mut();
+    }
+    let mut url = href_bytes;
+    url.push(0);
+    let style = xsltParseStylesheetFile(url.as_ptr() as *const xmlChar);
     style
 }
 

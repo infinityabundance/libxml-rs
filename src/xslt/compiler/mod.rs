@@ -56,6 +56,16 @@ pub unsafe fn compile(style: *mut _xsltStylesheet, doc: *mut _xmlDoc) -> c_int {
     let root_ns = get_element_ns(root);
     let root_name = get_element_name(root);
 
+    // UPSTREAM-PARITY: preprocess the stylesheet tree before compiling
+    // (xsltParsePreprocessStylesheetTree, xslt.c 1.1.45): merge adjacent
+    // text runs, strip whitespace-only runs, remove comments and PIs.
+    let is_stylesheet = matches!(
+        (root_ns.as_deref(), root_name.as_deref()),
+        (Some(ns), Some(name))
+            if ns == XSLT_NAMESPACE && (name == "stylesheet" || name == "transform")
+    );
+    preprocess_stylesheet_tree(root, is_stylesheet);
+
     match (root_ns.as_deref(), root_name.as_deref()) {
         (Some(ns), Some(name))
             if ns == XSLT_NAMESPACE && (name == "stylesheet" || name == "transform") =>
@@ -245,6 +255,257 @@ pub unsafe fn get_element_name(node: *mut _xmlNode) -> Option<String> {
         libc::strlen((*node).name as *const libc::c_char) as usize,
     );
     String::from_utf8_lossy(bytes).into_owned().into()
+}
+
+/// Preprocess the stylesheet's node tree.
+///
+/// # UPSTREAM-PARITY
+///
+/// Faithful port of the strict-mode behavior of
+/// `xsltParsePreprocessStylesheetTree` (xslt.c, libxslt 1.1.45):
+///
+/// - adjacent text/CDATA-section nodes are merged into one text node;
+/// - a merged run that is whitespace-only is removed, unless the parent
+///   element has `xml:space="preserve"` or is `xsl:text`;
+/// - comments and processing instructions are removed from the tree;
+/// - CDATA-section nodes are converted to text nodes;
+/// - whitespace-only text nodes directly preceding `xsl:param`/`xsl:sort`
+///   are removed;
+/// - elements in the XSLT "strip" set (`xsl:choose`, `xsl:call-template`,
+///   `xsl:apply-templates`, `xsl:apply-imports`, `xsl:attribute-set`, and
+///   the `xsl:stylesheet`/`xsl:transform` element itself) always strip
+///   whitespace-only runs.
+///
+/// This explains the observable behavior verified against the oracle:
+/// `<xsl:template><a>\n  X\n</a></xsl:template>` keeps the whitespace
+/// around `X` (the merged run is not whitespace-only) while
+/// `<xsl:template><a>\n  <b/></a></xsl:template>` strips it.
+///
+/// # SAFETY
+///
+/// - `root` must be a valid element node of the stylesheet document.
+unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
+    /// Per-element whitespace-handling state (upstream compiler-node-info).
+    struct St {
+        strip_whitespace: bool,
+        preserve_whitespace: bool,
+    }
+
+    /// True when every byte is a whitespace character (upstream xsltIsBlank).
+    unsafe fn is_blank(content: *const xmlChar) -> bool {
+        if content.is_null() {
+            return true;
+        }
+        let mut i = 0usize;
+        while unsafe { *content.add(i) != 0 } {
+            match unsafe { *content.add(i) } {
+                b' ' | b'\t' | b'\n' | b'\r' => {}
+                _ => return false,
+            }
+            i += 1;
+        }
+        true
+    }
+
+    /// Append `src` bytes to `dst`'s content (upstream xmlNodeAddContent).
+    unsafe fn merge_text(dst: *mut _xmlNode, src: *const xmlChar) {
+        if src.is_null() {
+            return;
+        }
+        let src_len = crate::xml::tree::xml_strlen(src) as usize;
+        if src_len == 0 {
+            return;
+        }
+        let cur = unsafe { (*dst).content };
+        let cur_len = if cur.is_null() {
+            0
+        } else {
+            crate::xml::tree::xml_strlen(cur) as usize
+        };
+        let new_len = cur_len + src_len;
+        let buf = crate::abi::allocator::xmlMalloc(new_len + 1) as *mut xmlChar;
+        if buf.is_null() {
+            return;
+        }
+        if cur_len > 0 && !cur.is_null() {
+            core::ptr::copy_nonoverlapping(cur, buf, cur_len);
+        }
+        core::ptr::copy_nonoverlapping(src, buf.add(cur_len), src_len);
+        *buf.add(new_len) = 0;
+        if !cur.is_null() {
+            crate::abi::allocator::xmlFree(cur as *mut core::ffi::c_void);
+        }
+        unsafe { (*dst).content = buf };
+    }
+
+    /// Convert a CDATA-section node to a text node.
+    unsafe fn to_text(node: *mut _xmlNode) {
+        if unsafe { (*node).type_ } != XML_CDATA_SECTION_NODE as c_int {
+            return;
+        }
+        unsafe {
+            (*node).type_ = XML_TEXT_NODE as c_int;
+            let name = crate::abi::allocator::xmlMalloc(5) as *mut xmlChar;
+            if !name.is_null() {
+                core::ptr::copy_nonoverlapping(b"text\0".as_ptr(), name, 5);
+                (*node).name = name;
+            }
+        }
+    }
+
+    /// The xml:space attribute value of an element (1 = preserve,
+    /// 0 = default, -1 = unset).
+    unsafe fn xml_space(node: *mut _xmlNode) -> c_int {
+        let mut attr = unsafe { (*node).properties };
+        while !attr.is_null() {
+            let a = unsafe { &*attr };
+            let ns_is_xml = if a.ns.is_null() {
+                false
+            } else {
+                let prefix = unsafe { (*a.ns).prefix };
+                !prefix.is_null()
+                    && unsafe { *prefix == b'x' }
+                    && unsafe { *prefix.add(1) == b'm' }
+                    && unsafe { *prefix.add(2) == b'l' }
+                    && unsafe { *prefix.add(3) == 0 }
+            };
+            if ns_is_xml && !a.name.is_null() && unsafe { *a.name == b's' } {
+                let name =
+                    crate::abi::versioning::c_str_to_bytes(a.name as *const std::os::raw::c_char)
+                        .unwrap_or(b"");
+                if name == b"space" && !a.children.is_null() {
+                    let val =
+                        crate::abi::versioning::c_str_to_bytes(
+                            unsafe { (*a.children).content } as *const std::os::raw::c_char
+                        )
+                        .unwrap_or(b"");
+                    if val == b"preserve" {
+                        return 1;
+                    }
+                    if val == b"default" {
+                        return 0;
+                    }
+                }
+            }
+            attr = a.next;
+        }
+        -1
+    }
+
+    /// Apply the end-of-text-run strip check (upstream `end_of_text`).
+    /// Returns true when the node was scheduled for deletion.
+    unsafe fn check_strip(node: *mut _xmlNode, st: &St, delete: &mut Vec<*mut _xmlNode>) {
+        if node.is_null() {
+            return;
+        }
+        let content = unsafe { (*node).content };
+        let blank = content.is_null() || unsafe { *content == 0 } || is_blank(content);
+        if blank && (st.strip_whitespace || !st.preserve_whitespace) {
+            delete.push(node);
+        } else {
+            to_text(node);
+        }
+    }
+
+    unsafe fn walk(children: *mut _xmlNode, st: &St, stylesheet_depth: bool, top_level: bool) {
+        let mut cur = children;
+        let mut text_node: *mut _xmlNode = ptr::null_mut();
+        let mut delete: Vec<*mut _xmlNode> = Vec::new();
+
+        while !cur.is_null() {
+            let next = unsafe { (*cur).next };
+            for d in delete.drain(..) {
+                crate::xml::tree::unlink_node(d);
+                crate::xml::tree::free_node(d);
+            }
+
+            match unsafe { (*cur).type_ } {
+                t if t == XML_ELEMENT_NODE as c_int => {
+                    // Compute the state for this element's content. Upstream
+                    // resets stripWhitespace to 0 for every element (only the
+                    // listed XSLT instructions set it to 1);
+                    // preserveWhitespace is inherited and can be changed by
+                    // xml:space or xsl:text.
+                    let mut nst = St {
+                        strip_whitespace: false,
+                        preserve_whitespace: st.preserve_whitespace,
+                    };
+                    if !unsafe { (*cur).children }.is_null() {
+                        match xml_space(cur) {
+                            1 => nst.preserve_whitespace = true,
+                            0 => nst.preserve_whitespace = false,
+                            _ => {}
+                        }
+                    }
+                    if is_xslt_element(cur, "text") {
+                        nst.preserve_whitespace = true;
+                    } else if is_xslt_element(cur, "choose")
+                        || is_xslt_element(cur, "call-template")
+                        || is_xslt_element(cur, "apply-templates")
+                        || is_xslt_element(cur, "apply-imports")
+                        || is_xslt_element(cur, "attribute-set")
+                    {
+                        nst.strip_whitespace = true;
+                    } else if stylesheet_depth {
+                        // The xsl:stylesheet/xsl:transform element itself.
+                        nst.strip_whitespace = true;
+                    } else if is_xslt_element(cur, "param") || is_xslt_element(cur, "sort") {
+                        // Remove whitespace-only text nodes directly before
+                        // xsl:param / xsl:sort (upstream default case).
+                        let mut prev = unsafe { (*cur).prev };
+                        while !prev.is_null()
+                            && unsafe { (*prev).type_ } == XML_TEXT_NODE as c_int
+                            && is_blank(unsafe { (*prev).content })
+                        {
+                            let p = prev;
+                            prev = unsafe { (*prev).prev };
+                            crate::xml::tree::unlink_node(p);
+                            crate::xml::tree::free_node(p);
+                        }
+                    }
+                    if !unsafe { (*cur).children }.is_null() {
+                        walk(unsafe { (*cur).children }, &nst, false, false);
+                    }
+                }
+                t if t == XML_TEXT_NODE as c_int || t == XML_CDATA_SECTION_NODE as c_int => {
+                    // Strict mode: merge adjacent text nodes.
+                    if text_node.is_null() {
+                        text_node = cur;
+                    } else {
+                        merge_text(text_node, unsafe { (*cur).content });
+                        delete.push(cur);
+                    }
+                    let end_of_run = unsafe { (*cur).next }.is_null()
+                        || unsafe { (*(*cur).next).type_ } == XML_ELEMENT_NODE as c_int;
+                    if end_of_run {
+                        check_strip(text_node, st, &mut delete);
+                        text_node = ptr::null_mut();
+                    }
+                }
+                t if t == XML_COMMENT_NODE as c_int || t == XML_PI_NODE as c_int => {
+                    delete.push(cur);
+                    let end_of_run = unsafe { (*cur).next }.is_null()
+                        || unsafe { (*(*cur).next).type_ } == XML_ELEMENT_NODE as c_int;
+                    if end_of_run {
+                        check_strip(text_node, st, &mut delete);
+                        text_node = ptr::null_mut();
+                    }
+                }
+                _ => {}
+            }
+            cur = next;
+        }
+        for d in delete {
+            crate::xml::tree::unlink_node(d);
+            crate::xml::tree::free_node(d);
+        }
+    }
+
+    let st = St {
+        strip_whitespace: false,
+        preserve_whitespace: false,
+    };
+    walk(unsafe { (*root).children }, &st, is_stylesheet, true);
 }
 
 /// Compile a simplified stylesheet: a literal result element with an

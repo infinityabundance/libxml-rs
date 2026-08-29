@@ -1,6 +1,6 @@
 # libxml-rs
 
-**Phase 8: libxslt — Complete XSLT 1.0 Engine.**
+**Phase 9: EXSLT + `xsltproc` — Complete EXSLT Modules and CLI.**
 
 Custodial native-Rust reimplementation of the **libxml2 + libxslt** ecosystem:
 a forensic reconstruction of observable behavior, implemented in native Rust,
@@ -13,47 +13,55 @@ historical lifetimes.
 
 ---
 
-## Current Status: Phase 8 — libxslt (§85)
+## Current Status: Phase 9 — EXSLT + `xsltproc` (§85)
 
-Phase 8 implements the complete native-Rust **XSLT 1.0 engine**: stylesheet
+Phase 9 delivers the **complete EXSLT module set** (§35) and the
+**`xsltproc` command-line tool** (§36). Per §85:
+
+> *Deliverable: EXSLT + `xsltproc` core oracle courts close.*
+
+All seven EXSLT modules are implemented natively and registered through the
+process-wide EXSLT registry (`exsltRegisterAll`, mirroring upstream):
+
+- **`exsl:` Common** — `exsl:node-set` (with real result-tree-fragment support), `exsl:object-type`
+- **`math:`** — `math:max`, `math:min`, `math:sin`, `math:cos`, `math:tan`, `math:constant`, `math:power`, `math:sqrt`, `math:log`, `math:random`, …
+- **`set:`** — `set:difference`, `set:intersection`, `set:distinct`, `set:has-same-node`, `set:leading`, `set:trailing`
+- **`str:`** — `str:tokenize`, `str:padding`, `str:concat`, `str:split`, `str:replace`, `str:align`, `str:encode-uri`, `str:decode-uri`
+- **`dyn:`** — `dyn:evaluate`, `dyn:element`, `dyn:attribute`, `dyn:map`, `dyn:call`, …
+- **`date:`** — `date:date-time`, `date:date`, `date:time`, `date:year`, `date:month-in-year`, `date:day-in-month`, `date:day-of-week-in-month`, `date:format-date`, `date:add`, `date:difference`, `date:seconds`, `date:day-name`, …
+- **`func:`** — `func:function`, `func:result` (extension-function declarations)
+- **`exsltRegisterAll` C ABI export** — mirrors upstream; `xsltproc` calls it at startup
+- **`xsltproc` CLI** — full option surface (`--param`, `--stringparam`, `--output`, `--noout`, `--html`, `--encoding`, `--xinclude`, `--profile`, `--maxdepth`, `--maxvars`, `--nonet`, `--nowrite`, …) with upstream exit codes (1–11)
+- **RTF support** — variables with inline content become context-owned result tree fragments; `exsl:node-set($var)/path` navigation works
+- **1110 passing tests**: `cargo test --lib` — 0 failures
+- **Differential oracle parity**: a 12-case `xsltproc` corpus (basic transform, `count()`/AVTs, `exsl:node-set`/`math:`/`set:`/`str:`, predicates, attribute string-values, `xsl:if`/`xsl:when`, numbering, descending `xsl:sort`, `key()`, `call-template` with params, `method="html"`) is **byte-identical** to the system libxslt 1.1.45 `xsltproc` (stdout + exit codes)
+
+### Underlying subsystem fixes landed during Phase 9
+
+| Fix | Surface | Detail |
+|-----|---------|--------|
+| XPath core functions in XSLT | xslt | The transform context now registers the XPath 1.0 core function library — before, every XPath function call (`count()`, `substring()`, …) failed as unknown |
+| AVT evaluation | xslt | `{expr}` attribute value templates evaluated in literal attributes and `xsl:element`/`xsl:attribute`/`xsl:processing-instruction` names (XSLT 1.0 §7.6.2) |
+| RTF variable ownership | xslt | Inline variable content is deep-copied into a context-owned RVT (freed exactly once at context teardown) — fixes a double-free and enables `exsl:node-set` |
+| Node string-value | tree | `node_get_content` concatenates all descendant text (XPath 1.0 string-value), not just direct text children |
+| Caller parameter format | xslt | `xsltApplyStylesheet` params parsed as upstream `(name, value)` pairs with `{uri}name` namespace form |
+| `date:` no-arg default | exslt | `date:date()`/`date:time()` and the component functions default to the current date-time (EXSLT spec) |
+
+### Phase 8 (historical)
+
+Phase 8 implemented the complete native-Rust **XSLT 1.0 engine**: stylesheet
 compilation, template matching, pattern compilation, variable/parameter binding,
 keys, sorting, numbering, imports/includes, extensions, security, serialization,
-and the transform runtime. Per §85:
-
-> *Deliverable: XSLT core oracle courts close.*
-
-The XSLT engine operates exclusively on the Rust libxml implementation —
-no upstream libxml2/libxslt is loaded, linked, or shelled out to (§31). The
-full pipeline is:
+and the transform runtime (§31–§34). The XSLT engine operates exclusively on
+the Rust libxml implementation — no upstream libxml2/libxslt is loaded, linked,
+or shelled out to (§31):
 
 ```text
 Rust CLI → Rust libxslt compatibility layer → Rust XSLT engine
         → Rust XPath implementation → Rust libxml tree/parser/serializer
 ```
 
-### What exists now
-
-- **Phases 1–7 complete**: C ABI skeleton, tree/ownership, XML parser + SAX,
-  I/O/encoding/URI/catalog/serialization/HTML, XPath 1.0/XPointer/XInclude,
-  validation family (DTD/XSD/RELAX NG/Schematron), C14N/reader/writer/regex/automata/debug
-- **XSLT stylesheet lifecycle**: `xsltStylesheetCreate`, `xsltParseStylesheetDoc/File/Memory`, `xsltFreeStylesheet`, `xsltGetStylesheetDoc`, `xsltSetStylesheetDoc` — simplified stylesheets (literal result elements) supported
-- **XSLT compiler**: template compilation, top-level elements (`key`, `decimal-format`, `namespace-alias`, `attribute-set`, `strip-space`, `preserve-space`, `output`, `variable`, `param`), `xsl:import`/`xsl:include`, import precedence
-- **XSLT templates**: priority-ordered template lists, `xsltFindTemplate` (XSLT 1.0 §5.2), named-template lookup, default priority computation (§5.5)
-- **XSLT patterns**: full pattern compiler (union `|`, `//`, `@`, `*`, `node()`, `text()`, `comment()`, `processing-instruction()`, predicates), `xsltDefaultPriority`
-- **Variables & parameters**: variable stacks, global variable initialization, `xsl:with-param`, caller parameter parsing (`name=value`, `{uri}name=value`)
-- **Keys**: key definitions, key table construction, `key()` function support
-- **Sorting**: multi-key sort, text/number data types, ascending/descending
-- **Numbering**: `xsl:number` with decimal (`1`), zero-padded (`01`), alphabetic (`a`/`A`), and roman (`i`/`I`) formats
-- **Transform runtime**: `xsltApplyStylesheet`, `xsltApplyStylesheetUser`, `xsltApplyStylesheetStacked`, transform context lifecycle, instruction execution — `apply-templates`, `call-template`, `apply-imports`, `for-each`, `value-of`, `copy-of`, `copy`, `element`, `attribute`, `text`, `comment`, `processing-instruction`, `number`, `choose`/`when`/`otherwise`, `if`, `variable`, `param`, `sort`, `message` — built-in template rules (§5.8), recursion depth limiting
-- **XSLT XPath functions**: `document()`, `key()`, `generate-id()`, `system-property()`, `element-available()`, `function-available()`, `current()`
-- **Serialization**: `xsltSaveResultToFile`, `xsltSaveResultToFd`, `xsltSaveResultToString` with output method selection (`xml`/`html`/`text`)
-- **Security**: full `xsltSecurityPrefs` API (`xsltNewSecurityPrefs`, `xsltSetSecurityPrefs`, `xsltGetSecurityPrefs`, global defaults)
-- **Extensions**: `xsltRegisterExtFunction`, `xsltRegisterExtElement`
-- **Errors**: XSLT error domains/levels, per-context error handler wiring, stderr reporting
-- **C ABI exports**: all 33 libxslt symbols exported and verified (`nm -D`)
-- **1060 passing tests**: `cargo test --lib` — 0 failures
-
-### Underlying subsystem fixes landed during Phase 8
+Subsystem fixes landed during Phase 8:
 
 | Fix | Surface | Detail |
 |-----|---------|--------|
@@ -72,7 +80,7 @@ All six Phase 8 residuals are documented in [`atlas/RESIDUAL_LEDGER.md`](atlas/R
 ```sh
 cargo build                          # Build library + CLI binaries
 cargo build --lib                    # Build only the library
-cargo test --lib                     # Run library tests (1060 passing)
+cargo test --lib                     # Run library tests (1110 passing)
 
 # Test C consumer compilation against our headers:
 gcc -I include courts/suites/sanity/ABI-STRUCT-NODE-0001-abicheck.c -o /tmp/abicheck
@@ -84,7 +92,7 @@ docker build -f docker/Dockerfile.oracle -t libxml-rs/oracle:2.12.0 docker/
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.10`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.11`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification
@@ -110,10 +118,13 @@ by the oracle contamination court.
 | Dictionary | 7 | Globals | 7 | String | 6 |
 | Errors | 5 | Memory | 2 | Threads | 2 |
 | ABI allocator | 8 | | | | |
-| XSLT patterns | 46 | XSLT transform | 14 | XSLT security | 7 |
-| XSLT numbering | 5 | XSLT stylesheet | 4 | XSLT variables/params | 8 |
+| XSLT patterns | 46 | XSLT transform | 26 | XSLT security | 7 |
+| XSLT numbering | 5 | XSLT stylesheet | 4 | XSLT variables/params | 9 |
 | XSLT compiler | 3 | XSLT sorting | 3 | XSLT misc (keys/space/serial/ns/imports/ext) | 13 |
-| **Total (1060 passing, 1 ignored)** | | | | | |
+| EXSLT dates | 9 | EXSLT strings | 6 | EXSLT math | 5 |
+| EXSLT common | 4 | EXSLT sets | 4 | EXSLT dynamic | 2 |
+| EXSLT functions | 1 | EXSLT registry | 3 | XSLT params | 5 |
+| **Total (1110 passing, 1 ignored)** | | | | | |
 
 ---
 
@@ -165,7 +176,7 @@ libxml-rs/
 ```sh
 cargo build              # Build the library and CLI binaries
 cargo build --lib        # Build only the library
-cargo test --lib         # Run library tests (1060 passing)
+cargo test --lib         # Run library tests (1110 passing)
 cargo build --release    # Optimized build (LTO, panic=abort)
 ```
 
@@ -197,8 +208,8 @@ at your option.
 | Validation family | 🟢 DTD (56) + XSD (62) + RELAX NG (56) + Schematron (40) |
 | XSLT 1.0 engine | 🟢 103 tests; full instruction surface; end-to-end transforms |
 | C headers | 🟢 45+19 headers, gcc & clang, zero warnings |
-| CLI parity | 🟡 Scaffolded (Phase 9: `xsltproc`; Phase 10: `xmllint`/`xmlcatalog`) |
-| EXSLT | 🔴 Not started (Phase 9) |
+| CLI parity | 🟢 `xsltproc` complete with upstream exit codes (Phase 9); `xmllint`/`xmlcatalog` staged (Phase 10) |
+| EXSLT | 🟢 All seven modules registered (34 tests); `exsl:node-set` on RTFs, math/set/str/dyn/date/func verified end-to-end |
 | Historical atlas | 🟡 Release manifests + API/ABI snapshots for current versions |
 | Oracle infrastructure | 🟢 Docker oracle built and verified |
 | Court coverage | 🟢 ABI courts passing; differential suites staged |

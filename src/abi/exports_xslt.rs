@@ -136,11 +136,8 @@ pub extern "C" fn xsltCleanupGlobals() {
 /// ```c
 /// void exsltRegisterAll(void);
 /// ```
-#[no_mangle]
-pub extern "C" fn exsltRegisterAll() {
-    // Phase 9: register all EXSLT modules (math, sets, strings, dynamic,
-    // functions, dates, common).
-}
+///
+/// Declared with #[no_mangle] in `src/exslt/mod.rs`.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 6. Save Result to File

@@ -139,13 +139,18 @@ impl NodeSet {
     }
 
     /// Sort nodes in document order.
+    ///
+    /// # UPSTREAM-PARITY
+    ///
+    /// XPath node-sets are always in document order (XPath 1.0 §3.3).
+    /// libxml2 maintains this via its node-set insertion/merge logic plus
+    /// the document-order comparator (xmlXPathNodeSetSort). Sorting by
+    /// pointer address is NOT document order and breaks downstream ordering
+    /// guarantees; the oracle-observed symptom is rotated results on the
+    /// second of two transforms in one process.
     pub fn sort(&mut self) {
-        self.nodes.sort_by(|a, b| {
-            // Document order: compare by pointer for now.
-            // A full implementation uses the document order algorithm.
-            // Pointer comparison gives us a consistent order per evaluation.
-            a.0.cmp(&b.0)
-        });
+        self.nodes
+            .sort_by(|a, b| unsafe { compare_document_order(a.0, b.0) });
         self.nodes.dedup();
     }
 
@@ -304,20 +309,25 @@ pub fn node_string_value(node: *mut _xmlNode) -> String {
             _ => return String::new(),
         }
 
-        // Element node (type 1): concatenate text descendants
+        // Element / document / HTML document: concatenate text descendants
         if node_ref.type_ == 1 || node_ref.type_ == 9 || node_ref.type_ == 13 {
-            // Root / element / attribute: collect text content
-            if node_ref.type_ == 13 {
-                // Attribute
-                if !node_ref.content.is_null() {
-                    return crate::xml::string::xmlstr_to_string(node_ref.content);
-                }
-                return String::new();
-            }
-            // Element or document node: concatenate text descendants
             let mut result = String::new();
             collect_text(&mut result, node);
             return result;
+        }
+
+        // Attribute node (type 2): the value is stored as the first text
+        // child of the attribute node (tree::set_prop layout, matching
+        // libxml2's xmlAttr->children). NOTE: type 13 is
+        // XML_HTML_DOCUMENT_NODE, not attribute.
+        if node_ref.type_ == 2 {
+            if !node_ref.children.is_null() {
+                let child = &*node_ref.children;
+                if (child.type_ == 3 || child.type_ == 4) && !child.content.is_null() {
+                    return crate::xml::string::xmlstr_to_string(child.content);
+                }
+            }
+            return String::new();
         }
 
         // Text / CDATA

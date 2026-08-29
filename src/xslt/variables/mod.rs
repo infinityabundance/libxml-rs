@@ -74,6 +74,26 @@ pub unsafe fn xsltPushVariable(
     };
     *((ctx.varsTab as *mut *mut _xsltStackElem).offset(ctx.varsNr as isize)) = var;
     ctx.varsNr = new_vars_nr;
+
+    // Register the variable in the internal XPath context's variable hash
+    // so `$name` resolves during XPath evaluation. Local variables live on
+    // the transform variable stack; the XPath evaluator reads the hash.
+    // (Global variables are registered separately by xsltInitGlobalVariables.)
+    let xpath_ctxt = ctx.xpathCtxt;
+    if !xpath_ctxt.is_null() && !(*var).name.is_null() {
+        let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+        if !internal.is_null() {
+            let name_len = libc::strlen((*var).name as *const libc::c_char);
+            let name_bytes = core::slice::from_raw_parts((*var).name, name_len);
+            let name = String::from_utf8_lossy(name_bytes).into_owned();
+            let value = if (*var).value.is_null() {
+                crate::xml::xpath::types::XPathValue::String(String::new())
+            } else {
+                crate::abi::exports_xml2::object_to_xpathvalue_pub((*var).value)
+            };
+            (*internal).register_variable(&name, value);
+        }
+    }
     0
 }
 
@@ -100,6 +120,20 @@ pub unsafe fn xsltPopVariable(ctxt: *mut _xsltTransformContext) -> *mut _xsltSta
         (*prev).next = ptr::null_mut();
     }
     (*var).next = ptr::null_mut();
+
+    // Unregister the variable from the internal XPath context's hash.
+    if !(*var).name.is_null() {
+        let xpath_ctxt = ctx.xpathCtxt;
+        if !xpath_ctxt.is_null() {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() {
+                let name_len = libc::strlen((*var).name as *const libc::c_char);
+                let name_bytes = core::slice::from_raw_parts((*var).name, name_len);
+                let name = String::from_utf8_lossy(name_bytes).into_owned();
+                (*internal).unregister_variable(&name);
+            }
+        }
+    }
     var
 }
 
@@ -192,10 +226,11 @@ pub unsafe fn xsltFreeStackElem(var: *mut _xsltStackElem) {
         xmlXPathFreeObject(v.value);
         v.value = ptr::null_mut();
     }
-    if !v.tree.is_null() {
-        crate::xml::tree::free_node(v.tree);
-        v.tree = ptr::null_mut();
-    }
+    // NOTE: `tree` points at the stylesheet's inline content nodes
+    // (compiler sets var->tree = inst->children); those nodes belong to the
+    // stylesheet document and are freed by xsltFreeStylesheet. They must NOT
+    // be freed here (would double-free). Runtime result-tree fragments are
+    // separate RVT documents owned by the transform context's docCache.
     // The name/select/nameURI strings are dictionary-owned or stylesheet-owned;
     // only free them if this is a caller-created variable (from params parsing).
     if (v.flags & XSLT_VAR_INTERNAL) != 0 {
@@ -269,13 +304,15 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
     // First, register caller-provided parameters (they take precedence).
     let mut param = (*style).params as *mut _xsltStackElem;
     while !param.is_null() {
-        register_global_value(ctxt, param);
+        register_global_value(ctxt, param, false);
         param = (*param).next;
     }
-    // Then evaluate stylesheet-defined global variables/params.
+    // Then evaluate stylesheet-defined global variables/params, skipping
+    // names already bound by the caller (upstream xsltEvalGlobalVariables
+    // consults ctxt->globalVars).
     let mut var = (*style).variables as *mut _xsltStackElem;
     while !var.is_null() {
-        register_global_value(ctxt, var);
+        register_global_value(ctxt, var, true);
         var = (*var).next;
     }
 }
@@ -283,11 +320,18 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
 /// Evaluate a single global variable/parameter and register its value in
 /// the XPath context's variable hash.
 ///
+/// When `skip_if_bound` is set (stylesheet defaults), a variable whose name
+/// is already bound by a caller-provided parameter is not evaluated.
+///
 /// # SAFETY
 ///
 /// - `ctxt` must be a valid `_xsltTransformContext`.
 /// - `var` must be a valid `_xsltStackElem`.
-unsafe fn register_global_value(ctxt: *mut _xsltTransformContext, var: *mut _xsltStackElem) {
+unsafe fn register_global_value(
+    ctxt: *mut _xsltTransformContext,
+    var: *mut _xsltStackElem,
+    skip_if_bound: bool,
+) {
     if var.is_null() || (*var).name.is_null() {
         return;
     }
@@ -296,6 +340,15 @@ unsafe fn register_global_value(ctxt: *mut _xsltTransformContext, var: *mut _xsl
         Some(n) => String::from_utf8_lossy(n).into_owned(),
         None => return,
     };
+    if skip_if_bound {
+        let xpath_ctxt = (*ctxt).xpathCtxt;
+        if !xpath_ctxt.is_null() {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() && (*internal).variables.contains_key(&name) {
+                return;
+            }
+        }
+    }
     // Compute the value: caller params carry a string value in `select`;
     // stylesheet variables have a select expression or inline content.
     let value: Option<crate::xml::xpath::types::XPathValue> = if !(*var).value.is_null() {
@@ -338,23 +391,81 @@ unsafe fn register_global_value(ctxt: *mut _xsltTransformContext, var: *mut _xsl
             crate::abi::exports_xml2::xmlXPathFreeObject(obj);
             Some(v)
         } else {
+            // UPSTREAM-PARITY: a failed user-parameter evaluation reports
+            // the XPath error, a runtime-error context line, and the
+            // failing parameter (xsltEvalUserParams / xsltEvalGlobalVariable,
+            // variables.c), and stops the transformation.
+            let xerr = {
+                let internal = (*ctxt).xpathCtxt;
+                if internal.is_null() {
+                    "Invalid expression".to_string()
+                } else {
+                    let x = (*internal).extra as *mut crate::xml::xpath::context::XPathContext;
+                    if x.is_null() {
+                        "Invalid expression".to_string()
+                    } else {
+                        (*x).error
+                            .clone()
+                            .unwrap_or_else(|| "Invalid expression".to_string())
+                    }
+                }
+            };
+            let nm =
+                crate::abi::versioning::c_str_to_bytes((*var).name as *const std::os::raw::c_char)
+                    .unwrap_or(b"")
+                    .to_vec();
+            eprintln!("XPath error : {}", xerr);
+            eprintln!("runtime error");
+            eprintln!(
+                "Evaluating user parameter {} failed",
+                String::from_utf8_lossy(&nm)
+            );
+            // UPSTREAM-PARITY: xsltEvalGlobalVariable sets the state to
+            // XSLT_STATE_STOPPED on a failed user parameter.
+            (*ctxt).state = crate::xslt::transform::XSLT_STATE_STOPPED;
             None
         };
         result
-    } else {
-        // Inline content: evaluate to a result tree fragment (string value).
-        let content = crate::xml::tree::node_get_content((*var).tree);
-        let s = if content.is_null() {
-            String::new()
-        } else {
-            crate::abi::versioning::c_str_to_bytes(content as *const std::os::raw::c_char)
-                .map(|b| String::from_utf8_lossy(b).into_owned())
-                .unwrap_or_default()
-        };
-        if !content.is_null() {
-            libc::free(content as *mut libc::c_void);
+    } else if !(*var).tree.is_null() {
+        // Inline content: build a result tree fragment (RVT). The variable
+        // value is a node-set containing the RVT's *document node*, matching
+        // upstream (variables.c xsltEvalVariable → xmlXPathNewValueTree of
+        // the RVT container), so that `exsl:node-set($var)/path` navigation
+        // works and `$var` stringifies to the full text content (§35).
+        let doc = crate::xml::tree::new_doc(ptr::null());
+        if doc.is_null() {
+            return;
         }
-        Some(crate::xml::xpath::types::XPathValue::String(s))
+        // Deep-copy the stylesheet content nodes into the RVT document.
+        let mut child = (*var).tree;
+        let mut last: *mut _xmlNode = ptr::null_mut();
+        while !child.is_null() {
+            let copy = crate::xml::tree::copy_node(child, 1);
+            if !copy.is_null() {
+                if last.is_null() {
+                    (*doc).children = copy;
+                } else {
+                    (*last).next = copy;
+                }
+                (*copy).prev = last;
+                (*copy).parent = doc as *mut _xmlNode;
+                (*copy).doc = doc;
+                last = copy;
+            }
+            child = (*child).next;
+        }
+        if !last.is_null() {
+            (*doc).last = last;
+        }
+        // Own the RVT via the context's document cache (freed exactly once
+        // at transform-context teardown, after the XPath context is freed).
+        crate::xslt::documents::xsltRegisterRVT(ctxt, doc);
+        let mut ns = crate::xml::xpath::types::NodeSet::new();
+        ns.push(doc as *mut _xmlNode);
+        Some(crate::xml::xpath::types::XPathValue::NodeSet(ns))
+    } else {
+        // No inline content: empty string value.
+        Some(crate::xml::xpath::types::XPathValue::String(String::new()))
     };
 
     if let Some(v) = value {

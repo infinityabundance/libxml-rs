@@ -49,6 +49,38 @@ pub const XSLT_MAX_INSERT_DEPTH: c_int = 50;
 pub const XSLT_STATE_OK: c_int = 0;
 pub const XSLT_STATE_ERROR: c_int = 1;
 
+/// The transformation was stopped (e.g. xsl:message terminate="yes").
+pub const XSLT_STATE_STOPPED: c_int = 2;
+
+/// Maximum template recursion depth (upstream `xsltMaxDepth`, transform.c).
+#[no_mangle]
+pub static mut xsltMaxDepth: c_int = 3000;
+
+/// Maximum number of variables/params (upstream `xsltMaxVars`, transform.c).
+#[no_mangle]
+pub static mut xsltMaxVars: c_int = 15000;
+
+/// Whether XInclude processing is enabled by default for documents loaded
+/// by the transform (upstream `xsltDoXIncludeDefault`, transform.c).
+static mut XSLT_XINCLUDE_DEFAULT: c_int = 0;
+
+/// Set whether XInclude processing is done on documents loaded by the
+/// transformation (upstream `xsltSetXIncludeDefault`).
+///
+/// # SAFETY
+///
+/// - The value is a process-wide setting, matching upstream's global.
+#[no_mangle]
+pub unsafe extern "C" fn xsltSetXIncludeDefault(xinclude: c_int) {
+    unsafe { XSLT_XINCLUDE_DEFAULT = if xinclude != 0 { 1 } else { 0 } };
+}
+
+/// Get the current XInclude default (upstream `xsltGetXIncludeDefault`).
+#[no_mangle]
+pub unsafe extern "C" fn xsltGetXIncludeDefault() -> c_int {
+    unsafe { XSLT_XINCLUDE_DEFAULT }
+}
+
 /// Create a new transform context.
 ///
 /// # SAFETY
@@ -71,7 +103,10 @@ pub unsafe extern "C" fn xsltNewTransformContext(
     (*ctxt).style = style;
     (*ctxt).document = doc;
     (*ctxt).state = XSLT_STATE_OK;
-    (*ctxt).maxDepth = XSLT_MAX_DEPTH;
+    // UPSTREAM-PARITY: the per-context depth/vars limits come from the
+    // process-wide xsltMaxDepth/xsltMaxVars globals (adjustable via
+    // xsltproc --maxdepth/--maxvars).
+    (*ctxt).maxDepth = unsafe { xsltMaxDepth };
     (*ctxt).maxInsertDepth = XSLT_MAX_INSERT_DEPTH;
     (*ctxt).profile = ptr::null_mut();
 
@@ -79,6 +114,12 @@ pub unsafe extern "C" fn xsltNewTransformContext(
     let xpath_ctxt = xmlXPathNewContext(doc);
     if !xpath_ctxt.is_null() {
         (*ctxt).xpathCtxt = xpath_ctxt;
+        // Stash this transform context in the XPath context's opaque slot so
+        // XSLT XPath functions (e.g. key()) can reach the key tables.
+        let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+        if !internal.is_null() {
+            (*internal).func_lookup_data = ctxt as *mut c_void;
+        }
         // Register the standard XSLT extension functions and variable
         // lookup for XSLT evaluation.
         register_xslt_functions(ctxt);
@@ -108,10 +149,10 @@ pub unsafe extern "C" fn xsltFreeTransformContext(ctxt: *mut _xsltTransformConte
     if !(*ctxt).xpathCtxt.is_null() {
         xmlXPathFreeContext((*ctxt).xpathCtxt);
     }
-    // Free the result document (if we own it).
-    if !(*ctxt).resultDoc.is_null() {
-        free_doc((*ctxt).resultDoc);
-    }
+    // NOTE: the result document is owned by the caller of
+    // xsltApplyStylesheet (upstream xsltFreeTransformContext does not free
+    // ctxt->output / resultDoc); freeing it here would double-free the
+    // result when the caller releases it.
     // Free global variables.
     crate::xslt::variables::xsltFreeGlobalVariables(ctxt);
     // Free key tables.
@@ -239,8 +280,17 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
     (*ctxt).contextSize = 1;
     (*ctxt).proximityPosition = 1;
     let result_code = apply_templates_to_node(ctxt, doc as *mut _xmlNode, ptr::null());
+    let _ = result_code;
 
-    let final_result = if result_code == 0 { result } else { result };
+    // UPSTREAM-PARITY: a transformation whose context is no longer in the
+    // OK state produces no result (xsltApplyStylesheetInternal frees the
+    // result and returns NULL when ctxt->state != XSLT_STATE_OK).
+    let final_result = if (*ctxt).state == XSLT_STATE_OK {
+        result
+    } else {
+        free_doc(result);
+        ptr::null_mut()
+    };
 
     if own_ctxt {
         // Detach the result document from the context before freeing.
@@ -275,6 +325,87 @@ pub unsafe extern "C" fn xsltFreeTransformResult(result: *mut _xmlDoc) {
     if !result.is_null() {
         free_doc(result);
     }
+}
+
+/// Apply a stylesheet and write the result to an output channel.
+///
+/// # UPSTREAM-PARITY
+///
+/// Mirrors `xsltRunStylesheetUser` (transform.c 1.1.45): applies the
+/// stylesheet and saves to `output` (a filename) or `IObuf`. The SAX
+/// callback mode is not implemented by upstream either (it returns -1).
+///
+/// # SAFETY
+///
+/// - All pointers must be valid or NULL where permitted.
+#[no_mangle]
+pub unsafe extern "C" fn xsltRunStylesheetUser(
+    style: *mut _xsltStylesheet,
+    doc: *mut _xmlDoc,
+    params: *mut *const c_char,
+    output: *const c_char,
+    SAX: *mut crate::abi::structs::_xmlSAXHandler,
+    IObuf: *mut crate::abi::structs::_xmlOutputBuffer,
+    profile: *mut c_void,
+    userCtxt: *mut _xsltTransformContext,
+) -> c_int {
+    if output.is_null() && SAX.is_null() && IObuf.is_null() {
+        return -1;
+    }
+    if !SAX.is_null() && !IObuf.is_null() {
+        return -1;
+    }
+    // SAX output mode is unsupported upstream as well.
+    if !SAX.is_null() {
+        return -1;
+    }
+    let tmp = xsltApplyStylesheetUser(style, doc, params, output, profile, userCtxt);
+    if tmp.is_null() {
+        eprintln!("xsltRunStylesheet : run failed");
+        return -1;
+    }
+    let ret = if !IObuf.is_null() {
+        let mut txt: *mut xmlChar = ptr::null_mut();
+        let mut len: c_int = 0;
+        let r = crate::xslt::serialization::xsltSaveResultToString(&mut txt, &mut len, tmp, style);
+        if r != 0 || txt.is_null() {
+            -1
+        } else {
+            let written = crate::xml::io::output_buffer_write(IObuf, len, txt as *const c_char);
+            crate::abi::allocator::xmlFree(txt as *mut c_void);
+            written
+        }
+    } else {
+        crate::xslt::serialization::xsltSaveResultToFilename(output, tmp, style, 0)
+    };
+    free_doc(tmp);
+    ret
+}
+
+/// Apply a stylesheet and write the result to an output channel.
+///
+/// # SAFETY
+///
+/// - All pointers must be valid or NULL where permitted.
+#[no_mangle]
+pub unsafe extern "C" fn xsltRunStylesheet(
+    style: *mut _xsltStylesheet,
+    doc: *mut _xmlDoc,
+    params: *mut *const c_char,
+    output: *const c_char,
+    SAX: *mut crate::abi::structs::_xmlSAXHandler,
+    IObuf: *mut crate::abi::structs::_xmlOutputBuffer,
+) -> c_int {
+    xsltRunStylesheetUser(
+        style,
+        doc,
+        params,
+        output,
+        SAX,
+        IObuf,
+        ptr::null_mut(),
+        ptr::null_mut(),
+    )
 }
 
 /// Apply the root template (match="/") for empty documents.
@@ -552,9 +683,17 @@ unsafe fn process_xslt_instruction(ctxt: *mut _xsltTransformContext, inst: *mut 
             // Top-level elements: not instructions, ignored in content.
         }
         _ => {
-            // Unknown XSLT element: may be an extension element.
+            // Unknown element: may be an EXSLT extension element or a
+            // registered extension element.
             let ns = get_element_ns(inst);
             if let Some(ns_uri) = ns {
+                // exsl:document — write the element content to a file.
+                if ns_uri == crate::exslt::EXSLT_NS_COMMON
+                    && get_element_name(inst).as_deref() == Some("document")
+                {
+                    process_exsl_document(ctxt, inst);
+                    return 0;
+                }
                 // Check for a registered extension element.
                 let name_ptr = (*inst).name;
                 let ns_cstr = str_to_cstr(&ns_uri);
@@ -579,6 +718,74 @@ fn str_to_cstr(s: &str) -> Vec<u8> {
     let mut v = s.as_bytes().to_vec();
     v.push(0);
     v
+}
+
+/// Process the EXSLT `<exsl:document href="...">` extension element:
+/// instantiate the element's content into a separate result document and
+/// write it to the file named by the `href` attribute.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream libexslt (common.c `exsltDocumentElem`) creates a new document
+/// whose root element copies the attributes of the exsl:document element
+/// (minus href), evaluates the content into it, and saves it to the
+/// resolved href (relative to the stylesheet's base URI).
+///
+/// # SAFETY
+///
+/// - All pointers must be valid.
+unsafe fn process_exsl_document(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
+    let href = get_prop(inst, b"href\0".as_ptr() as *const xmlChar);
+    if href.is_null() {
+        crate::xslt::errors::xsltTransformError(
+            ctxt,
+            (*ctxt).style,
+            inst,
+            b"exsl:document: missing href attribute\0".as_ptr() as *const c_char,
+        );
+        return;
+    }
+    // Build the fragment document.
+    let frag = libc::calloc(1, core::mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
+    if frag.is_null() {
+        libc::free(href as *mut libc::c_void);
+        return;
+    }
+    (*frag).type_ = XML_DOCUMENT_NODE as c_int;
+    (*frag).doc = frag;
+    let saved_insert = (*ctxt).insert;
+    let saved_result = (*ctxt).resultDoc;
+    (*ctxt).insert = frag as *mut _xmlNode;
+    (*ctxt).resultDoc = frag;
+    execute_content(ctxt, (*inst).children);
+    (*ctxt).insert = saved_insert;
+    (*ctxt).resultDoc = saved_result;
+
+    // Write the fragment to the file.
+    let fname = crate::abi::versioning::c_str_to_bytes(href as *const c_char);
+    if let Some(name) = fname {
+        let path = String::from_utf8_lossy(name);
+        let cpath = str_to_cstr(&path);
+        let out = libc::fopen(
+            cpath.as_ptr() as *const c_char,
+            b"wb\0".as_ptr() as *const c_char,
+        );
+        if !out.is_null() {
+            let buf = crate::xml::io::buf_create(-1);
+            if !buf.is_null() {
+                crate::xml::tree::doc_dump(buf, frag);
+                let content = crate::xml::io::buf_content(buf);
+                let len = crate::xml::io::buf_length(buf);
+                if !content.is_null() && len > 0 {
+                    libc::fwrite(content as *const libc::c_void, 1, len as usize, out);
+                }
+                crate::xml::io::buf_free(buf);
+            }
+            libc::fclose(out);
+        }
+    }
+    libc::free(href as *mut libc::c_void);
+    free_doc(frag);
 }
 
 /// Evaluate an XPath expression in the current context.
@@ -655,7 +862,7 @@ unsafe fn process_apply_templates(ctxt: *mut _xsltTransformContext, inst: *mut _
 
     if !nodes.is_null() && (*nodes).nodeNr > 0 {
         // Check for xsl:sort children.
-        let sort = find_sort_children(inst);
+        let sort = find_sort_children(ctxt, inst);
         let mut node_ptrs: Vec<*mut _xmlNode> = Vec::new();
         let mut i = 0;
         while i < (*nodes).nodeNr {
@@ -1064,7 +1271,7 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
         return;
     }
     // Check for xsl:sort children.
-    let sort = find_sort_children(inst);
+    let sort = find_sort_children(ctxt, inst);
     // Save the current node list state.
     let saved_node = (*ctxt).node;
     let saved_size = (*ctxt).contextSize;
@@ -1127,27 +1334,25 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
     xmlXPathFreeObject(obj);
 }
 
-/// Find the first `xsl:sort` child of an instruction.
+/// Find the first `xsl:sort` child of an instruction and compile it.
 ///
 /// # SAFETY
 ///
+/// - `ctxt` must be a valid transform context.
 /// - `inst` must be a valid node.
-unsafe fn find_sort_children(inst: *mut _xmlNode) -> *mut _xsltSort {
-    if inst.is_null() {
+unsafe fn find_sort_children(
+    ctxt: *mut _xsltTransformContext,
+    inst: *mut _xmlNode,
+) -> *mut _xsltSort {
+    if ctxt.is_null() || inst.is_null() {
         return ptr::null_mut();
     }
     let mut child = (*inst).children;
     while !child.is_null() {
         if is_xslt_element(child, "sort") {
-            // Compile the sort from the instruction node. The style is
-            // derived from the instruction's document (the stylesheet doc).
-            let style = if !(*child).doc.is_null() {
-                // Find the stylesheet that owns this document: use the
-                // transform context's style via the caller (set below).
-                ptr::null_mut()
-            } else {
-                ptr::null_mut()
-            };
+            // Compile the sort from the instruction node, with the actual
+            // stylesheet so xsltCompileSort can record it on the sort.
+            let style = (*ctxt).style;
             let sort = crate::xslt::sorting::xsltCompileSort(style, child);
             return sort;
         }
@@ -1454,7 +1659,7 @@ unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode)
         return;
     }
     // Evaluate the name attribute (it may be an AVT).
-    let name_str = xmlXPathCastToString(xmlXPathNewCString(name_attr));
+    let name_str = eval_avt(ctxt, name_attr);
     libc::free(name_attr as *mut libc::c_void);
     if name_str.is_null() {
         return;
@@ -1462,7 +1667,7 @@ unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode)
     // Check for the namespace attribute.
     let ns_attr = get_prop(inst, b"namespace\0".as_ptr() as *const xmlChar);
     let ns_str = if !ns_attr.is_null() {
-        let v = xmlXPathCastToString(xmlXPathNewCString(ns_attr));
+        let v = eval_avt(ctxt, ns_attr);
         libc::free(ns_attr as *mut libc::c_void);
         v
     } else {
@@ -1501,16 +1706,22 @@ unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNod
     if name_attr.is_null() {
         return;
     }
+    // The name attribute may be an AVT (XSLT 1.0 §7.6.2).
+    let name_str = eval_avt(ctxt, name_attr);
+    libc::free(name_attr as *mut libc::c_void);
+    if name_str.is_null() {
+        return;
+    }
     let insert = (*ctxt).insert;
     if insert.is_null() {
-        libc::free(name_attr as *mut libc::c_void);
+        xmlFree(name_str as *mut c_void);
         return;
     }
     // Evaluate the content into a temporary buffer.
     let saved_insert = (*ctxt).insert;
     let buf = libc::calloc(1, core::mem::size_of::<_xmlBuffer>()) as *mut _xmlBuffer;
     if buf.is_null() {
-        libc::free(name_attr as *mut libc::c_void);
+        xmlFree(name_str as *mut c_void);
         return;
     }
     (*buf).content = libc::calloc(1, 64) as *mut xmlChar;
@@ -1519,7 +1730,7 @@ unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNod
     let frag_doc = libc::calloc(1, core::mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
     if frag_doc.is_null() {
         libc::free(buf as *mut libc::c_void);
-        libc::free(name_attr as *mut libc::c_void);
+        xmlFree(name_str as *mut c_void);
         return;
     }
     (*frag_doc).type_ = XML_DOCUMENT_NODE as c_int;
@@ -1545,8 +1756,8 @@ unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNod
     // Set the attribute on the current result element.
     let mut cvalue = value.clone();
     cvalue.push(0);
-    set_prop(insert, name_attr, cvalue.as_ptr() as *const xmlChar);
-    libc::free(name_attr as *mut libc::c_void);
+    set_prop(insert, name_str, cvalue.as_ptr() as *const xmlChar);
+    xmlFree(name_str as *mut c_void);
 }
 
 /// Process `xsl:text`.
@@ -1596,12 +1807,18 @@ unsafe fn process_pi(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
     if name_attr.is_null() {
         return;
     }
+    // The name attribute may be an AVT (XSLT 1.0 §7.6.2).
+    let name_str = eval_avt(ctxt, name_attr);
+    libc::free(name_attr as *mut libc::c_void);
+    if name_str.is_null() {
+        return;
+    }
     let content = node_get_content((*inst).children);
-    append_pi_node(ctxt, name_attr, content);
+    append_pi_node(ctxt, name_str, content);
     if !content.is_null() {
         libc::free(content as *mut libc::c_void);
     }
-    libc::free(name_attr as *mut libc::c_void);
+    xmlFree(name_str as *mut c_void);
 }
 
 /// Process `xsl:number`.
@@ -1647,6 +1864,34 @@ unsafe fn process_number(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) 
     }
 }
 
+/// XPath 1.0 boolean conversion (§4.3) of a C ABI XPath object.
+///
+/// - node-set → true iff non-empty
+/// - number → true iff non-zero and not NaN
+/// - string → true iff non-empty
+/// - boolean → itself
+unsafe fn xpath_obj_boolean(obj: *mut _xmlXPathObject) -> bool {
+    if obj.is_null() {
+        return false;
+    }
+    let typ = (*obj).type_;
+    if typ == xmlXPathObjectType::XPATH_BOOLEAN as c_int {
+        return (*obj).boolval != 0;
+    }
+    if typ == xmlXPathObjectType::XPATH_NUMBER as c_int {
+        let n = (*obj).floatval;
+        return n != 0.0 && !n.is_nan();
+    }
+    if typ == xmlXPathObjectType::XPATH_STRING as c_int {
+        return !(*obj).stringval.is_null() && *(*obj).stringval != 0;
+    }
+    if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
+        let ns = (*obj).nodesetval as *mut _xmlNodeSet;
+        return !ns.is_null() && (*ns).nodeNr > 0;
+    }
+    false
+}
+
 /// Process `xsl:choose`.
 ///
 /// # SAFETY
@@ -1662,7 +1907,7 @@ unsafe fn process_choose(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) 
             if !test.is_null() {
                 let obj = eval_xpath(ctxt, test);
                 libc::free(test as *mut libc::c_void);
-                let truthy = !obj.is_null() && (*obj).boolval != 0;
+                let truthy = !obj.is_null() && xpath_obj_boolean(obj);
                 if !obj.is_null() {
                     xmlXPathFreeObject(obj);
                 }
@@ -1697,7 +1942,10 @@ unsafe fn process_if(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
     if obj.is_null() {
         return;
     }
-    let truthy = (*obj).boolval != 0;
+    // XPath 1.0 boolean conversion (§4.3): the test may be a node-set
+    // (e.g. `test="author"`), number, or string — `boolval` alone is only
+    // valid for boolean objects.
+    let truthy = xpath_obj_boolean(obj);
     xmlXPathFreeObject(obj);
     if truthy {
         execute_content(ctxt, (*inst).children);
@@ -1750,10 +1998,27 @@ unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
     if name.is_null() {
         return;
     }
-    // Check whether a value was passed via the parameter stack.
-    let existing = crate::xslt::variables::xsltLookupVariable(ctxt, name, ptr::null());
-    if !existing.is_null() && !(*existing).value.is_null() {
-        // Value already provided by with-param.
+    // Check whether a value was passed (via xsl:with-param or a global
+    // caller parameter). With-params are registered in the XPath context's
+    // variable hash by xsltPushParam, so consult the hash.
+    let already_bound = {
+        let xpath_ctxt = (*ctxt).xpathCtxt;
+        if xpath_ctxt.is_null() {
+            false
+        } else {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if internal.is_null() {
+                false
+            } else {
+                let name_len = libc::strlen(name as *const libc::c_char);
+                let name_bytes = core::slice::from_raw_parts(name, name_len);
+                let name_owned = String::from_utf8_lossy(name_bytes).into_owned();
+                (*internal).variables.contains_key(&name_owned)
+            }
+        }
+    };
+    if already_bound {
+        // Value already provided by with-param / caller.
         libc::free(name as *mut libc::c_void);
         return;
     }
@@ -1810,6 +2075,79 @@ unsafe fn process_message(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode)
     }
 }
 
+/// Evaluate an attribute value template (AVT) per XSLT 1.0 §7.6.2.
+///
+/// - `{{` and `}}` escape to literal `{` / `}`.
+/// - `{expr}` evaluates `expr` as an XPath expression and substitutes its
+///   string value.
+/// - An unmatched `{` is copied literally (upstream `xsltEvalAttrValueTemplate`
+///   keeps malformed templates verbatim).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid transform context.
+/// - `value` must be NULL or a valid NUL-terminated C string.
+///
+/// Returns a heap-allocated NUL-terminated string; the caller frees it with
+/// `xmlFree`. Returns NULL only on allocation failure.
+unsafe fn eval_avt(ctxt: *mut _xsltTransformContext, value: *const xmlChar) -> *mut xmlChar {
+    if value.is_null() {
+        return ptr::null_mut();
+    }
+    let len = libc::strlen(value as *const libc::c_char);
+    let bytes = core::slice::from_raw_parts(value, len);
+    let mut out: Vec<u8> = Vec::new();
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'{' {
+            if i + 1 < bytes.len() && bytes[i + 1] == b'{' {
+                out.push(b'{');
+                i += 2;
+                continue;
+            }
+            // Find the closing brace of the embedded XPath expression.
+            if let Some(rel) = bytes[i + 1..].iter().position(|c| *c == b'}') {
+                let close = i + 1 + rel;
+                let expr_bytes = &bytes[i + 1..close];
+                let expr_c = crate::xml::string::bytes_to_xmlstr(expr_bytes);
+                if !expr_c.is_null() {
+                    let obj = eval_xpath(ctxt, expr_c);
+                    xmlFree(expr_c as *mut c_void);
+                    if !obj.is_null() {
+                        let strv = xmlXPathCastToString(obj);
+                        xmlXPathFreeObject(obj);
+                        if !strv.is_null() {
+                            let slen = libc::strlen(strv as *const libc::c_char);
+                            out.extend_from_slice(core::slice::from_raw_parts(strv, slen));
+                            xmlFree(strv as *mut c_void);
+                        }
+                    }
+                }
+                i = close + 1;
+                continue;
+            }
+            // No closing brace: literal '{'.
+            out.push(b'{');
+            i += 1;
+            continue;
+        }
+        if b == b'}' {
+            if i + 1 < bytes.len() && bytes[i + 1] == b'}' {
+                out.push(b'}');
+                i += 2;
+                continue;
+            }
+            out.push(b'}');
+            i += 1;
+            continue;
+        }
+        out.push(b);
+        i += 1;
+    }
+    crate::xml::string::bytes_to_xmlstr(&out)
+}
+
 /// Process a literal result element.
 ///
 /// # SAFETY
@@ -1822,7 +2160,7 @@ unsafe fn process_literal_element(ctxt: *mut _xsltTransformContext, inst: *mut _
         return;
     }
     append_to_result(ctxt, elem);
-    // Copy attributes.
+    // Copy attributes, evaluating attribute value templates.
     let mut prop = (*inst).properties;
     while !prop.is_null() {
         let attr_name = (*prop).name;
@@ -1835,8 +2173,13 @@ unsafe fn process_literal_element(ctxt: *mut _xsltTransformContext, inst: *mut _
             if name_bytes != b"xmlns" {
                 let attr_val = node_get_content((*prop).children);
                 if !attr_val.is_null() {
-                    set_prop(elem, attr_name, attr_val);
+                    // AVT: the attribute value may contain {expr} templates.
+                    let avt_val = eval_avt(ctxt, attr_val);
                     libc::free(attr_val as *mut libc::c_void);
+                    if !avt_val.is_null() {
+                        set_prop(elem, attr_name, avt_val);
+                        xmlFree(avt_val as *mut c_void);
+                    }
                 }
             }
         }
@@ -1870,6 +2213,15 @@ unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
     use crate::xml::xpath::context::XPathContext;
     use crate::xml::xpath::types::{NodeSet, XPathValue};
 
+    // Register the XPath 1.0 core function library first (§25): count,
+    // string, substring, concat, etc. Without these, any XPath expression
+    // that invokes a core function (e.g. `count(library/book)`) fails with
+    // an unknown-function error.
+    let core_funcs = crate::xml::xpath::functions::core_functions();
+    for (name, func) in core_funcs {
+        internal.register_function(&name, func);
+    }
+
     // document() — loads an external document (first argument) and returns
     // its root node-set.
     internal.register_function("document", |ctx, args| {
@@ -1888,10 +2240,62 @@ unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         Ok(XPathValue::NodeSet(NodeSet::new()))
     });
 
-    // key() — looks up the key tables. The real implementation is wired
-    // through the transform context; here we return an empty node-set
-    // (the full bridge is in xsltEvalKeyFunction).
-    internal.register_function("key", |_ctx, _args| Ok(XPathValue::NodeSet(NodeSet::new())));
+    // key() — looks up the key tables built by xsltInitKeys. The value is
+    // matched against the key table's stored string keys (upstream
+    // xsltEvalKeyFunction, keys.c). The transform context is reached through
+    // the XPath context's opaque func_lookup_data slot, which is set below.
+    internal.register_function("key", |ctx, args| {
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        if tctxt.is_null() {
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        let name_str = match args.first() {
+            Some(v) => v.as_string(),
+            None => return Err("key() requires a name argument".to_string()),
+        };
+        // The value may be a node-set: use the string value of the first node
+        // (upstream iterates every node; the common case is a single value).
+        let value_str = match args.get(1) {
+            Some(XPathValue::NodeSet(ns)) => match ns.first() {
+                Some(n) => crate::xml::xpath::types::node_string_value(n),
+                None => return Ok(XPathValue::NodeSet(NodeSet::new())),
+            },
+            Some(v) => v.as_string(),
+            None => return Err("key() requires a value argument".to_string()),
+        };
+        let name_c = crate::xml::string::bytes_to_xmlstr(name_str.as_bytes());
+        let value_c = crate::xml::string::bytes_to_xmlstr(value_str.as_bytes());
+        if name_c.is_null() || value_c.is_null() {
+            if !name_c.is_null() {
+                crate::abi::allocator::xmlFree(name_c as *mut c_void);
+            }
+            if !value_c.is_null() {
+                crate::abi::allocator::xmlFree(value_c as *mut c_void);
+            }
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        let ns = unsafe { crate::xslt::keys::xsltEvalKeyFunction(tctxt, name_c, value_c) };
+        crate::abi::allocator::xmlFree(name_c as *mut c_void);
+        crate::abi::allocator::xmlFree(value_c as *mut c_void);
+        if ns.is_null() {
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        let mut out = NodeSet::new();
+        unsafe {
+            let node_nr = (*ns).nodeNr;
+            let node_tab = (*ns).nodeTab;
+            if !node_tab.is_null() {
+                for i in 0..node_nr as isize {
+                    let n = *node_tab.add(i as usize);
+                    if !n.is_null() {
+                        out.push(n);
+                    }
+                }
+            }
+            crate::abi::exports_xml2::xmlXPathFreeNodeSet(ns);
+        }
+        Ok(XPathValue::NodeSet(out))
+    });
 
     // generate-id() — returns a unique ID for the first node of the
     // node-set argument (or the context node).
@@ -1931,8 +2335,21 @@ unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             Some(v) => v.as_string(),
             None => return Err("element-available() requires an argument".to_string()),
         };
-        // All standard XSLT 1.0 elements are available.
+        // All standard XSLT 1.0 elements are available, plus EXSLT elements.
+        let exslt_elements = [
+            "exsl:document",
+            "exsl:node-set",
+            "exsl:object-type",
+            "func:function",
+            "func:result",
+            "func:script",
+            "dyn:element",
+            "dyn:attribute",
+            "dyn:call",
+            "dyn:evaluate",
+        ];
         let available = name.starts_with("xsl:")
+            || exslt_elements.contains(&name.as_str())
             || matches!(
                 name.as_str(),
                 "apply-templates"
@@ -2015,9 +2432,12 @@ unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             "current",
             "unparsed-entity-uri",
         ];
+        // EXSLT functions (e.g. math:max, exsl:node-set) are available when
+        // the EXSLT registry has been populated (exsltRegisterAll).
+        let exslt_available = crate::exslt::lookup(&name).is_some();
         let local = name.rsplit(':').next().unwrap_or(&name);
         Ok(XPathValue::Boolean(
-            core.contains(&local) || xslt_fn.contains(&local),
+            core.contains(&local) || xslt_fn.contains(&local) || exslt_available,
         ))
     });
 
@@ -2031,6 +2451,47 @@ unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         ns.push(node);
         Ok(XPathValue::NodeSet(ns))
     });
+
+    // ── EXSLT functions (§35) ────────────────────────────────────────────
+    //
+    // Upstream requires an explicit exsltRegisterAll() before EXSLT
+    // functions become available; xsltproc calls it at startup. We mirror
+    // that: copy the process-wide EXSLT registry into this context.
+    for (name, f) in crate::exslt::iter_functions() {
+        internal.register_function(&name, f);
+    }
+    // Register <func:function> definitions found in the stylesheet.
+    crate::exslt::functions::register_stylesheet_functions(
+        internal,
+        (*ctxt)
+            .style
+            .as_ref()
+            .map_or(std::ptr::null_mut(), |s| s.doc),
+    );
+}
+
+/// The set of EXSLT element names recognized by `element-available()`.
+pub fn exslt_element_names() -> &'static [&'static str] {
+    &[
+        "exsl:document",
+        "exsl:node-set",
+        "exsl:object-type",
+        "func:function",
+        "func:result",
+        "func:script",
+        "dyn:element",
+        "dyn:attribute",
+        "dyn:call",
+        "dyn:evaluate",
+    ]
+}
+
+/// The set of EXSLT function QNames (prefix:local) for `function-available()`.
+pub fn exslt_function_names() -> Vec<String> {
+    crate::exslt::iter_functions()
+        .into_iter()
+        .map(|(n, _)| n)
+        .collect()
 }
 
 #[cfg(test)]
@@ -2214,6 +2675,292 @@ mod tests {
     }
 
     #[test]
+    fn test_xslt_core_functions_in_value_of() {
+        // UPSTREAM-PARITY: the transform context must register the XPath 1.0
+        // core function library (count, string, substring, ...) so that
+        // function calls in XPath expressions evaluate correctly. Before the
+        // fix, every function call failed with an unknown-function error.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <cnt><xsl:value-of select=\"count(library/book)\"/></cnt>\
+                  <sub><xsl:value-of select=\"substring('hello',1,2)\"/></sub>\
+                  <str><xsl:value-of select=\"string(library/book[1]/title)\"/></str>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library>\
+              <book><title>Rust</title></book>\
+              <book><title>XML</title></book>\
+            </library>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<cnt>2</cnt>"), "count() wrong: {}", out);
+            assert!(out.contains("<sub>he</sub>"), "substring() wrong: {}", out);
+            assert!(out.contains("<str>Rust</str>"), "string() wrong: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_avt_in_literal_attribute() {
+        // UPSTREAM-PARITY: literal result element attributes may contain
+        // attribute value templates (XSLT 1.0 §7.6.2): {expr} is evaluated
+        // and its string value substituted, {{ and }} are literal braces.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <xsl:for-each select=\"library/book\">\
+                    <book id=\"{@id}\" label=\"{{literal}}\"/>\
+                  </xsl:for-each>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library>\
+              <book id=\"b1\"/>\
+              <book id=\"b2\"/>\
+            </library>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                out.contains("<book id=\"b1\" label=\"{literal}\""),
+                "AVT not evaluated: {}",
+                out
+            );
+            assert!(
+                out.contains("<book id=\"b2\" label=\"{literal}\""),
+                "AVT not evaluated: {}",
+                out
+            );
+        }
+    }
+
+    #[test]
+    fn test_xslt_avt_in_xsl_element_name() {
+        // UPSTREAM-PARITY: xsl:element/@name is an AVT.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <xsl:element name=\"el-{library/book/@id}\">text</xsl:element>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library><book id=\"b1\"/></library>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                out.contains("<el-b1>"),
+                "xsl:element AVT not evaluated: {}",
+                out
+            );
+        }
+    }
+
+    #[test]
+    fn test_xslt_variable_inline_content_rtf() {
+        // UPSTREAM-PARITY: a variable with inline content is a result tree
+        // fragment. Regression test: the inline content must be copied into
+        // a context-owned RVT (not left pointing into the stylesheet doc,
+        // which caused a double-free at teardown), and $var must stringify
+        // to the full descendant text.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:variable name=\"rtf\"><nums><n>3</n><n>7</n></nums></xsl:variable>\
+              <xsl:template match=\"/\">\
+                <out><v><xsl:value-of select=\"$rtf\"/></v></out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><root/>\0";
+            // Must complete without a double-free and produce the text.
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<v>37</v>"), "RTF string-value wrong: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_exsl_node_set_on_rtf() {
+        // UPSTREAM-PARITY: exsl:node-set($var) on an RTF variable yields a
+        // node-set whose root is the RVT document node, so path navigation
+        // and node-set functions work on it (§35).
+        unsafe {
+            crate::exslt::register_all();
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\"\
+                xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\
+                xmlns:exsl=\"http://exslt.org/common\"\
+                xmlns:math=\"http://exslt.org/math\"\
+                extension-element-prefixes=\"exsl math\">\
+              <xsl:variable name=\"rtf\"><nums><n>3</n><n>7</n><n>1</n><n>9</n></nums></xsl:variable>\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <max><xsl:value-of select=\"math:max(exsl:node-set($rtf)/nums/n)\"/></max>\
+                  <cnt><xsl:value-of select=\"count(exsl:node-set($rtf)/nums/n)\"/></cnt>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><root/>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<max>9</max>"), "math:max wrong: {}", out);
+            assert!(out.contains("<cnt>4</cnt>"), "count wrong: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_if_node_set_test() {
+        // UPSTREAM-PARITY: xsl:if/@test may be a node-set (XPath boolean
+        // conversion §4.3). Regression: the transform read only boolval,
+        // which is 0 for node-set objects, so test="author" was always
+        // false.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <xsl:for-each select=\"library/book\">\
+                    <b><xsl:if test=\"author\">A</xsl:if><xsl:if test=\"missing\">M</xsl:if></b>\
+                  </xsl:for-each>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library><book><author>x</author></book><book/></library>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<b>A</b>"), "node-set test false: {}", out);
+            assert!(out.contains("<b/>"), "missing-node test true: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_attribute_string_value() {
+        // UPSTREAM-PARITY: string(@attr) / @attr='x' predicates use the
+        // attribute's string value. Regression: node_string_value treated
+        // type 13 (XML_HTML_DOCUMENT_NODE) as attribute and returned empty
+        // for real attributes (type 2).
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <x><xsl:value-of select=\"string(library/book[1]/@id)\"/></x>\
+                  <y><xsl:value-of select=\"count(library/book[@id='b2'])\"/></y>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library><book id=\"b1\"/><book id=\"b2\"/></library>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                out.contains("<x>b1</x>"),
+                "attr string-value wrong: {}",
+                out
+            );
+            assert!(out.contains("<y>1</y>"), "attr predicate wrong: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_sort_descending() {
+        // UPSTREAM-PARITY: xsl:sort with order="descending" inverts the
+        // comparison. Regression: the sort was never compiled (null style)
+        // and the sort key evaluated against the wrong context node.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <xsl:for-each select=\"library/book\">\
+                    <xsl:sort select=\"title\" order=\"descending\"/>\
+                    <i><xsl:value-of select=\"title\"/></i>\
+                  </xsl:for-each>\
+                </out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library><book><title>Alpha</title></book><book><title>Gamma</title></book><book><title>Beta</title></book></library>\0";
+            let out = run_transform(xsl, src);
+            let gamma = out.find("<i>Gamma</i>").unwrap();
+            let beta = out.find("<i>Beta</i>").unwrap();
+            let alpha = out.find("<i>Alpha</i>").unwrap();
+            assert!(gamma < beta && beta < alpha, "not descending: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_key_function() {
+        // UPSTREAM-PARITY: key(name, value) resolves through the key tables
+        // built from xsl:key definitions.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:key name=\"byAuthor\" match=\"book\" use=\"author\"/>\
+              <xsl:template match=\"/\">\
+                <out><k><xsl:value-of select=\"key('byAuthor', 'Smith')/title\"/></k></out>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?>\
+            <library><book><title>A</title><author>Smith</author></book><book><title>B</title><author>Jones</author></book></library>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("<k>A</k>"), "key() wrong: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_call_template_with_params() {
+        // UPSTREAM-PARITY: xsl:with-param values are visible to $name inside
+        // the called template; xsl:param defaults apply when no value is
+        // passed. Regression: with-params were never registered in the XPath
+        // variable hash.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <out>\
+                  <xsl:call-template name=\"greet\">\
+                    <xsl:with-param name=\"who\" select=\"'World'\"/>\
+                  </xsl:call-template>\
+                </out>\
+              </xsl:template>\
+              <xsl:template name=\"greet\">\
+                <xsl:param name=\"who\" select=\"'nobody'\"/>\
+                <g>Hello <xsl:value-of select=\"$who\"/>!</g>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><root/>\0";
+            let out = run_transform(xsl, src);
+            assert!(out.contains("Hello World"), "with-param lost: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_html_method_meta_charset() {
+        // UPSTREAM-PARITY: method="html" inserts <meta charset="..."> in
+        // the <head> of the root <html> and formats with newlines only.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:output method=\"html\" indent=\"yes\"/>\
+              <xsl:template match=\"/\">\
+                <html><head><title>T</title></head><body><p>x</p></body></html>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><root/>\0";
+            let out = run_transform(xsl, src);
+            assert!(
+                out.contains("<meta charset=\"UTF-8\">"),
+                "meta charset missing: {}",
+                out
+            );
+            assert!(!out.contains("  <head>"), "unexpected indent: {}", out);
+        }
+    }
+
+    #[test]
     fn test_xslt_if() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -2264,6 +3011,26 @@ mod tests {
             </xsl:stylesheet>\0";
             let src = b"<?xml version=\"1.0\"?><root><name>World</name></root>\0";
             let out = run_transform(xsl, src);
+            // UPSTREAM-PARITY: the whitespace-only text node between the two
+            // xsl:value-of instructions is stripped at stylesheet
+            // preprocessing, exactly as upstream libxslt does; preserving it
+            // requires an explicit <xsl:text> </xsl:text>.
+            assert!(out.contains("HelloWorld"), "got: {}", out);
+        }
+    }
+
+    #[test]
+    fn test_xslt_text_preserves_whitespace() {
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\
+              <xsl:template match=\"/\">\
+                <msg><xsl:value-of select=\"'Hello'\"/><xsl:text> </xsl:text><xsl:value-of select=\"/root/name\"/></msg>\
+              </xsl:template>\
+            </xsl:stylesheet>\0";
+            let src = b"<?xml version=\"1.0\"?><root><name>World</name></root>\0";
+            let out = run_transform(xsl, src);
+            // UPSTREAM-PARITY: xsl:text content is preserved verbatim.
             assert!(out.contains("Hello World"), "got: {}", out);
         }
     }

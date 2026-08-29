@@ -1987,7 +1987,7 @@ unsafe fn html_parse_buffer(
 ///
 /// - `filename` must be a valid null-terminated C string or NULL.
 /// - `encoding` must be a valid null-terminated C string or NULL.
-pub(crate) unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *mut _xmlDoc {
+pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *mut _xmlDoc {
     if filename.is_null() {
         return ptr::null_mut();
     }
@@ -2033,7 +2033,7 @@ pub(crate) unsafe fn parse_file(filename: *const c_char, encoding: *const c_char
 ///
 /// - `buffer` must point to valid memory of at least `size` bytes.
 /// - `size` must be non-negative.
-pub(crate) unsafe fn parse_memory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
+pub unsafe fn parse_memory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
@@ -2298,6 +2298,27 @@ unsafe fn html_serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar)
 /// - Case-insensitive tag names preserved as-is
 /// - No namespace declarations
 /// - Elements with optional end tags may omit them
+
+/// Whether the head element already contains a <meta> element (so the
+/// serializer does not insert a duplicate charset declaration).
+///
+/// # SAFETY
+///
+/// - `child` must be a valid node or NULL.
+unsafe fn html_head_has_meta(child: *mut _xmlNode) -> bool {
+    let mut c = child;
+    while !c.is_null() {
+        if (*c).type_ == XML_ELEMENT_NODE as c_int && !(*c).name.is_null() {
+            let nm = xmlstr_to_bytes((*c).name);
+            if nm.eq_ignore_ascii_case(b"meta") {
+                return true;
+            }
+        }
+        c = (*c).next;
+    }
+    false
+}
+
 pub(crate) unsafe fn serialize_node(
     node: *mut _xmlNode,
     buf: *mut _xmlBuffer,
@@ -2320,12 +2341,12 @@ pub(crate) unsafe fn serialize_node(
 
             let is_void = is_html_void(name);
 
-            // Newline + indent before start tag (if formatting)
+            // Newline before start tag. UPSTREAM-PARITY: the HTML
+            // serializer (htmlsave.c htmlNodeDumpFormatOutput) writes a
+            // newline between elements when formatting, but no indentation
+            // spaces.
             if format != 0 && level > 0 {
                 io::buf_ccat(buf, b'\n');
-                for _ in 0..level {
-                    io::buf_add(buf, b"  " as *const u8, 2);
-                }
             }
 
             // Write start tag
@@ -2366,9 +2387,6 @@ pub(crate) unsafe fn serialize_node(
                 // Write end tag
                 if format != 0 {
                     io::buf_ccat(buf, b'\n');
-                    for _ in 0..level {
-                        io::buf_add(buf, b"  " as *const u8, 2);
-                    }
                 }
                 io::buf_add(buf, b"</" as *const u8, 2);
                 if !n.name.is_null() {
@@ -2378,6 +2396,32 @@ pub(crate) unsafe fn serialize_node(
             } else {
                 // Element with children
                 io::buf_ccat(buf, b'>');
+
+                // UPSTREAM-PARITY: htmlSetMetaEncoding (htmlsave.c) inserts
+                // <meta charset="..."> as the first child of the <head> of
+                // the root <html> element when no <meta> is present.
+                if name.eq_ignore_ascii_case("head") && level == 1 {
+                    let parent_is_html = !n.parent.is_null() && !(*n.parent).name.is_null() && {
+                        let pn =
+                            core::str::from_utf8(xmlstr_to_bytes((*n.parent).name)).unwrap_or("");
+                        pn.eq_ignore_ascii_case("html")
+                    };
+                    if parent_is_html && !html_head_has_meta(n.children) {
+                        let enc: &[u8] = if !n.doc.is_null() && !(*n.doc).encoding.is_null() {
+                            xmlstr_to_bytes((*n.doc).encoding)
+                        } else {
+                            b"UTF-8"
+                        };
+                        // The meta is emitted as a child of <head> (it gets
+                        // the same newline treatment as the other children).
+                        if format != 0 {
+                            io::buf_ccat(buf, b'\n');
+                        }
+                        io::buf_add(buf, b"<meta charset=\"" as *const u8, 15);
+                        io::buf_add(buf, enc.as_ptr() as *const u8, enc.len() as c_int);
+                        io::buf_add(buf, b"\">" as *const u8, 2);
+                    }
+                }
 
                 // Check if this is a "text-only" element (single text child)
                 let is_text_only = n.children == n.last
@@ -2392,19 +2436,17 @@ pub(crate) unsafe fn serialize_node(
                         child = unsafe { (*child).next };
                     }
                 } else {
-                    // Serialize children with indentation
+                    // Serialize children with newlines between elements
+                    // (HTML formatting: no indentation spaces).
                     let mut child = n.children;
                     while !child.is_null() {
                         serialize_node(child, buf, format, level + 1);
                         child = unsafe { (*child).next };
                     }
 
-                    // Indent before end tag (for non-text-only)
+                    // Newline before end tag (for non-text-only)
                     if format != 0 {
                         io::buf_ccat(buf, b'\n');
-                        for _ in 0..level {
-                            io::buf_add(buf, b"  " as *const u8, 2);
-                        }
                     }
                 }
 

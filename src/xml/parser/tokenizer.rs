@@ -57,6 +57,17 @@ pub(crate) struct XmlTokenizer {
 }
 
 impl XmlTokenizer {
+    /// Append a character's UTF-8 encoding to a byte vector.
+    ///
+    /// # UPSTREAM-PARITY
+    ///
+    /// libxml2 operates on UTF-8 bytes throughout; a decoded `char` must be
+    /// re-encoded as UTF-8, never truncated to a single byte.
+    fn push_char(v: &mut Vec<u8>, c: char) {
+        let mut buf = [0u8; 4];
+        v.extend_from_slice(c.encode_utf8(&mut buf).as_bytes());
+    }
+
     /// Create a new tokenizer over the given input stack.
     pub fn new(input: InputStack) -> Self {
         XmlTokenizer {
@@ -295,7 +306,7 @@ impl XmlTokenizer {
                 continue;
             }
             match self.input.read_char() {
-                Some(c) => data.push(c as u8),
+                Some(c) => Self::push_char(&mut data, c),
                 None => break,
             }
         }
@@ -418,7 +429,7 @@ impl XmlTokenizer {
         loop {
             match self.input.read_char() {
                 Some('>') => break,
-                Some(c) => content.push(c as u8),
+                Some(c) => Self::push_char(&mut content, c),
                 None => break,
             }
         }
@@ -454,7 +465,7 @@ impl XmlTokenizer {
             }
 
             match self.input.read_char() {
-                Some(c) => content.push(c as u8),
+                Some(c) => Self::push_char(&mut content, c),
                 None => break,
             }
         }
@@ -489,7 +500,7 @@ impl XmlTokenizer {
             }
 
             match self.input.read_char() {
-                Some(c) => content.push(c as u8),
+                Some(c) => Self::push_char(&mut content, c),
                 None => break,
             }
         }
@@ -526,7 +537,7 @@ impl XmlTokenizer {
                 }
                 Some(c) => {
                     self.input.read_char();
-                    content.push(c as u8);
+                    Self::push_char(&mut content, c);
                 }
                 None => break,
             }
@@ -551,7 +562,7 @@ impl XmlTokenizer {
                     content.push(b';');
                     break;
                 }
-                Some(c) => content.push(c as u8),
+                Some(c) => Self::push_char(&mut content, c),
                 None => break,
             }
         }
@@ -574,7 +585,7 @@ impl XmlTokenizer {
                 Some('<') | Some('&') => break,
                 Some(c) => {
                     self.input.read_char();
-                    content.push(c as u8);
+                    Self::push_char(&mut content, c);
                 }
                 None => break,
             }
@@ -602,7 +613,7 @@ impl XmlTokenizer {
             // XML Name characters: letters, digits, '.', '-', '_', ':'
             if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' || c == ':' {
                 self.input.read_char();
-                name.push(c as u8);
+                Self::push_char(&mut name, c);
             } else {
                 break;
             }
@@ -625,7 +636,7 @@ impl XmlTokenizer {
         loop {
             match self.input.read_char() {
                 Some(c) if c == quote => break,
-                Some(c) => value.push(c as u8),
+                Some(c) => Self::push_char(&mut value, c),
                 None => break,
             }
         }

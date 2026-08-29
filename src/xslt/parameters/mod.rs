@@ -42,85 +42,82 @@ pub unsafe fn xsltParseStylesheetParams(
     }
     let mut i = 0;
     let mut count = 0;
+    // UPSTREAM-PARITY: the params array is a NULL-terminated sequence of
+    // (name, value) pairs (xsltEvalUserParams, variables.c 1.1.45), where
+    // the value is an XPath expression evaluated later against the document.
     while !(*params.offset(i)).is_null() {
-        let param = *params.offset(i);
-        let parsed = xsltParseStylesheetParam(style, param);
-        if parsed.is_null() {
-            i += 1;
-            continue;
+        let name = *params.offset(i);
+        let value = if !(*params.offset(i + 1)).is_null() {
+            *params.offset(i + 1)
+        } else {
+            break;
+        };
+        let parsed = xsltParseStylesheetParam(style, name, value);
+        if !parsed.is_null() {
+            let p = &mut *parsed;
+            p.next = (*style).params as *mut _xsltStackElem;
+            (*style).params = parsed as *mut c_void;
+            count += 1;
         }
-        // Add to the stylesheet's params list.
-        let p = &mut *parsed;
-        p.next = (*style).params as *mut _xsltStackElem;
-        (*style).params = parsed as *mut c_void;
-        count += 1;
-        i += 1;
+        i += 2;
     }
     count
 }
 
-/// Parse a single parameter string into a stack element.
+/// Parse a single parameter (name + value) into a stack element.
 ///
-/// Format: "name=value" or "{uri}name=value".
+/// The name may be a QName or of the form `{uri}name`.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xsltStackElemPtr xsltParseStylesheetParam(xsltStylesheetPtr style,
+///                                           const xmlChar *name,
+///                                           const xmlChar *value);
+/// ```
 ///
 /// # SAFETY
 ///
 /// - `style` must be a valid `_xsltStylesheet`.
-/// - `param` must be a valid NUL-terminated C string.
+/// - `name` and `value` must be valid NUL-terminated C strings.
 pub unsafe fn xsltParseStylesheetParam(
     style: *mut _xsltStylesheet,
-    param: *const c_char,
+    name: *const c_char,
+    value: *const c_char,
 ) -> *mut _xsltStackElem {
-    if style.is_null() || param.is_null() {
+    if style.is_null() || name.is_null() || value.is_null() {
         return ptr::null_mut();
     }
-    let len = libc::strlen(param);
-    let bytes = core::slice::from_raw_parts(param as *const u8, len);
+    let name_len = libc::strlen(name);
+    let name_bytes = core::slice::from_raw_parts(name as *const u8, name_len);
+    let value_len = libc::strlen(value);
+    let value_bytes = core::slice::from_raw_parts(value as *const u8, value_len);
 
-    // Find the '=' separator.
-    let mut eq_pos = None;
-    for (idx, b) in bytes.iter().enumerate() {
-        if *b == b'=' {
-            eq_pos = Some(idx);
-            break;
-        }
-    }
-    let eq_pos = match eq_pos {
-        Some(p) => p,
-        None => return ptr::null_mut(),
-    };
-
-    // Parse name and namespace.
-    let (name, ns_uri): (Vec<u8>, Option<Vec<u8>>) = {
-        let name_part = &bytes[..eq_pos];
-        if name_part.starts_with(b"{") {
-            if let Some(close) = name_part.iter().position(|b| *b == b'}') {
-                if close > 0 && close < name_part.len() - 1 {
-                    let uri = name_part[1..close].to_vec();
-                    let nm = name_part[close + 1..].to_vec();
-                    (nm, Some(uri))
+    // Parse {uri}name form.
+    let (nm, ns_uri): (Vec<u8>, Option<Vec<u8>>) = {
+        if name_bytes.starts_with(b"{") {
+            if let Some(close) = name_bytes.iter().position(|b| *b == b'}') {
+                if close > 0 && close < name_bytes.len() - 1 {
+                    let uri = name_bytes[1..close].to_vec();
+                    let n = name_bytes[close + 1..].to_vec();
+                    (n, Some(uri))
                 } else {
-                    (name_part.to_vec(), None)
+                    (name_bytes.to_vec(), None)
                 }
             } else {
-                (name_part.to_vec(), None)
+                (name_bytes.to_vec(), None)
             }
         } else {
-            (name_part.to_vec(), None)
+            (name_bytes.to_vec(), None)
         }
     };
-    if name.is_empty() {
+    if nm.is_empty() {
         return ptr::null_mut();
     }
 
-    // Value: everything after '=' (may be empty).
-    let value = bytes[eq_pos + 1..].to_vec();
-
-    // Allocate the stack element.
-    let v = xmlFree_alloc_stack_elem(name, ns_uri, value)
+    xmlFree_alloc_stack_elem(nm, ns_uri, value_bytes.to_vec())
         .map(|p| p as *mut _xsltStackElem)
-        .unwrap_or(ptr::null_mut());
-    v
+        .unwrap_or(ptr::null_mut())
 }
 
 /// Allocate a stack element with owned (heap) name/select/value strings.
@@ -245,6 +242,24 @@ pub unsafe fn xsltPushParam(ctxt: *mut _xsltTransformContext, param: *mut _xsltS
     };
     *((ctx.paramsTab as *mut *mut _xsltStackElem).offset(ctx.paramsNr as isize)) = param;
     ctx.paramsNr = new_nr;
+
+    // Register the parameter in the internal XPath context's variable hash
+    // so `$name` resolves during XPath evaluation (with-param values).
+    let xpath_ctxt = ctx.xpathCtxt;
+    if !xpath_ctxt.is_null() && !(*param).name.is_null() {
+        let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+        if !internal.is_null() {
+            let name_len = libc::strlen((*param).name as *const libc::c_char);
+            let name_bytes = core::slice::from_raw_parts((*param).name, name_len);
+            let name = String::from_utf8_lossy(name_bytes).into_owned();
+            let value = if (*param).value.is_null() {
+                crate::xml::xpath::types::XPathValue::String(String::new())
+            } else {
+                crate::abi::exports_xml2::object_to_xpathvalue_pub((*param).value)
+            };
+            (*internal).register_variable(&name, value);
+        }
+    }
     0
 }
 
@@ -264,6 +279,20 @@ pub unsafe fn xsltPopParam(ctxt: *mut _xsltTransformContext) -> *mut _xsltStackE
     ctx.paramsNr -= 1;
     let param = *((ctx.paramsTab as *mut *mut _xsltStackElem).offset(ctx.paramsNr as isize));
     (*param).next = ptr::null_mut();
+
+    // Unregister the parameter from the internal XPath context's hash.
+    if !(*param).name.is_null() {
+        let xpath_ctxt = ctx.xpathCtxt;
+        if !xpath_ctxt.is_null() {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() {
+                let name_len = libc::strlen((*param).name as *const libc::c_char);
+                let name_bytes = core::slice::from_raw_parts((*param).name, name_len);
+                let name = String::from_utf8_lossy(name_bytes).into_owned();
+                (*internal).unregister_variable(&name);
+            }
+        }
+    }
     param
 }
 
@@ -272,6 +301,7 @@ mod tests {
     use super::*;
     use crate::abi::structs::*;
     use core::ptr;
+    use std::os::raw::c_char;
 
     fn make_style() -> *mut _xsltStylesheet {
         unsafe {
@@ -281,25 +311,19 @@ mod tests {
         }
     }
 
+    fn c(s: &[u8]) -> *const c_char {
+        s.as_ptr() as *const c_char
+    }
+
     #[test]
     fn test_parse_simple_param() {
         unsafe {
             let style = make_style();
-            let param = b"name=value\0".as_ptr() as *const c_char;
-            let elem = xsltParseStylesheetParam(style, param);
+            let elem = xsltParseStylesheetParam(style, c(b"name\0"), c(b"value\0"));
             assert!(!elem.is_null());
+            assert_eq!(libc::strcmp((*elem).name as *const c_char, c(b"name\0")), 0);
             assert_eq!(
-                libc::strcmp(
-                    (*elem).name as *const c_char,
-                    b"name\0".as_ptr() as *const c_char
-                ),
-                0
-            );
-            assert_eq!(
-                libc::strcmp(
-                    (*elem).select as *const c_char,
-                    b"value\0".as_ptr() as *const c_char
-                ),
+                libc::strcmp((*elem).select as *const c_char, c(b"value\0")),
                 0
             );
             assert!((*elem).nameURI.is_null());
@@ -312,22 +336,26 @@ mod tests {
     fn test_parse_ns_param() {
         unsafe {
             let style = make_style();
-            let param = b"{http://example.com/ns}pname=pvalue\0".as_ptr() as *const c_char;
-            let elem = xsltParseStylesheetParam(style, param);
+            let elem = xsltParseStylesheetParam(
+                style,
+                c(b"{http://example.com/ns}pname\0"),
+                c(b"pvalue\0"),
+            );
             assert!(!elem.is_null());
             assert_eq!(
-                libc::strcmp(
-                    (*elem).name as *const c_char,
-                    b"pname\0".as_ptr() as *const c_char
-                ),
+                libc::strcmp((*elem).name as *const c_char, c(b"pname\0")),
                 0
             );
             assert!(!(*elem).nameURI.is_null());
             assert_eq!(
                 libc::strcmp(
                     (*elem).nameURI as *const c_char,
-                    b"http://example.com/ns\0".as_ptr() as *const c_char
+                    c(b"http://example.com/ns\0")
                 ),
+                0
+            );
+            assert_eq!(
+                libc::strcmp((*elem).select as *const c_char, c(b"pvalue\0")),
                 0
             );
             xsltFreeStackElem(elem);
@@ -339,16 +367,9 @@ mod tests {
     fn test_parse_empty_value() {
         unsafe {
             let style = make_style();
-            let param = b"name=\0".as_ptr() as *const c_char;
-            let elem = xsltParseStylesheetParam(style, param);
+            let elem = xsltParseStylesheetParam(style, c(b"name\0"), c(b"\0"));
             assert!(!elem.is_null());
-            assert_eq!(
-                libc::strcmp(
-                    (*elem).select as *const c_char,
-                    b"\0".as_ptr() as *const c_char
-                ),
-                0
-            );
+            assert_eq!(libc::strcmp((*elem).select as *const c_char, c(b"\0")), 0);
             xsltFreeStackElem(elem);
             libc::free(style as *mut libc::c_void);
         }
@@ -358,11 +379,38 @@ mod tests {
     fn test_parse_invalid_param() {
         unsafe {
             let style = make_style();
-            // No '=' separator.
-            let param = b"noequals\0".as_ptr() as *const c_char;
-            assert!(xsltParseStylesheetParam(style, param).is_null());
-            // Null pointer.
-            assert!(xsltParseStylesheetParam(style, ptr::null()).is_null());
+            // Empty name.
+            assert!(xsltParseStylesheetParam(style, c(b"\0"), c(b"v\0")).is_null());
+            // Null pointers.
+            assert!(xsltParseStylesheetParam(style, ptr::null(), c(b"v\0")).is_null());
+            assert!(xsltParseStylesheetParam(style, c(b"n\0"), ptr::null()).is_null());
+            assert!(xsltParseStylesheetParam(ptr::null_mut(), c(b"n\0"), c(b"v\0")).is_null());
+            libc::free(style as *mut libc::c_void);
+        }
+    }
+
+    #[test]
+    fn test_parse_params_array_pairs() {
+        // UPSTREAM-PARITY: the params array is (name, value) pairs.
+        unsafe {
+            let style = make_style();
+            let p1n = alloc_c_string(b"a");
+            let p1v = alloc_c_string(b"'1'");
+            let p2n = alloc_c_string(b"b");
+            let p2v = alloc_c_string(b"'2'");
+            let arr: Vec<*const c_char> = vec![
+                p1n as *const c_char,
+                p1v as *const c_char,
+                p2n as *const c_char,
+                p2v as *const c_char,
+                ptr::null(),
+            ];
+            let count = xsltParseStylesheetParams(style, arr.as_ptr() as *mut *const c_char);
+            assert_eq!(count, 2);
+            libc::free(p1n as *mut libc::c_void);
+            libc::free(p1v as *mut libc::c_void);
+            libc::free(p2n as *mut libc::c_void);
+            libc::free(p2v as *mut libc::c_void);
             libc::free(style as *mut libc::c_void);
         }
     }

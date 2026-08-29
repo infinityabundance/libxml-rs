@@ -202,8 +202,25 @@ unsafe fn xsltEvalSortKey(
     if xpath_ctxt.is_null() {
         return sort_string_value(node);
     }
+    // Set the XPath context node to the node being compared so the sort
+    // key expression (e.g. `select="title"`) evaluates per-node.
+    let saved_node = (*xpath_ctxt).node;
+    let saved_doc = (*xpath_ctxt).doc;
+    (*xpath_ctxt).node = node;
+    (*xpath_ctxt).doc = (*ctxt).document;
+    let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+    if !internal.is_null() {
+        (*internal).context_node = node;
+        (*internal).document = (*ctxt).document;
+    }
     let select = (*sort).select;
     let xpath_obj = xmlXPathEvalExpression(select, xpath_ctxt);
+    (*xpath_ctxt).node = saved_node;
+    (*xpath_ctxt).doc = saved_doc;
+    if !internal.is_null() {
+        (*internal).context_node = saved_node;
+        (*internal).document = saved_doc;
+    }
     if xpath_obj.is_null() {
         return ptr::null_mut();
     }

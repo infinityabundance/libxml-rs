@@ -31,6 +31,14 @@ use std::os::raw::c_void;
 /// They return an `XPathValue` on success or an error string on failure.
 pub type XPathFunction = fn(&mut XPathContext, &[XPathValue]) -> Result<XPathValue, String>;
 
+/// A boxed, capture-capable XPath function implementation.
+///
+/// Plain function pointers coerce into this via boxing; capturing closures
+/// (e.g. EXSLT `func:function` bodies) can also be stored. Used for the
+/// extension-function registry and the EXSLT registry.
+pub type BoxedXPathFunction =
+    Box<dyn Fn(&mut XPathContext, &[XPathValue]) -> Result<XPathValue, String> + Send + Sync>;
+
 /// C callback for variable lookup.
 ///
 /// SAFETY: This is called from C ABI boundaries (e.g. when libxml2's XPath
@@ -82,7 +90,6 @@ pub type FuncLookupFunc =
 /// The context borrows raw pointers to the document and nodes. It is the
 /// caller's responsibility to ensure those pointers remain valid for the
 /// duration of evaluation. The context does **not** own the document tree.
-#[derive(Debug, Clone)]
 pub struct XPathContext {
     /// The current XML document.
     pub document: *mut _xmlDoc,
@@ -103,7 +110,7 @@ pub struct XPathContext {
     pub namespaces: HashMap<String, String>,
 
     /// Registered extension functions (name → function).
-    pub functions: HashMap<String, XPathFunction>,
+    pub functions: HashMap<String, BoxedXPathFunction>,
 
     /// Last error message, if any.
     pub error: Option<String>,
@@ -128,6 +135,47 @@ pub struct XPathContext {
 
     /// Opaque data pointer passed to `func_lookup_func`.
     pub func_lookup_data: *mut c_void,
+}
+
+impl std::fmt::Debug for XPathContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The extension-function map holds boxed callables and cannot be
+        // formatted; report the registered names instead.
+        let names: Vec<&String> = self.functions.keys().collect();
+        f.debug_struct("XPathContext")
+            .field("document", &self.document)
+            .field("context_node", &self.context_node)
+            .field("context_position", &self.context_position)
+            .field("context_size", &self.context_size)
+            .field("variables", &self.variables)
+            .field("namespaces", &self.namespaces)
+            .field("functions", &names)
+            .field("error", &self.error)
+            .field("recursion_depth", &self.recursion_depth)
+            .finish()
+    }
+}
+
+impl Clone for XPathContext {
+    fn clone(&self) -> Self {
+        // Extension functions are not cloned (boxed callables cannot be
+        // duplicated); the clone carries the same state otherwise.
+        let mut cloned = XPathContext::new(self.document);
+        cloned.context_node = self.context_node;
+        cloned.context_position = self.context_position;
+        cloned.context_size = self.context_size;
+        cloned.variables = self.variables.clone();
+        cloned.namespaces = self.namespaces.clone();
+        cloned.error = self.error.clone();
+        cloned.proximity_position = self.proximity_position;
+        cloned.context_list = self.context_list.clone();
+        cloned.recursion_depth = self.recursion_depth;
+        cloned.var_lookup_func = self.var_lookup_func;
+        cloned.var_lookup_data = self.var_lookup_data;
+        cloned.func_lookup_func = self.func_lookup_func;
+        cloned.func_lookup_data = self.func_lookup_data;
+        cloned
+    }
 }
 
 impl XPathContext {
@@ -316,10 +364,10 @@ impl XPathContext {
     /// `func_lookup_func` callback is registered, the callback is invoked.
     ///
     /// Returns `None` if no such function is registered.
-    pub fn lookup_function(&self, name: &str) -> Option<XPathFunction> {
+    pub fn lookup_function(&self, name: &str) -> Option<&BoxedXPathFunction> {
         // Check local Rust-side functions first.
         if let Some(func) = self.functions.get(name) {
-            return Some(*func);
+            return Some(func);
         }
 
         // Fall back to the C callback if registered.
@@ -328,7 +376,7 @@ impl XPathContext {
             // SAFETY: The callback must return a valid function pointer or null.
             let _result =
                 unsafe { lookup(self.func_lookup_data, std::ptr::null(), c_name.as_ptr()) };
-            // TODO: Convert the opaque pointer back to an XPathFunction.
+            // TODO: Convert the opaque pointer back to a BoxedXPathFunction.
             // This requires storing function pointers in a registry that can
             // be looked up by the opaque handle returned by the callback.
         }
@@ -340,9 +388,16 @@ impl XPathContext {
     ///
     /// The function is stored in the local `functions` map under `name`.
     /// It will be found by [`lookup_function`](Self::lookup_function) before
-    /// any C callback is consulted.
-    pub fn register_function(&mut self, name: &str, func: XPathFunction) {
-        self.functions.insert(name.to_string(), func);
+    /// any C callback is consulted. Accepts both fn pointers and capturing
+    /// closures.
+    pub fn register_function<F>(&mut self, name: &str, func: F)
+    where
+        F: Fn(&mut XPathContext, &[XPathValue]) -> Result<XPathValue, String>
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.functions.insert(name.to_string(), Box::new(func));
     }
 
     /// Register a variable binding.
@@ -352,6 +407,14 @@ impl XPathContext {
     /// any C callback is consulted.
     pub fn register_variable(&mut self, name: &str, value: XPathValue) {
         self.variables.insert(name.to_string(), value);
+    }
+
+    /// Remove a variable binding from the context's variable hash.
+    ///
+    /// Used to unwind local XSLT variable scopes when a variable is popped
+    /// from the transform variable stack.
+    pub fn unregister_variable(&mut self, name: &str) {
+        self.variables.remove(name);
     }
 
     /// Register a namespace binding.

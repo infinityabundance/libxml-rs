@@ -1875,6 +1875,28 @@ pub unsafe extern "C" fn xmlReadMemory(
     doc
 }
 
+/// Load a list of catalogs (upstream `xmlLoadCatalogs`).
+///
+/// # SAFETY
+///
+/// - `catalogs` must be a valid NUL-terminated string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlLoadCatalogs(catalogs: *const c_char) {
+    if !catalogs.is_null() {
+        crate::xml::catalog::load_catalog(catalogs);
+    }
+}
+
+/// Load a single catalog (upstream `xmlLoadCatalog`).
+///
+/// # SAFETY
+///
+/// - `catalogs` must be a valid NUL-terminated string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlLoadCatalog(catalogs: *const c_char) -> *mut c_void {
+    crate::xml::catalog::load_catalog(catalogs)
+}
+
 /// Read an XML document from a file descriptor.
 ///
 /// # UPSTREAM-PARITY
@@ -3752,6 +3774,19 @@ unsafe fn object_to_xpathvalue(obj: *mut _xmlXPathObject) -> XPathValue {
                 .into_owned();
             XPathValue::String(s)
         }
+    } else if typ == xmlXPathObjectType::XPATH_XSLT_TREE as c_int {
+        // A result tree fragment: node-set containing the fragment's
+        // document node (matching how global RTF variables are bound), so
+        // local RTF variables stringify to their text and remain navigable
+        // via exsl:node-set.
+        let frag_doc = (*obj).nodesetval as *mut _xmlDoc;
+        if frag_doc.is_null() {
+            XPathValue::NodeSet(NodeSet::new())
+        } else {
+            let mut ns = NodeSet::new();
+            ns.push(frag_doc as *mut _xmlNode);
+            XPathValue::NodeSet(ns)
+        }
     } else {
         // Undefined / unknown type — return boolean false as a safe default.
         XPathValue::Boolean(false)
@@ -3890,7 +3925,16 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
 
     match crate::xml::xpath::evaluate_str(expr_str, internal) {
         Some(val) => xpath_to_object(val),
-        None => ptr::null_mut(),
+        None => {
+            // UPSTREAM-PARITY: libxml2 reports a failed compile/eval with
+            // "XPath error : Invalid expression" (xmlXPathErr,
+            // XPATH_EXPR_ERROR). The precise per-expression diagnostics are
+            // tracked as RESIDUAL R-XPATH-ERRMSG.
+            if internal.error.is_none() {
+                internal.set_error("Invalid expression");
+            }
+            ptr::null_mut()
+        }
     }
 }
 
@@ -4320,6 +4364,31 @@ pub unsafe extern "C" fn xmlXPathNodeSetCreate(val: *mut _xmlNode) -> *mut _xmlN
     (*ns).nodeNr = 1;
     (*ns).nodeMax = 1;
     ns
+}
+
+/// Free a node-set allocated by `xmlXPathNodeSetCreate` or a node-set
+/// builder in this library.
+///
+/// Frees the node-set structure and its node table; the nodes themselves
+/// are owned by their document and are not freed.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlXPathFreeNodeSet(xmlNodeSetPtr ns);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathFreeNodeSet(ns: *mut _xmlNodeSet) {
+    if ns.is_null() {
+        return;
+    }
+    if !(*ns).nodeTab.is_null() {
+        xmlFree((*ns).nodeTab as *mut c_void);
+        (*ns).nodeTab = ptr::null_mut();
+    }
+    (*ns).nodeNr = 0;
+    (*ns).nodeMax = 0;
+    xmlFree(ns as *mut c_void);
 }
 
 /// Compile an XPath expression.

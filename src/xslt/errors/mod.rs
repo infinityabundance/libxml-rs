@@ -123,6 +123,49 @@ use std::sync::Mutex;
 
 static LAST_XSLT_ERROR: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
+/// Global debug handler (upstream xsltGenericDebug).
+static mut XSLT_GENERIC_DEBUG: Option<
+    unsafe extern "C" fn(*mut std::ffi::c_void, *const std::os::raw::c_char),
+> = None;
+
+/// Set the generic debug handler (upstream `xsltSetGenericDebugFunc`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xsltSetGenericDebugFunc(void *ctx, xmlGenericErrorFunc handler);
+/// ```
+///
+/// With a NULL handler, messages go to `stderr`; with a NULL context they
+/// are suppressed (upstream's default debug handler checks the context).
+#[no_mangle]
+pub unsafe extern "C" fn xsltSetGenericDebugFunc(
+    ctx: *mut std::ffi::c_void,
+    handler: Option<unsafe extern "C" fn(*mut std::ffi::c_void, *const std::os::raw::c_char)>,
+) {
+    unsafe {
+        XSLT_GENERIC_DEBUG_CONTEXT = ctx;
+        if handler.is_some() {
+            XSLT_GENERIC_DEBUG = handler;
+        }
+    }
+}
+
+static mut XSLT_GENERIC_DEBUG_CONTEXT: *mut std::ffi::c_void = std::ptr::null_mut();
+
+/// Emit a generic debug message (upstream xsltGenericDebug).
+#[no_mangle]
+pub unsafe extern "C" fn xsltGenericDebug(
+    ctx: *mut std::ffi::c_void,
+    msg: *const std::os::raw::c_char,
+) {
+    if ctx.is_null() || msg.is_null() {
+        return;
+    }
+    let len = libc::strlen(msg);
+    libc::write(2, msg as *const libc::c_void, len);
+}
+
 /// Set the transform error handler for a context.
 ///
 /// Registers a per-context error handler that will be called for every

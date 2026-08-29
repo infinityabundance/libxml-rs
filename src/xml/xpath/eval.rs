@@ -268,8 +268,17 @@ fn eval_function_call(
     }
 
     // Look up the function
-    match ctx.lookup_function(name) {
-        Some(func) => func(ctx, &evaluated_args),
+    // Take a raw pointer to the boxed function so the immutable borrow of
+    // `ctx` ends before we call it with `&mut ctx`.
+    let func_ptr: Option<*const crate::xml::xpath::context::BoxedXPathFunction> =
+        ctx.lookup_function(name).map(|f| f as *const _);
+    match func_ptr {
+        Some(p) => {
+            // SAFETY: `p` points into `ctx.functions`, which is alive for the
+            // duration of this call and is not mutated during evaluation.
+            let f: &crate::xml::xpath::context::BoxedXPathFunction = unsafe { &*p };
+            f(ctx, &evaluated_args)
+        }
         None => Err(format!("Unknown XPath function: {}", name)),
     }
 }

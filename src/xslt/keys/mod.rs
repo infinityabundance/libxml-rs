@@ -239,11 +239,28 @@ unsafe fn build_key_table(
             (*xpath_ctxt).doc = doc;
             (*xpath_ctxt).proximityPosition = 1;
             (*xpath_ctxt).contextSize = 1;
+            // The internal Rust XPath context is what the evaluator reads;
+            // mirror the context node there (as xsltEvalSortKey does).
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() {
+                (*internal).context_node = node;
+                (*internal).document = doc;
+                (*internal).context_position = 1;
+                (*internal).context_size = 1;
+                (*internal).proximity_position = 1;
+            }
             let obj = xmlXPathEvalExpression(use_expr, xpath_ctxt);
             (*xpath_ctxt).node = saved_node;
             (*xpath_ctxt).doc = saved_doc;
             (*xpath_ctxt).proximityPosition = saved_pos;
             (*xpath_ctxt).contextSize = saved_size;
+            if !internal.is_null() {
+                (*internal).context_node = saved_node;
+                (*internal).document = saved_doc;
+                (*internal).context_position = saved_pos;
+                (*internal).context_size = saved_size;
+                (*internal).proximity_position = saved_pos;
+            }
             if !obj.is_null() {
                 // Each string value in the result maps to this node.
                 let strv = xmlXPathCastToString(obj);

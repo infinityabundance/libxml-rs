@@ -530,6 +530,16 @@ impl XmlParser {
         let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> = Vec::new();
 
+        // UPSTREAM-PARITY: attribute values are parsed with
+        // xmlParseAttValueInternal, which substitutes character references
+        // always, predefined entities always, and declared entities when
+        // XML_PARSE_NOENT is set. The tokenizer scans the raw value, so the
+        // substitution happens here.
+        let attributes: Vec<(Vec<u8>, Vec<u8>)> = attributes
+            .into_iter()
+            .map(|(n, v)| (n, self.substitute_refs(&v)))
+            .collect();
+
         for (attr_name, attr_value) in &attributes {
             if attr_name == b"xmlns" {
                 // Default namespace declaration: xmlns="uri"
@@ -629,8 +639,97 @@ impl XmlParser {
 
         // Pop element name from context stack
         self.pop_name();
-
         Ok(())
+    }
+
+    /// Substitute entity and character references in an attribute value.
+    ///
+    /// # UPSTREAM-PARITY
+    ///
+    /// Mirrors libxml2's `xmlParseAttValueInternal`: character references are
+    /// always substituted, the five predefined entities are always
+    /// substituted, and other entities are substituted when `XML_PARSE_NOENT`
+    /// is set. Unresolvable references are left as-is (they would be reported
+    /// through the SAX reference callback by the full implementation).
+    fn substitute_refs(&self, value: &[u8]) -> Vec<u8> {
+        let mut out = Vec::with_capacity(value.len());
+        let mut i = 0usize;
+        while i < value.len() {
+            if value[i] == b'&' {
+                if let Some(semi) = value[i..].iter().position(|&b| b == b';') {
+                    let inner = &value[i + 1..i + semi];
+                    let mut replaced: Option<Vec<u8>> = None;
+                    if inner.starts_with(b"#") {
+                        // Character reference: &#N; or &#xH;
+                        let num = &inner[1..];
+                        let codepoint = if num.starts_with(b"x") || num.starts_with(b"X") {
+                            u32::from_str_radix(&String::from_utf8_lossy(&num[1..]), 16).ok()
+                        } else {
+                            u32::from_str_radix(&String::from_utf8_lossy(num), 10).ok()
+                        };
+                        if let Some(cp) = codepoint {
+                            if is_valid_xml_char(cp) {
+                                if let Some(ch) = char::from_u32(cp) {
+                                    let mut buf = [0u8; 4];
+                                    replaced = Some(ch.encode_utf8(&mut buf).as_bytes().to_vec());
+                                }
+                            }
+                        }
+                    } else {
+                        // Named entity: predefined ones always, others when NOENT.
+                        match inner {
+                            b"amp" => replaced = Some(b"&".to_vec()),
+                            b"lt" => replaced = Some(b"<".to_vec()),
+                            b"gt" => replaced = Some(b">".to_vec()),
+                            b"quot" => replaced = Some(b"\"".to_vec()),
+                            b"apos" => replaced = Some(b"'".to_vec()),
+                            _ => {
+                                if (self.options & XML_PARSE_NOENT) != 0 {
+                                    let doc = unsafe { (*self.ctxt).myDoc };
+                                    if !doc.is_null() {
+                                        let name_cstr = Self::vec_to_cstr_null(inner);
+                                        let ent = unsafe {
+                                            crate::xml::entities::get_entity(doc, name_cstr)
+                                        };
+                                        if !ent.is_null() {
+                                            let content = unsafe {
+                                                crate::xml::entities::get_entity_content(ent)
+                                            };
+                                            if !content.is_null() {
+                                                let len = unsafe {
+                                                    crate::xml::tree::xml_strlen(content)
+                                                };
+                                                replaced = Some(unsafe {
+                                                    core::slice::from_raw_parts(
+                                                        content,
+                                                        len as usize,
+                                                    )
+                                                    .to_vec()
+                                                });
+                                                unsafe {
+                                                    crate::abi::allocator::xmlFree(
+                                                        content as *mut core::ffi::c_void,
+                                                    )
+                                                };
+                                            }
+                                        }
+                                        unsafe { libc::free(name_cstr as *mut libc::c_void) };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if let Some(r) = replaced {
+                        out.extend_from_slice(&r);
+                        i += semi + 1;
+                        continue;
+                    }
+                }
+            }
+            out.push(value[i]);
+            i += 1;
+        }
+        out
     }
 
     /// Parse a reference (entity or character).
@@ -852,18 +951,6 @@ impl XmlParser {
         } else {
             (None, _name.to_vec())
         };
-        // DEBUG-TEMP
-        if prefix_opt.is_some() {
-            eprintln!(
-                "DBG sax_start_element: _name={:?} prefix={:?} local={:?}",
-                String::from_utf8_lossy(_name),
-                prefix_opt
-                    .as_ref()
-                    .map(|p| String::from_utf8_lossy(p).into_owned()),
-                String::from_utf8_lossy(&localname)
-            );
-        }
-
         // Resolve the prefix against this element's namespace declarations.
         let uri: Option<Vec<u8>> = match &prefix_opt {
             Some(p) if p == b"xml" => Some(b"http://www.w3.org/XML/1998/namespace".to_vec()),

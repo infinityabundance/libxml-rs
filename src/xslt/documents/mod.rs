@@ -26,6 +26,38 @@ pub struct _xsltDocCacheEntry {
     pub doc: *mut _xmlDoc,
 }
 
+/// Register a result-tree-fragment (RVT) document in the context's document
+/// cache so it is freed exactly once at transform-context teardown
+/// (`xsltFreeDocCache` releases every cached doc).
+///
+/// The entry carries a NULL URI, so `cache_lookup` (which requires a
+/// non-NULL, matching URI) never matches it.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream libxslt tracks RVT documents on the context (variables.c
+/// `xsltCreateRVT`) and frees them with the context; we reuse the docCache
+/// list for the same lifecycle.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext`.
+/// - Ownership of `doc` transfers to the cache (freed at teardown).
+pub(crate) unsafe fn xsltRegisterRVT(ctxt: *mut _xsltTransformContext, doc: *mut _xmlDoc) {
+    if ctxt.is_null() || doc.is_null() {
+        return;
+    }
+    let entry =
+        libc::calloc(1, core::mem::size_of::<_xsltDocCacheEntry>()) as *mut _xsltDocCacheEntry;
+    if entry.is_null() {
+        return;
+    }
+    (*entry).uri = ptr::null_mut();
+    (*entry).doc = doc;
+    (*entry).next = (*ctxt).docCache as *mut _xsltDocCacheEntry;
+    (*ctxt).docCache = entry as *mut c_void;
+}
+
 /// Default XSLT loader function (file loading).
 ///
 /// # SAFETY
