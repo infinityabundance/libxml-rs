@@ -384,14 +384,25 @@ pub type xmlXPathFuncLookupFunc = unsafe extern "C" fn(
 ///
 /// # UPSTREAM-PARITY
 ///
-/// - `type_`: The type of resource being loaded
-///   (1 = parser entity, 2 = stylesheet include, 3 = stylesheet import, 4 = document)
+/// Declared in upstream `parser.h` (2.15+):
+///
+/// ```c
+/// typedef xmlParserErrors
+/// (*xmlResourceLoader)(void *ctxt, const char *url, const char *publicId,
+///                      xmlResourceType type, xmlParserInputFlags flags,
+///                      xmlParserInput **out);
+/// ```
+///
+/// Note: a different, older `void *(*)(const char*, const char*, int, void*)`
+/// signature appears in very old libxml2 headers; the 2.15 contract wins.
 pub type xmlResourceLoader = unsafe extern "C" fn(
     ctxt: *mut c_void,
     url: *const c_char,
-    options: c_int,
-    type_: c_int,
-) -> *mut _xmlParserInput;
+    publicId: *const c_char,
+    type_: c_int, // xmlResourceType
+    flags: c_int, // xmlParserInputFlags
+    out: *mut *mut _xmlParserInput,
+) -> c_int; // xmlParserErrors
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Encoding Callbacks
@@ -409,6 +420,29 @@ pub type xmlCharEncodingInputFunc = unsafe extern "C" fn(
     inlen: *mut c_int,
 ) -> c_int;
 
+/// Modern character encoding conversion function (upstream encoding.h).
+///
+/// ```c
+/// typedef xmlCharEncError
+/// (*xmlCharEncConvFunc)(void *vctxt, unsigned char *out, int *outlen,
+///                       const unsigned char *in, int *inlen, int flush);
+/// ```
+pub type xmlCharEncConvFunc = unsafe extern "C" fn(
+    vctxt: *mut c_void,
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+    flush: c_int,
+) -> c_int; // xmlCharEncError
+
+/// Conversion-context destructor (upstream encoding.h).
+///
+/// ```c
+/// typedef void (*xmlCharEncConvCtxtDtor)(void *vctxt);
+/// ```
+pub type xmlCharEncConvCtxtDtor = unsafe extern "C" fn(vctxt: *mut c_void);
+
 /// Character encoding output conversion function.
 ///
 /// Converts from UTF-8 to the handler's output encoding.
@@ -425,15 +459,21 @@ pub type xmlCharEncodingOutputFunc = unsafe extern "C" fn(
 ///
 /// # UPSTREAM-PARITY
 ///
-/// This is used to plug custom encoding converters into the I/O subsystem.
-/// Returns the number of bytes written, or -1 on error.
+/// Declared in upstream `encoding.h` (2.15+):
+///
+/// ```c
+/// typedef xmlParserErrors
+/// (*xmlCharEncConvImpl)(void *vctxt, const char *name, xmlCharEncFlags flags,
+///                       xmlCharEncodingHandler **out);
+/// ```
+///
+/// Returns an xmlParserErrors code; `out` receives a new handler on success.
 pub type xmlCharEncConvImpl = unsafe extern "C" fn(
-    name: *mut *const crate::abi::types::xmlChar,
-    out: *mut *mut crate::abi::types::xmlChar,
-    outlen: *mut c_int,
-    in_: *const crate::abi::types::xmlChar,
-    inlen: *mut c_int,
-) -> c_int;
+    vctxt: *mut c_void,
+    name: *const c_char,
+    flags: c_int, // xmlCharEncFlags
+    out: *mut *mut crate::abi::structs::_xmlCharEncodingHandler,
+) -> c_int; // xmlParserErrors
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Catalog Callbacks

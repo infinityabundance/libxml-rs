@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
+#include <libxml/encoding.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,8 +21,10 @@ typedef int (*xmlInputReadCallback)(void *context, char *buffer, int len);
 typedef int (*xmlInputCloseCallback)(void *context);
 typedef int (*xmlOutputWriteCallback)(void *context, const char *buffer, int len);
 typedef int (*xmlOutputCloseCallback)(void *context);
-typedef void *(*xmlResourceLoader)(const char *URL, const char *encoding,
-                                    int options, void *ctxt);
+
+
+typedef xmlParserInputBuffer *
+(*xmlParserInputBufferCreateFilenameFunc)(const char *URI, xmlCharEncoding enc);
 
 #ifdef __cplusplus
 }

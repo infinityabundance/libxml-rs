@@ -59,11 +59,19 @@ const XML_PARSE_HUGE: c_int = 1 << 19;
 const XSLT_PARSE_OPTIONS: c_int =
     XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_NOCDATA;
 
-const XSLT_SECPREF_WRITE_FILE: c_int = 1;
-const XSLT_SECPREF_CREATE_DIRECTORY: c_int = 2;
-const XSLT_SECPREF_WRITE_NETWORK: c_int = 4;
-const XSLT_SECPREF_ALLOW: c_int = 1;
-const XSLT_SECPREF_FORBID: c_int = 2;
+const XSLT_SECPREF_WRITE_FILE: c_int = 2;
+const XSLT_SECPREF_CREATE_DIRECTORY: c_int = 3;
+const XSLT_SECPREF_WRITE_NETWORK: c_int = 5;
+
+/// Security check that forbids an operation (upstream xsltproc.c's static
+/// `xsltSecurityForbid`): always returns 0 (deny).
+unsafe extern "C" fn xslt_security_forbid(
+    _sec: *mut std::ffi::c_void,
+    _ctxt: *mut std::ffi::c_void,
+    _value: *const std::os::raw::c_char,
+) -> c_int {
+    0
+}
 
 /// CLI option state (mirrors upstream's file-scope globals).
 struct Cli {
@@ -544,20 +552,23 @@ unsafe fn main_impl() {
             "-nowrite" | "--nowrite" => {
                 cli.nowrite = true;
                 unsafe {
+                    // UPSTREAM-PARITY (R-000125): xsltproc registers the
+                    // xsltSecurityForbid callback (returns 0) for the write
+                    // options; the API is callback-based, not value-based.
                     libxml_rs::xslt::security::xsltSetSecurityPrefs(
                         sec,
                         XSLT_SECPREF_WRITE_FILE,
-                        XSLT_SECPREF_FORBID,
+                        Some(xslt_security_forbid),
                     );
                     libxml_rs::xslt::security::xsltSetSecurityPrefs(
                         sec,
                         XSLT_SECPREF_CREATE_DIRECTORY,
-                        XSLT_SECPREF_FORBID,
+                        Some(xslt_security_forbid),
                     );
                     libxml_rs::xslt::security::xsltSetSecurityPrefs(
                         sec,
                         XSLT_SECPREF_WRITE_NETWORK,
-                        XSLT_SECPREF_FORBID,
+                        Some(xslt_security_forbid),
                     );
                 }
             }
@@ -567,7 +578,7 @@ unsafe fn main_impl() {
                     libxml_rs::xslt::security::xsltSetSecurityPrefs(
                         sec,
                         XSLT_SECPREF_CREATE_DIRECTORY,
-                        XSLT_SECPREF_FORBID,
+                        Some(xslt_security_forbid),
                     );
                 }
             }

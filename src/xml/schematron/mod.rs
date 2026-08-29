@@ -25,7 +25,12 @@
 //! Deviations from the ISO Schematron specification that match libxml2's
 //! behavior are intentional.
 
-#![allow(missing_docs, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
 
 use core::ffi::c_void;
 use core::ptr;
@@ -84,11 +89,7 @@ pub struct SchematronPattern {
 
 impl SchematronPattern {
     /// Create a new assert or report pattern.
-    pub fn new(
-        pattern_type: SchematronPatternType,
-        test: String,
-        text: String,
-    ) -> Self {
+    pub fn new(pattern_type: SchematronPatternType, test: String, text: String) -> Self {
         Self {
             pattern_type,
             compiled_test: crate::xml::xpath::compile(&test),
@@ -699,7 +700,10 @@ unsafe fn schematron_parse_schema_node(node: *mut _xmlNode) -> SchematronSchema 
                     "rule" => {
                         // Rule directly inside schema (not inside a pattern)
                         let rule = schematron_parse_rule(child, &mut schema);
-                        let rule_id = rule.id.clone().unwrap_or_else(|| format!("_rule_{}", schema.rules.len()));
+                        let rule_id = rule
+                            .id
+                            .clone()
+                            .unwrap_or_else(|| format!("_rule_{}", schema.rules.len()));
                         // Store the rule
                         let rid = rule_id.clone();
                         schema.rules.insert(rid, rule);
@@ -766,9 +770,9 @@ unsafe fn schematron_parse_pattern_node(
         let pat_icon = get_attr(node, "icon");
         let pat_role = get_attr(node, "role");
 
-        let pid = pat_id.clone().unwrap_or_else(|| {
-            format!("_pattern_{}", schema.pattern_order.len())
-        });
+        let pid = pat_id
+            .clone()
+            .unwrap_or_else(|| format!("_pattern_{}", schema.pattern_order.len()));
 
         let mut rule_ids: Vec<String> = Vec::new();
 
@@ -780,9 +784,10 @@ unsafe fn schematron_parse_pattern_node(
                 match local.as_str() {
                     "rule" => {
                         let rule = schematron_parse_rule(child, schema);
-                        let rule_id = rule.id.clone().unwrap_or_else(|| {
-                            format!("_rule_{}", schema.rules.len())
-                        });
+                        let rule_id = rule
+                            .id
+                            .clone()
+                            .unwrap_or_else(|| format!("_rule_{}", schema.rules.len()));
                         let rid = rule_id.clone();
                         schema.rules.insert(rid, rule);
                         rule_ids.push(rule_id);
@@ -951,10 +956,7 @@ unsafe fn schematron_parse_phase(node: *mut _xmlNode) -> SchematronPhase {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to a `<diagnostics>` element node.
-unsafe fn schematron_parse_diagnostics(
-    node: *mut _xmlNode,
-    schema: &mut SchematronSchema,
-) {
+unsafe fn schematron_parse_diagnostics(node: *mut _xmlNode, schema: &mut SchematronSchema) {
     unsafe {
         let mut child = (*node).children;
         while !child.is_null() {
@@ -982,7 +984,12 @@ unsafe fn schematron_parse_diagnostic(node: *mut _xmlNode) -> SchematronDiagnost
         let icon = get_attr(node, "icon");
         let see = get_attr(node, "see");
 
-        SchematronDiagnostic { id, text, icon, see }
+        SchematronDiagnostic {
+            id,
+            text,
+            icon,
+            see,
+        }
     }
 }
 
@@ -991,10 +998,7 @@ unsafe fn schematron_parse_diagnostic(node: *mut _xmlNode) -> SchematronDiagnost
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an `<include>` element node.
-unsafe fn schematron_parse_include(
-    node: *mut _xmlNode,
-    _schema: &mut SchematronSchema,
-) {
+unsafe fn schematron_parse_include(node: *mut _xmlNode, _schema: &mut SchematronSchema) {
     unsafe {
         let href = get_attr(node, "href");
         if let Some(url) = href {
@@ -1167,11 +1171,8 @@ pub unsafe fn schematron_validate_doc(
                         }
                     };
 
-                    let message = expand_diagnostic_message(
-                        &pattern.text,
-                        *context_node,
-                        &mut xpath_ctxt,
-                    );
+                    let message =
+                        expand_diagnostic_message(&pattern.text, *context_node, &mut xpath_ctxt);
 
                     match pattern.pattern_type {
                         SchematronPatternType::Assert => {
@@ -1656,10 +1657,7 @@ pub unsafe extern "C" fn xmlSchematronFreeValidCtxt(ctxt: *mut c_void) {
 /// - `ctxt` must be a valid pointer to a validation context, or NULL.
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchematronValidateDoc(
-    ctxt: *mut c_void,
-    doc: *mut _xmlDoc,
-) -> c_int {
+pub unsafe extern "C" fn xmlSchematronValidateDoc(ctxt: *mut c_void, doc: *mut _xmlDoc) -> c_int {
     if ctxt.is_null() || doc.is_null() {
         return -1;
     }
@@ -1780,10 +1778,7 @@ mod tests {
         let schema = result.unwrap();
         let rule = schema.rules.values().next().unwrap();
         assert_eq!(rule.patterns.len(), 1);
-        assert_eq!(
-            rule.patterns[0].pattern_type,
-            SchematronPatternType::Report
-        );
+        assert_eq!(rule.patterns[0].pattern_type, SchematronPatternType::Report);
         assert_eq!(rule.patterns[0].test, "@deprecated");
     }
 
@@ -1935,7 +1930,11 @@ mod tests {
 </schema>"#;
 
         let result = schematron_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse schema with let/param: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse schema with let/param: {:?}",
+            result.err()
+        );
         let schema = result.unwrap();
         assert_eq!(schema.rules.len(), 1);
     }
@@ -2028,7 +2027,11 @@ mod tests {
         let valid = unsafe { schematron_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(!valid, "Validation should have failed, errors: {:?}", ctxt.errors);
+        assert!(
+            !valid,
+            "Validation should have failed, errors: {:?}",
+            ctxt.errors
+        );
         assert!(ctxt.nb_errors > 0);
     }
 
@@ -2222,7 +2225,11 @@ mod tests {
         let valid = unsafe { schematron_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(valid, "Phase filtering should make validation pass: {:?}", ctxt.errors);
+        assert!(
+            valid,
+            "Phase filtering should make validation pass: {:?}",
+            ctxt.errors
+        );
     }
 
     #[test]
@@ -2279,7 +2286,11 @@ mod tests {
         assert!(resolved.is_some());
         let resolved = resolved.unwrap();
         // The resolved rule should have patterns from both base and derived
-        assert_eq!(resolved.patterns.len(), 2, "Should have inherited the base pattern");
+        assert_eq!(
+            resolved.patterns.len(),
+            2,
+            "Should have inherited the base pattern"
+        );
 
         let doc = unsafe {
             crate::abi::exports_xml2::xmlReadMemory(
@@ -2333,7 +2344,10 @@ mod tests {
         assert!(!valid);
         assert!(ctxt.nb_errors > 0);
         // The error message should include the flag
-        assert!(ctxt.errors[0].contains("[warn]"), "Error should include flag");
+        assert!(
+            ctxt.errors[0].contains("[warn]"),
+            "Error should include flag"
+        );
     }
 
     // ── C ABI Lifecycle Tests ─────────────────────────────────────────────
@@ -2550,13 +2564,23 @@ mod tests {
 </schema>"#;
 
         let result = schematron_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse schema with span/emph: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse schema with span/emph: {:?}",
+            result.err()
+        );
         let schema = result.unwrap();
         let rule = schema.rules.values().next().unwrap();
         let pat = &rule.patterns[0];
         // The text should include the inline content of span and emph
-        assert!(pat.text.contains("inline"), "Text should include span content");
-        assert!(pat.text.contains("emphasis"), "Text should include emph content");
+        assert!(
+            pat.text.contains("inline"),
+            "Text should include span content"
+        );
+        assert!(
+            pat.text.contains("emphasis"),
+            "Text should include emph content"
+        );
     }
 
     #[test]

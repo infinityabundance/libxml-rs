@@ -152,7 +152,8 @@ pub fn xmlParserVersion() -> *const c_char {
 ///
 /// Oracle behavior: compares LIBXML2_VERSION (compiled-in) against `version`.
 /// Returns 0 if compatible, -1 if not.
-pub fn xmlCheckVersion(version: c_int) -> c_int {
+#[no_mangle]
+pub unsafe extern "C" fn xmlCheckVersion(version: c_int) -> c_int {
     if LIBXML2_VERSION_NUM >= version {
         0
     } else {

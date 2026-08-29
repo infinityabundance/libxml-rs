@@ -15,6 +15,8 @@
 #include <libxml/xmlerror.h>
 #include <libxml/xmlIO.h>
 #include <libxml/dict.h>
+#include <libxml/hash.h>
+#include <libxml/valid.h>
 #include <libxml/encoding.h>
 #include <libxml/SAX2.h>
 
@@ -22,30 +24,159 @@
 extern "C" {
 #endif
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Parser options */
-#define XML_PARSE_RECOVER 1
-#define XML_PARSE_NOENT 2
-#define XML_PARSE_DTDLOAD 4
-#define XML_PARSE_DTDATTR 8
-#define XML_PARSE_DTDVALID 16
-#define XML_PARSE_NOERROR 32
-#define XML_PARSE_NOWARNING 64
-#define XML_PARSE_PEDANTIC 128
-#define XML_PARSE_NOBLANKS 256
-#define XML_PARSE_SAX1 512
-#define XML_PARSE_XINCLUDE 1024
-#define XML_PARSE_NONET 2048
-#define XML_PARSE_NODICT 4096
-#define XML_PARSE_NSCLEAN 8192
-#define XML_PARSE_NOCDATA 16384
-#define XML_PARSE_NOXINCNODE 32768
-#define XML_PARSE_COMPACT 65536
-#define XML_PARSE_OLD10 131072
-#define XML_PARSE_NOBASEFIX 262144
-#define XML_PARSE_HUGE 524288
-#define XML_PARSE_OLDSAX 1048576
-#define XML_PARSE_IGNORE_ENC 2097152
-#define XML_PARSE_BIG_LINES 4194304
 
 /* Parser mode */
 typedef enum {
@@ -58,11 +189,7 @@ typedef enum {
 } xmlParserMode;
 
 /* Forward declarations */
-typedef struct _xmlParserNodeInfo xmlParserNodeInfo;
-typedef xmlParserNodeInfo *xmlParserNodeInfoPtr;
 struct _xmlValidCtxt;
-typedef struct _xmlValidCtxt xmlValidCtxt;
-typedef xmlValidCtxt *xmlValidCtxtPtr;
 
 /* Parser input states */
 typedef enum {
@@ -82,9 +209,7 @@ typedef enum {
     XML_PARSER_PUBLIC_LITERAL = 12
 } xmlParserInputState;
 
-/* Parser input structure */
-typedef struct _xmlParserInput xmlParserInput;
-typedef xmlParserInput *xmlParserInputPtr;
+/* Parser input structure (fwd typedef in SAX2.h; struct body here) */
 struct _xmlParserInput {
     xmlParserInputBufferPtr buf;
     const char *filename;
@@ -105,9 +230,7 @@ struct _xmlParserInput {
     xmlEntityPtr entity;
 };
 
-/* Parser input buffer */
-typedef struct _xmlParserInputBuffer xmlParserInputBuffer;
-typedef xmlParserInputBuffer *xmlParserInputBufferPtr;
+/* Parser input buffer (typedef in tree.h; struct body here) */
 struct _xmlParserInputBuffer {
     void *context;
     xmlInputReadCallback readcallback;
@@ -120,9 +243,7 @@ struct _xmlParserInputBuffer {
     unsigned long rawconsumed;
 };
 
-/* Output buffer */
-typedef struct _xmlOutputBuffer xmlOutputBuffer;
-typedef xmlOutputBuffer *xmlOutputBufferPtr;
+/* Output buffer (typedef in tree.h; struct body here) */
 struct _xmlOutputBuffer {
     void *context;
     xmlOutputWriteCallback writecallback;
@@ -133,6 +254,37 @@ struct _xmlOutputBuffer {
     int written;
     int error;
 };
+
+/* Resource types passed to xmlResourceLoader (upstream parser.h) */
+typedef enum {
+    XML_RESOURCE_UNKNOWN = 0,
+    XML_RESOURCE_MAIN_DOCUMENT,
+    XML_RESOURCE_DTD,
+    XML_RESOURCE_GENERAL_ENTITY,
+    XML_RESOURCE_PARAMETER_ENTITY,
+    XML_RESOURCE_XINCLUDE,
+    XML_RESOURCE_XINCLUDE_TEXT
+} xmlResourceType;
+
+/* Flags for parser input (upstream parser.h) */
+typedef enum {
+    XML_INPUT_BUF_STATIC = (1 << 1),
+    XML_INPUT_BUF_ZERO_TERMINATED = (1 << 2),
+    XML_INPUT_UNZIP = (1 << 3),
+    XML_INPUT_NETWORK = (1 << 4),
+    XML_INPUT_USE_SYS_CATALOG = (1 << 5)
+} xmlParserInputFlags;
+
+/* Opaque structs referenced by _xmlParserCtxt (upstream parser.h) */
+typedef struct _xmlStartTag xmlStartTag;
+typedef struct _xmlParserNsData xmlParserNsData;
+typedef struct _xmlAttrHashBucket xmlAttrHashBucket;
+
+/* Custom resource loader callback (upstream parser.h) */
+typedef xmlParserErrors
+(*xmlResourceLoader)(void *ctxt, const char *url, const char *publicId,
+                     xmlResourceType type, xmlParserInputFlags flags,
+                     xmlParserInput **out);
 
 /* Parser context */
 typedef struct _xmlParserCtxt xmlParserCtxt;
@@ -156,14 +308,14 @@ struct _xmlParserCtxt {
     int nodeMax;
     xmlNodePtr *nodeTab;
     int record_info;
-    int node_seq;
+    xmlParserNodeInfoSeq node_seq;
     int errNo;
     int hasExternalSubset;
     int hasPErefs;
     int external;
     int valid;
     int validate;
-    xmlValidCtxtPtr vctxt;
+    xmlValidCtxt vctxt;
     int instate;
     int token;
     char *directory;
@@ -206,8 +358,8 @@ struct _xmlParserCtxt {
     int nsNr;
     int nsMax;
     xmlNsPtr *nsTab;
-    int attallocs;
-    xmlNodePtr *pushTab;
+    unsigned int *attallocs;
+    xmlStartTag *pushTab;
     xmlHashTablePtr attsDefault;
     xmlHashTablePtr attsSpecial;
     int nsWellFormed;
@@ -219,38 +371,29 @@ struct _xmlParserCtxt {
     xmlAttrPtr *freeAttrs;
     xmlError lastError;
     int parseMode;
-    int nbentities;
-    int sizeentities;
+    unsigned long nbentities;
+    unsigned long sizeentities;
     xmlParserNodeInfoPtr nodeInfo;
     int nodeInfoNr;
     int nodeInfoMax;
     xmlParserNodeInfo *nodeInfoTab;
     int input_id;
-    int sizeentcopy;
+    unsigned long sizeentcopy;
     int endCheckState;
-    int nbErrors;
-    int nbWarnings;
-    int maxAmpl;
-    int nsdb;
-    int attrHashMax;
-    xmlHashTablePtr attrHash;
-    xmlGenericErrorFunc errorHandler;
+    unsigned short nbErrors;
+    unsigned short nbWarnings;
+    unsigned int maxAmpl;
+    xmlParserNsData *nsdb;
+    unsigned int attrHashMax;
+    xmlAttrHashBucket *attrHash;
+    xmlStructuredErrorFunc errorHandler;
     void *errorCtxt;
     xmlResourceLoader resourceLoader;
     void *resourceCtxt;
-    xmlCharEncodingInputFunc convImpl;
+    xmlCharEncConvImpl convImpl;
     void *convCtxt;
 };
 
-
-
-struct _xmlParserNodeInfo {
-    xmlNodePtr node;
-    unsigned long begin_pos;
-    unsigned long begin_line;
-    unsigned long end_pos;
-    unsigned long end_line;
-};
 
 /* Init and cleanup */
 XMLPUBFUN void xmlInitParser(void);
@@ -320,6 +463,265 @@ XMLPUBFUN int xmlOutputBufferFlush(xmlOutputBufferPtr out);
 XMLPUBFUN int xmlOutputBufferWrite(xmlOutputBufferPtr out, int len, const char *data);
 XMLPUBFUN int xmlOutputBufferWriteString(xmlOutputBufferPtr out, const char *str);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* [11.1-G] begin: extracted verbatim from upstream oracle header */
+typedef struct _xmlSAXHandlerV1 xmlSAXHandlerV1;
+typedef xmlSAXHandlerV1 *xmlSAXHandlerV1Ptr;
+/**
+ * SAX handler, version 1.
+ *
+ * @deprecated Use version 2 handlers.
+ */
+
+typedef enum{
+    XML_PARSE_RECOVER = 1<<0,
+    XML_PARSE_NOENT = 1<<1,
+    XML_PARSE_DTDLOAD = 1<<2,
+    XML_PARSE_DTDATTR = 1<<3,
+    XML_PARSE_DTDVALID = 1<<4,
+    XML_PARSE_NOERROR = 1<<5,
+    XML_PARSE_NOWARNING = 1<<6,
+    XML_PARSE_PEDANTIC = 1<<7,
+    XML_PARSE_NOBLANKS = 1<<8,
+    XML_PARSE_SAX1 = 1<<9,
+    XML_PARSE_XINCLUDE = 1<<10,
+    XML_PARSE_NONET = 1<<11,
+    XML_PARSE_NODICT = 1<<12,
+    XML_PARSE_NSCLEAN = 1<<13,
+    XML_PARSE_NOCDATA = 1<<14,
+    XML_PARSE_NOXINCNODE = 1<<15,
+    XML_PARSE_COMPACT = 1<<16,
+    XML_PARSE_OLD10 = 1<<17,
+    XML_PARSE_NOBASEFIX = 1<<18,
+    XML_PARSE_HUGE = 1<<19,
+    XML_PARSE_OLDSAX = 1<<20,
+    XML_PARSE_IGNORE_ENC = 1<<21,
+    XML_PARSE_BIG_LINES = 1<<22,
+    XML_PARSE_NO_XXE = 1<<23,
+    XML_PARSE_UNZIP = 1<<24,
+    XML_PARSE_NO_SYS_CATALOG = 1<<25,
+    XML_PARSE_CATALOG_PI = 1<<26,
+    XML_PARSE_SKIP_IDS = 1<<27
+} xmlParserOption;
+
+typedef enum{
+    XML_STATUS_NOT_WELL_FORMED          = (1 << 0),
+    XML_STATUS_NOT_NS_WELL_FORMED       = (1 << 1),
+    XML_STATUS_DTD_VALIDATION_FAILED    = (1 << 2),
+    XML_STATUS_CATASTROPHIC_ERROR       = (1 << 3)
+} xmlParserStatus;
+
+typedef enum{
+    XML_WITH_THREAD = 1,
+    XML_WITH_TREE = 2,
+    XML_WITH_OUTPUT = 3,
+    XML_WITH_PUSH = 4,
+    XML_WITH_READER = 5,
+    XML_WITH_PATTERN = 6,
+    XML_WITH_WRITER = 7,
+    XML_WITH_SAX1 = 8,
+    XML_WITH_FTP = 9,
+    XML_WITH_HTTP = 10,
+    XML_WITH_VALID = 11,
+    XML_WITH_HTML = 12,
+    XML_WITH_LEGACY = 13,
+    XML_WITH_C14N = 14,
+    XML_WITH_CATALOG = 15,
+    XML_WITH_XPATH = 16,
+    XML_WITH_XPTR = 17,
+    XML_WITH_XINCLUDE = 18,
+    XML_WITH_ICONV = 19,
+    XML_WITH_ISO8859X = 20,
+    XML_WITH_UNICODE = 21,
+    XML_WITH_REGEXP = 22,
+    XML_WITH_AUTOMATA = 23,
+    XML_WITH_EXPR = 24,
+    XML_WITH_SCHEMAS = 25,
+    XML_WITH_SCHEMATRON = 26,
+    XML_WITH_MODULES = 27,
+    XML_WITH_DEBUG = 28,
+    XML_WITH_DEBUG_MEM = 29,
+    XML_WITH_DEBUG_RUN = 30,
+    XML_WITH_ZLIB = 31,
+    XML_WITH_ICU = 32,
+    XML_WITH_LZMA = 33,
+    XML_WITH_RELAXNG = 34,
+    XML_WITH_NONE = 99999 /* just to be sure of allocation size */
+} xmlFeature;
+
+struct _xmlSAXHandlerV1 {
+    internalSubsetSAXFunc internalSubset;
+    isStandaloneSAXFunc isStandalone;
+    hasInternalSubsetSAXFunc hasInternalSubset;
+    hasExternalSubsetSAXFunc hasExternalSubset;
+    resolveEntitySAXFunc resolveEntity;
+    getEntitySAXFunc getEntity;
+    entityDeclSAXFunc entityDecl;
+    notationDeclSAXFunc notationDecl;
+    attributeDeclSAXFunc attributeDecl;
+    elementDeclSAXFunc elementDecl;
+    unparsedEntityDeclSAXFunc unparsedEntityDecl;
+    setDocumentLocatorSAXFunc setDocumentLocator;
+    startDocumentSAXFunc startDocument;
+    endDocumentSAXFunc endDocument;
+    startElementSAXFunc startElement;
+    endElementSAXFunc endElement;
+    referenceSAXFunc reference;
+    charactersSAXFunc characters;
+    ignorableWhitespaceSAXFunc ignorableWhitespace;
+    processingInstructionSAXFunc processingInstruction;
+    commentSAXFunc comment;
+    warningSAXFunc warning;
+    errorSAXFunc error;
+    fatalErrorSAXFunc fatalError; /* unused error() get all the errors */
+    getParameterEntitySAXFunc getParameterEntity;
+    cdataBlockSAXFunc cdataBlock;
+    externalSubsetSAXFunc externalSubset;
+    unsigned int initialized;
+};
+
+/* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus
 }
 #endif

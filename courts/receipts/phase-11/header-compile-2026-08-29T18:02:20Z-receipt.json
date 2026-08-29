@@ -1,0 +1,1297 @@
+{
+  "court": "HEADER-COMPILE",
+  "phase": "11.1-H",
+  "timestamp": "2026-08-29T18:02:20Z",
+  "toolchain": {
+    "gcc": "gcc (GCC) 16.2.1 20260810"
+,
+    "clang": "clang version 22.1.8"
+
+  },
+  "headers_under_test": 70,
+  "summary": { "passed": 216, "failed": 355 },
+  "results": [
+    {"item":"alone:libxml/c14n.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/c14n.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/catalog.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/catalog.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/chvalid.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/chvalid.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/debugXML.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/debugXML.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/dict.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/dict.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/dict.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/dict.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/dict.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/dict.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/dict.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/dict.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/encoding.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/encoding.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/entities.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/globals.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/hash.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/hash.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/hash.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/hash.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/hash.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/hash.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/hash.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/hash.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/HTMLparser.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/HTMLparser.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/HTMLtree.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/list.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/list.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/list.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/list.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/list.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/list.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/list.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/list.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/nanoftp.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/nanohttp.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/parser.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/parser.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/parserInternals.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/parserInternals.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/pattern.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/relaxng.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/relaxng.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/SAX.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/SAX2.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/schemasInternals.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/schematron.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/threads.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/threads.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/threads.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/threads.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/threads.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/threads.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/threads.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/threads.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/tree.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/tree.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/uri.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/valid.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xinclude.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xlink.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xlink.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlautomata.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlerror.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlexports.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlIO.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlIO.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlmemory.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlmemory.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlmodule.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlreader.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlreader.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlregexp.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlsave.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlsave.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlschemas.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemas.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xmlschemastypes.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlschemastypes.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlstring.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlunicode.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlversion.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xmlwriter.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xpath.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xpath.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxml/xpathInternals.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxml/xpointer.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxml/xpointer.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/attributes.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/attributes.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/documents.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/extensions.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/extra.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/functions.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/imports.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/libxslt.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/namespaces.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/numbersInternals.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/pattern.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/preproc.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/security.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/templates.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/transform.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/trio.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/trio.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/triodef.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/variables.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/variables.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xslt.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltconfig.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/xsltconfig.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/xsltInternals.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltInternals.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltlocale.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltexports.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/xsltexports.h:clang:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/xsltutils.h:gcc:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:gcc:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:gcc:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:gcc:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:clang:-std=c89","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:clang:-std=c99","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:clang:-std=c11","status":"FAIL"},
+    {"item":"alone:libxslt/xsltutils.h:clang:-std=c17","status":"FAIL"},
+    {"item":"all-together:gcc:-std=c89","status":"FAIL"},
+    {"item":"all-together:gcc:-std=c99","status":"FAIL"},
+    {"item":"all-together:gcc:-std=c11","status":"FAIL"},
+    {"item":"all-together:gcc:-std=c17","status":"FAIL"},
+    {"item":"cxx:gcc:-std=c++17","status":"FAIL"},
+    {"item":"all-together:clang:-std=c89","status":"FAIL"},
+    {"item":"all-together:clang:-std=c99","status":"FAIL"},
+    {"item":"all-together:clang:-std=c11","status":"FAIL"},
+    {"item":"all-together:clang:-std=c17","status":"FAIL"},
+    {"item":"cxx:clang:-std=c++17","status":"FAIL"},
+    {"item":"declared-functions-exported","status":"FAIL"}
+  ],
+  "failures": {
+    "alone:libxml/parser.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /tmp/hdr-libxml_parser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/imports.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_imports.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/imports.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_imports.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/valid.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_valid.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/schemasInternals.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13,                  from /tmp/hdr-libxml_schemasInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxslt/pattern.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13,                  from /tmp/hdr-libxslt_pattern.h.c:1: "
+,
+    "alone:libxslt/pattern.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13,                  from /tmp/hdr-libxslt_pattern.h.c:1: "
+,
+    "alone:libxml/schemasInternals.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13,                  from /tmp/hdr-libxml_schemasInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xmlschemas.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xmlschemas.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/preproc.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_preproc.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlschemas.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xmlschemas.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/libxslt.h:gcc:-std=c89": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: config.h: No such file or directory    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxslt/extra.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13,                  from /tmp/hdr-libxslt_extra.h.c:1: "
+,
+    "alone:libxslt/xsltInternals.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_xsltInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "all-together:clang:-std=c89": "In file included from /tmp/hdr-all.c:3: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/schematron.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_schematron.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/extra.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13,                  from /tmp/hdr-libxslt_extra.h.c:1: "
+,
+    "alone:libxslt/security.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_security.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11,                  from /tmp/hdr-libxml_SAX.h.c:1: "
+,
+    "alone:libxslt/security.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15,                  from /tmp/hdr-libxslt_security.h.c:1: "
+,
+    "alone:libxslt/extensions.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11,                  from /tmp/hdr-libxslt_extensions.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/transform.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_transform.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlIO.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12,                  from /tmp/hdr-libxml_xmlIO.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/transform.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_transform.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlIO.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12,                  from /tmp/hdr-libxml_xmlIO.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/debugXML.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_debugXML.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/debugXML.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_debugXML.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_SAX2.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11,                  from /tmp/hdr-libxml_SAX2.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/documents.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13,                  from /tmp/hdr-libxslt_documents.h.c:1: "
+,
+    "alone:libxslt/documents.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13,                  from /tmp/hdr-libxslt_documents.h.c:1: "
+,
+    "alone:libxslt/xslt.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_xslt.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/functions.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_functions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/debugXML.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12,                  from /tmp/hdr-libxml_debugXML.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/debugXML.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12,                  from /tmp/hdr-libxml_debugXML.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/attributes.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13,                  from /tmp/hdr-libxslt_attributes.h.c:1: "
+,
+    "alone:libxslt/functions.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_functions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpath.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /tmp/hdr-libxml_xpath.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/encoding.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /tmp/hdr-libxml_encoding.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/preproc.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_preproc.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/preproc.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_preproc.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpath.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /tmp/hdr-libxml_xpath.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/encoding.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /tmp/hdr-libxml_encoding.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/functions.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13,                  from /tmp/hdr-libxslt_functions.h.c:1: "
+,
+    "alone:libxslt/preproc.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13,                  from /tmp/hdr-libxslt_preproc.h.c:1: "
+,
+    "alone:libxslt/preproc.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13,                  from /tmp/hdr-libxslt_preproc.h.c:1: "
+,
+    "alone:libxml/xmlschemas.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xmlschemas.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/schematron.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14,                  from /tmp/hdr-libxml_schematron.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/numbersInternals.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_numbersInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/numbersInternals.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13,                  from /tmp/hdr-libxslt_numbersInternals.h.c:1: "
+,
+    "alone:libxml/tree.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_tree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxslt/templates.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13,                  from /tmp/hdr-libxslt_templates.h.c:1: "
+,
+    "alone:libxml/xpathInternals.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18,                  from /tmp/hdr-libxml_xpathInternals.h.c:1: "
+,
+    "alone:libxslt/numbersInternals.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13,                  from /tmp/hdr-libxslt_numbersInternals.h.c:1: "
+,
+    "alone:libxml/tree.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_tree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxslt/templates.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13,                  from /tmp/hdr-libxslt_templates.h.c:1: "
+,
+    "alone:libxml/xpathInternals.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18,                  from /tmp/hdr-libxml_xpathInternals.h.c:1: "
+,
+    "alone:libxml/schematron.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14,                  from /tmp/hdr-libxml_schematron.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/globals.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_globals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11,                  from /tmp/hdr-libxml_SAX.h.c:1: "
+,
+    "alone:libxml/SAX.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11,                  from /tmp/hdr-libxml_SAX.h.c:1: "
+,
+    "alone:libxml/globals.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_globals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/namespaces.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13,                  from /tmp/hdr-libxslt_namespaces.h.c:1: "
+,
+    "alone:libxml/xmlreader.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xmlreader.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltlocale.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_xsltlocale.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/schemasInternals.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_schemasInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxslt/namespaces.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13,                  from /tmp/hdr-libxslt_namespaces.h.c:1: "
+,
+    "alone:libxml/xmlreader.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xmlreader.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xinclude.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11,                  from /tmp/hdr-libxml_xinclude.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltlocale.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_xsltlocale.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlregexp.h:gcc:-std=c17": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^~~~~~~~~ "
+,
+    "alone:libxml/parser.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_parser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/transform.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_transform.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlregexp.h:gcc:-std=c11": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^~~~~~~~~ "
+,
+    "alone:libxslt/documents.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_documents.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/parser.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_parser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/documents.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13,                  from /tmp/hdr-libxslt_documents.h.c:1: "
+,
+    "cxx:clang:-std=c++17": "In file included from /tmp/hdr-all.c:3: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xmlIO.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xmlIO.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/entities.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11,                  from /tmp/hdr-libxml_entities.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/entities.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11,                  from /tmp/hdr-libxml_entities.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/pattern.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_pattern.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/HTMLtree.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_HTMLtree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/imports.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_imports.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/extensions.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_extensions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/extensions.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_extensions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xslt.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /tmp/hdr-libxslt_xslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/HTMLtree.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_HTMLtree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/schemasInternals.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13,                  from /tmp/hdr-libxml_schemasInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/catalog.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-libxml_catalog.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/preproc.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13,                  from /tmp/hdr-libxslt_preproc.h.c:1: "
+,
+    "alone:libxslt/imports.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13,                  from /tmp/hdr-libxslt_imports.h.c:1: "
+,
+    "alone:libxml/HTMLparser.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_HTMLparser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/catalog.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-libxml_catalog.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/globals.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_globals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xinclude.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11,                  from /tmp/hdr-libxml_xinclude.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/numbersInternals.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13,                  from /tmp/hdr-libxslt_numbersInternals.h.c:1: "
+,
+    "alone:libxml/tree.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_tree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xinclude.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11,                  from /tmp/hdr-libxml_xinclude.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xpath.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xpath.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/encoding.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_encoding.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/valid.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15,                  from /tmp/hdr-libxml_valid.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltlocale.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_xsltlocale.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/variables.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13,                  from /tmp/hdr-libxslt_variables.h.c:1: "
+,
+    "alone:libxslt/variables.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13,                  from /tmp/hdr-libxslt_variables.h.c:1: "
+,
+    "alone:libxslt/transform.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13,                  from /tmp/hdr-libxslt_transform.h.c:1: "
+,
+    "alone:libxml/tree.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /tmp/hdr-libxml_tree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "declared-functions-exported": "33 missing: libxml/globals.h:xmlCleanupGlobals libxml/globals.h:xmlInitGlobals libxml/SAX2.h:xmlSAX2InitDefaultSAXHandler libxml/SAX2.h:xmlSAX2InitHtmlDefaultSAXHandler libxml/SAX2.h:xmlSAX2IsInitialized libxml/tree.h:xmlFreeNodeList libxml/uri.h:xmlNormalizeURIPath libxml/uri.h:xmlParseURIReference libxml/xmlexports.h:xmlCheckVersion libxml/xmlmemory.h:xmlMallocAtomicLoc libxml/xmlmemory.h:xmlMallocLoc libxml/xmlmemory.h:xmlMemDisplayLast libxml/xmlmemory.h:xmlMemFree libxml/xmlmemory.h:xmlMemMalloc libxml/xmlmemory.h:xmlMemoryDump libxml/xmlmemory.h:xmlMemoryStrdup libxml/xmlmemory.h:xmlMemRealloc libxml/xmlmemory.h:xmlMemSize libxml/xmlmemory.h:xmlMemStrdupLoc libxml/xmlmemory.h:xmlReallocLoc libxml/xmlreader.h:xmlTextReaderClose libxml/xmlreader.h:xmlTextReaderCurrentNode libxml/xmlreader.h:xmlTextReaderExpand libxml/xmlreader.h:xmlTextReaderGetParserColumnNumber libxml/xmlreader.h:xmlTextReaderGetParserLineNumber libxml/xmlreader.h:xmlTextReaderIsValid libxml/xmlreader.h:xmlTextReaderNormalization libxml/xmlreader.h:xmlTextReaderReadAttributeValue libxml/xmlreader.h:xmlTextReaderReadInnerXml libxml/xmlreader.h:xmlTextReaderReadOuterXml libxml/xmlreader.h:xmlTextReaderReadString libxml/xmlreader.h:xmlTextReaderStandalone libxml/xmlreader.h:xmlTextReaderXmlLang "
+,
+    "all-together:clang:-std=c17": "In file included from /tmp/hdr-all.c:3: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "all-together:clang:-std=c11": "In file included from /tmp/hdr-all.c:3: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/entities.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_entities.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/debugXML.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_debugXML.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/uri.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_uri.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "cxx:gcc:-std=c++17": "In file included from /tmp/hdr-all.c:55: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: config.h: No such file or directory    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxml/entities.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11,                  from /tmp/hdr-libxml_entities.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xslt.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /tmp/hdr-libxslt_xslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xslt.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /tmp/hdr-libxslt_xslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/uri.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14,                  from /tmp/hdr-libxml_uri.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/pattern.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_pattern.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/relaxng.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_relaxng.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/pattern.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_pattern.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/HTMLtree.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_HTMLtree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_SAX2.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11,                  from /tmp/hdr-libxml_SAX2.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/extensions.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_extensions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_SAX2.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11,                  from /tmp/hdr-libxml_SAX2.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xmlIO.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12,                  from /tmp/hdr-libxml_xmlIO.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/keys.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_keys.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/variables.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_variables.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "all-together:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-all.c:3: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xpath.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /tmp/hdr-libxml_xpath.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/encoding.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /tmp/hdr-libxml_encoding.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/functions.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_functions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/tree.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /tmp/hdr-libxml_tree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/tree.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /tmp/hdr-libxml_tree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xpath.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xpath.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_SAX.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/encoding.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_encoding.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/valid.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15,                  from /tmp/hdr-libxml_valid.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/valid.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15,                  from /tmp/hdr-libxml_valid.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xpath.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xpath.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/encoding.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_encoding.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/libxslt.h:gcc:-std=c99": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: config.h: No such file or directory    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxslt/xsltutils.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_xsltutils.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/templates.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_templates.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpathInternals.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xpathInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/variables.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13,                  from /tmp/hdr-libxslt_variables.h.c:1: "
+,
+    "alone:libxml/xmlschemas.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13,                  from /tmp/hdr-libxml_xmlschemas.h.c:1: "
+,
+    "alone:libxslt/preproc.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_preproc.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/templates.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_templates.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpathInternals.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xpathInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/catalog.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_catalog.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/globals.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12,                  from /tmp/hdr-libxml_globals.h.c:1: "
+,
+    "alone:libxslt/numbersInternals.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_numbersInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "all-together:clang:-std=c99": "In file included from /tmp/hdr-all.c:3: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/numbersInternals.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_numbersInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/keys.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13,                  from /tmp/hdr-libxslt_keys.h.c:1: "
+,
+    "alone:libxslt/security.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_security.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/parser.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_parser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xmlregexp.h:gcc:-std=c99": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^~~~~~~~~ "
+,
+    "alone:libxslt/templates.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13,                  from /tmp/hdr-libxslt_templates.h.c:1: "
+,
+    "alone:libxml/xpathInternals.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18,                  from /tmp/hdr-libxml_xpathInternals.h.c:1: "
+,
+    "alone:libxml/HTMLtree.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11,                  from /tmp/hdr-libxml_HTMLtree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xmlregexp.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^ "
+,
+    "alone:libxml/relaxng.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_relaxng.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/relaxng.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_relaxng.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "all-together:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-all.c:3: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltInternals.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_xsltInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX2.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_SAX2.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltutils.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11,                  from /tmp/hdr-libxslt_xsltutils.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/variables.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_variables.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX2.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX2.h:11,                  from /tmp/hdr-libxml_SAX2.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/variables.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_variables.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "all-together:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-all.c:3: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltInternals.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_xsltInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xslt.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_xslt.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/HTMLparser.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_HTMLparser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/HTMLparser.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_HTMLparser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/extra.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_extra.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/extra.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13,                  from /tmp/hdr-libxslt_extra.h.c:1: "
+,
+    "alone:libxslt/attributes.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_attributes.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/parser.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /tmp/hdr-libxml_parser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/catalog.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-libxml_catalog.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/imports.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13,                  from /tmp/hdr-libxslt_imports.h.c:1: "
+,
+    "alone:libxslt/imports.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13,                  from /tmp/hdr-libxslt_imports.h.c:1: "
+,
+    "alone:libxslt/templates.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_templates.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpathInternals.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xpathInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/catalog.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_catalog.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/catalog.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_catalog.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/numbersInternals.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_numbersInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/debugXML.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12,                  from /tmp/hdr-libxml_debugXML.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/security.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_security.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/security.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_security.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltInternals.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /tmp/hdr-libxslt_xsltInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/schemasInternals.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_schemasInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/HTMLtree.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11,                  from /tmp/hdr-libxml_HTMLtree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/attributes.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13,                  from /tmp/hdr-libxslt_attributes.h.c:1: "
+,
+    "alone:libxslt/libxslt.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: 'config.h' file not found    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxslt/attributes.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13,                  from /tmp/hdr-libxslt_attributes.h.c:1: "
+,
+    "alone:libxml/HTMLtree.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11,                  from /tmp/hdr-libxml_HTMLtree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/extensions.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11,                  from /tmp/hdr-libxslt_extensions.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/pattern.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13,                  from /tmp/hdr-libxslt_pattern.h.c:1: "
+,
+    "alone:libxslt/xsltInternals.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_xsltInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/uri.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_uri.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/schematron.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_schematron.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/uri.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_uri.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/SAX.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11,                  from /tmp/hdr-libxml_SAX.h.c:1: "
+,
+    "alone:libxslt/security.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15,                  from /tmp/hdr-libxslt_security.h.c:1: "
+,
+    "alone:libxml/xmlreader.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15,                  from /tmp/hdr-libxml_xmlreader.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/schematron.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14,                  from /tmp/hdr-libxml_schematron.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/attributes.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_attributes.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/attributes.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_attributes.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xslt.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /tmp/hdr-libxslt_xslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/relaxng.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14,                  from /tmp/hdr-libxml_relaxng.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/namespaces.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_namespaces.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/namespaces.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13,                  from /tmp/hdr-libxslt_namespaces.h.c:1: "
+,
+    "alone:libxml/xmlreader.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xmlreader.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/libxslt.h:gcc:-std=c11": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: config.h: No such file or directory    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxml/xmlschemas.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13,                  from /tmp/hdr-libxml_xmlschemas.h.c:1: "
+,
+    "alone:libxml/xinclude.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xinclude.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xmlschemas.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13,                  from /tmp/hdr-libxml_xmlschemas.h.c:1: "
+,
+    "alone:libxslt/libxslt.h:gcc:-std=c17": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: config.h: No such file or directory    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxml/HTMLparser.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11,                  from /tmp/hdr-libxml_HTMLparser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xmlschemas.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xmlschemas.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltlocale.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13,                  from /tmp/hdr-libxslt_xsltlocale.h.c:1: "
+,
+    "alone:libxml/schemasInternals.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_schemasInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xmlIO.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xmlIO.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/schemasInternals.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_schemasInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xmlIO.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xmlIO.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltInternals.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /tmp/hdr-libxslt_xsltInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xpath.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xpath.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/encoding.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_encoding.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/attributes.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13,                  from /tmp/hdr-libxslt_attributes.h.c:1: "
+,
+    "alone:libxslt/xsltInternals.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /tmp/hdr-libxslt_xsltInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/extensions.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11,                  from /tmp/hdr-libxslt_extensions.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltutils.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_xsltutils.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltlocale.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_xsltlocale.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltutils.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_xsltutils.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/transform.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13,                  from /tmp/hdr-libxslt_transform.h.c:1: "
+,
+    "alone:libxslt/extensions.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11,                  from /tmp/hdr-libxslt_extensions.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/valid.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_valid.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/functions.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13,                  from /tmp/hdr-libxslt_functions.h.c:1: "
+,
+    "alone:libxslt/documents.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_documents.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/functions.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13,                  from /tmp/hdr-libxslt_functions.h.c:1: "
+,
+    "alone:libxml/xmlregexp.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^ "
+,
+    "alone:libxml/entities.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11,                  from /tmp/hdr-libxml_entities.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xmlregexp.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^ "
+,
+    "alone:libxml/xinclude.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11,                  from /tmp/hdr-libxml_xinclude.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/uri.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14,                  from /tmp/hdr-libxml_uri.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/relaxng.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_relaxng.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltutils.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11,                  from /tmp/hdr-libxslt_xsltutils.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/HTMLtree.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_HTMLtree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/entities.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_entities.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltutils.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11,                  from /tmp/hdr-libxslt_xsltutils.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/entities.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_entities.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xpath.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /tmp/hdr-libxml_xpath.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/encoding.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /tmp/hdr-libxml_encoding.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/relaxng.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14,                  from /tmp/hdr-libxml_relaxng.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/keys.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_keys.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/relaxng.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14,                  from /tmp/hdr-libxml_relaxng.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/variables.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_variables.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltlocale.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13,                  from /tmp/hdr-libxslt_xsltlocale.h.c:1: "
+,
+    "alone:libxslt/xsltlocale.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13,                  from /tmp/hdr-libxslt_xsltlocale.h.c:1: "
+,
+    "alone:libxslt/preproc.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/preproc.h:13,                  from /tmp/hdr-libxslt_preproc.h.c:1: "
+,
+    "alone:libxslt/imports.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13,                  from /tmp/hdr-libxslt_imports.h.c:1: "
+,
+    "alone:libxslt/extra.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_extra.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/extra.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_extra.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/globals.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12,                  from /tmp/hdr-libxml_globals.h.c:1: "
+,
+    "alone:libxslt/imports.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_imports.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/imports.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltutils.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_xsltutils.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/variables.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/variables.h:13,                  from /tmp/hdr-libxslt_variables.h.c:1: "
+,
+    "alone:libxml/xmlschemas.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/encoding.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlschemas.h:13,                  from /tmp/hdr-libxml_xmlschemas.h.c:1: "
+,
+    "alone:libxml/catalog.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_catalog.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/documents.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_documents.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/documents.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_documents.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/schemasInternals.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schemasInternals.h:13,                  from /tmp/hdr-libxml_schemasInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxslt/keys.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13,                  from /tmp/hdr-libxslt_keys.h.c:1: "
+,
+    "alone:libxml/HTMLtree.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLtree.h:11,                  from /tmp/hdr-libxml_HTMLtree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/parser.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_parser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/functions.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13,                  from /tmp/hdr-libxslt_functions.h.c:1: "
+,
+    "alone:libxml/uri.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_uri.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/libxslt.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: 'config.h' file not found    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxslt/libxslt.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: 'config.h' file not found    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxml/schematron.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_schematron.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/entities.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_entities.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/entities.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/xsltutils.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltutils.h:11,                  from /tmp/hdr-libxslt_xsltutils.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/schematron.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_schematron.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/keys.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_keys.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/keys.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_keys.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/extra.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13,                  from /tmp/hdr-libxslt_extra.h.c:1: "
+,
+    "alone:libxslt/attributes.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_attributes.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/attributes.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlreader.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15,                  from /tmp/hdr-libxml_xmlreader.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/transform.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_transform.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xmlreader.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15,                  from /tmp/hdr-libxml_xmlreader.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/debugXML.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_debugXML.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/security.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15,                  from /tmp/hdr-libxslt_security.h.c:1: "
+,
+    "alone:libxml/catalog.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-libxml_catalog.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/security.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/security.h:15,                  from /tmp/hdr-libxslt_security.h.c:1: "
+,
+    "alone:libxslt/extra.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_extra.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extra.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/documents.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/documents.h:13,                  from /tmp/hdr-libxslt_documents.h.c:1: "
+,
+    "alone:libxslt/transform.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13,                  from /tmp/hdr-libxslt_transform.h.c:1: "
+,
+    "alone:libxml/xinclude.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_xinclude.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xinclude.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_xinclude.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/transform.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/transform.h:13,                  from /tmp/hdr-libxslt_transform.h.c:1: "
+,
+    "alone:libxml/xmlIO.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xmlIO.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/namespaces.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_namespaces.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/HTMLparser.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11,                  from /tmp/hdr-libxml_HTMLparser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/pattern.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_pattern.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_SAX.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/namespaces.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_namespaces.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/HTMLparser.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11,                  from /tmp/hdr-libxml_HTMLparser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xsltInternals.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltInternals.h:16,                  from /tmp/hdr-libxslt_xsltInternals.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xslt.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_xslt.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "all-together:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/catalog.h:12,                  from /tmp/hdr-all.c:3: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/xslt.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_xslt.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxslt/functions.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_functions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/functions.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/keys.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13,                  from /tmp/hdr-libxslt_keys.h.c:1: "
+,
+    "alone:libxml/debugXML.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/debugXML.h:12,                  from /tmp/hdr-libxml_debugXML.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/keys.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:13,                  from /tmp/hdr-libxslt_keys.h.c:1: "
+,
+    "alone:libxml/parser.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /tmp/hdr-libxml_parser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/HTMLparser.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_HTMLparser.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/parser.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /tmp/hdr-libxml_parser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/globals.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_globals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/libxslt.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_libxslt.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/libxslt.h:19:10: fatal error: 'config.h' file not found    19 | #include <config.h>       |          ^~~~~~~~~~ "
+,
+    "alone:libxml/uri.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14,                  from /tmp/hdr-libxml_uri.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/numbersInternals.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/numbersInternals.h:13,                  from /tmp/hdr-libxslt_numbersInternals.h.c:1: "
+,
+    "alone:libxml/tree.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_tree.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/uri.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/uri.h:14,                  from /tmp/hdr-libxml_uri.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/valid.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_valid.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/valid.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15,                  from /tmp/hdr-libxml_valid.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/pattern.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/pattern.h:13,                  from /tmp/hdr-libxslt_pattern.h.c:1: "
+,
+    "alone:libxml/valid.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_valid.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/valid.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xmlregexp.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp'    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^ "
+,
+    "alone:libxml/tree.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /tmp/hdr-libxml_tree.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr; "
+,
+    "alone:libxml/xmlreader.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15,                  from /tmp/hdr-libxml_xmlreader.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/xmlregexp.h:gcc:-std=c89": "In file included from /tmp/hdr-libxml_xmlregexp.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’    66 | typedef xmlRegexp *xmlRegexpPtr;       |         ^~~~~~~~~ "
+,
+    "alone:libxslt/templates.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13,                  from /tmp/hdr-libxslt_templates.h.c:1: "
+,
+    "alone:libxml/xpathInternals.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18,                  from /tmp/hdr-libxml_xpathInternals.h.c:1: "
+,
+    "alone:libxml/schematron.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/schematron.h:14,                  from /tmp/hdr-libxml_schematron.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/namespaces.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13,                  from /tmp/hdr-libxslt_namespaces.h.c:1: "
+,
+    "alone:libxml/xmlreader.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xmlreader.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlreader.h:15: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/HTMLparser.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/HTMLparser.h:11,                  from /tmp/hdr-libxml_HTMLparser.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxml/relaxng.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/relaxng.h:14,                  from /tmp/hdr-libxml_relaxng.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+,
+    "alone:libxslt/namespaces.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_namespaces.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/namespaces.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/xsltlocale.h:gcc:-std=c89": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11,                  from /mnt/1tb_kingston/libxml-rs/include/libxslt/xsltlocale.h:13,                  from /tmp/hdr-libxslt_xsltlocale.h.c:1: "
+,
+    "alone:libxml/globals.h:gcc:-std=c11": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12,                  from /tmp/hdr-libxml_globals.h.c:1: "
+,
+    "alone:libxml/xinclude.h:clang:-std=c99": "In file included from /tmp/hdr-libxml_xinclude.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xinclude.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/globals.h:gcc:-std=c17": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/globals.h:12,                  from /tmp/hdr-libxml_globals.h.c:1: "
+,
+    "alone:libxslt/templates.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_templates.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/templates.h:13: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/xslt.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/xpathInternals.h:clang:-std=c89": "In file included from /tmp/hdr-libxml_xpathInternals.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpathInternals.h:18: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/xpath.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX.h:clang:-std=c11": "In file included from /tmp/hdr-libxml_SAX.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxml/SAX.h:clang:-std=c17": "In file included from /tmp/hdr-libxml_SAX.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/SAX.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/parser.h:14: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: "
+,
+    "alone:libxslt/extensions.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_extensions.h.c:1: In file included from /mnt/1tb_kingston/libxml-rs/include/libxslt/extensions.h:11: In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name 'xmlRegexp' "
+,
+    "alone:libxml/xmlIO.h:gcc:-std=c99": "In file included from /mnt/1tb_kingston/libxml-rs/include/libxml/tree.h:14,                  from /mnt/1tb_kingston/libxml-rs/include/libxml/xmlIO.h:12,                  from /tmp/hdr-libxml_xmlIO.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxml/xmlregexp.h:66:9: error: unknown type name ‘xmlRegexp’ "
+  }
+}

@@ -75,6 +75,10 @@ def parse_inventory(project, version, profile):
                 elif kind == "enumvalue":
                     ent["value"] = (mdef.findtext("initializer") or "").strip()
                     ent["enum"] = comp_name
+                elif kind == "enum":
+                    ent["enum_values"] = [
+                        (v.findtext("name") or "", (v.findtext("initializer") or "").strip())
+                        for v in mdef.findall("enumvalue")]
                 ent["documented"] = bool((mdef.findtext("briefdescription/para") or "").strip())
                 loc = mdef.find("location")
                 if loc is not None:

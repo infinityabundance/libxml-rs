@@ -118,6 +118,157 @@ pub(crate) struct UriParts {
     pub clean_path: Option<Vec<u8>>, // cleaned/normalized path
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// C-ABI URI object (struct _xmlURI layout)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The public `xmlURIPtr` returned by `xmlParseURI`/`xmlCreateURI` must be
+// readable by C consumers as `struct _xmlURI` (upstream uri.h):
+//
+// ```c
+// struct _xmlURI {
+//     char *scheme;     char *opaque;   char *authority;
+//     char *server;     char *user;     int port;
+//     char *path;       char *query;    char *fragment;
+//     int  cleanup;     char *query_raw;
+// };
+// ```
+//
+// sizeof == 104, _Alignof == 8 on x86-64 (verified by the ABI probe). The
+// object is allocated as a `Box<CXmlUri>`; every string field is an
+// allocator-owned (`xmlMalloc`) null-terminated copy, so C code may read and
+// (with `xmlFreeURI`) release them exactly as with upstream libxml2.
+//
+// Internal Rust-only fields (`host`, `path_raw`, `clean_path`) cannot be
+// represented in the C struct; they are kept in the internal [`UriParts`]
+// only. Conversions are lossless for the C-visible fields.
+
+#[repr(C)]
+struct CXmlUri {
+    scheme: *mut c_char,
+    opaque: *mut c_char,
+    authority: *mut c_char,
+    server: *mut c_char,
+    user: *mut c_char,
+    port: c_int,
+    path: *mut c_char,
+    query: *mut c_char,
+    fragment: *mut c_char,
+    cleanup: c_int,
+    query_raw: *mut c_char,
+}
+
+impl Default for CXmlUri {
+    fn default() -> Self {
+        CXmlUri {
+            scheme: ptr::null_mut(),
+            opaque: ptr::null_mut(),
+            authority: ptr::null_mut(),
+            server: ptr::null_mut(),
+            user: ptr::null_mut(),
+            port: 0,
+            path: ptr::null_mut(),
+            query: ptr::null_mut(),
+            fragment: ptr::null_mut(),
+            cleanup: 0,
+            query_raw: ptr::null_mut(),
+        }
+    }
+}
+
+/// Allocate an allocator-owned null-terminated copy of `bytes`, or NULL.
+unsafe fn to_c_str(bytes: Option<&[u8]>) -> *mut c_char {
+    let b = match bytes {
+        Some(b) if !b.is_empty() => b,
+        _ => return ptr::null_mut(),
+    };
+    let p = unsafe { allocator::xmlMalloc(b.len() + 1) as *mut u8 };
+    if p.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(b.as_ptr(), p, b.len());
+        *p.add(b.len()) = 0;
+    }
+    p as *mut c_char
+}
+
+/// Read an allocator-owned C string back into `Vec<u8>` (empty when NULL).
+unsafe fn from_c_str(p: *const c_char) -> Option<Vec<u8>> {
+    if p.is_null() {
+        return None;
+    }
+    let len = unsafe { libc::strlen(p) };
+    if len == 0 {
+        return None;
+    }
+    let slice = unsafe { core::slice::from_raw_parts(p as *const u8, len) };
+    Some(slice.to_vec())
+}
+
+/// Free a C-ABI URI object and all its strings.
+unsafe fn free_c_uri(uri: *mut CXmlUri) {
+    if uri.is_null() {
+        return;
+    }
+    unsafe {
+        let u = &*uri;
+        for p in [
+            u.scheme,
+            u.opaque,
+            u.authority,
+            u.server,
+            u.user,
+            u.path,
+            u.query,
+            u.fragment,
+            u.query_raw,
+        ] {
+            if !p.is_null() {
+                allocator::xmlFree(p as *mut c_void);
+            }
+        }
+        drop(Box::from_raw(uri));
+    }
+}
+
+/// Convert internal parts to a C-ABI URI object (allocates).
+unsafe fn parts_to_c(parts: &UriParts) -> *mut CXmlUri {
+    let boxed = Box::new(CXmlUri {
+        scheme: unsafe { to_c_str(parts.scheme.as_deref()) },
+        opaque: unsafe { to_c_str(parts.opaque.as_deref()) },
+        authority: unsafe { to_c_str(parts.authority.as_deref()) },
+        server: unsafe { to_c_str(parts.server.as_deref()) },
+        user: unsafe { to_c_str(parts.user.as_deref()) },
+        port: parts.port,
+        path: unsafe { to_c_str(parts.path.as_deref()) },
+        query: unsafe { to_c_str(parts.query.as_deref()) },
+        fragment: unsafe { to_c_str(parts.fragment.as_deref()) },
+        cleanup: 0,
+        query_raw: unsafe { to_c_str(parts.query.as_deref()) },
+    });
+    Box::into_raw(boxed)
+}
+
+/// Convert a C-ABI URI object back to internal parts (copies strings).
+unsafe fn c_to_parts(uri: *const CXmlUri) -> UriParts {
+    let u = unsafe { &*uri };
+    UriParts {
+        scheme: unsafe { from_c_str(u.scheme) },
+        opaque: unsafe { from_c_str(u.opaque) },
+        authority: unsafe { from_c_str(u.authority) },
+        server: unsafe { from_c_str(u.server) },
+        user: unsafe { from_c_str(u.user) },
+        host: None,
+        port: u.port,
+        path: unsafe { from_c_str(u.path) },
+        query: unsafe { from_c_str(u.query) },
+        fragment: unsafe { from_c_str(u.fragment) },
+        path_raw: None,
+        clean_path: None,
+    }
+}
+
 // ── URI parsing ─────────────────────────────────────────────────────────────
 
 /// Find the scheme in a URI string.
@@ -603,10 +754,7 @@ pub(crate) unsafe fn xmlParseURI(str: *const c_char) -> *mut c_void {
     let len = libc::strlen(str);
     let slice = unsafe { core::slice::from_raw_parts(str as *const u8, len) };
     match parse_uri(slice) {
-        Some(parts) => {
-            let boxed = Box::new(parts);
-            Box::into_raw(boxed) as *mut c_void
-        }
+        Some(parts) => unsafe { parts_to_c(&parts) as *mut c_void },
         None => ptr::null_mut(),
     }
 }
@@ -620,19 +768,19 @@ pub(crate) unsafe fn xmlParseURI(str: *const c_char) -> *mut c_void {
 /// `uri` must have been allocated by [`xmlParseURI`] or [`xmlCreateURI`] and not yet freed.
 pub(crate) unsafe fn xmlFreeURI(uri: *mut c_void) {
     if !uri.is_null() {
-        drop(Box::from_raw(uri as *mut UriParts));
+        unsafe { free_c_uri(uri as *mut CXmlUri) };
     }
 }
 
 /// `xmlURIPtr xmlCreateURI(void)`
 ///
 /// Create an empty URI structure.
-/// Returns an opaque pointer to a heap-allocated, zero-initialized `UriParts`.
+/// Returns an opaque pointer to a heap-allocated, zero-initialized `CXmlUri`
+/// (C-ABI layout matching `struct _xmlURI`).
 ///
 /// The caller must free the result with [`xmlFreeURI`].
 pub(crate) fn xmlCreateURI() -> *mut c_void {
-    let parts = UriParts::default();
-    let boxed = Box::new(parts);
+    let boxed = Box::new(CXmlUri::default());
     Box::into_raw(boxed) as *mut c_void
 }
 
@@ -646,14 +794,14 @@ pub(crate) fn xmlCreateURI() -> *mut c_void {
 ///
 /// # Safety
 ///
-/// `uri` must be a valid pointer to a `UriParts` previously created by
+/// `uri` must be a valid pointer to a `CXmlUri` previously created by
 /// [`xmlParseURI`] or [`xmlCreateURI`].
 pub(crate) unsafe fn xmlSaveUri(uri: *mut c_void) -> *mut xmlChar {
     if uri.is_null() {
         return ptr::null_mut();
     }
-    let parts = unsafe { &*(uri as *const UriParts) };
-    let result = build_uri(parts);
+    let parts = unsafe { c_to_parts(uri as *const CXmlUri) };
+    let result = build_uri(&parts);
     if result.is_empty() {
         return ptr::null_mut();
     }
@@ -668,6 +816,118 @@ pub(crate) unsafe fn xmlSaveUri(uri: *mut c_void) -> *mut xmlChar {
         *ptr.add(len) = 0; // null terminator
     }
     ptr as *mut xmlChar
+}
+
+/// `int xmlParseURIReference(xmlURIPtr uri, const char *str)`
+///
+/// Parse a URI string into an EXISTING URI structure (upstream uri.c
+/// `xmlParseURIReference`): the string is parsed and the fields of `uri` are
+/// replaced. Returns 0 on success, -1 on failure. On failure the URI
+/// structure is left untouched.
+///
+/// # Safety
+///
+/// `uri` must be a valid pointer to a `CXmlUri` previously created by
+/// [`xmlParseURI`] or [`xmlCreateURI`]; `str` must be a valid
+/// null-terminated C string.
+pub(crate) unsafe fn xmlParseURIReference(uri: *mut c_void, str: *const c_char) -> c_int {
+    if uri.is_null() || str.is_null() {
+        return -1;
+    }
+    let len = unsafe { libc::strlen(str) };
+    let slice = unsafe { core::slice::from_raw_parts(str as *const u8, len) };
+    let parts = match parse_uri(slice) {
+        Some(p) => p,
+        None => return -1,
+    };
+    let fresh = unsafe { parts_to_c(&parts) };
+    if fresh.is_null() {
+        return -1;
+    }
+    // swap the parsed fields into the caller's structure, then release the
+    // temporary shell (the strings were moved, so nothing is leaked)
+    unsafe {
+        let dst = &mut *(uri as *mut CXmlUri);
+        let src = &mut *fresh;
+        core::mem::swap(dst, src);
+        free_c_uri(fresh);
+    }
+    0
+}
+
+/// `int xmlNormalizeURIPath(char *path)`
+///
+/// Normalize a URI path IN PLACE (upstream uri.c `xmlNormalizeURIPath`):
+/// remove `.` and `..` segments per RFC 3986 §5.2.4, keeping the leading
+/// `/`. Returns 0 on success, -1 on failure (e.g. `..` above the root).
+///
+/// The candidate's internal normalizer (`normalize_uri_path`) implements the
+/// same algorithm on byte slices; this wrapper applies it to the C buffer in
+/// place.
+///
+/// # Safety
+///
+/// `path` must be a valid, writable, null-terminated C string buffer that
+/// is at least `strlen(path) + 1` bytes long.
+pub(crate) unsafe fn xmlNormalizeURIPath(path: *mut c_char) -> c_int {
+    if path.is_null() {
+        return -1;
+    }
+    // Faithful port of upstream uri.c `xmlNormalizeURIPath`: operates in
+    // place, removes `.`/`..` segments, and fails with -1 when `..` would
+    // climb above the root or when the path does not start with '/'
+    // (upstream only normalizes absolute paths).
+    unsafe {
+        let mut cur = path;
+        if *cur == b'/' as c_char {
+            cur = cur.add(1);
+        } else {
+            return -1;
+        }
+        let mut out = path;
+        while *cur != 0 {
+            let c0 = *cur as u8;
+            let c1 = *cur.add(1) as u8;
+            let c2 = *cur.add(2) as u8;
+            // "./" segment: skip
+            if c0 == b'.' && c1 == b'/' {
+                cur = cur.add(2);
+                continue;
+            }
+            // "../" segment: back up one segment, fail if at the root
+            if c0 == b'.' && c1 == b'.' && c2 == b'/' {
+                if out == path {
+                    return -1;
+                }
+                out = out.sub(1);
+                while out > path && *out.sub(1) != b'/' as c_char {
+                    out = out.sub(1);
+                }
+                cur = cur.add(3);
+                continue;
+            }
+            // trailing "." — drop it and finish
+            if c0 == b'.' && c1 == 0 {
+                break;
+            }
+            // trailing ".." — back up one segment, fail if at the root
+            if c0 == b'.' && c1 == b'.' && c2 == 0 {
+                if out == path {
+                    return -1;
+                }
+                out = out.sub(1);
+                while out > path && *out.sub(1) != b'/' as c_char {
+                    out = out.sub(1);
+                }
+                break;
+            }
+            *out = *cur;
+            out = out.add(1);
+            cur = cur.add(1);
+        }
+        *out = 0;
+    }
+    0
 }
 
 /// `xmlChar *xmlURIEscapeStr(unsigned char *str, unsigned char *list)`
@@ -1228,9 +1488,10 @@ mod tests {
             let cstr = b"http://example.com/path\0".as_ptr() as *const c_char;
             let uri = xmlParseURI(cstr);
             assert!(!uri.is_null());
-            let parts = &*(uri as *const UriParts);
-            assert_eq!(parts.scheme, Some(b"http".to_vec()));
-            assert_eq!(parts.host, Some(b"example.com".to_vec()));
+            let parts = &*(uri as *const CXmlUri);
+            assert_eq!(from_c_str(parts.scheme), Some(b"http".to_vec()));
+            assert_eq!(from_c_str(parts.server), Some(b"example.com".to_vec()));
+            assert_eq!(from_c_str(parts.path), Some(b"/path".to_vec()));
             xmlFreeURI(uri);
         }
     }
@@ -1313,8 +1574,9 @@ mod tests {
             let cstr = b"http://example.com\0".as_ptr() as *const c_char;
             let uri = xmlParseURIRaw(cstr, 0);
             assert!(!uri.is_null());
-            let parts = &*(uri as *const UriParts);
-            assert_eq!(parts.scheme, Some(b"http".to_vec()));
+            let parts = &*(uri as *const CXmlUri);
+            assert_eq!(from_c_str(parts.scheme), Some(b"http".to_vec()));
+            assert_eq!(from_c_str(parts.server), Some(b"example.com".to_vec()));
             xmlFreeURI(uri);
         }
     }

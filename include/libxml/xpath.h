@@ -10,11 +10,16 @@
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
+#include <libxml/hash.h>
+#include <libxml/dict.h>
 
 /* Forward declarations */
 struct _xmlXPathParserContext;
+
 typedef struct _xmlXPathParserContext xmlXPathParserContext;
 typedef xmlXPathParserContext *xmlXPathParserContextPtr;
+typedef struct _xmlXPathCompExpr xmlXPathCompExpr;
+typedef xmlXPathCompExpr *xmlXPathCompExprPtr;
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,15 +114,10 @@ struct _xmlXPathContext {
     xmlDictPtr dict;
     int flags;
     void *cache;
-    int opLimit;
-    int opCount;
+    unsigned long opLimit;
+    unsigned long opCount;
     int depth;
 };
-
-/* Forward declarations */
-struct _xmlXPathParserContext;
-typedef struct _xmlXPathParserContext xmlXPathParserContext;
-typedef xmlXPathParserContext *xmlXPathParserContextPtr;
 
 /* XPath API */
 XMLPUBFUN xmlXPathContextPtr xmlXPathNewContext(xmlDocPtr doc);
@@ -144,6 +144,210 @@ XMLPUBFUN xmlXPathObjectPtr xmlXPathNewCString(const xmlChar *val);
 XMLPUBFUN xmlXPathObjectPtr xmlXPathNewFloat(double val);
 XMLPUBFUN xmlXPathObjectPtr xmlXPathNewBoolean(int val);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* [11.1-G] begin: extracted verbatim from upstream oracle header */
+typedef struct _xmlXPathAxis xmlXPathAxis;
+typedef xmlXPathAxis *xmlXPathAxisPtr;
+
+typedef struct _xmlXPathFunct xmlXPathFunct;
+typedef xmlXPathFunct *xmlXPathFuncPtr;
+
+typedef struct _xmlXPathType xmlXPathType;
+typedef xmlXPathType *xmlXPathTypePtr;
+
+typedef struct _xmlXPathVariable xmlXPathVariable;
+typedef xmlXPathVariable *xmlXPathVariablePtr;
+
+typedef enum{
+    XPATH_EXPRESSION_OK = 0,
+    XPATH_NUMBER_ERROR,
+    XPATH_UNFINISHED_LITERAL_ERROR,
+    XPATH_START_LITERAL_ERROR,
+    XPATH_VARIABLE_REF_ERROR,
+    XPATH_UNDEF_VARIABLE_ERROR,
+    XPATH_INVALID_PREDICATE_ERROR,
+    XPATH_EXPR_ERROR,
+    XPATH_UNCLOSED_ERROR,
+    XPATH_UNKNOWN_FUNC_ERROR,
+    XPATH_INVALID_OPERAND,
+    XPATH_INVALID_TYPE,
+    XPATH_INVALID_ARITY,
+    XPATH_INVALID_CTXT_SIZE,
+    XPATH_INVALID_CTXT_POSITION,
+    XPATH_MEMORY_ERROR,
+    XPTR_SYNTAX_ERROR,
+    XPTR_RESOURCE_ERROR,
+    XPTR_SUB_RESOURCE_ERROR,
+    XPATH_UNDEF_PREFIX_ERROR,
+    XPATH_ENCODING_ERROR,
+    XPATH_INVALID_CHAR_ERROR,
+    XPATH_INVALID_CTXT,
+    XPATH_STACK_ERROR,
+    XPATH_FORBID_VARIABLE_ERROR,
+    XPATH_OP_LIMIT_EXCEEDED,
+    XPATH_RECURSION_LIMIT_EXCEEDED
+} xmlXPathError;
+
+typedef int (*xmlXPathConvertFunc) (xmlXPathObject *obj, int type);
+
+typedef void (*xmlXPathEvalFunc)(xmlXPathParserContext *ctxt,
+	                         int nargs);
+
+typedef xmlXPathObject *(*xmlXPathAxisFunc) (xmlXPathParserContext *ctxt,
+				 xmlXPathObject *cur);
+
+struct _xmlXPathAxis {
+    const xmlChar      *name;		/* the axis name */
+    xmlXPathAxisFunc func;		/* the search function */
+};
+
+struct _xmlXPathFunct {
+    const xmlChar      *name;		/* the function name */
+    xmlXPathEvalFunc func;		/* the evaluation function */
+};
+
+struct _xmlXPathParserContext {
+    /* the current char being parsed */
+    const xmlChar *cur;
+    /* the full expression */
+    const xmlChar *base;
+
+    /** error code */
+    int error;
+
+    /** the evaluation context */
+    xmlXPathContext    *context;
+    /** the current value */
+    xmlXPathObject       *value;
+    /* number of values stacked */
+    int                 valueNr;
+    /* max number of values stacked */
+    int                valueMax;
+    /* stack of values */
+    xmlXPathObject **valueTab;
+
+    /* the precompiled expression */
+    xmlXPathCompExpr *comp;
+    /* it this an XPointer expression */
+    int xptr;
+    /* used for walking preceding axis */
+    xmlNode           *ancestor;
+
+    /* always zero for compatibility */
+    int              valueFrame;
+};
+
+struct _xmlXPathType {
+    const xmlChar         *name;		/* the type name */
+    xmlXPathConvertFunc func;		/* the conversion function */
+};
+
+struct _xmlXPathVariable {
+    const xmlChar       *name;		/* the variable name */
+    xmlXPathObject *value;		/* the value */
+};
+
+/* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus
 }
 #endif

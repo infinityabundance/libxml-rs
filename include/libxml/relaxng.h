@@ -3,8 +3,8 @@
  *
  * RELAX NG API for libxml-rs
  *
- * Native Rust implementation — drop-in replacement for libxml2's
- * relaxng.h. API follows upstream libxml2 RELAX NG support.
+ * # UPSTREAM-PARITY
+ * Types, flags and error codes follow upstream `relaxng.h` (libxml2 2.15.x).
  */
 
 #ifndef __XML_RELAXNG_H__
@@ -12,53 +12,91 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
+#include <libxml/xmlerror.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * xmlRelaxNG:
- *
- * A RELAX NG schema (opaque type).
- */
-typedef struct _xmlRelaxNG *xmlRelaxNGPtr;
-typedef xmlRelaxNGPtr xmlRelaxNG;
+/* Opaque types (upstream relaxng.h) */
+typedef struct _xmlRelaxNG xmlRelaxNG;
+typedef xmlRelaxNG *xmlRelaxNGPtr;
+typedef struct _xmlRelaxNGParserCtxt xmlRelaxNGParserCtxt;
+typedef xmlRelaxNGParserCtxt *xmlRelaxNGParserCtxtPtr;
+typedef struct _xmlRelaxNGValidCtxt xmlRelaxNGValidCtxt;
+typedef xmlRelaxNGValidCtxt *xmlRelaxNGValidCtxtPtr;
 
-/**
- * xmlRelaxNGParserCtxt:
- *
- * A RELAX NG parser context (opaque type).
- */
-typedef struct _xmlRelaxNGParserCtxt *xmlRelaxNGParserCtxtPtr;
-typedef xmlRelaxNGParserCtxtPtr xmlRelaxNGParserCtxt;
+/* Parser flags (upstream xmlRelaxNGParserFlag) */
+typedef enum {
+    XML_RELAXNGP_NONE = 0,
+    XML_RELAXNGP_FREE_DOC = 1,
+    XML_RELAXNGP_CRNG = 2
+} xmlRelaxNGParserFlag;
 
-/**
- * xmlRelaxNGValidCtxt:
- *
- * A RELAX NG validation context (opaque type).
- */
-typedef struct _xmlRelaxNGValidCtxt *xmlRelaxNGValidCtxtPtr;
-typedef xmlRelaxNGValidCtxtPtr xmlRelaxNGValidCtxt;
+/* Validation error codes (upstream xmlRelaxNGValidErr) */
+typedef enum {
+    XML_RELAXNG_OK = 0,
+    XML_RELAXNG_ERR_MEMORY,
+    XML_RELAXNG_ERR_TYPE,
+    XML_RELAXNG_ERR_TYPEVAL,
+    XML_RELAXNG_ERR_DUPID,
+    XML_RELAXNG_ERR_TYPECMP,
+    XML_RELAXNG_ERR_NOSTATE,
+    XML_RELAXNG_ERR_NODEFINE,
+    XML_RELAXNG_ERR_LISTEXTRA,
+    XML_RELAXNG_ERR_LISTEMPTY,
+    XML_RELAXNG_ERR_INTERNODATA,
+    XML_RELAXNG_ERR_INTERSEQ,
+    XML_RELAXNG_ERR_INTEREXTRA,
+    XML_RELAXNG_ERR_ELEMNAME,
+    XML_RELAXNG_ERR_ATTRNAME,
+    XML_RELAXNG_ERR_ELEMNONS,
+    XML_RELAXNG_ERR_ATTRNONS,
+    XML_RELAXNG_ERR_ELEMWRONGNS,
+    XML_RELAXNG_ERR_ATTRWRONGNS,
+    XML_RELAXNG_ERR_ELEMEXTRANS,
+    XML_RELAXNG_ERR_ATTREXTRANS,
+    XML_RELAXNG_ERR_ELEMNOTEMPTY,
+    XML_RELAXNG_ERR_NOELEM,
+    XML_RELAXNG_ERR_NOTELEM,
+    XML_RELAXNG_ERR_ATTRVALID,
+    XML_RELAXNG_ERR_CONTENTVALID,
+    XML_RELAXNG_ERR_EXTRACONTENT,
+    XML_RELAXNG_ERR_INVALIDATTR,
+    XML_RELAXNG_ERR_DATAELEM,
+    XML_RELAXNG_ERR_VALELEM,
+    XML_RELAXNG_ERR_LISTELEM,
+    XML_RELAXNG_ERR_DATATYPE,
+    XML_RELAXNG_ERR_VALUE,
+    XML_RELAXNG_ERR_LIST,
+    XML_RELAXNG_ERR_NOGRAMMAR,
+    XML_RELAXNG_ERR_EXTRADATA,
+    XML_RELAXNG_ERR_LACKDATA,
+    XML_RELAXNG_ERR_INTERNAL,
+    XML_RELAXNG_ERR_ELEMWRONG,
+    XML_RELAXNG_ERR_TEXTWRONG
+} xmlRelaxNGValidErr;
 
 /*
  * Parser functions
  */
-xmlRelaxNGParserCtxtPtr xmlRelaxNGNewParserCtxt(const char *URL);
-xmlRelaxNGParserCtxtPtr xmlRelaxNGNewMemParserCtxt(const char *buffer, int size);
-xmlRelaxNGPtr           xmlRelaxNGParse(xmlRelaxNGParserCtxtPtr ctxt);
-void                    xmlRelaxNGFreeParserCtxt(xmlRelaxNGParserCtxtPtr ctxt);
-void                    xmlRelaxNGFree(xmlRelaxNGPtr schema);
+XMLPUBFUN xmlRelaxNGParserCtxtPtr xmlRelaxNGNewParserCtxt(const char *URL);
+XMLPUBFUN xmlRelaxNGParserCtxtPtr xmlRelaxNGNewMemParserCtxt(const char *buffer,
+                                                             int size);
+XMLPUBFUN xmlRelaxNGPtr xmlRelaxNGParse(xmlRelaxNGParserCtxtPtr ctxt);
+XMLPUBFUN void xmlRelaxNGFreeParserCtxt(xmlRelaxNGParserCtxtPtr ctxt);
+XMLPUBFUN void xmlRelaxNGFree(xmlRelaxNGPtr schema);
 
 /*
  * Validation functions
  */
-xmlRelaxNGValidCtxtPtr  xmlRelaxNGNewValidCtxt(xmlRelaxNGPtr schema);
-void                    xmlRelaxNGFreeValidCtxt(xmlRelaxNGValidCtxtPtr ctxt);
-int                     xmlRelaxNGValidateDoc(xmlRelaxNGValidCtxtPtr ctxt, xmlDocPtr doc);
-int                     xmlRelaxNGValidateFullElement(xmlRelaxNGValidCtxtPtr ctxt,
-                                                      xmlDocPtr doc,
-                                                      xmlNodePtr elem);
+XMLPUBFUN xmlRelaxNGValidCtxtPtr xmlRelaxNGNewValidCtxt(xmlRelaxNGPtr schema);
+XMLPUBFUN void xmlRelaxNGFreeValidCtxt(xmlRelaxNGValidCtxtPtr ctxt);
+XMLPUBFUN int xmlRelaxNGValidateDoc(xmlRelaxNGValidCtxtPtr ctxt,
+                                    xmlDocPtr doc);
+XMLPUBFUN int xmlRelaxNGValidateFullElement(xmlRelaxNGValidCtxtPtr ctxt,
+                                            xmlDocPtr doc,
+                                            xmlNodePtr elem);
 
 #ifdef __cplusplus
 }

@@ -1,18 +1,37 @@
-//! XSLT security preferences (§33, §85 Phase 8).
+//! XSLT security preferences (§33, §85 Phase 8; R-000125 closure).
 //!
-//! Implements the xsltSecurityPrefs API for controlling what operations
-//! are permitted during XSLT transformations.
+//! Implements the `xsltSecurityPrefs` API for controlling what operations are
+//! permitted during XSLT transformations.
 //!
 //! # Upstream mapping
 //!
 //! | Function | Header |
 //! |---|---|
-//! | `xsltNewSecurityPrefs` | xslt.h |
-//! | `xsltFreeSecurityPrefs` | xslt.h |
-//! | `xsltSetSecurityPrefs` | xslt.h |
-//! | `xsltGetSecurityPrefs` | xslt.h |
-//! | `xsltSetDefaultSecurityPrefs` | xslt.h |
-//! | `xsltGetDefaultSecurityPrefs` | xslt.h |
+//! | `xsltNewSecurityPrefs` | libxslt/security.h |
+//! | `xsltFreeSecurityPrefs` | libxslt/security.h |
+//! | `xsltSetSecurityPrefs` | libxslt/security.h |
+//! | `xsltGetSecurityPrefs` | libxslt/security.h |
+//! | `xsltSetDefaultSecurityPrefs` | libxslt/security.h |
+//! | `xsltGetDefaultSecurityPrefs` | libxslt/security.h |
+//!
+//! # UPSTREAM-PARITY (R-000125)
+//!
+//! The security model is **callback-based**, not value-based. Upstream
+//! `xsltSecurityPrefs` holds five `xsltSecurityCheck` function pointers
+//! (readFile / createFile / createDir / readNet / writeNet) and:
+//!
+//! - `xsltNewSecurityPrefs()` returns a **zeroed** block (all callbacks NULL);
+//! - `xsltSetSecurityPrefs(sec, option, func)` stores the callback, with the
+//!   upstream quirk that `XSLT_SECPREF_WRITE_FILE` writes the **createFile**
+//!   slot (`security.c` `xsltSetSecurityPrefs` case);
+//! - `xsltGetSecurityPrefs(sec, option)` returns the stored callback or NULL;
+//! - the callbacks are never invoked by libxslt 1.1.42 itself — the surface is
+//!   registration-only, exercised by consumers such as `xsltproc --nowrite`
+//!   which registers `xsltSecurityForbid`.
+//!
+//! Earlier revisions of this module implemented a divergent int allow/deny
+//! model (`xsltSetSecurityPrefs(sec, option, value: c_int)`); the module was
+//! reimplemented to the upstream contract (R-000125, closed 11.1-G/H).
 
 #![allow(
     clippy::missing_inline_in_public_items,
@@ -22,7 +41,7 @@
 
 use crate::abi::structs::*;
 use crate::abi::types::*;
-use std::ffi::c_void;
+use std::ffi::{c_char, c_void};
 use std::os::raw::c_int;
 use std::ptr;
 use std::sync::Mutex;
@@ -42,31 +61,24 @@ pub const XSLT_SECPREF_READ_NETWORK: c_int = 4;
 /// Security option: write to a network resource.
 pub const XSLT_SECPREF_WRITE_NETWORK: c_int = 5;
 
-/// Default security preference value (alias for [`XSLT_SECPREF_DENY`]).
-pub const XSLT_SECPREF_DEFAULT: c_int = 0;
+/// Security check callback (upstream `xsltSecurityCheck`):
+/// `int (*)(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt,
+///           const char *value)` — returns non-zero to allow, 0 to deny.
+pub type xsltSecurityCheck = unsafe extern "C" fn(*mut c_void, *mut c_void, *const c_char) -> c_int;
 
-/// Security preference value: deny the operation.
-pub const XSLT_SECPREF_DENY: c_int = 0;
-
-/// Security preference value: allow the operation.
-pub const XSLT_SECPREF_ALLOW: c_int = 1;
-
-/// Internal security preferences structure.
+/// Internal security preferences structure — five check callbacks, one per
+/// controllable option (upstream `xsltSecurityPrefs` in security.c).
 ///
-/// Stores the current allow/deny setting for each of the five
-/// controllable security options.
+/// # ABI
+/// The structure is private in upstream (defined only in security.c); the
+/// Rust representation is opaque to C consumers, so the layout is internal.
 #[repr(C)]
 pub struct XsltSecurityPrefs {
-    /// Allow reading files from the filesystem.
-    pub readFile: c_int,
-    /// Allow writing files to the filesystem.
-    pub writeFile: c_int,
-    /// Allow creating directories on the filesystem.
-    pub createDirectory: c_int,
-    /// Allow reading network resources.
-    pub readNetwork: c_int,
-    /// Allow writing to network resources.
-    pub writeNetwork: c_int,
+    readFile: Option<xsltSecurityCheck>,
+    createFile: Option<xsltSecurityCheck>,
+    createDir: Option<xsltSecurityCheck>,
+    readNet: Option<xsltSecurityCheck>,
+    writeNet: Option<xsltSecurityCheck>,
 }
 
 /// Wrapper around `*mut c_void` that implements `Send` so it can be stored
@@ -88,28 +100,26 @@ unsafe impl Send for SecurityPrefsPtr {}
 /// [`Mutex`] for thread-safe access.
 static DEFAULT_SECURITY_PREFS: Mutex<Option<SecurityPrefsPtr>> = Mutex::new(None);
 
-/// Create new security preferences with default (allow) settings.
-///
-/// Returns a raw pointer to a heap-allocated [`XsltSecurityPrefs`] with all
-/// options set to [`XSLT_SECPREF_ALLOW`]. The caller is responsible for
-/// freeing the returned pointer via [`xsltFreeSecurityPrefs`].
+/// Create new security preferences with the upstream default: a **zeroed**
+/// block whose five check callbacks are all NULL.
 ///
 /// # Returns
 ///
 /// A non-null pointer to the newly allocated security preferences on success.
+/// The caller is responsible for freeing it with [`xsltFreeSecurityPrefs`].
 ///
 /// # Safety
 ///
-/// The caller must ensure the returned pointer is eventually freed with
+/// The returned pointer must eventually be freed with
 /// [`xsltFreeSecurityPrefs`] to avoid memory leaks.
 #[no_mangle]
 pub unsafe extern "C" fn xsltNewSecurityPrefs() -> *mut c_void {
     let prefs = Box::new(XsltSecurityPrefs {
-        readFile: XSLT_SECPREF_ALLOW,
-        writeFile: XSLT_SECPREF_ALLOW,
-        createDirectory: XSLT_SECPREF_ALLOW,
-        readNetwork: XSLT_SECPREF_ALLOW,
-        writeNetwork: XSLT_SECPREF_ALLOW,
+        readFile: None,
+        createFile: None,
+        createDir: None,
+        readNet: None,
+        writeNet: None,
     });
     Box::into_raw(prefs) as *mut c_void
 }
@@ -128,79 +138,69 @@ pub unsafe extern "C" fn xsltFreeSecurityPrefs(sec: *mut c_void) {
     }
 }
 
-/// Set a security preference for the given options structure.
+/// Update a security option to use the given check callback.
 ///
-/// # Arguments
-///
-/// * `sec` - Pointer to security preferences (must be non-null).
-/// * `option` - One of `XSLT_SECPREF_READ_FILE`, `XSLT_SECPREF_WRITE_FILE`,
-///   `XSLT_SECPREF_CREATE_DIRECTORY`, `XSLT_SECPREF_READ_NETWORK`, or
-///   `XSLT_SECPREF_WRITE_NETWORK`.
-/// * `value` - The value to set (typically [`XSLT_SECPREF_ALLOW`] or
-///   [`XSLT_SECPREF_DENY`]).
+/// UPSTREAM-PARITY: mirrors `security.c` `xsltSetSecurityPrefs`, including
+/// the quirk that `XSLT_SECPREF_WRITE_FILE` stores into the `createFile`
+/// slot. `option` uses the `xsltSecurityOption` enum values (1-5).
 ///
 /// # Returns
 ///
-/// `0` on success, or `-1` if `sec` is null or `option` is invalid.
+/// 0 on success, -1 if `sec` is NULL or `option` is out of range.
 ///
 /// # Safety
 ///
-/// `sec` must point to a valid [`XsltSecurityPrefs`] structure obtained from
+/// `sec` must point to a valid [`XsltSecurityPrefs`] obtained from
 /// [`xsltNewSecurityPrefs`] that has not yet been freed.
 #[no_mangle]
 pub unsafe extern "C" fn xsltSetSecurityPrefs(
     sec: *mut c_void,
     option: c_int,
-    value: c_int,
+    func: Option<xsltSecurityCheck>,
 ) -> c_int {
     if sec.is_null() {
         return -1;
     }
     let prefs = &mut *(sec as *mut XsltSecurityPrefs);
     match option {
-        XSLT_SECPREF_READ_FILE => prefs.readFile = value,
-        XSLT_SECPREF_WRITE_FILE => prefs.writeFile = value,
-        XSLT_SECPREF_CREATE_DIRECTORY => prefs.createDirectory = value,
-        XSLT_SECPREF_READ_NETWORK => prefs.readNetwork = value,
-        XSLT_SECPREF_WRITE_NETWORK => prefs.writeNetwork = value,
+        XSLT_SECPREF_READ_FILE => prefs.readFile = func,
+        // UPSTREAM-PARITY: WRITE_FILE writes createFile (upstream quirk).
+        XSLT_SECPREF_WRITE_FILE => prefs.createFile = func,
+        XSLT_SECPREF_CREATE_DIRECTORY => prefs.createDir = func,
+        XSLT_SECPREF_READ_NETWORK => prefs.readNet = func,
+        XSLT_SECPREF_WRITE_NETWORK => prefs.writeNet = func,
         _ => return -1,
     }
     0
 }
 
-/// Get the current value of a security preference.
-///
-/// # Arguments
-///
-/// * `sec` - Pointer to security preferences. If null, returns
-///   [`XSLT_SECPREF_DENY`] for all options.
-/// * `option` - One of `XSLT_SECPREF_READ_FILE`, `XSLT_SECPREF_WRITE_FILE`,
-///   `XSLT_SECPREF_CREATE_DIRECTORY`, `XSLT_SECPREF_READ_NETWORK`, or
-///   `XSLT_SECPREF_WRITE_NETWORK`.
+/// Look up the check callback configured for a security option.
 ///
 /// # Returns
 ///
-/// The current preference value, or [`XSLT_SECPREF_DENY`] if `sec` is null
-/// or `option` is invalid.
+/// The stored callback, or NULL if `sec` is NULL or `option` is invalid or
+/// unset (upstream `xsltGetSecurityPrefs` returns NULL in those cases).
 ///
 /// # Safety
 ///
 /// If `sec` is non-null, it must point to a valid [`XsltSecurityPrefs`]
-/// structure obtained from [`xsltNewSecurityPrefs`] that has not yet been
-/// freed.
+/// obtained from [`xsltNewSecurityPrefs`] that has not yet been freed.
 #[no_mangle]
-pub unsafe extern "C" fn xsltGetSecurityPrefs(sec: *mut c_void, option: c_int) -> c_int {
+pub unsafe extern "C" fn xsltGetSecurityPrefs(
+    sec: *mut c_void,
+    option: c_int,
+) -> Option<xsltSecurityCheck> {
     if sec.is_null() {
-        return XSLT_SECPREF_DENY;
+        return None;
     }
     let prefs = &*(sec as *mut XsltSecurityPrefs);
     match option {
         XSLT_SECPREF_READ_FILE => prefs.readFile,
-        XSLT_SECPREF_WRITE_FILE => prefs.writeFile,
-        XSLT_SECPREF_CREATE_DIRECTORY => prefs.createDirectory,
-        XSLT_SECPREF_READ_NETWORK => prefs.readNetwork,
-        XSLT_SECPREF_WRITE_NETWORK => prefs.writeNetwork,
-        _ => XSLT_SECPREF_DENY,
+        XSLT_SECPREF_WRITE_FILE => prefs.createFile,
+        XSLT_SECPREF_CREATE_DIRECTORY => prefs.createDir,
+        XSLT_SECPREF_READ_NETWORK => prefs.readNet,
+        XSLT_SECPREF_WRITE_NETWORK => prefs.writeNet,
+        _ => None,
     }
 }
 
@@ -211,9 +211,9 @@ pub unsafe extern "C" fn xsltGetSecurityPrefs(sec: *mut c_void, option: c_int) -
 ///
 /// # Safety
 ///
-/// `sec` must point to a valid [`XsltSecurityPrefs`] structure that remains
-/// valid for the duration it is set as the default (i.e., until replaced by
-/// another call to this function).
+/// `sec` must point to a valid [`XsltSecurityPrefs`] that remains valid for
+/// the duration it is set as the default (i.e., until replaced by another
+/// call to this function).
 #[no_mangle]
 pub unsafe extern "C" fn xsltSetDefaultSecurityPrefs(sec: *mut c_void) {
     let mut guard = DEFAULT_SECURITY_PREFS.lock().unwrap();
@@ -225,7 +225,7 @@ pub unsafe extern "C" fn xsltSetDefaultSecurityPrefs(sec: *mut c_void) {
 /// # Returns
 ///
 /// A pointer to the default security preferences previously set with
-/// [`xsltSetDefaultSecurityPrefs`], or a null pointer if none have been set.
+/// [`xsltSetDefaultSecurityPrefs`], or NULL if none have been set.
 ///
 /// # Safety
 ///
@@ -241,6 +241,74 @@ pub unsafe extern "C" fn xsltGetDefaultSecurityPrefs() -> *mut c_void {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The security API surface matches the upstream callback contract:
+    /// set/get round-trip callbacks and default to NULL.
+    #[test]
+    fn test_set_get_callback_roundtrip() {
+        unsafe {
+            let prefs = xsltNewSecurityPrefs();
+            assert!(!prefs.is_null());
+            // Freshly created prefs have no callbacks configured.
+            assert!(xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE).is_none());
+            assert!(xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE).is_none());
+            assert!(xsltGetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY).is_none());
+            assert!(xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK).is_none());
+            assert!(xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK).is_none());
+            xsltFreeSecurityPrefs(prefs);
+        }
+    }
+
+    /// Registering a callback per option and reading it back works, and the
+    /// upstream WRITE_FILE -> createFile slot quirk is preserved.
+    #[test]
+    fn test_set_get_registered_callback() {
+        unsafe extern "C" fn forbid(
+            _sec: *mut c_void,
+            _ctxt: *mut c_void,
+            _value: *const c_char,
+        ) -> c_int {
+            0
+        }
+        let forbid: xsltSecurityCheck = forbid;
+        unsafe {
+            let prefs = xsltNewSecurityPrefs();
+            assert_eq!(
+                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE, Some(forbid)),
+                0
+            );
+            assert_eq!(
+                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE, Some(forbid)),
+                0
+            );
+            assert_eq!(
+                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE),
+                Some(forbid)
+            );
+            // WRITE_FILE reads back from the createFile slot (upstream quirk).
+            assert_eq!(
+                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE),
+                Some(forbid)
+            );
+            xsltFreeSecurityPrefs(prefs);
+        }
+    }
+
+    /// Invalid options and NULL prefs return -1 / NULL like upstream.
+    #[test]
+    fn test_invalid_option_and_null() {
+        unsafe {
+            assert_eq!(
+                xsltSetSecurityPrefs(ptr::null_mut(), XSLT_SECPREF_READ_FILE, None),
+                -1
+            );
+            let prefs = xsltNewSecurityPrefs();
+            assert_eq!(xsltSetSecurityPrefs(prefs, 99, None), -1);
+            assert!(xsltGetSecurityPrefs(prefs, 99).is_none());
+            assert!(xsltGetSecurityPrefs(ptr::null_mut(), XSLT_SECPREF_READ_FILE).is_none());
+            xsltFreeSecurityPrefs(prefs);
+        }
+    }
 
     /// Verify that creating and freeing security prefs works.
     #[test]
@@ -258,195 +326,6 @@ mod tests {
         unsafe {
             // Should not panic or crash.
             xsltFreeSecurityPrefs(ptr::null_mut());
-        }
-    }
-
-    /// Verify that newly created prefs have all options set to ALLOW.
-    #[test]
-    fn test_new_prefs_defaults_allow() {
-        unsafe {
-            let prefs = xsltNewSecurityPrefs();
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE),
-                XSLT_SECPREF_ALLOW
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE),
-                XSLT_SECPREF_ALLOW
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY),
-                XSLT_SECPREF_ALLOW
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK),
-                XSLT_SECPREF_ALLOW
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK),
-                XSLT_SECPREF_ALLOW
-            );
-            xsltFreeSecurityPrefs(prefs);
-        }
-    }
-
-    /// Verify that setting and getting each option round-trips correctly.
-    #[test]
-    fn test_set_and_get() {
-        unsafe {
-            let prefs = xsltNewSecurityPrefs();
-
-            // Set all to DENY
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE, XSLT_SECPREF_DENY),
-                0
-            );
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE, XSLT_SECPREF_DENY),
-                0
-            );
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY, XSLT_SECPREF_DENY),
-                0
-            );
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK, XSLT_SECPREF_DENY),
-                0
-            );
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK, XSLT_SECPREF_DENY),
-                0
-            );
-
-            // Verify all are DENY
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE),
-                XSLT_SECPREF_DENY
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE),
-                XSLT_SECPREF_DENY
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY),
-                XSLT_SECPREF_DENY
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK),
-                XSLT_SECPREF_DENY
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK),
-                XSLT_SECPREF_DENY
-            );
-
-            // Set each individually back to ALLOW
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE, XSLT_SECPREF_ALLOW),
-                0
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_FILE),
-                XSLT_SECPREF_ALLOW
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE),
-                XSLT_SECPREF_DENY
-            );
-
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE, XSLT_SECPREF_ALLOW),
-                0
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_FILE),
-                XSLT_SECPREF_ALLOW
-            );
-
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY, XSLT_SECPREF_ALLOW),
-                0
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_CREATE_DIRECTORY),
-                XSLT_SECPREF_ALLOW
-            );
-
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK, XSLT_SECPREF_ALLOW),
-                0
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_READ_NETWORK),
-                XSLT_SECPREF_ALLOW
-            );
-
-            assert_eq!(
-                xsltSetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK, XSLT_SECPREF_ALLOW),
-                0
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(prefs, XSLT_SECPREF_WRITE_NETWORK),
-                XSLT_SECPREF_ALLOW
-            );
-
-            xsltFreeSecurityPrefs(prefs);
-        }
-    }
-
-    /// Verify that setting/getting with null pointer returns error/default.
-    #[test]
-    fn test_null_pointer() {
-        unsafe {
-            assert_eq!(
-                xsltSetSecurityPrefs(ptr::null_mut(), XSLT_SECPREF_READ_FILE, XSLT_SECPREF_ALLOW),
-                -1
-            );
-            assert_eq!(
-                xsltGetSecurityPrefs(ptr::null_mut(), XSLT_SECPREF_READ_FILE),
-                XSLT_SECPREF_DENY
-            );
-        }
-    }
-
-    /// Verify that an invalid option returns error/default.
-    #[test]
-    fn test_invalid_option() {
-        unsafe {
-            let prefs = xsltNewSecurityPrefs();
-            assert_eq!(xsltSetSecurityPrefs(prefs, 99, XSLT_SECPREF_ALLOW), -1);
-            assert_eq!(xsltGetSecurityPrefs(prefs, 99), XSLT_SECPREF_DENY);
-            xsltFreeSecurityPrefs(prefs);
-        }
-    }
-
-    /// Verify that default security prefs set/get round-trip correctly.
-    #[test]
-    fn test_default_security_prefs() {
-        unsafe {
-            // Initially null
-            assert!(xsltGetDefaultSecurityPrefs().is_null());
-
-            // Create prefs and set as default
-            let prefs = xsltNewSecurityPrefs();
-            xsltSetDefaultSecurityPrefs(prefs);
-
-            // Retrieve and verify
-            let retrieved = xsltGetDefaultSecurityPrefs();
-            assert_eq!(retrieved, prefs);
-
-            // Verify we can read from the default
-            assert_eq!(
-                xsltGetSecurityPrefs(retrieved, XSLT_SECPREF_READ_FILE),
-                XSLT_SECPREF_ALLOW
-            );
-
-            // Clear the default by setting null
-            xsltSetDefaultSecurityPrefs(ptr::null_mut());
-            assert!(xsltGetDefaultSecurityPrefs().is_null());
-
-            // Free the original prefs
-            xsltFreeSecurityPrefs(prefs);
         }
     }
 }

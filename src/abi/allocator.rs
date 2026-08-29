@@ -22,7 +22,7 @@ use core::ffi::c_void;
 use core::ptr;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_long};
 
 use parking_lot::RwLock;
 
@@ -588,6 +588,195 @@ pub extern "C" fn xmlInitMemory() -> c_int {
 #[no_mangle]
 pub extern "C" fn xmlCleanupMemory() {
     // Phase 1: no cleanup needed for the default allocator.
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Legacy-named allocator API (upstream xmlmemory.h)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Upstream xmlmemory.h historically exported `xmlMemMalloc`, `xmlMemFree`,
+// `xmlMemRealloc`, `xmlMemoryStrdup`, the `*Loc` location-tracking variants,
+// `xmlMemSize`, `xmlMemDisplayLast` and `xmlMemoryDump` alongside the modern
+// names. Downstream code (older consumers, some language bindings) links
+// against these names, so the candidate exports them with identical
+// semantics. The `*Loc` variants take a source file/line that the default
+// allocator does not track (upstream uses it for leak reports only); the
+// location arguments are accepted and ignored — a documented safe divergence
+// (residual R-000131).
+
+/// Allocate memory (legacy name; same contract as `xmlMalloc`).
+///
+/// ```c
+/// void *xmlMemMalloc(size_t size);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
+    // SAFETY: identical contract to xmlMalloc.
+    unsafe { xmlMalloc(size) }
+}
+
+/// Free memory (legacy name; same contract as `xmlFree`).
+///
+/// ```c
+/// void xmlMemFree(void *ptr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
+    // SAFETY: identical contract to xmlFree.
+    unsafe { xmlFree(ptr) }
+}
+
+/// Reallocate memory (legacy name; same contract as `xmlRealloc`).
+///
+/// ```c
+/// void *xmlMemRealloc(void *ptr, size_t size);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_void {
+    // SAFETY: identical contract to xmlRealloc.
+    unsafe { xmlRealloc(ptr, size) }
+}
+
+/// Duplicate a string (legacy name; same contract as `xmlMemStrdup`).
+///
+/// ```c
+/// void *xmlMemoryStrdup(const char *str);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
+    // SAFETY: identical contract to xmlMemStrdup.
+    unsafe { xmlMemStrdup(str) }
+}
+
+/// Allocate memory, recording the allocation site (upstream xmlmemory.h).
+///
+/// ```c
+/// void *xmlMallocLoc(size_t size, const char *file, int line);
+/// ```
+///
+/// The default candidate allocator does not track allocation sites (see
+/// residual R-000131); the location arguments are accepted for ABI
+/// compatibility and ignored.
+#[no_mangle]
+pub unsafe extern "C" fn xmlMallocLoc(
+    size: usize,
+    _file: *const c_char,
+    _line: c_int,
+) -> *mut c_void {
+    // SAFETY: identical contract to xmlMalloc.
+    unsafe { xmlMalloc(size) }
+}
+
+/// Allocate zeroed memory, recording the allocation site (upstream xmlmemory.h).
+///
+/// ```c
+/// void *xmlMallocAtomicLoc(size_t size, const char *file, int line);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMallocAtomicLoc(
+    size: usize,
+    _file: *const c_char,
+    _line: c_int,
+) -> *mut c_void {
+    // SAFETY: identical contract to xmlMallocZero.
+    unsafe { xmlMallocZero(size) }
+}
+
+/// Reallocate memory, recording the allocation site (upstream xmlmemory.h).
+///
+/// ```c
+/// void *xmlReallocLoc(void *ptr, size_t size, const char *file, int line);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlReallocLoc(
+    ptr: *mut c_void,
+    size: usize,
+    _file: *const c_char,
+    _line: c_int,
+) -> *mut c_void {
+    // SAFETY: identical contract to xmlRealloc.
+    unsafe { xmlRealloc(ptr, size) }
+}
+
+/// Duplicate a string, recording the allocation site (upstream xmlmemory.h).
+///
+/// ```c
+/// void *xmlMemStrdupLoc(const char *str, const char *file, int line);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemStrdupLoc(
+    str: *const c_char,
+    _file: *const c_char,
+    _line: c_int,
+) -> *mut c_void {
+    // SAFETY: identical contract to xmlMemStrdup.
+    unsafe { xmlMemStrdup(str) }
+}
+
+/// Return the size of an allocated block (upstream xmlmemory.h).
+///
+/// ```c
+/// size_t xmlMemSize(void *ptr);
+/// ```
+///
+/// The default candidate allocator does not maintain a per-block size table
+/// (that is the upstream debug-allocator block list); it therefore returns 0
+/// for all blocks — a documented safe divergence (residual R-000131) until
+/// the allocator instrumentation court (11.1-J) adds block metadata.
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemSize(_ptr: *mut c_void) -> usize {
+    0
+}
+
+/// Display a limited amount of memory debug information (upstream xmlmemory.h).
+///
+/// ```c
+/// void xmlMemDisplayLast(FILE *fp, long nbBytes);
+/// ```
+///
+/// The default candidate allocator prints the global counters (it has no
+/// per-block list); the output format is intentionally simpler than
+/// upstream's block dump — a documented safe divergence (residual R-000131).
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, _nb_bytes: c_long) {
+    // SAFETY: fp must be a valid FILE* or NULL (stderr used).
+    unsafe {
+        let used = MEM_USED.load(Ordering::Relaxed);
+        let blocks = MEM_BLOCKS.load(Ordering::Relaxed);
+        let out = if fp.is_null() {
+            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
+        } else {
+            fp
+        };
+        if !out.is_null() {
+            let msg = format!(
+                "libxml-rs allocator: {} blocks, {} bytes in use\n",
+                blocks, used
+            );
+            let bytes = msg.as_bytes();
+            libc::fwrite(
+                bytes.as_ptr() as *const c_void,
+                1,
+                bytes.len(),
+                out as *mut libc::FILE,
+            );
+        }
+    }
+}
+
+/// Dump memory allocation statistics (upstream xmlmemory.h).
+///
+/// ```c
+/// int xmlMemoryDump(void);
+/// ```
+///
+/// Prints the global counters to stderr and returns 0 (no leak detector is
+/// active in the default allocator).
+#[no_mangle]
+pub unsafe extern "C" fn xmlMemoryDump() -> c_int {
+    unsafe {
+        xmlMemDisplayLast(ptr::null_mut(), -1);
+    }
+    0
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

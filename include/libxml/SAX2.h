@@ -9,6 +9,7 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
+#include <libxml/xmlerror.h>
 
 /* Forward declarations for types defined in parser.h */
 struct _xmlParserInput;
@@ -136,7 +137,6 @@ struct _xmlSAXHandler {
     xmlStructuredErrorFunc serror;
 };
 
-XMLPUBFUN int xmlSAX2IsInitialized(void *ctx);
 XMLPUBFUN void xmlSAX2InitDefaultSAXHandler(xmlSAXHandlerPtr handler, int warning);
 XMLPUBFUN void xmlSAX2InitHtmlDefaultSAXHandler(xmlSAXHandlerPtr handler);
 

@@ -11,6 +11,7 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 #include <libxslt/xslt.h>
+#include <libxslt/xsltInternals.h>
 
 #ifdef __cplusplus
 extern "C" {

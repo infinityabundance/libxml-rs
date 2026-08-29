@@ -2115,6 +2115,44 @@
   {
    "kind": "enum",
    "name": "exsltDateType",
+   "enum_values": [
+    [
+     "EXSLT_UNKNOWN",
+     "=    0"
+    ],
+    [
+     "XS_TIME",
+     "=    1"
+    ],
+    [
+     "XS_GDAY",
+     "= (XS_TIME   << 1)"
+    ],
+    [
+     "XS_GMONTH",
+     "= (XS_GDAY   << 1)"
+    ],
+    [
+     "XS_GMONTHDAY",
+     "= (XS_GMONTH | XS_GDAY)"
+    ],
+    [
+     "XS_GYEAR",
+     "= (XS_GMONTH << 1)"
+    ],
+    [
+     "XS_GYEARMONTH",
+     "= (XS_GYEAR  | XS_GMONTH)"
+    ],
+    [
+     "XS_DATE",
+     "= (XS_GYEAR  | XS_GMONTH | XS_GDAY)"
+    ],
+    [
+     "XS_DATETIME",
+     "= (XS_DATE   | XS_TIME)"
+    ]
+   ],
    "documented": false,
    "header": "date.c",
    "line": "60"
@@ -2122,6 +2160,20 @@
   {
    "kind": "enum",
    "name": "xsltLoadType",
+   "enum_values": [
+    [
+     "XSLT_LOAD_START",
+     "= 0"
+    ],
+    [
+     "XSLT_LOAD_STYLESHEET",
+     "= 1"
+    ],
+    [
+     "XSLT_LOAD_DOCUMENT",
+     "= 2"
+    ]
+   ],
    "documented": false,
    "header": "documents.h",
    "line": "53"
@@ -2129,6 +2181,16 @@
   {
    "kind": "enum",
    "name": "xsltAxis",
+   "enum_values": [
+    [
+     "AXIS_CHILD",
+     "=1"
+    ],
+    [
+     "AXIS_ATTRIBUTE",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "pattern.c",
    "line": "64"
@@ -2136,6 +2198,68 @@
   {
    "kind": "enum",
    "name": "xsltOp",
+   "enum_values": [
+    [
+     "XSLT_OP_END",
+     "=0"
+    ],
+    [
+     "XSLT_OP_ROOT",
+     ""
+    ],
+    [
+     "XSLT_OP_ELEM",
+     ""
+    ],
+    [
+     "XSLT_OP_ATTR",
+     ""
+    ],
+    [
+     "XSLT_OP_PARENT",
+     ""
+    ],
+    [
+     "XSLT_OP_ANCESTOR",
+     ""
+    ],
+    [
+     "XSLT_OP_ID",
+     ""
+    ],
+    [
+     "XSLT_OP_KEY",
+     ""
+    ],
+    [
+     "XSLT_OP_NS",
+     ""
+    ],
+    [
+     "XSLT_OP_ALL",
+     ""
+    ],
+    [
+     "XSLT_OP_PI",
+     ""
+    ],
+    [
+     "XSLT_OP_COMMENT",
+     ""
+    ],
+    [
+     "XSLT_OP_TEXT",
+     ""
+    ],
+    [
+     "XSLT_OP_NODE",
+     ""
+    ],
+    [
+     "XSLT_OP_PREDICATE",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "pattern.c",
    "line": "46"
@@ -2143,6 +2267,28 @@
   {
    "kind": "enum",
    "name": "xsltSecurityOption",
+   "enum_values": [
+    [
+     "XSLT_SECPREF_READ_FILE",
+     "= 1"
+    ],
+    [
+     "XSLT_SECPREF_WRITE_FILE",
+     ""
+    ],
+    [
+     "XSLT_SECPREF_CREATE_DIRECTORY",
+     ""
+    ],
+    [
+     "XSLT_SECPREF_READ_NETWORK",
+     ""
+    ],
+    [
+     "XSLT_SECPREF_WRITE_NETWORK",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "security.h",
    "line": "37"
@@ -2150,6 +2296,44 @@
   {
    "kind": "enum",
    "name": "@233367005206002044302317317210226251243022347127",
+   "enum_values": [
+    [
+     "TRIO_EOF",
+     "= 1"
+    ],
+    [
+     "TRIO_EINVAL",
+     "= 2"
+    ],
+    [
+     "TRIO_ETOOMANY",
+     "= 3"
+    ],
+    [
+     "TRIO_EDBLREF",
+     "= 4"
+    ],
+    [
+     "TRIO_EGAP",
+     "= 5"
+    ],
+    [
+     "TRIO_ENOMEM",
+     "= 6"
+    ],
+    [
+     "TRIO_ERANGE",
+     "= 7"
+    ],
+    [
+     "TRIO_ERRNO",
+     "= 8"
+    ],
+    [
+     "TRIO_ECUSTOM",
+     "= 9"
+    ]
+   ],
    "documented": false,
    "header": "trio.h",
    "line": "54"
@@ -2157,6 +2341,20 @@
   {
    "kind": "enum",
    "name": "xsltOutputType",
+   "enum_values": [
+    [
+     "XSLT_OUTPUT_XML",
+     "= 0"
+    ],
+    [
+     "XSLT_OUTPUT_HTML",
+     ""
+    ],
+    [
+     "XSLT_OUTPUT_TEXT",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "xsltInternals.h",
    "line": "1657"
@@ -2164,6 +2362,96 @@
   {
    "kind": "enum",
    "name": "xsltStyleType",
+   "enum_values": [
+    [
+     "XSLT_FUNC_COPY",
+     "=1"
+    ],
+    [
+     "XSLT_FUNC_SORT",
+     ""
+    ],
+    [
+     "XSLT_FUNC_TEXT",
+     ""
+    ],
+    [
+     "XSLT_FUNC_ELEMENT",
+     ""
+    ],
+    [
+     "XSLT_FUNC_ATTRIBUTE",
+     ""
+    ],
+    [
+     "XSLT_FUNC_COMMENT",
+     ""
+    ],
+    [
+     "XSLT_FUNC_PI",
+     ""
+    ],
+    [
+     "XSLT_FUNC_COPYOF",
+     ""
+    ],
+    [
+     "XSLT_FUNC_VALUEOF",
+     ""
+    ],
+    [
+     "XSLT_FUNC_NUMBER",
+     ""
+    ],
+    [
+     "XSLT_FUNC_APPLYIMPORTS",
+     ""
+    ],
+    [
+     "XSLT_FUNC_CALLTEMPLATE",
+     ""
+    ],
+    [
+     "XSLT_FUNC_APPLYTEMPLATES",
+     ""
+    ],
+    [
+     "XSLT_FUNC_CHOOSE",
+     ""
+    ],
+    [
+     "XSLT_FUNC_IF",
+     ""
+    ],
+    [
+     "XSLT_FUNC_FOREACH",
+     ""
+    ],
+    [
+     "XSLT_FUNC_DOCUMENT",
+     ""
+    ],
+    [
+     "XSLT_FUNC_WITHPARAM",
+     ""
+    ],
+    [
+     "XSLT_FUNC_PARAM",
+     ""
+    ],
+    [
+     "XSLT_FUNC_VARIABLE",
+     ""
+    ],
+    [
+     "XSLT_FUNC_WHEN",
+     ""
+    ],
+    [
+     "XSLT_FUNC_EXTENSION",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "xsltInternals.h",
    "line": "422"
@@ -2171,6 +2459,20 @@
   {
    "kind": "enum",
    "name": "xsltTransformState",
+   "enum_values": [
+    [
+     "XSLT_STATE_OK",
+     "= 0"
+    ],
+    [
+     "XSLT_STATE_ERROR",
+     ""
+    ],
+    [
+     "XSLT_STATE_STOPPED",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "xsltInternals.h",
    "line": "1670"
@@ -2178,6 +2480,48 @@
   {
    "kind": "enum",
    "name": "xsltDebugStatusCodes",
+   "enum_values": [
+    [
+     "XSLT_DEBUG_NONE",
+     "= 0"
+    ],
+    [
+     "XSLT_DEBUG_INIT",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_STEP",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_STEPOUT",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_NEXT",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_STOP",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_CONT",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_RUN",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_RUN_RESTART",
+     ""
+    ],
+    [
+     "XSLT_DEBUG_QUIT",
+     ""
+    ]
+   ],
    "documented": false,
    "header": "xsltutils.h",
    "line": "303"
@@ -2185,6 +2529,84 @@
   {
    "kind": "enum",
    "name": "xsltDebugTraceCodes",
+   "enum_values": [
+    [
+     "XSLT_TRACE_ALL",
+     "=       -1"
+    ],
+    [
+     "XSLT_TRACE_NONE",
+     "=       0"
+    ],
+    [
+     "XSLT_TRACE_COPY_TEXT",
+     "=       1<<0"
+    ],
+    [
+     "XSLT_TRACE_PROCESS_NODE",
+     "=   1<<1"
+    ],
+    [
+     "XSLT_TRACE_APPLY_TEMPLATE",
+     "=   1<<2"
+    ],
+    [
+     "XSLT_TRACE_COPY",
+     "=       1<<3"
+    ],
+    [
+     "XSLT_TRACE_COMMENT",
+     "=       1<<4"
+    ],
+    [
+     "XSLT_TRACE_PI",
+     "=           1<<5"
+    ],
+    [
+     "XSLT_TRACE_COPY_OF",
+     "=       1<<6"
+    ],
+    [
+     "XSLT_TRACE_VALUE_OF",
+     "=       1<<7"
+    ],
+    [
+     "XSLT_TRACE_CALL_TEMPLATE",
+     "=   1<<8"
+    ],
+    [
+     "XSLT_TRACE_APPLY_TEMPLATES",
+     "=   1<<9"
+    ],
+    [
+     "XSLT_TRACE_CHOOSE",
+     "=       1<<10"
+    ],
+    [
+     "XSLT_TRACE_IF",
+     "=           1<<11"
+    ],
+    [
+     "XSLT_TRACE_FOR_EACH",
+     "=       1<<12"
+    ],
+    [
+     "XSLT_TRACE_STRIP_SPACES",
+     "=   1<<13"
+    ],
+    [
+     "XSLT_TRACE_TEMPLATES",
+     "=       1<<14"
+    ],
+    [
+     "XSLT_TRACE_KEYS",
+     "=       1<<15"
+    ],
+    [
+     "XSLT_TRACE_VARIABLES",
+     "=       1<<16"
+    ]
+   ],
    "documented": false,
    "header": "xsltutils.h",
    "line": "105"
@@ -21977,5 +22399,5 @@
    "line": "145"
   }
  ],
- "inventory_hash": "d37f94014a237907c5cc84868132ab5b7114f252da22270910ac5a55e4e53663"
+ "inventory_hash": "be013a0bc4f091f96fe1f95ab2e0674ba0adaf3bab562168dd51cf597c50f024"
 }

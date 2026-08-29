@@ -11,10 +11,142 @@
 #include <libxml/xmlversion.h>
 #include <libxml/xmlstring.h>
 #include <libxml/xmlmemory.h>
+#include <libxml/xmlregexp.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Forward declarations */
 struct _xmlParserInputBuffer;
@@ -60,6 +192,29 @@ typedef xmlAttribute *xmlAttributePtr;
 
 typedef struct _xmlEnumeration xmlEnumeration;
 typedef xmlEnumeration *xmlEnumerationPtr;
+
+typedef struct _xmlID xmlID;
+typedef xmlID *xmlIDPtr;
+
+typedef struct _xmlParserNodeInfo xmlParserNodeInfo;
+typedef xmlParserNodeInfo *xmlParserNodeInfoPtr;
+
+struct _xmlParserNodeInfo {
+    const struct _xmlNode *node;
+    unsigned long begin_pos;
+    unsigned long begin_line;
+    unsigned long end_pos;
+    unsigned long end_line;
+};
+
+typedef struct _xmlParserNodeInfoSeq xmlParserNodeInfoSeq;
+
+struct _xmlParserNodeInfoSeq {
+    unsigned long magic;
+    xmlParserNodeInfo *buffer;
+    int size;
+    int number;
+};
 
 /* Element types */
 typedef enum {
@@ -124,14 +279,6 @@ typedef enum {
 } xmlBufferAllocationScheme;
 
 /* Document properties */
-#define XML_DOC_WELLFORMED 1
-#define XML_DOC_NSVALID 2
-#define XML_DOC_OLD10 4
-#define XML_DOC_DTDVALID 8
-#define XML_DOC_XINCLUDE 16
-#define XML_DOC_USERBUILT 32
-#define XML_DOC_INTERNAL 64
-#define XML_DOC_HTML 128
 
 /* Well-known namespaces */
 #define XML_XML_NAMESPACE ((const xmlChar *) "http://www.w3.org/XML/1998/namespace")
@@ -190,7 +337,7 @@ struct _xmlAttr {
     xmlNsPtr ns;
     int atype;
     void *psvi;
-    int id;
+    xmlIDPtr id;
 };
 
 /* Namespace structure */
@@ -272,7 +419,7 @@ struct _xmlEntity {
     const xmlChar *URI;
     int owner;
     int flags;
-    int expandedSize;
+    unsigned long expandedSize;
 };
 
 /* Notation structure */
@@ -386,6 +533,350 @@ XMLPUBFUN int xmlBufferGrow(xmlBufferPtr buf, int len);
 XMLPUBFUN int xmlBufferReserve(xmlBufferPtr buf, int len);
 XMLPUBFUN xmlChar *xmlBufferDetach(xmlBufferPtr buf);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* [11.1-G] begin: extracted verbatim from upstream oracle header */
+typedef struct _xmlDOMWrapCtxt xmlDOMWrapCtxt;
+typedef xmlDOMWrapCtxt *xmlDOMWrapCtxtPtr;
+
+/**
+ * A function called to acquire namespaces (xmlNs) from the wrapper.
+ *
+ * @param ctxt  a DOM wrapper context
+ * @param node  the context node (element or attribute)
+ * @param nsName  the requested namespace name
+ * @param nsPrefix  the requested namespace prefix
+ * @returns an xmlNs or NULL in case of an error.
+ */
+typedef xmlNs *(*xmlDOMWrapAcquireNsFunction) (xmlDOMWrapCtxt *ctxt,
+						 xmlNode *node,
+						 const xmlChar *nsName,
+						 const xmlChar *nsPrefix);
+
+/**
+ * Context for DOM wrapper-operations.
+ */
+
+typedef struct _xmlElement xmlElement;
+typedef xmlElement *xmlElementPtr;
+/**
+ * An XML Element declaration from a DTD.
+ *
+ * Should be treated as opaque. Accessing members directly
+ * is deprecated.
+ */
+
+typedef struct _xmlRef xmlRef;
+typedef xmlRef *xmlRefPtr;
+/*
+ * An XML IDREF instance.
+ */
+
+typedef enum{
+    XML_DOC_WELLFORMED		= 1<<0,
+    XML_DOC_NSVALID		= 1<<1,
+    XML_DOC_OLD10		= 1<<2,
+    XML_DOC_DTDVALID		= 1<<3,
+    XML_DOC_XINCLUDE		= 1<<4,
+    XML_DOC_USERBUILT		= 1<<5,
+    XML_DOC_INTERNAL		= 1<<6,
+    XML_DOC_HTML		= 1<<7
+} xmlDocProperties;
+
+typedef enum{
+    XML_ELEMENT_CONTENT_ONCE = 1,
+    XML_ELEMENT_CONTENT_OPT,
+    XML_ELEMENT_CONTENT_MULT,
+    XML_ELEMENT_CONTENT_PLUS
+} xmlElementContentOccur;
+
+typedef enum{
+    XML_ELEMENT_CONTENT_PCDATA = 1,
+    XML_ELEMENT_CONTENT_ELEMENT,
+    XML_ELEMENT_CONTENT_SEQ,
+    XML_ELEMENT_CONTENT_OR
+} xmlElementContentType;
+
+struct _xmlDOMWrapCtxt {
+    void * _private;
+    /*
+    * The type of this context, just in case we need specialized
+    * contexts in the future.
+    */
+    int type;
+    /*
+    * Internal namespace map used for various operations.
+    */
+    void * namespaceMap;
+    /*
+    * Use this one to acquire an xmlNs intended for node->ns.
+    * (Note that this is not intended for elem->nsDef).
+    */
+    xmlDOMWrapAcquireNsFunction getNsForNodeFunc;
+};
+
+struct _xmlElement {
+    /** application data */
+    void           *_private;
+    /** XML_ELEMENT_DECL */
+    xmlElementType          type;
+    /** element name */
+    const xmlChar          *name;
+    /** NULL */
+    struct _xmlNode    *children;
+    /** NULL */
+    struct _xmlNode        *last;
+    /** -> DTD */
+    struct _xmlDtd       *parent;
+    /** next sibling */
+    struct _xmlNode        *next;
+    /** previous sibling */
+    struct _xmlNode        *prev;
+    /** containing document */
+    struct _xmlDoc          *doc;
+
+    /** element type */
+    xmlElementTypeVal      etype XML_DEPRECATED_MEMBER;
+    /** allowed element content */
+    xmlElementContent *content XML_DEPRECATED_MEMBER;
+    /** list of declared attributes */
+    xmlAttribute     *attributes XML_DEPRECATED_MEMBER;
+    /** namespace prefix if any */
+    const xmlChar        *prefix XML_DEPRECATED_MEMBER;
+#ifdef LIBXML_REGEXP_ENABLED
+    /** validating regexp */
+    xmlRegexp         *contModel XML_DEPRECATED_MEMBER;
+#else
+    void	      *contModel XML_DEPRECATED_MEMBER;
+#endif
+};
+
+struct _xmlID {
+    /* next ID */
+    struct _xmlID    *next XML_DEPRECATED_MEMBER;
+    /* The ID name */
+    xmlChar *value XML_DEPRECATED_MEMBER;
+    /* The attribute holding it */
+    xmlAttr          *attr XML_DEPRECATED_MEMBER;
+    /* The attribute if attr is not available */
+    const xmlChar    *name XML_DEPRECATED_MEMBER;
+    /* The line number if attr is not available */
+    int               lineno XML_DEPRECATED_MEMBER;
+    /* The document holding the ID */
+    struct _xmlDoc   *doc XML_DEPRECATED_MEMBER;
+};
+
+struct _xmlRef {
+    /* next Ref */
+    struct _xmlRef    *next XML_DEPRECATED_MEMBER;
+    /* The Ref name */
+    const xmlChar     *value XML_DEPRECATED_MEMBER;
+    /* The attribute holding it */
+    xmlAttr          *attr XML_DEPRECATED_MEMBER;
+    /* The attribute if attr is not available */
+    const xmlChar    *name XML_DEPRECATED_MEMBER;
+    /* The line number if attr is not available */
+    int               lineno XML_DEPRECATED_MEMBER;
+};
+
+/* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus
 }
 #endif

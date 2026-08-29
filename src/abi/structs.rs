@@ -375,15 +375,38 @@ pub struct _xmlOutputBuffer {
 // Source: encoding.h
 
 /// Character encoding conversion handler.
+///
+/// # UPSTREAM-PARITY
+///
+/// Layout matches upstream `encoding.h` `struct _xmlCharEncodingHandler`
+/// (2.15.x): `name`, then two anonymous unions (`input`, `output`) each
+/// carrying either a modern `xmlCharEncConvFunc` or a legacy
+/// `xmlCharEncodingInputFunc`/`xmlCharEncodingOutputFunc`, then
+/// `inputCtxt`, `outputCtxt`, `ctxtDtor`, `flags`.
+/// sizeof == 56, _Alignof == 8 on x86-64.
+#[repr(C)]
+pub union EncodingInputUnion {
+    pub func: Option<xmlCharEncConvFunc>,
+    pub legacyFunc: Option<xmlCharEncodingInputFunc>,
+}
+
+/// Output-side counterpart of [`EncodingInputUnion`].
+#[repr(C)]
+pub union EncodingOutputUnion {
+    pub func: Option<xmlCharEncConvFunc>,
+    pub legacyFunc: Option<xmlCharEncodingOutputFunc>,
+}
+
+/// Character encoding conversion handler.
 #[repr(C)]
 pub struct _xmlCharEncodingHandler {
-    pub name: *mut c_char,                              // Encoding name
-    pub input: c_int,                                   // Input xmlCharEncoding
-    pub output: c_int,                                  // Output xmlCharEncoding
-    pub input_func: Option<xmlCharEncodingInputFunc>,   // Input conversion func
-    pub output_func: Option<xmlCharEncodingOutputFunc>, // Output conversion func
-    pub iconv_in: *mut c_void,                          // Iconv descriptor for input
-    pub iconv_out: *mut c_void,                         // Iconv descriptor for output
+    pub name: *mut c_char,                        // Encoding name
+    pub input: EncodingInputUnion,                // Input converter (union)
+    pub output: EncodingOutputUnion,              // Output converter (union)
+    pub inputCtxt: *mut c_void,                   // Iconv context for input
+    pub outputCtxt: *mut c_void,                  // Iconv context for output
+    pub ctxtDtor: Option<xmlCharEncConvCtxtDtor>, // Context destructor
+    pub flags: c_int,                             // xmlCharEncFlags
 }
 
 // ── xmlBuf ──────────────────────────────────────────────────────────────

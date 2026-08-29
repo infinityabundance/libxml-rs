@@ -22,7 +22,12 @@
 //! Deviations from the OASIS RELAX NG specification that match libxml2's
 //! behavior are intentional.
 
-#![allow(missing_docs, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
 
 use core::ffi::c_void;
 use core::ptr;
@@ -70,9 +75,7 @@ impl RelaxNgNameClass {
                     false
                 }
             }
-            RelaxNgNameClass::Choice(choices) => {
-                choices.iter().any(|c| c.matches(name, ns_uri))
-            }
+            RelaxNgNameClass::Choice(choices) => choices.iter().any(|c| c.matches(name, ns_uri)),
             RelaxNgNameClass::Except(positive, negative) => {
                 positive.matches(name, ns_uri) && !negative.matches(name, ns_uri)
             }
@@ -599,20 +602,14 @@ unsafe fn rng_parse_doc(doc: *mut _xmlDoc) -> Result<RelaxNgSchema, String> {
                 Ok(schema)
             }
             "element" | "attribute" | "text" | "choice" | "sequence" | "interleave"
-            | "zeroOrMore" | "oneOrMore" | "optional" | "list" | "group" | "data"
-            | "value" | "ref" | "notAllowed" | "empty" | "externalRef" | "define"
-            | "start" | "include" => {
+            | "zeroOrMore" | "oneOrMore" | "optional" | "list" | "group" | "data" | "value"
+            | "ref" | "notAllowed" | "empty" | "externalRef" | "define" | "start" | "include" => {
                 // Single pattern as root (simplified grammar)
                 let pattern = rng_parse_pattern(root_elem, &mut schema);
                 schema.grammar.start = Some(pattern);
                 Ok(schema)
             }
-            _ => {
-                Err(format!(
-                    "Unknown RELAX NG root element: '{}'",
-                    local_name
-                ))
-            }
+            _ => Err(format!("Unknown RELAX NG root element: '{}'", local_name)),
         }
     }
 }
@@ -744,12 +741,8 @@ unsafe fn rng_parse_pattern(node: *mut _xmlNode, schema: &mut RelaxNgSchema) -> 
             "interleave" => {
                 rng_parse_composite_pattern(node, RelaxNgPatternType::Interleave, schema)
             }
-            "zeroOrMore" => {
-                rng_parse_unary_pattern(node, RelaxNgPatternType::ZeroOrMore, schema)
-            }
-            "oneOrMore" => {
-                rng_parse_unary_pattern(node, RelaxNgPatternType::OneOrMore, schema)
-            }
+            "zeroOrMore" => rng_parse_unary_pattern(node, RelaxNgPatternType::ZeroOrMore, schema),
+            "oneOrMore" => rng_parse_unary_pattern(node, RelaxNgPatternType::OneOrMore, schema),
             "optional" => rng_parse_unary_pattern(node, RelaxNgPatternType::Optional, schema),
             "list" => rng_parse_unary_pattern(node, RelaxNgPatternType::List, schema),
             "group" => rng_parse_composite_pattern(node, RelaxNgPatternType::Group, schema),
@@ -813,7 +806,8 @@ unsafe fn rng_parse_element_pattern(
                     "name" => {
                         let text = get_node_text(child);
                         if !text.is_empty() {
-                            pattern.name_class = Some(RelaxNgNameClass::Name(text.trim().to_string()));
+                            pattern.name_class =
+                                Some(RelaxNgNameClass::Name(text.trim().to_string()));
                         }
                     }
                     "anyName" => {
@@ -1221,7 +1215,9 @@ fn rng_validate_pattern(
         ctxt.depth += 1;
 
         let result = match pattern.pattern_type {
-            RelaxNgPatternType::Element => rng_validate_element_pattern(pattern, node, schema, ctxt),
+            RelaxNgPatternType::Element => {
+                rng_validate_element_pattern(pattern, node, schema, ctxt)
+            }
             RelaxNgPatternType::Attribute => {
                 rng_validate_attribute_pattern(pattern, node, schema, ctxt)
             }
@@ -1236,9 +1232,7 @@ fn rng_validate_pattern(
                 ));
                 false
             }
-            RelaxNgPatternType::Choice => {
-                rng_validate_choice_pattern(pattern, node, schema, ctxt)
-            }
+            RelaxNgPatternType::Choice => rng_validate_choice_pattern(pattern, node, schema, ctxt),
             RelaxNgPatternType::Sequence => {
                 rng_validate_sequence_pattern(pattern, node, schema, ctxt)
             }
@@ -1248,16 +1242,12 @@ fn rng_validate_pattern(
             RelaxNgPatternType::ZeroOrMore => {
                 rng_validate_zero_or_more(pattern, node, schema, ctxt)
             }
-            RelaxNgPatternType::OneOrMore => {
-                rng_validate_one_or_more(pattern, node, schema, ctxt)
-            }
+            RelaxNgPatternType::OneOrMore => rng_validate_one_or_more(pattern, node, schema, ctxt),
             RelaxNgPatternType::Optional => {
                 rng_validate_optional_pattern(pattern, node, schema, ctxt)
             }
             RelaxNgPatternType::List => rng_validate_list_pattern(pattern, node, schema, ctxt),
-            RelaxNgPatternType::Group => {
-                rng_validate_group_pattern(pattern, node, schema, ctxt)
-            }
+            RelaxNgPatternType::Group => rng_validate_group_pattern(pattern, node, schema, ctxt),
             RelaxNgPatternType::Data => rng_validate_data_pattern(pattern, node, ctxt),
             RelaxNgPatternType::Value => rng_validate_value_pattern(pattern, node, ctxt),
             RelaxNgPatternType::Ref => rng_validate_ref_pattern(pattern, node, schema, ctxt),
@@ -1265,7 +1255,9 @@ fn rng_validate_pattern(
                 // External refs are resolved during parsing; treat as empty
                 rng_validate_empty_pattern(node, ctxt)
             }
-            RelaxNgPatternType::Define | RelaxNgPatternType::Grammar | RelaxNgPatternType::Start
+            RelaxNgPatternType::Define
+            | RelaxNgPatternType::Grammar
+            | RelaxNgPatternType::Start
             | RelaxNgPatternType::Include => {
                 // These shouldn't appear during validation; treat as pass-through
                 rng_validate_children(pattern, node, schema, ctxt)
@@ -1407,12 +1399,10 @@ fn rng_validate_attribute_pattern(
                                 let val = get_node_text(prop as *mut _xmlNode);
                                 let valid = match content.pattern_type {
                                     RelaxNgPatternType::Text => true,
-                                    RelaxNgPatternType::Data => {
-                                        rng_validate_datatype_value(
-                                            content.datatype.as_deref(),
-                                            &val,
-                                        )
-                                    }
+                                    RelaxNgPatternType::Data => rng_validate_datatype_value(
+                                        content.datatype.as_deref(),
+                                        &val,
+                                    ),
                                     RelaxNgPatternType::Value => {
                                         content.value.as_deref() == Some(&val)
                                     }
@@ -1460,9 +1450,7 @@ fn rng_validate_attribute_pattern(
                         RelaxNgPatternType::Data => {
                             rng_validate_datatype_value(content.datatype.as_deref(), &val)
                         }
-                        RelaxNgPatternType::Value => {
-                            content.value.as_deref() == Some(&val)
-                        }
+                        RelaxNgPatternType::Value => content.value.as_deref() == Some(&val),
                         _ => true,
                     };
                     if !valid {
@@ -2057,9 +2045,7 @@ fn rng_validate_datatype_value(datatype: Option<&str>, value: &str) -> bool {
                 return false;
             }
             // Allow INF, -INF, NaN for float/double
-            if matches!(dt, "float" | "double")
-                && matches!(value, "INF" | "-INF" | "NaN")
-            {
+            if matches!(dt, "float" | "double") && matches!(value, "INF" | "-INF" | "NaN") {
                 return true;
             }
             value.parse::<f64>().is_ok()
@@ -2342,10 +2328,7 @@ pub unsafe extern "C" fn xmlRelaxNGFreeValidCtxt(ctxt: *mut c_void) {
 /// - `ctxt` must be a valid pointer to a validation context, or NULL.
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRelaxNGValidateDoc(
-    ctxt: *mut c_void,
-    doc: *mut _xmlDoc,
-) -> c_int {
+pub unsafe extern "C" fn xmlRelaxNGValidateDoc(ctxt: *mut c_void, doc: *mut _xmlDoc) -> c_int {
     if ctxt.is_null() || doc.is_null() {
         return -1;
     }
@@ -2511,7 +2494,11 @@ mod tests {
 </grammar>"#;
 
         let result = rng_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse grammar: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse grammar: {:?}",
+            result.err()
+        );
         let schema = result.unwrap();
         assert!(schema.grammar.start.is_some());
     }
@@ -2569,7 +2556,11 @@ mod tests {
 </element>"#;
 
         let result = rng_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse attribute: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse attribute: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -2710,7 +2701,10 @@ mod tests {
         let valid = unsafe { rng_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(!valid, "Validation should have failed for missing attribute");
+        assert!(
+            !valid,
+            "Validation should have failed for missing attribute"
+        );
     }
 
     #[test]
@@ -2788,7 +2782,10 @@ mod tests {
         let valid = unsafe { rng_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(!valid, "Validation should have failed for no matching choice");
+        assert!(
+            !valid,
+            "Validation should have failed for no matching choice"
+        );
     }
 
     #[test]
@@ -2966,7 +2963,11 @@ mod tests {
         let valid = unsafe { rng_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(valid, "Optional present validation failed: {:?}", ctxt.errors);
+        assert!(
+            valid,
+            "Optional present validation failed: {:?}",
+            ctxt.errors
+        );
     }
 
     #[test]
@@ -3001,7 +3002,11 @@ mod tests {
         let valid = unsafe { rng_validate_doc(&schema, doc, &mut ctxt) };
         unsafe { crate::abi::exports_xml2::xmlFreeDoc(doc) };
 
-        assert!(valid, "Optional absent validation failed: {:?}", ctxt.errors);
+        assert!(
+            valid,
+            "Optional absent validation failed: {:?}",
+            ctxt.errors
+        );
     }
 
     #[test]
@@ -3470,8 +3475,16 @@ mod tests {
     #[test]
     fn test_c_abi_null_handling() {
         // Test null pointer handling
-        assert_eq!(unsafe { xmlRelaxNGValidateDoc(ptr::null_mut(), ptr::null_mut()) }, -1);
-        assert_eq!(unsafe { xmlRelaxNGValidateFullElement(ptr::null_mut(), ptr::null_mut(), ptr::null_mut()) }, -1);
+        assert_eq!(
+            unsafe { xmlRelaxNGValidateDoc(ptr::null_mut(), ptr::null_mut()) },
+            -1
+        );
+        assert_eq!(
+            unsafe {
+                xmlRelaxNGValidateFullElement(ptr::null_mut(), ptr::null_mut(), ptr::null_mut())
+            },
+            -1
+        );
         assert!(unsafe { xmlRelaxNGNewMemParserCtxt(ptr::null(), 0).is_null() });
 
         // Free with null should not crash
@@ -3499,7 +3512,11 @@ mod tests {
 </grammar>"#;
 
         let result = rng_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse with div: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse with div: {:?}",
+            result.err()
+        );
         let schema = result.unwrap();
         assert_eq!(schema.grammar.defines.len(), 1);
         assert_eq!(schema.grammar.defines[0].name, "shared");
@@ -3628,7 +3645,11 @@ mod tests {
 </element>"#;
 
         let result = rng_parse(schema_xml);
-        assert!(result.is_ok(), "Failed to parse externalRef: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse externalRef: {:?}",
+            result.err()
+        );
         let schema = result.unwrap();
         if let Some(ref start) = schema.grammar.start {
             assert_eq!(start.pattern_type, RelaxNgPatternType::Element);

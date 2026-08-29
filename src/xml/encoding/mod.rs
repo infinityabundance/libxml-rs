@@ -31,7 +31,9 @@ use parking_lot::RwLock;
 use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
 use crate::abi::callbacks::{xmlCharEncodingInputFunc, xmlCharEncodingOutputFunc};
 use crate::abi::constants::XML_MAX_ENCODING_NAME_LEN;
-use crate::abi::structs::{_xmlBuffer, _xmlCharEncodingHandler};
+use crate::abi::structs::{
+    _xmlBuffer, _xmlCharEncodingHandler, EncodingInputUnion, EncodingOutputUnion,
+};
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlCharPtr};
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -615,12 +617,16 @@ fn register_handler(
             handler,
             _xmlCharEncodingHandler {
                 name: name_raw as *mut c_char,
-                input: input_enc as c_int,
-                output: output_enc as c_int,
-                input_func,
-                output_func,
-                iconv_in: ptr::null_mut(),
-                iconv_out: ptr::null_mut(),
+                input: EncodingInputUnion {
+                    legacyFunc: input_func,
+                },
+                output: EncodingOutputUnion {
+                    legacyFunc: output_func,
+                },
+                inputCtxt: ptr::null_mut(),
+                outputCtxt: ptr::null_mut(),
+                ctxtDtor: None,
+                flags: 0,
             },
         );
     }
@@ -705,7 +711,7 @@ pub(crate) fn add_encoding_handler(handler: *mut _xmlCharEncodingHandler) -> c_i
 
 /// Input conversion: convert from handler's input encoding to UTF-8.
 ///
-/// Calls the handler's `input_func` callback. Returns bytes written or -1 on error.
+/// Calls the handler's `input.legacyFunc` callback. Returns bytes written or -1 on error.
 pub(crate) fn char_enc_in_func(
     handler: *mut _xmlCharEncodingHandler,
     out: &mut [u8],
@@ -716,7 +722,8 @@ pub(crate) fn char_enc_in_func(
     }
 
     let h = unsafe { &*handler };
-    let input_func = match h.input_func {
+    let input_func = unsafe { h.input.legacyFunc };
+    let input_func = match input_func {
         Some(f) => f,
         None => return -1,
     };
@@ -729,7 +736,7 @@ pub(crate) fn char_enc_in_func(
 
 /// Output conversion: convert from UTF-8 to handler's output encoding.
 ///
-/// Calls the handler's `output_func` callback. Returns bytes written or -1 on error.
+/// Calls the handler's `output.legacyFunc` callback. Returns bytes written or -1 on error.
 pub(crate) fn char_enc_out_func(
     handler: *mut _xmlCharEncodingHandler,
     out: &mut [u8],
@@ -740,7 +747,8 @@ pub(crate) fn char_enc_out_func(
     }
 
     let h = unsafe { &*handler };
-    let output_func = match h.output_func {
+    let output_func = unsafe { h.output.legacyFunc };
+    let output_func = match output_func {
         Some(f) => f,
         None => return -1,
     };
@@ -753,7 +761,7 @@ pub(crate) fn char_enc_out_func(
 
 /// Full input conversion (`xmlCharEncInFunc` equivalent).
 ///
-/// Reads from the input `_xmlBuffer`, converts via the handler's `input_func`,
+/// Reads from the input `_xmlBuffer`, converts via the handler's `input.legacyFunc`,
 /// and appends the result to the output `_xmlBuffer`.
 ///
 /// Returns the number of bytes written to the output buffer, or -1 on error.
@@ -767,7 +775,8 @@ pub(crate) fn char_enc_in(
     }
 
     let h = unsafe { &*handler };
-    let input_func = match h.input_func {
+    let input_func = unsafe { h.input.legacyFunc };
+    let input_func = match input_func {
         Some(f) => f,
         None => return -1,
     };
@@ -811,7 +820,7 @@ pub(crate) fn char_enc_in(
 /// Full output conversion (`xmlCharEncOutFunc` equivalent).
 ///
 /// Reads from the input `_xmlBuffer` (UTF-8), converts via the handler's
-/// `output_func`, and appends the result to the output `_xmlBuffer`.
+/// `output.legacyFunc`, and appends the result to the output `_xmlBuffer`.
 ///
 /// Returns the number of bytes written to the output buffer, or -1 on error.
 pub(crate) fn char_enc_out(
@@ -824,7 +833,8 @@ pub(crate) fn char_enc_out(
     }
 
     let h = unsafe { &*handler };
-    let output_func = match h.output_func {
+    let output_func = unsafe { h.output.legacyFunc };
+    let output_func = match output_func {
         Some(f) => f,
         None => return -1,
     };
@@ -1382,12 +1392,16 @@ pub(crate) fn xmlNewCharEncodingHandler(
             handler,
             _xmlCharEncodingHandler {
                 name: name_raw as *mut c_char,
-                input: xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
-                output: xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
-                input_func: Some(input),
-                output_func: Some(output),
-                iconv_in: ptr::null_mut(),
-                iconv_out: ptr::null_mut(),
+                input: EncodingInputUnion {
+                    legacyFunc: Some(input),
+                },
+                output: EncodingOutputUnion {
+                    legacyFunc: Some(output),
+                },
+                inputCtxt: ptr::null_mut(),
+                outputCtxt: ptr::null_mut(),
+                ctxtDtor: None,
+                flags: 0,
             },
         );
     }
@@ -1899,12 +1913,12 @@ mod tests {
                 handler,
                 _xmlCharEncodingHandler {
                     name: name as *mut c_char,
-                    input: xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
-                    output: xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
-                    input_func: None,
-                    output_func: None,
-                    iconv_in: ptr::null_mut(),
-                    iconv_out: ptr::null_mut(),
+                    input: EncodingInputUnion { legacyFunc: None },
+                    output: EncodingOutputUnion { legacyFunc: None },
+                    inputCtxt: ptr::null_mut(),
+                    outputCtxt: ptr::null_mut(),
+                    ctxtDtor: None,
+                    flags: 0,
                 },
             );
         }

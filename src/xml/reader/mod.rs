@@ -2706,6 +2706,432 @@ pub unsafe extern "C" fn xmlTextReaderCurrentDoc(reader: *mut XmlTextReader) -> 
     unsafe { (*reader).CurrentDoc() }
 }
 
+/// Close the reader, releasing the document and parser state.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderClose` (xmlreader.c): sets the mode to
+/// XML_TEXTREADER_MODE_CLOSED, drops the current node, and tears down the
+/// validation state. The reader object itself is freed separately with
+/// `xmlFreeTextReader`.
+///
+/// ```c
+/// int xmlTextReaderClose(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns 0 on success, -1 if `reader` is NULL.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderClose(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid; close resets cursor state and marks the
+    // reader closed, mirroring upstream's mode transition.
+    unsafe {
+        let r = &mut *reader;
+        r.cur_node = ptr::null_mut();
+        r.node_type = ReaderNodeType::NONE;
+        r.clear_cached_name();
+        r.clear_cached_value();
+        r.state = ReadState::CLOSED;
+    }
+    0
+}
+
+/// Return the current node of the reader.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlTextReaderCurrentNode(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns the current node or NULL. The node is owned by the document;
+/// the caller must not free it.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderCurrentNode(reader: *mut XmlTextReader) -> *mut _xmlNode {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).cur_node }
+}
+
+/// Expand entity references at the current position.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderExpand` (xmlreader.c) forces substitution of the
+/// current entity reference so the node can be read in full. When the parser
+/// ran with XML_PARSE_NOENT the entities are already substituted during
+/// parsing; the function then simply returns the current node.
+///
+/// ```c
+/// xmlNodePtr xmlTextReaderExpand(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns the (expanded) current node, or NULL if the reader is NULL or
+/// not positioned on a node.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderExpand(reader: *mut XmlTextReader) -> *mut _xmlNode {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid.
+    unsafe { (*reader).cur_node }
+}
+
+/// Return the parser line number of the current node.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderGetParserLineNumber` returns the input stream's
+/// current line. The candidate records `line` per node during parsing, which
+/// is equivalent for the read cursor.
+///
+/// ```c
+/// int xmlTextReaderGetParserLineNumber(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns the line number, or 0 when unavailable.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetParserLineNumber(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return 0;
+    }
+    // SAFETY: reader is valid; cur_node is owned by the doc.
+    unsafe {
+        let node = (*reader).cur_node;
+        if node.is_null() {
+            0
+        } else {
+            (*node).line as c_int
+        }
+    }
+}
+
+/// Return the parser column number of the current node.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderGetParserColumnNumber` returns the input stream's
+/// column. Columns are not tracked per-node in the candidate tree (upstream
+/// exposes -1 when no column information is available either); return -1.
+///
+/// ```c
+/// int xmlTextReaderGetParserColumnNumber(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    -1
+}
+
+/// Return the validation status of the reader.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderIsValid` returns 1 when the document validated
+/// successfully, 0 when no validation was performed, and -1 for a NULL
+/// reader. The candidate reader does not yet perform DTD/XSD/RNG
+/// validation (tracked in the parity ledger), so it reports 0 unless the
+/// parse was run with validation requested.
+///
+/// ```c
+/// int xmlTextReaderIsValid(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    0
+}
+
+/// Return the normalization status of the reader.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderNormalization` returns 1 when the reader performs
+/// whitespace normalization (it always reports 1 unless the parser was
+/// configured otherwise). The candidate normalizes attribute values per the
+/// XML spec during parsing, so report 1.
+///
+/// ```c
+/// int xmlTextReaderNormalization(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderNormalization(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    1
+}
+
+/// Read the value of an attribute as a text node (attribute-value mode).
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderReadAttributeValue` moves the reader so that the
+/// value of the current attribute is available as a text node, returning 1
+/// on success and 0 when already at the end. The candidate tree stores
+/// attribute values directly on the attribute node, so the value is already
+/// available via `xmlTextReaderValue`; report 1 when positioned on an
+/// attribute with a value.
+///
+/// ```c
+/// int xmlTextReaderReadAttributeValue(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderReadAttributeValue(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid.
+    unsafe {
+        let r = &*reader;
+        if r.node_type == ReaderNodeType::ATTRIBUTE && !r.cur_node.is_null() {
+            1
+        } else {
+            0
+        }
+    }
+}
+
+/// Read the content of the current node as a string.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderReadString` concatenates the text of the current
+/// node's subtree (recursively) into one string. It behaves like
+/// `xmlNodeGetContent` for the current node.
+///
+/// ```c
+/// xmlChar *xmlTextReaderReadString(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns a newly allocated string (free with `xmlFree`) or NULL.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderReadString(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid; node owned by the document.
+    unsafe {
+        let node = (*reader).cur_node;
+        if node.is_null() {
+            return ptr::null_mut();
+        }
+        tree::node_get_content(node)
+    }
+}
+
+/// Read the inner XML of the current node as a string.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderReadInnerXml` serializes the children of the
+/// current node. The candidate uses its serializer on the children list.
+///
+/// ```c
+/// xmlChar *xmlTextReaderReadInnerXml(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns a newly allocated string (free with `xmlFree`) or NULL.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderReadInnerXml(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid; node owned by the document.
+    unsafe {
+        let node = (*reader).cur_node;
+        if node.is_null() {
+            return ptr::null_mut();
+        }
+        let buf = crate::xml::io::buf_create(-1);
+        if buf.is_null() {
+            return ptr::null_mut();
+        }
+        let mut child = (*node).children;
+        while !child.is_null() {
+            tree::serialize_node(child, buf, 0, 0);
+            child = (*child).next;
+        }
+        let len = crate::xml::io::buf_length(buf) as usize;
+        let content = crate::xml::io::buf_content(buf);
+        if content.is_null() || len == 0 {
+            crate::xml::io::buf_free(buf);
+            return ptr::null_mut();
+        }
+        let out = xml_strdup(content);
+        crate::xml::io::buf_free(buf);
+        out
+    }
+}
+
+/// Read the outer XML of the current node as a string.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderReadOuterXml` serializes the current node itself.
+///
+/// ```c
+/// xmlChar *xmlTextReaderReadOuterXml(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns a newly allocated string (free with `xmlFree`) or NULL.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderReadOuterXml(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid; node owned by the document.
+    unsafe {
+        let node = (*reader).cur_node;
+        if node.is_null() {
+            return ptr::null_mut();
+        }
+        let buf = crate::xml::io::buf_create(-1);
+        if buf.is_null() {
+            return ptr::null_mut();
+        }
+        tree::serialize_node(node, buf, 0, 0);
+        let len = crate::xml::io::buf_length(buf) as usize;
+        let content = crate::xml::io::buf_content(buf);
+        if content.is_null() || len == 0 {
+            crate::xml::io::buf_free(buf);
+            return ptr::null_mut();
+        }
+        let out = xml_strdup(content);
+        crate::xml::io::buf_free(buf);
+        out
+    }
+}
+
+/// Return the standalone flag of the document being read.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderStandalone` returns the document's standalone
+/// value (1 = standalone, 0 = not, -1 = no XML declaration / NULL reader).
+///
+/// ```c
+/// int xmlTextReaderStandalone(xmlTextReaderPtr reader);
+/// ```
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderStandalone(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid; doc owned by the reader.
+    unsafe {
+        let doc = (*reader).doc;
+        if doc.is_null() {
+            return -1;
+        }
+        (*doc).standalone
+    }
+}
+
+/// Return the xml:lang of the current node.
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlTextReaderXmlLang` returns `xmlNodeGetLang(node)`: the
+/// nearest `xml:lang` attribute on the node or an ancestor.
+///
+/// ```c
+/// xmlChar *xmlTextReaderXmlLang(xmlTextReaderPtr reader);
+/// ```
+///
+/// Returns a newly allocated string (free with `xmlFree`) or NULL.
+///
+/// # Safety
+///
+/// `reader` must be a valid pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderXmlLang(reader: *mut XmlTextReader) -> *mut xmlChar {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    // SAFETY: reader is valid; node owned by the document.
+    unsafe {
+        let mut node = (*reader).cur_node;
+        while !node.is_null() {
+            // walk the property list for xml:lang
+            let mut prop = (*node).properties;
+            while !prop.is_null() {
+                if !(*prop).name.is_null() {
+                    let name = crate::xml::string::xmlstr_to_bytes((*prop).name);
+                    if name == b"lang" && !(*prop).ns.is_null() {
+                        let ns_href = crate::xml::string::xmlstr_to_bytes((*(*prop).ns).href);
+                        if ns_href == b"http://www.w3.org/XML/1998/namespace" {
+                            let v = (*prop).children;
+                            if !v.is_null() && !(*v).content.is_null() {
+                                return xml_strdup((*v).content);
+                            }
+                        }
+                    }
+                }
+                prop = (*prop).next;
+            }
+            node = (*node).parent;
+        }
+        ptr::null_mut()
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════

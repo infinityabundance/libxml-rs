@@ -3,8 +3,8 @@
  *
  * Schematron API for libxml-rs
  *
- * Native Rust implementation — drop-in replacement for libxml2's
- * schematron.h. API follows upstream libxml2 Schematron support.
+ * # UPSTREAM-PARITY
+ * Types follow upstream `schematron.h` (libxml2 2.15.x).
  */
 
 #ifndef __XML_SCHEMATRON_H__
@@ -12,51 +12,39 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
+#include <libxml/xmlerror.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * xmlSchematron:
- *
- * A Schematron schema (opaque type).
- */
-typedef struct _xmlSchematron *xmlSchematronPtr;
-typedef xmlSchematronPtr xmlSchematron;
+typedef struct _xmlSchematron xmlSchematron;
+typedef xmlSchematron *xmlSchematronPtr;
+typedef struct _xmlSchematronParserCtxt xmlSchematronParserCtxt;
+typedef xmlSchematronParserCtxt *xmlSchematronParserCtxtPtr;
+typedef struct _xmlSchematronValidCtxt xmlSchematronValidCtxt;
+typedef xmlSchematronValidCtxt *xmlSchematronValidCtxtPtr;
 
-/**
- * xmlSchematronParserCtxt:
- *
- * A Schematron parser context (opaque type).
- */
-typedef struct _xmlSchematronParserCtxt *xmlSchematronParserCtxtPtr;
-typedef xmlSchematronParserCtxtPtr xmlSchematronParserCtxt;
+typedef enum {
+    XML_SCHEMATRON_OUT_QUIET = 1 << 0,
+    XML_SCHEMATRON_OUT_TEXT = 1 << 1,
+    XML_SCHEMATRON_OUT_XML = 1 << 2,
+    XML_SCHEMATRON_OUT_ERROR = 1 << 3,
+    XML_SCHEMATRON_OUT_ANNOTATE = 1 << 4,
+    XML_SCHEMATRON_OUT_STREAM = 1 << 5
+} xmlSchematronValidOptions;
 
-/**
- * xmlSchematronValidCtxt:
- *
- * A Schematron validation context (opaque type).
- */
-typedef struct _xmlSchematronValidCtxt *xmlSchematronValidCtxtPtr;
-typedef xmlSchematronValidCtxtPtr xmlSchematronValidCtxt;
-
-/*
- * Parser functions
- */
-xmlSchematronParserCtxtPtr xmlSchematronNewParserCtxt(const char *URL);
-xmlSchematronParserCtxtPtr xmlSchematronNewMemParserCtxt(const char *buffer, int size);
-xmlSchematronPtr           xmlSchematronParse(xmlSchematronParserCtxtPtr ctxt);
-void                       xmlSchematronFreeParserCtxt(xmlSchematronParserCtxtPtr ctxt);
-void                       xmlSchematronFree(xmlSchematronPtr schema);
-
-/*
- * Validation functions
- */
-xmlSchematronValidCtxtPtr  xmlSchematronNewValidCtxt(xmlSchematronPtr schema);
-void                       xmlSchematronFreeValidCtxt(xmlSchematronValidCtxtPtr ctxt);
-int                        xmlSchematronValidateDoc(xmlSchematronValidCtxtPtr ctxt,
-                                                     xmlDocPtr doc);
+XMLPUBFUN xmlSchematronParserCtxtPtr xmlSchematronNewParserCtxt(const char *URL);
+XMLPUBFUN xmlSchematronParserCtxtPtr xmlSchematronNewMemParserCtxt(const char *buffer,
+                                                                   int size);
+XMLPUBFUN xmlSchematronPtr xmlSchematronParse(xmlSchematronParserCtxtPtr ctxt);
+XMLPUBFUN void xmlSchematronFreeParserCtxt(xmlSchematronParserCtxtPtr ctxt);
+XMLPUBFUN void xmlSchematronFree(xmlSchematronPtr schema);
+XMLPUBFUN xmlSchematronValidCtxtPtr xmlSchematronNewValidCtxt(xmlSchematronPtr schema,
+                                                              int options);
+XMLPUBFUN void xmlSchematronFreeValidCtxt(xmlSchematronValidCtxtPtr ctxt);
+XMLPUBFUN int xmlSchematronValidateDoc(xmlSchematronValidCtxtPtr ctxt,
+                                       xmlDocPtr instance);
 
 #ifdef __cplusplus
 }

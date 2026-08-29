@@ -2,6 +2,11 @@
  * @file
  *
  * XSLT main header for libxml-rs
+ *
+ * # UPSTREAM-PARITY
+ * Matches upstream `libxslt/xslt.h`: constants and version macros only.
+ * Type declarations live in `xsltInternals.h` (upstream convention —
+ * consumers include `<libxslt/xsltInternals.h>` for the engine types).
  */
 
 #ifndef __XSLT_H__
@@ -9,6 +14,7 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
+#include <libxslt/xsltexports.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,44 +26,12 @@ extern "C" {
 #define LIBXSLT_VERSION_STRING "10139"
 #define LIBXSLT_VERSION_EXTRA ""
 
-/* Stylesheet type */
-typedef struct _xsltStylesheet xsltStylesheet;
-typedef xsltStylesheet *xsltStylesheetPtr;
+/* XSLT 1.0 namespace (upstream xslt.h) */
+#define XSLT_NAMESPACE ((const xmlChar *)"http://www.w3.org/1999/XSL/Transform")
 
-/* Transform context */
-typedef struct _xsltTransformContext xsltTransformContext;
-typedef xsltTransformContext *xsltTransformContextPtr;
-
-/* XSLT functions */
-XMLPUBFUN int xsltLibxsltVersion(void);
-XMLPUBFUN const char *xsltLibxsltVersionString(void);
-XMLPUBFUN int xsltCheckVersion(int version);
-XMLPUBFUN void xsltInit(void);
-XMLPUBFUN void xsltCleanupGlobals(void);
-XMLPUBFUN xsltStylesheetPtr xsltParseStylesheetFile(const xmlChar *filename);
-XMLPUBFUN xsltStylesheetPtr xsltParseStylesheetDoc(xmlDocPtr doc);
-XMLPUBFUN xsltStylesheetPtr xsltParseStylesheetMemory(const char *buf, int len,
-                                                       const char *URL);
-XMLPUBFUN void xsltFreeStylesheet(xsltStylesheetPtr style);
-XMLPUBFUN xmlDocPtr xsltApplyStylesheet(xsltStylesheetPtr style, xmlDocPtr doc,
-                                         const char **params);
-XMLPUBFUN xmlDocPtr xsltApplyStylesheetUser(xsltStylesheetPtr style, xmlDocPtr doc,
-                                             const char **params, const char *output,
-                                             FILE *profile,
-                                             xsltTransformContextPtr userCtxt);
-XMLPUBFUN void xsltFreeTransformResult(xmlDocPtr result);
-XMLPUBFUN xsltTransformContextPtr xsltNewTransformContext(xsltStylesheetPtr style,
-                                                           xmlDocPtr doc);
-XMLPUBFUN void xsltFreeTransformContext(xsltTransformContextPtr ctxt);
-XMLPUBFUN int xsltSaveResultToFile(FILE *output, xmlDocPtr result,
-                                    xsltStylesheetPtr style);
-XMLPUBFUN int xsltSaveResultToFd(int fd, xmlDocPtr result,
-                                  xsltStylesheetPtr style);
-XMLPUBFUN int xsltSaveResultToString(xmlChar **doc_txt_ptr, int *doc_txt_len,
-                                      xmlDocPtr result, xsltStylesheetPtr style);
-XMLPUBFUN xmlDocPtr xsltGetStylesheetDoc(xsltStylesheetPtr style);
-XMLPUBFUN void xsltSetStylesheetDoc(xsltStylesheetPtr style, xmlDocPtr doc);
-XMLPUBFUN const char *xsltEngineVersion(void);
+/* Default parse options for loading XSLT documents (upstream xslt.h) */
+#define XSLT_PARSE_OPTIONS \
+ XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_NOCDATA
 
 #ifdef __cplusplus
 }

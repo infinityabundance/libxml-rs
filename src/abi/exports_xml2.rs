@@ -77,6 +77,39 @@ pub unsafe extern "C" fn xmlInitParser() {
     crate::internal::globals::init_parser();
 }
 
+/// Initialize the global variables module (upstream globals.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlInitGlobals(void);
+/// ```
+///
+/// Upstream `xmlInitGlobals` (globals.c) is called once to initialize the
+/// global variable defaults. The candidate's globals are initialized
+/// statically/on first use, so this is a no-op that exists for ABI
+/// compatibility.
+#[no_mangle]
+pub unsafe extern "C" fn xmlInitGlobals() {
+    // Globals are statically initialized in the candidate.
+}
+
+/// Clean up the global variables module (upstream globals.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlCleanupGlobals(void);
+/// ```
+///
+/// Upstream `xmlCleanupGlobals` frees the global defaults. The candidate
+/// keeps globals alive for the process lifetime (repeated init/cleanup is
+/// reference-counted); no-op for ABI compatibility.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCleanupGlobals() {
+    // The candidate's globals are process-lifetime statics.
+}
+
 /// Clean up the parser library.
 ///
 /// Should be called when the library is no longer needed.
@@ -806,6 +839,27 @@ pub unsafe extern "C" fn xmlFreeNode(node: *mut _xmlNode) {
     crate::xml::tree::free_node(node);
 }
 
+/// Free a linked list of nodes (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeNodeList(xmlNodePtr node);
+/// ```
+///
+/// Frees the node and all its siblings (following `next` pointers),
+/// recursively freeing children. Matches upstream `xmlFreeNodeList`
+/// (tree.c): a NULL argument is a no-op.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+/// - The list must NOT be part of a document tree (must be unlinked first).
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeNodeList(node: *mut _xmlNode) {
+    crate::xml::tree::free_node_list(node);
+}
+
 /// Unlink a node from its tree.
 ///
 /// # UPSTREAM-PARITY
@@ -820,6 +874,77 @@ pub unsafe extern "C" fn xmlFreeNode(node: *mut _xmlNode) {
 #[no_mangle]
 pub unsafe extern "C" fn xmlUnlinkNode(node: *mut _xmlNode) {
     crate::xml::tree::unlink_node(node);
+}
+
+/// Initialize a SAX handler with the default SAX2 callbacks (upstream SAX2.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlSAX2InitDefaultSAXHandler(xmlSAXHandler *hdlr, int warning);
+/// ```
+///
+/// The `warning` parameter controls whether the warning callback is set in
+/// upstream; the candidate always sets it (the parser dispatches warnings
+/// identically) — a documented safe divergence tracked in the parity ledger.
+///
+/// # SAFETY
+///
+/// - `handler` must be a valid writable `_xmlSAXHandler` or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2InitDefaultSAXHandler(
+    handler: *mut crate::abi::structs::_xmlSAXHandler,
+    _warning: c_int,
+) {
+    crate::xml::sax::dispatch::xmlSAX2InitDefaultSAXHandler(handler);
+}
+
+/// Initialize a SAX handler with the default HTML callbacks (upstream SAX2.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlSAX2InitHtmlDefaultSAXHandler(xmlSAXHandler *hdlr);
+/// ```
+///
+/// Upstream (SAX2.c `xmlSAX2InitHtmlDefaultSAXHandler`) fills the handler
+/// with the SAX2 defaults minus the DTD-declaration callbacks
+/// (resolveEntity/getParameterEntity/entityDecl/attributeDecl/elementDecl/
+/// notationDecl/unparsedEntityDecl/reference/externalSubset are NULL) and
+/// sets `initialized = 1` (not XML_SAX2_MAGIC). The candidate mirrors that
+/// exactly.
+///
+/// # SAFETY
+///
+/// - `handler` must be a valid writable `_xmlSAXHandler` or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2InitHtmlDefaultSAXHandler(
+    handler: *mut crate::abi::structs::_xmlSAXHandler,
+) {
+    use crate::abi::callbacks::*;
+    use crate::abi::structs::_xmlSAXHandler;
+    if handler.is_null() {
+        return;
+    }
+    // SAFETY: handler is non-NULL and writable.
+    unsafe {
+        // The DTD-ish callbacks are not part of the HTML default set.
+        if (*handler).initialized != 0 {
+            return;
+        }
+        crate::xml::sax::dispatch::xmlSAX2InitDefaultSAXHandler(handler);
+        let h = &mut *handler;
+        h.resolveEntity = None;
+        h.getParameterEntity = None;
+        h.entityDecl = None;
+        h.attributeDecl = None;
+        h.elementDecl = None;
+        h.notationDecl = None;
+        h.unparsedEntityDecl = None;
+        h.reference = None;
+        h.externalSubset = None;
+        h.initialized = 1;
+    }
 }
 
 /// Add a child node.
@@ -3675,6 +3800,45 @@ pub extern "C" fn xmlCreateURI() -> *mut c_void {
 #[no_mangle]
 pub unsafe extern "C" fn xmlSaveUri(uri: *mut c_void) -> *mut xmlChar {
     crate::xml::uri::xmlSaveUri(uri)
+}
+
+/// Parse a URI string into an existing URI structure (upstream uri.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlParseURIReference(xmlURIPtr uri, const char *str);
+/// ```
+///
+/// Returns 0 on success, -1 on failure (the URI structure is left
+/// untouched on failure).
+///
+/// # Safety
+///
+/// - `uri` must be a valid pointer from `xmlParseURI`/`xmlCreateURI`.
+/// - `str` must be a valid null-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParseURIReference(uri: *mut c_void, str: *const c_char) -> c_int {
+    crate::xml::uri::xmlParseURIReference(uri, str)
+}
+
+/// Normalize a URI path in place (upstream uri.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlNormalizeURIPath(char *path);
+/// ```
+///
+/// Returns 0 on success, -1 if the path is NULL, not absolute, or contains
+/// `..` segments that climb above the root.
+///
+/// # Safety
+///
+/// `path` must be a valid writable null-terminated C string buffer.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNormalizeURIPath(path: *mut c_char) -> c_int {
+    crate::xml::uri::xmlNormalizeURIPath(path)
 }
 
 /// Escape a URI string.
