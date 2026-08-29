@@ -1,0 +1,17 @@
+{
+ "court": "CATALOG-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T21:17:38Z",
+ "probe": "courts/suites/data-abi/catalog-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "f748f22c43e04fc1c5ebc5402561dcea45fbc18cf027d2c94b7f71690735c683"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "f748f22c43e04fc1c5ebc5402561dcea45fbc18cf027d2c94b7f71690735c683"
+ },
+ "verdict": "PASS",
+ "mismatch_count": 0,
+ "mismatches": []
+}

@@ -1,0 +1,28 @@
+{
+ "court": "READER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T21:22:26Z",
+ "probe": "courts/suites/data-abi/reader-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "c86c97550ddde8b7c5b222d12f92b6d85c7f8b00aa00c4e5e42ce79debdd8c98"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "7ec74b978d521265a2a182d9c74dcaa3802014ed224b32882723d5a268b0ec42"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 2,
+ "mismatches": [
+  {
+   "line": 11,
+   "oracle": "    attr name=x:a value=nsval quote=34",
+   "candidate": "    attr name=a value=nsval quote=34"
+  },
+  {
+   "line": 32,
+   "oracle": "nsattr-movens-prop=1 name=x:child value=(null)",
+   "candidate": "nsattr-movens-prop=0 name=x:child value=(null)"
+  }
+ ]
+}

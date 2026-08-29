@@ -1,0 +1,33 @@
+{
+ "court": "READER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T21:25:19Z",
+ "probe": "courts/suites/data-abi/reader-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "1d9de1df42b5c200fc20c24999c3b490b05c658e745ca84979a34b7e48004d40"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "6eebf71a9efc07d390c30911a0b7f32794d4af36ea1cd6e82d4189bcfbf73a59"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 3,
+ "mismatches": [
+  {
+   "line": 5,
+   "oracle": "    attr name=xmlns:x value=urn:x quote=34 uri=http://www.w3.org/2000/xmlns/ local=x prefix=xmlns",
+   "candidate": "    attr name=xmlns:x value=urn:x quote=34 uri=urn:x local=x prefix=xmlns"
+  },
+  {
+   "line": 12,
+   "oracle": "    attr name=x:a value=nsval quote=34 uri=urn:x local=a prefix=x",
+   "candidate": "    attr name=a value=nsval quote=34 uri=(null) local=a prefix=(null)"
+  },
+  {
+   "line": 36,
+   "oracle": "nsattr-movens-prop=1 name=x:child value=(null)",
+   "candidate": "nsattr-movens-prop=0 name=x:child value=(null)"
+  }
+ ]
+}

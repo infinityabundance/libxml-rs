@@ -206,6 +206,16 @@ def run_check(fix=False):
     if ids != sorted(ids):
         errors.append("residuals must be ordered by ID")
 
+    # 1b. every residual phase must be in the canonical display order, otherwise
+    # the generated Markdown would silently omit it (byte-identity would pass
+    # vacuously). No silent omission is allowed: fail instead.
+    known_phases = set(ledger.get("phases", []))
+    for r in ledger["ledger"]:
+        ph = r.get("phase", "tooling")
+        if ph not in known_phases:
+            errors.append(f"{r['id']}: phase {ph!r} not in canonical phases list; "
+                          "the Markdown would silently drop this residual")
+
     # required fields
     for r in ledger["ledger"]:
         for field in ("id", "status", "title", "surface", "component", "classification"):

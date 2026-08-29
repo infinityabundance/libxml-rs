@@ -341,6 +341,273 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Regression courts:** CLI-XMLCATALOG-0010.
 - **Classification:** CANDIDATE_BUG
 
+## Phase 11.1-G Residuals
+
+### R-000124: Candidate headers lacked byte-exact public struct/enum definitions (header-surface gap) (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-G)
+- **Component:** tools/headers/header_closure.py, include/libxml/parser.h, include/libxml/schemasInternals.h
+- **Surface:** headers / ABI
+- **Root cause:** The candidate include/ headers were hand-written stubs or partial reconstructions; the ABI census (tools/abi/abi_probe_gen.py) reported 255 libxml2 and 311 libxslt MISSING struct/enum entities (e.g. _xmlParserCtxt field types xmlStartTag/xmlParserNsData/xmlAttrHashBucket, schemasInternals cluster, xsltInternals cluster, xmlCharEncoding values 23-31, xmlErrorDomain, xmlParserOption enums). A C consumer compiling against the headers would not get the upstream layouts.
+- **Fix:** Built tools/headers/header_closure.py: deterministic verbatim extraction of missing public struct/enum/typedef definitions from the oracle archaeology trees (libxml2-2.15.0, libxslt-1.1.42), with a regenerated [11.1-G] section per header, upstream forward-typedef blocks, #define->enum migration (xmlerror.h xmlParserErrors, xmlErrorDomain; parser.h xmlParserOption; tree.h xmlDocProperties), and a compile-fix loop resolving cascading missing types. Libxslt headers were rebuilt verbatim from upstream (xsltInternals.h, numbersInternals.h) with the upstream include conventions (xslt.h constants-only; transform.h hosts the engine entry points).
+- **Evidence:** ['atlas/ABI_PARITY_LEDGER.json (libxml2 1889/1889, libxslt 344/344, verdict PASS)', 'courts/receipts/phase-11/header-compile-* (571/571 PASS)', 'tools/headers/header_closure.py']
+- **Classification:** CANDIDATE_BUG
+
+### R-000128: Struct field type drift: _xmlAttr.id, _xmlEntity.expandedSize, _xmlXPathContext.opLimit/opCount (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-G)
+- **Component:** include/libxml/tree.h, include/libxml/xpath.h
+- **Surface:** ABI struct layout
+- **Root cause:** Hand-written headers used int for _xmlAttr.id (upstream: xmlIDPtr), _xmlEntity.expandedSize (upstream: unsigned long) and _xmlXPathContext.opLimit/opCount (upstream: unsigned long), producing wrong offsets/sizes.
+- **Fix:** Corrected the field types to the upstream declarations; verified by the ABI census (offsetof/sizeof equality).
+- **Evidence:** ['atlas/ABI_PARITY_LEDGER.json', 'include/libxml/tree.h', 'include/libxml/xpath.h']
+- **Classification:** CANDIDATE_BUG
+
+### R-000129: _xmlCharEncodingHandler Rust struct layout mismatch (48 vs upstream 56 bytes) (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-G)
+- **Component:** src/abi/structs.rs, src/abi/callbacks.rs, src/xml/encoding/mod.rs, include/libxml/encoding.h
+- **Surface:** ABI struct layout
+- **Root cause:** The Rust _xmlCharEncodingHandler stored 7 pointer/int fields in a non-upstream order; upstream has name + two anonymous unions (func/legacyFunc) + inputCtxt/outputCtxt/ctxtDtor/flags (sizeof 56, not 48). The old encoding.h also invented xmlCharEncInput/xmlCharEncOutput which do not exist upstream.
+- **Fix:** Rewrote the Rust struct with upstream layout using repr(C) unions (EncodingInputUnion/EncodingOutputUnion), added the missing xmlCharEncConvFunc/xmlCharEncConvCtxtDtor/xmlCharEncConvImpl callbacks with upstream signatures, updated the consumer (input.legacyFunc/output.legacyFunc), rewrote encoding.h to the upstream content, and removed the invented prototypes.
+- **Evidence:** ['atlas/ABI_PARITY_LEDGER.json (PASS)', 'src/abi/structs.rs', 'src/xml/encoding/mod.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000130: Rust callback typedefs xmlResourceLoader / xmlCharEncConvImpl had non-upstream signatures (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-G)
+- **Component:** src/abi/callbacks.rs
+- **Surface:** ABI callbacks
+- **Root cause:** The Rust xmlResourceLoader (void* ctxt, url, options:int, type:int)->xmlParserInput* and xmlCharEncConvImpl signatures did not match upstream parser.h/encoding.h (xmlParserErrors (*)(void*, const char*, const char*, xmlResourceType, xmlParserInputFlags, xmlParserInput**), xmlParserErrors (*)(void*, const char*, xmlCharEncFlags, xmlCharEncodingHandler**)).
+- **Fix:** Corrected both callback typedefs to the upstream signatures; neither is invoked by the candidate, so the change is purely ABI-exact.
+- **Evidence:** ['src/abi/callbacks.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000132: xmlParseURI returned a non-C-layout object (UriParts) as xmlURIPtr (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-G)
+- **Component:** src/xml/uri/mod.rs, src/abi/exports_xml2.rs
+- **Surface:** ABI runtime object
+- **Root cause:** xmlParseURI/xmlCreateURI returned Box<UriParts> (Rust struct of Option<Vec<u8>> fields) cast to xmlURIPtr; a C consumer reading uri->scheme would read garbage. The header struct _xmlURI (104 bytes) was correct but the runtime object was not.
+- **Fix:** Introduced repr(C) CXmlUri matching struct _xmlURI field-for-field (allocator-owned null-terminated strings); xmlParseURI/xmlCreateURI now return it, xmlFreeURI releases the strings, xmlSaveUri converts back; added xmlParseURIReference (fills an existing struct) and xmlNormalizeURIPath (faithful in-place port of uri.c).
+- **Evidence:** ['src/xml/uri/mod.rs (69 tests pass)', 'atlas/ABI_PARITY_LEDGER.json']
+- **Classification:** CANDIDATE_BUG
+
+## Phase 11.1-H Residuals
+
+### R-000125: xslt security module used int allow/deny model instead of upstream callback model (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-H)
+- **Component:** src/xslt/security/mod.rs, include/libxslt/security.h, src/bin/xsltproc.rs
+- **Surface:** libxslt security API
+- **Root cause:** xsltSetSecurityPrefs in upstream takes a function pointer (xsltSecurityCheck) per option (enum values 1..5), and WRITE_FILE maps to the createFile quirk; the candidate stored int allow/deny flags, which is ABI-incompatible with downstream code that registers callbacks.
+- **Fix:** Rewrote src/xslt/security/mod.rs to the upstream callback model (XsltSecurityPrefs stores five Option<xsltSecurityCheck> callbacks, zeroed defaults); xsltproc -nowrite/-nomkdir register xslt_security_forbid callbacks; callback round-trip tests added; include/libxslt/security.h rewritten to the upstream declarations.
+- **Evidence:** ['src/xslt/security/mod.rs (tests pass)', 'include/libxslt/security.h']
+- **Classification:** CANDIDATE_BUG
+
+### R-000126: Missing xpathInternals.h header surface (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-H)
+- **Component:** include/libxml/xpathInternals.h
+- **Surface:** headers
+- **Root cause:** The candidate shipped no libxml/xpathInternals.h; downstream consumers including it (common for XPath extension authors) would fail to compile.
+- **Fix:** Created include/libxml/xpathInternals.h declaring the 22 candidate-exported XPath-internals functions with upstream-compatible signatures; every declared function verified exported in the DSO by the HEADER-COMPILE court.
+- **Evidence:** ['include/libxml/xpathInternals.h', 'courts/receipts/phase-11/header-compile-*']
+- **Classification:** CANDIDATE_BUG
+
+### R-000127: Missing libxslt public headers (libxslt.h, xsltexports.h, trio.h, triodef.h) (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-H)
+- **Component:** include/libxslt/libxslt.h, include/libxslt/xsltexports.h
+- **Surface:** headers
+- **Root cause:** The candidate include/libxslt set was missing five public headers present upstream; consumers including them failed.
+- **Fix:** Created the missing headers (libxslt.h umbrella, xsltexports.h visibility macros, trio.h/triodef.h); the include set now matches upstream (diff-verified against the archaeology tree); config.h (a build-private artifact) is no longer included.
+- **Evidence:** ['include/libxslt/*', 'courts/receipts/phase-11/header-compile-*']
+- **Classification:** CANDIDATE_BUG
+
+### R-000133: Declared-but-unexported header functions (33 symbols) (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-H)
+- **Component:** src/abi/allocator.rs, src/xml/reader/mod.rs, src/abi/exports_xml2.rs, src/abi/versioning.rs, src/xml/uri/mod.rs
+- **Surface:** headers / DSO exports
+- **Root cause:** Hand-written headers declared 33 functions the candidate DSO did not export: the legacy allocator names (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup + 7 more), 13 xmlTextReader* accessors, xmlFreeNodeList, xmlInitGlobals/xmlCleanupGlobals, xmlCheckVersion, xmlSAX2InitDefaultSAXHandler/xmlSAX2InitHtmlDefaultSAXHandler, xmlNormalizeURIPath/xmlParseURIReference. A header declaring a symbol the library does not provide breaks the honest-header rule and would fail downstream linking.
+- **Fix:** Implemented all 33 with upstream semantics: legacy allocator wrappers, reader accessors (Close/CurrentNode/Expand/line/column/IsValid/Normalization/ReadAttributeValue/ReadInnerXml/ReadOuterXml/ReadString/Standalone/XmlLang), xmlFreeNodeList wrapper, globals init/cleanup no-ops, xmlCheckVersion export, SAX2 handler initializers (HTML variant matches upstream SAX2.c field set and initialized=1), and the URI functions. xmlSAX2IsInitialized (not an upstream API) was removed from SAX2.h. The HEADER-COMPILE court now proves every declared function is exported.
+- **Evidence:** ['courts/receipts/phase-11/header-compile-* (declared-functions-exported PASS)', 'nm -D target/debug/liblibxml_rs.so']
+- **Classification:** CANDIDATE_BUG
+
+### R-000134: xmlSAX2IsInitialized declared in header but not an upstream API (FIXED)
+
+- **Status:** FIXED (2026-08-29, Phase 11.1-H)
+- **Component:** include/libxml/SAX2.h
+- **Surface:** headers
+- **Root cause:** The hand-written SAX2.h declared xmlSAX2IsInitialized(void* ctx), which does not exist in upstream libxml2 2.15 (verified against /usr/include and the archaeology tree).
+- **Fix:** Removed the declaration; upstream 2.15 declares xmlSAX2InitDefaultSAXHandler(hdlr, warning) and xmlSAX2InitHtmlDefaultSAXHandler(hdlr), both now exported by the candidate.
+- **Evidence:** ['include/libxml/SAX2.h', 'courts/receipts/phase-11/header-compile-*']
+- **Classification:** CANDIDATE_BUG
+
+## Phase 11.1-I Residuals
+
+### R-000131: Legacy allocator API surface: location tracking, xmlMemSize, debug dumps are simplified (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/abi/allocator.rs, include/libxml/xmlmemory.h
+- **Surface:** xmlmemory.h API
+- **Root cause:** The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.
+- **Fix:** Recorded as intentional safe divergence: the exported symbols exist with ABI-identical signatures; exact per-block reporting requires the allocator instrumentation court (11.1-J ownership/allocator work) to add block metadata. To be closed there or accepted as documented divergence.
+- **Evidence:** ['src/abi/allocator.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000135: Exported C data globals: 11 libxml2 symbols remain (SAX handler structs, char tables, xmlLastError) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/globals/mod.rs, src/abi/exports_xml2.rs, src/abi/exports_xslt.rs, src/abi/data_globals.rs, src/xml/chvalid.rs, src/xml/unicode_tables.rs, src/xml/errors/mod.rs, tools/abi/data_globals_probe.py, courts/suites/data-abi/data-globals-probe.c
+- **Surface:** ABI data symbols
+- **Root cause:** Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab — upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions — documented safe divergence (stable Rust cannot define variadic extern fns).
+- **Fix:** All 11 remaining data symbols are now exported and court-verified byte-identical against the oracle DSO. (1) Added _xmlSAXHandlerV1, xmlChSRange/xmlChLRange/xmlChRangeGroup mirrors to structs.rs (measured by the RUST-MIRROR-ABI court, 0 mismatches). (2) Created tools/archaeology/gen_chvalid_tables.py — a deterministic generator extracting the char-class tables verbatim from upstream codegen/ranges.inc (sha256 bound) into src/xml/unicode_tables.rs (xmlIsPubidChar_tab[256] + the six xmlIs*Group range tables, counts verified against the declared values). (3) Created src/xml/chvalid.rs implementing xmlCharInRange, xmlIs{BaseChar,Blank,Char,Combining,Digit,Extender,Ideographic,PubidChar}, xmlIsLetter and xmlIsBlankNode with the exact upstream Q-macro semantics. (4) Exported xmlDefaultSAXHandler/htmlDefaultSAXHandler (xmlSAXHandlerV1) and xmlDefaultSAXLocator as #[no_mangle] consts reproducing the upstream globals.c initializer lists exactly — the differential court caught an initializer error (htmlDefaultSAXHandler reference/externalSubset slots) before sealing. (5) Added the xmlParserError/Warning/ValidityError/ValidityWarning legacy SAX handlers (non-variadic documented divergence) referenced by the handler structs. (6) xmlLastError: deep-copy mirror of the thread-local error state (sync on raise, free on reset, upstream xmlResetError semantics). (7) New DATA-GLOBALS-001 court (tools/abi/data_globals_probe.py + committed C probe) compiles the probe against the system libxml2 and the candidate DSO and requires byte-identical output: pubid table hex, every range group entry, SAX handler slot patterns, xmlLastError zero state, FNV-1a hashes of the nine xmlIs* functions over the full BMP + supplementary samples, xmlIsBlankNode behavior. Verdict PASS (oracle sha256 e7575963… == candidate). PARITY_OBLIGATIONS.json regenerated: DATA MISSING 11 → 0 (both projects).
+- **Evidence:** ['courts/receipts/phase-11/data-globals-20260829T203735Z.json', 'courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json', 'atlas/PARITY_OBLIGATIONS.json (DATA MISSING = 0)']
+- **Classification:** UNRESOLVED
+- **History:** OPEN 2026-08-29; FIXED 2026-08-29
+
+### R-000136: Missing oracle functions: 881 libxml2 + 201 libxslt exports (was 1158 at discovery) (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/abi/exports_xml2.rs, src/abi/exports_xslt.rs, src/xml
+- **Surface:** DSO function exports
+- **Root cause:** The parity obligation census (tools/abi/parity_obligations.py, oracle = system libxml2 2.15.3 / libxslt 1.1.45 DSOs) records 1158 libxml2 and 201 libxslt upstream functions that the candidate does not yet export. These are the 11.1-I obligation ledger entries; each must be implemented (not stubbed) with upstream semantics, court-covered, in dependency order.
+- **Fix:** Systematic closure in 11.1-I/X: implement per subsystem (validation, serialization, reader/writer, xpath internals, schemas, relaxng, catalogs, entities, globals, HTML, xslt internals, exslt), adding differential courts per domain. Progress tracked in atlas/PARITY_OBLIGATIONS.json (status MISSING).
+- **Evidence:** ['atlas/PARITY_OBLIGATIONS.json']
+- **Classification:** UNRESOLVED
+
+### R-000138: Deprecated init/cleanup entry points are no-ops (xmlInitializeGlobalState, xmlInitializeDict, xmlInitializePredefinedEntities, xmlCleanupPredefinedEntities, xmlDefaultSAXHandlerInit, xmlCheckThreadLocalStorage) (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/abi/exports_xml2.rs
+- **Surface:** DSO function exports
+- **Root cause:** Modern libxml2 keeps these as genuine no-ops (subsystems initialize lazily; xmlDefaultSAXHandlerInit fills a global handler the candidate builds on demand; xmlCheckThreadLocalStorage always passes with Rust thread-locals). The candidate exports them with matching no-op behavior; the only observable difference is xmlDefaultSAXHandlerInit not populating the (still missing) xmlDefaultSAXHandler global, tracked in R-000135.
+- **Fix:** Monitor: when xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator globals are added (R-000135 closure), xmlDefaultSAXHandlerInit must populate xmlDefaultSAXHandler. Otherwise close as documented intentional no-ops.
+- **Evidence:** ['atlas/PARITY_OBLIGATIONS.json (EXPORTED_NOOP)']
+- **Classification:** INTENTIONAL_SAFE_DIVERGENCE
+
+### R-000139: Rust _xmlElement ABI mirror diverged from public C layout (56 vs 104 bytes) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/abi/structs.rs, src/xml/dtd/mod.rs, src/xml/validation/mod.rs, src/xml/tree/mod.rs
+- **Surface:** Rust #[repr(C)] mirror of struct _xmlElement
+- **Root cause:** The ABI evidence system proved upstream-C-header ↔ candidate-C-header parity but never proved implementation-representation parity: the C ABI court compiles probes against C headers only and does not inspect the Rust #[repr(C)] mirrors. The Rust _xmlElement had 7 fields (56 bytes) while the candidate header and upstream tree.h define 14 fields (104 bytes). Every element declaration allocated via xmlMalloc(sizeof(_xmlElement)) was therefore 48 bytes too small; a C consumer reading elem->content at its real offset would read beyond the allocation.
+- **Fix:** Rewrote the Rust mirror with the exact upstream layout (_private, type, name, children, last, parent, next, prev, doc, etype, content, attributes, prefix, contModel); reworked add_element_decl/copy_element/free_element for the new field set (etype now carries EMPTY/ANY/MIXED/ELEMENT; type_ is XML_ELEMENT_DECL); switched all readers from type_ to etype; free_element now releases contModel via the validation content-model NFA free. Also added opaque xmlID/xmlRef mirror structs. Committed as 4090561b.
+- **Evidence:** ['src/abi/structs.rs', 'src/abi/exports_xml2.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000140: Eight libxslt Rust #[repr(C)] mirrors diverged from the oracle ABI (121 mismatches) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/abi/structs.rs, src/xslt/compiler/mod.rs, src/xslt/templates/mod.rs, src/xslt/stylesheet/mod.rs, src/xslt/variables/mod.rs, src/xslt/parameters/mod.rs, src/xslt/keys/mod.rs, src/xslt/extensions/mod.rs, src/xslt/errors/mod.rs, src/xslt/transform/mod.rs, src/xslt/sorting/mod.rs, src/xslt/documents/mod.rs
+- **Surface:** Rust #[repr(C)] mirrors of _xsltStylesheet, _xsltTransformContext, _xsltTemplate, _xsltStackElem, _xsltKeyDef, _xsltKeyTable, _xsltDocument, _xsltDecimalFormat
+- **Root cause:** The candidate's libxslt Rust mirrors were authored against an invented layout rather than the upstream C headers. The RUST-MIRROR-ABI court (first run, commit ef00daf) measured 121 mismatches across eight structs: _xsltStylesheet (280 vs 440 bytes), _xsltTransformContext, _xsltTemplate (missing the match field entirely in the mirror's field order), _xsltStackElem (invented style/inst fields; real comp/computed/level/context fields absent), _xsltKeyDef (missing match/use), _xsltKeyTable (invented table/nb/max/depth array fields; real struct is next/name/nameURI/keys), _xsltDocument and _xsltDecimalFormat. A C consumer traversing these fields directly would read the wrong offsets. This is the same defect class as _xmlElement (R-000139), now caught for the whole libxslt family by the permanent three-way mirror court.
+- **Fix:** Rewrote all eight mirrors from the authoritative clang -fdump-record-layouts-complete field lists of the candidate C headers (verbatim 1.1.42) and remapped every downstream accessor: transform context (sec/error/errctx, extFunctions/extElements, output, maxTemplateDepth/maxTemplateVars, varsTab stack, initialContextNode/initialContextDoc, no paramsTab/keyTables/contextSize fields — those live on xpathCtxt or the document wrapper), template (match string in r#match, compiled pattern carried in params, import depth in position), stylesheet (no params field; caller params merge into variables with XSLT_VAR_PARAM; preserve-space head in nsDefs; XSLT_REFACTORED-gated compCtxt/principalData omitted because the oracle DSO ships with XSLT_REFACTORED disabled), key tables (candidate array storage moved behind the keys void* slot as a private sidecar), stack elements (no style field), decimal formats (nsUri is const), plus document wrapper (main/doc/keys/includes/preproc/nbKeysComputed) and the whole xslt module compile+test pass. Committed with the mirror PASS receipt.
+- **Evidence:** ['courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json', 'src/abi/structs.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000141: xmlTextReaderQuoteChar: upstream hardcodes '"' unconditionally; candidate returned 0 (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs, include/libxml/xmlreader.h
+- **Surface:** xmlTextReaderQuoteChar (xmlreader.c)
+- **Root cause:** The READER-001 differential probe showed the candidate returning quote=0 while the oracle returned 34 ('"') for every attribute. Inspection of upstream xmlreader.c (2.13.0 and 2.15.0) shows xmlTextReaderQuoteChar is a placeholder that returns '"' unconditionally for any non-NULL reader ('/* TODO maybe lookup the attribute value for " first */'); it never inspects the attribute. The candidate had implemented a value-based lookup that produced 0 when the attribute was not on a quote-bearing attribute node. This is an upstream historical accident that the custodian must reproduce verbatim.
+- **Fix:** xmlTextReaderQuoteChar now returns b'"' (34) for any non-NULL reader and -1 for a NULL reader, matching the oracle exactly. Covered by READER-001 (quote=34 on real attributes and xmlns: namespace declarations).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-*.json', 'oracle/historical/src/libxml2-2.15.0/xmlreader.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000142: xmlReaderNew* family: NULL reader must be rejected with -1 without allocating (in-place reuse contract) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs, include/libxml/xmlreader.h
+- **Surface:** xmlReaderNewDoc/NewFile/NewMemory/NewFd/NewIO/NewWalker (xmlreader.c)
+- **Root cause:** READER-001 showed newmem-ret=0 for xmlReaderNewMemory(NULL, ...) while the oracle returns -1 and leaves the caller's pointer untouched. Upstream xmlreader.c begins every xmlReaderNew* with 'if (reader == NULL) return (-1);' before any work, and the family reuses the caller's existing reader allocation in place (xmlTextReaderSetup), so a caller's pointer remains valid across New* calls. The candidate had implemented New* by allocating a fresh reader and, worse, the old reader_renew helper dropped the caller's allocation, leaving the caller's pointer dangling after a successful reuse. Both the NULL-rejection contract and the pointer-stability contract were violated.
+- **Fix:** Every xmlReaderNew* now returns -1 immediately when reader is NULL (and when the source argument is NULL, matching upstream's per-function early checks), never allocating. reader_renew was rewritten to move the freshly built reader's contents into the caller's allocation in place (drop_in_place + copy_nonoverlapping + dealloc of the temporary), preserving the caller's pointer identity across reuse exactly as upstream does. Sealed by READER-001 (newmem-ret=-1, reader stays NULL) plus the in-place reuse unit tests.
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-*.json', 'src/xml/reader/mod.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000143: Reader attribute traversal: namespace declarations count as attributes (xmlns / xmlns:prefix), ordered before properties (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReader attribute navigation (HasAttributes, AttributeCount, MoveToFirstAttribute, MoveToNextAttribute, IsNamespaceDecl)
+- **Root cause:** The upstream reader reports namespace declarations as attributes during attribute traversal (they appear in the attribute list with names 'xmlns' and 'xmlns:prefix', ordered before regular properties), and xmlTextReaderIsNamespaceDecl distinguishes them. The candidate's initial attribute iteration only exposed real xmlAttr properties, so counts and MoveTo* navigation diverged from the oracle on any document with xmlns declarations.
+- **Fix:** Attribute iteration now walks namespace definitions first (names 'xmlns'/'xmlns:prefix', flagged IsNamespaceDecl=1) followed by regular properties, using a unified AttrTarget enum; HasAttributes/AttributeCount and all MoveTo*/GetAttribute* entry points share the same ordering. Sealed by READER-001 (ns-decl attributes with value=urn:x and quote=34, ordered before id/attr).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-*.json']
+- **Classification:** CANDIDATE_BUG
+
+### R-000144: Reader event stream: empty elements emit no END_ELEMENT; whitespace-only text is SIGNIFICANT_WHITESPACE (14) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReaderRead/xmlReaderWalker event generation (xmlreader.c xmlTextReaderNextNode)
+- **Root cause:** The candidate's traversal emitted an END_ELEMENT event for empty elements (<empty/>) and skipped whitespace-only text nodes; the oracle (verified against system 2.15.3 by a standalone read-path probe and the READER-001 walker) emits no END_ELEMENT for empty elements and reports whitespace-only text as SIGNIFICANT_WHITESPACE (14) unless XML_PARSE_NOBLANKS. The walker-count in READER-001 was 7 vs 9 before the fix.
+- **Fix:** build_events now skips the END event for empty elements and classifies whitespace-only text/CDATA content as SIGNIFICANT_WHITESPACE; six unit tests with pre-parity expectations were updated to the oracle-verified sequences. Sealed by READER-001 (walker-count=9 byte-identical) and an independent C read-path probe against the system oracle.
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-*.json', 'src/xml/reader/mod.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000145: xmlTextReaderGetLastError returns a non-NULL embedded xmlError even before any error (message NULL) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReaderGetLastError (xmlreader.c)
+- **Root cause:** READER-001 showed last-error=(null) for the candidate vs (no msg) for the oracle on a freshly created reader. Upstream returns &reader->ctxt->lastError, which is always present while the parser context exists, so callers that inspect the struct (rather than just testing NULL) observe a valid pointer with message==NULL before any error. The candidate returned NULL when no error had been collected.
+- **Fix:** xmlTextReaderGetLastError now always returns a pointer to the reader's embedded _xmlError (message NULL until an error is collected, then a fresh xmlMalloc'd message owned by the reader and freed on replacement/drop). Sealed by READER-001 (last-error=(no msg) byte-identical).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-*.json']
+- **Classification:** CANDIDATE_BUG
+
+### R-000146: Ledger generator silently dropped residuals whose phase label was not in the canonical phases list (21 residuals missing from Markdown) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** tools/evidence/ledger_gen.py, atlas/RESIDUAL_LEDGER.json, atlas/RESIDUAL_LEDGER.md
+- **Surface:** tools/evidence/ledger_gen.py (canonical_md + run_check)
+- **Root cause:** canonical_md groups residuals by phase but only renders phases present in the JSON 'phases' display list. Residuals labeled 11.1-G / 11.1-H / 11.1-I (21 of them, including R-000139 and R-000140) were silently omitted from the generated Markdown while run_check's byte-identity comparison passed vacuously against the equally-stale committed file. The evidence-integrity court therefore certified a document that was missing a third of the ledger. This is the same defect class as the original §70 violation (Markdown vs JSON drift): the generator itself had a silent-omission path.
+- **Fix:** Added the 11.1-G / 11.1-H / 11.1-I phase labels to the canonical phases list and added a run_check validation that fails when any residual's phase is absent from the list, so a future phase label can never silently disappear from the generated document again. Regenerated the Markdown (49/49 residuals render) and re-passed the evidence-integrity court.
+- **Evidence:** ['tools/evidence/ledger_gen.py', 'atlas/RESIDUAL_LEDGER.md']
+- **Classification:** CANDIDATE_BUG
+
+### R-000147: Parser never attached a namespace to namespace-qualified attributes (xmlSAX2AttributeNs parity) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/sax/default.rs
+- **Surface:** Default SAX handler attribute construction (src/xml/sax/default.rs parser_set_prop)
+- **Root cause:** The READER-001 extension (namespaced attribute x:a="nsval") exposed that attributes with a prefix carried no _xmlAttr->ns: the SAX2 default handler stored only the local name and never resolved the prefix. Upstream xmlSAX2AttributeNs resolves the prefix through the parser namespace scope (element's own declarations plus ancestors) and attaches the resulting xmlNs. Downstream consequences are broad: xmlHasNsProp, MoveToAttributeNs, ConstNamespaceUri at attribute positions and any C consumer reading attr->ns all see a NULL namespace.
+- **Fix:** parser_set_prop now resolves the attribute prefix exactly like xmlSAX2AttributeNs: scan the element's own nsDef chain (the new element is not yet linked to its parent when attributes are processed), then fall back to tree::search_ns over ctxt->node (the parent before the element push). The existing-attribute update path now matches on name AND namespace so same-local-name different-prefix attributes stay distinct. Sealed by READER-001 (x:a resolves to urn:x; MoveToAttributeNs finds it).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-20260829T212705Z.json', 'src/xml/sax/default.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000148: Reader reports namespace-qualified attribute names as prefix:localname (constQString), not the local name (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReaderConstName/Name at attribute positions (xmlreader.c constQString)
+- **Root cause:** The extended READER-001 probe showed the oracle reporting attr name=x:a for a namespaced attribute while the candidate reported name=a. Upstream xmlTextReaderConstName returns constQString(reader, node->ns->prefix, node->name) — i.e. 'prefix:localname' — for any element or attribute whose namespace has a prefix; the tree stores only the local name in node->name.
+- **Fix:** cache_attribute_info now rebuilds 'prefix:localname' for namespace-qualified attributes (matching the element-name logic already present for elements) and keeps the local name for unqualified ones. Sealed by READER-001 (attr name=x:a byte-identical).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-20260829T212705Z.json', 'oracle/historical/src/libxml2-2.15.0/xmlreader.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000149: Reader namespace accessors wrong at attribute positions; xmlns-decl quirks missing (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReaderConstNamespaceUri / ConstPrefix / ConstLocalName (xmlreader.c)
+- **Root cause:** The extended READER-001 probe revealed three upstream contracts the candidate did not reproduce: (1) at an attribute position the namespace comes from the attribute (or namespace declaration) itself, not from the underlying element node; (2) a namespace-declaration attribute reports the hardcoded URI http://www.w3.org/2000/xmlns/ (not the declared URI); (3) ConstPrefix on a namespace declaration returns the string 'xmlns' (and NULL for the default declaration), while ConstLocalName returns the prefix (or 'xmlns' for the default). The candidate consulted cur_node->ns for every position and had no namespace-decl handling.
+- **Fix:** All three accessors now resolve the current attribute target (AttrTarget::Ns/Prop) when positioned on an attribute, reproducing the upstream quirks verbatim; at element positions they keep using the node's ns. Sealed by READER-001 (uri=http://www.w3.org/2000/xmlns/, local=x, prefix=xmlns for xmlns:x; uri=urn:x, local=a, prefix=x for x:a).
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-20260829T212705Z.json', 'oracle/historical/src/libxml2-2.15.0/xmlreader.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000150: Reader typed nodes report fixed names (#text, #comment, #cdata-section, #document) instead of NULL (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/reader/mod.rs
+- **Surface:** xmlTextReaderConstName for non-element/attribute node kinds (xmlreader.c)
+- **Root cause:** Upstream xmlTextReaderConstName returns fixed dictionary strings for typed nodes — '#text' for TEXT, '#cdata-section' for CDATA, '#comment' for COMMENT, '#document' for DOCUMENT/HTML_DOCUMENT, '#document-fragment' for DOCUMENT_FRAG — while the candidate returned NULL for those node kinds. Consumers like Nokogiri/lxml read ConstName on every node and distinguish node kinds by these names.
+- **Fix:** cache_name_and_value now sets the upstream fixed name for those node kinds. Sealed by READER-001 (node=#text type=3 / type=14 lines byte-identical) and the updated test_read_simple_document expectation.
+- **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-20260829T212705Z.json', 'src/xml/reader/mod.rs']
+- **Classification:** CANDIDATE_BUG
+
 ## Classification Legend
 
 - `CANDIDATE_BUG` — see classification policy in §45/§71

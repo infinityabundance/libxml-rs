@@ -262,6 +262,7 @@ typedef xmlSchemaSAXPlugStruct *xmlSchemaSAXPlugPtr;
 typedef struct _xmlSchemaParserCtxt xmlSchemaParserCtxt;
 
 typedef struct _xmlSchemaValidCtxt xmlSchemaValidCtxt;
+typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 typedef enum{
     XML_SCHEMAS_ERR_OK		= 0,

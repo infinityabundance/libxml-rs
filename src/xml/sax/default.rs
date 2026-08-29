@@ -183,6 +183,11 @@ pub(crate) mod default_sax_handler {
     /// `parser_new_text_node` so short attribute values are compact under
     /// `XML_PARSE_COMPACT` (upstream `xmlSAX2AttributeNs` behavior).
     ///
+    /// `prefix`/`uri` resolve the attribute's namespace exactly like upstream
+    /// `xmlSAX2AttributeNs` (xmlSAX2.c): a non-NULL prefix is looked up in the
+    /// namespace scope of the element; a NULL prefix means the attribute is
+    /// NOT in the default namespace.
+    ///
     /// KNOWN RESIDUAL: upstream attribute values that contain entity or
     /// character references take the `xmlNodeParseAttValue` path and are
     /// never compact; our tokenizer decodes references before the SAX layer,
@@ -195,6 +200,7 @@ pub(crate) mod default_sax_handler {
         ctxt: *mut _xmlParserCtxt,
         node: *mut _xmlNode,
         name: *const xmlChar,
+        prefix: *const xmlChar,
         value: *const xmlChar,
         value_len: isize,
     ) -> *mut _xmlAttr {
@@ -204,13 +210,50 @@ pub(crate) mod default_sax_handler {
         unsafe {
             let n = &mut *node;
 
-            // Update an existing attribute with the same name.
+            // UPSTREAM-PARITY (xmlSAX2AttributeNs): the attribute namespace is
+            // resolved by prefix against the parser's namespace scope — the
+            // element's own declarations plus its ancestors. The new element is
+            // not yet linked to its parent (add_child runs after attributes),
+            // so the own-decl chain is scanned directly and the ancestor scope
+            // via ctxt->node (the parent before the element push).
+            let ns = if prefix.is_null() {
+                ptr::null_mut()
+            } else {
+                let mut found = ptr::null_mut();
+                let mut own = (*node).nsDef;
+                while !own.is_null() {
+                    let d = &*own;
+                    if !d.prefix.is_null()
+                        && crate::abi::exports_xml2::xmlStrEqual(d.prefix, prefix) != 0
+                    {
+                        found = own;
+                        break;
+                    }
+                    own = (*own).next;
+                }
+                if found.is_null() && !(*ctxt).node.is_null() {
+                    found = tree::search_ns(n.doc, (*ctxt).node, prefix);
+                }
+                found
+            };
+
+            // Update an existing attribute with the same name and namespace.
             let mut existing = n.properties;
             while !existing.is_null() {
                 let attr = &*existing;
-                if !attr.name.is_null()
-                    && crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0
-                {
+                let same_name = !attr.name.is_null()
+                    && crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0;
+                let same_ns = match (attr.ns, ns) {
+                    (a, b) if a == b => true,
+                    (a, b) if a.is_null() || b.is_null() => false,
+                    (a, b) => {
+                        let (ah, bh) = ((*a).href, (*b).href);
+                        !ah.is_null()
+                            && !bh.is_null()
+                            && crate::abi::exports_xml2::xmlStrEqual(ah, bh) != 0
+                    }
+                };
+                if same_name && same_ns {
                     if !attr.children.is_null() {
                         tree::free_node_list(attr.children);
                         let attr_mut = existing as *mut _xmlAttr;
@@ -237,6 +280,7 @@ pub(crate) mod default_sax_handler {
             }
             (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
             (*attr).name = crate::xml::string::xml_strdup(name);
+            (*attr).ns = ns;
             (*attr).parent = node;
             (*attr).doc = n.doc;
             (*attr).atype = crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int;
@@ -453,7 +497,14 @@ pub(crate) mod default_sax_handler {
                             // UPSTREAM-PARITY: xmlSAX2AttributeNs builds the
                             // attribute value text with xmlSAX2TextNode, so
                             // short values are compact under XML_PARSE_COMPACT.
-                            parser_set_prop(ctxt, node, attr_name, attr_value_start, value_len);
+                            parser_set_prop(
+                                ctxt,
+                                node,
+                                attr_name,
+                                attr_prefix,
+                                attr_value_start,
+                                value_len,
+                            );
                         }
                     }
                     i += 1;

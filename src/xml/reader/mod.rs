@@ -29,7 +29,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_long, c_uint};
 
 use crate::abi::allocator::xmlFree;
 use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
@@ -96,6 +96,7 @@ pub(crate) enum ReaderNodeType {
     END_ELEMENT = 15,
     END_ENTITY = 16,
     XML_DECLARATION = 17,
+    NAMESPACE = 18,
 }
 
 /// Reader read state (xmlTextReaderReadState enum).
@@ -220,6 +221,14 @@ fn is_whitespace_only(text: &[u8]) -> bool {
 /// This struct holds all state for the reader cursor: the parsed document,
 /// the current position in the traversal, attribute navigation state, and
 /// cached information about the current node.
+/// The element the reader is currently positioned on.
+#[derive(Clone, Copy)]
+enum AttrTarget {
+    None,
+    Ns(*mut crate::abi::structs::_xmlNs),
+    Prop(*mut _xmlAttr),
+}
+
 pub(crate) struct XmlTextReader {
     /// The parsed XML document.
     doc: *mut _xmlDoc,
@@ -255,6 +264,27 @@ pub(crate) struct XmlTextReader {
     errors: Vec<String>,
     /// Whether the document has been parsed.
     parsed: bool,
+    /// Reader error callback (xmlTextReaderSetErrorHandler).
+    error_handler: Option<xmlTextReaderErrorFunc>,
+    /// User data for the error callback.
+    error_arg: *mut c_void,
+    /// Structured error callback (xmlTextReaderSetStructuredErrorHandler).
+    structured_handler: Option<crate::abi::callbacks::xmlStructuredErrorFunc>,
+    /// User data for the structured callback.
+    structured_arg: *mut c_void,
+    /// Cached last-error struct (xmlTextReaderGetLastError); message owned.
+    last_err: crate::abi::structs::_xmlError,
+    /// Maximum entity amplification ratio (xmlTextReaderSetMaxAmplification).
+    max_amplification: c_int,
+    /// Schema set via xmlTextReaderSetSchema.
+    schema: *mut c_void,
+    /// RELAX NG schema set via xmlTextReaderRelaxNGSetSchema.
+    rng: *mut c_void,
+    /// Whether the reader owns `doc` (parse paths: yes; walker: no).
+    owns_doc: bool,
+    /// Whether the current attribute position is a namespace declaration
+    /// (xmlTextReaderIsNamespaceDecl; ns-decls are exposed as attributes).
+    cur_attr_is_ns: bool,
 }
 
 impl XmlTextReader {
@@ -293,6 +323,16 @@ impl XmlTextReader {
             URL: url_ptr,
             errors: Vec::new(),
             parsed: false,
+            error_handler: None,
+            error_arg: ptr::null_mut(),
+            structured_handler: None,
+            structured_arg: ptr::null_mut(),
+            last_err: unsafe { core::mem::zeroed() },
+            max_amplification: 0,
+            schema: ptr::null_mut(),
+            rng: ptr::null_mut(),
+            owns_doc: true,
+            cur_attr_is_ns: false,
         }
     }
 
@@ -392,7 +432,8 @@ impl XmlTextReader {
         let node_type = unsafe { (*node).type_ };
 
         // For elements, generate an enter event and then recursively visit children,
-        // then generate an exit (END_ELEMENT) event.
+        // then generate an exit (END_ELEMENT) event — unless the element is
+        // empty (upstream: empty elements produce only the start event).
         if node_type == XML_ELEMENT_NODE as c_int {
             self.events.push(TraversalEvent {
                 node,
@@ -410,12 +451,15 @@ impl XmlTextReader {
                 child = unsafe { (*child).next };
             }
 
-            // Generate END_ELEMENT.
-            self.events.push(TraversalEvent {
-                node,
-                is_end: true,
-                depth,
-            });
+            // Generate END_ELEMENT for non-empty elements only (upstream
+            // xmlreader.c: empty elements have no end event).
+            if !unsafe { (*node).children }.is_null() {
+                self.events.push(TraversalEvent {
+                    node,
+                    is_end: true,
+                    depth,
+                });
+            }
         } else if node_type == XML_TEXT_NODE as c_int
             || node_type == XML_CDATA_SECTION_NODE as c_int
             || node_type == XML_COMMENT_NODE as c_int
@@ -423,21 +467,9 @@ impl XmlTextReader {
             || node_type == XML_ENTITY_REF_NODE as c_int
         {
             // Leaf nodes: text, CDATA, comment, PI, entity reference.
-            // Skip whitespace-only text nodes (libxml2 reader default behavior).
-            if node_type == XML_TEXT_NODE as c_int || node_type == XML_CDATA_SECTION_NODE as c_int {
-                let content = unsafe { (*node).content };
-                if !content.is_null() {
-                    let len = crate::xml::tree::xml_strlen(content);
-                    let slice = unsafe { core::slice::from_raw_parts(content, len as usize) };
-                    if slice
-                        .iter()
-                        .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
-                    {
-                        // Skip whitespace-only text node
-                        return;
-                    }
-                }
-            }
+            // Whitespace-only text is emitted (as SIGNIFICANT_WHITESPACE by
+            // position_at) — upstream reader default behavior without
+            // XML_PARSE_NOBLANKS.
             self.events.push(TraversalEvent {
                 node,
                 is_end: false,
@@ -491,6 +523,20 @@ impl XmlTextReader {
             self.node_type = ReaderNodeType::END_ELEMENT;
         } else {
             self.node_type = element_type_to_reader_type(etype);
+            // UPSTREAM-PARITY: whitespace-only text is reported as
+            // SIGNIFICANT_WHITESPACE (14) unless XML_PARSE_NOBLANKS.
+            if etype == XML_TEXT_NODE as c_int || etype == XML_CDATA_SECTION_NODE as c_int {
+                let content = unsafe { (*ev_node).content };
+                if !content.is_null() {
+                    // SAFETY: content is a valid NUL-terminated C string owned by the node.
+                    let len = unsafe { libc::strlen(content as *const libc::c_char) as usize };
+                    // SAFETY: content points to len valid bytes (the NUL-terminated string).
+                    let slice = unsafe { core::slice::from_raw_parts(content, len) };
+                    if is_whitespace_only(slice) {
+                        self.node_type = ReaderNodeType::SIGNIFICANT_WHITESPACE;
+                    }
+                }
+            }
         }
 
         // Cache name and value.
@@ -507,6 +553,7 @@ impl XmlTextReader {
 
         // Reset attribute cursor.
         self.cur_attribute = -1;
+        self.cur_attr_is_ns = false;
     }
 
     /// Cache the name of the current node.
@@ -549,8 +596,53 @@ impl XmlTextReader {
         };
 
         if !name.is_null() {
-            // SAFETY: name is a valid null-terminated xmlChar string.
-            self.name = unsafe { xml_strdup(name as *const xmlChar) };
+            // UPSTREAM-PARITY: xmlTextReaderName/ConstName return the
+            // qualified name for namespaced elements (e.g. "x:child"); the
+            // candidate rebuilds it from the node's ns prefix.
+            let qualified: *mut xmlChar = if etype == XML_ELEMENT_NODE as c_int && !node.is_null() {
+                let ns = unsafe { (*node).ns };
+                if !ns.is_null() && !unsafe { (*ns).prefix }.is_null() {
+                    let plen =
+                        libc::strlen(unsafe { (*ns).prefix } as *const libc::c_char) as usize;
+                    let nlen = libc::strlen(name as *const libc::c_char) as usize;
+                    let p = crate::abi::allocator::xmlMalloc(plen + 1 + nlen + 1) as *mut xmlChar;
+                    if !p.is_null() {
+                        libc::memcpy(
+                            p as *mut libc::c_void,
+                            unsafe { (*ns).prefix } as *const libc::c_void,
+                            plen,
+                        );
+                        *p.add(plen) = b':';
+                        libc::memcpy(
+                            p.add(plen + 1) as *mut libc::c_void,
+                            name as *const libc::c_void,
+                            nlen,
+                        );
+                        *p.add(plen + 1 + nlen) = 0;
+                    }
+                    p
+                } else {
+                    unsafe { xml_strdup(name as *const xmlChar) }
+                }
+            } else {
+                unsafe { xml_strdup(name as *const xmlChar) }
+            };
+            self.name = qualified;
+        } else if !is_end {
+            // UPSTREAM-PARITY (xmlTextReaderConstName): typed node kinds are
+            // reported with fixed names rather than NULL.
+            let fixed: &[u8] = match etype {
+                x if x == XML_TEXT_NODE as c_int => b"#text\0",
+                x if x == XML_CDATA_SECTION_NODE as c_int => b"#cdata-section\0",
+                x if x == XML_COMMENT_NODE as c_int => b"#comment\0",
+                x if x == XML_DOCUMENT_NODE as c_int => b"#document\0",
+                x if x == XML_HTML_DOCUMENT_NODE as c_int => b"#document\0",
+                x if x == XML_DOCUMENT_FRAG_NODE as c_int => b"#document-fragment\0",
+                _ => b"",
+            };
+            if !fixed.is_empty() {
+                self.name = unsafe { xml_strdup(fixed.as_ptr() as *const xmlChar) };
+            }
         }
 
         // Determine value.
@@ -585,6 +677,13 @@ impl XmlTextReader {
     /// `node` must be a valid element node pointer.
     unsafe fn count_attributes(&self, node: *mut _xmlNode) -> i32 {
         let mut count: i32 = 0;
+        // UPSTREAM-PARITY: namespace declarations count as attributes
+        // (xmlTextReaderAttributeCount includes them, xmlreader.c).
+        let mut ns = unsafe { (*node).nsDef };
+        while !ns.is_null() {
+            count += 1;
+            ns = unsafe { (*ns).next };
+        }
         // SAFETY: node is a valid element.
         let mut prop = unsafe { (*node).properties };
         while !prop.is_null() {
@@ -593,6 +692,73 @@ impl XmlTextReader {
             prop = unsafe { (*prop).next };
         }
         count
+    }
+
+    /// Unified attribute addressing: namespace declarations first, then
+    /// regular attributes (upstream reader attribute iteration).
+    unsafe fn attr_at(&self, node: *mut _xmlNode, index: i32) -> AttrTarget {
+        if node.is_null() || index < 0 {
+            return AttrTarget::None;
+        }
+        let mut i = 0;
+        let mut ns = unsafe { (*node).nsDef };
+        while !ns.is_null() {
+            if i == index {
+                return AttrTarget::Ns(ns);
+            }
+            i += 1;
+            ns = unsafe { (*ns).next };
+        }
+        let mut prop = unsafe { (*node).properties };
+        while !prop.is_null() {
+            if i == index {
+                return AttrTarget::Prop(prop);
+            }
+            i += 1;
+            prop = unsafe { (*prop).next };
+        }
+        AttrTarget::None
+    }
+
+    /// The index of the attribute matching `name` (ns decls use
+    /// "xmlns:prefix"/"xmlns" names), or -1.
+    unsafe fn attr_index_by_name(&self, node: *mut _xmlNode, name: *const xmlChar) -> i32 {
+        if node.is_null() || name.is_null() {
+            return -1;
+        }
+        let mut i = 0;
+        let mut ns = unsafe { (*node).nsDef };
+        while !ns.is_null() {
+            let n = unsafe { &*ns };
+            let nsname: Vec<u8> = if n.prefix.is_null() {
+                b"xmlns\0".to_vec()
+            } else {
+                let mut v = b"xmlns:\0".to_vec();
+                let plen = libc::strlen(n.prefix as *const libc::c_char) as usize;
+                v.extend_from_slice(core::slice::from_raw_parts(n.prefix, plen));
+                v.push(0);
+                v
+            };
+            let nlen = libc::strlen(name as *const libc::c_char) as usize;
+            let nbytes = core::slice::from_raw_parts(name as *const u8, nlen);
+            if nbytes == &nsname[..nsname.len() - 1] {
+                return i;
+            }
+            i += 1;
+            ns = unsafe { (*ns).next };
+        }
+        let mut prop = unsafe { (*node).properties };
+        while !prop.is_null() {
+            let pn = unsafe { (*prop).name };
+            if !pn.is_null()
+                && libc::strcmp(pn as *const libc::c_char, name as *const libc::c_char) == 0
+            {
+                return i;
+            }
+            i += 1;
+            prop = unsafe { (*prop).next };
+        }
+        -1
     }
 
     /// Free the cached name.
@@ -641,6 +807,7 @@ impl XmlTextReader {
         // If we're positioned on an attribute, return to the element first.
         if self.cur_attribute >= 0 {
             self.cur_attribute = -1;
+            self.cur_attr_is_ns = false;
             // Re-cache the element info.
             if !self.cur_node.is_null() {
                 // SAFETY: cur_node is valid.
@@ -720,6 +887,7 @@ impl XmlTextReader {
             return 0;
         }
         self.cur_attribute = -1;
+        self.cur_attr_is_ns = false;
         if !self.cur_node.is_null() {
             // SAFETY: cur_node is valid.
             unsafe { self.cache_name_and_value(self.cur_node, false) };
@@ -743,28 +911,15 @@ impl XmlTextReader {
         }
 
         // SAFETY: cur_node is an element.
-        let mut prop = unsafe { (*self.cur_node).properties };
-        let mut index: i32 = 0;
-        while !prop.is_null() {
-            // SAFETY: prop is a valid attribute.
-            let prop_name = unsafe { (*prop).name };
-            if !prop_name.is_null() {
-                // Compare names.
-                // SAFETY: Both strings are null-terminated.
-                if unsafe { crate::xml::string::xml_strcmp(prop_name as *const xmlChar, name) == 0 }
-                {
-                    self.cur_attribute = index;
-                    // Cache attribute info.
-                    self.cache_attribute_info(prop);
-                    return 1;
-                }
-            }
-            index += 1;
-            // SAFETY: prop's next pointer is valid.
-            prop = unsafe { (*prop).next };
+        let idx = unsafe { self.attr_index_by_name(self.cur_node, name) };
+        if idx < 0 {
+            return 0;
         }
-
-        0
+        self.cur_attribute = idx;
+        let target = unsafe { self.attr_at(self.cur_node, idx) };
+        // Cache attribute info.
+        unsafe { self.cache_attribute_info(target) };
+        1
     }
 
     /// Move to an attribute by index.
@@ -782,21 +937,16 @@ impl XmlTextReader {
         }
 
         // SAFETY: cur_node is an element.
-        let mut prop = unsafe { (*self.cur_node).properties };
-        let mut i: i32 = 0;
-        while !prop.is_null() {
-            if i == index {
+        let target = unsafe { self.attr_at(self.cur_node, index) };
+        match target {
+            AttrTarget::None => 0,
+            t => {
                 self.cur_attribute = index;
                 // Cache attribute info.
-                self.cache_attribute_info(prop);
-                return 1;
+                unsafe { self.cache_attribute_info(t) };
+                1
             }
-            i += 1;
-            // SAFETY: prop's next pointer is valid.
-            prop = unsafe { (*prop).next };
         }
-
-        0
     }
 
     /// Move to the first attribute of the current element.
@@ -814,15 +964,16 @@ impl XmlTextReader {
         }
 
         // SAFETY: cur_node is an element.
-        let first_prop = unsafe { (*self.cur_node).properties };
-        if first_prop.is_null() {
-            return 0;
+        let first = unsafe { self.attr_at(self.cur_node, 0) };
+        match first {
+            AttrTarget::None => 0,
+            t => {
+                self.cur_attribute = 0;
+                // Cache attribute info.
+                unsafe { self.cache_attribute_info(t) };
+                1
+            }
         }
-
-        self.cur_attribute = 0;
-        // Cache attribute info.
-        self.cache_attribute_info(first_prop);
-        1
     }
 
     /// Move to the next attribute.
@@ -839,57 +990,106 @@ impl XmlTextReader {
             return -1;
         }
 
-        // Find the attribute at cur_attribute index.
-        // SAFETY: cur_node is an element.
-        let mut prop = unsafe { (*self.cur_node).properties };
-        let mut i: i32 = 0;
-        while !prop.is_null() && i <= self.cur_attribute {
-            if i == self.cur_attribute {
-                // Move to the next attribute.
-                // SAFETY: prop is a valid attribute.
-                let next_prop = unsafe { (*prop).next };
-                if next_prop.is_null() {
-                    return 0;
-                }
-                self.cur_attribute += 1;
-                self.cache_attribute_info(next_prop);
-                return 1;
+        // Find the attribute at cur_attribute index, then move to the next.
+        let next_index = self.cur_attribute + 1;
+        let target = unsafe { self.attr_at(self.cur_node, next_index) };
+        match target {
+            AttrTarget::None => 0,
+            t => {
+                self.cur_attribute = next_index;
+                unsafe { self.cache_attribute_info(t) };
+                1
             }
-            i += 1;
-            // SAFETY: prop's next pointer is valid.
-            prop = unsafe { (*prop).next };
         }
-
-        0
     }
 
-    /// Cache the current position info for an attribute.
+    /// Cache the current position info for an attribute (or namespace
+    /// declaration, which the reader presents as an attribute).
     ///
     /// # Safety
     ///
-    /// `prop` must be a valid `_xmlAttr` pointer.
-    unsafe fn cache_attribute_info(&mut self, prop: *mut _xmlAttr) {
+    /// `target` must be a valid AttrTarget::Prop(_xmlAttr) or
+    /// AttrTarget::Ns(_xmlNs).
+    unsafe fn cache_attribute_info(&mut self, target: AttrTarget) {
         self.node_type = ReaderNodeType::ATTRIBUTE;
+        self.cur_attr_is_ns = matches!(target, AttrTarget::Ns(_));
         self.clear_cached_name();
         self.clear_cached_value();
-
-        // SAFETY: prop is valid.
-        let attr = unsafe { &*prop };
-
-        // Name.
-        if !attr.name.is_null() {
-            // SAFETY: attr.name is null-terminated.
-            self.name = unsafe { xml_strdup(attr.name as *const xmlChar) };
-        }
-
-        // Value — the attribute's text content is in its child text node.
-        if !attr.children.is_null() {
-            // SAFETY: attr.children is a text node.
-            let val = unsafe { (*attr.children).content };
-            if !val.is_null() {
-                // SAFETY: val is null-terminated.
-                self.value = unsafe { xml_strdup(val as *const xmlChar) };
+        match target {
+            AttrTarget::Ns(ns) => {
+                // UPSTREAM-PARITY: a namespace declaration is exposed as an
+                // attribute named "xmlns:prefix" (or "xmlns" for the default
+                // namespace) whose value is the namespace URI.
+                let n = unsafe { &*ns };
+                if n.prefix.is_null() {
+                    self.name = unsafe { xml_strdup(b"xmlns\0".as_ptr() as *const xmlChar) };
+                } else {
+                    let plen = libc::strlen(n.prefix as *const libc::c_char) as usize;
+                    let mut v = Vec::with_capacity(6 + plen);
+                    v.extend_from_slice(b"xmlns:");
+                    v.extend_from_slice(core::slice::from_raw_parts(n.prefix, plen));
+                    v.push(0);
+                    let p = crate::abi::allocator::xmlMalloc(v.len()) as *mut xmlChar;
+                    if !p.is_null() {
+                        libc::memcpy(
+                            p as *mut libc::c_void,
+                            v.as_ptr() as *const libc::c_void,
+                            v.len(),
+                        );
+                        self.name = p;
+                    }
+                }
+                if !n.href.is_null() {
+                    self.value = unsafe { xml_strdup(n.href as *const xmlChar) };
+                }
             }
+            AttrTarget::Prop(prop) => {
+                // SAFETY: prop is valid.
+                let attr = unsafe { &*prop };
+
+                // Name — UPSTREAM-PARITY (xmlTextReaderConstName): a
+                // namespace-qualified attribute is reported as
+                // "prefix:localname" (constQString), unqualified attributes
+                // keep the local name.
+                if !attr.name.is_null() {
+                    if !attr.ns.is_null() && !unsafe { (*attr.ns).prefix }.is_null() {
+                        let plen = libc::strlen(unsafe { (*attr.ns).prefix } as *const libc::c_char)
+                            as usize;
+                        let nlen = libc::strlen(attr.name as *const libc::c_char) as usize;
+                        let p =
+                            crate::abi::allocator::xmlMalloc(plen + 1 + nlen + 1) as *mut xmlChar;
+                        if !p.is_null() {
+                            libc::memcpy(
+                                p as *mut libc::c_void,
+                                unsafe { (*attr.ns).prefix } as *const libc::c_void,
+                                plen,
+                            );
+                            *p.add(plen) = b':';
+                            libc::memcpy(
+                                p.add(plen + 1) as *mut libc::c_void,
+                                attr.name as *const libc::c_void,
+                                nlen,
+                            );
+                            *p.add(plen + 1 + nlen) = 0;
+                            self.name = p;
+                        }
+                    } else {
+                        // SAFETY: attr.name is null-terminated.
+                        self.name = unsafe { xml_strdup(attr.name as *const xmlChar) };
+                    }
+                }
+
+                // Value — the attribute's text content is in its child text node.
+                if !attr.children.is_null() {
+                    // SAFETY: attr.children is a text node.
+                    let val = unsafe { (*attr.children).content };
+                    if !val.is_null() {
+                        // SAFETY: val is null-terminated.
+                        self.value = unsafe { xml_strdup(val as *const xmlChar) };
+                    }
+                }
+            }
+            AttrTarget::None => {}
         }
     }
 
@@ -998,8 +1198,10 @@ impl XmlTextReader {
             return 0;
         }
         // SAFETY: cur_node is an element.
+        // UPSTREAM-PARITY: namespace declarations count as attributes.
         let props = unsafe { (*self.cur_node).properties };
-        if props.is_null() {
+        let nsdefs = unsafe { (*self.cur_node).nsDef };
+        if props.is_null() && nsdefs.is_null() {
             0
         } else {
             1
@@ -1144,33 +1346,32 @@ impl XmlTextReader {
         }
 
         // SAFETY: cur_node is an element.
-        let mut prop = unsafe { (*self.cur_node).properties };
-        while !prop.is_null() {
-            // SAFETY: prop is valid.
-            let prop_name = unsafe { (*prop).name };
-            if !prop_name.is_null() {
-                // SAFETY: Both strings are null-terminated.
-                if unsafe { crate::xml::string::xml_strcmp(prop_name as *const xmlChar, name) == 0 }
-                {
-                    // Get the attribute value from its child text node.
-                    // SAFETY: prop's children is valid.
-                    let val = unsafe { (*prop).children };
-                    if !val.is_null() {
-                        // SAFETY: val's content is null-terminated.
-                        let content = unsafe { (*val).content };
-                        if !content.is_null() {
-                            // SAFETY: content is null-terminated.
-                            return unsafe { xml_strdup(content as *const xmlChar) };
-                        }
-                    }
-                    return ptr::null_mut();
+        let idx = unsafe { self.attr_index_by_name(self.cur_node, name) };
+        if idx < 0 {
+            return ptr::null_mut();
+        }
+        match unsafe { self.attr_at(self.cur_node, idx) } {
+            AttrTarget::Ns(ns) => {
+                let href = unsafe { (*ns).href };
+                if href.is_null() {
+                    ptr::null_mut()
+                } else {
+                    unsafe { xml_strdup(href as *const xmlChar) }
                 }
             }
-            // SAFETY: prop's next is valid.
-            prop = unsafe { (*prop).next };
+            AttrTarget::Prop(prop) => {
+                // Get the attribute value from its child text node.
+                let val = unsafe { (*prop).children };
+                if !val.is_null() {
+                    let content = unsafe { (*val).content };
+                    if !content.is_null() {
+                        return unsafe { xml_strdup(content as *const xmlChar) };
+                    }
+                }
+                ptr::null_mut()
+            }
+            AttrTarget::None => ptr::null_mut(),
         }
-
-        ptr::null_mut()
     }
 
     /// Get an attribute value by index.
@@ -1188,28 +1389,27 @@ impl XmlTextReader {
         }
 
         // SAFETY: cur_node is an element.
-        let mut prop = unsafe { (*self.cur_node).properties };
-        let mut i: i32 = 0;
-        while !prop.is_null() {
-            if i == index {
-                // SAFETY: prop is valid.
+        match unsafe { self.attr_at(self.cur_node, index) } {
+            AttrTarget::Ns(ns) => {
+                let href = unsafe { (*ns).href };
+                if href.is_null() {
+                    ptr::null_mut()
+                } else {
+                    unsafe { xml_strdup(href as *const xmlChar) }
+                }
+            }
+            AttrTarget::Prop(prop) => {
                 let val = unsafe { (*prop).children };
                 if !val.is_null() {
-                    // SAFETY: val's content is null-terminated.
                     let content = unsafe { (*val).content };
                     if !content.is_null() {
-                        // SAFETY: content is null-terminated.
                         return unsafe { xml_strdup(content as *const xmlChar) };
                     }
                 }
-                return ptr::null_mut();
+                ptr::null_mut()
             }
-            i += 1;
-            // SAFETY: prop's next is valid.
-            prop = unsafe { (*prop).next };
+            AttrTarget::None => ptr::null_mut(),
         }
-
-        ptr::null_mut()
     }
 
     /// Get an attribute value by local name and namespace URI.
@@ -1408,6 +1608,13 @@ impl Drop for XmlTextReader {
         self.clear_cached_name();
         self.clear_cached_value();
 
+        // Free the cached last-error message (owned, xmlMalloc'd).
+        if !self.last_err.message.is_null() {
+            // SAFETY: message was allocated by xmlMalloc in GetLastError.
+            unsafe { libc::free(self.last_err.message as *mut libc::c_void) };
+            self.last_err.message = ptr::null_mut();
+        }
+
         // Free encoding and URL.
         if !self.encoding.is_null() {
             // SAFETY: encoding was allocated by xmlMalloc.
@@ -1420,8 +1627,8 @@ impl Drop for XmlTextReader {
             self.URL = ptr::null_mut();
         }
 
-        // Free the document if we own it.
-        if !self.doc.is_null() {
+        // Free the document if we own it (walker readers borrow the doc).
+        if !self.doc.is_null() && self.owns_doc {
             // SAFETY: doc was created by the parser, which allocates via xmlMalloc.
             // We own the doc since we created it.
             unsafe { tree::free_doc(self.doc) };
@@ -3213,7 +3420,8 @@ mod tests {
             assert_eq!(nodes.len(), 5);
             assert_eq!(nodes[0], (ReaderNodeType::ELEMENT, "root".to_string(), 0));
             assert_eq!(nodes[1], (ReaderNodeType::ELEMENT, "child".to_string(), 1));
-            assert_eq!(nodes[2], (ReaderNodeType::TEXT, "".to_string(), 2));
+            // UPSTREAM-PARITY: text nodes report the fixed name "#text".
+            assert_eq!(nodes[2], (ReaderNodeType::TEXT, "#text".to_string(), 2));
             assert_eq!(
                 nodes[3],
                 (ReaderNodeType::END_ELEMENT, "child".to_string(), 1)
@@ -3241,11 +3449,8 @@ mod tests {
             assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
             assert_eq!((*reader).Depth(), 0);
 
-            // Second read — should be END_ELEMENT.
-            assert_eq!(xmlTextReaderRead(reader), 1);
-            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
-
-            // Third read — EOF.
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): empty elements emit no
+            // END_ELEMENT event — the second Read returns EOF directly.
             assert_eq!(xmlTextReaderRead(reader), 0);
             assert_eq!((*reader).ReadState(), ReadState::EOF);
 
@@ -3319,9 +3524,10 @@ mod tests {
             assert_eq!((*reader).HasAttributes(), 0);
             assert_eq!((*reader).AttributeCount(), 0);
 
-            // END_ELEMENT.
-            assert_eq!(xmlTextReaderRead(reader), 1);
-            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): empty elements emit
+            // NO END_ELEMENT event; the next Read returns EOF.
+            assert_eq!(xmlTextReaderRead(reader), 0);
+            assert_eq!((*reader).ReadState(), ReadState::EOF);
 
             free_reader(reader);
         }
@@ -3448,15 +3654,16 @@ mod tests {
             assert!(!reader.is_null());
 
             let nodes = collect_nodes(reader);
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): empty elements emit no
+            // END_ELEMENT event.
             // ELEMENT a (0), ELEMENT b (1), ELEMENT c (2),
-            // END_ELEMENT c (2), END_ELEMENT b (1), END_ELEMENT a (0)
-            assert_eq!(nodes.len(), 6);
+            // END_ELEMENT b (1), END_ELEMENT a (0)
+            assert_eq!(nodes.len(), 5);
             assert_eq!(nodes[0].2, 0); // a depth 0
             assert_eq!(nodes[1].2, 1); // b depth 1
             assert_eq!(nodes[2].2, 2); // c depth 2
-            assert_eq!(nodes[3].2, 2); // END c depth 2
-            assert_eq!(nodes[4].2, 1); // END b depth 1
-            assert_eq!(nodes[5].2, 0); // END a depth 0
+            assert_eq!(nodes[3].2, 1); // END b depth 1
+            assert_eq!(nodes[4].2, 0); // END a depth 0
 
             free_reader(reader);
         }
@@ -3918,13 +4125,15 @@ mod tests {
             assert!(!reader.is_null());
 
             let nodes = collect_nodes(reader);
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): empty elements emit no
+            // END_ELEMENT event.
             // ELEMENT root(0), TEXT "before"(1), ELEMENT child(1),
-            // END_ELEMENT child(1), TEXT "after"(1), END_ELEMENT root(0)
-            assert_eq!(nodes.len(), 6);
+            // TEXT "after"(1), END_ELEMENT root(0)
+            assert_eq!(nodes.len(), 5);
             assert_eq!(nodes[0], (ReaderNodeType::ELEMENT, "root".to_string(), 0));
             assert_eq!(nodes[1].0, ReaderNodeType::TEXT);
             assert_eq!(nodes[2], (ReaderNodeType::ELEMENT, "child".to_string(), 1));
-            assert_eq!(nodes[4].0, ReaderNodeType::TEXT);
+            assert_eq!(nodes[3].0, ReaderNodeType::TEXT);
 
             free_reader(reader);
         }
@@ -3992,7 +4201,9 @@ mod tests {
             assert!(!reader.is_null());
 
             let nodes = collect_nodes(reader);
-            assert_eq!(nodes.len(), 4); // ELEMENT root, ELEMENT data, END data, END root
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): `<data/>` is empty, so
+            // it contributes no END_ELEMENT: root, data, END root.
+            assert_eq!(nodes.len(), 3);
 
             free_reader(reader);
             libc::close(fd);
@@ -4060,12 +4271,948 @@ mod tests {
             assert!(!cname.is_null());
             assert_eq!(xmlstr_to_bytes(cname), b"root");
 
-            assert_eq!(xmlTextReaderRead(reader), 1);
-            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
-
-            assert_eq!(xmlTextReaderRead(reader), 0); // EOF
+            // UPSTREAM-PARITY (oracle-verified 2.15.3): `<root/>` is empty, so
+            // there is no END_ELEMENT — the second Read returns EOF.
+            assert_eq!(xmlTextReaderRead(reader), 0);
 
             free_reader(reader);
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 11.1-I reader closure — remaining xmlTextReader API (R-000136)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Error severity (upstream `xmlParserSeverities`, reader.h).
+pub const XML_PARSER_SEVERITY_VALIDITY_WARNING: c_int = 1;
+pub const XML_PARSER_SEVERITY_VALIDITY_ERROR: c_int = 2;
+pub const XML_PARSER_SEVERITY_WARNING: c_int = 3;
+pub const XML_PARSER_SEVERITY_ERROR: c_int = 4;
+
+/// Opaque locator passed to the reader error handler (upstream
+/// `xmlTextReaderLocator`).
+#[repr(C)]
+pub struct XmlTextReaderLocator {
+    pub reader: *mut XmlTextReader,
+}
+
+/// Reader error callback (upstream `xmlTextReaderErrorFunc`).
+pub type xmlTextReaderErrorFunc = unsafe extern "C" fn(
+    arg: *mut c_void,
+    msg: *const c_char,
+    severity: c_int,
+    locator: *mut XmlTextReaderLocator,
+);
+
+/// `xmlTextReaderPtr xmlReaderForDoc(const xmlChar *cur, const char *URL,
+/// const char *encoding, int options)` — reader over an in-memory XML string.
+///
+/// # SAFETY
+///
+/// - `cur` must be a valid NUL-terminated XML document string.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderForDoc(
+    cur: *const xmlChar,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    let len = unsafe { libc::strlen(cur as *const libc::c_char) } as c_int;
+    unsafe { xmlReaderForMemory(cur as *const c_char, len, URL, encoding, options) }
+}
+
+/// `xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewTextReaderFilename(
+    URI: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut XmlTextReader {
+    unsafe { xmlReaderForFile(URI, encoding, options) }
+}
+
+/// Rebuild a reader in place (upstream `xmlReaderNew*` reuse contract).
+///
+/// Upstream reuses the caller's existing reader allocation, so a caller's
+/// pointer remains valid across `xmlReaderNew*`. The candidate mirrors that by
+/// moving the freshly built reader's contents into the caller's allocation and
+/// releasing the temporary allocation without dropping the moved contents.
+///
+/// # SAFETY
+///
+/// - `reader` must be a valid, non-NULL reader pointer.
+/// - `new_reader` must be a valid, non-NULL reader pointer distinct from `reader`.
+unsafe fn reader_renew(reader: *mut XmlTextReader, new_reader: *mut XmlTextReader) {
+    debug_assert!(!reader.is_null() && !new_reader.is_null() && reader != new_reader);
+    unsafe {
+        // Drop the old contents, then bitwise-move the new reader into the
+        // caller's allocation. The temporary allocation is deallocated without
+        // dropping (its contents now live at `reader`).
+        core::ptr::drop_in_place(reader);
+        core::ptr::copy_nonoverlapping(new_reader, reader, 1);
+        let layout = std::alloc::Layout::new::<XmlTextReader>();
+        std::alloc::dealloc(new_reader as *mut u8, layout);
+    }
+}
+
+/// `int xmlReaderNewDoc(xmlTextReaderPtr reader, const xmlChar *cur, const char *URL, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewDoc(
+    reader: *mut XmlTextReader,
+    cur: *const xmlChar,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    // UPSTREAM-PARITY: the New* family rejects a NULL reader before any work
+    // (xmlreader.c: `if (reader == NULL) return (-1);`). It never allocates.
+    if reader.is_null() || cur.is_null() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderForDoc(cur, URL, encoding, options) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `int xmlReaderNewFile(xmlTextReaderPtr reader, const char *filename, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewFile(
+    reader: *mut XmlTextReader,
+    filename: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderForFile(filename, encoding, options) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `int xmlReaderNewMemory(xmlTextReaderPtr reader, const char *buffer, int size, const char *URL, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewMemory(
+    reader: *mut XmlTextReader,
+    buffer: *const c_char,
+    size: c_int,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    if reader.is_null() || buffer.is_null() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderForMemory(buffer, size, URL, encoding, options) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `int xmlReaderNewFd(xmlTextReaderPtr reader, int fd, const char *URL, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewFd(
+    reader: *mut XmlTextReader,
+    fd: c_int,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderForFd(fd, URL, encoding, options) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `int xmlReaderNewIO(xmlTextReaderPtr reader, xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, const char *URL, const char *encoding, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewIO(
+    reader: *mut XmlTextReader,
+    ioread: Option<xmlInputReadCallback>,
+    ioclose: Option<xmlInputCloseCallback>,
+    ioctx: *mut c_void,
+    URL: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> c_int {
+    // UPSTREAM-PARITY: NULL reader or NULL read callback is rejected (-1).
+    if reader.is_null() || ioread.is_none() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderForIO(ioread, ioclose, ioctx, URL, encoding, options) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `xmlTextReaderPtr xmlReaderWalker(xmlDocPtr doc)` — reader walking an
+/// existing document tree.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid document.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderWalker(doc: *mut _xmlDoc) -> *mut XmlTextReader {
+    if doc.is_null() {
+        return ptr::null_mut();
+    }
+    let mut reader = XmlTextReader::new(ptr::null_mut(), None, None);
+    reader.doc = doc;
+    reader.parsed = true;
+    reader.owns_doc = false; // walker borrows the caller's document
+    reader.state = ReadState::READING;
+    reader.build_events();
+    Box::into_raw(Box::new(reader))
+}
+
+/// `int xmlReaderNewWalker(xmlTextReaderPtr reader, xmlDocPtr doc)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlReaderNewWalker(
+    reader: *mut XmlTextReader,
+    doc: *mut _xmlDoc,
+) -> c_int {
+    // UPSTREAM-PARITY: NULL reader or NULL doc is rejected (-1).
+    if reader.is_null() || doc.is_null() {
+        return -1;
+    }
+    let r = unsafe { xmlReaderWalker(doc) };
+    if r.is_null() {
+        return -1;
+    }
+    unsafe { reader_renew(reader, r) };
+    0
+}
+
+/// `long xmlTextReaderByteConsumed(xmlTextReaderPtr reader)`.
+///
+/// Returns the total bytes consumed from the input (0 when unavailable —
+/// the candidate parses the full input up front; documented divergence).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderByteConsumed(reader: *mut XmlTextReader) -> c_long {
+    if reader.is_null() {
+        return -1;
+    }
+    0
+}
+
+/// `const xmlChar *xmlTextReaderConstBaseUri(xmlTextReaderPtr reader)` — the
+/// base URI, valid until the reader is freed (no copy).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstBaseUri(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    unsafe { (*reader).URL }
+}
+
+/// `const xmlChar *xmlTextReaderConstEncoding(xmlTextReaderPtr reader)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstEncoding(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    if !r.encoding.is_null() {
+        return r.encoding;
+    }
+    if !r.doc.is_null() {
+        return unsafe { (*r.doc).encoding };
+    }
+    ptr::null()
+}
+
+/// `const xmlChar *xmlTextReaderConstLocalName(xmlTextReaderPtr reader)`.
+///
+/// UPSTREAM-PARITY: at an attribute position this is the attribute's local
+/// name (or "xmlns"/the prefix for a namespace declaration); at an element
+/// position the tree's local name.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstLocalName(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    if r.cur_node.is_null() {
+        return ptr::null();
+    }
+    // Attribute position: the attribute's local name (upstream node->name for
+    // XML_ATTRIBUTE_NODE; "xmlns"/prefix for a namespace declaration).
+    if r.cur_attribute >= 0 {
+        let target = unsafe { r.attr_at(r.cur_node, r.cur_attribute) };
+        return match target {
+            AttrTarget::Ns(ns) => {
+                if ns.is_null() {
+                    ptr::null()
+                } else if unsafe { (*ns).prefix }.is_null() {
+                    b"xmlns\0".as_ptr() as *const xmlChar
+                } else {
+                    unsafe { (*ns).prefix }
+                }
+            }
+            AttrTarget::Prop(p) => {
+                if p.is_null() || unsafe { (*p).name }.is_null() {
+                    ptr::null()
+                } else {
+                    unsafe { (*p).name }
+                }
+            }
+            AttrTarget::None => ptr::null(),
+        };
+    }
+    // Element position: the tree's local name (upstream node->name).
+    let etype = unsafe { (*r.cur_node).type_ };
+    if etype == XML_ELEMENT_NODE as c_int || etype == XML_ATTRIBUTE_NODE as c_int {
+        unsafe { (*r.cur_node).name }
+    } else {
+        ptr::null()
+    }
+}
+
+/// `const xmlChar *xmlTextReaderConstNamespaceUri(xmlTextReaderPtr reader)`.
+///
+/// UPSTREAM-PARITY: at an attribute position the namespace comes from the
+/// attribute (or namespace declaration) itself; elsewhere from the node.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstNamespaceUri(
+    reader: *mut XmlTextReader,
+) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    if r.cur_node.is_null() {
+        return ptr::null();
+    }
+    // Attribute position: resolve the current attribute's namespace.
+    if r.cur_attribute >= 0 {
+        let target = unsafe { r.attr_at(r.cur_node, r.cur_attribute) };
+        return match target {
+            AttrTarget::Ns(_ns) => {
+                // UPSTREAM-PARITY (xmlTextReaderConstNamespaceUri): a
+                // namespace declaration reports the xmlns namespace URI,
+                // not the declared URI.
+                b"http://www.w3.org/2000/xmlns/\0".as_ptr() as *const xmlChar
+            }
+            AttrTarget::Prop(p) => {
+                if p.is_null() || unsafe { (*p).ns }.is_null() {
+                    ptr::null()
+                } else {
+                    unsafe { (*(*p).ns).href }
+                }
+            }
+            AttrTarget::None => ptr::null(),
+        };
+    }
+    let ns = unsafe { (*r.cur_node).ns };
+    if ns.is_null() || unsafe { (*ns).href }.is_null() {
+        ptr::null()
+    } else {
+        unsafe { (*ns).href }
+    }
+}
+
+/// `const xmlChar *xmlTextReaderConstPrefix(xmlTextReaderPtr reader)`.
+///
+/// UPSTREAM-PARITY: at an attribute position the prefix comes from the
+/// attribute; for a namespace declaration the prefix is reported as "xmlns"
+/// (and NULL for the default declaration) — an upstream quirk reproduced here.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstPrefix(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    if r.cur_node.is_null() {
+        return ptr::null();
+    }
+    // Attribute position: resolve the current attribute's namespace.
+    if r.cur_attribute >= 0 {
+        let target = unsafe { r.attr_at(r.cur_node, r.cur_attribute) };
+        return match target {
+            AttrTarget::Ns(ns) => {
+                if ns.is_null() || unsafe { (*ns).prefix }.is_null() {
+                    ptr::null()
+                } else {
+                    b"xmlns\0".as_ptr() as *const xmlChar
+                }
+            }
+            AttrTarget::Prop(p) => {
+                if p.is_null() || unsafe { (*p).ns }.is_null() {
+                    ptr::null()
+                } else {
+                    unsafe { (*(*p).ns).prefix }
+                }
+            }
+            AttrTarget::None => ptr::null(),
+        };
+    }
+    let ns = unsafe { (*r.cur_node).ns };
+    if ns.is_null() || unsafe { (*ns).prefix }.is_null() {
+        ptr::null()
+    } else {
+        unsafe { (*ns).prefix }
+    }
+}
+
+/// `const xmlChar *xmlTextReaderConstString(xmlTextReaderPtr reader, const xmlChar *str)`
+/// — the reader's dictionary-internalized copy of `str`; the candidate
+/// returns `str` unchanged (dictionary interning is an internal detail).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstString(
+    _reader: *mut XmlTextReader,
+    str: *const xmlChar,
+) -> *const xmlChar {
+    str
+}
+
+/// `const xmlChar *xmlTextReaderConstXmlLang(xmlTextReaderPtr reader)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstXmlLang(reader: *mut XmlTextReader) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    let mut node = r.cur_node;
+    while !node.is_null() {
+        let mut prop = unsafe { (*node).properties };
+        while !prop.is_null() {
+            let p = unsafe { &*prop };
+            if !p.name.is_null()
+                && unsafe { *p.name } == b'x'
+                && unsafe { *p.name.add(1) } == b'm'
+                && unsafe { *p.name.add(2) } == b'l'
+                && unsafe { *p.name.add(3) } == b':'
+                && unsafe { *p.name.add(4) } == b'l'
+                && unsafe { *p.name.add(5) } == b'a'
+                && unsafe { *p.name.add(6) } == b'n'
+                && unsafe { *p.name.add(7) } == b'g'
+                && unsafe { *p.name.add(8) } == 0
+            {
+                if !p.children.is_null() {
+                    let txt = p.children;
+                    if unsafe { (*txt).type_ }
+                        == crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int
+                    {
+                        return unsafe { (*txt).content };
+                    }
+                }
+                return ptr::null();
+            }
+            prop = p.next;
+        }
+        node = unsafe { (*node).parent };
+    }
+    ptr::null()
+}
+
+/// `const xmlChar *xmlTextReaderConstXmlVersion(xmlTextReaderPtr reader)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderConstXmlVersion(
+    reader: *mut XmlTextReader,
+) -> *const xmlChar {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &*reader };
+    if r.doc.is_null() {
+        return ptr::null();
+    }
+    unsafe { (*r.doc).version }
+}
+
+/// `int xmlTextReaderQuoteChar(xmlTextReaderPtr reader)`.
+///
+/// UPSTREAM-PARITY: libxml2 2.13/2.15 returns `'"'` unconditionally for any
+/// non-NULL reader (the implementation is a placeholder that does not inspect
+/// the attribute; see the `/* TODO maybe lookup the attribute value */` comment
+/// in xmlreader.c). The candidate reproduces that historical behavior exactly.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderQuoteChar(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    b'"' as c_int
+}
+
+/// `int xmlTextReaderIsDefault(xmlTextReaderPtr reader)` — whether the current
+/// attribute came from the DTD default. The candidate returns 0 for a valid
+/// reader (DTD default attribute expansion is not annotated; documented
+/// divergence), -1 for a NULL reader (upstream contract).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderIsDefault(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    0
+}
+
+/// `int xmlTextReaderIsNamespaceDecl(xmlTextReaderPtr reader)` — whether the
+/// current attribute position is a namespace declaration.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderIsNamespaceDecl(reader: *mut XmlTextReader) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    let r = unsafe { &*reader };
+    if r.cur_node.is_null() {
+        return -1;
+    }
+    r.cur_attr_is_ns as c_int
+}
+
+/// `int xmlTextReaderMoveToAttributeNs(xmlTextReaderPtr reader, const xmlChar *localName, const xmlChar *namespaceURI)`.
+///
+/// UPSTREAM-PARITY (xmlreader.c, 2.15): NULL reader/localName/namespaceURI
+/// returns -1; a NULL `namespaceURI` is NOT treated as "no namespace" — the
+/// caller must pass the actual URI. The `http://www.w3.org/2000/xmlns/`
+/// namespace searches namespace declarations (matching the default `xmlns`
+/// declaration or a prefix), everything else searches only namespace-qualified
+/// properties (`prop->ns != NULL`).
+///
+/// # SAFETY
+///
+/// - `localName`/`namespaceURI` must be valid strings (non-NULL).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderMoveToAttributeNs(
+    reader: *mut XmlTextReader,
+    localName: *const xmlChar,
+    namespaceURI: *const xmlChar,
+) -> c_int {
+    if reader.is_null() || localName.is_null() || namespaceURI.is_null() {
+        return -1;
+    }
+    let r = unsafe { &mut *reader };
+    let node = r.cur_node;
+    if node.is_null() {
+        return -1;
+    }
+    if unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
+        return 0;
+    }
+
+    const XMLNS_URI: &[u8] = b"http://www.w3.org/2000/xmlns/\0";
+    if libc::strcmp(
+        namespaceURI as *const libc::c_char,
+        XMLNS_URI.as_ptr() as *const libc::c_char,
+    ) == 0
+    {
+        // Namespace-declaration search: localName "xmlns" addresses the
+        // default declaration, any other localName is a prefix.
+        let is_default = libc::strcmp(
+            localName as *const libc::c_char,
+            b"xmlns\0".as_ptr() as *const libc::c_char,
+        ) == 0;
+        let mut ns = unsafe { (*node).nsDef };
+        let mut index = 0;
+        while !ns.is_null() {
+            let n = unsafe { &*ns };
+            let prefix_match = if is_default {
+                n.prefix.is_null()
+            } else {
+                !n.prefix.is_null()
+                    && libc::strcmp(
+                        n.prefix as *const libc::c_char,
+                        localName as *const libc::c_char,
+                    ) == 0
+            };
+            if prefix_match {
+                r.cur_attribute = index;
+                r.node_type = ReaderNodeType::ATTRIBUTE;
+                r.cache_attribute_info(AttrTarget::Ns(ns));
+                return 1;
+            }
+            index += 1;
+            ns = unsafe { (*ns).next };
+        }
+        return 0;
+    }
+
+    // Property search: only namespace-qualified attributes are matchable.
+    let mut prop = unsafe { (*node).properties };
+    let mut index = 0;
+    let mut ns_count = 0;
+    let mut ns = unsafe { (*node).nsDef };
+    while !ns.is_null() {
+        ns_count += 1;
+        ns = unsafe { (*ns).next };
+    }
+    while !prop.is_null() {
+        let p = unsafe { &*prop };
+        if !p.name.is_null()
+            && !p.ns.is_null()
+            && !(*p.ns).href.is_null()
+            && libc::strcmp(
+                p.name as *const libc::c_char,
+                localName as *const libc::c_char,
+            ) == 0
+            && libc::strcmp(
+                (*p.ns).href as *const libc::c_char,
+                namespaceURI as *const libc::c_char,
+            ) == 0
+        {
+            r.cur_attribute = ns_count + index;
+            r.node_type = ReaderNodeType::ATTRIBUTE;
+            r.cache_attribute_info(AttrTarget::Prop(prop));
+            return 1;
+        }
+        index += 1;
+        prop = unsafe { (*prop).next };
+    }
+    0
+}
+
+/// `xmlNodePtr xmlTextReaderPreserve(xmlTextReaderPtr reader)` — the current
+/// node (the candidate's reader owns the whole tree, so no separate
+/// preservation step is needed).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderPreserve(reader: *mut XmlTextReader) -> *mut _xmlNode {
+    if reader.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*reader).cur_node }
+}
+
+/// `int xmlTextReaderPreservePattern(xmlTextReaderPtr reader, const xmlChar *pattern, const xmlChar **namespaces)`.
+///
+/// The candidate preserves every node; returns 0 (documented divergence:
+/// pattern-based selective preservation is not tracked).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderPreservePattern(
+    reader: *mut XmlTextReader,
+    _pattern: *const xmlChar,
+    _namespaces: *mut *const xmlChar,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    0
+}
+
+/// `int xmlTextReaderSetErrorHandler(xmlTextReaderPtr reader, xmlTextReaderErrorFunc f, void *arg)`.
+///
+/// # SAFETY
+///
+/// - `f` must be a valid callback or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetErrorHandler(
+    reader: *mut XmlTextReader,
+    f: Option<xmlTextReaderErrorFunc>,
+    arg: *mut c_void,
+) {
+    if reader.is_null() {
+        return;
+    }
+    unsafe {
+        (*reader).error_handler = f;
+        (*reader).error_arg = arg;
+    }
+}
+
+/// `void xmlTextReaderGetErrorHandler(xmlTextReaderPtr reader, xmlTextReaderErrorFunc *f, void **arg)`.
+///
+/// # SAFETY
+///
+/// - `f`/`arg` must be valid out-pointers or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetErrorHandler(
+    reader: *mut XmlTextReader,
+    f: *mut Option<xmlTextReaderErrorFunc>,
+    arg: *mut *mut c_void,
+) {
+    if reader.is_null() {
+        return;
+    }
+    unsafe {
+        if !f.is_null() {
+            *f = (*reader).error_handler;
+        }
+        if !arg.is_null() {
+            *arg = (*reader).error_arg;
+        }
+    }
+}
+
+/// `void xmlTextReaderSetStructuredErrorHandler(xmlTextReaderPtr reader, xmlStructuredErrorFunc f, void *arg)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetStructuredErrorHandler(
+    reader: *mut XmlTextReader,
+    f: Option<crate::abi::callbacks::xmlStructuredErrorFunc>,
+    arg: *mut c_void,
+) {
+    if reader.is_null() {
+        return;
+    }
+    unsafe {
+        (*reader).structured_handler = f;
+        (*reader).structured_arg = arg;
+    }
+}
+
+/// `const xmlError *xmlTextReaderGetLastError(xmlTextReaderPtr reader)` —
+/// pointer to the reader's embedded `_xmlError` (upstream returns
+/// `&reader->ctxt->lastError`, which is always present while the reader
+/// exists; valid until the next error is collected).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetLastError(
+    reader: *mut XmlTextReader,
+) -> *const crate::abi::structs::_xmlError {
+    if reader.is_null() {
+        return ptr::null();
+    }
+    let r = unsafe { &mut *reader };
+    // Sync the embedded struct from the most recent collected error, if any.
+    // With no errors the struct stays zeroed (message NULL) — matching the
+    // oracle, which still returns a non-NULL pointer here.
+    if let Some(msg) = r.errors.last() {
+        unsafe {
+            // Message is a fresh NUL-terminated xmlMalloc copy owned by the
+            // reader (freed on replacement and on drop).
+            let bytes = msg.as_bytes();
+            let m = libc::malloc(bytes.len() + 1) as *mut xmlChar;
+            if !m.is_null() {
+                libc::memcpy(
+                    m as *mut libc::c_void,
+                    bytes.as_ptr() as *const libc::c_void,
+                    bytes.len(),
+                );
+                *m.add(bytes.len()) = 0;
+                if !r.last_err.message.is_null() {
+                    libc::free(r.last_err.message as *mut libc::c_void);
+                }
+                (*reader).last_err.message = m as *mut c_char;
+                (*reader).last_err.domain = crate::abi::types::XML_FROM_PARSER as c_int;
+                (*reader).last_err.level = crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int;
+                (*reader).last_err.code = crate::abi::types::XML_ERR_INTERNAL_ERROR as c_int;
+            }
+        }
+    }
+    &(*reader).last_err as *const crate::abi::structs::_xmlError
+}
+
+/// `xmlChar *xmlTextReaderLocatorBaseURI(xmlTextReaderLocatorPtr locator)`.
+///
+/// # SAFETY
+///
+/// - `locator` must be valid or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderLocatorBaseURI(
+    locator: *mut XmlTextReaderLocator,
+) -> *mut xmlChar {
+    if locator.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let r = (*locator).reader;
+        if r.is_null() {
+            return ptr::null_mut();
+        }
+        xml_strdup((*r).URL)
+    }
+}
+
+/// `int xmlTextReaderLocatorLineNumber(xmlTextReaderLocatorPtr locator)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderLocatorLineNumber(
+    locator: *mut XmlTextReaderLocator,
+) -> c_int {
+    if locator.is_null() {
+        return -1;
+    }
+    unsafe {
+        let r = (*locator).reader;
+        if r.is_null() {
+            return -1;
+        }
+        let node = (*r).cur_node;
+        if node.is_null() {
+            return -1;
+        }
+        (*node).line as c_int
+    }
+}
+
+/// `xmlParserInputBufferPtr xmlTextReaderGetRemainder(xmlTextReaderPtr reader)`.
+///
+/// Returns NULL — the candidate reads the whole input up front (documented
+/// divergence: no unconsumed input remains).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderGetRemainder(
+    _reader: *mut XmlTextReader,
+) -> *mut crate::abi::structs::_xmlParserInputBuffer {
+    ptr::null_mut()
+}
+
+/// `void xmlTextReaderSetMaxAmplification(xmlTextReaderPtr reader, unsigned maxAmpl)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetMaxAmplification(
+    reader: *mut XmlTextReader,
+    maxAmpl: c_uint,
+) {
+    if reader.is_null() {
+        return;
+    }
+    unsafe { (*reader).max_amplification = maxAmpl as c_int };
+}
+
+/// `int xmlTextReaderSchemaValidate(xmlTextReaderPtr reader, const char *xsd)` —
+/// parse `xsd` and validate the reader's document.
+///
+/// # SAFETY
+///
+/// - `xsd` must be a valid path or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSchemaValidate(
+    reader: *mut XmlTextReader,
+    xsd: *const c_char,
+) -> c_int {
+    if reader.is_null() || xsd.is_null() {
+        return -1;
+    }
+    // Ensure the document is parsed.
+    if unsafe { (*reader).doc }.is_null() {
+        if unsafe { (*reader).parsed } == false {
+            unsafe { (*reader).Read() };
+        }
+    }
+    let ctxt = crate::xml::schemas::xmlSchemaNewParserCtxt(xsd);
+    if ctxt.is_null() {
+        return -1;
+    }
+    let schema = crate::xml::schemas::xmlSchemaParse(ctxt);
+    if schema.is_null() {
+        crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
+        return -1;
+    }
+    let vctxt = crate::xml::schemas::xmlSchemaNewValidCtxt(schema);
+    if vctxt.is_null() {
+        crate::xml::schemas::xmlSchemaFree(schema);
+        crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
+        return -1;
+    }
+    let ret = crate::xml::schemas::xmlSchemaValidateDoc(vctxt, unsafe { (*reader).doc });
+    crate::xml::schemas::xmlSchemaFreeValidCtxt(vctxt);
+    crate::xml::schemas::xmlSchemaFree(schema);
+    crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
+    ret
+}
+
+/// `int xmlTextReaderSchemaValidateCtxt(xmlTextReaderPtr reader, xmlSchemaValidCtxtPtr ctxt, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSchemaValidateCtxt(
+    reader: *mut XmlTextReader,
+    ctxt: *mut c_void,
+    _options: c_int,
+) -> c_int {
+    if reader.is_null() || ctxt.is_null() {
+        return -1;
+    }
+    if unsafe { (*reader).doc }.is_null() {
+        if unsafe { (*reader).parsed } == false {
+            unsafe { (*reader).Read() };
+        }
+    }
+    crate::xml::schemas::xmlSchemaValidateDoc(ctxt, unsafe { (*reader).doc })
+}
+
+/// `int xmlTextReaderSetSchema(xmlTextReaderPtr reader, xmlSchemaPtr schema)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetSchema(
+    reader: *mut XmlTextReader,
+    schema: *mut c_void,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    unsafe {
+        (*reader).schema = schema;
+    }
+    0
+}
+
+/// `int xmlTextReaderRelaxNGValidate(xmlTextReaderPtr reader, const char *rng)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderRelaxNGValidate(
+    reader: *mut XmlTextReader,
+    rng: *const c_char,
+) -> c_int {
+    if reader.is_null() || rng.is_null() {
+        return -1;
+    }
+    if unsafe { (*reader).doc }.is_null() {
+        if unsafe { (*reader).parsed } == false {
+            unsafe { (*reader).Read() };
+        }
+    }
+    let ctxt = crate::xml::relaxng::xmlRelaxNGNewParserCtxt(rng);
+    if ctxt.is_null() {
+        return -1;
+    }
+    let schema = crate::xml::relaxng::xmlRelaxNGParse(ctxt);
+    if schema.is_null() {
+        crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
+        return -1;
+    }
+    let vctxt = crate::xml::relaxng::xmlRelaxNGNewValidCtxt(schema);
+    if vctxt.is_null() {
+        crate::xml::relaxng::xmlRelaxNGFree(schema);
+        crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
+        return -1;
+    }
+    let ret = crate::xml::relaxng::xmlRelaxNGValidateDoc(vctxt, unsafe { (*reader).doc });
+    crate::xml::relaxng::xmlRelaxNGFreeValidCtxt(vctxt);
+    crate::xml::relaxng::xmlRelaxNGFree(schema);
+    crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
+    ret
+}
+
+/// `int xmlTextReaderRelaxNGValidateCtxt(xmlTextReaderPtr reader, xmlRelaxNGValidCtxtPtr ctxt, int options)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderRelaxNGValidateCtxt(
+    reader: *mut XmlTextReader,
+    ctxt: *mut c_void,
+    _options: c_int,
+) -> c_int {
+    if reader.is_null() || ctxt.is_null() {
+        return -1;
+    }
+    if unsafe { (*reader).doc }.is_null() {
+        if unsafe { (*reader).parsed } == false {
+            unsafe { (*reader).Read() };
+        }
+    }
+    crate::xml::relaxng::xmlRelaxNGValidateDoc(ctxt, unsafe { (*reader).doc })
+}
+
+/// `int xmlTextReaderRelaxNGSetSchema(xmlTextReaderPtr reader, xmlRelaxNGPtr schema)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderRelaxNGSetSchema(
+    reader: *mut XmlTextReader,
+    schema: *mut c_void,
+) -> c_int {
+    if reader.is_null() {
+        return -1;
+    }
+    unsafe {
+        (*reader).rng = schema;
+    }
+    0
 }

@@ -1,0 +1,34 @@
+{
+  "court": "RUST-MIRROR-ABI",
+  "phase": "11.1-G",
+  "timestamp": "2026-08-29T21:17:39Z",
+  "triangle": [
+    "upstream C header (sealed by ABI_PARITY_LEDGER)",
+    "candidate C header (include/)",
+    "Rust #[repr(C)] mirrors (src/abi/structs.rs, src/abi/types.rs)"
+  ],
+  "accounting": {
+    "rust_repr_c_types": 59,
+    "measurable": 50,
+    "classified_unmeasurable": {
+      "OPAQUE_FORWARD_DECL": [
+        "_xmlBuf",
+        "_xsltNsAlias"
+      ],
+      "NOT_LAYOUT_OBSERVABLE": [
+        "EncodingInputUnion",
+        "EncodingOutputUnion",
+        "_xsltAttrSet",
+        "_xsltSort",
+        "xmlChLRange",
+        "xmlChRangeGroup",
+        "xmlChSRange"
+      ]
+    },
+    "silently_omitted": 0
+  },
+  "mismatch_count": 0,
+  "mismatches": [],
+  "verdict": "PASS",
+  "regenerate": "tools/abi/rust_mirror_court.py"
+}

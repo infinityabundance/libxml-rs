@@ -1,0 +1,93 @@
+{
+ "court": "READER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T21:07:32Z",
+ "probe": "courts/suites/data-abi/reader-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "edb5065ce46842686e5e0e2b49bb4a1901cce17690ced1d57b755a5011ef8760"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "8c7d2731131da5161b380a45a8b7b537915a8687f9c83223bfc0f999132089ef"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 15,
+ "mismatches": [
+  {
+   "line": 4,
+   "oracle": "  first-attr=1",
+   "candidate": "node=child local=child prefix=(null) depth=1"
+  },
+  {
+   "line": 5,
+   "oracle": "    attr name=xmlns:x value=urn:x quote=34",
+   "candidate": "  uri=urn:x lang=(null) ver=1.0 base=http://base/root.xml enc=(null)"
+  },
+  {
+   "line": 6,
+   "oracle": "node=x:child local=child prefix=x depth=1",
+   "candidate": "  first-attr=1"
+  },
+  {
+   "line": 7,
+   "oracle": "  uri=urn:x lang=(null) ver=1.0 base=http://base/root.xml enc=(null)",
+   "candidate": "    attr name=id value=1 quote=0"
+  },
+  {
+   "line": 8,
+   "oracle": "  first-attr=1",
+   "candidate": "    attr name=attr value=v quote=0"
+  },
+  {
+   "line": 9,
+   "oracle": "    attr name=id value=1 quote=34",
+   "candidate": "node=child local=child prefix=(null) depth=1"
+  },
+  {
+   "line": 10,
+   "oracle": "    attr name=attr value=v quote=34",
+   "candidate": "  uri=urn:x lang=(null) ver=1.0 base=http://base/root.xml enc=(null)"
+  },
+  {
+   "line": 11,
+   "oracle": "node=x:child local=child prefix=x depth=1",
+   "candidate": "node=empty local=empty prefix=(null) depth=1"
+  },
+  {
+   "line": 12,
+   "oracle": "  uri=urn:x lang=(null) ver=1.0 base=http://base/root.xml enc=(null)",
+   "candidate": "  uri=(null) lang=(null) ver=1.0 base=http://base/root.xml enc=(null)"
+  },
+  {
+   "line": 13,
+   "oracle": "node=empty local=empty prefix=(null) depth=1",
+   "candidate": "  is-empty=1"
+  },
+  {
+   "line": 14,
+   "oracle": "  uri=(null) lang=(null) ver=1.0 base=http://base/root.xml enc=(null)",
+   "candidate": "node=empty local=empty prefix=(null) depth=1"
+  },
+  {
+   "line": 15,
+   "oracle": "  is-empty=1",
+   "candidate": "  uri=(null) lang=(null) ver=1.0 base=http://base/root.xml enc=(null)"
+  },
+  {
+   "line": 20,
+   "oracle": "walker-count=9",
+   "candidate": "walker-count=7"
+  },
+  {
+   "line": 21,
+   "oracle": "newmem-ret=-1",
+   "candidate": "newmem-ret=0"
+  },
+  {
+   "line": 22,
+   "oracle": "last-error=(no msg)",
+   "candidate": "last-error=(null)"
+  }
+ ]
+}
