@@ -1,0 +1,93 @@
+{
+ "court": "CATALOG-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T20:56:57Z",
+ "probe": "courts/suites/data-abi/catalog-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "46f6a97b780432ee50be80dcf04e7fcad87642f03f199251125da59cc97fc6b7"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "491b78dc2b0e246726d5f0c806831bf9765f7dcc57a840cfdb96c38c055c908d"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 15,
+ "mismatches": [
+  {
+   "line": 2,
+   "oracle": "after-adds empty=1",
+   "candidate": "after-adds empty=0"
+  },
+  {
+   "line": 3,
+   "oracle": "resolvePublic=(null)",
+   "candidate": "resolvePublic=file:///dtd/a.dtd"
+  },
+  {
+   "line": 4,
+   "oracle": "resolveSystem=(null)",
+   "candidate": "resolveSystem=file:///tmp/x.xml"
+  },
+  {
+   "line": 5,
+   "oracle": "resolveRewritten=(null)",
+   "candidate": "resolveRewritten=http://new/a.xml"
+  },
+  {
+   "line": 6,
+   "oracle": "resolveURIRewrite=(null)",
+   "candidate": "resolveURIRewrite=urn:new:y"
+  },
+  {
+   "line": 8,
+   "oracle": "resolveBoth=(null)",
+   "candidate": "resolveBoth=file:///dtd/a.dtd"
+  },
+  {
+   "line": 9,
+   "oracle": "dump[236]=<?xml version=\"1.0\"?>",
+   "candidate": "dump[524]=<?xml version=\"1.0\"?>"
+  },
+  {
+   "line": 11,
+   "oracle": "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\"/>",
+   "candidate": "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">"
+  },
+  {
+   "line": 12,
+   "oracle": "remove=-1",
+   "candidate": "  <public publicId=\"-//OASIS//DTD A//EN\" uri=\"file:///dtd/a.dtd\"/>"
+  },
+  {
+   "line": 13,
+   "oracle": "remove-miss=-1",
+   "candidate": "  <system systemId=\"http://ex.com/x\" uri=\"file:///tmp/x.xml\"/>"
+  },
+  {
+   "line": 14,
+   "oracle": "local-miss=1",
+   "candidate": "  <rewriteSystem systemIdStartString=\"http://old/\" rewritePrefix=\"http://new/\"/>"
+  },
+  {
+   "line": 15,
+   "oracle": "globalGetSystem=(null)",
+   "candidate": "  <rewriteURI uriStartString=\"urn:old:\" rewritePrefix=\"urn:new:\"/>"
+  },
+  {
+   "line": 16,
+   "oracle": "globalGetPublic=(null)",
+   "candidate": "</catalog>"
+  },
+  {
+   "line": 17,
+   "oracle": "prefer-return=1",
+   "candidate": "remove=0"
+  },
+  {
+   "line": 18,
+   "oracle": "debug=0",
+   "candidate": "remove-miss=-1"
+  }
+ ]
+}

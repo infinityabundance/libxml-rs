@@ -1,0 +1,48 @@
+{
+ "court": "CATALOG-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T20:58:42Z",
+ "probe": "courts/suites/data-abi/catalog-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "f748f22c43e04fc1c5ebc5402561dcea45fbc18cf027d2c94b7f71690735c683"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "29289a0f6b462926c33383e8b7eb5056045da7c670277cb1d6f5477fafaf9e39"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 6,
+ "mismatches": [
+  {
+   "line": 2,
+   "oracle": "shell add-ret=-1",
+   "candidate": "shell add-ret=0"
+  },
+  {
+   "line": 3,
+   "oracle": "shell resolve=(null)",
+   "candidate": "shell resolve=file:///y"
+  },
+  {
+   "line": 9,
+   "oracle": "resolveBoth=file:///tmp/x.xml",
+   "candidate": "resolveBoth=file:///dtd/a.dtd"
+  },
+  {
+   "line": 14,
+   "oracle": "remove-miss=0",
+   "candidate": "remove-miss=-1"
+  },
+  {
+   "line": 22,
+   "oracle": "prefer-return=1",
+   "candidate": "prefer-return=0"
+  },
+  {
+   "line": 23,
+   "oracle": "debug=0",
+   "candidate": "debug=3"
+  }
+ ]
+}
