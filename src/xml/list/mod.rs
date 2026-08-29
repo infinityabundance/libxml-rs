@@ -151,6 +151,178 @@ pub unsafe fn list_search(l: *mut List, data: *const c_void) -> *mut c_void {
     ptr::null_mut()
 }
 
+/// Return the last element of a list (upstream list.c `xmlListEnd`): the
+/// data of the last node, or NULL.
+///
+/// # SAFETY
+///
+/// - `l` must be a valid list pointer or NULL.
+pub unsafe fn list_end(l: *mut List) -> *mut c_void {
+    if l.is_null() {
+        return ptr::null_mut();
+    }
+    let list = unsafe { &*l };
+    if list.back.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*list.back).data }
+}
+
+/// Reverse-search a list with the comparator (upstream list.c
+/// `xmlListReverseSearch`): scans from the back, returns the first (from
+/// the end) matching node's data, or NULL.
+///
+/// # SAFETY
+///
+/// - `l` must be a valid list pointer or NULL.
+/// - `data` must be valid for the comparator.
+pub unsafe fn list_reverse_search(l: *mut List, data: *const c_void) -> *mut c_void {
+    if l.is_null() {
+        return ptr::null_mut();
+    }
+    let list = unsafe { &*l };
+    let comparator = match list.comparator {
+        Some(c) => c,
+        None => return ptr::null_mut(),
+    };
+    let mut cur = list.back;
+    while !cur.is_null() {
+        // SAFETY: cur is a valid node; comparator is valid.
+        let node_data = unsafe { (*cur).data };
+        if unsafe { comparator(node_data as *const c_void, data) } == 0 {
+            return node_data;
+        }
+        cur = unsafe { (*cur).prev };
+    }
+    ptr::null_mut()
+}
+
+/// Walk a list in reverse with a walker callback (upstream list.c
+/// `xmlListReverseWalk`).
+///
+/// # SAFETY
+///
+/// - `l` must be a valid list pointer or NULL.
+/// - `walker` may be NULL (no-op).
+pub unsafe fn list_reverse_walk(l: *mut List, walker: Option<xmlListWalker>, data: *mut c_void) {
+    if l.is_null() {
+        return;
+    }
+    let walker = match walker {
+        Some(w) => w,
+        None => return,
+    };
+    let list = unsafe { &*l };
+    let mut cur = list.back;
+    while !cur.is_null() {
+        // SAFETY: cur is a valid node; walker is valid.
+        let node_data = unsafe { (*cur).data };
+        if unsafe { walker(node_data, data) } != 0 {
+            return;
+        }
+        cur = unsafe { (*cur).prev };
+    }
+}
+
+/// Duplicate a list (upstream list.c `xmlListDup`): a shallow copy using
+/// the same deallocator/comparator; node data pointers are copied as-is.
+/// Returns the new list or NULL on allocation failure.
+///
+/// # SAFETY
+///
+/// - `l` must be a valid list pointer or NULL.
+pub unsafe fn list_dup(l: *mut List) -> *mut List {
+    if l.is_null() {
+        return ptr::null_mut();
+    }
+    let list = unsafe { &*l };
+    let new_list = Box::new(List {
+        front: ptr::null_mut(),
+        back: ptr::null_mut(),
+        count: 0,
+        deallocator: list.deallocator,
+        comparator: list.comparator,
+    });
+    let new_ptr = Box::into_raw(new_list);
+    let mut cur = list.front;
+    while !cur.is_null() {
+        // SAFETY: cur is valid; the node data is shallow-copied.
+        let data = unsafe { (*cur).data };
+        if unsafe { list_push_back(new_ptr, data) } != 0 {
+            unsafe { list_delete(new_ptr) };
+            return ptr::null_mut();
+        }
+        cur = unsafe { (*cur).next };
+    }
+    new_ptr
+}
+
+/// Copy a list with a data copier (upstream list.c `xmlListCopy`): each
+/// node's data is copied through `copier` (returns a fresh pointer or
+/// NULL on failure). The result replaces the target list `l`'s content.
+/// Returns 0 on success, -1 on error.
+///
+/// # SAFETY
+///
+/// - `l` must be a valid list pointer or NULL.
+/// - `copier` must be a valid copier function.
+pub unsafe fn list_copy(
+    l: *mut List,
+    copier: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+) -> c_int {
+    if l.is_null() {
+        return -1;
+    }
+    let copier = match copier {
+        Some(c) => c,
+        None => return -1,
+    };
+    let list = unsafe { &*l };
+    let new_list = Box::new(List {
+        front: ptr::null_mut(),
+        back: ptr::null_mut(),
+        count: 0,
+        deallocator: list.deallocator,
+        comparator: list.comparator,
+    });
+    let new_ptr = Box::into_raw(new_list);
+    let mut cur = list.front;
+    while !cur.is_null() {
+        // SAFETY: cur is valid; copier must return a fresh copy or NULL.
+        let copied = unsafe { copier((*cur).data) };
+        if copied.is_null() {
+            unsafe { list_delete(new_ptr) };
+            return -1;
+        }
+        if unsafe { list_push_back(new_ptr, copied) } != 0 {
+            unsafe { list_delete(new_ptr) };
+            return -1;
+        }
+        cur = unsafe { (*cur).next };
+    }
+    // Replace `l`'s content with the copy (upstream copies INTO `l`).
+    unsafe {
+        list_clear(l);
+        let dst = &mut *l;
+        let src = &mut *new_ptr;
+        core::mem::swap(dst, src);
+        list_delete(new_ptr);
+    }
+    0
+}
+
+/// Return the data stored in a link (upstream list.c `xmlLinkGetData`).
+///
+/// # SAFETY
+///
+/// - `link` must be a valid link pointer or NULL.
+pub unsafe fn link_get_data(link: *mut c_void) -> *mut c_void {
+    if link.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*(link as *mut ListNode)).data }
+}
+
 /// Walk the list, calling the walker function for each element.
 ///
 /// # UPSTREAM-PARITY

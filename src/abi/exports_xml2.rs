@@ -2220,7 +2220,44 @@ pub unsafe extern "C" fn xmlReadFile(
     doc
 }
 
-/// Read an XML document from memory.
+/// Recover-parse a document from a string (upstream parser.h): same as
+/// `xmlReadDoc` with XML_PARSE_RECOVER forced.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlRecoverDoc(const xmlChar *cur);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRecoverDoc(cur: *const xmlChar) -> *mut _xmlDoc {
+    unsafe { xmlReadDoc(cur, ptr::null(), ptr::null(), 1 << 0) }
+}
+
+/// Recover-parse a document from a file (upstream parser.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlRecoverFile(const char *filename);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRecoverFile(filename: *const c_char) -> *mut _xmlDoc {
+    unsafe { xmlReadFile(filename, ptr::null(), 1 << 0) }
+}
+
+/// Recover-parse a document from memory (upstream parser.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlRecoverMemory(const char *buffer, int size);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRecoverMemory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
+    unsafe { xmlReadMemory(buffer, size, ptr::null(), ptr::null(), 1 << 0) }
+}
+
+/// Read an XML document from a file (upstream parser.h).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -2408,6 +2445,134 @@ pub unsafe extern "C" fn xmlSAXParseDoc(
     }
     let len = crate::xml::string::xml_strlen(cur);
     let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
+}
+
+/// Parse an XML document (SAX1) with user data (upstream parser.h
+/// `xmlSAXParseDocWithData`): `user_data` is passed to the SAX callbacks.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlSAXParseDocWithData(xmlSAXHandlerPtr sax, const xmlChar *cur,
+///                                  int recovery, void *data);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAXParseDocWithData(
+    sax: *mut _xmlSAXHandler,
+    cur: *const xmlChar,
+    recovery: c_int,
+    data: *mut c_void,
+) -> *mut _xmlDoc {
+    // SAFETY: cur must be a valid null-terminated xmlChar string.
+    if cur.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+    }
+    (*ctxt).userData = data;
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1; // XML_PARSE_RECOVER
+    }
+    let len = crate::xml::string::xml_strlen(cur);
+    let input = crate::xml::parser::helpers::input_from_memory(cur as *const c_char, len as c_int);
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
+}
+
+/// Parse an XML file (SAX1) with user data (upstream parser.h
+/// `xmlSAXParseFileWithData`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlSAXParseFileWithData(xmlSAXHandlerPtr sax, const char *filename,
+///                                   int recovery, void *data);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAXParseFileWithData(
+    sax: *mut _xmlSAXHandler,
+    filename: *const c_char,
+    recovery: c_int,
+    data: *mut c_void,
+) -> *mut _xmlDoc {
+    // SAFETY: filename must be a valid C string or NULL.
+    if filename.is_null() {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+    }
+    (*ctxt).userData = data;
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1; // XML_PARSE_RECOVER
+    }
+    let input = match crate::xml::parser::helpers::input_from_file(filename) {
+        Ok(input) => input,
+        Err(_) => {
+            crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+            return ptr::null_mut();
+        }
+    };
+    crate::xml::parser::helpers::setup_parser_input(ctxt, input);
+    crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    doc
+}
+
+/// Parse an XML document (SAX1) with user data from memory (upstream
+/// parser.h `xmlSAXParseMemoryWithData`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlDocPtr xmlSAXParseMemoryWithData(xmlSAXHandlerPtr sax, const char *buffer,
+///                                     int size, int recovery, void *data);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAXParseMemoryWithData(
+    sax: *mut _xmlSAXHandler,
+    buffer: *const c_char,
+    size: c_int,
+    recovery: c_int,
+    data: *mut c_void,
+) -> *mut _xmlDoc {
+    // SAFETY: buffer must be a valid pointer with `size` readable bytes.
+    if buffer.is_null() || size <= 0 {
+        return ptr::null_mut();
+    }
+    let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    if !sax.is_null() {
+        (*ctxt).sax = sax;
+    }
+    (*ctxt).userData = data;
+    if recovery != 0 {
+        (*ctxt).recovery = 1;
+        (*ctxt).options |= 1; // XML_PARSE_RECOVER
+    }
+    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
@@ -3686,6 +3851,84 @@ pub extern "C" fn xmlListMerge(list: *mut c_void, list2: *mut c_void) {
             list2 as *mut crate::xml::list::List,
         )
     }
+}
+/// Return the last element of a list (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void *xmlListEnd(xmlListPtr l);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlListEnd(l: *mut c_void) -> *mut c_void {
+    crate::xml::list::list_end(l as *mut crate::xml::list::List)
+}
+
+/// Reverse-search a list (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void *xmlListReverseSearch(xmlListPtr l, void *data);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlListReverseSearch(l: *mut c_void, data: *mut c_void) -> *mut c_void {
+    crate::xml::list::list_reverse_search(l as *mut crate::xml::list::List, data)
+}
+
+/// Walk a list in reverse (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlListReverseWalk(xmlListPtr l, xmlListWalker walker, void *data);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlListReverseWalk(
+    l: *mut c_void,
+    walker: Option<unsafe extern "C" fn(*mut c_void, *mut c_void) -> c_int>,
+    data: *mut c_void,
+) {
+    crate::xml::list::list_reverse_walk(l as *mut crate::xml::list::List, walker, data)
+}
+
+/// Duplicate a list (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlListPtr xmlListDup(xmlListPtr l);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlListDup(l: *mut c_void) -> *mut c_void {
+    crate::xml::list::list_dup(l as *mut crate::xml::list::List) as *mut c_void
+}
+
+/// Copy a list with a copier (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlListCopy(xmlListPtr l, xmlListCopier copier);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlListCopy(
+    l: *mut c_void,
+    copier: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
+) -> c_int {
+    crate::xml::list::list_copy(l as *mut crate::xml::list::List, copier)
+}
+
+/// Return the data of a link (upstream list.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void *xmlLinkGetData(xmlLinkPtr lk);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlLinkGetData(lk: *mut c_void) -> *mut c_void {
+    crate::xml::list::link_get_data(lk)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
