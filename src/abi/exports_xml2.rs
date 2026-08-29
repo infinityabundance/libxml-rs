@@ -2772,8 +2772,7 @@ pub unsafe extern "C" fn xmlOutputBufferWriteString(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreate() -> *mut c_void {
-    // Phase 1: STUB — will be implemented in xml/dictionary module.
-    ptr::null_mut()
+    unsafe { crate::xml::dictionary::dict_create() as *mut c_void }
 }
 
 /// Create a sub-dictionary.
@@ -2784,9 +2783,11 @@ pub extern "C" fn xmlDictCreate() -> *mut c_void {
 /// xmlDictPtr xmlDictCreateSub(xmlDictPtr sub);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictCreateSub(_sub: *mut c_void) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlDictCreateSub(sub: *mut c_void) -> *mut c_void {
+    unsafe {
+        crate::xml::dictionary::dict_create_sub(sub as *mut crate::xml::dictionary::Dict)
+            as *mut c_void
+    }
 }
 
 /// Look up a string in the dictionary.
@@ -2806,8 +2807,9 @@ pub unsafe extern "C" fn xmlDictLookup(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    // Phase 1: STUB
-    name
+    unsafe {
+        crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, len)
+    }
 }
 
 /// Check if a string exists in the dictionary.
@@ -2823,8 +2825,9 @@ pub unsafe extern "C" fn xmlDictExists(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    // Phase 1: STUB
-    ptr::null()
+    unsafe {
+        crate::xml::dictionary::dict_exists(dict as *mut crate::xml::dictionary::Dict, name, len)
+    }
 }
 
 /// Query dictionary size.
@@ -2836,8 +2839,9 @@ pub unsafe extern "C" fn xmlDictExists(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::dictionary::dict_size(dict as *const crate::xml::dictionary::Dict) as c_uint
+    }
 }
 
 /// Free a dictionary.
@@ -2848,8 +2852,8 @@ pub extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
 /// void xmlDictFree(xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictFree(_dict: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlDictFree(dict: *mut c_void) {
+    unsafe { crate::xml::dictionary::dict_free(dict as *mut crate::xml::dictionary::Dict) }
 }
 
 /// Set the dictionary size limit.
@@ -2860,9 +2864,13 @@ pub extern "C" fn xmlDictFree(_dict: *mut c_void) {
 /// unsigned int xmlDictSetLimit(xmlDictPtr dict, unsigned int limit);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictSetLimit(_dict: *mut c_void, _limit: c_uint) -> c_uint {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: c_uint) -> c_uint {
+    unsafe {
+        crate::xml::dictionary::dict_set_limit(
+            dict as *mut crate::xml::dictionary::Dict,
+            limit as usize,
+        ) as c_uint
+    }
 }
 
 /// Get current dictionary usage.
@@ -2873,9 +2881,10 @@ pub extern "C" fn xmlDictSetLimit(_dict: *mut c_void, _limit: c_uint) -> c_uint 
 /// unsigned int xmlDictGetUsage(const xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictGetUsage(_dict: *const c_void) -> c_uint {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlDictGetUsage(dict: *const c_void) -> c_uint {
+    unsafe {
+        crate::xml::dictionary::dict_get_usage(dict as *mut crate::xml::dictionary::Dict) as c_uint
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2890,9 +2899,8 @@ pub extern "C" fn xmlDictGetUsage(_dict: *const c_void) -> c_uint {
 /// xmlHashTablePtr xmlHashCreate(int size);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlHashCreate(_size: c_int) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlHashCreate(size: c_int) -> *mut c_void {
+    unsafe { crate::xml::hash::hash_create(size) as *mut c_void }
 }
 
 /// Create a new hash table with a dictionary.
@@ -2903,9 +2911,8 @@ pub extern "C" fn xmlHashCreate(_size: c_int) -> *mut c_void {
 /// xmlHashTablePtr xmlHashCreateDict(int size, xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlHashCreateDict(_size: c_int, _dict: *mut c_void) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlHashCreateDict(size: c_int, dict: *mut c_void) -> *mut c_void {
+    unsafe { crate::xml::hash::hash_create_dict(size, dict) as *mut c_void }
 }
 
 /// Free a hash table.
@@ -2917,10 +2924,10 @@ pub extern "C" fn xmlHashCreateDict(_size: c_int, _dict: *mut c_void) -> *mut c_
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlHashFree(
-    _table: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) {
-    // Phase 1: STUB
+    unsafe { crate::xml::hash::hash_free(table as *mut crate::xml::hash::HashTable, f) }
 }
 
 /// Add an entry to a hash table.
@@ -2932,12 +2939,13 @@ pub extern "C" fn xmlHashFree(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashAddEntry(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _userdata: *mut c_void,
+    table: *mut c_void,
+    name: *const xmlChar,
+    userdata: *mut c_void,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_add_entry(table as *mut crate::xml::hash::HashTable, name, userdata)
+    }
 }
 
 /// Add a 2-key entry.
@@ -2950,13 +2958,19 @@ pub unsafe extern "C" fn xmlHashAddEntry(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashAddEntry2(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _userdata: *mut c_void,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    userdata: *mut c_void,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_add_entry2(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            userdata,
+        )
+    }
 }
 
 /// Add a 3-key entry.
@@ -2969,14 +2983,21 @@ pub unsafe extern "C" fn xmlHashAddEntry2(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashAddEntry3(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _name3: *const xmlChar,
-    _userdata: *mut c_void,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    name3: *const xmlChar,
+    userdata: *mut c_void,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_add_entry3(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            name3,
+            userdata,
+        )
+    }
 }
 
 /// Update or add an entry.
@@ -2989,40 +3010,61 @@ pub unsafe extern "C" fn xmlHashAddEntry3(
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashUpdateEntry(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _userdata: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    userdata: *mut c_void,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_update_entry(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            userdata,
+            f,
+        )
+    }
 }
 
 /// Update or add a 2-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashUpdateEntry2(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _userdata: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    userdata: *mut c_void,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_update_entry2(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            userdata,
+            f,
+        )
+    }
 }
 
 /// Update or add a 3-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashUpdateEntry3(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _name3: *const xmlChar,
-    _userdata: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    name3: *const xmlChar,
+    userdata: *mut c_void,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_update_entry3(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            name3,
+            userdata,
+            f,
+        )
+    }
 }
 
 /// Look up an entry.
@@ -3033,32 +3075,38 @@ pub unsafe extern "C" fn xmlHashUpdateEntry3(
 /// void *xmlHashLookup(xmlHashTablePtr table, const xmlChar *name);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlHashLookup(_table: *mut c_void, _name: *const xmlChar) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub unsafe extern "C" fn xmlHashLookup(table: *mut c_void, name: *const xmlChar) -> *mut c_void {
+    unsafe { crate::xml::hash::hash_lookup(table as *mut crate::xml::hash::HashTable, name) }
 }
 
 /// Look up a 2-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashLookup2(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
 ) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+    unsafe {
+        crate::xml::hash::hash_lookup2(table as *mut crate::xml::hash::HashTable, name, name2)
+    }
 }
 
 /// Look up a 3-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashLookup3(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _name3: *const xmlChar,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    name3: *const xmlChar,
 ) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+    unsafe {
+        crate::xml::hash::hash_lookup3(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            name3,
+        )
+    }
 }
 
 /// Get the size of a hash table.
@@ -3069,9 +3117,8 @@ pub unsafe extern "C" fn xmlHashLookup3(
 /// int xmlHashSize(xmlHashTablePtr table);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlHashSize(_table: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlHashSize(table: *mut c_void) -> c_int {
+    unsafe { crate::xml::hash::hash_size(table as *mut crate::xml::hash::HashTable) }
 }
 
 /// Remove an entry.
@@ -3084,37 +3131,51 @@ pub extern "C" fn xmlHashSize(_table: *mut c_void) -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashRemoveEntry(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_remove_entry(table as *mut crate::xml::hash::HashTable, name, f)
+    }
 }
 
 /// Remove a 2-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashRemoveEntry2(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_remove_entry2(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            f,
+        )
+    }
 }
 
 /// Remove a 3-key entry.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashRemoveEntry3(
-    _table: *mut c_void,
-    _name: *const xmlChar,
-    _name2: *const xmlChar,
-    _name3: *const xmlChar,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
+    table: *mut c_void,
+    name: *const xmlChar,
+    name2: *const xmlChar,
+    name3: *const xmlChar,
+    f: Option<unsafe extern "C" fn(*mut c_void, *mut xmlChar)>,
 ) -> c_int {
-    // Phase 1: STUB
-    0
+    unsafe {
+        crate::xml::hash::hash_remove_entry3(
+            table as *mut crate::xml::hash::HashTable,
+            name,
+            name2,
+            name3,
+            f,
+        )
+    }
 }
 
 /// Scan a hash table with a scanner function.
@@ -3125,22 +3186,18 @@ pub unsafe extern "C" fn xmlHashRemoveEntry3(
 /// void xmlHashScan(xmlHashTablePtr table, xmlHashScanner f, void *data);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlHashScan(
-    _table: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *const xmlChar, *mut c_void)>,
-    _data: *mut c_void,
-) {
-    // Phase 1: STUB
+pub extern "C" fn xmlHashScan(table: *mut c_void, f: Option<xmlHashScanner>, data: *mut c_void) {
+    unsafe { crate::xml::hash::hash_scan(table as *mut crate::xml::hash::HashTable, f, data) }
 }
 
 /// Scan a hash table with a full scanner function.
 #[no_mangle]
 pub extern "C" fn xmlHashScanFull(
-    _table: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *const xmlChar, *mut c_void, *mut c_void)>,
-    _data: *mut c_void,
+    table: *mut c_void,
+    f: Option<xmlHashScannerFull>,
+    data: *mut c_void,
 ) {
-    // Phase 1: STUB
+    unsafe { crate::xml::hash::hash_scan_full(table as *mut crate::xml::hash::HashTable, f, data) }
 }
 
 /// Copy a hash table.
@@ -3152,11 +3209,12 @@ pub extern "C" fn xmlHashScanFull(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlHashCopy(
-    _table: *mut c_void,
-    _f: Option<unsafe extern "C" fn(*mut c_void, *const xmlChar) -> *mut c_void>,
+    table: *mut c_void,
+    f: Option<unsafe extern "C" fn(*mut c_void, *const xmlChar) -> *mut c_void>,
 ) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+    unsafe {
+        crate::xml::hash::hash_copy(table as *mut crate::xml::hash::HashTable, f) as *mut c_void
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3173,11 +3231,10 @@ pub extern "C" fn xmlHashCopy(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListCreate(
-    _deallocator: Option<unsafe extern "C" fn(*mut c_void)>,
-    _compare: Option<unsafe extern "C" fn(*const c_void, *const c_void) -> c_int>,
+    deallocator: Option<unsafe extern "C" fn(*mut c_void)>,
+    compare: Option<unsafe extern "C" fn(*const c_void, *const c_void) -> c_int>,
 ) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+    unsafe { crate::xml::list::list_create(deallocator, compare) as *mut c_void }
 }
 
 /// Delete a list.
@@ -3188,8 +3245,8 @@ pub extern "C" fn xmlListCreate(
 /// void xmlListDelete(xmlListPtr list);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListDelete(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListDelete(list: *mut c_void) {
+    unsafe { crate::xml::list::list_delete(list as *mut crate::xml::list::List) }
 }
 
 /// Search a list.
@@ -3200,9 +3257,8 @@ pub extern "C" fn xmlListDelete(_list: *mut c_void) {
 /// void *xmlListSearch(xmlListPtr list, void *data);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListSearch(_list: *mut c_void, _data: *mut c_void) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlListSearch(list: *mut c_void, data: *mut c_void) -> *mut c_void {
+    unsafe { crate::xml::list::list_search(list as *mut crate::xml::list::List, data) }
 }
 
 /// Walk a list.
@@ -3214,11 +3270,11 @@ pub extern "C" fn xmlListSearch(_list: *mut c_void, _data: *mut c_void) -> *mut 
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListWalk(
-    _list: *mut c_void,
-    _walker: Option<unsafe extern "C" fn(*mut c_void, *mut c_void) -> c_int>,
-    _data: *mut c_void,
+    list: *mut c_void,
+    walker: Option<unsafe extern "C" fn(*mut c_void, *mut c_void) -> c_int>,
+    data: *mut c_void,
 ) {
-    // Phase 1: STUB
+    unsafe { crate::xml::list::list_walk(list as *mut crate::xml::list::List, walker, data) }
 }
 
 /// Push to back.
@@ -3229,9 +3285,8 @@ pub extern "C" fn xmlListWalk(
 /// int xmlListPushBack(xmlListPtr list, void *data);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListPushBack(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListPushBack(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_push_back(list as *mut crate::xml::list::List, data) }
 }
 
 /// Push to front.
@@ -3242,21 +3297,20 @@ pub extern "C" fn xmlListPushBack(_list: *mut c_void, _data: *mut c_void) -> c_i
 /// int xmlListPushFront(xmlListPtr list, void *data);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListPushFront(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListPushFront(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_push_front(list as *mut crate::xml::list::List, data) }
 }
 
 /// Pop from back.
 #[no_mangle]
-pub extern "C" fn xmlListPopBack(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListPopBack(list: *mut c_void) {
+    unsafe { crate::xml::list::list_pop_back(list as *mut crate::xml::list::List) }
 }
 
 /// Pop from front.
 #[no_mangle]
-pub extern "C" fn xmlListPopFront(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListPopFront(list: *mut c_void) {
+    unsafe { crate::xml::list::list_pop_front(list as *mut crate::xml::list::List) }
 }
 
 /// Insert into sorted list.
@@ -3267,43 +3321,38 @@ pub extern "C" fn xmlListPopFront(_list: *mut c_void) {
 /// int xmlListInsert(xmlListPtr list, void *data);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListInsert(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListInsert(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_insert(list as *mut crate::xml::list::List, data) }
 }
 
 /// Append to list.
 #[no_mangle]
-pub extern "C" fn xmlListAppend(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListAppend(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_append(list as *mut crate::xml::list::List, data) }
 }
 
 /// Remove first matching element.
 #[no_mangle]
-pub extern "C" fn xmlListRemoveFirst(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListRemoveFirst(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_remove_first(list as *mut crate::xml::list::List, data) }
 }
 
 /// Remove last matching element.
 #[no_mangle]
-pub extern "C" fn xmlListRemoveLast(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListRemoveLast(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_remove_last(list as *mut crate::xml::list::List, data) }
 }
 
 /// Remove all matching elements.
 #[no_mangle]
-pub extern "C" fn xmlListRemoveAll(_list: *mut c_void, _data: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListRemoveAll(list: *mut c_void, data: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_remove_all(list as *mut crate::xml::list::List, data) }
 }
 
 /// Clear a list.
 #[no_mangle]
-pub extern "C" fn xmlListClear(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListClear(list: *mut c_void) {
+    unsafe { crate::xml::list::list_clear(list as *mut crate::xml::list::List) }
 }
 
 /// Check if list is empty.
@@ -3314,9 +3363,8 @@ pub extern "C" fn xmlListClear(_list: *mut c_void) {
 /// int xmlListEmpty(xmlListPtr list);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListEmpty(_list: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    1
+pub extern "C" fn xmlListEmpty(list: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_empty(list as *mut crate::xml::list::List) }
 }
 
 /// Get front element.
@@ -3327,9 +3375,8 @@ pub extern "C" fn xmlListEmpty(_list: *mut c_void) -> c_int {
 /// void *xmlListFront(xmlListPtr list);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListFront(_list: *mut c_void) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlListFront(list: *mut c_void) -> *mut c_void {
+    unsafe { crate::xml::list::list_front(list as *mut crate::xml::list::List) }
 }
 
 /// Get back element.
@@ -3340,9 +3387,8 @@ pub extern "C" fn xmlListFront(_list: *mut c_void) -> *mut c_void {
 /// void *xmlListBack(xmlListPtr list);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListBack(_list: *mut c_void) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
+pub extern "C" fn xmlListBack(list: *mut c_void) -> *mut c_void {
+    unsafe { crate::xml::list::list_back(list as *mut crate::xml::list::List) }
 }
 
 /// Get list size.
@@ -3353,33 +3399,42 @@ pub extern "C" fn xmlListBack(_list: *mut c_void) -> *mut c_void {
 /// int xmlListSize(xmlListPtr list);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlListSize(_list: *mut c_void) -> c_int {
-    // Phase 1: STUB
-    0
+pub extern "C" fn xmlListSize(list: *mut c_void) -> c_int {
+    unsafe { crate::xml::list::list_size(list as *mut crate::xml::list::List) }
 }
 
 /// Sort a list.
 #[no_mangle]
-pub extern "C" fn xmlListSort(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListSort(list: *mut c_void) {
+    unsafe { crate::xml::list::list_sort(list as *mut crate::xml::list::List) }
 }
 
 /// Reverse a list.
 #[no_mangle]
-pub extern "C" fn xmlListReverse(_list: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListReverse(list: *mut c_void) {
+    unsafe { crate::xml::list::list_reverse(list as *mut crate::xml::list::List) }
 }
 
 /// Reverse a list in-place.
 #[no_mangle]
-pub extern "C" fn xmlListReverseSplice(_list: *mut c_void, _list2: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListReverseSplice(list: *mut c_void, list2: *mut c_void) {
+    unsafe {
+        crate::xml::list::list_reverse_splice(
+            list as *mut crate::xml::list::List,
+            list2 as *mut crate::xml::list::List,
+        )
+    }
 }
 
 /// Merge two sorted lists.
 #[no_mangle]
-pub extern "C" fn xmlListMerge(_list: *mut c_void, _list2: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn xmlListMerge(list: *mut c_void, list2: *mut c_void) {
+    unsafe {
+        crate::xml::list::list_merge(
+            list as *mut crate::xml::list::List,
+            list2 as *mut crate::xml::list::List,
+        )
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5180,8 +5235,8 @@ pub unsafe extern "C" fn htmlCreateFileParserCtxt(
 /// void htmlFreeParserCtxt(htmlParserCtxtPtr ctxt);
 /// ```
 #[no_mangle]
-pub extern "C" fn htmlFreeParserCtxt(_ctxt: *mut c_void) {
-    // Phase 1: STUB
+pub extern "C" fn htmlFreeParserCtxt(ctxt: *mut c_void) {
+    unsafe { crate::xml::html::free_parser_ctxt(ctxt) }
 }
 
 /// Initialize the HTML parser.

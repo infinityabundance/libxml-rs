@@ -1118,6 +1118,58 @@
      "status": "FIXED"
     }
    ]
+  },
+  {
+   "id": "R-000135",
+   "status": "OPEN",
+   "phase": "11.1-I",
+   "title": "Exported C data globals (40 libxml2 + 6 libxslt symbols) not yet exported",
+   "surface": "ABI data symbols",
+   "component": [
+    "src/xml/globals/mod.rs",
+    "src/abi/exports_xml2.rs",
+    "src/abi/exports_xslt.rs"
+   ],
+   "discovery_date": "2026-08-29",
+   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported.",
+   "fix": "Export the globals as #[no_mangle] static mut with upstream types, converting the globals module's atomics to direct static access (single source of truth so C writes affect the parser). Char-class tables and constant strings as exported statics; xmlXPathNAN/PINF/NINF and xmlParserVersion as consts. To be closed in the 11.1-G/I data-ABI closure.",
+   "evidence": [
+    "atlas/PARITY_OBLIGATIONS.json (DATA_MISSING=40/6)"
+   ],
+   "classification": "UNRESOLVED",
+   "history": [
+    {
+     "date": "2026-08-29",
+     "event": "discovered during 11.1-I parity census",
+     "status": "OPEN"
+    }
+   ]
+  },
+  {
+   "id": "R-000136",
+   "status": "OPEN",
+   "phase": "11.1-I",
+   "title": "Missing oracle functions: 1158 libxml2 + 201 libxslt exports",
+   "surface": "DSO function exports",
+   "component": [
+    "src/abi/exports_xml2.rs",
+    "src/abi/exports_xslt.rs",
+    "src/xml"
+   ],
+   "discovery_date": "2026-08-29",
+   "root_cause": "The parity obligation census (tools/abi/parity_obligations.py, oracle = system libxml2 2.15.3 / libxslt 1.1.45 DSOs) records 1158 libxml2 and 201 libxslt upstream functions that the candidate does not yet export. These are the 11.1-I obligation ledger entries; each must be implemented (not stubbed) with upstream semantics, court-covered, in dependency order.",
+   "fix": "Systematic closure in 11.1-I/X: implement per subsystem (validation, serialization, reader/writer, xpath internals, schemas, relaxng, catalogs, entities, globals, HTML, xslt internals, exslt), adding differential courts per domain. Progress tracked in atlas/PARITY_OBLIGATIONS.json (status MISSING).",
+   "evidence": [
+    "atlas/PARITY_OBLIGATIONS.json"
+   ],
+   "classification": "UNRESOLVED",
+   "history": [
+    {
+     "date": "2026-08-29",
+     "event": "discovered during 11.1-I parity census",
+     "status": "OPEN"
+    }
+   ]
   }
  ]
 }
