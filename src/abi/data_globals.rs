@@ -233,3 +233,252 @@ pub static mut xmlOutputBufferCreateFilenameValue: Option<
         c_int,
     ) -> *mut crate::abi::structs::_xmlOutputBuffer,
 > = None;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// xmlThrDef* accessors (upstream threads.c / globals.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The deprecated `xmlThrDef*` family reads/writes the public globals with
+// the upstream semantics: when `v != 0` the global is set, and the (new)
+// value is returned. In upstream these were thread-local definitions before
+// the globals became plain variables; the modern behavior is exactly this
+// conditional-set-and-return on the global (see upstream globals.c).
+
+/// Upstream `xmlThrDefDoValidityCheckingDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefDoValidityCheckingDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlDoValidityCheckingDefaultValue = v;
+        }
+        xmlDoValidityCheckingDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefGetWarningsDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefGetWarningsDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlGetWarningsDefaultValue = v;
+        }
+        xmlGetWarningsDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefLoadExtDtdDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefLoadExtDtdDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlLoadExtDtdDefaultValue = v;
+        }
+        xmlLoadExtDtdDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefPedanticParserDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefPedanticParserDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlPedanticParserDefaultValue = v;
+        }
+        xmlPedanticParserDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefLineNumbersDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefLineNumbersDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlLineNumbersDefaultValue = v;
+        }
+        xmlLineNumbersDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefKeepBlanksDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefKeepBlanksDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlKeepBlanksDefaultValue = v;
+        }
+        xmlKeepBlanksDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefSubstituteEntitiesDefaultValue(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefSubstituteEntitiesDefaultValue(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlSubstituteEntitiesDefaultValue = v;
+        }
+        xmlSubstituteEntitiesDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefParserDebugEntities(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefParserDebugEntities(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlParserDebugEntities = v;
+        }
+        xmlParserDebugEntities
+    }
+}
+
+/// Upstream `xmlThrDefIndentTreeOutput(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefIndentTreeOutput(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlIndentTreeOutput = v;
+        }
+        xmlIndentTreeOutput
+    }
+}
+
+/// Upstream `xmlThrDefTreeIndentString(const char *v)` — sets the indent
+/// string when non-NULL and returns the current pointer.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefTreeIndentString(v: *const c_char) -> *const c_char {
+    unsafe {
+        if !v.is_null() {
+            xmlTreeIndentString = v as *const xmlChar;
+        }
+        xmlTreeIndentString as *const c_char
+    }
+}
+
+/// Upstream `xmlThrDefSaveNoEmptyTags(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefSaveNoEmptyTags(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlSaveNoEmptyTags = v;
+        }
+        xmlSaveNoEmptyTags
+    }
+}
+
+/// Upstream `xmlThrDefRegisterNodeDefault(xmlRegisterNodeFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefRegisterNodeDefault(
+    func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
+) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    unsafe {
+        if func.is_some() {
+            xmlRegisterNodeDefaultValue = func;
+        }
+        xmlRegisterNodeDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefDeregisterNodeDefault(
+    func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
+) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    unsafe {
+        if func.is_some() {
+            xmlDeregisterNodeDefaultValue = func;
+        }
+        xmlDeregisterNodeDefaultValue
+    }
+}
+
+/// Upstream `xmlThrDefSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefSetGenericErrorFunc(
+    ctx: *mut c_void,
+    func: Option<xmlGenericErrorFunc>,
+) {
+    unsafe {
+        xmlGenericErrorContext = ctx;
+        xmlGenericError = func;
+    }
+}
+
+/// Upstream `xmlThrDefSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefSetStructuredErrorFunc(
+    ctx: *mut c_void,
+    func: Option<xmlStructuredErrorFunc>,
+) {
+    unsafe {
+        xmlStructuredErrorContext = ctx;
+        xmlStructuredError = func;
+    }
+}
+
+/// Upstream `xmlThrDefDefaultBufferSize(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefDefaultBufferSize(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlDefaultBufferSize = v;
+        }
+        xmlDefaultBufferSize
+    }
+}
+
+/// Upstream `xmlThrDefBufferAllocScheme(xmlBufferAllocationScheme v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefBufferAllocScheme(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlBufferAllocScheme = v;
+        }
+        xmlBufferAllocScheme
+    }
+}
+
+/// Upstream `xmlThrDefParserInputBufferCreateFilenameDefault(...)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefParserInputBufferCreateFilenameDefault(
+    func: Option<
+        unsafe extern "C" fn(
+            *const c_char,
+            c_int,
+        ) -> *mut crate::abi::structs::_xmlParserInputBuffer,
+    >,
+) -> Option<
+    unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
+> {
+    unsafe {
+        if func.is_some() {
+            xmlParserInputBufferCreateFilenameValue = func;
+        }
+        xmlParserInputBufferCreateFilenameValue
+    }
+}
+
+/// Upstream `xmlThrDefOutputBufferCreateFilenameDefault(...)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlThrDefOutputBufferCreateFilenameDefault(
+    func: Option<
+        unsafe extern "C" fn(
+            *const c_char,
+            crate::abi::structs::xmlCharEncodingHandlerPtr,
+            c_int,
+        ) -> *mut crate::abi::structs::_xmlOutputBuffer,
+    >,
+) -> Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        crate::abi::structs::xmlCharEncodingHandlerPtr,
+        c_int,
+    ) -> *mut crate::abi::structs::_xmlOutputBuffer,
+> {
+    unsafe {
+        if func.is_some() {
+            xmlOutputBufferCreateFilenameValue = func;
+        }
+        xmlOutputBufferCreateFilenameValue
+    }
+}

@@ -5784,3 +5784,259 @@ pub extern "C" fn xmlGetHomeOfBinary() -> *mut c_char {
     // Phase 1: STUB
     ptr::null_mut()
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAX2 default callback entry points (upstream SAX2.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// These are the public `xmlSAX2*` callback functions that downstream code
+// installs into `xmlSAXHandler` structures. They are the same implementations
+// the candidate's default SAX handler uses; exporting them under the
+// upstream names is required for ABI parity (R-000136 closure).
+
+/// Upstream SAX2.c `xmlSAX2StartDocument` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2StartDocument(ctx: *mut c_void) {
+    crate::xml::sax::default::default_sax_handler::startDocument(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2EndDocument` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2EndDocument(ctx: *mut c_void) {
+    crate::xml::sax::default::default_sax_handler::endDocument(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2StartElementNs` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2StartElementNs(
+    ctx: *mut c_void,
+    localname: *const xmlChar,
+    prefix: *const xmlChar,
+    URI: *const xmlChar,
+    nb_namespaces: c_int,
+    namespaces: *mut *const xmlChar,
+    nb_attributes: c_int,
+    nb_defaulted: c_int,
+    attributes: *mut *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::startElementNs(
+        ctx,
+        localname,
+        prefix,
+        URI,
+        nb_namespaces,
+        namespaces,
+        nb_attributes,
+        nb_defaulted,
+        attributes,
+    )
+}
+
+/// Upstream SAX2.c `xmlSAX2EndElementNs` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2EndElementNs(
+    ctx: *mut c_void,
+    localname: *const xmlChar,
+    prefix: *const xmlChar,
+    URI: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::endElementNs(ctx, localname, prefix, URI)
+}
+
+/// Upstream SAX2.c `xmlSAX2Characters` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2Characters(ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    crate::xml::sax::default::default_sax_handler::characters(ctx, ch, len)
+}
+
+/// Upstream SAX2.c `xmlSAX2IgnorableWhitespace` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2IgnorableWhitespace(
+    ctx: *mut c_void,
+    ch: *const xmlChar,
+    len: c_int,
+) {
+    crate::xml::sax::default::default_sax_handler::ignorableWhitespace(ctx, ch, len)
+}
+
+/// Upstream SAX2.c `xmlSAX2Comment` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2Comment(ctx: *mut c_void, value: *const xmlChar) {
+    crate::xml::sax::default::default_sax_handler::comment(ctx, value)
+}
+
+/// Upstream SAX2.c `xmlSAX2ProcessingInstruction` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2ProcessingInstruction(
+    ctx: *mut c_void,
+    target: *const xmlChar,
+    data: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::processingInstruction(ctx, target, data)
+}
+
+/// Upstream SAX2.c `xmlSAX2CDataBlock` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2CDataBlock(ctx: *mut c_void, value: *const xmlChar, len: c_int) {
+    crate::xml::sax::default::default_sax_handler::cdataBlock(ctx, value, len)
+}
+
+/// Upstream SAX2.c `xmlSAX2InternalSubset` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2InternalSubset(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::internalSubset(ctx, name, ExternalID, SystemID)
+}
+
+/// Upstream SAX2.c `xmlSAX2ExternalSubset` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2ExternalSubset(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::externalSubset(ctx, name, ExternalID, SystemID)
+}
+
+/// Upstream SAX2.c `xmlSAX2EntityDecl` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2EntityDecl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    publicId: *const xmlChar,
+    systemId: *const xmlChar,
+    content: *mut xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::entityDecl(
+        ctx, name, type_, publicId, systemId, content,
+    )
+}
+
+/// Upstream SAX2.c `xmlSAX2AttributeDecl` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2AttributeDecl(
+    ctx: *mut c_void,
+    elem: *const xmlChar,
+    fullname: *const xmlChar,
+    type_: c_int,
+    def: c_int,
+    defaultValue: *const xmlChar,
+    tree: *mut crate::abi::structs::_xmlEnumeration,
+) {
+    crate::xml::sax::default::default_sax_handler::attributeDecl(
+        ctx,
+        elem,
+        fullname,
+        type_,
+        def,
+        defaultValue,
+        tree,
+    )
+}
+
+/// Upstream SAX2.c `xmlSAX2ElementDecl` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2ElementDecl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    type_: c_int,
+    content: *mut crate::abi::structs::_xmlElementContent,
+) {
+    crate::xml::sax::default::default_sax_handler::elementDecl(ctx, name, type_, content)
+}
+
+/// Upstream SAX2.c `xmlSAX2NotationDecl` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2NotationDecl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    publicId: *const xmlChar,
+    systemId: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::notationDecl(ctx, name, publicId, systemId)
+}
+
+/// Upstream SAX2.c `xmlSAX2UnparsedEntityDecl` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2UnparsedEntityDecl(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+    publicId: *const xmlChar,
+    systemId: *const xmlChar,
+    notationName: *const xmlChar,
+) {
+    crate::xml::sax::default::default_sax_handler::unparsedEntityDecl(
+        ctx,
+        name,
+        publicId,
+        systemId,
+        notationName,
+    )
+}
+
+/// Upstream SAX2.c `xmlSAX2ResolveEntity` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2ResolveEntity(
+    ctx: *mut c_void,
+    publicId: *const xmlChar,
+    systemId: *const xmlChar,
+) -> *mut crate::abi::structs::_xmlParserInput {
+    crate::xml::sax::default::default_sax_handler::resolveEntity(ctx, publicId, systemId)
+}
+
+/// Upstream SAX2.c `xmlSAX2IsStandalone` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2IsStandalone(ctx: *mut c_void) -> c_int {
+    crate::xml::sax::default::default_sax_handler::isStandalone(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2HasInternalSubset` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2HasInternalSubset(ctx: *mut c_void) -> c_int {
+    crate::xml::sax::default::default_sax_handler::hasInternalSubset(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2HasExternalSubset` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2HasExternalSubset(ctx: *mut c_void) -> c_int {
+    crate::xml::sax::default::default_sax_handler::hasExternalSubset(ctx)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetEntity` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetEntity(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+) -> *mut crate::abi::structs::_xmlEntity {
+    crate::xml::sax::default::default_sax_handler::getEntity(ctx, name)
+}
+
+/// Upstream SAX2.c `xmlSAX2GetParameterEntity` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2GetParameterEntity(
+    ctx: *mut c_void,
+    name: *const xmlChar,
+) -> *mut crate::abi::structs::_xmlEntity {
+    crate::xml::sax::default::default_sax_handler::getParameterEntity(ctx, name)
+}
+
+/// Upstream SAX2.c `xmlSAX2SetDocumentLocator` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2SetDocumentLocator(
+    ctx: *mut c_void,
+    loc: *mut crate::abi::callbacks::_xmlSAXLocator,
+) {
+    crate::xml::sax::default::default_sax_handler::setDocumentLocator(ctx, loc)
+}
+
+/// Upstream SAX2.c `xmlSAX2Reference` — public entry point of the default handler.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSAX2Reference(ctx: *mut c_void, name: *const xmlChar) {
+    crate::xml::sax::default::default_sax_handler::reference(ctx, name)
+}
