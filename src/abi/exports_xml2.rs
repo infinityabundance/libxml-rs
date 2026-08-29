@@ -45,7 +45,7 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::size_of;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::xml::xinclude;
 use crate::xml::xpath::ast::CompiledExpr;
@@ -539,6 +539,96 @@ pub unsafe extern "C" fn xmlStrEqual(str1: *const xmlChar, str2: *const xmlChar)
         return 0;
     }
     unsafe { (libc::strcmp(str1 as *const c_char, str2 as *const c_char) == 0) as c_int }
+}
+
+/// Build a QName (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlBuildQName(const xmlChar *ncname, const xmlChar *prefix,
+///                        xmlChar *memory, int len);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlBuildQName(
+    ncname: *const xmlChar,
+    prefix: *const xmlChar,
+    memory: *mut xmlChar,
+    len: c_int,
+) -> *mut xmlChar {
+    crate::xml::string::build_qname(ncname, prefix, memory, len)
+}
+
+/// Split a QName into prefix + local part (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlSplitQName2(const xmlChar *name, xmlChar **prefix);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSplitQName2(
+    name: *const xmlChar,
+    prefix: *mut *mut xmlChar,
+) -> *mut xmlChar {
+    crate::xml::string::split_qname2(name, prefix)
+}
+
+/// Return the prefix length of a QName (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlSplitQName3(const xmlChar *name, int *len);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSplitQName3(name: *const xmlChar, len: *mut c_int) -> c_int {
+    crate::xml::string::split_qname3(name, len)
+}
+
+/// Deprecated alias of `xmlSplitQName2` (upstream tree.h `xmlSplitQName`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSplitQName(
+    name: *const xmlChar,
+    prefix: *mut *mut xmlChar,
+) -> *mut xmlChar {
+    crate::xml::string::split_qname2(name, prefix)
+}
+
+/// Count UTF-8 characters (upstream xmlstring.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlUTF8Strlen(const xmlChar *utf);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlUTF8Strlen(utf: *const xmlChar) -> c_int {
+    crate::xml::string::utf8_strlen(utf)
+}
+
+/// Size in bytes of a UTF-8 sequence (upstream xmlstring.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlUTF8Size(const xmlChar *utf);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlUTF8Size(utf: *const xmlChar) -> c_int {
+    crate::xml::string::utf8_size(utf)
+}
+
+/// Check UTF-8 validity (upstream xmlstring.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlCheckUTF8(const unsigned char *utf);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlCheckUTF8(utf: *const xmlChar) -> c_int {
+    crate::xml::string::check_utf8(utf)
 }
 
 /// Check if an xmlChar string equals a qualified name.
@@ -1326,6 +1416,141 @@ pub unsafe extern "C" fn xmlSetNsProp(
 #[no_mangle]
 pub unsafe extern "C" fn xmlRemoveProp(attr: *mut _xmlAttr) -> c_int {
     crate::xml::tree::remove_prop(attr)
+}
+
+/// Check whether a node has a property (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlAttrPtr xmlHasProp(const xmlNode *node, const xmlChar *name);
+/// ```
+///
+/// Returns the attribute pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlHasProp(node: *const _xmlNode, name: *const xmlChar) -> *mut _xmlAttr {
+    crate::xml::tree::has_prop(node as *mut _xmlNode, name)
+}
+
+/// Check whether a node has a namespaced property (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlAttrPtr xmlHasNsProp(const xmlNode *node, const xmlChar *name,
+///                         const xmlChar *nameSpace);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlHasNsProp(
+    node: *const _xmlNode,
+    name: *const xmlChar,
+    nameSpace: *const xmlChar,
+) -> *mut _xmlAttr {
+    crate::xml::tree::has_ns_prop(node as *mut _xmlNode, name, nameSpace)
+}
+
+/// Remove a property by name (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlUnsetProp(xmlNodePtr node, const xmlChar *name);
+/// ```
+///
+/// Returns 0 on success, -1 if not found.
+#[no_mangle]
+pub unsafe extern "C" fn xmlUnsetProp(node: *mut _xmlNode, name: *const xmlChar) -> c_int {
+    crate::xml::tree::unset_prop(node, name)
+}
+
+/// Remove a namespaced property by name (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlUnsetNsProp(xmlNodePtr node, const xmlChar *name,
+///                    const xmlChar *nameSpace);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlUnsetNsProp(
+    node: *mut _xmlNode,
+    name: *const xmlChar,
+    nameSpace: *const xmlChar,
+) -> c_int {
+    crate::xml::tree::unset_ns_prop(node, name, nameSpace)
+}
+
+/// Return the first child element (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlFirstElementChild(xmlNodePtr parent);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFirstElementChild(parent: *mut _xmlNode) -> *mut _xmlNode {
+    crate::xml::tree::first_element_child(parent)
+}
+
+/// Return the last child element (upstream tree.h).
+#[no_mangle]
+pub unsafe extern "C" fn xmlLastElementChild(parent: *mut _xmlNode) -> *mut _xmlNode {
+    crate::xml::tree::last_element_child(parent)
+}
+
+/// Return the next element sibling (upstream tree.h).
+#[no_mangle]
+pub unsafe extern "C" fn xmlNextElementSibling(node: *mut _xmlNode) -> *mut _xmlNode {
+    crate::xml::tree::next_element_sibling(node)
+}
+
+/// Return the previous element sibling (upstream tree.h).
+#[no_mangle]
+pub unsafe extern "C" fn xmlPreviousElementSibling(node: *mut _xmlNode) -> *mut _xmlNode {
+    crate::xml::tree::previous_element_sibling(node)
+}
+
+/// Count the child elements (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// unsigned long xmlChildElementCount(xmlNodePtr parent);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlChildElementCount(parent: *mut _xmlNode) -> c_ulong {
+    crate::xml::tree::child_element_count(parent)
+}
+
+/// Concatenate text to a node (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextConcat(xmlNodePtr node, const xmlChar *content, int len);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextConcat(
+    node: *mut _xmlNode,
+    content: *const xmlChar,
+    len: c_int,
+) -> c_int {
+    crate::xml::tree::text_concat(node, content, len)
+}
+
+/// Merge two text nodes (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlTextMerge(xmlNodePtr first, xmlNodePtr second);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextMerge(
+    first: *mut _xmlNode,
+    second: *mut _xmlNode,
+) -> *mut _xmlNode {
+    crate::xml::tree::text_merge(first, second)
 }
 
 /// Get a DTD from a document, creating one if needed.

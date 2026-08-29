@@ -35,7 +35,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::abi::allocator;
 use crate::abi::constants::*;
@@ -1841,6 +1841,271 @@ pub unsafe fn remove_prop(attr: *mut _xmlAttr) -> c_int {
 
     allocator::xmlFree(attr as *mut c_void);
     0
+}
+
+/// Check whether a node has a property with the given name (upstream tree.c
+/// `xmlHasProp`): returns the attribute pointer or NULL.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn has_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlAttr {
+    if node.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).properties };
+    while !cur.is_null() {
+        let attr = unsafe { &*cur };
+        if !attr.name.is_null()
+            && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
+            && attr.ns.is_null()
+        {
+            return cur;
+        }
+        cur = unsafe { (*cur).next };
+    }
+    ptr::null_mut()
+}
+
+/// Check whether a node has a namespaced property (upstream tree.c
+/// `xmlHasNsProp`): returns the attribute pointer or NULL. A NULL
+/// `nameSpace` matches the no-namespace case.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+/// - `nameSpace` may be NULL.
+pub unsafe fn has_ns_prop(
+    node: *mut _xmlNode,
+    name: *const xmlChar,
+    name_space: *const xmlChar,
+) -> *mut _xmlAttr {
+    if node.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).properties };
+    while !cur.is_null() {
+        let attr = unsafe { &*cur };
+        if !attr.name.is_null()
+            && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
+        {
+            if name_space.is_null() {
+                if attr.ns.is_null() {
+                    return cur;
+                }
+            } else if !attr.ns.is_null() && !(*attr.ns).href.is_null() {
+                if unsafe {
+                    crate::abi::exports_xml2::xmlStrEqual((*attr.ns).href, name_space) != 0
+                } {
+                    return cur;
+                }
+            }
+        }
+        cur = unsafe { (*cur).next };
+    }
+    ptr::null_mut()
+}
+
+/// Remove a property by name from a node (upstream tree.c `xmlUnsetProp`):
+/// returns 0 on success, -1 if the property does not exist or arguments are
+/// NULL.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn unset_prop(node: *mut _xmlNode, name: *const xmlChar) -> c_int {
+    let attr = unsafe { has_prop(node, name) };
+    if attr.is_null() {
+        return -1;
+    }
+    unsafe { remove_prop(attr) }
+}
+
+/// Remove a namespaced property by name (upstream tree.c `xmlUnsetNsProp`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+/// - `nameSpace` may be NULL.
+pub unsafe fn unset_ns_prop(
+    node: *mut _xmlNode,
+    name: *const xmlChar,
+    name_space: *const xmlChar,
+) -> c_int {
+    let attr = unsafe { has_ns_prop(node, name, name_space) };
+    if attr.is_null() {
+        return -1;
+    }
+    unsafe { remove_prop(attr) }
+}
+
+/// Return the first child ELEMENT of a node, or NULL (upstream tree.c
+/// `xmlFirstElementChild`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+pub unsafe fn first_element_child(node: *mut _xmlNode) -> *mut _xmlNode {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).children };
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            return cur;
+        }
+        cur = unsafe { (*cur).next };
+    }
+    ptr::null_mut()
+}
+
+/// Return the last child ELEMENT of a node, or NULL (upstream tree.c
+/// `xmlLastElementChild`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+pub unsafe fn last_element_child(node: *mut _xmlNode) -> *mut _xmlNode {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).last };
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            return cur;
+        }
+        cur = unsafe { (*cur).prev };
+    }
+    ptr::null_mut()
+}
+
+/// Return the next ELEMENT sibling of a node, or NULL (upstream tree.c
+/// `xmlNextElementSibling`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+pub unsafe fn next_element_sibling(node: *mut _xmlNode) -> *mut _xmlNode {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).next };
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            return cur;
+        }
+        cur = unsafe { (*cur).next };
+    }
+    ptr::null_mut()
+}
+
+/// Return the previous ELEMENT sibling of a node, or NULL (upstream tree.c
+/// `xmlPreviousElementSibling`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+pub unsafe fn previous_element_sibling(node: *mut _xmlNode) -> *mut _xmlNode {
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    let mut cur = unsafe { (*node).prev };
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            return cur;
+        }
+        cur = unsafe { (*cur).prev };
+    }
+    ptr::null_mut()
+}
+
+/// Count the child ELEMENT nodes of a node (upstream tree.c
+/// `xmlChildElementCount`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node pointer or NULL.
+pub unsafe fn child_element_count(node: *mut _xmlNode) -> c_ulong {
+    if node.is_null() {
+        return 0;
+    }
+    let mut cur = unsafe { (*node).children };
+    let mut count: c_ulong = 0;
+    while !cur.is_null() {
+        if unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+            count += 1;
+        }
+        cur = unsafe { (*cur).next };
+    }
+    count
+}
+
+/// Concatenate text to a node's content (upstream tree.c `xmlTextConcat`):
+/// appends `num` bytes of `str` to the node's text content. Returns 0 on
+/// success, -1 on error.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid text node or NULL.
+/// - `str` must be a valid buffer of `num` bytes.
+pub unsafe fn text_concat(node: *mut _xmlNode, str: *const xmlChar, num: c_int) -> c_int {
+    if node.is_null() || str.is_null() || num <= 0 {
+        return -1;
+    }
+    let cur = unsafe { &mut *node };
+    if cur.content.is_null() {
+        let p = unsafe { allocator::xmlMalloc(num as usize + 1) as *mut xmlChar };
+        if p.is_null() {
+            return -1;
+        }
+        unsafe {
+            ptr::copy_nonoverlapping(str, p, num as usize);
+            *p.add(num as usize) = 0;
+        }
+        cur.content = p;
+        return 0;
+    }
+    let old_len = unsafe { crate::xml::string::xml_strlen(cur.content) };
+    let p = unsafe {
+        allocator::xmlRealloc(cur.content as *mut c_void, old_len + num as usize + 1)
+            as *mut xmlChar
+    };
+    if p.is_null() {
+        return -1;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(str, p.add(old_len), num as usize);
+        *p.add(old_len + num as usize) = 0;
+    }
+    cur.content = p;
+    0
+}
+
+/// Merge the text content of two nodes (upstream tree.c `xmlTextMerge`):
+/// appends `ntext`'s content to `text`'s content and frees `ntext`.
+/// Returns the first node, or NULL on error.
+///
+/// # SAFETY
+///
+/// - `text` and `ntext` must be valid text nodes or NULL.
+pub unsafe fn text_merge(text: *mut _xmlNode, ntext: *mut _xmlNode) -> *mut _xmlNode {
+    if text.is_null() || ntext.is_null() {
+        return ptr::null_mut();
+    }
+    if unsafe { (*ntext).content.is_null() } {
+        unsafe { free_node(ntext) };
+        return text;
+    }
+    let num = unsafe { crate::xml::string::xml_strlen((*ntext).content) };
+    if unsafe { text_concat(text, (*ntext).content, num as c_int) } != 0 {
+        return ptr::null_mut();
+    }
+    unsafe { free_node(ntext) };
+    text
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

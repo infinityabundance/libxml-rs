@@ -235,6 +235,110 @@ pub static mut xmlOutputBufferCreateFilenameValue: Option<
 > = None;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Default accessor functions (upstream parser.h / tree.h / xmlsave.h)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The deprecated `xmlXxxDefault(v)` accessors set the corresponding global
+// when `v != 0` and return the (new) value — upstream semantics (they
+// predate the plain globals; the modern behavior is conditional-set-and-
+// return, see upstream globals.c / parser.c).
+
+/// Upstream `xmlKeepBlanksDefault(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlKeepBlanksDefault(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlKeepBlanksDefaultValue = v;
+        }
+        xmlKeepBlanksDefaultValue
+    }
+}
+
+/// Upstream `xmlLineNumbersDefault(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlLineNumbersDefault(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlLineNumbersDefaultValue = v;
+        }
+        xmlLineNumbersDefaultValue
+    }
+}
+
+/// Upstream `xmlSubstituteEntitiesDefault(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSubstituteEntitiesDefault(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlSubstituteEntitiesDefaultValue = v;
+        }
+        xmlSubstituteEntitiesDefaultValue
+    }
+}
+
+/// Upstream `xmlPedanticParserDefault(int v)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlPedanticParserDefault(v: c_int) -> c_int {
+    unsafe {
+        if v != 0 {
+            xmlPedanticParserDefaultValue = v;
+        }
+        xmlPedanticParserDefaultValue
+    }
+}
+
+/// Upstream `xmlDoValidityCheckingDefaultValue` accessor is the global
+/// itself; `xmlGetWarningsDefaultValue` likewise (no accessor functions
+/// exist for those in upstream 2.15).
+
+/// Upstream `xmlRegisterNodeDefault(xmlRegisterNodeFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlRegisterNodeDefault(
+    func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
+) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    unsafe {
+        if func.is_some() {
+            xmlRegisterNodeDefaultValue = func;
+        }
+        xmlRegisterNodeDefaultValue
+    }
+}
+
+/// Upstream `xmlDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlDeregisterNodeDefault(
+    func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
+) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    unsafe {
+        if func.is_some() {
+            xmlDeregisterNodeDefaultValue = func;
+        }
+        xmlDeregisterNodeDefaultValue
+    }
+}
+
+/// Upstream `__xmlIndentTreeOutput(void)` (parser.h) — returns a pointer to
+/// the `xmlIndentTreeOutput` global.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlIndentTreeOutput() -> *mut c_int {
+    unsafe { core::ptr::addr_of_mut!(xmlIndentTreeOutput) }
+}
+
+/// Upstream `__xmlSaveNoEmptyTags(void)` (parser.h) — returns a pointer to
+/// the `xmlSaveNoEmptyTags` global.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlSaveNoEmptyTags() -> *mut c_int {
+    unsafe { core::ptr::addr_of_mut!(xmlSaveNoEmptyTags) }
+}
+
+/// Upstream `__xmlTreeIndentString(void)` (parser.h) — returns a pointer to
+/// the `xmlTreeIndentString` global.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlTreeIndentString() -> *mut *const xmlChar {
+    unsafe { core::ptr::addr_of_mut!(xmlTreeIndentString) }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // xmlThrDef* accessors (upstream threads.c / globals.c)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
@@ -481,4 +585,172 @@ pub unsafe extern "C" fn xmlThrDefOutputBufferCreateFilenameDefault(
         }
         xmlOutputBufferCreateFilenameValue
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// __xmlXxx() pointer accessors (upstream threads.c / globals.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+// The deprecated thread-local API exports one `__xmlXxx(void)` accessor per
+// global; each returns a pointer to the global so callers can read/write it.
+
+/// Upstream `__xmlBufferAllocScheme(void)` — returns a pointer to `xmlBufferAllocScheme`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlBufferAllocScheme() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlBufferAllocScheme) }
+}
+
+/// Upstream `__xmlDefaultBufferSize(void)` — returns a pointer to `xmlDefaultBufferSize`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlDefaultBufferSize() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlDefaultBufferSize) }
+}
+
+/// Upstream `__xmlDeregisterNodeDefaultValue(void)` — returns a pointer to `xmlDeregisterNodeDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlDeregisterNodeDefaultValue(
+) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlDeregisterNodeDefaultValue) }
+}
+
+/// Upstream `__xmlDoValidityCheckingDefaultValue(void)` — returns a pointer to `xmlDoValidityCheckingDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlDoValidityCheckingDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlDoValidityCheckingDefaultValue) }
+}
+
+/// Upstream `__xmlGenericError(void)` — returns a pointer to `xmlGenericError`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlGenericError() -> *mut Option<xmlGenericErrorFunc> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlGenericError) }
+}
+
+/// Upstream `__xmlGenericErrorContext(void)` — returns a pointer to `xmlGenericErrorContext`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlGenericErrorContext() -> *mut *mut c_void {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlGenericErrorContext) }
+}
+
+/// Upstream `__xmlGetWarningsDefaultValue(void)` — returns a pointer to `xmlGetWarningsDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlGetWarningsDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlGetWarningsDefaultValue) }
+}
+
+/// Upstream `__xmlKeepBlanksDefaultValue(void)` — returns a pointer to `xmlKeepBlanksDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlKeepBlanksDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlKeepBlanksDefaultValue) }
+}
+
+/// Upstream `__xmlLineNumbersDefaultValue(void)` — returns a pointer to `xmlLineNumbersDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlLineNumbersDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlLineNumbersDefaultValue) }
+}
+
+/// Upstream `__xmlLoadExtDtdDefaultValue(void)` — returns a pointer to `xmlLoadExtDtdDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlLoadExtDtdDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlLoadExtDtdDefaultValue) }
+}
+
+/// Upstream `__xmlOutputBufferCreateFilenameValue(void)` — returns a pointer to `xmlOutputBufferCreateFilenameValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlOutputBufferCreateFilenameValue() -> *mut Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        crate::abi::structs::xmlCharEncodingHandlerPtr,
+        c_int,
+    ) -> *mut crate::abi::structs::_xmlOutputBuffer,
+> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlOutputBufferCreateFilenameValue) }
+}
+
+/// Upstream `__xmlParserDebugEntities(void)` — returns a pointer to `xmlParserDebugEntities`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlParserDebugEntities() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlParserDebugEntities) }
+}
+
+/// Upstream `__xmlParserInputBufferCreateFilenameValue(void)` — returns a pointer to `xmlParserInputBufferCreateFilenameValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlParserInputBufferCreateFilenameValue() -> *mut Option<
+    unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
+> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlParserInputBufferCreateFilenameValue) }
+}
+
+/// Upstream `__xmlParserVersion(void)` — returns a pointer to `xmlParserVersion`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlParserVersion() -> *mut *const c_char {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlParserVersion) }
+}
+
+/// Upstream `__xmlPedanticParserDefaultValue(void)` — returns a pointer to `xmlPedanticParserDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlPedanticParserDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlPedanticParserDefaultValue) }
+}
+
+/// Upstream `__xmlRegisterNodeDefaultValue(void)` — returns a pointer to `xmlRegisterNodeDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlRegisterNodeDefaultValue(
+) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlRegisterNodeDefaultValue) }
+}
+
+/// Upstream `__xmlStructuredError(void)` — returns a pointer to `xmlStructuredError`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlStructuredError() -> *mut Option<xmlStructuredErrorFunc> {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlStructuredError) }
+}
+
+/// Upstream `__xmlStructuredErrorContext(void)` — returns a pointer to `xmlStructuredErrorContext`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlStructuredErrorContext() -> *mut *mut c_void {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlStructuredErrorContext) }
+}
+
+/// Upstream `__xmlSubstituteEntitiesDefaultValue(void)` — returns a pointer to `xmlSubstituteEntitiesDefaultValue`.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlSubstituteEntitiesDefaultValue() -> *mut c_int {
+    // SAFETY: returning a pointer to an exported static; the caller may
+    // read/write it exactly as with upstream's deprecated accessor.
+    unsafe { core::ptr::addr_of_mut!(xmlSubstituteEntitiesDefaultValue) }
 }

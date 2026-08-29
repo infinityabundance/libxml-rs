@@ -3,11 +3,11 @@
 //! Provides operations on `xmlChar*` (i.e. `*mut u8`) strings compatible
 //! with upstream libxml2's string handling.
 
-use crate::abi::allocator::xmlMalloc;
+use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
 use crate::abi::types::xmlChar;
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::slice;
 
 /// Compute the length of a null-terminated `xmlChar` string.
@@ -170,19 +170,257 @@ pub(crate) unsafe fn xml_strcat(str1: *const xmlChar, str2: *const xmlChar) -> *
 ///
 /// `str` must be NULL or point to a null-terminated sequence of bytes.
 #[inline]
+pub(crate) unsafe fn xml_strndup(str: *const xmlChar, len: usize) -> *mut xmlChar {
+    if str.is_null() {
+        return ptr::null_mut();
+    }
+    let p = unsafe { xmlMalloc(len + 1) as *mut xmlChar };
+    if p.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(str, p, len);
+        *p.add(len) = 0;
+    }
+    p
+}
+
+/// Convert a null-terminated `xmlChar` string into a Rust `String`
+/// (lossy UTF-8 conversion; empty string for NULL).
+///
+/// # Safety
+///
+/// `str` must be NULL or point to a null-terminated byte sequence.
 pub(crate) unsafe fn xmlstr_to_string(str: *const xmlChar) -> String {
     if str.is_null() {
         return String::new();
     }
-    let bytes = xmlstr_to_bytes(str);
+    let bytes = unsafe { xmlstr_to_bytes(str) };
     String::from_utf8_lossy(bytes).to_string()
 }
 
-/// Check if `str` starts with `prefix`.
+/// Build a QName `prefix:local` (upstream tree.c `xmlBuildQName`):
+/// writes into `memory` when it is large enough, otherwise allocates.
+/// Returns the resulting string (allocator-owned when not `memory`), or
+/// NULL on error. A NULL prefix returns `ncname` unchanged.
 ///
 /// # Safety
 ///
-/// Both pointers must be null-terminated or NULL.
+/// - `ncname`, `prefix` must be valid null-terminated strings or NULL.
+/// - `memory` must be a valid buffer of `len` bytes or NULL.
+pub unsafe fn build_qname(
+    ncname: *const xmlChar,
+    prefix: *const xmlChar,
+    memory: *mut xmlChar,
+    len: c_int,
+) -> *mut xmlChar {
+    if ncname.is_null() {
+        return ptr::null_mut();
+    }
+    if prefix.is_null() {
+        return ncname as *mut xmlChar;
+    }
+    unsafe {
+        let lenn = xml_strlen(ncname);
+        let lenp = xml_strlen(prefix);
+        let ret = if memory.is_null() || (len as usize) < lenn + lenp + 2 {
+            let p = xmlMalloc(lenn + lenp + 2) as *mut xmlChar;
+            if p.is_null() {
+                return ptr::null_mut();
+            }
+            p
+        } else {
+            memory
+        };
+        ptr::copy_nonoverlapping(prefix, ret, lenp);
+        *ret.add(lenp) = b':' as xmlChar;
+        ptr::copy_nonoverlapping(ncname, ret.add(lenp + 1), lenn);
+        *ret.add(lenn + lenp + 1) = 0;
+        ret
+    }
+}
+
+/// Split a QName into prefix and local part (upstream tree.c
+/// `xmlSplitQName2`): returns NULL when the name has no prefix (or starts
+/// with ':'), otherwise allocates `*prefix` with the prefix and returns the
+/// local part.
+///
+/// # Safety
+///
+/// - `name` must be a valid null-terminated string or NULL.
+/// - `prefix` must be a valid `xmlChar**`.
+pub unsafe fn split_qname2(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *mut xmlChar {
+    if prefix.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        *prefix = ptr::null_mut();
+    }
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        // "nasty but valid" (upstream): leading ':' has no prefix
+        if *name == b':' as xmlChar {
+            return ptr::null_mut();
+        }
+        let mut len: usize = 0;
+        while *name.add(len) != 0 && *name.add(len) != b':' as xmlChar {
+            len += 1;
+        }
+        if *name.add(len) == 0 || *name.add(len + 1) == 0 {
+            return ptr::null_mut();
+        }
+        let p = xml_strndup(name, len);
+        if p.is_null() {
+            return ptr::null_mut();
+        }
+        *prefix = p;
+        let ret = xml_strdup(name.add(len + 1));
+        if ret.is_null() {
+            xmlFree(*prefix as *mut c_void);
+            *prefix = ptr::null_mut();
+            return ptr::null_mut();
+        }
+        ret
+    }
+}
+
+/// Split a QName returning the prefix length (upstream tree.c
+/// `xmlSplitQName3`): returns the length of the prefix (before ':'), or 0
+/// when there is no prefix. `name` must not start with ':'.
+///
+/// # Safety
+///
+/// - `name` must be a valid null-terminated string or NULL.
+pub unsafe fn split_qname3(name: *const xmlChar, len: *mut c_int) -> c_int {
+    if name.is_null() || len.is_null() {
+        return 0;
+    }
+    unsafe {
+        if *name == b':' as xmlChar {
+            return 0;
+        }
+        let mut l: usize = 0;
+        while *name.add(l) != 0 && *name.add(l) != b':' as xmlChar {
+            l += 1;
+        }
+        if *name.add(l) == 0 {
+            return 0;
+        }
+        *len = l as c_int;
+        l as c_int
+    }
+}
+
+/// Return the number of UTF-8 characters in a string (upstream
+/// `xmlUTF8Strlen`).
+///
+/// # Safety
+///
+/// - `utf` must be a valid null-terminated UTF-8 string.
+pub unsafe fn utf8_strlen(utf: *const xmlChar) -> c_int {
+    if utf.is_null() {
+        return 0;
+    }
+    unsafe {
+        let mut n: c_int = 0;
+        let mut cur = utf;
+        while *cur != 0 {
+            let c = *cur;
+            if c & 0x80 == 0 {
+                cur = cur.add(1);
+            } else if c & 0xe0 == 0xc0 {
+                cur = cur.add(2);
+            } else if c & 0xf0 == 0xe0 {
+                cur = cur.add(3);
+            } else if c & 0xf8 == 0xf0 {
+                cur = cur.add(4);
+            } else {
+                // invalid sequence: stop counting
+                return n;
+            }
+            n += 1;
+        }
+        n
+    }
+}
+
+/// Size in bytes of the UTF-8 sequence starting at `utf` (upstream
+/// `xmlUTF8Size`): returns the sequence length, or -1 on invalid leading
+/// byte, 0 on NUL.
+///
+/// # Safety
+///
+/// - `utf` must be a valid pointer into a UTF-8 string.
+pub unsafe fn utf8_size(utf: *const xmlChar) -> c_int {
+    if utf.is_null() {
+        return -1;
+    }
+    unsafe {
+        let c = *utf;
+        if c == 0 {
+            return 0;
+        }
+        if c & 0x80 == 0 {
+            1
+        } else if c & 0xe0 == 0xc0 {
+            2
+        } else if c & 0xf0 == 0xe0 {
+            3
+        } else if c & 0xf8 == 0xf0 {
+            4
+        } else {
+            -1
+        }
+    }
+}
+
+/// Check that a byte string is valid UTF-8 (upstream `xmlCheckUTF8`):
+/// returns 1 when valid, 0 otherwise.
+///
+/// # Safety
+///
+/// - `utf` must be a valid null-terminated byte string.
+pub unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
+    if utf.is_null() {
+        return 0;
+    }
+    unsafe {
+        let mut cur = utf;
+        while *cur != 0 {
+            let c = *cur;
+            if c & 0x80 == 0 {
+                cur = cur.add(1);
+            } else if c & 0xe0 == 0xc0 {
+                // 2-byte: 110xxxxx 10xxxxxx
+                let c1 = *cur.add(1);
+                if c1 & 0xc0 != 0x80 {
+                    return 0;
+                }
+                cur = cur.add(2);
+            } else if c & 0xf0 == 0xe0 {
+                let c1 = *cur.add(1);
+                let c2 = *cur.add(2);
+                if c1 & 0xc0 != 0x80 || c2 & 0xc0 != 0x80 {
+                    return 0;
+                }
+                cur = cur.add(3);
+            } else if c & 0xf8 == 0xf0 {
+                let c1 = *cur.add(1);
+                let c2 = *cur.add(2);
+                let c3 = *cur.add(3);
+                if c1 & 0xc0 != 0x80 || c2 & 0xc0 != 0x80 || c3 & 0xc0 != 0x80 {
+                    return 0;
+                }
+                cur = cur.add(4);
+            } else {
+                return 0;
+            }
+        }
+        1
+    }
+}
 #[inline]
 pub(crate) unsafe fn xml_str_starts_with(str: *const xmlChar, prefix: *const xmlChar) -> bool {
     if str.is_null() || prefix.is_null() {

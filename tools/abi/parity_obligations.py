@@ -30,7 +30,7 @@ ORACLE_DSOS = {
     "libxslt": "/usr/lib/libxslt.so.1",
 }
 CANDIDATE_DSO = os.path.join(ROOT, "target", "debug", "liblibxml_rs.so")
-PREFIXES = {"libxml2": ("xml", "html"), "libxslt": ("xslt", "exslt")}
+PREFIXES = {"libxml2": ("xml", "html", "__xml"), "libxslt": ("xslt", "exslt")}
 
 
 def dso_symbols(path, prefixes):
