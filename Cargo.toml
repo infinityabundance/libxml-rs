@@ -1,8 +1,8 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.11"
+version = "0.1.0-alpha.12"
 edition = "2021"
-description = "Phase 9: EXSLT + xsltproc. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Complete EXSLT (exsl:node-set on RTFs, math, sets, strings, dynamic, dates, functions), full xsltproc CLI with upstream exit codes, byte-identical differential parity against libxslt 1.1.45 across a 12-case corpus, 1110 tests passing, XSLT 1.0 engine + all prior surfaces."
+description = "Phase 10: xmllint + xmlcatalog. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Full xmllint and xmlcatalog CLIs (debug, copy, format, valid, xpath, xinclude, html, noent, compact text nodes, catalog shell) with upstream exit codes, byte-identical differential parity against libxml2 2.15.3 across a 44-case suite, 1110 tests passing, XSLT 1.0 engine + EXSLT + all prior surfaces."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"
