@@ -312,6 +312,17 @@ where
 
 /// Set the last error for this thread.
 pub fn set_last_error(err: _xmlError) {
+    // UPSTREAM-PARITY: mirror the error into the exported C global
+    // `xmlLastError` (data-ABI, residual R-000135). Upstream keeps a single
+    // global; the candidate keeps a thread-local truth and a deep-copied
+    // mirror so C consumers see the most recent error with upstream
+    // lifetime semantics (mirror strings are owned by the mirror and freed
+    // on reset, matching xmlResetError).
+    //
+    // SAFETY: sync_xml_last_error only reads `err` and writes the global
+    // mirror with freshly owned copies; the thread-local slot takes
+    // ownership of `err` itself.
+    unsafe { crate::abi::data_globals::sync_xml_last_error(&err) };
     LAST_ERROR.with(|last| {
         *last.borrow_mut() = Some(err);
     });
@@ -322,6 +333,8 @@ pub fn reset_last_error() {
     LAST_ERROR.with(|last| {
         *last.borrow_mut() = None;
     });
+    // SAFETY: frees the mirror's owned strings and zeroes the global.
+    unsafe { crate::abi::data_globals::reset_xml_last_error() };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

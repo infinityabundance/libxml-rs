@@ -532,6 +532,7 @@ XMLPUBFUN int xmlBufferShrink(xmlBufferPtr buf, int len);
 XMLPUBFUN int xmlBufferGrow(xmlBufferPtr buf, int len);
 XMLPUBFUN int xmlBufferReserve(xmlBufferPtr buf, int len);
 XMLPUBFUN xmlChar *xmlBufferDetach(xmlBufferPtr buf);
+XMLPUBFUN int xmlIsBlankNode(const xmlNode *node);
 
 
 

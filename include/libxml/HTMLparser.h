@@ -314,6 +314,10 @@ struct _htmlEntityDesc {
 };
 
 /* [11.1-G] end: extracted definitions */
+
+/* Deprecated default SAX v1 handler (globals.c 2.15.3). */
+XMLPUBVAR const xmlSAXHandlerV1 htmlDefaultSAXHandler;
+
 #ifdef __cplusplus
 }
 #endif

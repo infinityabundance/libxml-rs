@@ -1069,6 +1069,10 @@ typedef enum{
 } xmlErrorDomain;
 
 /* [11.1-G] end: extracted definitions */
+
+/* The last error raised (xmlerror.h 2.15.3). */
+XMLPUBVAR xmlError xmlLastError;
+
 #ifdef __cplusplus
 }
 #endif

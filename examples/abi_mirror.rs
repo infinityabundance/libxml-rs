@@ -2216,6 +2216,175 @@ fn main() {
     println!("FIELD _xmlSAXHandler.serror offsetof={} size={}", offset_of!(_xmlSAXHandler, serror), size_of_val(&(*p).serror));
     dealloc(p as *mut u8, layout);
   } }
+  println!("STRUCT _xmlSAXHandlerV1 sizeof={} alignof={}", size_of::<_xmlSAXHandlerV1>(), align_of::<_xmlSAXHandlerV1>());
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.internalSubset offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, internalSubset), size_of_val(&(*p).internalSubset));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.isStandalone offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, isStandalone), size_of_val(&(*p).isStandalone));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.hasInternalSubset offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, hasInternalSubset), size_of_val(&(*p).hasInternalSubset));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.hasExternalSubset offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, hasExternalSubset), size_of_val(&(*p).hasExternalSubset));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.resolveEntity offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, resolveEntity), size_of_val(&(*p).resolveEntity));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.getEntity offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, getEntity), size_of_val(&(*p).getEntity));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.entityDecl offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, entityDecl), size_of_val(&(*p).entityDecl));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.notationDecl offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, notationDecl), size_of_val(&(*p).notationDecl));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.attributeDecl offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, attributeDecl), size_of_val(&(*p).attributeDecl));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.elementDecl offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, elementDecl), size_of_val(&(*p).elementDecl));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.unparsedEntityDecl offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, unparsedEntityDecl), size_of_val(&(*p).unparsedEntityDecl));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.setDocumentLocator offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, setDocumentLocator), size_of_val(&(*p).setDocumentLocator));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.startDocument offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, startDocument), size_of_val(&(*p).startDocument));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.endDocument offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, endDocument), size_of_val(&(*p).endDocument));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.startElement offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, startElement), size_of_val(&(*p).startElement));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.endElement offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, endElement), size_of_val(&(*p).endElement));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.reference offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, reference), size_of_val(&(*p).reference));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.characters offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, characters), size_of_val(&(*p).characters));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.ignorableWhitespace offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, ignorableWhitespace), size_of_val(&(*p).ignorableWhitespace));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.processingInstruction offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, processingInstruction), size_of_val(&(*p).processingInstruction));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.comment offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, comment), size_of_val(&(*p).comment));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.warning offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, warning), size_of_val(&(*p).warning));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.error offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, error), size_of_val(&(*p).error));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.fatalError offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, fatalError), size_of_val(&(*p).fatalError));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.getParameterEntity offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, getParameterEntity), size_of_val(&(*p).getParameterEntity));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.cdataBlock offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, cdataBlock), size_of_val(&(*p).cdataBlock));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.externalSubset offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, externalSubset), size_of_val(&(*p).externalSubset));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xmlSAXHandlerV1>();
+    let p = alloc_zeroed(layout) as *mut _xmlSAXHandlerV1;
+    println!("FIELD _xmlSAXHandlerV1.initialized offsetof={} size={}", offset_of!(_xmlSAXHandlerV1, initialized), size_of_val(&(*p).initialized));
+    dealloc(p as *mut u8, layout);
+  } }
   println!("STRUCT _xmlValidCtxt sizeof={} alignof={}", size_of::<_xmlValidCtxt>(), align_of::<_xmlValidCtxt>());
   { unsafe {
     let layout = Layout::new::<_xmlValidCtxt>();
@@ -3944,6 +4113,57 @@ fn main() {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
     println!("FIELD _xsltTransformContext.genSortKey offsetof={} size={}", offset_of!(_xsltTransformContext, genSortKey), size_of_val(&(*p).genSortKey));
+    dealloc(p as *mut u8, layout);
+  } }
+  println!("STRUCT xmlChLRange sizeof={} alignof={}", size_of::<xmlChLRange>(), align_of::<xmlChLRange>());
+  { unsafe {
+    let layout = Layout::new::<xmlChLRange>();
+    let p = alloc_zeroed(layout) as *mut xmlChLRange;
+    println!("FIELD xmlChLRange.low offsetof={} size={}", offset_of!(xmlChLRange, low), size_of_val(&(*p).low));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<xmlChLRange>();
+    let p = alloc_zeroed(layout) as *mut xmlChLRange;
+    println!("FIELD xmlChLRange.high offsetof={} size={}", offset_of!(xmlChLRange, high), size_of_val(&(*p).high));
+    dealloc(p as *mut u8, layout);
+  } }
+  println!("STRUCT xmlChRangeGroup sizeof={} alignof={}", size_of::<xmlChRangeGroup>(), align_of::<xmlChRangeGroup>());
+  { unsafe {
+    let layout = Layout::new::<xmlChRangeGroup>();
+    let p = alloc_zeroed(layout) as *mut xmlChRangeGroup;
+    println!("FIELD xmlChRangeGroup.nbShortRange offsetof={} size={}", offset_of!(xmlChRangeGroup, nbShortRange), size_of_val(&(*p).nbShortRange));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<xmlChRangeGroup>();
+    let p = alloc_zeroed(layout) as *mut xmlChRangeGroup;
+    println!("FIELD xmlChRangeGroup.nbLongRange offsetof={} size={}", offset_of!(xmlChRangeGroup, nbLongRange), size_of_val(&(*p).nbLongRange));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<xmlChRangeGroup>();
+    let p = alloc_zeroed(layout) as *mut xmlChRangeGroup;
+    println!("FIELD xmlChRangeGroup.shortRange offsetof={} size={}", offset_of!(xmlChRangeGroup, shortRange), size_of_val(&(*p).shortRange));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<xmlChRangeGroup>();
+    let p = alloc_zeroed(layout) as *mut xmlChRangeGroup;
+    println!("FIELD xmlChRangeGroup.longRange offsetof={} size={}", offset_of!(xmlChRangeGroup, longRange), size_of_val(&(*p).longRange));
+    dealloc(p as *mut u8, layout);
+  } }
+  println!("STRUCT xmlChSRange sizeof={} alignof={}", size_of::<xmlChSRange>(), align_of::<xmlChSRange>());
+  { unsafe {
+    let layout = Layout::new::<xmlChSRange>();
+    let p = alloc_zeroed(layout) as *mut xmlChSRange;
+    println!("FIELD xmlChSRange.low offsetof={} size={}", offset_of!(xmlChSRange, low), size_of_val(&(*p).low));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<xmlChSRange>();
+    let p = alloc_zeroed(layout) as *mut xmlChSRange;
+    println!("FIELD xmlChSRange.high offsetof={} size={}", offset_of!(xmlChSRange, high), size_of_val(&(*p).high));
     dealloc(p as *mut u8, layout);
   } }
   println!("ENUM xmlAttributeDefault sizeof={} alignof={}", size_of::<xmlAttributeDefault>(), align_of::<xmlAttributeDefault>());

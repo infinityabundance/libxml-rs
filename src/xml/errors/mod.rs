@@ -412,6 +412,70 @@ pub unsafe fn raise_error(
     // A more complete implementation would free the old message when setting a new one.
 }
 
+/// Emit a legacy-format message through the generic error channel.
+///
+/// Upstream's `xmlGenericErrorDefaultFunc` writes the message to stderr;
+/// when a custom generic handler is installed it receives the message. The
+/// `level` prefix matches upstream `xmlVFormatLegacyError` (error.c 2.15).
+unsafe fn emit_legacy_message(level: &str, msg: *const c_char) {
+    if msg.is_null() {
+        return;
+    }
+    let len = libc::strlen(msg) as usize;
+    let text = core::slice::from_raw_parts(msg as *const u8, len);
+    let mut full = Vec::with_capacity(level.len() + 2 + len);
+    full.extend_from_slice(level.as_bytes());
+    full.push(b':');
+    full.push(b' ');
+    full.extend_from_slice(text);
+    if let Some(handler) = globals::get_generic_error_func() {
+        let ctx = globals::get_generic_error_ctx();
+        let mut cmsg = full.clone();
+        cmsg.push(0);
+        handler(ctx, cmsg.as_ptr() as *const c_char);
+    } else {
+        // Upstream default (xmlGenericErrorDefaultFunc): stderr.
+        let _ = libc::write(2, full.as_ptr() as *const libc::c_void, full.len());
+    }
+}
+
+/// Default SAX v1 error handler — `void xmlParserError(void *ctx, const char *msg, ...)`.
+///
+/// UPSTREAM-PARITY: the candidate exposes the non-variadic ABI
+/// (`fn(ctx, msg)`); variadic formatting is not reproducible on stable Rust
+/// (documented safe divergence — callers pass pre-formatted messages).
+///
+/// # SAFETY
+///
+/// - `ctx` may be NULL (unused by the candidate's legacy path).
+/// - `msg` must be a valid NUL-terminated C string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserError(ctx: *mut c_void, msg: *const c_char) {
+    let _ = ctx;
+    unsafe { emit_legacy_message("error", msg) };
+}
+
+/// Default SAX v1 warning handler — `void xmlParserWarning(void *ctx, const char *msg, ...)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserWarning(ctx: *mut c_void, msg: *const c_char) {
+    let _ = ctx;
+    unsafe { emit_legacy_message("warning", msg) };
+}
+
+/// Default validity error handler — `void xmlParserValidityError(void *ctx, const char *msg, ...)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserValidityError(ctx: *mut c_void, msg: *const c_char) {
+    let _ = ctx;
+    unsafe { emit_legacy_message("validity error", msg) };
+}
+
+/// Default validity warning handler — `void xmlParserValidityWarning(void *ctx, const char *msg, ...)`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserValidityWarning(ctx: *mut c_void, msg: *const c_char) {
+    let _ = ctx;
+    unsafe { emit_legacy_message("validity warning", msg) };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════

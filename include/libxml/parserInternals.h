@@ -15,7 +15,8 @@
 extern "C" {
 #endif
 
-/* Functions will be declared here as they are implemented. */
+/* Deprecated character classification (parserInternals.h 2.15.3). */
+XMLPUBFUN int xmlIsLetter(int c);
 
 #ifdef __cplusplus
 }

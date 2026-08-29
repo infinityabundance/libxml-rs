@@ -481,6 +481,74 @@ pub struct _xmlSAXHandler {
     pub serror: Option<xmlStructuredErrorFunc>,
 }
 
+/// SAX handler, version 1 (upstream `struct _xmlSAXHandlerV1`, parser.h).
+///
+/// # ABI
+///
+/// Exactly the first 28 fields of `_xmlSAXHandler`; this is the type of the
+/// deprecated exported consts `xmlDefaultSAXHandler` / `htmlDefaultSAXHandler`.
+#[repr(C)]
+pub struct _xmlSAXHandlerV1 {
+    pub internalSubset: Option<internalSubsetSAXFunc>,
+    pub isStandalone: Option<isStandaloneSAXFunc>,
+    pub hasInternalSubset: Option<hasInternalSubsetSAXFunc>,
+    pub hasExternalSubset: Option<hasExternalSubsetSAXFunc>,
+    pub resolveEntity: Option<resolveEntitySAXFunc>,
+    pub getEntity: Option<getEntitySAXFunc>,
+    pub entityDecl: Option<entityDeclSAXFunc>,
+    pub notationDecl: Option<notationDeclSAXFunc>,
+    pub attributeDecl: Option<attributeDeclSAXFunc>,
+    pub elementDecl: Option<elementDeclSAXFunc>,
+    pub unparsedEntityDecl: Option<unparsedEntityDeclSAXFunc>,
+    pub setDocumentLocator: Option<setDocumentLocatorSAXFunc>,
+    pub startDocument: Option<startDocumentSAXFunc>,
+    pub endDocument: Option<endDocumentSAXFunc>,
+    pub startElement: Option<startElementSAXFunc>,
+    pub endElement: Option<endElementSAXFunc>,
+    pub reference: Option<referenceSAXFunc>,
+    pub characters: Option<charactersSAXFunc>,
+    pub ignorableWhitespace: Option<ignorableWhitespaceSAXFunc>,
+    pub processingInstruction: Option<processingInstructionSAXFunc>,
+    pub comment: Option<commentSAXFunc>,
+    pub warning: Option<warningSAXFunc>,
+    pub error: Option<errorSAXFunc>,
+    pub fatalError: Option<fatalErrorSAXFunc>,
+    pub getParameterEntity: Option<getParameterEntitySAXFunc>,
+    pub cdataBlock: Option<cdataBlockSAXFunc>,
+    pub externalSubset: Option<externalSubsetSAXFunc>,
+    pub initialized: c_uint,
+}
+
+/// Character-range table entry (upstream `xmlChSRange`, chvalid.h).
+#[repr(C)]
+pub struct xmlChSRange {
+    pub low: c_ushort,
+    pub high: c_ushort,
+}
+
+/// Long character-range table entry (upstream `xmlChLRange`, chvalid.h).
+#[repr(C)]
+pub struct xmlChLRange {
+    pub low: c_uint,
+    pub high: c_uint,
+}
+
+/// Character-class range group (upstream `xmlChRangeGroup`, chvalid.h) — the
+/// type of the exported char-class tables `xmlIsBaseCharGroup` &c.
+#[repr(C)]
+pub struct xmlChRangeGroup {
+    pub nbShortRange: c_int,
+    pub nbLongRange: c_int,
+    pub shortRange: *const xmlChSRange,
+    pub longRange: *const xmlChLRange,
+}
+
+// SAFETY: the group's raw pointers reference immutable `#[no_mangle]` const
+// arrays (generated from upstream data); they are never mutated, so the type
+// is safe to share across threads — required for the exported `static` tables
+// (upstream declares them `const`).
+unsafe impl Sync for xmlChRangeGroup {}
+
 // ── xmlParserCtxt ───────────────────────────────────────────────────────
 //
 // Source: parser.h

@@ -722,6 +722,11 @@ struct _xmlSAXHandlerV1 {
 };
 
 /* [11.1-G] end: extracted definitions */
+
+/* Deprecated default handlers (globals.c 2.15.3). */
+XMLPUBVAR const xmlSAXHandlerV1 xmlDefaultSAXHandler;
+XMLPUBVAR const xmlSAXLocator xmlDefaultSAXLocator;
+
 #ifdef __cplusplus
 }
 #endif

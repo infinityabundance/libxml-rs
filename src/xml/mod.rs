@@ -21,6 +21,7 @@
 pub mod automata;
 pub mod c14n;
 pub mod catalog;
+pub mod chvalid;
 pub mod debug;
 pub mod dictionary;
 pub mod dtd;
@@ -44,6 +45,7 @@ pub mod schematron;
 pub mod string;
 pub mod threads;
 pub mod tree;
+pub mod unicode_tables;
 pub mod uri;
 pub mod validation;
 pub mod writer;

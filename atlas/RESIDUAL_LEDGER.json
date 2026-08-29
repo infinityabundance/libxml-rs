@@ -1121,20 +1121,28 @@
   },
   {
    "id": "R-000135",
-   "status": "OPEN",
+   "status": "FIXED",
    "phase": "11.1-I",
    "title": "Exported C data globals: 11 libxml2 symbols remain (SAX handler structs, char tables, xmlLastError)",
    "surface": "ABI data symbols",
    "component": [
     "src/xml/globals/mod.rs",
     "src/abi/exports_xml2.rs",
-    "src/abi/exports_xslt.rs"
+    "src/abi/exports_xslt.rs",
+    "src/abi/data_globals.rs",
+    "src/xml/chvalid.rs",
+    "src/xml/unicode_tables.rs",
+    "src/xml/errors/mod.rs",
+    "tools/abi/data_globals_probe.py",
+    "courts/suites/data-abi/data-globals-probe.c"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab — upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions — documented safe divergence (stable Rust cannot define variadic extern fns).",
-   "fix": "Export the globals as #[no_mangle] static mut with upstream types, converting the globals module's atomics to direct static access (single source of truth so C writes affect the parser). Char-class tables and constant strings as exported statics; xmlXPathNAN/PINF/NINF and xmlParserVersion as consts. To be closed in the 11.1-G/I data-ABI closure.",
+   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab \u2014 upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions \u2014 documented safe divergence (stable Rust cannot define variadic extern fns).",
+   "fix": "All 11 remaining data symbols are now exported and court-verified byte-identical against the oracle DSO. (1) Added _xmlSAXHandlerV1, xmlChSRange/xmlChLRange/xmlChRangeGroup mirrors to structs.rs (measured by the RUST-MIRROR-ABI court, 0 mismatches). (2) Created tools/archaeology/gen_chvalid_tables.py — a deterministic generator extracting the char-class tables verbatim from upstream codegen/ranges.inc (sha256 bound) into src/xml/unicode_tables.rs (xmlIsPubidChar_tab[256] + the six xmlIs*Group range tables, counts verified against the declared values). (3) Created src/xml/chvalid.rs implementing xmlCharInRange, xmlIs{BaseChar,Blank,Char,Combining,Digit,Extender,Ideographic,PubidChar}, xmlIsLetter and xmlIsBlankNode with the exact upstream Q-macro semantics. (4) Exported xmlDefaultSAXHandler/htmlDefaultSAXHandler (xmlSAXHandlerV1) and xmlDefaultSAXLocator as #[no_mangle] consts reproducing the upstream globals.c initializer lists exactly — the differential court caught an initializer error (htmlDefaultSAXHandler reference/externalSubset slots) before sealing. (5) Added the xmlParserError/Warning/ValidityError/ValidityWarning legacy SAX handlers (non-variadic documented divergence) referenced by the handler structs. (6) xmlLastError: deep-copy mirror of the thread-local error state (sync on raise, free on reset, upstream xmlResetError semantics). (7) New DATA-GLOBALS-001 court (tools/abi/data_globals_probe.py + committed C probe) compiles the probe against the system libxml2 and the candidate DSO and requires byte-identical output: pubid table hex, every range group entry, SAX handler slot patterns, xmlLastError zero state, FNV-1a hashes of the nine xmlIs* functions over the full BMP + supplementary samples, xmlIsBlankNode behavior. Verdict PASS (oracle sha256 e7575963\u2026 == candidate). PARITY_OBLIGATIONS.json regenerated: DATA MISSING 11 \u2192 0 (both projects).",
    "evidence": [
-    "atlas/PARITY_OBLIGATIONS.json (DATA_MISSING=40/6)"
+    "courts/receipts/phase-11/data-globals-20260829T203735Z.json",
+    "courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json",
+    "atlas/PARITY_OBLIGATIONS.json (DATA MISSING = 0)"
    ],
    "classification": "UNRESOLVED",
    "history": [
@@ -1142,9 +1150,16 @@
      "date": "2026-08-29",
      "event": "discovered during 11.1-I parity census",
      "status": "OPEN"
+    },
+    {
+     "date": "2026-08-29",
+     "event": "closed: 11 data symbols exported with upstream layout and initial values; DATA-GLOBALS-001 differential court byte-identical vs the oracle DSO; obligations regenerated (DATA MISSING = 0)",
+     "status": "FIXED"
     }
-   ]
-  },
+   ],
+   "lesson": "Data-global parity needs value-level differential evidence, not just symbol presence: the DATA-GLOBALS-001 court compares the actual table bytes, handler slot patterns and function results against the oracle DSO. Symbol kind/size are covered by nm/readelf plus the three-way mirror court; initial values are covered by the differential probe. Function-pointer initializers must be transcribed from the upstream initializer lists exactly — a wrong NULL/non-NULL slot was caught only by the differential court."
+  }
+  ,
   {
    "id": "R-000136",
    "status": "OPEN",

@@ -1,0 +1,25 @@
+{
+ "court": "DATA-GLOBALS-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T20:37:16Z",
+ "probe": "courts/suites/data-abi/data-globals-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "e75759634c247345ed452fb81fe7cbdac59fd8e6b99f83148dde9d8252612cde",
+  "line_count": 22
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "50485e078910713bd7b4cbbe3b03e0923fd2ad7adb03d2b72343658382e1c1b9",
+  "line_count": 22
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 1,
+ "mismatches": [
+  {
+   "line": 9,
+   "oracle": "htmlDefaultSAXHandler initialized=1 pattern=100001000001111101111111010",
+   "candidate": "htmlDefaultSAXHandler initialized=1 pattern=100001000001111101111111011"
+  }
+ ]
+}

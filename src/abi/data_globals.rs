@@ -235,6 +235,215 @@ pub static mut xmlOutputBufferCreateFilenameValue: Option<
 > = None;
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Default SAX v1 handler structs + locator (upstream globals.c 2.15.3)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// `const xmlSAXHandlerV1 xmlDefaultSAXHandler` and `htmlDefaultSAXHandler`
+// (parser.h / HTMLparser.h), plus `const xmlSAXLocator xmlDefaultSAXLocator`.
+// The handler instances reproduce the upstream initializer lists exactly
+// (globals.c); every referenced xmlSAX2* entry point is a real candidate
+// export.
+
+/// `const xmlSAXHandlerV1 xmlDefaultSAXHandler` (globals.c 2.15.3).
+#[no_mangle]
+pub static xmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
+    crate::abi::structs::_xmlSAXHandlerV1 {
+        internalSubset: Some(crate::abi::exports_xml2::xmlSAX2InternalSubset),
+        isStandalone: Some(crate::abi::exports_xml2::xmlSAX2IsStandalone),
+        hasInternalSubset: Some(crate::abi::exports_xml2::xmlSAX2HasInternalSubset),
+        hasExternalSubset: Some(crate::abi::exports_xml2::xmlSAX2HasExternalSubset),
+        resolveEntity: Some(crate::abi::exports_xml2::xmlSAX2ResolveEntity),
+        getEntity: Some(crate::abi::exports_xml2::xmlSAX2GetEntity),
+        entityDecl: Some(crate::abi::exports_xml2::xmlSAX2EntityDecl),
+        notationDecl: Some(crate::abi::exports_xml2::xmlSAX2NotationDecl),
+        attributeDecl: Some(crate::abi::exports_xml2::xmlSAX2AttributeDecl),
+        elementDecl: Some(crate::abi::exports_xml2::xmlSAX2ElementDecl),
+        unparsedEntityDecl: Some(crate::abi::exports_xml2::xmlSAX2UnparsedEntityDecl),
+        setDocumentLocator: Some(crate::abi::exports_xml2::xmlSAX2SetDocumentLocator),
+        startDocument: Some(crate::abi::exports_xml2::xmlSAX2StartDocument),
+        endDocument: Some(crate::abi::exports_xml2::xmlSAX2EndDocument),
+        startElement: Some(crate::abi::exports_xml2::xmlSAX2StartElement),
+        endElement: Some(crate::abi::exports_xml2::xmlSAX2EndElement),
+        reference: Some(crate::abi::exports_xml2::xmlSAX2Reference),
+        characters: Some(crate::abi::exports_xml2::xmlSAX2Characters),
+        ignorableWhitespace: Some(crate::abi::exports_xml2::xmlSAX2IgnorableWhitespace),
+        processingInstruction: Some(crate::abi::exports_xml2::xmlSAX2ProcessingInstruction),
+        comment: Some(crate::abi::exports_xml2::xmlSAX2Comment),
+        warning: Some(crate::xml::errors::xmlParserWarning),
+        error: Some(crate::xml::errors::xmlParserError),
+        fatalError: Some(crate::xml::errors::xmlParserError),
+        getParameterEntity: Some(crate::abi::exports_xml2::xmlSAX2GetParameterEntity),
+        cdataBlock: Some(crate::abi::exports_xml2::xmlSAX2CDataBlock),
+        externalSubset: Some(crate::abi::exports_xml2::xmlSAX2ExternalSubset),
+        initialized: 1,
+    };
+
+/// `const xmlSAXHandlerV1 htmlDefaultSAXHandler` (globals.c 2.15.3).
+#[no_mangle]
+pub static htmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
+    crate::abi::structs::_xmlSAXHandlerV1 {
+        internalSubset: Some(crate::abi::exports_xml2::xmlSAX2InternalSubset),
+        isStandalone: None,
+        hasInternalSubset: None,
+        hasExternalSubset: None,
+        resolveEntity: None,
+        getEntity: Some(crate::abi::exports_xml2::xmlSAX2GetEntity),
+        entityDecl: None,
+        notationDecl: None,
+        attributeDecl: None,
+        elementDecl: None,
+        unparsedEntityDecl: None,
+        setDocumentLocator: Some(crate::abi::exports_xml2::xmlSAX2SetDocumentLocator),
+        startDocument: Some(crate::abi::exports_xml2::xmlSAX2StartDocument),
+        endDocument: Some(crate::abi::exports_xml2::xmlSAX2EndDocument),
+        startElement: Some(crate::abi::exports_xml2::xmlSAX2StartElement),
+        endElement: Some(crate::abi::exports_xml2::xmlSAX2EndElement),
+        reference: None,
+        characters: Some(crate::abi::exports_xml2::xmlSAX2Characters),
+        ignorableWhitespace: Some(crate::abi::exports_xml2::xmlSAX2IgnorableWhitespace),
+        processingInstruction: Some(crate::abi::exports_xml2::xmlSAX2ProcessingInstruction),
+        comment: Some(crate::abi::exports_xml2::xmlSAX2Comment),
+        warning: Some(crate::xml::errors::xmlParserWarning),
+        error: Some(crate::xml::errors::xmlParserError),
+        fatalError: Some(crate::xml::errors::xmlParserError),
+        getParameterEntity: None,
+        cdataBlock: Some(crate::abi::exports_xml2::xmlSAX2CDataBlock),
+        externalSubset: None,
+        initialized: 1,
+    };
+
+/// `const xmlSAXLocator xmlDefaultSAXLocator` (globals.c 2.15.3).
+#[no_mangle]
+pub static xmlDefaultSAXLocator: crate::abi::callbacks::_xmlSAXLocator =
+    crate::abi::callbacks::_xmlSAXLocator {
+        getPublicId: Some(crate::abi::exports_xml2::xmlSAX2GetPublicId),
+        getSystemId: Some(crate::abi::exports_xml2::xmlSAX2GetSystemId),
+        getLineNumber: Some(crate::abi::exports_xml2::xmlSAX2GetLineNumber),
+        getColumnNumber: Some(crate::abi::exports_xml2::xmlSAX2GetColumnNumber),
+    };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// xmlLastError — the exported C global mirror of the thread-local error state
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream `XMLPUBVAR xmlError xmlLastError` (xmlerror.h). The candidate's
+// internal error state is thread-local (safe divergence, more correct than
+// upstream's racy global); this mirror is deep-copied on every error raise
+// and freed on reset, so C consumers observe upstream-equivalent lifetime
+// semantics. Residual R-000135.
+
+/// `xmlError xmlLastError` — most recent error (mirror).
+#[no_mangle]
+pub static mut xmlLastError: crate::abi::structs::_xmlError = crate::abi::structs::_xmlError {
+    domain: 0,
+    code: 0,
+    message: core::ptr::null_mut(),
+    level: 0,
+    file: core::ptr::null_mut(),
+    line: 0,
+    str1: core::ptr::null_mut(),
+    str2: core::ptr::null_mut(),
+    str3: core::ptr::null_mut(),
+    int1: 0,
+    int2: 0,
+    ctxt: core::ptr::null_mut(),
+    node: core::ptr::null_mut(),
+};
+
+/// Deep-copy `err` into the exported `xmlLastError` global.
+///
+/// The string fields are copied with `libc::malloc`/`memcpy` so the mirror
+/// owns them (previous mirror strings are freed first — upstream
+/// xmlResetError semantics).
+///
+/// # SAFETY
+///
+/// - `err` must point to a valid `_xmlError` whose string fields are
+///   NUL-terminated or NULL.
+pub unsafe fn sync_xml_last_error(err: *const crate::abi::structs::_xmlError) {
+    if err.is_null() {
+        return;
+    }
+    unsafe {
+        reset_xml_last_error();
+        let src = &*err;
+        let dst = core::ptr::addr_of_mut!(xmlLastError);
+        (*dst).domain = src.domain;
+        (*dst).code = src.code;
+        (*dst).level = src.level;
+        (*dst).line = src.line;
+        (*dst).int1 = src.int1;
+        (*dst).int2 = src.int2;
+        (*dst).ctxt = src.ctxt;
+        (*dst).node = src.node;
+        (*dst).message = dup_cstr(src.message as *const u8);
+        (*dst).file = dup_cstr(src.file as *const u8);
+        (*dst).str1 = dup_cstr(src.str1 as *const u8);
+        (*dst).str2 = dup_cstr(src.str2 as *const u8);
+        (*dst).str3 = dup_cstr(src.str3 as *const u8);
+    }
+}
+
+/// Reset the exported `xmlLastError` global, freeing owned strings
+/// (upstream xmlResetError).
+///
+/// # SAFETY
+///
+/// Only call while no other thread is reading the global (upstream has the
+/// same race; documented).
+pub unsafe fn reset_xml_last_error() {
+    unsafe {
+        let dst = core::ptr::addr_of_mut!(xmlLastError);
+        if !(*dst).message.is_null() {
+            libc::free((*dst).message as *mut libc::c_void);
+        }
+        if !(*dst).file.is_null() {
+            libc::free((*dst).file as *mut libc::c_void);
+        }
+        if !(*dst).str1.is_null() {
+            libc::free((*dst).str1 as *mut libc::c_void);
+        }
+        if !(*dst).str2.is_null() {
+            libc::free((*dst).str2 as *mut libc::c_void);
+        }
+        if !(*dst).str3.is_null() {
+            libc::free((*dst).str3 as *mut libc::c_void);
+        }
+        *dst = crate::abi::structs::_xmlError {
+            domain: 0,
+            code: 0,
+            message: core::ptr::null_mut(),
+            level: 0,
+            file: core::ptr::null_mut(),
+            line: 0,
+            str1: core::ptr::null_mut(),
+            str2: core::ptr::null_mut(),
+            str3: core::ptr::null_mut(),
+            int1: 0,
+            int2: 0,
+            ctxt: core::ptr::null_mut(),
+            node: core::ptr::null_mut(),
+        };
+    }
+}
+
+/// Heap-copy a NUL-terminated string (NULL-safe).
+unsafe fn dup_cstr(s: *const u8) -> *mut c_char {
+    if s.is_null() {
+        return core::ptr::null_mut();
+    }
+    unsafe {
+        let len = libc::strlen(s as *const libc::c_char) as usize;
+        let p = libc::malloc(len + 1) as *mut u8;
+        if p.is_null() {
+            return core::ptr::null_mut();
+        }
+        libc::memcpy(p as *mut libc::c_void, s as *const libc::c_void, len + 1);
+        p as *mut c_char
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Default accessor functions (upstream parser.h / tree.h / xmlsave.h)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
