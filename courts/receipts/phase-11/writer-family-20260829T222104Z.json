@@ -1,0 +1,168 @@
+{
+ "court": "WRITER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T22:21:04Z",
+ "probe": "courts/suites/data-abi/writer-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "91d91df5b0baae09a42ca7201c5448396e9cd8c2de04c5b9dd5ff3cf663ec3ac"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "9d62c0143638044eed9a9dd878a52774af9f7a6303afc8ff7bdd98d5ad43f89b"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 55,
+ "mismatches": [
+  {
+   "line": 35,
+   "oracle": "dtdattlist=1",
+   "candidate": "dtdattlist=0"
+  },
+  {
+   "line": 50,
+   "oracle": " <!ELEMENT child (#PCDATA|sub)*>",
+   "candidate": " <!ELEMENT child (#PCDATA|sub)*><!ATTLIST child id CDATA #IMPLIED>"
+  },
+  {
+   "line": 51,
+   "oracle": " <!ATTLIST child id CDATA #IMPLIED>",
+   "candidate": " <!ENTITY % pent \"pe-content\"> <!ENTITY ent \"content &amp; more\"> <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\"><!NOTATION note PUBLIC \"PubID\" \"SysID\">]>"
+  },
+  {
+   "line": 52,
+   "oracle": " <!ENTITY % pent \"pe-content\">",
+   "candidate": "<root/>"
+  },
+  {
+   "line": 53,
+   "oracle": " <!ENTITY ent \"content &amp; more\">",
+   "candidate": ""
+  },
+  {
+   "line": 54,
+   "oracle": " <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\">",
+   "candidate": "setquote=0"
+  },
+  {
+   "line": 55,
+   "oracle": "<!NOTATION note PUBLIC \"PubID\" \"SysID\">]>",
+   "candidate": "startdoc2=0"
+  },
+  {
+   "line": 56,
+   "oracle": "<root/>",
+   "candidate": "attr-squote=0"
+  },
+  {
+   "line": 57,
+   "oracle": "",
+   "candidate": "empty-end=0"
+  },
+  {
+   "line": 58,
+   "oracle": "setquote=0",
+   "candidate": "---"
+  },
+  {
+   "line": 59,
+   "oracle": "startdoc2=0",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 60,
+   "oracle": "attr-squote=0",
+   "candidate": "<root>"
+  },
+  {
+   "line": 61,
+   "oracle": "empty-end=0",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>"
+  },
+  {
+   "line": 62,
+   "oracle": "---",
+   "candidate": " <!--a comment-->"
+  },
+  {
+   "line": 63,
+   "oracle": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+   "candidate": "<?target data?>"
+  },
+  {
+   "line": 64,
+   "oracle": "<root>",
+   "candidate": "<![CDATA[cdata <&>]]></root>"
+  },
+  {
+   "line": 65,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>"
+  },
+  {
+   "line": 66,
+   "oracle": " <!--a comment-->",
+   "candidate": "<!DOCTYPE root ["
+  },
+  {
+   "line": 67,
+   "oracle": "<?target data?>",
+   "candidate": " <!ELEMENT child (#PCDATA|sub)*><!ATTLIST child id CDATA #IMPLIED>"
+  },
+  {
+   "line": 68,
+   "oracle": "<![CDATA[cdata <&>]]></root>",
+   "candidate": " <!ENTITY % pent \"pe-content\"> <!ENTITY ent \"content &amp; more\"> <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\"><!NOTATION note PUBLIC \"PubID\" \"SysID\">]>"
+  },
+  {
+   "line": 69,
+   "oracle": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>",
+   "candidate": "<root/>"
+  },
+  {
+   "line": 70,
+   "oracle": "<!DOCTYPE root [",
+   "candidate": "<?xml version='1.0' standalone=?'yes'?>"
+  },
+  {
+   "line": 71,
+   "oracle": " <!ELEMENT child (#PCDATA|sub)*>",
+   "candidate": "<a q='it&apos;s &apos;quoted&apos;'><empty/><b>tail</b></a>"
+  },
+  {
+   "line": 72,
+   "oracle": " <!ATTLIST child id CDATA #IMPLIED>",
+   "candidate": ""
+  },
+  {
+   "line": 73,
+   "oracle": " <!ENTITY % pent \"pe-content\">",
+   "candidate": "fmt-string=0"
+  },
+  {
+   "line": 74,
+   "oracle": " <!ENTITY ent \"content &amp; more\">",
+   "candidate": "fmt-attr=-1"
+  },
+  {
+   "line": 75,
+   "oracle": " <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\">",
+   "candidate": "fmt-elem=0"
+  },
+  {
+   "line": 76,
+   "oracle": "<!NOTATION note PUBLIC \"PubID\" \"SysID\">]>",
+   "candidate": "fmt-comment=0"
+  },
+  {
+   "line": 77,
+   "oracle": "<root/>",
+   "candidate": "fmt-pi=0"
+  },
+  {
+   "line": 78,
+   "oracle": "<?xml version='1.0' standalone='yes'?>",
+   "candidate": "fmt-cdata=0"
+  }
+ ]
+}

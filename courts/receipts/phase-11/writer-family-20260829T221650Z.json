@@ -1,0 +1,168 @@
+{
+ "court": "WRITER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T22:16:50Z",
+ "probe": "courts/suites/data-abi/writer-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "91d91df5b0baae09a42ca7201c5448396e9cd8c2de04c5b9dd5ff3cf663ec3ac"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "b4bc248a8cc34706f445945095c3ad88b8b1330174bae8e00c87843049fbebac"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 47,
+ "mismatches": [
+  {
+   "line": 12,
+   "oracle": "enddoc=184",
+   "candidate": "enddoc=179"
+  },
+  {
+   "line": 16,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": " "
+  },
+  {
+   "line": 17,
+   "oracle": " <!--a comment-->",
+   "candidate": "ns-start=0"
+  },
+  {
+   "line": 18,
+   "oracle": "<?target data?>",
+   "candidate": "ns-attr=0"
+  },
+  {
+   "line": 19,
+   "oracle": "<![CDATA[cdata <&>]]></root>",
+   "candidate": "ns-end=0"
+  },
+  {
+   "line": 20,
+   "oracle": "",
+   "candidate": "---"
+  },
+  {
+   "line": 21,
+   "oracle": "ns-start=0",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 22,
+   "oracle": "ns-attr=0",
+   "candidate": "<root>"
+  },
+  {
+   "line": 23,
+   "oracle": "ns-end=0",
+   "candidate": " "
+  },
+  {
+   "line": 24,
+   "oracle": "---",
+   "candidate": "startdtd=0"
+  },
+  {
+   "line": 25,
+   "oracle": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+   "candidate": "dtdelem=0"
+  },
+  {
+   "line": 26,
+   "oracle": "<root>",
+   "candidate": "dtdattlist=0"
+  },
+  {
+   "line": 27,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": "dtdpent=0"
+  },
+  {
+   "line": 28,
+   "oracle": " <!--a comment-->",
+   "candidate": "dtdent=0"
+  },
+  {
+   "line": 29,
+   "oracle": "<?target data?>",
+   "candidate": "dtdext=0"
+  },
+  {
+   "line": 30,
+   "oracle": "<![CDATA[cdata <&>]]></root>",
+   "candidate": "dtdnot=0"
+  },
+  {
+   "line": 31,
+   "oracle": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>",
+   "candidate": "enddtd=0"
+  },
+  {
+   "line": 32,
+   "oracle": "",
+   "candidate": "---"
+  },
+  {
+   "line": 33,
+   "oracle": "startdtd=0",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 34,
+   "oracle": "dtdelem=1",
+   "candidate": "<root>"
+  },
+  {
+   "line": 35,
+   "oracle": "dtdattlist=1",
+   "candidate": " "
+  },
+  {
+   "line": 36,
+   "oracle": "dtdpent=1",
+   "candidate": "setquote=0"
+  },
+  {
+   "line": 37,
+   "oracle": "dtdent=1",
+   "candidate": "startdoc2=0"
+  },
+  {
+   "line": 38,
+   "oracle": "dtdext=1",
+   "candidate": "attr-squote=0"
+  },
+  {
+   "line": 39,
+   "oracle": "dtdnot=0",
+   "candidate": "empty-end=0"
+  },
+  {
+   "line": 40,
+   "oracle": "enddtd=0",
+   "candidate": "---"
+  },
+  {
+   "line": 41,
+   "oracle": "---",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 42,
+   "oracle": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+   "candidate": "<root>"
+  },
+  {
+   "line": 43,
+   "oracle": "<root>",
+   "candidate": " "
+  },
+  {
+   "line": 44,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": "fmt-string=0"
+  }
+ ]
+}

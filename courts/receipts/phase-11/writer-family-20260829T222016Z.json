@@ -1,0 +1,168 @@
+{
+ "court": "WRITER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T22:20:16Z",
+ "probe": "courts/suites/data-abi/writer-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "91d91df5b0baae09a42ca7201c5448396e9cd8c2de04c5b9dd5ff3cf663ec3ac"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "30e7c69229768c427f23fecb78bc60abf70d44f3f091e0fceade751c06b4e03c"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 54,
+ "mismatches": [
+  {
+   "line": 35,
+   "oracle": "dtdattlist=1",
+   "candidate": "dtdattlist=-1"
+  },
+  {
+   "line": 36,
+   "oracle": "dtdpent=1",
+   "candidate": "dtdpent=-1"
+  },
+  {
+   "line": 37,
+   "oracle": "dtdent=1",
+   "candidate": "dtdent=-1"
+  },
+  {
+   "line": 38,
+   "oracle": "dtdext=1",
+   "candidate": "dtdext=-1"
+  },
+  {
+   "line": 39,
+   "oracle": "dtdnot=0",
+   "candidate": "dtdnot=-1"
+  },
+  {
+   "line": 40,
+   "oracle": "enddtd=0",
+   "candidate": "enddtd=-1"
+  },
+  {
+   "line": 50,
+   "oracle": " <!ELEMENT child (#PCDATA|sub)*>",
+   "candidate": " <!ELEMENT child <root/>"
+  },
+  {
+   "line": 51,
+   "oracle": " <!ATTLIST child id CDATA #IMPLIED>",
+   "candidate": ""
+  },
+  {
+   "line": 52,
+   "oracle": " <!ENTITY % pent \"pe-content\">",
+   "candidate": "setquote=0"
+  },
+  {
+   "line": 53,
+   "oracle": " <!ENTITY ent \"content &amp; more\">",
+   "candidate": "startdoc2=0"
+  },
+  {
+   "line": 54,
+   "oracle": " <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\">",
+   "candidate": "attr-squote=0"
+  },
+  {
+   "line": 55,
+   "oracle": "<!NOTATION note PUBLIC \"PubID\" \"SysID\">]>",
+   "candidate": "empty-end=0"
+  },
+  {
+   "line": 56,
+   "oracle": "<root/>",
+   "candidate": "---"
+  },
+  {
+   "line": 57,
+   "oracle": "",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 58,
+   "oracle": "setquote=0",
+   "candidate": "<root>"
+  },
+  {
+   "line": 59,
+   "oracle": "startdoc2=0",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>"
+  },
+  {
+   "line": 60,
+   "oracle": "attr-squote=0",
+   "candidate": " <!--a comment-->"
+  },
+  {
+   "line": 61,
+   "oracle": "empty-end=0",
+   "candidate": "<?target data?>"
+  },
+  {
+   "line": 62,
+   "oracle": "---",
+   "candidate": "<![CDATA[cdata <&>]]></root>"
+  },
+  {
+   "line": 63,
+   "oracle": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+   "candidate": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>"
+  },
+  {
+   "line": 64,
+   "oracle": "<root>",
+   "candidate": "<!DOCTYPE root ["
+  },
+  {
+   "line": 65,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": " <!ELEMENT child <root/>"
+  },
+  {
+   "line": 66,
+   "oracle": " <!--a comment-->",
+   "candidate": "<?xml version='1.0' standalone=?'yes'?>"
+  },
+  {
+   "line": 67,
+   "oracle": "<?target data?>",
+   "candidate": "<a q='it&apos;s &apos;quoted&apos;'><empty/><b>tail</b></a>"
+  },
+  {
+   "line": 68,
+   "oracle": "<![CDATA[cdata <&>]]></root>",
+   "candidate": ""
+  },
+  {
+   "line": 69,
+   "oracle": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>",
+   "candidate": "fmt-string=0"
+  },
+  {
+   "line": 70,
+   "oracle": "<!DOCTYPE root [",
+   "candidate": "fmt-attr=-1"
+  },
+  {
+   "line": 71,
+   "oracle": " <!ELEMENT child (#PCDATA|sub)*>",
+   "candidate": "fmt-elem=0"
+  },
+  {
+   "line": 72,
+   "oracle": " <!ATTLIST child id CDATA #IMPLIED>",
+   "candidate": "fmt-comment=0"
+  },
+  {
+   "line": 73,
+   "oracle": " <!ENTITY % pent \"pe-content\">",
+   "candidate": "fmt-pi=0"
+  }
+ ]
+}

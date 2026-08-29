@@ -1549,6 +1549,171 @@
         }
       ],
       "lesson": "Node-kind names are part of the reader's observable contract. A reader implementation that returns NULL where upstream returns '#text' breaks downstream kind-dispatch logic even though the node type integer is correct."
+    },
+    {
+      "id": "R-000151",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "Writer return values are encoder-dependent byte counts, not 0 or raw lengths",
+      "surface": "xmlTextWriter* return contract (xmlwriter.c)",
+      "component": [
+        "src/xml/writer/mod.rs"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "The WRITER-001 differential probe showed the oracle returning 0 for StartDocument-with-encoding while the candidate returned the raw byte count. Upstream xmlOutputBufferWrite takes an encoder path once an encoding is installed: writes below the 256-byte conversion threshold report 0 bytes; xmlTextWriterWriteIndent reports the NUMBER OF INDENT STRINGS, not bytes; EndDocument returns the flush count. The encoder, once installed by a StartDocument with encoding, persists for the writer's lifetime (a later StartDocument with encoding=NULL only resets conv).",
+      "fix": "The writer now tracks encoder_active (set once, never cleared), mutes byte-write returns to 0 when active, returns the indent string count from write_indent, and returns the output-buffer length delta/flush count from EndDocument. Sealed by WRITER-001 (all return values byte-identical, incl. enddoc=184).",
+      "evidence": [
+        "courts/suites/data-abi/writer-family-probe.c",
+        "courts/receipts/phase-11/writer-family-*.json",
+        "oracle/historical/src/libxml2-2.15.0/xmlIO.c",
+        "oracle/historical/src/libxml2-2.15.0/xmlwriter.c"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "discovered by WRITER-001 (startdoc=38 vs 0, enddoc=178 vs 184); encoder-persistence model implemented; sealed by WRITER-001 PASS",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "Return values are part of the writer ABI and encode internal buffering/encoder state. A naive 'return bytes appended' implementation diverges the moment an encoding is set. The return contract must reproduce upstream's encoder path (0 below the conversion threshold) and the indent string-count quirk."
+    },
+    {
+      "id": "R-000152",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "DTD internal-subset bracket is deferred to the first child declaration, not written by StartDTD",
+      "surface": "xmlTextWriterStartDTD/StartDTDElement/StartDTDAttlist/StartDTDEntity/WriteDTDNotation/EndDTD (xmlwriter.c)",
+      "component": [
+        "src/xml/writer/mod.rs"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "Upstream xmlTextWriterStartDTD writes `<!DOCTYPE name` WITHOUT the `[`; the first DTD child (StartDTDElement/StartDTDAttlist/StartDTDEntity) or raw content emits ` [` (+newline when indented) on the DTD->DTD_TEXT transition, and EndDTD emits `]` only when content was written. The candidate's original StartDTD wrote `[` immediately and EndDTD wrote `]>` unconditionally — coincidentally identical for the old WriteDTD path but wrong for every Start/End composition (e.g. a bare StartDTD+EndDTD produced `<!DOCTYPE name []>` instead of `<!DOCTYPE name>`).",
+      "fix": "StartDTD no longer writes the bracket; a dtd_child_transition helper writes ` [` on the first DTD child; EndDTD writes `]` only from the DTDText state. The DTD child starts also push/pop dtd_depth so the upstream indentation (one indent string per open declaration) and the indent return counts match. Sealed by WRITER-001.",
+      "evidence": [
+        "courts/suites/data-abi/writer-family-probe.c",
+        "courts/receipts/phase-11/writer-family-*.json",
+        "oracle/historical/src/libxml2-2.15.0/xmlwriter.c"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "discovered by WRITER-001 DTD section divergences (bracket placement, indentation, `]` handling); bracket-deferral state machine implemented; sealed by WRITER-001 PASS",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "State machines with deferred separators produce identical output to eager ones on the happy path and diverge on compositions. The bracket/separator placement must mirror the upstream state transitions exactly, or partial DTDs (Start without End, single children, empty subsets) come out wrong."
+    },
+    {
+      "id": "R-000153",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "Writer namespace declarations are deferred to tag close (xmlns after attributes), not written inline",
+      "surface": "xmlTextWriterStartElementNS / xmlTextWriterOutputNSDecl (xmlwriter.c)",
+      "component": [
+        "src/xml/writer/mod.rs"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "Upstream defers namespace declarations: xmlTextWriterOutputNSDecl emits ` xmlns:prefix=\"uri\"` when the start tag closes (after all attributes), so `<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>` has the xmlns AFTER the attributes. The candidate wrote the xmlns inline at StartElementNS, producing `xmlns:p` before the attribute.",
+      "fix": "StartElementNS now records pending namespace declarations; close_start_tag and the EndElement self-close path flush them (xmlns first, then `>`/`/>`). Sealed by WRITER-001.",
+      "evidence": [
+        "courts/suites/data-abi/writer-family-probe.c",
+        "courts/receipts/phase-11/writer-family-*.json"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "discovered by WRITER-001 (xmlns:p before p:attr vs after); deferral implemented; sealed by WRITER-001 PASS",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "Start-tag attribute ordering is observable: namespace declarations are serialized at tag close in upstream, after all attributes. Inline emission at StartElementNS reorders the output."
+    },
+    {
+      "id": "R-000154",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "Writer text/attribute escaping: apostrophe is never escaped; the indent default is one space; StartPI does not indent",
+      "surface": "xmlTextWriterWriteString/WriteAttribute, xmlEncodeSpecialChars, xmlBufAttrSerializeTxtContent, xmlTextWriterStartPI (xmlwriter.c)",
+      "component": [
+        "src/xml/writer/mod.rs"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "Three upstream quirks the candidate did not reproduce: (1) xmlEncodeSpecialChars (xmlEscapeText with XML_ESCAPE_QUOT) escapes &<>\" but NOT the apostrophe, and xmlBufAttrSerializeTxtContent (XML_ESCAPE_ATTR) likewise never escapes ' regardless of the writer's qchar — the qchar only selects the outer quotes; (2) the default indent string is a single space, not two; (3) xmlTextWriterStartPI writes no indentation (PIs appear at column 0).",
+      "fix": "encode_special_chars and write_attr_escaped no longer escape the apostrophe (the qchar-aware quote logic was removed); the default indent string is now one space; StartPI no longer writes an indent. Sealed by WRITER-001.",
+      "evidence": [
+        "courts/suites/data-abi/writer-family-probe.c",
+        "courts/receipts/phase-11/writer-family-*.json",
+        "oracle/historical/src/libxml2-2.15.0/entities.c",
+        "oracle/historical/src/libxml2-2.15.0/xmlsave.c"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "discovered by WRITER-001 (text &apos; vs literal ', 2-space vs 1-space indent, indented PI vs column-0 PI); reproduced verbatim; sealed by WRITER-001 PASS",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "Escaping sets, default indentation and per-construct indentation are all observable. The apostrophe quirk produces technically invalid XML in single-quoted attributes and must be preserved, not 'fixed'."
+    },
+    {
+      "id": "R-000155",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "Variadic xmlTextWriterWriteFormat* exports cannot be defined on stable Rust (c_variadic unstable); solved with #[no_mangle] inline-asm shims",
+      "surface": "xmlTextWriterWriteFormat*/WriteVFormat* (xmlwriter.h)",
+      "component": [
+        "src/xml/writer/mod.rs",
+        "build.rs"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "The 13 variadic Format functions require a va_list construction at the callee. Stable Rust cannot define variadic extern \"C\" functions. A global_asm approach failed because rustc's cdylib version script (global: no_mangle-exports; local: *) localizes every symbol not declared #[no_mangle], and --export-dynamic-symbol cannot override the version script.",
+      "fix": "Each Format export is a #[no_mangle] function whose body is a single noreturn inline-asm block: it captures the SysV register save area like va_start, builds a 24-byte __va_list_tag (gp_offset/fp_offset/overflow_arg_area/reg_save_area), calls the corresponding VFormat implementation by name, restores the stack (including LLVM's 8-byte alignment push) and returns. The VFormat functions take a *mut VaListTag and format via the system vsnprintf with fresh va_copy per attempt (xmlTextWriterVSprintf semantics). Sealed by WRITER-001 including the >6-GP overflow-argument path.",
+      "evidence": [
+        "courts/suites/data-abi/writer-family-probe.c",
+        "courts/receipts/phase-11/writer-family-*.json",
+        "src/xml/writer/mod.rs"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "variadic exports absent; inline-asm shim approach implemented after the version-script interaction was characterized; sealed by WRITER-001 PASS",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "rustc cdylib exports are controlled by a version script generated from #[no_mangle] items; global_asm symbols are localized regardless of --export-dynamic-symbol. A #[no_mangle] function containing a noreturn inline-asm body (no declared parameters, so LLVM emits only an alignment push) is the stable-Rust way to export a variadic C entry point."
+    },
+    {
+      "id": "R-000156",
+      "status": "FIXED",
+      "phase": "11.1-I",
+      "title": "xmlTextWriterStartDTDEntity and WriteDTDEntity had wrong signatures; WriteDTDAttribute composed the wrong primitives",
+      "surface": "xmlTextWriterStartDTDEntity(writer, pe, name), xmlTextWriterWriteDTDEntity(writer, pe, name, pubid, sysid, ndataid, content), xmlTextWriterWriteDTDAttribute (xmlwriter.h)",
+      "component": [
+        "src/xml/writer/mod.rs",
+        "include/libxml/xmlwriter.h"
+      ],
+      "discovery_date": "2026-08-29",
+      "root_cause": "The candidate's pre-existing StartDTDEntity exported (writer, name) but upstream is (writer, pe, name) with a %-prefix for parameter entities; WriteDTDEntity exported (writer, name, content) but upstream takes seven arguments and dispatches internal/external; WriteDTDAttribute composed an invented StartDTDAttribute/EndDTDAttribute pair instead of upstream's StartDTDAttlist/WriteString/EndDTDAttlist. The stub header masked these ABI mismatches from the header court.",
+      "fix": "All three signatures now match upstream exactly; WriteDTDInternalEntity/WriteDTDExternalEntity/WriteDTDExternalEntityContents implement the dispatch targets; the full upstream xmlwriter.h was written (the stub was replaced), exposing every writer declaration to the header court. Sealed by WRITER-001 and the 571/571 header court.",
+      "evidence": [
+        "src/xml/writer/mod.rs",
+        "include/libxml/xmlwriter.h",
+        "courts/receipts/phase-11/writer-family-*.json"
+      ],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {
+          "date": "2026-08-29",
+          "event": "discovered while writing the full xmlwriter.h (signature audit against /usr/include); corrected and sealed by WRITER-001 + header court",
+          "status": "FIXED"
+        }
+      ],
+      "lesson": "A stub header hides ABI mismatches from declared-vs-exported courts. Signature parity must be audited against the real upstream header before exporting: parameter counts and the pe flag change both the calling convention and the observable output."
     }
   ]
 }

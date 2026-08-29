@@ -22,7 +22,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_uint};
 
 use crate::abi::allocator;
 
@@ -54,14 +54,22 @@ enum WriterState {
     Comment,
     /// Inside a processing instruction.
     PI,
-    /// Inside a DTD declaration.
+    /// Inside a DTD declaration (bracket not yet written).
     DTD,
+    /// Inside a DTD declaration after the internal subset bracket.
+    DTDText,
     /// Inside a DTD element declaration.
     DTDElem,
+    /// Inside a DTD element declaration after content.
+    DTDElemText,
     /// Inside a DTD attribute declaration.
     DTDAttr,
-    /// Inside a DTD entity declaration.
+    /// Inside a DTD attribute declaration after content.
+    DTDAttrText,
+    /// Inside a DTD entity declaration (no content yet).
     DTDEntity,
+    /// Inside a DTD entity declaration after content.
+    DTDEntityText,
     /// Inside a DTD notation declaration.
     DTDNotation,
     /// Writing XML declaration.
@@ -87,6 +95,10 @@ pub struct XmlTextWriter {
     indent: c_int,
     /// The string used for one level of indentation.
     indent_string: Vec<u8>,
+    /// Quote character for attribute/entity values (upstream `qchar`).
+    qchar: u8,
+    /// Indent the next closing tag (upstream `doindent`).
+    doindent: bool,
     /// Current nesting depth.
     depth: c_int,
     /// Stack of element local names (for end-element matching).
@@ -104,6 +116,19 @@ pub struct XmlTextWriter {
     /// The element name stack with full qualified names for proper end-element matching.
     /// Stores (prefix, localname) pairs.
     elem_stack: Vec<(Vec<u8>, Vec<u8>)>,
+    /// Whether the current DTD entity declaration is a parameter entity
+    /// (upstream XML_TEXTWRITER_DTD_PENT).
+    entity_pe: bool,
+    /// Whether an output encoder has been installed (xmlTextWriterStartDocument
+    /// with a non-NULL encoding). Once set it persists for the writer's life
+    /// and makes byte-writes report 0 bytes (upstream encoder path).
+    encoder_active: bool,
+    /// Pending namespace declarations for the current start tag (upstream
+    /// xmlTextWriterOutputNSDecl defers them until the tag closes).
+    pending_ns: Vec<(Vec<u8>, Vec<u8>)>,
+    /// Open DTD child declarations (upstream stack entries) contributing to
+    /// the indentation depth.
+    dtd_depth: c_int,
 }
 
 impl XmlTextWriter {
@@ -120,7 +145,9 @@ impl XmlTextWriter {
         unsafe {
             (*writer).output = output;
             (*writer).indent = 0;
-            (*writer).indent_string = b"  \0".to_vec();
+            (*writer).indent_string = b" \0".to_vec();
+            (*writer).qchar = b'"';
+            (*writer).doindent = true;
             (*writer).depth = 0;
             (*writer).stack = Vec::new();
             (*writer).encoding = b"UTF-8\0".to_vec();
@@ -129,6 +156,10 @@ impl XmlTextWriter {
             (*writer).doc = ptr::null_mut();
             (*writer).in_start_tag = false;
             (*writer).elem_stack = Vec::new();
+            (*writer).entity_pe = false;
+            (*writer).encoder_active = false;
+            (*writer).pending_ns = Vec::new();
+            (*writer).dtd_depth = 0;
         }
         writer
     }
@@ -138,64 +169,124 @@ impl XmlTextWriter {
     /// # SAFETY
     ///
     /// - `data` must point to `len` valid bytes.
-    unsafe fn write_raw(&mut self, data: *const u8, len: c_int) {
+    unsafe fn write_raw(&mut self, data: *const u8, len: c_int) -> c_int {
         if self.output.is_null() || data.is_null() || len <= 0 {
-            return;
+            return -1;
         }
-        io::output_buffer_write(self.output, len, data as *const c_char);
+        let rc = io::output_buffer_write(self.output, len, data as *const c_char);
+        // UPSTREAM-PARITY: with an output encoder installed, xmlOutputBufferWrite
+        // reports 0 bytes for writes below the 256-byte conversion threshold.
+        if self.encoder_active {
+            0
+        } else {
+            rc
+        }
     }
 
     /// Write a null-terminated string to the output buffer.
-    unsafe fn write_str(&mut self, s: *const u8) {
+    unsafe fn write_str(&mut self, s: *const u8) -> c_int {
         if self.output.is_null() || s.is_null() {
-            return;
+            return -1;
         }
-        io::output_buffer_write_string(self.output, s as *const c_char);
+        let rc = io::output_buffer_write_string(self.output, s as *const c_char);
+        if self.encoder_active {
+            0
+        } else {
+            rc
+        }
     }
 
     /// Write a byte slice to the output buffer.
     ///
     /// NOTE: The slice must NOT borrow from `self` to avoid borrow checker conflicts.
-    unsafe fn write_slice(&mut self, slice: &[u8]) {
+    unsafe fn write_slice(&mut self, slice: &[u8]) -> c_int {
         if self.output.is_null() || slice.is_empty() {
-            return;
+            return -1;
         }
-        io::output_buffer_write(
+        let rc = io::output_buffer_write(
             self.output,
             slice.len() as c_int,
             slice.as_ptr() as *const c_char,
         );
+        if self.encoder_active {
+            0
+        } else {
+            rc
+        }
     }
 
     /// Write a single byte to the output buffer.
-    unsafe fn write_byte(&mut self, b: u8) {
+    unsafe fn write_byte(&mut self, b: u8) -> c_int {
         if self.output.is_null() {
-            return;
+            return -1;
         }
-        io::output_buffer_write_char(self.output, b as c_char);
+        let rc = io::output_buffer_write_char(self.output, b as c_char);
+        if self.encoder_active {
+            0
+        } else {
+            rc
+        }
     }
 
     /// Write indentation (if enabled).
     ///
     /// Uses a clone of the indent string to avoid borrow checker conflicts.
-    unsafe fn write_indent(&mut self) {
+    unsafe fn write_indent(&mut self) -> c_int {
         if self.indent == 0 {
-            return;
+            return 0;
         }
-        self.write_byte(b'\n');
+        // UPSTREAM-PARITY (xmlTextWriterWriteIndent): returns the number of
+        // indent strings written, not the byte count. The stored indent
+        // string is NUL-terminated; the NUL must not reach the output.
         let indent_str = self.indent_string.clone();
-        for _ in 0..self.depth {
-            self.write_slice(&indent_str);
+        let body = if indent_str.last() == Some(&0) {
+            &indent_str[..indent_str.len() - 1]
+        } else {
+            &indent_str[..]
+        };
+        let count = self.depth + self.dtd_depth;
+        for _ in 0..count {
+            self.write_slice(body);
         }
+        count
     }
 
     /// Close any open start tag (writing `>` to transition from attribute-writing
-    /// mode to content-writing mode).
-    unsafe fn close_start_tag(&mut self) {
+    /// mode to content-writing mode). Returns `(closed, bytes)` — whether a tag
+    /// was actually closed, and the byte count contributed (encoder-muted).
+    /// No newline: the NAME->TEXT transition only emits `>` (the newline after
+    /// the first child comes from the child-start paths, matching
+    /// xmlTextWriterHandleStateDependencies). Pending namespace declarations
+    /// are flushed first (upstream xmlTextWriterOutputNSDecl).
+    unsafe fn close_start_tag(&mut self) -> (bool, c_int) {
         if self.in_start_tag {
-            self.write_byte(b'>');
             self.in_start_tag = false;
+            let mut sum: c_int = self.flush_pending_ns();
+            sum += self.write_byte(b'>');
+            (true, sum)
+        } else {
+            (false, 0)
         }
+    }
+
+    /// Write the pending namespace declarations (upstream
+    /// xmlTextWriterOutputNSDecl): ` xmlns:prefix="uri"` / ` xmlns="uri"`.
+    unsafe fn flush_pending_ns(&mut self) -> c_int {
+        let mut sum: c_int = 0;
+        let pending = core::mem::take(&mut self.pending_ns);
+        for (prefix, uri) in pending {
+            sum += self.write_byte(b' ');
+            if prefix.is_empty() {
+                sum += self.write_slice(b"xmlns=\"");
+            } else {
+                sum += self.write_slice(b"xmlns:");
+                sum += self.write_slice(&prefix);
+                sum += self.write_slice(b"=\"");
+            }
+            sum += self.write_slice(&uri);
+            sum += self.write_byte(b'"');
+        }
+        sum
     }
 
     /// Check if the writer is in a state where element/attribute content can be written.
@@ -459,43 +550,42 @@ pub unsafe extern "C" fn xmlTextWriterStartDocument(
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.write_raw(b"<?xml version=\"" as *const u8, 15);
+    // UPSTREAM-PARITY (xmlTextWriterStartDocument): the declaration uses the
+    // writer's quote char and always ends with a newline (indent-independent).
+    let mut sum: c_int = 0;
+    sum += w.write_raw(b"<?xml version=" as *const u8, 14);
+    sum += w.write_byte(w.qchar);
 
     let ver = if version.is_null() {
         b"1.0\0" as *const u8
     } else {
         version as *const u8
     };
-    w.write_str(ver);
+    sum += w.write_str(ver);
+    sum += w.write_byte(w.qchar);
 
-    w.write_raw(b"\"" as *const u8, 1);
-
-    let enc = if encoding.is_null() {
-        ptr::null()
-    } else {
-        encoding as *const u8
-    };
-    if !enc.is_null() {
-        w.write_raw(b" encoding=\"" as *const u8, 11);
-        w.write_str(enc);
-        w.write_byte(b'"');
+    if !encoding.is_null() {
+        sum += w.write_raw(b" encoding=" as *const u8, 10);
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(encoding as *const u8);
+        sum += w.write_byte(w.qchar);
+        // UPSTREAM-PARITY: the output encoder, once installed, persists for
+        // the writer's lifetime (a later StartDocument with encoding=NULL does
+        // NOT clear it — xmlTextWriterStartDocument only resets conv).
+        w.encoder_active = true;
     }
 
     if !standalone.is_null() {
-        let sa = standalone as *const u8;
-        w.write_raw(b" standalone=\"" as *const u8, 13);
-        w.write_str(sa);
-        w.write_byte(b'"');
+        sum += w.write_raw(b" standalone=" as *const u8, 12);
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(standalone as *const u8);
+        sum += w.write_byte(w.qchar);
     }
 
-    w.write_raw(b"?>" as *const u8, 2);
-
-    if w.indent != 0 {
-        w.write_byte(b'\n');
-    }
+    sum += w.write_raw(b"?>\n" as *const u8, 3);
 
     w.state = WriterState::XMLDecl;
-    0
+    sum
 }
 
 /// End an XML document.
@@ -520,22 +610,24 @@ pub unsafe extern "C" fn xmlTextWriterEndDocument(writer: *mut XmlTextWriter) ->
     let w = unsafe { &mut *writer };
 
     // Close any open elements
+    let mut sum: c_int = 0;
     while w.depth > 0 {
-        xmlTextWriterEndElement(writer);
+        sum += xmlTextWriterEndElement(writer);
     }
 
-    // Final newline if indentation is enabled
-    if w.indent != 0 {
-        w.write_byte(b'\n');
+    // UPSTREAM-PARITY: the final newline is written when indentation is OFF
+    // (each indented EndElement already wrote its own newline).
+    if w.indent == 0 {
+        sum += w.write_byte(b'\n');
     }
 
     // Flush output
     if !w.output.is_null() {
-        io::output_buffer_flush(w.output);
+        sum += io::output_buffer_flush(w.output);
     }
 
     w.state = WriterState::None;
-    0
+    sum
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -565,15 +657,21 @@ pub unsafe extern "C" fn xmlTextWriterStartElement(
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    // Close any open start tag from a previous element
-    w.close_start_tag();
+    // Close any open start tag from a previous element.
+    // UPSTREAM-PARITY: closing the parent's start tag emits `>` and, when
+    // indented, a newline (xmlTextWriterStartElement NAME case).
+    let (closed, cnt) = w.close_start_tag();
+    let mut sum: c_int = cnt;
+    if closed && w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
 
     // Write indentation
-    w.write_indent();
+    sum += w.write_indent();
 
     // Write `<name`
-    w.write_byte(b'<');
-    w.write_str(name);
+    sum += w.write_byte(b'<');
+    sum += w.write_str(name);
 
     // Push onto stack (without null terminator)
     let name_bytes = unsafe { c_str_to_vec(name) };
@@ -589,7 +687,7 @@ pub unsafe extern "C" fn xmlTextWriterStartElement(
     w.in_start_tag = true;
     w.state = WriterState::Element;
 
-    0
+    sum
 }
 
 /// End an XML element.
@@ -615,34 +713,39 @@ pub unsafe extern "C" fn xmlTextWriterEndElement(writer: *mut XmlTextWriter) -> 
         return -1;
     }
 
-    // If we're still in the start tag (no content written), write self-closing tag
+    // UPSTREAM-PARITY (xmlTextWriterEndElement):
+    //   NAME state (start tag still open) -> "/>", doindent=1
+    //   otherwise (content written)       -> indent if doindent, "</name>"
+    //   then, when indented, a trailing newline.
+    let mut sum: c_int = 0;
     if w.in_start_tag {
-        // Remove the trailing `>` or just rewrite as `/>`
-        // Since we wrote `<name` and then haven't closed, we just write `/>` and we're done
-        w.write_raw(b"/>" as *const u8, 2);
+        sum += w.flush_pending_ns();
+        sum += w.write_raw(b"/>" as *const u8, 2);
         w.in_start_tag = false;
+        w.doindent = true;
+        w.stack.pop();
     } else {
-        // Write indentation before end tag for non-inline content
-        if w.indent != 0 {
-            w.write_byte(b'\n');
-            let indent_str = w.indent_string.clone();
-            for _ in 0..(w.depth - 1) {
-                w.write_slice(&indent_str);
-            }
+        if w.indent != 0 && w.doindent {
+            sum += w.write_indent();
+            w.doindent = true;
+        } else {
+            w.doindent = true;
         }
-
-        // Write `</name>`
         let name = w.stack.pop().unwrap_or_default();
-        w.write_raw(b"</" as *const u8, 2);
-        w.write_slice(&name);
-        w.write_byte(b'>');
+        sum += w.write_raw(b"</" as *const u8, 2);
+        sum += w.write_slice(&name);
+        sum += w.write_byte(b'>');
+    }
+
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
     }
 
     w.depth -= 1;
     w.elem_stack.pop();
     w.state = WriterState::None;
 
-    0
+    sum
 }
 
 /// Start a namespaced XML element.
@@ -673,10 +776,16 @@ pub unsafe extern "C" fn xmlTextWriterStartElementNS(
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.close_start_tag();
-    w.write_indent();
+    // UPSTREAM-PARITY: closing the parent's start tag emits `>` and, when
+    // indented, a newline.
+    let (closed, cnt) = w.close_start_tag();
+    let mut sum: c_int = cnt;
+    if closed && w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    sum += w.write_indent();
 
-    w.write_byte(b'<');
+    sum += w.write_byte(b'<');
 
     let prefix_bytes = if prefix.is_null() {
         Vec::new()
@@ -693,8 +802,8 @@ pub unsafe extern "C" fn xmlTextWriterStartElementNS(
         } else {
             &prefix_bytes
         };
-        w.write_slice(p);
-        w.write_byte(b':');
+        sum += w.write_slice(p);
+        sum += w.write_byte(b':');
     }
     // Strip trailing null before writing
     let n = if name_bytes.last() == Some(&0) {
@@ -702,30 +811,23 @@ pub unsafe extern "C" fn xmlTextWriterStartElementNS(
     } else {
         &name_bytes
     };
-    w.write_slice(n);
+    sum += w.write_slice(n);
 
-    // Write namespace declaration
+    // Defer the namespace declaration until the tag closes (upstream
+    // xmlTextWriterOutputNSDecl writes it after the attributes).
     if !namespaceURI.is_null() {
         let ns_uri_bytes = unsafe { c_str_to_vec(namespaceURI) };
-        if !prefix_bytes.is_empty() {
-            w.write_raw(b" xmlns:" as *const u8, 7);
-            let p = if prefix_bytes.last() == Some(&0) {
-                &prefix_bytes[..prefix_bytes.len() - 1]
-            } else {
-                &prefix_bytes
-            };
-            w.write_slice(p);
+        let uri_body = if ns_uri_bytes.last() == Some(&0) {
+            ns_uri_bytes[..ns_uri_bytes.len() - 1].to_vec()
         } else {
-            w.write_raw(b" xmlns" as *const u8, 6);
-        }
-        w.write_raw(b"=\"" as *const u8, 2);
-        let ns = if ns_uri_bytes.last() == Some(&0) {
-            &ns_uri_bytes[..ns_uri_bytes.len() - 1]
-        } else {
-            &ns_uri_bytes
+            ns_uri_bytes
         };
-        w.write_slice(ns);
-        w.write_byte(b'"');
+        let prefix_body = if prefix_bytes.last() == Some(&0) {
+            prefix_bytes[..prefix_bytes.len() - 1].to_vec()
+        } else {
+            prefix_bytes.clone()
+        };
+        w.pending_ns.push((prefix_body, uri_body));
     }
 
     w.elem_stack.push((prefix_bytes, name_bytes.clone()));
@@ -740,7 +842,7 @@ pub unsafe extern "C" fn xmlTextWriterStartElementNS(
     w.in_start_tag = true;
     w.state = WriterState::Element;
 
-    0
+    sum
 }
 
 /// Write an element with inline content.
@@ -767,12 +869,12 @@ pub unsafe extern "C" fn xmlTextWriterWriteElement(
         return -1;
     }
     let ret = xmlTextWriterStartElement(writer, name);
-    if ret != 0 {
+    if ret == -1 {
         return ret;
     }
     if !content.is_null() {
         let ret2 = xmlTextWriterWriteString(writer, content);
-        if ret2 != 0 {
+        if ret2 == -1 {
             return ret2;
         }
     }
@@ -807,12 +909,12 @@ pub unsafe extern "C" fn xmlTextWriterWriteElementNS(
         return -1;
     }
     let ret = xmlTextWriterStartElementNS(writer, prefix, name, nsURI);
-    if ret != 0 {
+    if ret == -1 {
         return ret;
     }
     if !content.is_null() {
         let ret2 = xmlTextWriterWriteString(writer, content);
-        if ret2 != 0 {
+        if ret2 == -1 {
             return ret2;
         }
     }
@@ -842,32 +944,36 @@ pub unsafe extern "C" fn xmlTextWriterFullEndElement(writer: *mut XmlTextWriter)
         return -1;
     }
 
-    // Close any open start tag first (if we're still in the start tag, close it with `>`)
+    // UPSTREAM-PARITY (xmlTextWriterFullEndElement): always writes `</name>`,
+    // closing the start tag with `>` first if needed.
+    let mut sum: c_int = 0;
     if w.in_start_tag {
-        w.write_byte(b'>');
+        sum += w.write_byte(b'>');
         w.in_start_tag = false;
     }
 
-    // Write indentation
-    if w.indent != 0 {
-        w.write_byte(b'\n');
-        let indent_str = w.indent_string.clone();
-        for _ in 0..(w.depth - 1) {
-            w.write_slice(&indent_str);
-        }
+    if w.indent != 0 && w.doindent {
+        sum += w.write_indent();
+        w.doindent = true;
+    } else {
+        w.doindent = true;
     }
 
     // Write `</name>`
     let name = w.stack.pop().unwrap_or_default();
-    w.write_raw(b"</" as *const u8, 2);
-    w.write_slice(&name);
-    w.write_byte(b'>');
+    sum += w.write_raw(b"</" as *const u8, 2);
+    sum += w.write_slice(&name);
+    sum += w.write_byte(b'>');
+
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
 
     w.depth -= 1;
     w.elem_stack.pop();
     w.state = WriterState::None;
 
-    0
+    sum
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -904,21 +1010,22 @@ pub unsafe extern "C" fn xmlTextWriterWriteAttribute(
         return -1;
     }
 
-    // Write ` name="`
-    w.write_byte(b' ');
-    w.write_str(name);
-    w.write_raw(b"=\"" as *const u8, 2);
+    // Write ` name=` and the quote char.
+    let mut sum: c_int = 0;
+    sum += w.write_byte(b' ');
+    sum += w.write_str(name);
+    sum += w.write_raw(b"=" as *const u8, 1);
+    sum += w.write_byte(w.qchar);
 
-    // Write escaped content
-    tree::serialize_attr_value(
-        unsafe { &mut *((*w.output).buffer as *mut _xmlBuffer) },
-        content,
-    );
+    // Write escaped content (qchar-aware).
+    sum += unsafe { write_attr_escaped(w, content) };
 
-    w.write_byte(b'"');
-    w.state = WriterState::Attribute;
+    sum += w.write_byte(w.qchar);
+    // UPSTREAM-PARITY: a completed attribute returns the writer to the
+    // element start-tag state (xmlTextWriterEndAttribute -> NAME).
+    w.state = WriterState::Element;
 
-    0
+    sum
 }
 
 /// Write a namespaced attribute.
@@ -956,24 +1063,27 @@ pub unsafe extern "C" fn xmlTextWriterWriteAttributeNS(
         return -1;
     }
 
-    w.write_byte(b' ');
+    let mut sum: c_int = 0;
+    sum += w.write_byte(b' ');
 
     if !prefix.is_null() {
-        w.write_str(prefix);
-        w.write_byte(b':');
+        sum += w.write_str(prefix);
+        sum += w.write_byte(b':');
     }
-    w.write_str(name);
+    sum += w.write_str(name);
 
-    w.write_raw(b"=\"" as *const u8, 2);
+    sum += w.write_raw(b"=" as *const u8, 1);
+    sum += w.write_byte(w.qchar);
 
-    // Write escaped content
-    let buf = unsafe { &mut *((*w.output).buffer as *mut _xmlBuffer) };
-    tree::serialize_attr_value(buf, content);
+    // Write escaped content (qchar-aware).
+    sum += unsafe { write_attr_escaped(w, content) };
 
-    w.write_byte(b'"');
-    w.state = WriterState::Attribute;
+    sum += w.write_byte(w.qchar);
+    // UPSTREAM-PARITY: a completed attribute returns the writer to the
+    // element start-tag state.
+    w.state = WriterState::Element;
 
-    0
+    sum
 }
 
 /// Write a formatted attribute.
@@ -1019,12 +1129,14 @@ pub unsafe extern "C" fn xmlTextWriterStartAttribute(
         return -1;
     }
 
-    w.write_byte(b' ');
-    w.write_str(name);
-    w.write_raw(b"=\"" as *const u8, 2);
+    let mut sum: c_int = 0;
+    sum += w.write_byte(b' ');
+    sum += w.write_str(name);
+    sum += w.write_raw(b"=" as *const u8, 1);
+    sum += w.write_byte(w.qchar);
     w.state = WriterState::Attribute;
 
-    0
+    sum
 }
 
 /// Start a namespaced attribute (to be written incrementally).
@@ -1060,16 +1172,18 @@ pub unsafe extern "C" fn xmlTextWriterStartAttributeNS(
         return -1;
     }
 
-    w.write_byte(b' ');
+    let mut sum: c_int = 0;
+    sum += w.write_byte(b' ');
     if !prefix.is_null() {
-        w.write_str(prefix);
-        w.write_byte(b':');
+        sum += w.write_str(prefix);
+        sum += w.write_byte(b':');
     }
-    w.write_str(name);
-    w.write_raw(b"=\"" as *const u8, 2);
+    sum += w.write_str(name);
+    sum += w.write_raw(b"=" as *const u8, 1);
+    sum += w.write_byte(w.qchar);
     w.state = WriterState::Attribute;
 
-    0
+    sum
 }
 
 /// End an attribute (closes the attribute value quote).
@@ -1095,23 +1209,89 @@ pub unsafe extern "C" fn xmlTextWriterEndAttribute(writer: *mut XmlTextWriter) -
         return -1;
     }
 
-    w.write_byte(b'"');
+    w.write_byte(w.qchar);
     w.state = WriterState::Element;
 
-    0
+    1
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Content writing
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Write text content (with XML escaping).
+/// Escape text like upstream `xmlEncodeSpecialChars(NULL, content)`:
+/// `&` `<` `>` `"` `'` are all escaped. Returns a NUL-terminated vector.
+///
+/// # SAFETY
+///
+/// - `content` must be a valid NUL-terminated string.
+unsafe fn encode_special_chars(content: *const xmlChar) -> Vec<u8> {
+    let mut out = Vec::new();
+    let mut p = content;
+    unsafe {
+        while !p.is_null() && *p != 0 {
+            // UPSTREAM-PARITY (xmlEncodeSpecialChars / xmlEscapeText with
+            // XML_ESCAPE_QUOT): `&<>"` are escaped; the apostrophe is NOT.
+            match *p {
+                b'&' => out.extend_from_slice(b"&amp;"),
+                b'<' => out.extend_from_slice(b"&lt;"),
+                b'>' => out.extend_from_slice(b"&gt;"),
+                b'"' => out.extend_from_slice(b"&quot;"),
+                c => out.push(c),
+            }
+            p = p.add(1);
+        }
+    }
+    out.push(0);
+    out
+}
+
+/// Serialize attribute content with the writer's quote char, mirroring
+/// `xmlBufAttrSerializeTxtContent` (xmlsave.c): `\n`/`\r`/`\t` become
+/// character references, `&<>` always escape, and the quote char is escaped.
+/// Returns the bytes written.
+///
+/// # SAFETY
+///
+/// - `content` must be a valid NUL-terminated string.
+unsafe fn write_attr_escaped(w: &mut XmlTextWriter, content: *const xmlChar) -> c_int {
+    let mut sum: c_int = 0;
+    let mut p = content;
+    unsafe {
+        while !p.is_null() && *p != 0 {
+            let c = *p;
+            // UPSTREAM-PARITY (xmlBufAttrSerializeTxtContent -> xmlSerializeText
+            // with XML_ESCAPE_ATTR): `\n`/`\r`/`\t` become character
+            // references, `&<>"` escape; the apostrophe is NEVER escaped
+            // (the qchar only selects the outer quotes).
+            sum += match c {
+                b'\n' => w.write_slice(b"&#10;"),
+                b'\r' => w.write_slice(b"&#13;"),
+                b'\t' => w.write_slice(b"&#9;"),
+                b'&' => w.write_slice(b"&amp;"),
+                b'<' => w.write_slice(b"&lt;"),
+                b'>' => w.write_slice(b"&gt;"),
+                b'"' => w.write_slice(b"&quot;"),
+                c => w.write_byte(c),
+            };
+            p = p.add(1);
+        }
+    }
+    sum
+}
+
+/// Write text content.
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
 /// int xmlTextWriterWriteString(xmlTextWriterPtr writer, const xmlChar *content);
 /// ```
+///
+/// NAME/TEXT states escape via xmlEncodeSpecialChars (quotes included);
+/// ATTRIBUTE escapes via xmlBufAttrSerializeTxtContent (qchar-aware); all
+/// other states (CDATA/comment/PI/DTD*) write raw through WriteRaw, which
+/// performs the DTD state transitions.
 ///
 /// # SAFETY
 ///
@@ -1128,18 +1308,38 @@ pub unsafe extern "C" fn xmlTextWriterWriteString(
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.close_start_tag();
-
-    let buf = if w.output.is_null() {
-        return -1;
-    } else {
-        unsafe { &mut *((*w.output).buffer as *mut _xmlBuffer) }
-    };
-
-    let len = tree::xml_strlen(content);
-    tree::serialize_text(buf, content, len);
-
-    0
+    match w.state {
+        WriterState::Attribute => unsafe { write_attr_escaped(w, content) },
+        WriterState::Element => {
+            let esc = unsafe { encode_special_chars(content) };
+            let (_, cnt) = w.close_start_tag();
+            let mut sum: c_int = cnt;
+            if !esc.is_empty() {
+                sum += w.write_slice(&esc[..esc.len() - 1]);
+            }
+            w.doindent = false;
+            sum
+        }
+        WriterState::None if w.depth > 0 => {
+            // Inside an element after content: upstream TEXT state escapes.
+            let esc = unsafe { encode_special_chars(content) };
+            let mut sum: c_int = 0;
+            if !esc.is_empty() {
+                sum += w.write_slice(&esc[..esc.len() - 1]);
+            }
+            w.doindent = false;
+            sum
+        }
+        _ => {
+            // Raw path (CDATA/comment/PI/DTD*, and top-level with no stack
+            // entry — upstream writes raw when no element is open): WriteRaw
+            // performs the state transitions (DTD bracket, entity quote,
+            // element/attr separators).
+            let rc = unsafe { xmlTextWriterWriteRaw(writer, content) };
+            w.doindent = false;
+            rc
+        }
+    }
 }
 
 /// Write raw content (no XML escaping).
@@ -1149,6 +1349,10 @@ pub unsafe extern "C" fn xmlTextWriterWriteString(
 /// ```c
 /// int xmlTextWriterWriteRaw(xmlTextWriterPtr writer, const xmlChar *content);
 /// ```
+///
+/// Performs the upstream state-dependent transitions before the content:
+/// DTD -> " [" (+newline when indented), DTD_ELEM/DTD_ATTL -> " ",
+/// DTD_ENTY/PENT -> " " + quote char, PI -> " ".
 ///
 /// # SAFETY
 ///
@@ -1165,10 +1369,46 @@ pub unsafe extern "C" fn xmlTextWriterWriteRaw(
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.close_start_tag();
-    w.write_str(content);
+    // UPSTREAM-PARITY (xmlTextWriterHandleStateDependencies).
+    let mut sum: c_int = 0;
+    match w.state {
+        WriterState::Element => {
+            let (_, cnt) = w.close_start_tag();
+            sum += cnt;
+        }
+        WriterState::PI => {
+            sum += w.write_byte(b' ');
+        }
+        WriterState::DTD => {
+            w.state = WriterState::DTDText;
+            if w.indent != 0 {
+                sum += w.write_slice(b" [\n");
+            } else {
+                sum += w.write_slice(b" [");
+            }
+        }
+        WriterState::DTDElem => {
+            sum += w.write_byte(b' ');
+            w.state = WriterState::DTDElemText;
+        }
+        WriterState::DTDAttr => {
+            sum += w.write_byte(b' ');
+            w.state = WriterState::DTDAttrText;
+        }
+        WriterState::DTDEntity => {
+            sum += w.write_byte(b' ');
+            sum += w.write_byte(w.qchar);
+            w.state = WriterState::DTDEntityText;
+        }
+        _ => {}
+    }
 
-    0
+    if w.indent != 0 {
+        w.doindent = false;
+    }
+
+    sum += w.write_str(content);
+    sum
 }
 
 /// Write raw content with explicit length (no XML escaping).
@@ -1191,16 +1431,54 @@ pub unsafe extern "C" fn xmlTextWriterWriteRawLen(
     content: *const xmlChar,
     len: c_int,
 ) -> c_int {
-    if writer.is_null() || content.is_null() || len <= 0 {
+    if writer.is_null() || content.is_null() || len < 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.close_start_tag();
-    w.write_raw(content, len);
+    // Same state transitions as WriteRaw, then the len-bounded write.
+    let mut sum: c_int = 0;
+    match w.state {
+        WriterState::Element => {
+            let (_, cnt) = w.close_start_tag();
+            sum += cnt;
+        }
+        WriterState::PI => {
+            sum += w.write_byte(b' ');
+        }
+        WriterState::DTD => {
+            w.state = WriterState::DTDText;
+            if w.indent != 0 {
+                sum += w.write_slice(b" [\n");
+            } else {
+                sum += w.write_slice(b" [");
+            }
+        }
+        WriterState::DTDElem => {
+            sum += w.write_byte(b' ');
+            w.state = WriterState::DTDElemText;
+        }
+        WriterState::DTDAttr => {
+            sum += w.write_byte(b' ');
+            w.state = WriterState::DTDAttrText;
+        }
+        WriterState::DTDEntity => {
+            sum += w.write_byte(b' ');
+            sum += w.write_byte(w.qchar);
+            w.state = WriterState::DTDEntityText;
+        }
+        _ => {}
+    }
 
-    0
+    if w.indent != 0 {
+        w.doindent = false;
+    }
+
+    if len > 0 {
+        sum += w.write_raw(content, len);
+    }
+    sum
 }
 
 /// Write a formatted string.
@@ -1311,21 +1589,24 @@ pub unsafe extern "C" fn xmlTextWriterWriteCDATA(
     writer: *mut XmlTextWriter,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() {
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartCDATA(writer) };
+    if ret == -1 {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-
-    w.write_raw(b"<![CDATA[" as *const u8, 9);
+    sum += ret;
     if !content.is_null() {
-        w.write_str(content);
+        let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+        if ret2 == -1 {
+            return -1;
+        }
+        sum += ret2;
     }
-    w.write_raw(b"]]>" as *const u8, 3);
-
-    0
+    let ret3 = unsafe { xmlTextWriterEndCDATA(writer) };
+    if ret3 == -1 {
+        return -1;
+    }
+    sum + ret3
 }
 
 /// Start a CDATA section.
@@ -1347,11 +1628,16 @@ pub unsafe extern "C" fn xmlTextWriterStartCDATA(writer: *mut XmlTextWriter) -> 
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    w.close_start_tag();
-    w.write_raw(b"<![CDATA[" as *const u8, 9);
+    // UPSTREAM-PARITY: closing the parent's start tag emits `>` and, when
+    // indented, a newline; no indentation precedes `<![CDATA[`.
+    let (closed, cnt) = w.close_start_tag();
+    let mut sum: c_int = cnt;
+    if closed && w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    sum += w.write_slice(b"<![CDATA[");
     w.state = WriterState::CData;
-
-    0
+    sum
 }
 
 /// End a CDATA section.
@@ -1372,15 +1658,12 @@ pub unsafe extern "C" fn xmlTextWriterEndCDATA(writer: *mut XmlTextWriter) -> c_
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
     if w.state != WriterState::CData {
         return -1;
     }
-
-    w.write_raw(b"]]>" as *const u8, 3);
+    let sum: c_int = w.write_slice(b"]]>");
     w.state = WriterState::None;
-
-    0
+    sum
 }
 
 /// Write a comment.
@@ -1400,21 +1683,22 @@ pub unsafe extern "C" fn xmlTextWriterWriteComment(
     writer: *mut XmlTextWriter,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() {
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartComment(writer) };
+    if ret < 0 {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!--" as *const u8, 4);
-    if !content.is_null() {
-        w.write_str(content);
+    sum += ret;
+    let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+    if ret2 < 0 {
+        return -1;
     }
-    w.write_raw(b"-->" as *const u8, 3);
-
-    0
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndComment(writer) };
+    if ret3 < 0 {
+        return -1;
+    }
+    sum + ret3
 }
 
 /// Start a comment.
@@ -1435,13 +1719,15 @@ pub unsafe extern "C" fn xmlTextWriterStartComment(writer: *mut XmlTextWriter) -
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!--" as *const u8, 4);
+    let (closed, cnt) = w.close_start_tag();
+    let mut sum: c_int = cnt;
+    if closed && w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!--");
     w.state = WriterState::Comment;
-
-    0
+    sum
 }
 
 /// End a comment.
@@ -1462,15 +1748,15 @@ pub unsafe extern "C" fn xmlTextWriterEndComment(writer: *mut XmlTextWriter) -> 
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
     if w.state != WriterState::Comment {
         return -1;
     }
-
-    w.write_raw(b"-->" as *const u8, 3);
+    let mut sum: c_int = w.write_slice(b"-->");
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
     w.state = WriterState::None;
-
-    0
+    sum
 }
 
 /// Write a processing instruction.
@@ -1493,23 +1779,24 @@ pub unsafe extern "C" fn xmlTextWriterWritePI(
     target: *const xmlChar,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || target.is_null() {
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartPI(writer, target) };
+    if ret == -1 {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<?" as *const u8, 2);
-    w.write_str(target);
-    if !content.is_null() && unsafe { *content != 0 } {
-        w.write_byte(b' ');
-        w.write_str(content);
+    sum += ret;
+    if !content.is_null() {
+        let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+        if ret2 == -1 {
+            return -1;
+        }
+        sum += ret2;
     }
-    w.write_raw(b"?>" as *const u8, 2);
-
-    0
+    let ret3 = unsafe { xmlTextWriterEndPI(writer) };
+    if ret3 == -1 {
+        return -1;
+    }
+    sum + ret3
 }
 
 /// Start a processing instruction.
@@ -1529,20 +1816,22 @@ pub unsafe extern "C" fn xmlTextWriterStartPI(
     writer: *mut XmlTextWriter,
     target: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || target.is_null() {
+    if writer.is_null() || target.is_null() || unsafe { *target } == 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<?" as *const u8, 2);
-    w.write_str(target);
-    w.write_byte(b' ');
+    let (closed, cnt) = w.close_start_tag();
+    let mut sum: c_int = cnt;
+    if closed && w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    sum += w.write_slice(b"<?");
+    sum += w.write_str(target);
+    // UPSTREAM-PARITY: no trailing space here — the first content write
+    // emits the separator (xmlTextWriterHandleStateDependencies PI case).
     w.state = WriterState::PI;
-
-    0
+    sum
 }
 
 /// End a processing instruction.
@@ -1563,15 +1852,15 @@ pub unsafe extern "C" fn xmlTextWriterEndPI(writer: *mut XmlTextWriter) -> c_int
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
     if w.state != WriterState::PI {
         return -1;
     }
-
-    w.write_raw(b"?>" as *const u8, 2);
+    let mut sum: c_int = w.write_slice(b"?>");
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
     w.state = WriterState::None;
-
-    0
+    sum
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1602,45 +1891,24 @@ pub unsafe extern "C" fn xmlTextWriterWriteDTD(
     sysid: *const xmlChar,
     subset: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
-        return -1;
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTD(writer, name, pubid, sysid) };
+    if ret == -1 {
+        return ret;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_raw(b"<!DOCTYPE " as *const u8, 10);
-    w.write_str(name);
-
-    if !pubid.is_null() {
-        w.write_raw(b" PUBLIC \"" as *const u8, 9);
-        w.write_str(pubid);
-        w.write_byte(b'"');
-        if !sysid.is_null() {
-            w.write_byte(b' ');
-            w.write_byte(b'"');
-            w.write_str(sysid);
-            w.write_byte(b'"');
-        }
-    } else if !sysid.is_null() {
-        w.write_raw(b" SYSTEM \"" as *const u8, 9);
-        w.write_str(sysid);
-        w.write_byte(b'"');
-    }
-
+    sum += ret;
     if !subset.is_null() {
-        w.write_raw(b" [" as *const u8, 2);
-        w.write_str(subset);
-        w.write_byte(b']');
+        let ret2 = unsafe { xmlTextWriterWriteString(writer, subset) };
+        if ret2 == -1 {
+            return ret2;
+        }
+        sum += ret2;
     }
-
-    w.write_byte(b'>');
-
-    if w.indent != 0 {
-        w.write_byte(b'\n');
+    let ret3 = unsafe { xmlTextWriterEndDTD(writer) };
+    if ret3 == -1 {
+        return ret3;
     }
-
-    0
+    sum + ret3
 }
 
 /// Write a DTD element declaration.
@@ -1663,21 +1931,25 @@ pub unsafe extern "C" fn xmlTextWriterWriteDTDElement(
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() || content.is_null() {
+    if content.is_null() {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ELEMENT " as *const u8, 10);
-    w.write_str(name);
-    w.write_byte(b' ');
-    w.write_str(content);
-    w.write_raw(b">" as *const u8, 1);
-
-    0
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTDElement(writer, name) };
+    if ret == -1 {
+        return ret;
+    }
+    sum += ret;
+    let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+    if ret2 == -1 {
+        return ret2;
+    }
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndDTDElement(writer) };
+    if ret3 == -1 {
+        return ret3;
+    }
+    sum + ret3
 }
 
 /// Write a DTD attribute declaration.
@@ -1700,21 +1972,28 @@ pub unsafe extern "C" fn xmlTextWriterWriteDTDAttribute(
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() || content.is_null() {
+    if content.is_null() {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
-    let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ATTLIST " as *const u8, 10);
-    w.write_str(name);
-    w.write_byte(b' ');
-    w.write_str(content);
-    w.write_raw(b">" as *const u8, 1);
-
-    0
+    // UPSTREAM-PARITY: upstream xmlTextWriterWriteDTDAttribute composes
+    // StartDTDAttlist + WriteString + EndDTDAttlist (there is no separate
+    // StartDTDAttribute API).
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTDAttlist(writer, name) };
+    if ret == -1 {
+        return ret;
+    }
+    sum += ret;
+    let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+    if ret2 == -1 {
+        return ret2;
+    }
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndDTDAttlist(writer) };
+    if ret3 == -1 {
+        return ret3;
+    }
+    sum + ret3
 }
 
 /// Write a DTD entity declaration.
@@ -1734,24 +2013,151 @@ pub unsafe extern "C" fn xmlTextWriterWriteDTDAttribute(
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteDTDEntity(
     writer: *mut XmlTextWriter,
+    pe: c_int,
+    name: *const xmlChar,
+    pubid: *const xmlChar,
+    sysid: *const xmlChar,
+    ndataid: *const xmlChar,
+    content: *const xmlChar,
+) -> c_int {
+    if content.is_null() && pubid.is_null() && sysid.is_null() {
+        return -1;
+    }
+    if pe != 0 && !ndataid.is_null() {
+        return -1;
+    }
+    if pubid.is_null() && sysid.is_null() {
+        return unsafe { xmlTextWriterWriteDTDInternalEntity(writer, pe, name, content) };
+    }
+    unsafe { xmlTextWriterWriteDTDExternalEntity(writer, pe, name, pubid, sysid, ndataid) }
+}
+
+/// Write a DTD internal entity (StartDTDEntity + WriteString + EndDTDEntity).
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+/// - `name`, `content` must be valid null-terminated strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteDTDInternalEntity(
+    writer: *mut XmlTextWriter,
+    pe: c_int,
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() || content.is_null() {
+    if name.is_null() || unsafe { *name } == 0 || content.is_null() {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTDEntity(writer, pe, name) };
+    if ret == -1 {
+        return -1;
+    }
+    sum += ret;
+    let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+    if ret2 == -1 {
+        return -1;
+    }
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndDTDEntity(writer) };
+    if ret3 == -1 {
+        return -1;
+    }
+    sum + ret3
+}
+
+/// Write a DTD external entity (StartDTDEntity + ExternalEntityContents + EndDTDEntity).
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+/// - `name`, `pubid`, `sysid`, `ndataid` must be valid null-terminated
+///   strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteDTDExternalEntity(
+    writer: *mut XmlTextWriter,
+    pe: c_int,
+    name: *const xmlChar,
+    pubid: *const xmlChar,
+    sysid: *const xmlChar,
+    ndataid: *const xmlChar,
+) -> c_int {
+    if pubid.is_null() && sysid.is_null() {
+        return -1;
+    }
+    if pe != 0 && !ndataid.is_null() {
+        return -1;
+    }
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTDEntity(writer, pe, name) };
+    if ret == -1 {
+        return -1;
+    }
+    sum += ret;
+    let ret2 =
+        unsafe { xmlTextWriterWriteDTDExternalEntityContents(writer, pubid, sysid, ndataid) };
+    if ret2 < 0 {
+        return -1;
+    }
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndDTDEntity(writer) };
+    if ret3 == -1 {
+        return -1;
+    }
+    sum + ret3
+}
+
+/// Write the external-entity contents after `StartDTDEntity` (PUBLIC/SYSTEM
+/// identifiers and NDATA).
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+/// - `pubid`, `sysid`, `ndataid` must be valid null-terminated strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteDTDExternalEntityContents(
+    writer: *mut XmlTextWriter,
+    pubid: *const xmlChar,
+    sysid: *const xmlChar,
+    ndataid: *const xmlChar,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ENTITY " as *const u8, 9);
-    w.write_str(name);
-    w.write_raw(b" \"" as *const u8, 2);
-    w.write_str(content);
-    w.write_raw(b"\">" as *const u8, 2);
-
-    0
+    // UPSTREAM-PARITY: must be directly inside a StartDTDEntity declaration
+    // (DTD_ENTY / DTD_PENT; content already written is rejected).
+    if w.state != WriterState::DTDEntity {
+        return -1;
+    }
+    if w.entity_pe && !ndataid.is_null() {
+        // UPSTREAM-PARITY: notation not allowed with parameter entities.
+        return -1;
+    }
+    let mut sum: c_int = 0;
+    if !pubid.is_null() {
+        if sysid.is_null() {
+            return -1;
+        }
+        sum += w.write_slice(b" PUBLIC ");
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(pubid);
+        sum += w.write_byte(w.qchar);
+    }
+    if !sysid.is_null() {
+        if pubid.is_null() {
+            sum += w.write_slice(b" SYSTEM");
+        }
+        sum += w.write_byte(b' ');
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(sysid);
+        sum += w.write_byte(w.qchar);
+    }
+    if !ndataid.is_null() {
+        sum += w.write_slice(b" NDATA ");
+        sum += w.write_str(ndataid);
+    }
+    sum
 }
 
 /// Write a DTD notation declaration.
@@ -1776,36 +2182,41 @@ pub unsafe extern "C" fn xmlTextWriterWriteDTDNotation(
     pubid: *const xmlChar,
     sysid: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
         return -1;
     }
-    // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!NOTATION " as *const u8, 11);
-    w.write_str(name);
-
-    if !pubid.is_null() {
-        w.write_raw(b" PUBLIC \"" as *const u8, 9);
-        w.write_str(pubid);
-        w.write_byte(b'"');
-        if !sysid.is_null() {
-            w.write_byte(b' ');
-            w.write_byte(b'"');
-            w.write_str(sysid);
-            w.write_byte(b'"');
+    let mut sum: c_int = 0;
+    if w.state == WriterState::DTD {
+        // UPSTREAM-PARITY: first DTD child writes the internal-subset bracket.
+        sum += w.write_slice(b" [");
+        if w.indent != 0 {
+            sum += w.write_byte(b'\n');
         }
-    } else if !sysid.is_null() {
-        w.write_raw(b" SYSTEM \"" as *const u8, 9);
-        w.write_str(sysid);
-        w.write_byte(b'"');
+        w.state = WriterState::DTDText;
+    } else if w.state != WriterState::DTDText {
+        return -1;
     }
-
-    w.write_raw(b">" as *const u8, 1);
-
-    0
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!NOTATION ");
+    sum += w.write_str(name);
+    if !pubid.is_null() {
+        sum += w.write_slice(b" PUBLIC ");
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(pubid);
+        sum += w.write_byte(w.qchar);
+    }
+    if !sysid.is_null() {
+        if pubid.is_null() {
+            sum += w.write_slice(b" SYSTEM");
+        }
+        sum += w.write_byte(b' ');
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(sysid);
+        sum += w.write_byte(w.qchar);
+    }
+    sum += w.write_byte(b'>');
+    sum
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1832,40 +2243,56 @@ pub unsafe extern "C" fn xmlTextWriterStartDTD(
     pubid: *const xmlChar,
     sysid: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
+    if w.depth > 0 {
+        // UPSTREAM-PARITY: DTD allowed only in the prolog (no open elements).
+        return -1;
+    }
 
-    w.close_start_tag();
-    w.write_raw(b"<!DOCTYPE " as *const u8, 10);
-    w.write_str(name);
+    let mut sum: c_int = 0;
+    sum += w.write_slice(b"<!DOCTYPE ");
+    sum += w.write_str(name);
 
     if !pubid.is_null() {
-        w.write_raw(b" PUBLIC \"" as *const u8, 9);
-        w.write_str(pubid);
-        w.write_byte(b'"');
-        if !sysid.is_null() {
-            w.write_byte(b' ');
-            w.write_byte(b'"');
-            w.write_str(sysid);
-            w.write_byte(b'"');
+        if sysid.is_null() {
+            // UPSTREAM-PARITY: PUBLIC requires a system identifier.
+            return -1;
         }
-    } else if !sysid.is_null() {
-        w.write_raw(b" SYSTEM \"" as *const u8, 9);
-        w.write_str(sysid);
-        w.write_byte(b'"');
+        if w.indent != 0 {
+            sum += w.write_byte(b'\n');
+        } else {
+            sum += w.write_byte(b' ');
+        }
+        sum += w.write_slice(b"PUBLIC ");
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(pubid);
+        sum += w.write_byte(w.qchar);
+    }
+    if !sysid.is_null() {
+        if pubid.is_null() {
+            if w.indent != 0 {
+                sum += w.write_byte(b'\n');
+            } else {
+                sum += w.write_byte(b' ');
+            }
+            sum += w.write_slice(b"SYSTEM ");
+        } else if w.indent != 0 {
+            // UPSTREAM-PARITY: continuation line is indented 7 spaces.
+            sum += w.write_slice(b"\n       ");
+        } else {
+            sum += w.write_byte(b' ');
+        }
+        sum += w.write_byte(w.qchar);
+        sum += w.write_str(sysid);
+        sum += w.write_byte(w.qchar);
     }
 
-    w.write_raw(b" [" as *const u8, 2);
     w.state = WriterState::DTD;
-
-    if w.indent != 0 {
-        w.write_byte(b'\n');
-    }
-
-    0
+    sum
 }
 
 /// End a DTD declaration.
@@ -1887,22 +2314,36 @@ pub unsafe extern "C" fn xmlTextWriterEndDTD(writer: *mut XmlTextWriter) -> c_in
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
 
-    if w.state != WriterState::DTD {
+    if w.state != WriterState::DTD && w.state != WriterState::DTDText {
         return -1;
     }
-
-    if w.indent != 0 {
-        w.write_byte(b'\n');
+    let mut sum: c_int = 0;
+    if w.state == WriterState::DTDText {
+        sum += w.write_byte(b']');
     }
-    w.write_raw(b"]>" as *const u8, 2);
-
+    sum += w.write_byte(b'>');
     if w.indent != 0 {
-        w.write_byte(b'\n');
+        sum += w.write_byte(b'\n');
     }
-
     w.state = WriterState::None;
+    sum
+}
 
-    0
+/// Internal: the ` [` (+ newline when indented) transition from the DTD state
+/// used by all DTD child starts. Returns false when the state is not usable.
+unsafe fn dtd_child_transition(w: &mut XmlTextWriter) -> bool {
+    match w.state {
+        WriterState::DTD => {
+            w.write_slice(b" [");
+            if w.indent != 0 {
+                w.write_byte(b'\n');
+            }
+            w.state = WriterState::DTDText;
+            true
+        }
+        WriterState::DTDText => true,
+        _ => false,
+    }
 }
 
 /// Start a DTD element declaration.
@@ -1922,20 +2363,21 @@ pub unsafe extern "C" fn xmlTextWriterStartDTDElement(
     writer: *mut XmlTextWriter,
     name: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ELEMENT " as *const u8, 10);
-    w.write_str(name);
-    w.write_byte(b' ');
+    if !unsafe { dtd_child_transition(w) } {
+        return -1;
+    }
+    w.dtd_depth += 1;
+    let mut sum: c_int = 0;
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!ELEMENT ");
+    sum += w.write_str(name);
     w.state = WriterState::DTDElem;
-
-    0
+    sum
 }
 
 /// End a DTD element declaration.
@@ -1956,15 +2398,16 @@ pub unsafe extern "C" fn xmlTextWriterEndDTDElement(writer: *mut XmlTextWriter) 
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    if w.state != WriterState::DTDElem {
+    if w.state != WriterState::DTDElem && w.state != WriterState::DTDElemText {
         return -1;
     }
-
-    w.write_raw(b">" as *const u8, 1);
-    w.state = WriterState::DTD;
-
-    0
+    let mut sum: c_int = w.write_byte(b'>');
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    w.state = WriterState::DTDText;
+    w.dtd_depth -= 1;
+    sum
 }
 
 /// Start a DTD attribute declaration.
@@ -1984,20 +2427,21 @@ pub unsafe extern "C" fn xmlTextWriterStartDTDAttribute(
     writer: *mut XmlTextWriter,
     name: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ATTLIST " as *const u8, 10);
-    w.write_str(name);
-    w.write_byte(b' ');
+    if !unsafe { dtd_child_transition(w) } {
+        return -1;
+    }
+    w.dtd_depth += 1;
+    let mut sum: c_int = 0;
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!ATTLIST ");
+    sum += w.write_str(name);
     w.state = WriterState::DTDAttr;
-
-    0
+    sum
 }
 
 /// End a DTD attribute declaration.
@@ -2018,15 +2462,16 @@ pub unsafe extern "C" fn xmlTextWriterEndDTDAttribute(writer: *mut XmlTextWriter
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    if w.state != WriterState::DTDAttr {
+    if w.state != WriterState::DTDAttr && w.state != WriterState::DTDAttrText {
         return -1;
     }
-
-    w.write_raw(b">" as *const u8, 1);
-    w.state = WriterState::DTD;
-
-    0
+    let mut sum: c_int = w.write_byte(b'>');
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    w.state = WriterState::DTDText;
+    w.dtd_depth -= 1;
+    sum
 }
 
 /// Start a DTD entity declaration.
@@ -2044,22 +2489,28 @@ pub unsafe extern "C" fn xmlTextWriterEndDTDAttribute(writer: *mut XmlTextWriter
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterStartDTDEntity(
     writer: *mut XmlTextWriter,
+    pe: c_int,
     name: *const xmlChar,
 ) -> c_int {
-    if writer.is_null() || name.is_null() {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
         return -1;
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    w.close_start_tag();
-    w.write_indent();
-    w.write_raw(b"<!ENTITY " as *const u8, 9);
-    w.write_str(name);
-    w.write_raw(b" \"" as *const u8, 2);
+    if !unsafe { dtd_child_transition(w) } {
+        return -1;
+    }
+    w.dtd_depth += 1;
+    let mut sum: c_int = 0;
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!ENTITY ");
+    if pe != 0 {
+        sum += w.write_slice(b"% ");
+    }
+    sum += w.write_str(name);
     w.state = WriterState::DTDEntity;
-
-    0
+    w.entity_pe = pe != 0;
+    sum
 }
 
 /// End a DTD entity declaration.
@@ -2080,15 +2531,106 @@ pub unsafe extern "C" fn xmlTextWriterEndDTDEntity(writer: *mut XmlTextWriter) -
     }
     // SAFETY: writer is a valid XmlTextWriter.
     let w = unsafe { &mut *writer };
-
-    if w.state != WriterState::DTDEntity {
+    let mut sum: c_int = 0;
+    if w.state == WriterState::DTDEntityText {
+        sum += w.write_byte(w.qchar);
+    } else if w.state != WriterState::DTDEntity {
         return -1;
     }
+    sum += w.write_byte(b'>');
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    w.state = WriterState::DTDText;
+    w.entity_pe = false;
+    w.dtd_depth -= 1;
+    sum
+}
 
-    w.write_raw(b"\">" as *const u8, 2);
-    w.state = WriterState::DTD;
+/// Start a DTD attribute-list declaration (`<!ATTLIST name`).
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+/// - `name` must be a valid null-terminated string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterStartDTDAttlist(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+) -> c_int {
+    if writer.is_null() || name.is_null() || unsafe { *name } == 0 {
+        return -1;
+    }
+    // SAFETY: writer is a valid XmlTextWriter.
+    let w = unsafe { &mut *writer };
+    if !unsafe { dtd_child_transition(w) } {
+        return -1;
+    }
+    w.dtd_depth += 1;
+    let mut sum: c_int = 0;
+    sum += w.write_indent();
+    sum += w.write_slice(b"<!ATTLIST ");
+    sum += w.write_str(name);
+    w.state = WriterState::DTDAttr;
+    sum
+}
 
-    0
+/// End a DTD attribute-list declaration.
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterEndDTDAttlist(writer: *mut XmlTextWriter) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    // SAFETY: writer is a valid XmlTextWriter.
+    let w = unsafe { &mut *writer };
+    if w.state != WriterState::DTDAttr && w.state != WriterState::DTDAttrText {
+        return -1;
+    }
+    let mut sum: c_int = w.write_byte(b'>');
+    if w.indent != 0 {
+        sum += w.write_byte(b'\n');
+    }
+    w.state = WriterState::DTDText;
+    w.dtd_depth -= 1;
+    sum
+}
+
+/// Write a DTD attribute-list declaration
+/// (StartDTDAttlist + WriteString + EndDTDAttlist).
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+/// - `name`, `content` must be valid null-terminated strings or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteDTDAttlist(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    content: *const xmlChar,
+) -> c_int {
+    if content.is_null() {
+        return -1;
+    }
+    let mut sum: c_int = 0;
+    let ret = unsafe { xmlTextWriterStartDTDAttlist(writer, name) };
+    if ret == -1 {
+        return -1;
+    }
+    sum += ret;
+    let ret2 = unsafe { xmlTextWriterWriteString(writer, content) };
+    if ret2 == -1 {
+        return -1;
+    }
+    sum += ret2;
+    let ret3 = unsafe { xmlTextWriterEndDTDAttlist(writer) };
+    if ret3 == -1 {
+        return -1;
+    }
+    sum + ret3
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2172,6 +2714,566 @@ pub unsafe extern "C" fn xmlTextWriterSetIndentString(
     let w = unsafe { &mut *writer };
     w.indent_string = unsafe { c_str_to_vec(str) };
     0
+}
+
+/// Set the quote character used for attribute and entity values.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextWriterSetQuoteChar(xmlTextWriterPtr writer, xmlChar quotechar);
+/// ```
+///
+/// Only `'` and `'\"'` are accepted; anything else returns -1.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterSetQuoteChar(
+    writer: *mut XmlTextWriter,
+    quotechar: xmlChar,
+) -> c_int {
+    if writer.is_null() || (quotechar != b'\'' && quotechar != b'"') {
+        return -1;
+    }
+    // SAFETY: writer is a valid XmlTextWriter.
+    unsafe { (*writer).qchar = quotechar };
+    0
+}
+
+/// Close the writer's output buffer. The writer itself is NOT freed (upstream
+/// contract: xmlFreeTextWriter does that). Returns XML_ERR_OK (0) on success,
+/// XML_ERR_ARGUMENT (9) for a NULL writer or NULL output buffer.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlTextWriterClose(xmlTextWriterPtr writer);
+/// ```
+///
+/// # SAFETY
+///
+/// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterClose(writer: *mut XmlTextWriter) -> c_int {
+    if writer.is_null() {
+        return crate::abi::types::XML_ERR_ARGUMENT as c_int;
+    }
+    let w = unsafe { &mut *writer };
+    if w.output.is_null() {
+        return crate::abi::types::XML_ERR_ARGUMENT as c_int;
+    }
+    let result = io::output_buffer_close(w.output);
+    w.output = ptr::null_mut();
+    if result >= 0 {
+        crate::abi::types::XML_ERR_OK as c_int
+    } else {
+        -result
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Format / VFormat family
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// The System V AMD64 `__va_list_tag` (24 bytes): gp_offset, fp_offset,
+/// overflow_arg_area, reg_save_area. A C `va_list` parameter decays to a
+/// pointer to this structure, which is exactly what the VFormat exports and
+/// the Format shims exchange.
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct VaListTag {
+    gp_offset: c_uint,
+    fp_offset: c_uint,
+    overflow_arg_area: *mut c_void,
+    reg_save_area: *mut c_void,
+}
+
+/// The platform `vsnprintf` (system libc — not an oracle dependency).
+unsafe extern "C" {
+    fn vsnprintf(s: *mut c_char, n: usize, format: *const c_char, ap: *mut VaListTag) -> c_int;
+}
+
+/// Format a printf-style string with the given va_list into a fresh buffer,
+/// mirroring upstream `xmlTextWriterVSprintf` (BUFSIZ start, doubling growth,
+/// fresh va_copy per attempt).
+///
+/// Returns Err(()) on failure (unrepresentable output or absurd size).
+///
+/// # SAFETY
+///
+/// - `format` must be a valid printf format string.
+/// - `args` must point to a valid va_list.
+unsafe fn vformat_buf(format: *const c_char, args: *mut VaListTag) -> Result<Vec<u8>, ()> {
+    let mut size: usize = 8192;
+    loop {
+        let mut buf = vec![0u8; size];
+        // Fresh va_copy per attempt: vsnprintf consumes the va_list.
+        // SAFETY: args points to a valid va_list; the bitwise copy is va_copy.
+        let mut copy = unsafe { core::ptr::read(args) };
+        let n = unsafe { vsnprintf(buf.as_mut_ptr() as *mut c_char, size, format, &mut copy) };
+        if n >= 0 && (n as usize) < size {
+            buf.truncate(n as usize);
+            return Ok(buf);
+        }
+        if size >= (1 << 26) {
+            return Err(());
+        }
+        size *= 2;
+    }
+}
+
+// The VFormat functions have heterogeneous fixed-arg lists, so each is written
+// explicitly rather than through a macro (mirroring the upstream C).
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatRaw(
+    writer: *mut XmlTextWriter,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteRaw(writer, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatString(
+    writer: *mut XmlTextWriter,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() || format.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteString(writer, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatComment(
+    writer: *mut XmlTextWriter,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteComment(writer, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatCDATA(
+    writer: *mut XmlTextWriter,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteCDATA(writer, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatPI(
+    writer: *mut XmlTextWriter,
+    target: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWritePI(writer, target, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatElement(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteElement(writer, name, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatElementNS(
+    writer: *mut XmlTextWriter,
+    prefix: *const xmlChar,
+    name: *const xmlChar,
+    namespaceURI: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe {
+        xmlTextWriterWriteElementNS(
+            writer,
+            prefix,
+            name,
+            namespaceURI,
+            buf.as_ptr() as *const xmlChar,
+        )
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttribute(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteAttribute(writer, name, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttributeNS(
+    writer: *mut XmlTextWriter,
+    prefix: *const xmlChar,
+    name: *const xmlChar,
+    namespaceURI: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe {
+        xmlTextWriterWriteAttributeNS(
+            writer,
+            prefix,
+            name,
+            namespaceURI,
+            buf.as_ptr() as *const xmlChar,
+        )
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTD(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    pubid: *const xmlChar,
+    sysid: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteDTD(writer, name, pubid, sysid, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDElement(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteDTDElement(writer, name, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDAttlist(
+    writer: *mut XmlTextWriter,
+    name: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteDTDAttlist(writer, name, buf.as_ptr() as *const xmlChar) }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDInternalEntity(
+    writer: *mut XmlTextWriter,
+    pe: c_int,
+    name: *const xmlChar,
+    format: *const c_char,
+    argptr: *mut VaListTag,
+) -> c_int {
+    if writer.is_null() {
+        return -1;
+    }
+    let buf = match unsafe { vformat_buf(format, argptr) } {
+        Ok(b) => b,
+        Err(()) => return -1,
+    };
+    unsafe { xmlTextWriterWriteDTDInternalEntity(writer, pe, name, buf.as_ptr() as *const xmlChar) }
+}
+
+/// Assembly shims for the variadic `xmlTextWriterWriteFormat*` exports.
+///
+/// Stable Rust cannot define variadic `extern "C"` functions (c_variadic is
+/// unstable), so each Format export is a #[no_mangle] function whose body is a
+/// single `noreturn` inline-asm block: it captures the SysV x86-64 register
+/// save area exactly like `va_start`, builds a `va_list`, forwards it to the
+/// VFormat implementation, restores the stack and returns directly.
+/// `#![no_mangle]` puts these exports into rustc's cdylib export list (a
+/// version script localizes every other global).
+///
+/// Layout: reg_save_area = rsp+0 (6 GP + 8 SSE slots, 176 bytes); the va_list
+/// struct lives at rsp+176 (gp_offset, fp_offset, overflow_arg_area,
+/// reg_save_area); overflow varargs are above the return address.
+///
+/// NOTE on the frame: LLVM emits an 8-byte alignment `push` before the block
+/// (verified for rustc 1.98.0 at opt-level 0); the block therefore uses a
+/// 240-byte frame (≡ 0 mod 16, keeping the `call` 16-aligned), points the
+/// overflow area at rsp+256 (= entry_rsp + 8) and pops the alignment push
+/// before `ret`. The overflow-argument pointer is only dereferenced when more
+/// than 6 general-purpose varargs are passed; WRITER-001 exercises that path.
+/// This is native code with no dependency on any XML library.
+#[cfg(target_arch = "x86_64")]
+mod format_shims {
+    use super::*;
+
+    /// `gp` is the gp_offset for the fixed-argument count (8 bytes each);
+    /// `aptr` is the register receiving the va_list pointer for the VFormat
+    /// call (rdx=2 fixed, rcx=3, r8=4, r9=5). The parameter list is types
+    /// only — the values are read directly from registers inside the asm.
+    macro_rules! vfmt_shim {
+        ($name:ident, $vname:ident, $gp:literal, $aptr:tt, ($($pty:ty),*)) => {
+            // No declared parameters: the C caller's fixed arguments arrive in
+            // the ABI registers and are read directly inside the asm; with no
+            // parameters and a noreturn body LLVM emits only an 8-byte
+            // alignment push, which the block pops before `ret`.
+            #[no_mangle]
+            pub unsafe extern "C" fn $name() -> c_int {
+                unsafe {
+                    core::arch::asm!(
+                        "sub rsp, 240",
+                        "mov [rsp+0], rdi",
+                        "mov [rsp+8], rsi",
+                        "mov [rsp+16], rdx",
+                        "mov [rsp+24], rcx",
+                        "mov [rsp+32], r8",
+                        "mov [rsp+40], r9",
+                        "movaps [rsp+48], xmm0",
+                        "movaps [rsp+64], xmm1",
+                        "movaps [rsp+80], xmm2",
+                        "movaps [rsp+96], xmm3",
+                        "movaps [rsp+112], xmm4",
+                        "movaps [rsp+128], xmm5",
+                        "movaps [rsp+144], xmm6",
+                        "movaps [rsp+160], xmm7",
+                        concat!("mov dword ptr [rsp+176], ", $gp),
+                        "mov dword ptr [rsp+180], 48",
+                        "lea rax, [rsp+256]",
+                        "mov [rsp+184], rax",
+                        "lea rax, [rsp]",
+                        "mov [rsp+192], rax",
+                        concat!("lea ", stringify!($aptr), ", [rsp+176]"),
+                        concat!("call ", stringify!($vname)),
+                        "add rsp, 240",
+                        "add rsp, 8",
+                        "ret",
+                        options(noreturn),
+                    );
+                }
+            }
+        };
+    }
+
+    vfmt_shim!(
+        xmlTextWriterWriteFormatRaw,
+        xmlTextWriterWriteVFormatRaw,
+        16,
+        rdx,
+        (*mut XmlTextWriter, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatString,
+        xmlTextWriterWriteVFormatString,
+        16,
+        rdx,
+        (*mut XmlTextWriter, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatComment,
+        xmlTextWriterWriteVFormatComment,
+        16,
+        rdx,
+        (*mut XmlTextWriter, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatCDATA,
+        xmlTextWriterWriteVFormatCDATA,
+        16,
+        rdx,
+        (*mut XmlTextWriter, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatPI,
+        xmlTextWriterWriteVFormatPI,
+        24,
+        rcx,
+        (*mut XmlTextWriter, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatElement,
+        xmlTextWriterWriteVFormatElement,
+        24,
+        rcx,
+        (*mut XmlTextWriter, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatAttribute,
+        xmlTextWriterWriteVFormatAttribute,
+        24,
+        rcx,
+        (*mut XmlTextWriter, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatDTDElement,
+        xmlTextWriterWriteVFormatDTDElement,
+        24,
+        rcx,
+        (*mut XmlTextWriter, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatDTDAttlist,
+        xmlTextWriterWriteVFormatDTDAttlist,
+        24,
+        rcx,
+        (*mut XmlTextWriter, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatDTDInternalEntity,
+        xmlTextWriterWriteVFormatDTDInternalEntity,
+        32,
+        r8,
+        (*mut XmlTextWriter, c_int, *const xmlChar, *const c_char)
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatDTD,
+        xmlTextWriterWriteVFormatDTD,
+        40,
+        r9,
+        (
+            *mut XmlTextWriter,
+            *const xmlChar,
+            *const xmlChar,
+            *const xmlChar,
+            *const c_char
+        )
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatElementNS,
+        xmlTextWriterWriteVFormatElementNS,
+        40,
+        r9,
+        (
+            *mut XmlTextWriter,
+            *const xmlChar,
+            *const xmlChar,
+            *const xmlChar,
+            *const c_char
+        )
+    );
+    vfmt_shim!(
+        xmlTextWriterWriteFormatAttributeNS,
+        xmlTextWriterWriteVFormatAttributeNS,
+        40,
+        r9,
+        (
+            *mut XmlTextWriter,
+            *const xmlChar,
+            *const xmlChar,
+            *const xmlChar,
+            *const c_char
+        )
+    );
+}
+
+// Non-x86-64 fallback: honest stubs (the variadic ABI cannot be forwarded on
+// stable Rust); the platform surface is documented as not yet executable there.
+#[cfg(not(target_arch = "x86_64"))]
+mod format_fallback {
+    use super::*;
+    macro_rules! fmt_stub {
+        ($($name:ident),*) => {$(
+            #[no_mangle]
+            pub unsafe extern "C" fn $name(_writer: *mut XmlTextWriter, _format: *const c_char) -> c_int {
+                -1
+            }
+        )*};
+    }
+    fmt_stub!(
+        xmlTextWriterWriteFormatRaw,
+        xmlTextWriterWriteFormatString,
+        xmlTextWriterWriteFormatComment,
+        xmlTextWriterWriteFormatCDATA,
+        xmlTextWriterWriteFormatPI,
+        xmlTextWriterWriteFormatElement,
+        xmlTextWriterWriteFormatElementNS,
+        xmlTextWriterWriteFormatAttribute,
+        xmlTextWriterWriteFormatAttributeNS,
+        xmlTextWriterWriteFormatDTD,
+        xmlTextWriterWriteFormatDTDElement,
+        xmlTextWriterWriteFormatDTDAttlist,
+        xmlTextWriterWriteFormatDTDInternalEntity
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2293,7 +3395,7 @@ mod tests {
             assert_eq!(r, 0, "EndElement failed");
 
             let r = xmlTextWriterEndDocument(writer);
-            assert_eq!(r, 0, "EndDocument failed");
+            assert!(r > 0, "EndDocument failed (rc={})", r);
 
             let result = flush_and_get(writer, buf);
             assert!(
@@ -2523,7 +3625,11 @@ mod tests {
             );
             xmlTextWriterWriteDTDEntity(
                 writer,
+                0, // pe
                 b"copy\0" as *const u8,
+                ptr::null(), // pubid
+                ptr::null(), // sysid
+                ptr::null(), // ndataid
                 b"Copyright Me\0" as *const u8,
             );
             xmlTextWriterWriteDTDNotation(

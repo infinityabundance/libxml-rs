@@ -1,0 +1,168 @@
+{
+ "court": "WRITER-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-29T22:17:48Z",
+ "probe": "courts/suites/data-abi/writer-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.2",
+  "stdout_sha256": "91d91df5b0baae09a42ca7201c5448396e9cd8c2de04c5b9dd5ff3cf663ec3ac"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "fc357a57aacf7801349e2a5863ddd6cc921869b970be432b7ebe5ef0184473ad"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 65,
+ "mismatches": [
+  {
+   "line": 12,
+   "oracle": "enddoc=184",
+   "candidate": "enddoc=177"
+  },
+  {
+   "line": 16,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\"text &lt;&gt;&amp;&quot;'/>"
+  },
+  {
+   "line": 27,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\"text &lt;&gt;&amp;&quot;'/>"
+  },
+  {
+   "line": 31,
+   "oracle": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>",
+   "candidate": "<p:node xmlns:p=\"urn:test\" p:attr=\"v\"/>"
+  },
+  {
+   "line": 34,
+   "oracle": "dtdelem=1",
+   "candidate": "dtdelem=0"
+  },
+  {
+   "line": 35,
+   "oracle": "dtdattlist=1",
+   "candidate": "dtdattlist=0"
+  },
+  {
+   "line": 36,
+   "oracle": "dtdpent=1",
+   "candidate": "dtdpent=0"
+  },
+  {
+   "line": 37,
+   "oracle": "dtdent=1",
+   "candidate": "dtdent=0"
+  },
+  {
+   "line": 38,
+   "oracle": "dtdext=1",
+   "candidate": "dtdext=0"
+  },
+  {
+   "line": 44,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\"text &lt;&gt;&amp;&quot;'/>"
+  },
+  {
+   "line": 48,
+   "oracle": "<p:node p:attr=\"v\" xmlns:p=\"urn:test\"/>",
+   "candidate": "<p:node xmlns:p=\"urn:test\" p:attr=\"v\"/>"
+  },
+  {
+   "line": 50,
+   "oracle": " <!ELEMENT child (#PCDATA|sub)*>",
+   "candidate": "<!ELEMENT child (#PCDATA|sub)*><!ATTLIST child id CDATA #IMPLIED>"
+  },
+  {
+   "line": 51,
+   "oracle": " <!ATTLIST child id CDATA #IMPLIED>",
+   "candidate": "<!ENTITY % pent \"pe-content\"><!ENTITY ent \"content &amp; more\"><!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\"><!NOTATION note PUBLIC \"PubID\" \"SysID\">]>"
+  },
+  {
+   "line": 52,
+   "oracle": " <!ENTITY % pent \"pe-content\">",
+   "candidate": "<root/>"
+  },
+  {
+   "line": 53,
+   "oracle": " <!ENTITY ent \"content &amp; more\">",
+   "candidate": ""
+  },
+  {
+   "line": 54,
+   "oracle": " <!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\">",
+   "candidate": "setquote=0"
+  },
+  {
+   "line": 55,
+   "oracle": "<!NOTATION note PUBLIC \"PubID\" \"SysID\">]>",
+   "candidate": "startdoc2=0"
+  },
+  {
+   "line": 56,
+   "oracle": "<root/>",
+   "candidate": "attr-squote=0"
+  },
+  {
+   "line": 57,
+   "oracle": "",
+   "candidate": "empty-end=0"
+  },
+  {
+   "line": 58,
+   "oracle": "setquote=0",
+   "candidate": "---"
+  },
+  {
+   "line": 59,
+   "oracle": "startdoc2=0",
+   "candidate": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+  },
+  {
+   "line": 60,
+   "oracle": "attr-squote=0",
+   "candidate": "<root>"
+  },
+  {
+   "line": 61,
+   "oracle": "empty-end=0",
+   "candidate": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\"text &lt;&gt;&amp;&quot;'/>"
+  },
+  {
+   "line": 62,
+   "oracle": "---",
+   "candidate": " <!--a comment-->"
+  },
+  {
+   "line": 63,
+   "oracle": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+   "candidate": "<?target data?>"
+  },
+  {
+   "line": 64,
+   "oracle": "<root>",
+   "candidate": "<![CDATA[cdata <&>]]></root>"
+  },
+  {
+   "line": 65,
+   "oracle": " <child a=\"1 &amp; 2 &lt; &quot;q&quot;\">text &lt;&gt;&amp;&quot;'</child>",
+   "candidate": "<p:node xmlns:p=\"urn:test\" p:attr=\"v\"/>"
+  },
+  {
+   "line": 66,
+   "oracle": " <!--a comment-->",
+   "candidate": "<!DOCTYPE root ["
+  },
+  {
+   "line": 67,
+   "oracle": "<?target data?>",
+   "candidate": "<!ELEMENT child (#PCDATA|sub)*><!ATTLIST child id CDATA #IMPLIED>"
+  },
+  {
+   "line": 68,
+   "oracle": "<![CDATA[cdata <&>]]></root>",
+   "candidate": "<!ENTITY % pent \"pe-content\"><!ENTITY ent \"content &amp; more\"><!ENTITY ext PUBLIC \"-//PUB//ID\" \"http://x/y.dtd\"><!NOTATION note PUBLIC \"PubID\" \"SysID\">]>"
+  }
+ ]
+}

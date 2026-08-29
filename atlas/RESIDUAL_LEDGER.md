@@ -608,6 +608,66 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Evidence:** ['courts/suites/data-abi/reader-family-probe.c', 'courts/receipts/phase-11/reader-family-20260829T212705Z.json', 'src/xml/reader/mod.rs']
 - **Classification:** CANDIDATE_BUG
 
+### R-000151: Writer return values are encoder-dependent byte counts, not 0 or raw lengths (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs
+- **Surface:** xmlTextWriter* return contract (xmlwriter.c)
+- **Root cause:** The WRITER-001 differential probe showed the oracle returning 0 for StartDocument-with-encoding while the candidate returned the raw byte count. Upstream xmlOutputBufferWrite takes an encoder path once an encoding is installed: writes below the 256-byte conversion threshold report 0 bytes; xmlTextWriterWriteIndent reports the NUMBER OF INDENT STRINGS, not bytes; EndDocument returns the flush count. The encoder, once installed by a StartDocument with encoding, persists for the writer's lifetime (a later StartDocument with encoding=NULL only resets conv).
+- **Fix:** The writer now tracks encoder_active (set once, never cleared), mutes byte-write returns to 0 when active, returns the indent string count from write_indent, and returns the output-buffer length delta/flush count from EndDocument. Sealed by WRITER-001 (all return values byte-identical, incl. enddoc=184).
+- **Evidence:** ['courts/suites/data-abi/writer-family-probe.c', 'courts/receipts/phase-11/writer-family-*.json', 'oracle/historical/src/libxml2-2.15.0/xmlIO.c', 'oracle/historical/src/libxml2-2.15.0/xmlwriter.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000152: DTD internal-subset bracket is deferred to the first child declaration, not written by StartDTD (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs
+- **Surface:** xmlTextWriterStartDTD/StartDTDElement/StartDTDAttlist/StartDTDEntity/WriteDTDNotation/EndDTD (xmlwriter.c)
+- **Root cause:** Upstream xmlTextWriterStartDTD writes `<!DOCTYPE name` WITHOUT the `[`; the first DTD child (StartDTDElement/StartDTDAttlist/StartDTDEntity) or raw content emits ` [` (+newline when indented) on the DTD->DTD_TEXT transition, and EndDTD emits `]` only when content was written. The candidate's original StartDTD wrote `[` immediately and EndDTD wrote `]>` unconditionally — coincidentally identical for the old WriteDTD path but wrong for every Start/End composition (e.g. a bare StartDTD+EndDTD produced `<!DOCTYPE name []>` instead of `<!DOCTYPE name>`).
+- **Fix:** StartDTD no longer writes the bracket; a dtd_child_transition helper writes ` [` on the first DTD child; EndDTD writes `]` only from the DTDText state. The DTD child starts also push/pop dtd_depth so the upstream indentation (one indent string per open declaration) and the indent return counts match. Sealed by WRITER-001.
+- **Evidence:** ['courts/suites/data-abi/writer-family-probe.c', 'courts/receipts/phase-11/writer-family-*.json', 'oracle/historical/src/libxml2-2.15.0/xmlwriter.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000153: Writer namespace declarations are deferred to tag close (xmlns after attributes), not written inline (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs
+- **Surface:** xmlTextWriterStartElementNS / xmlTextWriterOutputNSDecl (xmlwriter.c)
+- **Root cause:** Upstream defers namespace declarations: xmlTextWriterOutputNSDecl emits ` xmlns:prefix="uri"` when the start tag closes (after all attributes), so `<p:node p:attr="v" xmlns:p="urn:test"/>` has the xmlns AFTER the attributes. The candidate wrote the xmlns inline at StartElementNS, producing `xmlns:p` before the attribute.
+- **Fix:** StartElementNS now records pending namespace declarations; close_start_tag and the EndElement self-close path flush them (xmlns first, then `>`/`/>`). Sealed by WRITER-001.
+- **Evidence:** ['courts/suites/data-abi/writer-family-probe.c', 'courts/receipts/phase-11/writer-family-*.json']
+- **Classification:** CANDIDATE_BUG
+
+### R-000154: Writer text/attribute escaping: apostrophe is never escaped; the indent default is one space; StartPI does not indent (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs
+- **Surface:** xmlTextWriterWriteString/WriteAttribute, xmlEncodeSpecialChars, xmlBufAttrSerializeTxtContent, xmlTextWriterStartPI (xmlwriter.c)
+- **Root cause:** Three upstream quirks the candidate did not reproduce: (1) xmlEncodeSpecialChars (xmlEscapeText with XML_ESCAPE_QUOT) escapes &<>" but NOT the apostrophe, and xmlBufAttrSerializeTxtContent (XML_ESCAPE_ATTR) likewise never escapes ' regardless of the writer's qchar — the qchar only selects the outer quotes; (2) the default indent string is a single space, not two; (3) xmlTextWriterStartPI writes no indentation (PIs appear at column 0).
+- **Fix:** encode_special_chars and write_attr_escaped no longer escape the apostrophe (the qchar-aware quote logic was removed); the default indent string is now one space; StartPI no longer writes an indent. Sealed by WRITER-001.
+- **Evidence:** ['courts/suites/data-abi/writer-family-probe.c', 'courts/receipts/phase-11/writer-family-*.json', 'oracle/historical/src/libxml2-2.15.0/entities.c', 'oracle/historical/src/libxml2-2.15.0/xmlsave.c']
+- **Classification:** CANDIDATE_BUG
+
+### R-000155: Variadic xmlTextWriterWriteFormat* exports cannot be defined on stable Rust (c_variadic unstable); solved with #[no_mangle] inline-asm shims (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs, build.rs
+- **Surface:** xmlTextWriterWriteFormat*/WriteVFormat* (xmlwriter.h)
+- **Root cause:** The 13 variadic Format functions require a va_list construction at the callee. Stable Rust cannot define variadic extern "C" functions. A global_asm approach failed because rustc's cdylib version script (global: no_mangle-exports; local: *) localizes every symbol not declared #[no_mangle], and --export-dynamic-symbol cannot override the version script.
+- **Fix:** Each Format export is a #[no_mangle] function whose body is a single noreturn inline-asm block: it captures the SysV register save area like va_start, builds a 24-byte __va_list_tag (gp_offset/fp_offset/overflow_arg_area/reg_save_area), calls the corresponding VFormat implementation by name, restores the stack (including LLVM's 8-byte alignment push) and returns. The VFormat functions take a *mut VaListTag and format via the system vsnprintf with fresh va_copy per attempt (xmlTextWriterVSprintf semantics). Sealed by WRITER-001 including the >6-GP overflow-argument path.
+- **Evidence:** ['courts/suites/data-abi/writer-family-probe.c', 'courts/receipts/phase-11/writer-family-*.json', 'src/xml/writer/mod.rs']
+- **Classification:** CANDIDATE_BUG
+
+### R-000156: xmlTextWriterStartDTDEntity and WriteDTDEntity had wrong signatures; WriteDTDAttribute composed the wrong primitives (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-I)
+- **Component:** src/xml/writer/mod.rs, include/libxml/xmlwriter.h
+- **Surface:** xmlTextWriterStartDTDEntity(writer, pe, name), xmlTextWriterWriteDTDEntity(writer, pe, name, pubid, sysid, ndataid, content), xmlTextWriterWriteDTDAttribute (xmlwriter.h)
+- **Root cause:** The candidate's pre-existing StartDTDEntity exported (writer, name) but upstream is (writer, pe, name) with a %-prefix for parameter entities; WriteDTDEntity exported (writer, name, content) but upstream takes seven arguments and dispatches internal/external; WriteDTDAttribute composed an invented StartDTDAttribute/EndDTDAttribute pair instead of upstream's StartDTDAttlist/WriteString/EndDTDAttlist. The stub header masked these ABI mismatches from the header court.
+- **Fix:** All three signatures now match upstream exactly; WriteDTDInternalEntity/WriteDTDExternalEntity/WriteDTDExternalEntityContents implement the dispatch targets; the full upstream xmlwriter.h was written (the stub was replaced), exposing every writer declaration to the header court. Sealed by WRITER-001 and the 571/571 header court.
+- **Evidence:** ['src/xml/writer/mod.rs', 'include/libxml/xmlwriter.h', 'courts/receipts/phase-11/writer-family-*.json']
+- **Classification:** CANDIDATE_BUG
+
 ## Classification Legend
 
 - `CANDIDATE_BUG` — see classification policy in §45/§71

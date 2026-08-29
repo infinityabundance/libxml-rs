@@ -457,6 +457,7 @@ pub const XML_ERR_TAG_NAME_MISMATCH: c_int = 95;
 pub const XML_ERR_TAG_NOT_FINISHED: c_int = 96;
 pub const XML_ERR_STANDALONE_VALUE: c_int = 97;
 pub const XML_ERR_VERSION_MISSING: c_int = 98;
+pub const XML_ERR_ARGUMENT: c_int = 115;
 // Removed: duplicate of XML_ERR_NAME_TOO_LONG at line 414
 
 // ── Parser limits ──────────────────────────────────────────────────────
