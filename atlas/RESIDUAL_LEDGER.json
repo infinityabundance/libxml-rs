@@ -1149,7 +1149,7 @@
    "id": "R-000136",
    "status": "OPEN",
    "phase": "11.1-I",
-   "title": "Missing oracle functions: 1158 libxml2 + 201 libxslt exports",
+   "title": "Missing oracle functions: 881 libxml2 + 201 libxslt exports (was 1158 at discovery)",
    "surface": "DSO function exports",
    "component": [
     "src/abi/exports_xml2.rs",
@@ -1169,7 +1169,8 @@
      "event": "discovered during 11.1-I parity census",
      "status": "OPEN"
     }
-   ]
+   ],
+   "description": "The parity obligation census (tools/abi/parity_obligations.py, oracle = system libxml2 2.15.3 / libxslt 1.1.45 DSOs) records upstream functions the candidate does not yet export. 277 libxml2 exports were closed between discovery and 2026-08-29 (1158 -> 881). Each remaining entry must be implemented (not stubbed) with upstream semantics, court-covered, in dependency order."
   },
   {
    "id": "R-000138",

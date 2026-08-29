@@ -1,12 +1,22 @@
 {
- "schema": "abi-parity-ledger-1",
+ "schema": "abi-parity-ledger-2",
  "projects": {
   "libxml2": {
    "version": "2.15.3",
-   "structs_probed": 47,
-   "enums_probed": 40,
-   "oracle_entities": 1889,
-   "candidate_entities": 1889,
+   "evidence_sources": {
+    "doxygen_inventory": "oracle/historical/doxygen/libxml2-system/inventory-public.json",
+    "doxygen_inventory_hash": "237b9d8ff2ab2bfdffd20e3d3d02c56246a280bfa4816a1d8198cf31f3a3015e",
+    "oracle_headers": "/usr/include/libxml2",
+    "candidate_headers": "include",
+    "oracle_dso": "/usr/lib/libxml2.so.2",
+    "candidate_dso": "target/debug/liblibxml_rs.so",
+    "probe_compiler": "gcc -std=c11",
+    "note": "Current ABI seal derived from current-system Doxygen public inventory (libxml2-system / libxslt-system) × current-system headers (/usr/include) × current-system DSO. Historical ABI epochs are sealed separately from historical inventories (atlas/HISTORICAL_SURFACE_EPOCHS.json)"
+   },
+   "structs_probed": 43,
+   "enums_probed": 41,
+   "oracle_entities": 654,
+   "candidate_entities": 654,
    "mismatch_count": 0,
    "mismatches": [],
    "candidate_header_gap_entities": [],
@@ -14,10 +24,20 @@
   },
   "libxslt": {
    "version": "1.1.45",
+   "evidence_sources": {
+    "doxygen_inventory": "oracle/historical/doxygen/libxslt-system/inventory-public.json",
+    "doxygen_inventory_hash": "6f44be15dbbc7695a488cd45ffe103e913b079a1b1e974d460ea00a247a79aeb",
+    "oracle_headers": "/usr/include/libxml2",
+    "candidate_headers": "include",
+    "oracle_dso": "/usr/lib/libxslt.so.1",
+    "candidate_dso": "target/debug/liblibxml_rs.so",
+    "probe_compiler": "gcc -std=c11",
+    "note": "Current ABI seal derived from current-system Doxygen public inventory (libxml2-system / libxslt-system) × current-system headers (/usr/include) × current-system DSO. Historical ABI epochs are sealed separately from historical inventories (atlas/HISTORICAL_SURFACE_EPOCHS.json)"
+   },
    "structs_probed": 14,
    "enums_probed": 7,
-   "oracle_entities": 344,
-   "candidate_entities": 344,
+   "oracle_entities": 279,
+   "candidate_entities": 279,
    "mismatch_count": 0,
    "mismatches": [],
    "candidate_header_gap_entities": [],

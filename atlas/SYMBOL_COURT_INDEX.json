@@ -1,0 +1,5 @@
+{
+  "schema": "symbol-court-index-1",
+  "purpose": "Per-symbol court verdicts consumed by tools/abi/parity_obligations.py. A parity obligation earns PARITY_VERIFIED only when a court registered here passes for it (abi + semantic + ownership). Populated by per-symbol courts as they land (11.1-I family courts, 11.1-J ownership courts, ...). Never hand-edited alongside the ledger; the ledger is regenerated from this index.",
+  "courts": {}
+}

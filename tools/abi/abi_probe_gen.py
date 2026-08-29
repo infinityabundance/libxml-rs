@@ -24,11 +24,16 @@ DOX = os.path.join(ROOT, "oracle", "historical", "doxygen")
 ATLAS = os.path.join(ROOT, "atlas")
 
 PROJECTS = {
+    # The CURRENT ABI seal uses current-system evidence only:
+    #   system Doxygen public inventory × system headers × system DSO
+    # (historical inventories are used separately for historical ABI epochs).
     "libxml2": {
-        "inv": os.path.join(DOX, "libxml2-2.15.0", "inventory-full.json"),
-        "public_inv": os.path.join(DOX, "libxml2-2.15.0", "inventory-public.json"),
+        "inv": os.path.join(DOX, "libxml2-system", "inventory-public.json"),
+        "public_inv": os.path.join(DOX, "libxml2-system", "inventory-public.json"),
         "oracle_inc": ["/usr/include/libxml2", "/usr/include"],
         "cand_inc": [os.path.join(ROOT, "include")],
+        "oracle_dso": "/usr/lib/libxml2.so.2",
+        "candidate_dso": os.path.join(ROOT, "target", "debug", "liblibxml_rs.so"),
         "include_guard": (
             "#include <libxml/tree.h>\n#include <libxml/parser.h>\n"
             "#include <libxml/xpath.h>\n#include <libxml/xmlreader.h>\n"
@@ -51,10 +56,12 @@ PROJECTS = {
         "version": "2.15.3",
     },
     "libxslt": {
-        "inv": os.path.join(DOX, "libxslt-1.1.42", "inventory-full.json"),
-        "public_inv": os.path.join(DOX, "libxslt-1.1.42", "inventory-public.json"),
+        "inv": os.path.join(DOX, "libxslt-system", "inventory-public.json"),
+        "public_inv": os.path.join(DOX, "libxslt-system", "inventory-public.json"),
         "oracle_inc": ["/usr/include/libxml2", "/usr/include"],
         "cand_inc": [os.path.join(ROOT, "include")],
+        "oracle_dso": "/usr/lib/libxslt.so.1",
+        "candidate_dso": os.path.join(ROOT, "target", "debug", "liblibxml_rs.so"),
         "include_guard": (
             "#include <libxslt/xslt.h>\n#include <libxslt/xsltInternals.h>\n"
             "#include <libxslt/transform.h>\n#include <libxslt/xsltutils.h>\n"
@@ -197,6 +204,14 @@ def build_and_run(src, inc_dirs, tag):
     return None, "retry limit"
 
 
+def inventory_hash(path):
+    """sha256 of the Doxygen inventory JSON (byte-exact identity of the
+    extraction the ABI probe is derived from)."""
+    import hashlib
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
 def parse(text):
     out = {}
     for line in text.splitlines():
@@ -218,7 +233,7 @@ def parse(text):
 
 
 def main():
-    ledger = {"schema": "abi-parity-ledger-1", "projects": {}}
+    ledger = {"schema": "abi-parity-ledger-2", "projects": {}}
     for project, info in PROJECTS.items():
         src, n_struct, n_enum = gen_probe(project)
         print(f"{project}: probe with {n_struct} structs, {n_enum} enums -> {src}")
@@ -252,6 +267,20 @@ def main():
                 header_gaps = sorted(parse(vo2 or "").keys())
         ledger["projects"][project] = {
             "version": info["version"],
+            "evidence_sources": {
+                "doxygen_inventory": os.path.relpath(info["inv"], ROOT),
+                "doxygen_inventory_hash": inventory_hash(info["inv"]),
+                "oracle_headers": info["oracle_inc"][0],
+                "candidate_headers": os.path.relpath(ROOT + os.sep + "include", ROOT),
+                "oracle_dso": info["oracle_dso"],
+                "candidate_dso": os.path.relpath(info["candidate_dso"], ROOT),
+                "probe_compiler": "gcc -std=c11",
+                "note": ("Current ABI seal derived from current-system Doxygen public "
+                          "inventory (libxml2-system / libxslt-system) × current-system "
+                          "headers (/usr/include) × current-system DSO. Historical ABI "
+                          "epochs are sealed separately from historical inventories "
+                          "(atlas/HISTORICAL_SURFACE_EPOCHS.json)"),
+            },
             "structs_probed": n_struct,
             "enums_probed": n_enum,
             "oracle_entities": len(po),

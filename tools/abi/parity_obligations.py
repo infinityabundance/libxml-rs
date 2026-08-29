@@ -1,18 +1,33 @@
 #!/usr/bin/env python3
-"""11.1-I function-level parity obligation ledger generator.
+"""11.1-I function-level parity obligation ledger generator (schema v2).
 
-For every externally relevant function exported by the ORACLE DSOs
-(system libxml2/libxslt), records a machine-readable parity obligation:
+For every externally relevant function/data object exported by the ORACLE
+DSOs (system libxml2/libxslt), records a machine-readable parity obligation.
 
-    entity_id, oracle_symbol, candidate_symbol (same for C ABI),
-    exported (bool), stub (bool|None), category, courts[], residuals[],
-    status (EXPORTED_VERIFIED / EXPORTED_STUB / MISSING)
+Schema v2 makes verification ORTHOGONAL. "Symbol exists" is never treated as
+"function is verified". Each obligation carries six independent dimensions:
 
-The ledger is generated from the DSO symbol tables plus a source scan of
-the candidate for stub bodies (`todo!`, `unimplemented!`, `panic!` on
-valid C API paths, unconditional default returns). "Symbol exists" is
-never treated as "function is implemented": EXPORTED_STUB entries are
-residuals that must be closed.
+    export_status        MISSING | EXPORTED
+    implementation_status STUB | INTENTIONAL_NOOP | IMPLEMENTED | NOT_APPLICABLE
+    abi_status           UNVERIFIED | PASS | FAIL
+    semantic_status      UNVERIFIED | PARTIAL | PASS | FAIL
+    ownership_status     NOT_APPLICABLE | UNVERIFIED | PASS
+    historical_status    CURRENT_ONLY | PARTIAL | VERIFIED
+
+`overall` is DERIVED, never handwritten:
+
+    MISSING               export_status == MISSING
+    STUB                  implementation_status == STUB
+    INTENTIONAL_NOOP      implementation_status == INTENTIONAL_NOOP
+    PARITY_VERIFIED       EXPORTED + IMPLEMENTED + abi PASS
+                          + semantic PASS + ownership (NA or PASS)
+    IMPLEMENTED_UNVERIFIED otherwise
+
+`PARITY_VERIFIED` therefore requires a passing per-symbol court; today no
+per-symbol courts exist yet, so no entry earns it. The per-symbol court
+results live in atlas/SYMBOL_COURT_INDEX.json (schema published, populated as
+courts land) and are consumed here so the ledger stays current without
+hand-editing.
 
 Usage:
   parity_obligations.py          # regenerate atlas/PARITY_OBLIGATIONS.json
@@ -31,6 +46,24 @@ ORACLE_DSOS = {
 }
 CANDIDATE_DSO = os.path.join(ROOT, "target", "debug", "liblibxml_rs.so")
 PREFIXES = {"libxml2": ("xml", "html", "__xml"), "libxslt": ("xslt", "exslt")}
+SYMBOL_COURT_INDEX = os.path.join(ATLAS, "SYMBOL_COURT_INDEX.json")
+
+STATUS_MODEL = {
+    "schema": "parity-obligations-status-model-1",
+    "export_status": ["MISSING", "EXPORTED"],
+    "implementation_status": ["STUB", "INTENTIONAL_NOOP", "IMPLEMENTED", "UNKNOWN", "NOT_APPLICABLE"],
+    "abi_status": ["UNVERIFIED", "PASS", "FAIL"],
+    "semantic_status": ["UNVERIFIED", "PARTIAL", "PASS", "FAIL"],
+    "ownership_status": ["NOT_APPLICABLE", "UNVERIFIED", "PASS"],
+    "historical_status": ["CURRENT_ONLY", "PARTIAL", "VERIFIED"],
+    "overall": ["MISSING", "STUB", "INTENTIONAL_NOOP",
+                "IMPLEMENTED_UNVERIFIED", "PARITY_VERIFIED",
+                "DATA_EXPORTED", "DATA_MISSING"],
+    "parity_verified_definition": (
+        "EXPORTED + IMPLEMENTED + abi_status PASS + semantic_status PASS "
+        "+ ownership_status in (NOT_APPLICABLE, PASS) — each supported by a "
+        "passing court recorded in courts[]"),
+}
 
 
 def dso_symbols(path, prefixes):
@@ -61,9 +94,13 @@ def rust_sources():
 def stub_score(name, text):
     """Detect stub/placeholder bodies for a #[no_mangle] function.
 
-    Returns a (status, reason) pair: status is one of
-    'VERIFIED' (has real logic), 'STUB' (placeholder detected),
-    'UNKNOWN' (no source body found / macro export).
+    Returns a (implementation_status, reason) pair where implementation_status
+    is one of 'IMPLEMENTED' (has real logic), 'STUB' (placeholder detected),
+    or 'UNKNOWN' (no source body found / macro export).
+
+    NOTE: this is a *static* heuristic, never a semantic verification. It only
+    classifies the implementation dimension; abi/semantic/ownership statuses
+    come from courts.
     """
     # find `fn name(` in the text (with optional visibility/extern attrs)
     m = re.search(r"fn\s+" + re.escape(name) + r"\s*\(", text)
@@ -102,7 +139,7 @@ def stub_score(name, text):
     # no-op: empty body (only comments/whitespace)
     if not re.search(r"[a-zA-Z_]", re.sub(r"//[^\n]*\n", "", body)):
         return "STUB", "empty body"
-    return "VERIFIED", "has logic"
+    return "IMPLEMENTED", "has logic"
 
 
 # Documented intentional no-ops / simplified implementations whose bodies are
@@ -128,12 +165,59 @@ DOCUMENTED_NOOPS = {
 }
 
 
+def load_symbol_courts():
+    """Per-symbol court verdicts (atlas/SYMBOL_COURT_INDEX.json).
+
+    Schema:
+      { "schema": "symbol-court-index-1",
+        "courts": { "<court-id>": { "symbols": { "<proj>:<sym>": {
+             "abi": "PASS", "semantic": "PASS", "ownership": "PASS" } } } } }
+    Populated as per-symbol courts land; the parity ledger consumes it so
+    verification flows from courts, never from hand-edited flags.
+    """
+    if not os.path.exists(SYMBOL_COURT_INDEX):
+        return {}
+    d = json.load(open(SYMBOL_COURT_INDEX))
+    out = {}
+    for cid, cdata in (d.get("courts") or {}).items():
+        for key, verdicts in (cdata.get("symbols") or {}).items():
+            out[key] = verdicts
+    return out
+
+
+def derive_overall(entry):
+    if entry["export_status"] == "MISSING":
+        return "DATA_MISSING" if entry["kind"] == "DATA" else "MISSING"
+    if entry["kind"] == "DATA":
+        return "DATA_EXPORTED"
+    if entry["implementation_status"] == "STUB":
+        return "STUB"
+    if entry["implementation_status"] == "INTENTIONAL_NOOP":
+        return "INTENTIONAL_NOOP"
+    if entry["implementation_status"] != "IMPLEMENTED":
+        return "IMPLEMENTED_UNVERIFIED"
+    if (entry["abi_status"] == "PASS"
+            and entry["semantic_status"] == "PASS"
+            and entry["ownership_status"] in ("NOT_APPLICABLE", "PASS")):
+        return "PARITY_VERIFIED"
+    return "IMPLEMENTED_UNVERIFIED"
+
+
 def main():
     hay = "\n".join(open(p, encoding="utf-8", errors="replace").read()
                     for p in rust_sources())
-    ledger = {"schema": "parity-obligations-1",
-              "generated": __import__("datetime").datetime.utcnow()
+    symbol_courts = load_symbol_courts()
+    ledger = {"schema": "parity-obligations-2",
+              "generated": __import__("datetime").datetime.now(
+                  __import__("datetime").timezone.utc)
               .strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "status_model": STATUS_MODEL,
+              "symbol_court_index": os.path.relpath(SYMBOL_COURT_INDEX, ROOT),
+              "verification_policy": (
+                  "PARITY_VERIFIED is earned only when a per-symbol court "
+                  "exists and passes (abi + semantic + ownership). "
+                  "IMPLEMENTED_UNVERIFIED means the export exists with real "
+                  "logic but has not yet been verified by a court."),
               "projects": {}}
     for project, path in ORACLE_DSOS.items():
         if not os.path.exists(path):
@@ -145,38 +229,62 @@ def main():
         entries = []
         for sym in sorted(oracle):
             kind = oracle[sym]
-            is_func = kind.isupper() and kind in "TtWw" or kind in "Tt"
             data = not (kind in ("T", "t"))
             exported = sym in cand
-            st, reason = None, None
+            impl = "NOT_APPLICABLE" if data else "UNKNOWN"
+            reason = None
             if exported and not data:
-                st, reason = stub_score(sym, hay)
-                if st in ("STUB", "UNKNOWN") and sym in DOCUMENTED_NOOPS:
-                    st = "NOOP"
+                impl, reason = stub_score(sym, hay)
+                if impl in ("STUB", "UNKNOWN") and sym in DOCUMENTED_NOOPS:
+                    impl = "INTENTIONAL_NOOP"
                     reason = f"documented intentional no-op (residual {DOCUMENTED_NOOPS[sym]})"
-            if data:
-                status = "DATA_EXPORTED" if exported else "DATA_MISSING"
-            else:
-                status = "EXPORTED_VERIFIED" if (exported and st == "VERIFIED") \
-                    else "EXPORTED_NOOP" if (exported and st == "NOOP") \
-                    else "EXPORTED_STUB" if exported else "MISSING"
-            entries.append({
+            elif not exported and sym in DOCUMENTED_NOOPS:
+                # not exported but documented as an intentional no-op surface:
+                # keep it classified as an unexported obligation (still MISSING)
+                reason = f"documented intentional no-op surface (residual {DOCUMENTED_NOOPS[sym]}); not exported"
+
+            courts = []
+            residuals = [DOCUMENTED_NOOPS[sym]] if sym in DOCUMENTED_NOOPS else []
+            abi = "UNVERIFIED"
+            sem = "UNVERIFIED"
+            own = "NOT_APPLICABLE" if data else "UNVERIFIED"
+            hist = "CURRENT_ONLY"
+            # per-symbol court verdicts, if any exist
+            cver = symbol_courts.get(f"{project}:{sym}")
+            if cver:
+                abi = cver.get("abi", "UNVERIFIED")
+                sem = cver.get("semantic", "UNVERIFIED")
+                own = cver.get("ownership", own)
+                for cid, cdata in json.load(
+                        open(SYMBOL_COURT_INDEX)).get("courts", {}).items():
+                    if f"{project}:{sym}" in cdata.get("symbols", {}):
+                        courts.append(cid)
+            entry = {
                 "entity_id": f"{project}:{sym}",
                 "oracle_symbol": sym,
                 "candidate_symbol": sym,
                 "kind": "FUNC" if not data else "DATA",
-                "exported": exported,
-                "stub": st,
+                "export_status": "EXPORTED" if exported else "MISSING",
+                "implementation_status": impl,
+                "abi_status": abi,
+                "semantic_status": sem,
+                "ownership_status": own,
+                "historical_status": hist,
                 "stub_reason": reason,
-                "status": status,
-                "courts": [],
-                "residuals": [DOCUMENTED_NOOPS[sym]] if sym in DOCUMENTED_NOOPS else [],
-            })
-        counts = {k: 0 for k in
-                  ("MISSING", "EXPORTED_VERIFIED", "EXPORTED_STUB",
-                   "EXPORTED_NOOP", "DATA_EXPORTED", "DATA_MISSING")}
+                "courts": courts,
+                "residuals": residuals,
+            }
+            entry["overall"] = derive_overall(entry)
+            entries.append(entry)
+        counts = {k: 0 for k in STATUS_MODEL["overall"]}
+        dim = {k: {s: 0 for s in v} for k, v in STATUS_MODEL.items()
+               if k != "overall" and k != "schema"}
         for e in entries:
-            counts[e["status"]] += 1
+            counts[e["overall"]] += 1
+            for dname in ("export_status", "implementation_status",
+                          "abi_status", "semantic_status",
+                          "ownership_status", "historical_status"):
+                dim[dname][e[dname]] += 1
         ledger["projects"][project] = {
             "oracle_dso": path,
             "candidate_dso": CANDIDATE_DSO,
@@ -184,13 +292,15 @@ def main():
             "oracle_data": sum(1 for e in entries if e["kind"] == "DATA"),
             "candidate_functions": sum(1 for s, k in cand.items() if k in ("T", "t")),
             "counts": counts,
+            "dimensions": dim,
             "obligations": entries,
         }
         print(f"{project}: funcs={ledger['projects'][project]['oracle_functions']} "
-              f"data={ledger['projects'][project]['oracle_data']} "
-              f"verified={counts['EXPORTED_VERIFIED']} noop={counts['EXPORTED_NOOP']} "
-              f"stub={counts['EXPORTED_STUB']} missing={counts['MISSING']} "
-              f"data_exp={counts['DATA_EXPORTED']} data_missing={counts['DATA_MISSING']}")
+              f"data={ledger['projects'][project]['oracle_data']}")
+        for k in ("MISSING", "STUB", "INTENTIONAL_NOOP", "IMPLEMENTED_UNVERIFIED",
+                  "PARITY_VERIFIED", "DATA_EXPORTED", "DATA_MISSING"):
+            if counts[k]:
+                print(f"    {k}: {counts[k]}")
     out = os.path.join(ATLAS, "PARITY_OBLIGATIONS.json")
     with open(out, "w") as f:
         json.dump(ledger, f, indent=1, ensure_ascii=False)
