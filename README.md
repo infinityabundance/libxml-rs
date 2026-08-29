@@ -133,7 +133,7 @@ docker build -f docker/Dockerfile.oracle -t libxml-rs/oracle:2.12.0 docker/
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.11`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.14`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification

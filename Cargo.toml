@@ -1,8 +1,8 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.13"
+version = "0.1.0-alpha.14"
 edition = "2021"
-description = "Phase 11: Historical matrix — semantic epochs. Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs E-001..E-008 correlated to upstream commits (xpath output 2.9.10, parser diagnostics 2.9.11/2.12, exit-code + entity-text epochs 2.13.0, html/valid 2.15.0), historical residual fingerprints, full xmllint/xmlcatalog/xsltproc CLIs, 1110 tests passing."
+description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure (xmlXPath*, xmlTextReader*, xmlTextWriter*, catalogs, serialization, data globals, chvalid). 1127 tests passing."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"
