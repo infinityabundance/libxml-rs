@@ -36,6 +36,20 @@ mkdir -p "$SRC" "$PREFIX"
 # Extract only tracked files (no submodules).
 git -C "$GIT" archive "$REV" | tar -x -C "$SRC"
 
+# Record the exact configure-time build environment (11.1-A #4 closure): the
+# manifest must bind CPPFLAGS/CFLAGS/LDFLAGS/CC/PATH as they actually were,
+# not as assumed later. Captured BEFORE configure so no flag is lost.
+export CFLAGS="-O2 -w"
+python3 - "$PREFIX" <<'PYEOF'
+import json, os, sys
+prefix = sys.argv[1]
+fields = ("CPPFLAGS", "CFLAGS", "LDFLAGS", "CC", "PATH")
+env = {k: os.environ.get(k, "") for k in fields}
+with open(os.path.join(prefix, "build-env.json"), "w") as f:
+    json.dump(env, f, indent=2, sort_keys=True)
+    f.write("\n")
+PYEOF
+
 cd "$SRC"
 # Git checkouts need autogen; release tarballs carry configure.
 # Use the system autotools (the cargo bin shadows them with Rust shims).

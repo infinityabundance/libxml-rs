@@ -1,7 +1,9 @@
 {
-  "schema": "oracle-manifest-1",
+  "schema": "oracle-manifest-2",
   "project": "libxml2",
   "version": "2.6.32",
+  "build_status": "FAILED",
+  "build_failure_reason": "era toolchain required: configure.in of this era uses macros removed from modern autoconf/automake; autotools-modernize.sed cannot bridge the gap under autoconf 2.73. Excluded from the matrix (run_matrix.sh XML2_VERSIONS). Source identity below is still authoritative.",
   "resolved_git_tag": "LIBXML2.6.32",
   "upstream_commit_sha": "596da973eb47ae1c5fcec9e0085994a689648868",
   "source_tree_hash": "09d7b4c550f73133c99dbfb7cb896e6ce28a9cfd5e7c981e52a2d4311be052bc",
@@ -36,6 +38,7 @@
     "CPPFLAGS": "",
     "CFLAGS": "-O2 -w",
     "LDFLAGS": "",
+    "CC": "",
     "enabled_features": null,
     "disabled_features": [
       "python",
@@ -45,7 +48,8 @@
       "threads",
       "shared"
     ],
-    "runtime_compiled_with": null
+    "runtime_compiled_with": null,
+    "build_env_capture_note": "pre-capture build; documented values from build.sh (CFLAGS='-O2 -w', CPPFLAGS/LDFLAGS unset)"
   },
   "generated_config_header_hash": null,
   "built_binary_hashes": {},

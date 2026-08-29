@@ -1,7 +1,9 @@
 {
-  "schema": "oracle-manifest-1",
+  "schema": "oracle-manifest-2",
   "project": "libxml2",
   "version": "2.11.5",
+  "build_status": "BUILT",
+  "build_failure_reason": null,
   "resolved_git_tag": "v2.11.5",
   "upstream_commit_sha": "2b998a4ffbdfea04fc6a620721abc690a15743af",
   "source_tree_hash": "c31b0ce4869e4f332221f8d12938b323c4da31c7e9e89bd235ef702e8b80a12f",
@@ -36,7 +38,34 @@
     "CPPFLAGS": "",
     "CFLAGS": "-O2 -w",
     "LDFLAGS": "",
-    "enabled_features": null,
+    "CC": "",
+    "enabled_features": [
+      "Tree",
+      "Output",
+      "Push",
+      "Reader",
+      "Patterns",
+      "Writer",
+      "SAXv1",
+      "DTDValid",
+      "HTML",
+      "C14N",
+      "Catalog",
+      "XPath",
+      "XPointer",
+      "XInclude",
+      "Iconv",
+      "ISO8859X",
+      "Unicode",
+      "Regexps",
+      "Automata",
+      "Schemas",
+      "Schematron",
+      "Modules",
+      "Debug",
+      "Zlib",
+      "Lzma"
+    ],
     "disabled_features": [
       "python",
       "http",
@@ -45,7 +74,8 @@
       "threads",
       "shared"
     ],
-    "runtime_compiled_with": "compiled with: Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ISO8859X Unicode Regexps Automata Schemas Schematron Modules Debug Zlib Lzma"
+    "runtime_compiled_with": "compiled with: Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ISO8859X Unicode Regexps Automata Schemas Schematron Modules Debug Zlib Lzma",
+    "build_env_capture_note": "pre-capture build; documented values from build.sh (CFLAGS='-O2 -w', CPPFLAGS/LDFLAGS unset)"
   },
   "generated_config_header_hash": "31af67fad59f9c4641f3160b3f0a4b22f5014683c0fba2a451b296af28e340f9",
   "built_binary_hashes": {
@@ -57,5 +87,15 @@
     "libxml2.a": "297e546d5d6e8bb15bd0efe4e07db8db364c5c1b0d7141d81891564159bf383c"
   },
   "installed_header_tree_hash": "f2d2fbe7aede92db3c0219ff2387987d6fa3bdaea2f0acb888d8a616d7396a50",
-  "doxygen_profile": null
+  "doxygen_profile": {
+    "profile": "public",
+    "doxygen_version": "1.18.0",
+    "config_hash": "7980566ad0e92f101e26ac5ecc5894a1a657379d0376ab3e7657654b0e34dd8b",
+    "extraction_source_tree_hash": "a15cdd4a75ef942dceb8987c258072e1e2c00c0c588ff5d47894766e1dd9dd7b",
+    "include_path": "oracle/historical/prefix/libxml2-2.11.5/include/libxml2",
+    "raw_xml_hash": "be45b0b5dd7812728dc67d7a98529b2bb01cecfe29990a6ff87ca61e5f70073e",
+    "inventory_hash": "a6e4e36ca5d83acc6cc1e484ada172b8a29e211935faeff11145bb79edd251ab",
+    "inventory_path": "oracle/historical/doxygen/libxml2-2.11.5/inventory-public.json",
+    "entities": 2811
+  }
 }

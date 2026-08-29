@@ -26,6 +26,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "oracle", "historical")
 ADAPT = os.path.join(OUT, "adapt", "autotools-modernize.sed")
+DOX = os.path.join(OUT, "doxygen")
 GIT = {"libxml2": os.path.join(ROOT, "archaeology", "libxml2-git"),
        "libxslt": os.path.join(ROOT, "archaeology", "libxslt-git")}
 
@@ -34,6 +35,18 @@ BASE_CONFIGURE_ARGS = [
     "--without-python", "--without-http", "--without-ftp",
     "--without-icu", "--without-threads",
 ]
+
+# 2.6.32 could not be built: configure.in of that era is not bridgeable to
+# autoconf 2.73 even with autotools-modernize.sed (documented archaeology
+# failure, per run_matrix.sh "2.6.32 excluded: era toolchain required").
+DOCUMENTED_BUILD_FAILURES = {
+    "libxml2-2.6.32": (
+        "era toolchain required: configure.in of this era uses macros removed "
+        "from modern autoconf/automake; autotools-modernize.sed cannot bridge "
+        "the gap under autoconf 2.73. Excluded from the matrix (run_matrix.sh "
+        "XML2_VERSIONS). Source identity below is still authoritative."
+    ),
+}
 
 
 def resolve_tag(project, version):
@@ -126,6 +139,70 @@ def compiled_with(bin_path):
     return None
 
 
+def enabled_features(compiled_line):
+    """Parse the `compiled with:` feature list from the built tool itself.
+
+    The feature list varies by era (e.g. 2.6.x lacks Modules; 2.13.x drops
+    DebugLegacy), so the parsed list is per-oracle evidence, not a constant.
+    Returns None when the tool does not print a feature list (libxslt never
+    does in the matrix span).
+    """
+    if not compiled_line:
+        return None
+    _, _, rest = compiled_line.partition("compiled with:")
+    toks = rest.strip().split()
+    return toks or None
+
+
+def doxygen_profile(project, version):
+    """Bind the 11.1-B Doxygen extraction identity for this oracle.
+
+    The Doxygen run for a built version consumes the *installed headers of
+    that same oracle* (profile input = prefix include dir), so the extraction
+    identity is part of the oracle identity: Doxygen version, extraction
+    config hash, extraction source-tree hash, raw XML hash, normalized
+    inventory hash and the include path used.
+
+    Returns None when no extraction exists (e.g. versions whose build
+    failed and were therefore never run through Doxygen).
+    """
+    pdir = os.path.join(DOX, f"{project}-{version}")
+    prof = os.path.join(pdir, "profile-public.json")
+    inv = os.path.join(pdir, "inventory-public.json")
+    if not (os.path.exists(prof) and os.path.exists(inv)):
+        return None
+    p = json.load(open(prof))
+    i = json.load(open(inv))
+    return {
+        "profile": p.get("profile"),
+        "doxygen_version": p.get("doxygen_version"),
+        "config_hash": p.get("config_hash"),
+        "extraction_source_tree_hash": p.get("source_tree_hash"),
+        "include_path": os.path.relpath(p.get("input", ""), ROOT),
+        "raw_xml_hash": i.get("raw_xml_hash"),
+        "inventory_hash": i.get("inventory_hash"),
+        "inventory_path": os.path.relpath(inv, ROOT),
+        "entities": (i.get("counts") or {}).get("total"),
+    }
+
+
+def build_env_capture(prefix):
+    """Exact configure-time environment, captured by build.sh as
+    build-env.json beside the prefix (CPPFLAGS/CFLAGS/LDFLAGS/CC/PATH).
+    Falls back to the documented values used by build.sh for oracles
+    built before the capture mechanism existed."""
+    path = os.path.join(prefix, "build-env.json")
+    if os.path.exists(path):
+        return json.load(open(path))
+    return {
+        "CPPFLAGS": "",
+        "CFLAGS": "-O2 -w",
+        "LDFLAGS": "",
+        "CC": "",
+        "note": "pre-capture build; documented values from build.sh (CFLAGS='-O2 -w', CPPFLAGS/LDFLAGS unset)",
+    }
+
+
 def emit(project, version, libxml2_prefix=None):
     prefix = os.path.join(OUT, "prefix", f"{project}-{version}")
     src = os.path.join(OUT, "src", f"{project}-{version}")
@@ -135,7 +212,6 @@ def emit(project, version, libxml2_prefix=None):
     adapt_hash = sha_file(ADAPT)
 
     cfg = configure_argv(project, prefix, libxml2_prefix)
-    cflags = "-O2 -w"
 
     # feature manifest from the built tool itself where available
     bins = sorted(glob.glob(os.path.join(prefix, "bin", "*")))
@@ -155,10 +231,25 @@ def emit(project, version, libxml2_prefix=None):
     if not os.path.exists(cfg_header):
         cfg_header = None
 
+    # build status: a built oracle has artifacts; a failed build is a
+    # documented archaeology failure residual, never silent nulls
+    built = bool(glob.glob(os.path.join(prefix, "lib", "*.a"))) or bool(bins)
+    key = f"{project}-{version}"
+    if built:
+        build_status = "BUILT"
+        build_failure_reason = None
+    else:
+        build_status = "FAILED"
+        build_failure_reason = DOCUMENTED_BUILD_FAILURES.get(key)
+
+    benv = build_env_capture(prefix)
+
     manifest = {
-        "schema": "oracle-manifest-1",
+        "schema": "oracle-manifest-2",
         "project": project,
         "version": version,
+        "build_status": build_status,
+        "build_failure_reason": build_failure_reason,
         "resolved_git_tag": tag,
         "upstream_commit_sha": commit,
         "source_tree_hash": tree_hash(src),
@@ -181,12 +272,14 @@ def emit(project, version, libxml2_prefix=None):
         },
         "configuration": {
             "configure_argv": cfg,
-            "CPPFLAGS": "",
-            "CFLAGS": cflags,
-            "LDFLAGS": "",
-            "enabled_features": None,
+            "CPPFLAGS": benv.get("CPPFLAGS", ""),
+            "CFLAGS": benv.get("CFLAGS", ""),
+            "LDFLAGS": benv.get("LDFLAGS", ""),
+            "CC": benv.get("CC", ""),
+            "enabled_features": enabled_features(compiled) if project == "libxml2" else None,
             "disabled_features": ["python", "http", "ftp", "icu", "threads", "shared"],
             "runtime_compiled_with": compiled,
+            "build_env_capture_note": benv.get("note"),
         },
         "generated_config_header_hash": sha_file(cfg_header) if cfg_header else None,
         "built_binary_hashes": {os.path.basename(b): sha_file(b) for b in bins},
@@ -195,7 +288,7 @@ def emit(project, version, libxml2_prefix=None):
             for f in sorted(glob.glob(os.path.join(prefix, "lib", "*.a")))
         },
         "installed_header_tree_hash": tree_hash(os.path.join(prefix, "include")),
-        "doxygen_profile": None,  # filled by 11.1-B
+        "doxygen_profile": doxygen_profile(project, version),
     }
     out_path = os.path.join(prefix, "oracle-manifest.json")
     with open(out_path, "w", encoding="utf-8") as f:

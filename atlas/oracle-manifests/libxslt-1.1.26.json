@@ -1,7 +1,9 @@
 {
-  "schema": "oracle-manifest-1",
+  "schema": "oracle-manifest-2",
   "project": "libxslt",
   "version": "1.1.26",
+  "build_status": "BUILT",
+  "build_failure_reason": null,
   "resolved_git_tag": "v1.1.26",
   "upstream_commit_sha": "2818aec36119907206bab050811e4ec8347ffa40",
   "source_tree_hash": "31669b69b0fffe7aeb36175a80d322d2fbdb01fb237eb428da72509cce0b62a3",
@@ -37,6 +39,7 @@
     "CPPFLAGS": "",
     "CFLAGS": "-O2 -w",
     "LDFLAGS": "",
+    "CC": "",
     "enabled_features": null,
     "disabled_features": [
       "python",
@@ -46,7 +49,8 @@
       "threads",
       "shared"
     ],
-    "runtime_compiled_with": null
+    "runtime_compiled_with": null,
+    "build_env_capture_note": "pre-capture build; documented values from build.sh (CFLAGS='-O2 -w', CPPFLAGS/LDFLAGS unset)"
   },
   "generated_config_header_hash": "d0d8e2f46676b280cbb9ac8ae143f92eade78db6ec7f1d29a437146f98768ca2",
   "built_binary_hashes": {
@@ -58,5 +62,15 @@
     "libxslt.a": "f6e7203b9fb2b0063a18d54f01692d188930496c0d59950b86083e691e64f107"
   },
   "installed_header_tree_hash": "a8cf327be8b8b8c4481a5a8f2aec55fdeec9b5d5972a8f27afa66a9febfc4c74",
-  "doxygen_profile": null
+  "doxygen_profile": {
+    "profile": "public",
+    "doxygen_version": "1.18.0",
+    "config_hash": "f7f3fcd5708ef250a28fcfd2ce2d2c2816c17be0950f6fdf6ec3030ac20acadd",
+    "extraction_source_tree_hash": "20bc6a10cf6f2615fa1e9fc6d94de435e0b597cc0c11ac0ae85a4e49b210457f",
+    "include_path": "oracle/historical/prefix/libxslt-1.1.26/include",
+    "raw_xml_hash": "af04e8319171288a9ef4340beb3594a8245fe4b4b2c1d111ec9d68d7b09359a2",
+    "inventory_hash": "28d41c062b69ddc9f55bfb6f729dcbca306f3f9843291972502d85aaa4b3b9dd",
+    "inventory_path": "oracle/historical/doxygen/libxslt-1.1.26/inventory-public.json",
+    "entities": 631
+  }
 }

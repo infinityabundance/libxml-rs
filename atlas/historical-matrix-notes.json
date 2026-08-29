@@ -1,0 +1,25 @@
+{
+  "schema": "historical-matrix-notes-1",
+  "purpose": "Human narrative layer for the generated historical-matrix receipt. Every key in epoch_notes must reference a real matrix case name (validated by tools/evidence/matrix_receipt.py), so stale narrative fails the court. Machine-derivable facts (hashes, epoch groups, oracle identity) are computed by the generator and must NOT be duplicated here.",
+  "epoch_notes": {
+    "xpath-nodeset/xpath-count/xpath-string": "concatenated nodes with no separators in 2.7.8-2.9.4; one node per line from 2.9.10 (upstream commit da35eeae, v2.9.10) through 2.15.3",
+    "xpath-attr": "exit 10 in 2.7.8-2.10.4; exit 0 in 2.11.0-2.11.5 (e85f9b98); exit 11 in 2.12.6-2.15.3 (387a952b)",
+    "parse-error": "2 diagnostics + exit 1 in 2.7.8-2.11.5 (2.9.10 carries the EndTag regression, fixed de5b624f in v2.9.11); 1 diagnostic + exit 1 in 2.12.6; 1 diagnostic + exit 4 in 2.13.0-2.15.3",
+    "recover-bad": "2 diagnostics in 2.7.8-2.11.5 (2.9.10 carries the EndTag regression); 1 diagnostic in 2.12.6-2.15.3",
+    "undeclared": "exit 1 in 2.7.8-2.12.6; exit 4 in 2.13.0-2.15.3",
+    "attr-markup-entity": "reported once + exit 1 in 2.7.8-2.12.6; reported twice + exit 4 in 2.13.0-2.15.3",
+    "noent-debug": "ENTITYDECL content TEXT in 2.7.8-2.12.6; ENTITYDECL content TEXT compact from 2.13.0 (8d04f0ee)",
+    "valid-invalid": "exit 4 in 2.7.8-2.12.6; exit 3 in 2.13.0-2.15.3",
+    "valid-nodtd": "exit 4 in 2.7.8-2.12.6; exit 3 in 2.13.0-2.14.1; exit 0 in 2.15.0-2.15.3",
+    "html-dump": "formatted with newlines in 2.7.8-2.14.1; single line from 2.15.0 (newline writes removed from HTMLtree.c)",
+    "basic/num/empty": "byte-identical across 1.1.26-1.1.45 — stable epoch for xsltproc"
+  },
+  "candidate_outputs": {
+    "note": "Candidate (libxml-rs) runs are out of scope for the matrix receipt; candidate residuals are tracked in atlas/RESIDUAL_LEDGER.md (R-000119..R-000121 triangulated by epochs E-004/E-005)."
+  },
+  "residuals": [
+    "R-000119 (entity content children in --debug): crate's TEXT compact matches the 2.13.0+ epoch, i.e. the current system oracle",
+    "R-000120 (entity-containing attribute values marked compact): crate behavior sits in the pre-2.13 epoch; upstream never changed this observable across the matrix span",
+    "R-000121 (LT_IN_ATTRIBUTE reported once): crate reports once (pre-2.13 count) with exit 4 (2.13+ exit) — hybrid of two epochs; caret column differs from all upstream versions"
+  ]
+}
