@@ -31,4 +31,6 @@ pub mod exports_xslt;
 pub mod ownership;
 pub mod structs;
 pub mod types;
+pub mod ucs_blocks;
+pub mod ucs_cat;
 pub mod versioning;
