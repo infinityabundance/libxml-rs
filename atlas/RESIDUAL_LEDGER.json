@@ -1123,7 +1123,7 @@
    "id": "R-000135",
    "status": "OPEN",
    "phase": "11.1-I",
-   "title": "Exported C data globals (40 libxml2 + 6 libxslt symbols) not yet exported",
+   "title": "Exported C data globals: 11 libxml2 symbols remain (SAX handler structs, char tables, xmlLastError)",
    "surface": "ABI data symbols",
    "component": [
     "src/xml/globals/mod.rs",
@@ -1131,7 +1131,7 @@
     "src/abi/exports_xslt.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported.",
+   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab — upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions — documented safe divergence (stable Rust cannot define variadic extern fns).",
    "fix": "Export the globals as #[no_mangle] static mut with upstream types, converting the globals module's atomics to direct static access (single source of truth so C writes affect the parser). Char-class tables and constant strings as exported statics; xmlXPathNAN/PINF/NINF and xmlParserVersion as consts. To be closed in the 11.1-G/I data-ABI closure.",
    "evidence": [
     "atlas/PARITY_OBLIGATIONS.json (DATA_MISSING=40/6)"

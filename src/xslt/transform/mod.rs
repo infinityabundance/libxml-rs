@@ -53,8 +53,9 @@ pub const XSLT_STATE_ERROR: c_int = 1;
 pub const XSLT_STATE_STOPPED: c_int = 2;
 
 /// Maximum template recursion depth (upstream `xsltMaxDepth`, transform.c).
+/// Default 30000 (upstream xslt.c).
 #[no_mangle]
-pub static mut xsltMaxDepth: c_int = 3000;
+pub static mut xsltMaxDepth: c_int = 30000;
 
 /// Maximum number of variables/params (upstream `xsltMaxVars`, transform.c).
 #[no_mangle]

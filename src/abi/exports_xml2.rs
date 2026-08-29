@@ -804,6 +804,32 @@ pub unsafe extern "C" fn xmlFreeDoc(doc: *mut _xmlDoc) {
     crate::xml::tree::free_doc(doc);
 }
 
+/// Get the compression mode of a document (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlGetDocCompressMode(const xmlDoc *doc);
+/// ```
+///
+/// Returns the compression level (0-9) or -1 if `doc` is NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDocCompressMode(doc: *mut _xmlDoc) -> c_int {
+    crate::xml::tree::xmlGetDocCompressMode(doc)
+}
+
+/// Set the compression mode of a document (upstream tree.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlSetDocCompressMode(xmlDocPtr doc, int mode);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlSetDocCompressMode(doc: *mut _xmlDoc, mode: c_int) {
+    crate::xml::tree::xmlSetDocCompressMode(doc, mode);
+}
+
 /// Create a new node.
 ///
 /// # UPSTREAM-PARITY
@@ -3742,6 +3768,117 @@ pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
         crate::abi::allocator::xmlFree(handler);
     }
     0
+}
+
+/// Return the name of a character encoding (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// const char *xmlGetCharEncodingName(xmlCharEncoding enc);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlGetCharEncodingName(enc: c_int) -> *const c_char {
+    let e: crate::abi::types::xmlCharEncoding = unsafe { core::mem::transmute(enc) };
+    crate::xml::encoding::xmlGetCharEncodingName(e)
+}
+
+/// Parse an encoding name into an xmlCharEncoding value (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlCharEncoding xmlParseCharEncoding(const char *name);
+/// ```
+///
+/// Returns the encoding value or XML_CHAR_ENCODING_ERROR (-1).
+#[no_mangle]
+pub extern "C" fn xmlParseCharEncoding(name: *const c_char) -> c_int {
+    crate::xml::encoding::xmlParseCharEncoding(name)
+}
+
+/// Convert the input buffer using an encoding handler (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlCharEncInFunc(xmlCharEncodingHandler *handler,
+///                      xmlBufferPtr out, xmlBufferPtr in);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCharEncInFunc(
+    handler: *mut c_void,
+    out: *mut c_void,
+    in_: *mut c_void,
+) -> c_int {
+    crate::xml::encoding::xmlCharEncInFunc(
+        handler as *mut crate::abi::structs::_xmlCharEncodingHandler,
+        out as *mut crate::abi::structs::_xmlBuffer,
+        in_ as *mut crate::abi::structs::_xmlBuffer,
+    )
+}
+
+/// Convert the output buffer using an encoding handler (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlCharEncOutFunc(xmlCharEncodingHandler *handler,
+///                       xmlBufferPtr out, xmlBufferPtr in);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCharEncOutFunc(
+    handler: *mut c_void,
+    out: *mut c_void,
+    in_: *mut c_void,
+) -> c_int {
+    crate::xml::encoding::xmlCharEncOutFunc(
+        handler as *mut crate::abi::structs::_xmlCharEncodingHandler,
+        out as *mut crate::abi::structs::_xmlBuffer,
+        in_ as *mut crate::abi::structs::_xmlBuffer,
+    )
+}
+
+/// Create a new encoding handler (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlCharEncodingHandlerPtr xmlNewCharEncodingHandler(
+///     const char *name, xmlCharEncodingInputFunc input,
+///     xmlCharEncodingOutputFunc output);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlNewCharEncodingHandler(
+    name: *const c_char,
+    input: crate::abi::callbacks::xmlCharEncodingInputFunc,
+    output: crate::abi::callbacks::xmlCharEncodingOutputFunc,
+) -> *mut c_void {
+    crate::xml::encoding::xmlNewCharEncodingHandler(name, input, output) as *mut c_void
+}
+
+/// Initialize the built-in encoding handlers (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlInitCharEncodingHandlers(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlInitCharEncodingHandlers() {
+    crate::xml::encoding::xmlInitCharEncodingHandlers();
+}
+
+/// Clean up the encoding handlers (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlCleanupCharEncodingHandlers(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCleanupCharEncodingHandlers() {
+    crate::xml::encoding::xmlCleanupCharEncodingHandlers();
 }
 
 /// Convert an input buffer's encoding.

@@ -25,6 +25,7 @@
 pub mod allocator;
 pub mod callbacks;
 pub mod constants;
+pub mod data_globals;
 pub mod exports_xml2;
 pub mod exports_xslt;
 pub mod ownership;

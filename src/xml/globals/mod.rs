@@ -65,55 +65,20 @@ static THREADS_INITIALIZED: AtomicBool = AtomicBool::new(false);
 // extern int xmlKeepBlanksDefaultValue;
 // extern int xmlLoadExtDtdDefaultValue;
 // extern int xmlPedanticParserDefaultValue;
-// extern int xmlSubstituteEntitiesDefaultValue;
-// extern int xmlSaveNoEmptyTags;
-// extern int xmlGetWarningsDefaultValue;
-// ```
-
-/// Default: perform validity checking.
-/// Controlled by --valid / --novalid flags in xmllint.
-static VALIDITY_CHECKING_DEFAULT: AtomicI32 = AtomicI32::new(0);
-
-/// Default: emit warnings.
-static DO_WARNINGS_DEFAULT: AtomicI32 = AtomicI32::new(1);
-
-/// Default: indent tree output.
-static INDENT_TREE_OUTPUT: AtomicI32 = AtomicI32::new(0);
-
-/// Default: keep blank nodes.
-static KEEP_BLANKS_DEFAULT: AtomicI32 = AtomicI32::new(1);
-
-/// Default: load external DTD subsets.
-/// Bitmask of XML_DETECT_IDS, XML_COMPLETE_ATTRS, XML_SKIP_IDS.
-static LOAD_EXT_DTD_DEFAULT: AtomicI32 = AtomicI32::new(0);
-
-/// Default: pedantic parser mode.
-static PEDANTIC_PARSER_DEFAULT: AtomicI32 = AtomicI32::new(0);
-
-/// Default: substitute entities.
-static SUBSTITUTE_ENTITIES_DEFAULT: AtomicI32 = AtomicI32::new(0);
-
-/// Default: save empty tags.
-static SAVE_NO_EMPTY_TAGS: AtomicI32 = AtomicI32::new(0);
-
-/// Default: get warnings.
-static GET_WARNINGS_DEFAULT: AtomicI32 = AtomicI32::new(1);
+// ═══════════════════════════════════════════════════════════════════════════════
+// Parser Defaults
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The defaults live in the EXPORTED C globals (src/abi/data_globals.rs) so
+// that downstream C code reading/writing them directly (the upstream
+// contract) observes and controls the same state the parser uses. The
+// accessors below are the safe-Rust view of those statics.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Error Callback Globals
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Generic error handler context pointer.
-static GENERIC_ERROR_CTX: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-
-/// Generic error handler function pointer.
-static GENERIC_ERROR_FUNC: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-
-/// Structured error handler context pointer.
-static STRUCTURED_ERROR_CTX: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-
-/// Structured error handler function pointer.
-static STRUCTURED_ERROR_FUNC: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+// Also exported as C globals (xmlGenericError/xmlGenericErrorContext,
+// xmlStructuredError/xmlStructuredErrorContext).
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Catalog Defaults
@@ -121,6 +86,8 @@ static STRUCTURED_ERROR_FUNC: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut()
 
 /// Catalog default allow value.
 /// 0 = strict, 1 = allow, 2 = allow document, -1 = none.
+/// Internal only (upstream keeps catalog state inside xmlCatalogSetDefaults;
+/// there is no public C global for it).
 static CATALOG_DEFAULTS: AtomicI32 = AtomicI32::new(0);
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -138,92 +105,128 @@ thread_local! {
 
 /// Get the default validity checking value.
 pub fn get_validity_checking_default() -> c_int {
-    VALIDITY_CHECKING_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global; matches upstream semantics.
+    unsafe { crate::abi::data_globals::xmlDoValidityCheckingDefaultValue }
 }
 
 /// Set the default validity checking value.
 pub fn set_validity_checking_default(val: c_int) {
-    VALIDITY_CHECKING_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global; matches upstream semantics.
+    unsafe {
+        crate::abi::data_globals::xmlDoValidityCheckingDefaultValue = val;
+    }
 }
 
 /// Get the default warnings value.
 pub fn get_do_warnings_default() -> c_int {
-    DO_WARNINGS_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlGetWarningsDefaultValue).
+    unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue }
 }
 
 /// Set the default warnings value.
 pub fn set_do_warnings_default(val: c_int) {
-    DO_WARNINGS_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlGetWarningsDefaultValue = val;
+    }
 }
 
 /// Get the indent tree output default.
 pub fn get_indent_tree_output() -> c_int {
-    INDENT_TREE_OUTPUT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlIndentTreeOutput).
+    unsafe { crate::abi::data_globals::xmlIndentTreeOutput }
 }
 
 /// Set the indent tree output default.
 pub fn set_indent_tree_output(val: c_int) {
-    INDENT_TREE_OUTPUT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlIndentTreeOutput = val;
+    }
 }
 
 /// Get the keep blanks default value.
 pub fn get_keep_blanks_default() -> c_int {
-    KEEP_BLANKS_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlKeepBlanksDefaultValue).
+    unsafe { crate::abi::data_globals::xmlKeepBlanksDefaultValue }
 }
 
 /// Set the keep blanks default value.
 pub fn set_keep_blanks_default(val: c_int) {
-    KEEP_BLANKS_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlKeepBlanksDefaultValue = val;
+    }
 }
 
 /// Get the load external DTD default value.
 pub fn get_load_ext_dtd_default() -> c_int {
-    LOAD_EXT_DTD_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlLoadExtDtdDefaultValue).
+    unsafe { crate::abi::data_globals::xmlLoadExtDtdDefaultValue }
 }
 
 /// Set the load external DTD default value.
 pub fn set_load_ext_dtd_default(val: c_int) {
-    LOAD_EXT_DTD_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlLoadExtDtdDefaultValue = val;
+    }
 }
 
 /// Get the pedantic parser default.
 pub fn get_pedantic_parser_default() -> c_int {
-    PEDANTIC_PARSER_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlPedanticParserDefaultValue).
+    unsafe { crate::abi::data_globals::xmlPedanticParserDefaultValue }
 }
 
 /// Set the pedantic parser default.
 pub fn set_pedantic_parser_default(val: c_int) {
-    PEDANTIC_PARSER_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlPedanticParserDefaultValue = val;
+    }
 }
 
 /// Get the substitute entities default.
 pub fn get_substitute_entities_default() -> c_int {
-    SUBSTITUTE_ENTITIES_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlSubstituteEntitiesDefaultValue).
+    unsafe { crate::abi::data_globals::xmlSubstituteEntitiesDefaultValue }
 }
 
 /// Set the substitute entities default.
 pub fn set_substitute_entities_default(val: c_int) {
-    SUBSTITUTE_ENTITIES_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlSubstituteEntitiesDefaultValue = val;
+    }
 }
 
 /// Get the save no empty tags default.
 pub fn get_save_no_empty_tags() -> c_int {
-    SAVE_NO_EMPTY_TAGS.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlSaveNoEmptyTags).
+    unsafe { crate::abi::data_globals::xmlSaveNoEmptyTags }
 }
 
 /// Set the save no empty tags default.
 pub fn set_save_no_empty_tags(val: c_int) {
-    SAVE_NO_EMPTY_TAGS.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlSaveNoEmptyTags = val;
+    }
 }
 
 /// Get the get warnings default.
 pub fn get_get_warnings_default() -> c_int {
-    GET_WARNINGS_DEFAULT.load(Ordering::Relaxed)
+    // SAFETY: reading an exported int global (upstream xmlGetWarningsDefaultValue).
+    unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue }
 }
 
 /// Set the get warnings default.
 pub fn set_get_warnings_default(val: c_int) {
-    GET_WARNINGS_DEFAULT.store(val, Ordering::Relaxed);
+    // SAFETY: writing an exported int global.
+    unsafe {
+        crate::abi::data_globals::xmlGetWarningsDefaultValue = val;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -237,27 +240,24 @@ pub fn set_get_warnings_default(val: c_int) {
 /// - `handler` must be a valid function pointer or NULL (to reset to default).
 /// - If non-NULL, the handler may be called at any time with `ctx`.
 pub unsafe fn set_generic_error_func(ctx: *mut c_void, handler: Option<xmlGenericErrorFunc>) {
-    GENERIC_ERROR_CTX.store(ctx, Ordering::Release);
-    GENERIC_ERROR_FUNC.store(
-        handler.map_or(ptr::null_mut(), |f| f as *mut c_void),
-        Ordering::Release,
-    );
+    // SAFETY: writing the exported C globals xmlGenericErrorContext /
+    // xmlGenericError; matches upstream xmlSetGenericErrorFunc.
+    unsafe {
+        crate::abi::data_globals::xmlGenericErrorContext = ctx;
+        crate::abi::data_globals::xmlGenericError = handler;
+    }
 }
 
 /// Get the generic error handler context.
 pub fn get_generic_error_ctx() -> *mut c_void {
-    GENERIC_ERROR_CTX.load(Ordering::Acquire)
+    // SAFETY: reading the exported C global xmlGenericErrorContext.
+    unsafe { crate::abi::data_globals::xmlGenericErrorContext }
 }
 
 /// Get the generic error handler function pointer.
 pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
-    let ptr = GENERIC_ERROR_FUNC.load(Ordering::Acquire);
-    if ptr.is_null() {
-        None
-    } else {
-        // SAFETY: The pointer was set by set_generic_error_func and must be valid.
-        Some(unsafe { core::mem::transmute::<*mut c_void, xmlGenericErrorFunc>(ptr) })
-    }
+    // SAFETY: reading the exported C global xmlGenericError.
+    unsafe { crate::abi::data_globals::xmlGenericError }
 }
 
 /// Set the structured error handler.
@@ -266,27 +266,24 @@ pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
 ///
 /// - `handler` must be a valid function pointer or NULL.
 pub unsafe fn set_structured_error_func(ctx: *mut c_void, handler: Option<xmlStructuredErrorFunc>) {
-    STRUCTURED_ERROR_CTX.store(ctx, Ordering::Release);
-    STRUCTURED_ERROR_FUNC.store(
-        handler.map_or(ptr::null_mut(), |f| f as *mut c_void),
-        Ordering::Release,
-    );
+    // SAFETY: writing the exported C globals xmlStructuredErrorContext /
+    // xmlStructuredError; matches upstream xmlSetStructuredErrorFunc.
+    unsafe {
+        crate::abi::data_globals::xmlStructuredErrorContext = ctx;
+        crate::abi::data_globals::xmlStructuredError = handler;
+    }
 }
 
 /// Get the structured error handler context.
 pub fn get_structured_error_ctx() -> *mut c_void {
-    STRUCTURED_ERROR_CTX.load(Ordering::Acquire)
+    // SAFETY: reading the exported C global xmlStructuredErrorContext.
+    unsafe { crate::abi::data_globals::xmlStructuredErrorContext }
 }
 
 /// Get the structured error handler function pointer.
 pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
-    let ptr = STRUCTURED_ERROR_FUNC.load(Ordering::Acquire);
-    if ptr.is_null() {
-        None
-    } else {
-        // SAFETY: The pointer was set by set_structured_error_func and must be valid.
-        Some(unsafe { core::mem::transmute::<*mut c_void, xmlStructuredErrorFunc>(ptr) })
-    }
+    // SAFETY: reading the exported C global xmlStructuredError.
+    unsafe { crate::abi::data_globals::xmlStructuredError }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
