@@ -15,14 +15,13 @@
 //!
 //! # Compatibility profile
 //!
-//! Currently targeting libxml2 2.12.0 / libxslt 1.1.39 compatibility.
-//! These versions are selected as the first modern stable release after
-//! the major 2.11 → 2.12 API transition.
+//! Currently targeting libxml2 2.15.3 / libxslt 1.1.47 compatibility
+//! (the oracle toolchain on the reference system).
 //!
 //! # UPSTREAM-PARITY
 //!
 //! Upstream version format: major * 10000 + minor * 100 + micro
-//! Example: 2.12.0 → 21200
+//! Example: 2.15.3 → 21503
 
 #![allow(non_upper_case_globals)]
 
@@ -40,19 +39,19 @@ use crate::abi::types::*;
 
 /// The target libxml2 version we aim to be compatible with.
 const TARGET_LIBXML2_MAJOR: c_int = 2;
-const TARGET_LIBXML2_MINOR: c_int = 12;
-const TARGET_LIBXML2_MICRO: c_int = 0;
+const TARGET_LIBXML2_MINOR: c_int = 15;
+const TARGET_LIBXML2_MICRO: c_int = 3;
 
 /// The target libxslt version we aim to be compatible with.
 const TARGET_LIBXSLT_MAJOR: c_int = 1;
 const TARGET_LIBXSLT_MINOR: c_int = 1;
-const TARGET_LIBXSLT_MICRO: c_int = 39;
+const TARGET_LIBXSLT_MICRO: c_int = 47;
 
 /// The version string for libxml2 compatibility.
-const LIBXML2_VERSION_STRING: &[u8; 7] = b"2.12.0\0";
+const LIBXML2_VERSION_STRING: &[u8; 7] = b"2.15.3\0";
 
 /// The version string for libxslt compatibility.
-const LIBXSLT_VERSION_STRING: &[u8; 7] = b"1.1.39\0";
+const LIBXSLT_VERSION_STRING: &[u8; 7] = b"1.1.47\0";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Version Macros (also defined in types.rs for compile-time use)
@@ -64,7 +63,7 @@ pub const fn version_number(major: c_int, minor: c_int, micro: c_int) -> c_int {
     major * 10000 + minor * 100 + micro
 }
 
-/// libxml2 version as a number: 2 * 10000 + 12 * 100 + 0 = 21200
+/// libxml2 version as a number: 2 * 10000 + 15 * 100 + 3 = 21503
 pub const LIBXML2_VERSION_NUM: c_int = version_number(
     TARGET_LIBXML2_MAJOR,
     TARGET_LIBXML2_MINOR,
@@ -109,7 +108,7 @@ pub fn is_initialized() -> bool {
 /// int xmlLibxmlVersion(void);
 /// ```
 ///
-/// Oracle behavior (2.12.0): returns 21200.
+/// Oracle behavior (2.15.3): returns 21503.
 pub fn xmlLibxmlVersion() -> c_int {
     LIBXML2_VERSION_NUM
 }
@@ -122,7 +121,7 @@ pub fn xmlLibxmlVersion() -> c_int {
 /// const char *xmlLibxmlVersionString(void);
 /// ```
 ///
-/// Oracle behavior (2.12.0): returns pointer to "2.12.0".
+/// Oracle behavior (2.15.3): returns pointer to "2.15.3".
 pub fn xmlLibxmlVersionString() -> *const c_char {
     LIBXML2_VERSION_STRING.as_ptr() as *const c_char
 }

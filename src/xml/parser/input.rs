@@ -876,21 +876,37 @@ impl InputStack {
     }
 
     /// Check if all inputs on the stack are at EOF.
-    pub fn is_eof(&self) -> bool {
+    ///
+    /// Exhausted pushed inputs are popped automatically.
+    pub fn is_eof(&mut self) -> bool {
+        self.pop_exhausted();
         self.inputs[self.current].is_eof()
     }
 
     /// Read the next character from the current input.
     ///
-    /// If the current input is at EOF and there are pushed inputs above it,
-    /// this does NOT automatically pop — the caller must manage stack depth.
+    /// Exhausted pushed inputs are popped automatically so the stack
+    /// behaves as a single logical input (used for entity expansion).
     pub fn read_char(&mut self) -> Option<char> {
+        self.pop_exhausted();
         self.inputs[self.current].read_char()
     }
 
     /// Peek at the next character from the current input without advancing.
-    pub fn peek_char(&self) -> Option<char> {
+    ///
+    /// Exhausted pushed inputs are popped automatically.
+    pub fn peek_char(&mut self) -> Option<char> {
+        self.pop_exhausted();
         self.inputs[self.current].peek_char()
+    }
+
+    /// Pop any exhausted pushed inputs so that the current input always has
+    /// remaining data (or is the base input).
+    fn pop_exhausted(&mut self) {
+        while self.inputs.len() > 1 && self.inputs[self.current].is_eof() {
+            self.inputs.pop();
+            self.current = self.inputs.len() - 1;
+        }
     }
 }
 

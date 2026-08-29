@@ -67,7 +67,8 @@ pub unsafe extern "C" fn xmlBoolToText(boolval: c_int) -> *const c_char {
 
 /// Dump a debug representation of an xmlChar string.
 ///
-/// UPSTREAM-PARITY: `xmlDebugDumpString()`
+/// UPSTREAM-PARITY: `xmlDebugDumpString()` — line breaks, tabs and CRs are
+/// rendered as a single space.
 #[no_mangle]
 pub unsafe extern "C" fn xmlDebugDumpString(output: *mut _IO_FILE, str_val: *const u8) {
     if output.is_null() {
@@ -75,30 +76,30 @@ pub unsafe extern "C" fn xmlDebugDumpString(output: *mut _IO_FILE, str_val: *con
     }
     if str_val.is_null() {
         unsafe {
-            libc::fprintf(output, b"(null)\0".as_ptr() as *const c_char);
+            libc::fprintf(output, b"(NULL)\0".as_ptr() as *const c_char);
         }
         return;
     }
     unsafe {
+        // UPSTREAM-PARITY: xmlCtxtDumpString prints at most 40 characters;
+        // blank characters become spaces, bytes >= 0x80 are printed as
+        // `#%X`, and a longer string is truncated with "...".
         let mut i = 0;
-        loop {
+        while i < 40 {
             let c = *str_val.add(i);
             if c == 0 {
-                break;
+                return;
             }
-            if c == b'\n' {
-                libc::fprintf(output, b"\\n\0".as_ptr() as *const c_char);
-            } else if c == b'\r' {
-                libc::fprintf(output, b"\\r\0".as_ptr() as *const c_char);
-            } else if c == b'\t' {
-                libc::fprintf(output, b"\\t\0".as_ptr() as *const c_char);
-            } else if c < 0x20 || c >= 0x7f {
-                libc::fprintf(output, b"\\x%02x\0".as_ptr() as *const c_char, c as c_int);
+            if c == b' ' || c == b'\t' || c == b'\n' || c == b'\r' {
+                libc::fprintf(output, b" \0".as_ptr() as *const c_char);
+            } else if c >= 0x80 {
+                libc::fprintf(output, b"#%X\0".as_ptr() as *const c_char, c as c_int);
             } else {
                 libc::fprintf(output, b"%c\0".as_ptr() as *const c_char, c as c_int);
             }
             i += 1;
         }
+        libc::fprintf(output, b"...\0".as_ptr() as *const c_char);
     }
 }
 
@@ -120,25 +121,9 @@ pub unsafe extern "C" fn xmlDebugDumpAttr(
         }
         libc::fprintf(output, b"ATTRIBUTE \0".as_ptr() as *const c_char);
         xmlDebugDumpString(output, (*attr).name as *const u8);
-        if !(*attr).ns.is_null() && !(*(*attr).ns).prefix.is_null() {
-            libc::fprintf(
-                output,
-                b":%s\0".as_ptr() as *const c_char,
-                (*(*attr).ns).prefix,
-            );
-        }
         libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
-        if !(*attr).children.is_null() {
-            for _ in 0..(depth + 1) {
-                libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
-            }
-            libc::fprintf(output, b"VALUE: \0".as_ptr() as *const c_char);
-            let text = (*attr).children;
-            if !text.is_null() && !(*text).content.is_null() {
-                xmlDebugDumpString(output, (*text).content as *const u8);
-            }
-            libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
-        }
+        // The attribute value is dumped as a compact text node child.
+        xmlDebugDumpNode(output, (*attr).children, depth + 1);
     }
 }
 
@@ -186,56 +171,152 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
             1 => {
                 // XML_ELEMENT_NODE
                 libc::fprintf(output, b"ELEMENT \0".as_ptr() as *const c_char);
+                // QName: prefix:name when a namespace prefix is present.
+                if !(*node).ns.is_null() && !(*(*node).ns).prefix.is_null() {
+                    libc::fprintf(
+                        output,
+                        b"%s:\0".as_ptr() as *const c_char,
+                        (*(*node).ns).prefix,
+                    );
+                }
                 xmlDebugDumpString(output, (*node).name as *const u8);
-                if !(*node).ns.is_null() {
-                    if !(*(*node).ns).prefix.is_null() {
-                        libc::fprintf(
-                            output,
-                            b" (ns=%s)\0".as_ptr() as *const c_char,
-                            (*(*node).ns).prefix,
-                        );
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+
+                // Namespace declarations on the element (upstream prints them
+                // before attributes).
+                if !(*node).nsDef.is_null() {
+                    let mut ns = (*node).nsDef;
+                    while !ns.is_null() {
+                        for _ in 0..(depth + 1) {
+                            libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                        }
+                        libc::fprintf(output, b"namespace \0".as_ptr() as *const c_char);
+                        if (*ns).prefix.is_null() {
+                            libc::fprintf(output, b" \0".as_ptr() as *const c_char);
+                        } else {
+                            libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, (*ns).prefix);
+                        }
+                        libc::fprintf(output, b" href=\0".as_ptr() as *const c_char);
+                        libc::fprintf(output, b"%s\n\0".as_ptr() as *const c_char, (*ns).href);
+                        ns = (*ns).next;
                     }
+                }
+
+                // Attributes
+                if !(*node).properties.is_null() {
+                    xmlDebugDumpAttrList(output, (*node).properties, depth + 1);
                 }
             }
             2 => {
                 // XML_ATTRIBUTE_NODE
                 libc::fprintf(output, b"ATTRIBUTE \0".as_ptr() as *const c_char);
                 xmlDebugDumpString(output, (*node).name as *const u8);
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
             }
             3 => {
                 // XML_TEXT_NODE
                 libc::fprintf(output, b"TEXT\0".as_ptr() as *const c_char);
-                if !(*node).content.is_null() {
-                    libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
-                    for _ in 0..(depth + 1) {
-                        libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
-                    }
-                    libc::fprintf(output, b"CONTENT: \0".as_ptr() as *const c_char);
-                    xmlDebugDumpString(output, (*node).content as *const u8);
+                // UPSTREAM-PARITY: debugXML.c marks compact text via
+                // `node->content == (xmlChar *) &(node->properties)`.
+                let inline_addr = std::ptr::addr_of_mut!((*node).properties) as *const c_void;
+                if (*node).content as *const c_void == inline_addr {
+                    libc::fprintf(output, b" compact\0".as_ptr() as *const c_char);
                 }
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+                for _ in 0..(depth + 1) {
+                    libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                }
+                libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                if !(*node).content.is_null() {
+                    xmlDebugDumpString(output, (*node).content as *const u8);
+                } else {
+                    let c = crate::xml::tree::node_get_content(node);
+                    if !c.is_null() {
+                        libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, c);
+                        crate::abi::allocator::xmlFree(c as *mut c_void);
+                    }
+                }
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
             }
             4 => {
                 // XML_CDATA_SECTION_NODE
-                libc::fprintf(output, b"CDATA\0".as_ptr() as *const c_char);
+                libc::fprintf(output, b"CDATA_SECTION\n\0".as_ptr() as *const c_char);
+                for _ in 0..(depth + 1) {
+                    libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                }
+                libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                xmlDebugDumpString(output, (*node).content as *const u8);
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
             }
             5 => {
                 // XML_ENTITY_REF_NODE
-                libc::fprintf(output, b"ENTITY_REF \0".as_ptr() as *const c_char);
+                libc::fprintf(output, b"ENTITY_REF(\0".as_ptr() as *const c_char);
                 xmlDebugDumpString(output, (*node).name as *const u8);
+                libc::fprintf(output, b")\n\0".as_ptr() as *const c_char);
+                // The referenced entity's declaration.
+                let doc = (*node).doc;
+                let ent = if doc.is_null() {
+                    ptr::null_mut()
+                } else {
+                    crate::xml::entities::get_entity(doc, (*node).name)
+                };
+                if !ent.is_null() {
+                    for _ in 0..(depth + 1) {
+                        libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                    }
+                    let etype = (*ent).etype;
+                    let etype_name = entity_type_name(etype);
+                    libc::fprintf(
+                        output,
+                        b"%s \0".as_ptr() as *const c_char,
+                        etype_name.as_ptr() as *const c_char,
+                    );
+                    libc::fprintf(output, b"%s\n\0".as_ptr() as *const c_char, (*ent).name);
+                    for _ in 0..(depth + 1) {
+                        libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                    }
+                    libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                    if !(*ent).content.is_null() {
+                        xmlDebugDumpString(output, (*ent).content as *const u8);
+                    }
+                    libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+                }
             }
             6 => {
                 // XML_ENTITY_NODE
-                libc::fprintf(output, b"ENTITY \0".as_ptr() as *const c_char);
+                libc::fprintf(output, b"ENTITYDECL(\0".as_ptr() as *const c_char);
                 xmlDebugDumpString(output, (*node).name as *const u8);
+                libc::fprintf(output, b")\0".as_ptr() as *const c_char);
+                if !(*node).content.is_null() {
+                    libc::fprintf(output, b", internal\n \0".as_ptr() as *const c_char);
+                    libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                    xmlDebugDumpString(output, (*node).content as *const u8);
+                }
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
             }
             7 => {
                 // XML_PI_NODE
                 libc::fprintf(output, b"PI \0".as_ptr() as *const c_char);
                 xmlDebugDumpString(output, (*node).name as *const u8);
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+                if !(*node).content.is_null() {
+                    for _ in 0..(depth + 1) {
+                        libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                    }
+                    libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                    xmlDebugDumpString(output, (*node).content as *const u8);
+                    libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+                }
             }
             8 => {
                 // XML_COMMENT_NODE
-                libc::fprintf(output, b"COMMENT\0".as_ptr() as *const c_char);
+                libc::fprintf(output, b"COMMENT\n\0".as_ptr() as *const c_char);
+                for _ in 0..(depth + 1) {
+                    libc::fprintf(output, b"  \0".as_ptr() as *const c_char);
+                }
+                libc::fprintf(output, b"content=\0".as_ptr() as *const c_char);
+                xmlDebugDumpString(output, (*node).content as *const u8);
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
             }
             9 => {
                 // XML_DOCUMENT_NODE
@@ -245,11 +326,54 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
                 // XML_DOCUMENT_TYPE_NODE
                 libc::fprintf(output, b"DOCTYPE\0".as_ptr() as *const c_char);
             }
-            11 => {
-                // XML_DOCUMENT_FRAG_NODE
-                libc::fprintf(output, b"DOCUMENT_FRAG\0".as_ptr() as *const c_char);
+            14 => {
+                // XML_DTD_NODE. UPSTREAM-PARITY: xmlCtxtDumpDtdNode prints
+                // `DTD(name)`, `, PUBLIC extID` and `, SYSTEM sysID` all on
+                // one line.
+                libc::fprintf(output, b"DTD(\0".as_ptr() as *const c_char);
+                xmlDebugDumpString(output, (*node).name as *const u8);
+                libc::fprintf(output, b")\0".as_ptr() as *const c_char);
+                let dtd = node as *mut crate::abi::structs::_xmlDtd;
+                if !(*dtd).ExternalID.is_null() {
+                    libc::fprintf(output, b", PUBLIC \0".as_ptr() as *const c_char);
+                    libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, (*dtd).ExternalID);
+                }
+                if !(*dtd).SystemID.is_null() {
+                    libc::fprintf(output, b", SYSTEM \0".as_ptr() as *const c_char);
+                    libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, (*dtd).SystemID);
+                }
+                libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+                // Element declarations (hash table).
+                let dtd = node as *mut crate::abi::structs::_xmlDtd;
+                if !(*dtd).elements.is_null() {
+                    let ctx = DtdDumpCtx {
+                        output,
+                        depth: depth + 1,
+                    };
+                    crate::xml::hash::hash_scan(
+                        (*dtd).elements as *mut crate::xml::hash::HashTable,
+                        Some(dump_elemscan_cb),
+                        &ctx as *const DtdDumpCtx as *mut c_void,
+                    );
+                }
+                // Entity declarations.
+                if !(*dtd).entities.is_null() {
+                    let ctx = DtdDumpCtx {
+                        output,
+                        depth: depth + 1,
+                    };
+                    crate::xml::hash::hash_scan(
+                        (*dtd).entities as *mut crate::xml::hash::HashTable,
+                        Some(dump_entityscan_cb),
+                        &ctx as *const DtdDumpCtx as *mut c_void,
+                    );
+                }
             }
             13 => {
+                // XML_HTML_DOCUMENT_NODE
+                libc::fprintf(output, b"HTML DOCUMENT\0".as_ptr() as *const c_char);
+            }
+            18 => {
                 // XML_NAMESPACE_DECL
                 libc::fprintf(output, b"NAMESPACE\0".as_ptr() as *const c_char);
                 if !(*node).ns.is_null() && !(*(*node).ns).prefix.is_null() {
@@ -261,7 +385,7 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
                     );
                 }
             }
-            14 => {
+            19 => {
                 // XML_XINCLUDE_START
                 if is_xinclude_node(node) {
                     libc::fprintf(output, b"XINCLUDE\0".as_ptr() as *const c_char);
@@ -269,7 +393,7 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
                     libc::fprintf(output, b"XINCLUDE_START\0".as_ptr() as *const c_char);
                 }
             }
-            15 => {
+            20 => {
                 // XML_XINCLUDE_END
                 libc::fprintf(output, b"XINCLUDE_END\0".as_ptr() as *const c_char);
             }
@@ -281,11 +405,226 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
                 );
             }
         }
-        libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+    }
+}
 
-        // Print attributes
-        if !(*node).properties.is_null() {
-            xmlDebugDumpAttrList(output, (*node).properties, depth + 1);
+/// Map an entity type to its upstream debug name.
+fn entity_type_name(etype: c_int) -> Vec<u8> {
+    use crate::abi::types::xmlEntityType::*;
+    match etype {
+        t if t == XML_INTERNAL_GENERAL_ENTITY as c_int => b"INTERNAL_GENERAL_ENTITY\0".to_vec(),
+        t if t == XML_INTERNAL_PARAMETER_ENTITY as c_int => b"INTERNAL_PARAMETER_ENTITY\0".to_vec(),
+        t if t == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int => {
+            b"EXTERNAL_GENERAL_PARSED_ENTITY\0".to_vec()
+        }
+        t if t == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int => {
+            b"EXTERNAL_GENERAL_UNPARSED_ENTITY\0".to_vec()
+        }
+        t if t == XML_EXTERNAL_PARAMETER_ENTITY as c_int => b"EXTERNAL_PARAMETER_ENTITY\0".to_vec(),
+        t if t == XML_INTERNAL_PREDEFINED_ENTITY as c_int => {
+            b"INTERNAL_PREDEFINED_ENTITY\0".to_vec()
+        }
+        _ => b"UNKNOWN_ENTITY\0".to_vec(),
+    }
+}
+
+/// Context for DTD hash-scan debug callbacks.
+#[repr(C)]
+struct DtdDumpCtx {
+    output: *mut _IO_FILE,
+    depth: c_int,
+}
+
+/// Dump an element declaration (`ELEMDECL(name), TYPE (model)`).
+unsafe extern "C" fn dump_elemscan_cb(payload: *mut c_void, data: *mut c_void, _name: *const u8) {
+    if payload.is_null() || data.is_null() {
+        return;
+    }
+    let ctx = unsafe { &*(data as *const DtdDumpCtx) };
+    let elem = unsafe { &*(payload as *mut crate::abi::structs::_xmlElement) };
+    unsafe {
+        for _ in 0..ctx.depth {
+            libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
+        }
+        libc::fprintf(ctx.output, b"ELEMDECL(\0".as_ptr() as *const c_char);
+        if !elem.name.is_null() {
+            libc::fprintf(ctx.output, b"%s\0".as_ptr() as *const c_char, elem.name);
+        }
+        libc::fprintf(ctx.output, b")\0".as_ptr() as *const c_char);
+        // UPSTREAM-PARITY: 2.15 prints the MIXED label for every
+        // parenthesized content model (even element-only ones) in the debug
+        // dump.
+        match elem.type_ {
+            t if t == crate::abi::types::xmlElementTypeVal::XML_ELEMENT_TYPE_EMPTY as c_int => {
+                libc::fprintf(ctx.output, b", EMPTY\n\0".as_ptr() as *const c_char);
+            }
+            t if t == crate::abi::types::xmlElementTypeVal::XML_ELEMENT_TYPE_ANY as c_int => {
+                libc::fprintf(ctx.output, b", ANY\n\0".as_ptr() as *const c_char);
+            }
+            _ => {
+                libc::fprintf(ctx.output, b", MIXED \0".as_ptr() as *const c_char);
+                dump_debug_content_model(ctx.output, elem.content);
+                libc::fprintf(ctx.output, b"\n\0".as_ptr() as *const c_char);
+            }
+        }
+    }
+}
+
+/// Render a content model tree in the upstream debug format
+/// (`xmlDebugDumpContentModel`, flattened).
+unsafe fn dump_debug_content_model(
+    output: *mut _IO_FILE,
+    content: *mut crate::abi::structs::_xmlElementContent,
+) {
+    use crate::abi::types::xmlElementContentOccur::*;
+    use crate::abi::types::xmlElementContentType::*;
+    if content.is_null() {
+        return;
+    }
+    unsafe {
+        let c = &*content;
+        match c.type_ {
+            t if t == XML_ELEMENT_CONTENT_PCDATA as c_int => {
+                libc::fprintf(output, b"(#PCDATA)\0".as_ptr() as *const c_char);
+            }
+            t if t == XML_ELEMENT_CONTENT_ELEMENT as c_int => {
+                if !c.prefix.is_null() {
+                    libc::fprintf(output, b"%s:\0".as_ptr() as *const c_char, c.prefix);
+                }
+                libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, c.name);
+            }
+            _ => {
+                let sep = if c.type_ == XML_ELEMENT_CONTENT_SEQ as c_int {
+                    b" , \0".as_ptr() as *const c_char
+                } else {
+                    b" | \0".as_ptr() as *const c_char
+                };
+                libc::fprintf(output, b"(\0".as_ptr() as *const c_char);
+                let mut parts: Vec<*mut crate::abi::structs::_xmlElementContent> = Vec::new();
+                flatten_chain(c as *const _ as *mut _, c.type_, &mut parts);
+                for (i, &p) in parts.iter().enumerate() {
+                    if i > 0 {
+                        libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, sep);
+                    }
+                    let pc = &*p;
+                    if pc.type_ == XML_ELEMENT_CONTENT_PCDATA as c_int {
+                        libc::fprintf(output, b"#PCDATA\0".as_ptr() as *const c_char);
+                    } else if pc.type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                        if !pc.prefix.is_null() {
+                            libc::fprintf(output, b"%s:\0".as_ptr() as *const c_char, pc.prefix);
+                        }
+                        libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, pc.name);
+                    } else {
+                        dump_debug_content_model(output, p);
+                    }
+                    dump_debug_occurrence(output, pc.ocur);
+                }
+                libc::fprintf(output, b")\0".as_ptr() as *const c_char);
+            }
+        }
+        dump_debug_occurrence(output, c.ocur);
+    }
+}
+
+/// Collect the leaves of a same-type chain (left-leaning trees flatten).
+fn flatten_chain(
+    node: *mut crate::abi::structs::_xmlElementContent,
+    chain_type: c_int,
+    parts: &mut Vec<*mut crate::abi::structs::_xmlElementContent>,
+) {
+    unsafe {
+        let c = &*node;
+        if c.type_ == chain_type && !c.c1.is_null() {
+            flatten_chain(c.c1, chain_type, parts);
+            if !c.c2.is_null() {
+                flatten_chain(c.c2, chain_type, parts);
+            }
+        } else {
+            parts.push(node);
+        }
+    }
+}
+
+/// Print the occurrence suffix.
+unsafe fn dump_debug_occurrence(output: *mut _IO_FILE, ocur: c_int) {
+    use crate::abi::types::xmlElementContentOccur::*;
+    let s = match ocur {
+        t if t == XML_ELEMENT_CONTENT_OPT as c_int => b"?\0".as_ptr() as *const c_char,
+        t if t == XML_ELEMENT_CONTENT_MULT as c_int => b"*\0".as_ptr() as *const c_char,
+        t if t == XML_ELEMENT_CONTENT_PLUS as c_int => b"+\0".as_ptr() as *const c_char,
+        _ => return,
+    };
+    unsafe {
+        libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, s);
+    }
+}
+
+/// True when a null-terminated string contains markup-significant bytes
+/// (`<` or `&`), i.e. it cannot be a single plain text node.
+unsafe fn contains_markup(s: *const crate::abi::types::xmlChar) -> bool {
+    if s.is_null() {
+        return false;
+    }
+    unsafe {
+        let mut i = 0usize;
+        while *s.add(i) != 0 {
+            let c = *s.add(i);
+            if c == b'<' || c == b'&' {
+                return true;
+            }
+            i += 1;
+        }
+    }
+    false
+}
+
+/// Dump an entity declaration (`ENTITYDECL(name), internal`).
+unsafe extern "C" fn dump_entityscan_cb(payload: *mut c_void, data: *mut c_void, _name: *const u8) {
+    if payload.is_null() || data.is_null() {
+        return;
+    }
+    let ctx = unsafe { &*(data as *const DtdDumpCtx) };
+    let ent = unsafe { &*(payload as *mut crate::abi::structs::_xmlEntity) };
+    unsafe {
+        for _ in 0..ctx.depth {
+            libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
+        }
+        libc::fprintf(ctx.output, b"ENTITYDECL(\0".as_ptr() as *const c_char);
+        if !ent.name.is_null() {
+            libc::fprintf(ctx.output, b"%s\0".as_ptr() as *const c_char, ent.name);
+        }
+        if ent.etype == crate::abi::types::xmlEntityType::XML_INTERNAL_GENERAL_ENTITY as c_int {
+            libc::fprintf(ctx.output, b"), internal\n\0".as_ptr() as *const c_char);
+            // UPSTREAM-PARITY: the content line is the ENTITYDECL indent plus
+            // one extra leading space.
+            for _ in 0..ctx.depth {
+                libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
+            }
+            libc::fprintf(ctx.output, b" content=\0".as_ptr() as *const c_char);
+            if !ent.content.is_null() {
+                xmlDebugDumpString(ctx.output, ent.content as *const u8);
+            }
+            libc::fprintf(ctx.output, b"\n\0".as_ptr() as *const c_char);
+            // The entity's parsed content tree (upstream builds children on
+            // first reference and dumps them; ours stores the raw content,
+            // so a compact text node is synthesized for plain text content
+            // only. KNOWN RESIDUAL: entity content containing markup (`<`,
+            // `&`) is not parsed into a child tree, so the oracle's
+            // element/entity-ref children are not reproduced here.
+            if !ent.content.is_null() && !contains_markup(ent.content) && ent.children.is_null() {
+                for _ in 0..(ctx.depth + 1) {
+                    libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
+                }
+                libc::fprintf(ctx.output, b"TEXT compact\n\0".as_ptr() as *const c_char);
+                for _ in 0..(ctx.depth + 2) {
+                    libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
+                }
+                libc::fprintf(ctx.output, b"content=\0".as_ptr() as *const c_char);
+                xmlDebugDumpString(ctx.output, ent.content as *const u8);
+                libc::fprintf(ctx.output, b"\n\0".as_ptr() as *const c_char);
+            }
+        } else {
+            libc::fprintf(ctx.output, b")\n\0".as_ptr() as *const c_char);
         }
     }
 }
@@ -305,8 +644,15 @@ pub unsafe extern "C" fn xmlDebugDumpNode(
     unsafe {
         xmlDebugDumpOneNode(output, node, depth);
 
-        // Dump children
-        if !(*node).children.is_null() {
+        // UPSTREAM-PARITY: only element-like nodes recurse into children;
+        // text nodes (including the non-compact merged representation) do not.
+        let t = (*node).type_;
+        let recurse = t == 1 // XML_ELEMENT_NODE
+            || t == 9  // XML_DOCUMENT_NODE
+            || t == 13 // XML_HTML_DOCUMENT_NODE
+            || t == 11 // XML_DOCUMENT_FRAG_NODE
+            || t == 14; // XML_DTD_NODE
+        if recurse && !(*node).children.is_null() {
             let mut child = (*node).children;
             while !child.is_null() {
                 xmlDebugDumpNode(output, child, depth + 1);
@@ -346,14 +692,57 @@ pub unsafe extern "C" fn xmlDebugDumpDocument(output: *mut _IO_FILE, doc: *mut _
         return;
     }
     unsafe {
-        libc::fprintf(output, b"DOCUMENT\0".as_ptr() as *const c_char);
-        if !(*doc).name.is_null() {
-            libc::fprintf(output, b" %s\0".as_ptr() as *const c_char, (*doc).name);
+        // UPSTREAM-PARITY: xmlCtxtDumpDocHead prints "HTML DOCUMENT" for
+        // HTML documents and "DOCUMENT" otherwise (debugXML.c).
+        if (*doc).type_ == crate::abi::types::xmlElementType::XML_HTML_DOCUMENT_NODE as c_int {
+            libc::fprintf(output, b"HTML DOCUMENT\n\0".as_ptr() as *const c_char);
+        } else {
+            libc::fprintf(output, b"DOCUMENT\n\0".as_ptr() as *const c_char);
+        }
+        if !(*doc).version.is_null() {
+            libc::fprintf(output, b"version=\0".as_ptr() as *const c_char);
+            xmlDebugDumpString(output, (*doc).version as *const u8);
+            libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
         }
         if !(*doc).URL.is_null() {
-            libc::fprintf(output, b" URL=%s\0".as_ptr() as *const c_char, (*doc).URL);
+            libc::fprintf(output, b"URL=\0".as_ptr() as *const c_char);
+            // UPSTREAM-PARITY: xmlCtxtDumpDocHead prints the URL through
+            // xmlCtxtDumpString, so it is truncated at 40 characters.
+            xmlDebugDumpString(output, (*doc).URL as *const u8);
+            libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
         }
-        libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+        // UPSTREAM-PARITY: the standalone flag is tri-state; the debug dump
+        // prints "standalone=true" whenever it is not 0 (unset defaults to
+        // true in the parser).
+        if (*doc).standalone != 0 {
+            libc::fprintf(output, b"standalone=true\n\0".as_ptr() as *const c_char);
+        }
+
+        // Document-level namespace declarations (upstream keeps the xml
+        // namespace here; other prefixes live on the root element's nsDef).
+        if !(*doc).oldNs.is_null() {
+            let mut ns = (*doc).oldNs;
+            while !ns.is_null() {
+                libc::fprintf(output, b"namespace \0".as_ptr() as *const c_char);
+                if (*ns).prefix.is_null() {
+                    libc::fprintf(output, b" \0".as_ptr() as *const c_char);
+                } else {
+                    libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, (*ns).prefix);
+                }
+                libc::fprintf(
+                    output,
+                    b" href=%s\n\0".as_ptr() as *const c_char,
+                    (*ns).href,
+                );
+                ns = (*ns).next;
+            }
+        }
+
+        // Dump the internal subset (upstream keeps the DTD as the document's
+        // first child; ours is stored on doc->intSubset).
+        if !(*doc).intSubset.is_null() {
+            xmlDebugDumpNode(output, (*doc).intSubset as *mut _xmlNode, 1);
+        }
 
         // Dump children of doc
         if !(*doc).children.is_null() {

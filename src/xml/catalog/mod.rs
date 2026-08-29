@@ -30,7 +30,7 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
 use crate::abi::allocator::{xmlFree, xmlMalloc};
-use crate::abi::structs::_xmlDoc;
+use crate::abi::structs::{_xmlDoc, _xmlNode};
 use crate::abi::types::xmlChar;
 use crate::xml::string::{
     bytes_to_xmlstr, c_strdup, xml_str_starts_with, xml_strcat, xml_strcmp, xml_strdup, xml_strlen,
@@ -1240,6 +1240,60 @@ pub(crate) unsafe fn convert() -> *mut _xmlDoc {
         }
     }
 
+    doc
+}
+
+/// Build the catalog document for dumping/saving: XML declaration, the
+/// OASIS catalog DOCTYPE, and a `<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">`
+/// root with the current entries.
+///
+/// The DOCTYPE node is prepended as the first child of the document (the
+/// serializer emits `<!DOCTYPE catalog PUBLIC ...>` from child DTD nodes);
+/// `doc->intSubset` is left NULL so `free_doc` frees the DTD exactly once via
+/// the children list.
+///
+/// Returns a newly allocated document, or NULL on allocation failure.
+pub unsafe fn dump_doc() -> *mut _xmlDoc {
+    let mut doc = convert();
+    if doc.is_null() {
+        // Empty catalog: build the skeleton ourselves.
+        doc = crate::xml::tree::new_doc(ptr::null_mut());
+        if doc.is_null() {
+            return ptr::null_mut();
+        }
+        let root =
+            crate::xml::tree::new_node(ptr::null_mut(), b"catalog\0".as_ptr() as *const xmlChar);
+        if root.is_null() {
+            crate::xml::tree::free_doc(doc);
+            return ptr::null_mut();
+        }
+        crate::xml::tree::set_prop(
+            root,
+            b"xmlns\0".as_ptr() as *const xmlChar,
+            b"urn:oasis:names:tc:entity:xmlns:xml:catalog\0".as_ptr() as *const xmlChar,
+        );
+        crate::xml::tree::doc_set_root_element(doc, root);
+    }
+
+    let dtd = crate::xml::tree::new_dtd(
+        doc,
+        b"catalog\0".as_ptr() as *const xmlChar,
+        b"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN\0".as_ptr() as *const xmlChar,
+        b"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd\0".as_ptr()
+            as *const xmlChar,
+    );
+    if !dtd.is_null() {
+        (*doc).intSubset = ptr::null_mut();
+        let dtd_node = dtd as *mut _xmlNode;
+        let first = (*doc).children;
+        (*dtd_node).next = first;
+        (*dtd_node).parent = doc as *mut _xmlNode;
+        (*dtd_node).doc = doc;
+        if !first.is_null() {
+            (*first).prev = dtd_node;
+        }
+        (*doc).children = dtd_node;
+    }
     doc
 }
 

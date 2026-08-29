@@ -244,6 +244,17 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
         (*new_doc).charset = d.charset;
         (*new_doc).properties = d.properties;
 
+        // UPSTREAM-PARITY: xmlCopyDoc copies the document's children, which
+        // include the DTD node (upstream keeps it as the first child); ours
+        // stores the internal subset on doc->intSubset, so copy it there to
+        // reproduce --copy output.
+        if !d.intSubset.is_null() {
+            let dtd_copy = crate::xml::dtd::copy_dtd(d.intSubset);
+            if !dtd_copy.is_null() {
+                (*new_doc).intSubset = dtd_copy;
+            }
+        }
+
         if recursive != 0 && !d.children.is_null() {
             (*new_doc).children = copy_node_list(d.children, recursive);
             if !(*new_doc).children.is_null() {
@@ -382,6 +393,20 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
                 let len = crate::abi::exports_xml2::xmlStrlen((*node).content);
                 result
                     .extend_from_slice(core::slice::from_raw_parts((*node).content, len as usize));
+            } else if t == XML_TEXT_NODE as c_int && !(*node).children.is_null() {
+                // Non-compact text node (entity merge): content lives in the
+                // child text nodes.
+                let mut child = (*node).children;
+                while !child.is_null() {
+                    if !(*child).content.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen((*child).content);
+                        result.extend_from_slice(core::slice::from_raw_parts(
+                            (*child).content,
+                            len as usize,
+                        ));
+                    }
+                    child = (*child).next;
+                }
             }
         }
         t if t == XML_ATTRIBUTE_NODE as c_int => {
@@ -524,13 +549,23 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 
     let n = unsafe { &mut *node };
 
-    // Free properties
-    if !n.properties.is_null() {
+    // UPSTREAM-PARITY: xmlFreeNode routes DTD nodes to xmlFreeDtd (the DTD
+    // layout is only partially node-compatible).
+    if n.type_ == XML_DTD_NODE as c_int {
+        free_dtd(node as *mut _xmlDtd);
+        return;
+    }
+
+    // Free properties and namespace declarations. Only element nodes carry
+    // them; compact text nodes store their inline content at the address of
+    // the `properties` field (and the following `nsDef` field), so touching
+    // these for other node types would read text bytes as pointers.
+    let is_element = n.type_ == XML_ELEMENT_NODE as c_int;
+    if is_element && !n.properties.is_null() {
         free_prop_list(n.properties);
     }
 
-    // Free namespace declarations
-    if !n.nsDef.is_null() {
+    if is_element && !n.nsDef.is_null() {
         free_ns_list(n.nsDef);
     }
 
@@ -539,7 +574,9 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
         allocator::xmlFree(n.name as *mut c_void);
     }
 
-    // Free content (for text/CDATA nodes)
+    // Free content (for text/CDATA nodes). Compact text content lives inside
+    // the node struct (at the `properties` field address) and must not be
+    // freed separately.
     if !n.content.is_null() {
         let node_type = n.type_;
         if node_type == XML_TEXT_NODE as c_int
@@ -547,7 +584,10 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
             || node_type == XML_COMMENT_NODE as c_int
             || node_type == XML_PI_NODE as c_int
         {
-            allocator::xmlFree(n.content as *mut c_void);
+            let inline_addr = std::ptr::addr_of_mut!((*node).properties) as *const c_void;
+            if n.content as *const c_void != inline_addr {
+                allocator::xmlFree(n.content as *mut c_void);
+            }
         }
     }
 
@@ -661,8 +701,10 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
         // Copy namespace pointer (NOT the ns declaration — just the reference)
         (*new_node).ns = n.ns;
 
-        // Copy namespace declarations
-        if !n.nsDef.is_null() {
+        // Copy namespace declarations (element nodes only; compact text nodes
+        // store inline content over the `properties`/`nsDef` fields).
+        let is_element = n.type_ == XML_ELEMENT_NODE as c_int;
+        if is_element && !n.nsDef.is_null() {
             (*new_node).nsDef = copy_ns_list(n.nsDef);
         }
 
@@ -677,8 +719,8 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
             (*new_node).content = dup_xml_str(n.content);
         }
 
-        // Copy properties
-        if !n.properties.is_null() {
+        // Copy properties (element nodes only).
+        if is_element && !n.properties.is_null() {
             (*new_node).properties = copy_prop_list(n.properties);
             // Update doc links on properties
             let mut prop = (*new_node).properties;
@@ -845,14 +887,18 @@ unsafe fn propagate_doc(node: *mut _xmlNode, doc: *mut _xmlDoc) {
         unsafe {
             (*cur).doc = doc;
 
-            // Propagate to properties
-            let mut prop = (*cur).properties;
-            while !prop.is_null() {
-                (*prop).doc = doc;
-                if !(*prop).children.is_null() {
-                    propagate_doc((*prop).children, doc);
+            // Propagate to properties (element nodes only; other node types
+            // never carry properties, and compact text nodes store inline
+            // content at the `properties` field address).
+            if (*cur).type_ == XML_ELEMENT_NODE as c_int {
+                let mut prop = (*cur).properties;
+                while !prop.is_null() {
+                    (*prop).doc = doc;
+                    if !(*prop).children.is_null() {
+                        propagate_doc((*prop).children, doc);
+                    }
+                    prop = (*prop).next;
                 }
-                prop = (*prop).next;
             }
 
             // Recurse into children
@@ -1851,6 +1897,14 @@ pub unsafe fn new_dtd(
         (*dtd).parent = doc;
         (*dtd).doc = doc;
 
+        // Create hash tables for declarations (upstream creates these lazily;
+        // we create them eagerly so dumps and lookups can rely on them).
+        (*dtd).notations = crate::xml::hash::hash_create(8) as *mut c_void;
+        (*dtd).elements = crate::xml::hash::hash_create(16) as *mut c_void;
+        (*dtd).attributes = crate::xml::hash::hash_create(16) as *mut c_void;
+        (*dtd).entities = crate::xml::hash::hash_create(8) as *mut c_void;
+        (*dtd).pentities = crate::xml::hash::hash_create(8) as *mut c_void;
+
         // Attach to document
         if !doc.is_null() {
             if (*doc).intSubset.is_null() {
@@ -2701,37 +2755,107 @@ unsafe fn dtd_dump_output(
         io::buf_add(buf, b" SYSTEM " as *const u8, 8);
         write_quoted_string(buf, d.SystemID);
     }
-    if d.entities.is_null()
-        && d.elements.is_null()
-        && d.attributes.is_null()
-        && d.notations.is_null()
-        && d.pentities.is_null()
+    if crate::xml::hash::hash_size(d.entities as *mut crate::xml::hash::HashTable) == 0
+        && crate::xml::hash::hash_size(d.elements as *mut crate::xml::hash::HashTable) == 0
+        && crate::xml::hash::hash_size(d.attributes as *mut crate::xml::hash::HashTable) == 0
+        && crate::xml::hash::hash_size(d.notations as *mut crate::xml::hash::HashTable) == 0
+        && crate::xml::hash::hash_size(d.pentities as *mut crate::xml::hash::HashTable) == 0
     {
         io::buf_ccat(buf, b'>');
         return;
     }
     io::buf_add(buf, b" [\n" as *const u8, 3);
-    // Notations are stored in a hash table and are not part of the children
-    // list; dumped only for the internal subset (upstream checks dtd->doc).
+    // UPSTREAM-PARITY: declarations are dumped in the upstream order
+    // (notations, elements, attributes, entities, parameter entities). Our
+    // decls live in hash tables; iteration order is hash-bucket order, so
+    // multi-declaration files may differ from upstream's insertion order
+    // (tracked as RESIDUAL R-DTD-DUMP-ORDER).
     let format = state.format;
     let lvl = *level;
     state.format = 0;
     *level = -1;
-    let mut child = d.children;
-    while !child.is_null() {
-        let ct = unsafe { (*child).type_ };
-        if ct == XML_ELEMENT_DECL as c_int {
-            dump_element_decl(buf, child as *mut _xmlElement);
-        } else if ct == XML_ATTRIBUTE_DECL as c_int {
-            dump_attribute_decl(buf, child as *mut _xmlAttribute);
-        } else if ct == XML_ENTITY_DECL as c_int {
-            dump_entity_decl(buf, child as *mut _xmlEntity);
-        }
-        child = unsafe { (*child).next };
+    if !d.notations.is_null() {
+        crate::xml::hash::hash_scan(
+            d.notations as *mut crate::xml::hash::HashTable,
+            Some(dump_notation_decl_cb),
+            buf as *mut c_void,
+        );
+    }
+    if !d.elements.is_null() {
+        crate::xml::hash::hash_scan(
+            d.elements as *mut crate::xml::hash::HashTable,
+            Some(dump_element_decl_cb),
+            buf as *mut c_void,
+        );
+    }
+    if !d.attributes.is_null() {
+        crate::xml::hash::hash_scan(
+            d.attributes as *mut crate::xml::hash::HashTable,
+            Some(dump_attribute_decl_cb),
+            buf as *mut c_void,
+        );
+    }
+    if !d.entities.is_null() {
+        crate::xml::hash::hash_scan(
+            d.entities as *mut crate::xml::hash::HashTable,
+            Some(dump_entity_decl_cb),
+            buf as *mut c_void,
+        );
+    }
+    if !d.pentities.is_null() {
+        crate::xml::hash::hash_scan(
+            d.pentities as *mut crate::xml::hash::HashTable,
+            Some(dump_entity_decl_cb),
+            buf as *mut c_void,
+        );
     }
     state.format = format;
     *level = lvl;
     io::buf_add(buf, b"]>" as *const u8, 2);
+}
+
+/// Hash-scan callbacks that route each DTD declaration to its dumper.
+unsafe extern "C" fn dump_notation_decl_cb(
+    payload: *mut c_void,
+    data: *mut c_void,
+    _name: *const crate::abi::types::xmlChar,
+) {
+    if !payload.is_null() && !data.is_null() {
+        dump_notation_decl(data as *mut _xmlBuffer, payload as *mut _xmlNotation);
+    }
+}
+
+/// Hash-scan callback for element declarations.
+unsafe extern "C" fn dump_element_decl_cb(
+    payload: *mut c_void,
+    data: *mut c_void,
+    _name: *const crate::abi::types::xmlChar,
+) {
+    if !payload.is_null() && !data.is_null() {
+        dump_element_decl(data as *mut _xmlBuffer, payload as *mut _xmlElement);
+    }
+}
+
+/// Hash-scan callback for attribute declarations.
+unsafe extern "C" fn dump_attribute_decl_cb(
+    payload: *mut c_void,
+    data: *mut c_void,
+    _name: *const crate::abi::types::xmlChar,
+) {
+    if !payload.is_null() && !data.is_null() {
+        dump_attribute_decl(data as *mut _xmlBuffer, payload as *mut _xmlAttribute);
+    }
+}
+
+/// Hash-scan callback for entity declarations.
+unsafe extern "C" fn dump_entity_decl_cb(
+    payload: *mut c_void,
+    data: *mut c_void,
+    _name: *const crate::abi::types::xmlChar,
+) {
+    if !payload.is_null() && !data.is_null() {
+        dump_entity_decl(data as *mut _xmlBuffer, payload as *mut _xmlEntity);
+    }
 }
 
 /// Dump the content of a document (upstream `xmlSaveDocInternal`, XML path).
@@ -2775,6 +2899,14 @@ unsafe fn doc_content_dump_output(
         _ => {}
     }
     io::buf_add(buf, b"?>\n" as *const u8, 3);
+
+    // UPSTREAM-PARITY: the internal subset is serialized before the tree
+    // children (it is stored on doc->intSubset, not in the children list).
+    if !d.intSubset.is_null() {
+        let mut lvl = 0;
+        dtd_dump_output(buf, d.intSubset as *mut _xmlNode, state, &mut lvl);
+        io::buf_ccat(buf, b'\n');
+    }
 
     if !d.children.is_null() {
         let mut child = d.children;
@@ -2911,6 +3043,18 @@ unsafe fn node_dump_internal(
                     io::buf_cat(buf, n.content);
                 } else {
                     serialize_text(buf, n.content, xml_strlen(n.content));
+                }
+            } else if !n.children.is_null() {
+                // Non-compact text node (entity merge): content lives in a
+                // child text node.
+                let c = node_get_content(cur);
+                if !c.is_null() {
+                    if is_noenc_text(cur) {
+                        io::buf_cat(buf, c);
+                    } else {
+                        serialize_text(buf, c, xml_strlen(c));
+                    }
+                    allocator::xmlFree(c as *mut c_void);
                 }
             }
         }

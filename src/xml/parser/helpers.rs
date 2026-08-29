@@ -75,6 +75,9 @@ pub(crate) unsafe fn create_parser_ctxt() -> *mut _xmlParserCtxt {
         c.keepBlanks = 1;
         c.replaceEntities = 0;
         c.linenumbers = 1;
+        // UPSTREAM-PARITY: the standalone flag is tri-state: -1 unknown/unset,
+        // 0 "no", 1 "yes" (xmlNewParserCtxt initialises it to -1).
+        c.standalone = -1;
         c.errNo = crate::abi::types::XML_ERR_OK;
         c.options = 0;
     }

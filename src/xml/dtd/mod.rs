@@ -149,6 +149,65 @@ pub unsafe fn new_dtd(
     dtd
 }
 
+/// extern "C" copier shims for `hash::hash_copy`.
+unsafe extern "C" fn copy_elem_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
+    unsafe { copy_element(payload as *mut _xmlElement) as *mut c_void }
+}
+
+unsafe extern "C" fn copy_attr_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
+    unsafe { copy_attribute_decl(payload as *mut _xmlAttribute) as *mut c_void }
+}
+
+unsafe extern "C" fn copy_ent_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
+    unsafe { crate::xml::entities::copy_entity(payload as *mut _xmlEntity) as *mut c_void }
+}
+
+unsafe extern "C" fn copy_notation_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
+    unsafe { copy_notation(payload as *mut _xmlNotation) as *mut c_void }
+}
+
+/// Deep-copy a DTD: name, external identifiers, and all declaration tables.
+///
+/// UPSTREAM-PARITY: the DTD portion of `xmlCopyDoc` / `xmlCopyDtd`.
+///
+/// Returns the new DTD, or NULL on failure.
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer to an _xmlDtd, or NULL.
+pub unsafe fn copy_dtd(dtd: *const _xmlDtd) -> *mut _xmlDtd {
+    if dtd.is_null() {
+        return ptr::null_mut();
+    }
+    let d = unsafe { &*dtd };
+
+    let copy = unsafe { allocator::xmlMallocZero(size_of::<_xmlDtd>() as usize) as *mut _xmlDtd };
+    if copy.is_null() {
+        return ptr::null_mut();
+    }
+
+    unsafe {
+        (*copy).type_ = d.type_;
+        (*copy).name = string::xml_strdup(d.name);
+        (*copy).ExternalID = string::xml_strdup(d.ExternalID);
+        (*copy).SystemID = string::xml_strdup(d.SystemID);
+        (*copy).notations =
+            hash::hash_copy(d.notations as *mut hash::HashTable, Some(copy_notation_cb))
+                as *mut c_void;
+        (*copy).elements =
+            hash::hash_copy(d.elements as *mut hash::HashTable, Some(copy_elem_cb)) as *mut c_void;
+        (*copy).attributes =
+            hash::hash_copy(d.attributes as *mut hash::HashTable, Some(copy_attr_cb))
+                as *mut c_void;
+        (*copy).entities =
+            hash::hash_copy(d.entities as *mut hash::HashTable, Some(copy_ent_cb)) as *mut c_void;
+        (*copy).pentities =
+            hash::hash_copy(d.pentities as *mut hash::HashTable, Some(copy_ent_cb)) as *mut c_void;
+    }
+
+    copy
+}
+
 /// Free a DTD and all its declarations.
 ///
 /// # UPSTREAM-PARITY

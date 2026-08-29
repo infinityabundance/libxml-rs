@@ -187,6 +187,34 @@ history is retained after fixing. This Markdown is generated from
 - **Fix:** Insert `<meta charset="ENCODING">` as the first child of a root `<head>` lacking a `<meta>` element (encoding from the document, default UTF-8); formatting writes newlines without indentation spaces.
 - **Regression courts:** `test_xslt_html_method_meta_charset`; differential corpus `html.xsl`.
 
+## Phase 10 Residuals
+
+### R-000119: Entity content children not built at reference time
+
+- **Status:** OPEN
+- **Component:** `src/xml/parser/state.rs`, `src/xml/debug/mod.rs`
+- **Surface:** DTD/entity debug dumps
+- **Oracle versions:** libxml2 2.15.3 (`xmllint --debug` on entity-containing documents)
+- **Root cause:** Upstream parses a referenced entity's content into `ent->children` (xmlCtxtParseEntity) and `xmlCtxtDumpEntityDecl` dumps that tree; our entity declarations store only the raw content string, so the debug dump synthesizes a `TEXT compact` node for plain content and nothing for markup content. The document tree, serialization and XPath are unaffected (the `--noent` re-parse path builds the correct in-document nodes).
+- **Observable residual:** `xmllint --debug` on a document that references an entity whose content contains markup shows the raw `content=` line but not the parsed child element under `ENTITYDECL`.
+
+### R-000120: Entity-containing attribute values marked compact in `--debug`
+
+- **Status:** OPEN
+- **Component:** `src/xml/parser/state.rs`, `src/xml/sax/default.rs`
+- **Surface:** debug dumps
+- **Oracle versions:** libxml2 2.15.3 (`xmllint --debug` on `<a p="AT&amp;T"/>`)
+- **Root cause:** Upstream attribute values containing entity/character references take the `xmlNodeParseAttValue` path and are never compact; our tokenizer decodes references before the SAX layer (`substitute_refs`), losing the "had references" signal, so short decoded values are marked compact.
+- **Observable residual:** `TEXT compact` vs upstream `TEXT` for entity-containing attribute values in `--debug` output. Content, serialization and XPath results are identical.
+
+### R-000121: `'<' in entity ... is not allowed in attributes values` reported once
+
+- **Status:** OPEN
+- **Component:** `src/xml/parser/state.rs`
+- **Surface:** parser diagnostics
+- **Oracle versions:** libxml2 2.15.3 (`xmllint` on a document referencing a markup entity in an attribute value)
+- **Root cause:** Upstream reports the `XML_ERR_LT_IN_ATTRIBUTE` fatal error twice (parser + validation paths) with the caret at the `&`; ours reports it once with the caret past the start tag. The message text and exit code (4) match.
+
 ## Fixed Residuals
 
 ### R-000001: `#line` directive mapping uses wrong coordinate space

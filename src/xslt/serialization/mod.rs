@@ -170,6 +170,19 @@ unsafe fn save_result_to_vec(
             // defaults indent to 1 for HTML output and inserts a meta
             // charset element; see RESIDUAL R-HTML-OUTPUT.
             let fmt = if indent != 0 { 1 } else { 0 };
+            // UPSTREAM-PARITY: xsltSaveResultTo calls htmlSetMetaEncoding
+            // with the stylesheet encoding (defaulting to "UTF-8") before
+            // dumping; the HTML serializer reads the document's encoding to
+            // emit the <meta charset> element.
+            if (*result).encoding.is_null() {
+                let enc: *const xmlChar = if !encoding.is_null() {
+                    encoding
+                } else {
+                    b"UTF-8\0".as_ptr() as *const xmlChar
+                };
+                (*result).encoding =
+                    crate::abi::allocator::xmlMemStrdup(enc as *const c_char) as *mut xmlChar;
+            }
             let buf = crate::xml::io::buf_create(-1);
             if buf.is_null() {
                 return Err(-1);

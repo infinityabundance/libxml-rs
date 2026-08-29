@@ -1013,7 +1013,7 @@ pub unsafe fn validate_element(
 
         if elem_decl.is_null() {
             let name_str = string::xmlstr_to_string(elem_name);
-            let err_msg = format!("No declaration for element '{}'\0", name_str);
+            let err_msg = format!("No declaration for element {}\0", name_str);
             vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
             vctxt_pop_node(ctxt);
             return 0;
@@ -1305,6 +1305,20 @@ pub unsafe fn validate_document(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> 
         c.valid = 1;
 
         let d = &*doc;
+
+        // UPSTREAM-PARITY: xmlValidateDocumentInternal rejects documents with
+        // no internal or external subset (valid.c:6266-6271):
+        //
+        // ```c
+        // if ((doc->intSubset == NULL) && (doc->extSubset == NULL)) {
+        //     xmlErrValid(vctxt, XML_DTD_NO_DTD, "no DTD found!\n", NULL);
+        //     return(0);
+        // }
+        // ```
+        if d.intSubset.is_null() && d.extSubset.is_null() {
+            vctxt_error(ctxt, b"no DTD found!\0" as *const u8 as *const c_char);
+            return 0;
+        }
 
         // Find the root element (first child that's an element node)
         let mut root = d.children;

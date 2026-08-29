@@ -78,7 +78,7 @@ includedir=${prefix}/include
 
 Name: libxml-2.0
 Description: libxml-rs — Native Rust libxml2 compatibility
-Version: 2.12.0
+Version: 2.15.3
 Requires:
 Libs: -L${libdir} -lxml2
 Libs.private: -lpthread -lm
@@ -96,7 +96,7 @@ includedir=${prefix}/include
 
 Name: libxslt
 Description: libxslt — Native Rust libxslt compatibility
-Version: 1.1.39
+Version: 1.1.47
 Requires: libxml-2.0
 Libs: -L${libdir} -lxslt
 Libs.private: -lpthread -lm
@@ -110,8 +110,8 @@ Cflags: -I${includedir}
 /// Generate SONAME symlinks.
 ///
 /// On Linux, upstream installs:
-///   libxml2.so -> libxml2.so.2 -> libxml2.so.2.12.0
-///   libxslt.so -> libxslt.so.1 -> libxslt.so.1.1.39
+///   libxml2.so -> libxml2.so.2 -> libxml2.so.2.15.3
+///   libxslt.so -> libxslt.so.1 -> libxslt.so.1.1.47
 ///
 /// Since our crate produces liblibxml_rs.so, we create symlinks
 /// so that `-lxml2` and `-lxslt` link correctly.
@@ -136,21 +136,21 @@ fn generate_symlinks(artifact_dir: &Path) {
 
     // Create libxml2.so symlinks
     // Use owned strings to avoid temporary lifetime issues
-    let v2120 = artifact_dir.join("libxml2.so.2.12.0");
+    let v2153 = artifact_dir.join("libxml2.so.2.15.3");
     let v2 = artifact_dir.join("libxml2.so.2");
     let _v = artifact_dir.join("libxml2.so");
 
-    create_symlink("libxml2.so.2.12.0", &actual_lib, artifact_dir);
-    create_symlink("libxml2.so.2", &v2120, artifact_dir);
+    create_symlink("libxml2.so.2.15.3", &actual_lib, artifact_dir);
+    create_symlink("libxml2.so.2", &v2153, artifact_dir);
     create_symlink("libxml2.so", &v2, artifact_dir);
 
     // Create libxslt.so symlinks
-    let xslt1139 = artifact_dir.join("libxslt.so.1.1.39");
+    let xslt1147 = artifact_dir.join("libxslt.so.1.1.47");
     let xslt1 = artifact_dir.join("libxslt.so.1");
     let _xslt = artifact_dir.join("libxslt.so");
 
-    create_symlink("libxslt.so.1.1.39", &actual_lib, artifact_dir);
-    create_symlink("libxslt.so.1", &xslt1139, artifact_dir);
+    create_symlink("libxslt.so.1.1.47", &actual_lib, artifact_dir);
+    create_symlink("libxslt.so.1", &xslt1147, artifact_dir);
     create_symlink("libxslt.so", &xslt1, artifact_dir);
 
     println!(
@@ -219,7 +219,7 @@ while test $# -gt 0; do
         echo "-I$includedir/libxml2"
         ;;
     --version)
-        echo "2.12.0"
+        echo "2.15.3"
         ;;
     --help)
         usage

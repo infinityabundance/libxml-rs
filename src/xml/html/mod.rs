@@ -940,8 +940,11 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         }
     }
 
-    // Rule 5: <tr> auto-closes another <tr>, <td>, <th>
-    if tag_lower_str == "tr" || tag_lower_str == "td" || tag_lower_str == "th" {
+    // Rule 5: <tr> auto-closes an open <tr>, <td> or <th> (the previous
+    // row); a new <td>/<th> only auto-closes an open <td>/<th> (the
+    // previous cell) and stays inside the open <tr> (upstream
+    // htmlAutoClose).
+    if tag_lower_str == "tr" {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
@@ -950,6 +953,22 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
                     let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
                     let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
                     if name_str == "tr" || name_str == "td" || name_str == "th" {
+                        current = unsafe { (*cur2).parent };
+                        break;
+                    }
+                }
+            }
+            cur2 = unsafe { (*cur2).parent };
+        }
+    } else if tag_lower_str == "td" || tag_lower_str == "th" {
+        let mut cur2 = current;
+        while !cur2.is_null() {
+            let ctype = unsafe { (*cur2).type_ };
+            if ctype == XML_ELEMENT_NODE as c_int {
+                if !unsafe { (*cur2).name.is_null() } {
+                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                    if name_str == "td" || name_str == "th" {
                         current = unsafe { (*cur2).parent };
                         break;
                     }
@@ -1371,6 +1390,33 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
         return;
     }
 
+    // UPSTREAM-PARITY: whitespace-only text at the document level (before or
+    // after the root element) is discarded; non-whitespace stray text is
+    // wrapped in a new `html` element (htmlParseCharData behavior), with
+    // leading blank characters skipped.
+    if insertion_point == ctxt.doc as *mut _xmlNode {
+        if text.iter().all(|b| b.is_ascii_whitespace()) {
+            return;
+        }
+        let content = trim_ascii_start(text);
+        let html_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(b"html"));
+        if !html_node.is_null() {
+            let content_c = bytes_to_xmlstr(content);
+            let text_node = tree::new_text(ptr::null_mut());
+            if !text_node.is_null() {
+                unsafe {
+                    (*text_node).content = content_c;
+                }
+                tree::add_child(html_node, text_node);
+            }
+            tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
+            ctxt.html = html_node;
+            ctxt.html_created = true;
+            ctxt.current = html_node;
+        }
+        return;
+    }
+
     let text_node = tree::new_text(ptr::null_mut());
     if text_node.is_null() {
         return;
@@ -1673,14 +1719,35 @@ unsafe fn html_parse_buffer(
     }
 
     // Create document with HTML_DOCUMENT_NODE type
-    let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+    let doc = tree::new_doc(ptr::null());
     if doc.is_null() {
         return ptr::null_mut();
     }
     unsafe {
         (*doc).type_ = XML_HTML_DOCUMENT_NODE as c_int;
+        // UPSTREAM-PARITY: HTML documents carry no version (htmlNewDocNoDtD
+        // leaves version NULL), so drop the XML default set by new_doc.
+        if !(*doc).version.is_null() {
+            crate::abi::allocator::xmlFree((*doc).version as *mut c_void);
+        }
+        (*doc).version = ptr::null_mut();
         (*doc).properties = XML_DOC_WELLFORMED as c_int;
+        // UPSTREAM-PARITY: HTML documents default to standalone="yes"
+        // (visible when serialized with the XML serializer, e.g. --xmlout).
+        (*doc).standalone = 1;
     }
+    // UPSTREAM-PARITY: htmlParseDocument creates a default DTD
+    // (`<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+    // "http://www.w3.org/TR/REC-html40/loose.dtd">) when the source does
+    // not declare one; XML_SAVE_NO_DOCTYPE / HTML_PARSE_NODEFDTD suppresses
+    // it (handled by the caller).
+    let default_dtd = crate::xml::dtd::create_int_subset(
+        doc,
+        b"html\0" as *const u8 as *const xmlChar,
+        b"-//W3C//DTD HTML 4.0 Transitional//EN\0" as *const u8 as *const xmlChar,
+        b"http://www.w3.org/TR/REC-html40/loose.dtd\0" as *const u8 as *const xmlChar,
+    );
+    let _ = default_dtd;
     ctxt.doc = doc;
 
     // Set up input
@@ -2237,6 +2304,25 @@ fn has_optional_end_tag(name: &str) -> bool {
 ///
 /// In HTML serialization, we escape `<` and `&` but NOT non-ASCII characters
 /// as numeric entities (unlike XML serialization).
+/// Write a double-quoted C string to the buffer.
+unsafe fn html_write_quoted(buf: *mut _xmlBuffer, s: *const xmlChar) {
+    if buf.is_null() || s.is_null() {
+        return;
+    }
+    io::buf_ccat(buf, b'"');
+    io::buf_cat(buf, s);
+    io::buf_ccat(buf, b'"');
+}
+
+/// Trim leading ASCII whitespace.
+fn trim_ascii_start(s: &[u8]) -> &[u8] {
+    let start = s
+        .iter()
+        .position(|&b| !b.is_ascii_whitespace())
+        .unwrap_or(s.len());
+    &s[start..]
+}
+
 unsafe fn html_serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
     if buf.is_null() || content.is_null() || len <= 0 {
         return;
@@ -2340,14 +2426,13 @@ pub(crate) unsafe fn serialize_node(
             };
 
             let is_void = is_html_void(name);
-
-            // Newline before start tag. UPSTREAM-PARITY: the HTML
-            // serializer (htmlsave.c htmlNodeDumpFormatOutput) writes a
-            // newline between elements when formatting, but no indentation
-            // spaces.
-            if format != 0 && level > 0 {
-                io::buf_ccat(buf, b'\n');
-            }
+            // UPSTREAM-PARITY: htmlNodeDumpInternal only adds formatting
+            // newlines for non-inline elements; p, pre and param are never
+            // formatted (name[0] == 'p'), and unknown elements are treated
+            // as inline (info == NULL).
+            let info = html_tag_lookup(name);
+            let is_inline = info.map_or(true, |i| i.flags & HTML_INLINE != 0);
+            let no_format = is_inline || name.starts_with('p');
 
             // Write start tag
             io::buf_ccat(buf, b'<');
@@ -2378,76 +2463,111 @@ pub(crate) unsafe fn serialize_node(
                 attr = a.next;
             }
 
+            // UPSTREAM-PARITY: htmlSetMetaEncoding (htmlsave.c) inserts
+            // <meta charset="..."> as the first child of the <head> of the
+            // root <html> element when no <meta> is present and the document
+            // carries an encoding (htmlNodeDumpInternal only runs the meta
+            // logic when `encoding != NULL`). The meta is synthetic here, so
+            // it participates in the formatting rules like a real child.
+            let mut meta_bytes: Option<Vec<u8>> = None;
+            if name.eq_ignore_ascii_case("head")
+                && level == 1
+                && !n.doc.is_null()
+                && !(*n.doc).encoding.is_null()
+            {
+                let parent_is_html = !n.parent.is_null() && !(*n.parent).name.is_null() && {
+                    let pn = core::str::from_utf8(xmlstr_to_bytes((*n.parent).name)).unwrap_or("");
+                    pn.eq_ignore_ascii_case("html")
+                };
+                if parent_is_html && !html_head_has_meta(n.children) {
+                    meta_bytes = Some(xmlstr_to_bytes((*n.doc).encoding).to_vec());
+                }
+            }
+            let meta_inserted = meta_bytes.is_some();
+
+            let has_children = !n.children.is_null();
+            let first_child = if has_children {
+                unsafe { (*n.children).type_ }
+            } else {
+                XML_TEXT_NODE as c_int
+            };
+            let first_is_text = first_child == XML_TEXT_NODE as c_int
+                || first_child == XML_ENTITY_REF_NODE as c_int;
+            // With a synthetic meta child, an empty head behaves as having
+            // one element child.
+            let multi_child = (has_children && n.children != n.last) || meta_inserted;
+
             if is_void {
                 // Void element: just close the tag, no children
                 io::buf_ccat(buf, b'>');
-            } else if n.children.is_null() {
-                // Empty non-void element: write full start/end tag
+                // UPSTREAM-PARITY (line 997): a newline follows a non-inline
+                // element whose next sibling is not text; the caller (parent
+                // loop) emits it, so nothing here.
+            } else {
+                // Element with children (or a head receiving a meta)
                 io::buf_ccat(buf, b'>');
-                // Write end tag
-                if format != 0 {
+
+                // Newline after the open tag (upstream line 969): a
+                // non-inline element whose first child is not text and which
+                // has more than one child (or receives a meta) starts its
+                // content on a new line.
+                if format != 0 && !no_format && !first_is_text && multi_child {
                     io::buf_ccat(buf, b'\n');
                 }
-                io::buf_add(buf, b"</" as *const u8, 2);
-                if !n.name.is_null() {
-                    io::buf_cat(buf, n.name);
-                }
-                io::buf_ccat(buf, b'>');
-            } else {
-                // Element with children
-                io::buf_ccat(buf, b'>');
 
-                // UPSTREAM-PARITY: htmlSetMetaEncoding (htmlsave.c) inserts
-                // <meta charset="..."> as the first child of the <head> of
-                // the root <html> element when no <meta> is present.
-                if name.eq_ignore_ascii_case("head") && level == 1 {
-                    let parent_is_html = !n.parent.is_null() && !(*n.parent).name.is_null() && {
-                        let pn =
-                            core::str::from_utf8(xmlstr_to_bytes((*n.parent).name)).unwrap_or("");
-                        pn.eq_ignore_ascii_case("html")
-                    };
-                    if parent_is_html && !html_head_has_meta(n.children) {
-                        let enc: &[u8] = if !n.doc.is_null() && !(*n.doc).encoding.is_null() {
-                            xmlstr_to_bytes((*n.doc).encoding)
-                        } else {
-                            b"UTF-8"
-                        };
-                        // The meta is emitted as a child of <head> (it gets
-                        // the same newline treatment as the other children).
-                        if format != 0 {
-                            io::buf_ccat(buf, b'\n');
-                        }
-                        io::buf_add(buf, b"<meta charset=\"" as *const u8, 15);
-                        io::buf_add(buf, enc.as_ptr() as *const u8, enc.len() as c_int);
-                        io::buf_add(buf, b"\">" as *const u8, 2);
-                    }
-                }
-
-                // Check if this is a "text-only" element (single text child)
-                let is_text_only = n.children == n.last
-                    && !n.children.is_null()
-                    && unsafe { (*(n.children)).type_ } == XML_TEXT_NODE as c_int;
-
-                if is_text_only {
-                    // Serialize child inline
-                    let mut child = n.children;
-                    while !child.is_null() {
-                        serialize_node(child, buf, format, level + 1);
-                        child = unsafe { (*child).next };
-                    }
-                } else {
-                    // Serialize children with newlines between elements
-                    // (HTML formatting: no indentation spaces).
-                    let mut child = n.children;
-                    while !child.is_null() {
-                        serialize_node(child, buf, format, level + 1);
-                        child = unsafe { (*child).next };
-                    }
-
-                    // Newline before end tag (for non-text-only)
-                    if format != 0 {
+                if let Some(enc) = &meta_bytes {
+                    io::buf_add(buf, b"<meta charset=\"" as *const u8, 15);
+                    io::buf_add(buf, enc.as_ptr() as *const u8, enc.len() as c_int);
+                    io::buf_add(buf, b"\">" as *const u8, 2);
+                    // UPSTREAM-PARITY (line 983): a newline follows the
+                    // inserted meta when the next real child is not text.
+                    if format != 0 && has_children && !first_is_text && !name.starts_with('p') {
                         io::buf_ccat(buf, b'\n');
                     }
+                }
+
+                // Serialize children inline (HTML formatting adds no
+                // indentation; the per-element rules emit the newlines).
+                let mut child = n.children;
+                while !child.is_null() {
+                    serialize_node(child, buf, format, level + 1);
+                    // UPSTREAM-PARITY (line 997): a newline follows a
+                    // non-inline element whose next sibling is not text,
+                    // unless the parent is p/pre/param.
+                    let next = unsafe { (*child).next };
+                    if format != 0 && !next.is_null() && !name.starts_with('p') {
+                        let nt = unsafe { (*next).type_ };
+                        if nt != XML_TEXT_NODE as c_int && nt != XML_ENTITY_REF_NODE as c_int {
+                            let cname = if (*child).name.is_null() {
+                                ""
+                            } else {
+                                unsafe {
+                                    core::str::from_utf8(xmlstr_to_bytes((*child).name))
+                                        .unwrap_or("")
+                                }
+                            };
+                            let cinfo = html_tag_lookup(cname);
+                            let c_inline = cinfo.map_or(true, |i| i.flags & HTML_INLINE != 0);
+                            if !c_inline {
+                                io::buf_ccat(buf, b'\n');
+                            }
+                        }
+                    }
+                    child = next;
+                }
+
+                // Newline before the end tag (upstream line 1085): a
+                // non-inline element whose last child is not text and which
+                // has more than one child (or is the head receiving a meta).
+                let last_child = if has_children {
+                    unsafe { (*n.last).type_ }
+                } else {
+                    XML_ELEMENT_NODE as c_int
+                };
+                let last_is_text = last_child == XML_TEXT_NODE as c_int
+                    || last_child == XML_ENTITY_REF_NODE as c_int;
+                if format != 0 && !no_format && !last_is_text && multi_child {
+                    io::buf_ccat(buf, b'\n');
                 }
 
                 // Write end tag
@@ -2497,6 +2617,28 @@ pub(crate) unsafe fn serialize_node(
             io::buf_add(buf, b"?>" as *const u8, 2);
         }
         t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
+            // UPSTREAM-PARITY: htmlDocContentDumpOutput writes the internal
+            // subset's DOCTYPE before the tree children.
+            let doc_ptr = n as *const _xmlNode as *mut _xmlDoc;
+            let d = &*doc_ptr;
+            if !d.intSubset.is_null() {
+                let dtd = &*d.intSubset;
+                io::buf_add(buf, b"<!DOCTYPE " as *const u8, 10);
+                if !dtd.name.is_null() {
+                    io::buf_cat(buf, dtd.name);
+                }
+                if !dtd.ExternalID.is_null() {
+                    io::buf_add(buf, b" PUBLIC " as *const u8, 8);
+                    html_write_quoted(buf, dtd.ExternalID);
+                    io::buf_ccat(buf, b' ');
+                    html_write_quoted(buf, dtd.SystemID);
+                } else if !dtd.SystemID.is_null() {
+                    io::buf_add(buf, b" SYSTEM " as *const u8, 8);
+                    html_write_quoted(buf, dtd.SystemID);
+                }
+                io::buf_ccat(buf, b'>');
+                io::buf_ccat(buf, b'\n');
+            }
             // No XML declaration for HTML documents
             // Serialize children
             let mut child = n.children;
@@ -2504,9 +2646,9 @@ pub(crate) unsafe fn serialize_node(
                 serialize_node(child, buf, format, 0);
                 child = unsafe { (*child).next };
             }
-            if format != 0 {
-                io::buf_ccat(buf, b'\n');
-            }
+            // UPSTREAM-PARITY: htmlDocContentDumpOutput terminates with a
+            // newline.
+            io::buf_ccat(buf, b'\n');
         }
         _ => {
             if !n.content.is_null() {
@@ -3008,10 +3150,11 @@ mod tests {
             assert!(!doc.is_null());
             assert_eq!((*doc).type_, XML_HTML_DOCUMENT_NODE as c_int);
 
-            // No implicit html/head/body
+            // No implicit html/head/body. UPSTREAM-PARITY: the HTML
+            // serializer (htmlNodeDumpInternal) writes "\n" for a
+            // document node with no children (HTMLtree.c:861-863).
             let s = html_doc_to_string(doc);
-            // Should be empty (no children)
-            assert_eq!(s, "");
+            assert_eq!(s, "\n");
 
             tree::free_doc(doc);
         }

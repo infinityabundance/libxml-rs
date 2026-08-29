@@ -1828,7 +1828,16 @@ pub unsafe extern "C" fn xmlReadFile(
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
         let doc = (*ctxt).myDoc;
         crate::xml::parser::helpers::free_parser_ctxt(ctxt);
-        return doc;
+        // UPSTREAM-PARITY: on a hard (non-recoverable) parse error the
+        // partially built document is discarded and NULL is returned; with
+        // XML_PARSE_RECOVER the partial tree is kept.
+        if options & 1 << 0 != 0 {
+            return doc;
+        }
+        if !doc.is_null() {
+            crate::xml::tree::free_doc(doc);
+        }
+        return ptr::null_mut();
     }
     let doc = (*ctxt).myDoc;
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
@@ -1865,7 +1874,16 @@ pub unsafe extern "C" fn xmlReadMemory(
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
         let doc = (*ctxt).myDoc;
         crate::xml::parser::helpers::free_parser_ctxt(ctxt);
-        return doc;
+        // UPSTREAM-PARITY: on a hard (non-recoverable) parse error the
+        // partially built document is discarded and NULL is returned; with
+        // XML_PARSE_RECOVER the partial tree is kept.
+        if options & 1 << 0 != 0 {
+            return doc;
+        }
+        if !doc.is_null() {
+            crate::xml::tree::free_doc(doc);
+        }
+        return ptr::null_mut();
     }
     let doc = (*ctxt).myDoc;
     if !doc.is_null() && !URL.is_null() {
@@ -4831,6 +4849,72 @@ pub unsafe extern "C" fn xmlCatalogRemove(value: *const xmlChar) -> c_int {
         return 0;
     }
     crate::xml::catalog::remove(value)
+}
+
+/// Dump the catalog in XML format to a FILE* (upstream `xmlCatalogDump`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlCatalogDump(FILE *out, xmlCatalogPtr catal);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlCatalogDump(output: *mut c_void, _catal: *mut c_void) {
+    if output.is_null() {
+        return;
+    }
+    let doc = crate::xml::catalog::dump_doc();
+    if doc.is_null() {
+        return;
+    }
+    let mut mem: *mut xmlChar = ptr::null_mut();
+    let mut size: c_int = 0;
+    crate::xml::tree::xmlDocDumpFormatMemory(doc, &mut mem, &mut size, 1);
+    if !mem.is_null() {
+        libc::fwrite(
+            mem as *const c_void,
+            1,
+            size as usize,
+            output as *mut libc::FILE,
+        );
+        xmlFree(mem as *mut c_void);
+    }
+    crate::xml::tree::free_doc(doc);
+}
+
+/// Save the catalog to a file (upstream `xmlCatalogSave`).
+///
+/// Returns 0 on success, -1 on failure.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlCatalogSave(const char *filename);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlCatalogSave(filename: *const c_char) -> c_int {
+    if filename.is_null() {
+        return -1;
+    }
+    let doc = crate::xml::catalog::dump_doc();
+    if doc.is_null() {
+        return -1;
+    }
+    let mut mem: *mut xmlChar = ptr::null_mut();
+    let mut size: c_int = 0;
+    crate::xml::tree::xmlDocDumpFormatMemory(doc, &mut mem, &mut size, 1);
+    let mut ret: c_int = -1;
+    if !mem.is_null() {
+        let fp = libc::fopen(filename, b"w\0".as_ptr() as *const c_char);
+        if !fp.is_null() {
+            let written = libc::fwrite(mem as *const c_void, 1, size as usize, fp);
+            ret = if written == size as usize { 0 } else { -1 };
+            libc::fclose(fp);
+        }
+        xmlFree(mem as *mut c_void);
+    }
+    crate::xml::tree::free_doc(doc);
+    ret
 }
 
 /// Clean up the catalog subsystem.

@@ -33,6 +33,7 @@ use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
 use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
 use crate::abi::types::xmlElementType::*;
+use crate::abi::types::XML_PARSE_COMPACT;
 use crate::xml::tree;
 
 /// Default SAX2 handlers that build a DOM tree from SAX events.
@@ -52,6 +53,215 @@ pub(crate) mod default_sax_handler {
     /// - The caller must ensure the context is still alive and valid.
     unsafe fn ctxt_from_ctx(ctx: *mut c_void) -> *mut _xmlParserCtxt {
         ctx as *mut _xmlParserCtxt
+    }
+
+    /// Current source line from the parser input (0 when unavailable).
+    unsafe fn current_line(ctxt: *mut _xmlParserCtxt) -> u16 {
+        if ctxt.is_null() || (*ctxt).input.is_null() {
+            return 0;
+        }
+        let l = (*(*ctxt).input).line;
+        if l < 0 {
+            0
+        } else {
+            l as u16
+        }
+    }
+
+    /// Merge character data into an existing text node (upstream
+    /// `xmlNodeAddContent` semantics): the bytes are appended to the node's
+    /// own content buffer, keeping the tree flat (a single text node).
+    ///
+    /// Compact (inline) content is promoted to a heap allocation on the first
+    /// merge — an interrupted character-data stream (e.g. an entity
+    /// reference) is never compact, matching the oracle's debug output.
+    unsafe fn merge_into_text_node(node: *mut _xmlNode, ch: *const xmlChar, len: c_int) {
+        if node.is_null() || ch.is_null() || len <= 0 {
+            return;
+        }
+        unsafe {
+            let existing_len = crate::xml::string::xml_strlen((*node).content);
+            let total = existing_len + len as usize;
+            if content_is_inline(node) {
+                // The current content lives inside the node struct; promote
+                // it to a heap buffer before appending.
+                let merged = allocator::xmlMalloc(total + 1) as *mut xmlChar;
+                if merged.is_null() {
+                    return;
+                }
+                ptr::copy_nonoverlapping((*node).content, merged, existing_len);
+                ptr::copy_nonoverlapping(ch, merged.add(existing_len), len as usize);
+                *merged.add(total) = 0;
+                (*node).content = merged;
+            } else {
+                let new = allocator::xmlRealloc((*node).content as *mut c_void, total + 1)
+                    as *mut xmlChar;
+                if new.is_null() {
+                    return;
+                }
+                ptr::copy_nonoverlapping(ch, new.add(existing_len), len as usize);
+                *new.add(total) = 0;
+                (*node).content = new;
+            }
+        }
+    }
+
+    /// True when the node's `content` points into its own struct (compact
+    /// text storage, as produced by the parser under `XML_PARSE_COMPACT`).
+    ///
+    /// UPSTREAM-PARITY: `debugXML.c` identifies compact text via
+    /// `node->content == (xmlChar *) &(node->properties)`; the parser stores
+    /// short strings in the memory occupied by the unused `properties` field.
+    unsafe fn content_is_inline(node: *mut _xmlNode) -> bool {
+        if node.is_null() {
+            return false;
+        }
+        unsafe {
+            let inline_addr =
+                std::ptr::addr_of_mut!((*node).properties) as *mut xmlChar as *const c_void;
+            (*node).content as *const c_void == inline_addr
+        }
+    }
+
+    /// Create a parser text node holding `len` bytes of character data.
+    ///
+    /// UPSTREAM-PARITY: `xmlSAX2TextNode` (SAX2.c) stores short strings
+    /// (`len < 2 * sizeof(void*)`) inside the node struct, overriding the
+    /// unused `properties` and `nsDef` fields, when `XML_PARSE_COMPACT` is
+    /// set:
+    ///
+    /// ```c
+    /// if ((len < (int) (2 * sizeof(void *))) &&
+    ///     (ctxt->options & XML_PARSE_COMPACT)) {
+    ///     xmlChar *tmp = (xmlChar *) &(ret->properties);
+    ///     memcpy(tmp, str, len);
+    ///     tmp[len] = 0;
+    ///     intern = tmp;
+    /// }
+    /// ```
+    ///
+    /// Returns the new node, or NULL on allocation failure.
+    unsafe fn parser_new_text_node(
+        ctxt: *mut _xmlParserCtxt,
+        ch: *const xmlChar,
+        len: c_int,
+    ) -> *mut _xmlNode {
+        unsafe {
+            let compact = !ctxt.is_null()
+                && ((*ctxt).options & XML_PARSE_COMPACT) != 0
+                && (len as usize) < 16;
+            if compact {
+                let node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
+                if !node.is_null() {
+                    (*node).type_ = XML_TEXT_NODE as c_int;
+                    (*node).name = allocator::xmlMemStrdup(b"text\0".as_ptr() as *const c_char)
+                        as *mut xmlChar;
+                    let inline = std::ptr::addr_of_mut!((*node).properties) as *mut xmlChar;
+                    ptr::copy_nonoverlapping(ch, inline, len as usize);
+                    *inline.add(len as usize) = 0;
+                    (*node).content = inline;
+                }
+                node
+            } else {
+                // Create a null-terminated copy of the character data.
+                let content = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+                if content.is_null() {
+                    return ptr::null_mut();
+                }
+                ptr::copy_nonoverlapping(ch, content, len as usize);
+                *content.add(len as usize) = 0;
+
+                let text = tree::new_text(content as *const xmlChar);
+                allocator::xmlFree(content as *mut c_void);
+                text
+            }
+        }
+    }
+
+    /// Set an attribute on `node` with `len` bytes of value, mirroring
+    /// `tree::set_prop` but building the value text node with
+    /// `parser_new_text_node` so short attribute values are compact under
+    /// `XML_PARSE_COMPACT` (upstream `xmlSAX2AttributeNs` behavior).
+    ///
+    /// KNOWN RESIDUAL: upstream attribute values that contain entity or
+    /// character references take the `xmlNodeParseAttValue` path and are
+    /// never compact; our tokenizer decodes references before the SAX layer,
+    /// losing that signal, so such values may be marked compact in `--debug`
+    /// dumps where the oracle shows a plain `TEXT`. Content, serialization
+    /// and XPath results are identical.
+    ///
+    /// Returns the attribute, or NULL on failure.
+    unsafe fn parser_set_prop(
+        ctxt: *mut _xmlParserCtxt,
+        node: *mut _xmlNode,
+        name: *const xmlChar,
+        value: *const xmlChar,
+        value_len: isize,
+    ) -> *mut _xmlAttr {
+        if node.is_null() || name.is_null() || value.is_null() || value_len <= 0 {
+            return ptr::null_mut();
+        }
+        unsafe {
+            let n = &mut *node;
+
+            // Update an existing attribute with the same name.
+            let mut existing = n.properties;
+            while !existing.is_null() {
+                let attr = &*existing;
+                if !attr.name.is_null()
+                    && crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0
+                {
+                    if !attr.children.is_null() {
+                        tree::free_node_list(attr.children);
+                        let attr_mut = existing as *mut _xmlAttr;
+                        (*attr_mut).children = ptr::null_mut();
+                        (*attr_mut).last = ptr::null_mut();
+                    }
+                    let text = parser_new_text_node(ctxt, value, value_len as c_int);
+                    if !text.is_null() {
+                        let attr_mut = existing as *mut _xmlAttr;
+                        (*attr_mut).children = text;
+                        (*attr_mut).last = text;
+                        (*text).parent = existing as *mut _xmlNode;
+                        (*text).doc = n.doc;
+                    }
+                    return existing;
+                }
+                existing = (*existing).next;
+            }
+
+            // Create a new attribute.
+            let attr = allocator::xmlMallocZero(size_of::<_xmlAttr>() as usize) as *mut _xmlAttr;
+            if attr.is_null() {
+                return ptr::null_mut();
+            }
+            (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
+            (*attr).name = crate::xml::string::xml_strdup(name);
+            (*attr).parent = node;
+            (*attr).doc = n.doc;
+            (*attr).atype = crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int;
+
+            let text = parser_new_text_node(ctxt, value, value_len as c_int);
+            if !text.is_null() {
+                (*attr).children = text;
+                (*attr).last = text;
+                (*text).parent = attr as *mut _xmlNode;
+                (*text).doc = n.doc;
+            }
+
+            // Add to the node's property list.
+            if n.properties.is_null() {
+                n.properties = attr;
+            } else {
+                let mut last = n.properties;
+                while !(*last).next.is_null() {
+                    last = (*last).next;
+                }
+                (*last).next = attr;
+                (*attr).prev = last;
+            }
+            attr
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -191,6 +401,9 @@ pub(crate) mod default_sax_handler {
                 return;
             }
 
+            // UPSTREAM-PARITY: nodes carry the line of their construct.
+            (*node).line = current_line(ctxt);
+
             // Set namespace on the node if provided.
             if !URI.is_null() && ns.is_null() {
                 // Create a new namespace declaration on this element.
@@ -237,20 +450,10 @@ pub(crate) mod default_sax_handler {
                             attr_value_end.offset_from(attr_value_start)
                         };
                         if value_len > 0 {
-                            // Allocate a null-terminated copy of the attribute value.
-                            let value =
-                                allocator::xmlMalloc((value_len + 1) as usize) as *mut xmlChar;
-                            if !value.is_null() {
-                                ptr::copy_nonoverlapping(
-                                    attr_value_start,
-                                    value,
-                                    value_len as usize,
-                                );
-                                *value.add(value_len as usize) = 0;
-                                // Set the attribute.
-                                tree::set_prop(node, attr_name, value as *const xmlChar);
-                                allocator::xmlFree(value as *mut c_void);
-                            }
+                            // UPSTREAM-PARITY: xmlSAX2AttributeNs builds the
+                            // attribute value text with xmlSAX2TextNode, so
+                            // short values are compact under XML_PARSE_COMPACT.
+                            parser_set_prop(ctxt, node, attr_name, attr_value_start, value_len);
                         }
                     }
                     i += 1;
@@ -358,18 +561,25 @@ pub(crate) mod default_sax_handler {
                 return;
             }
 
-            // Create a null-terminated copy of the character data.
-            let content = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
-            if content.is_null() {
-                return;
+            // UPSTREAM-PARITY: xmlSAX2Characters merges character data into
+            // the parent's LAST child when it is a text node (xmlNodeAddContent).
+            // An interrupted character-data stream (e.g. an entity reference)
+            // is never compact, so the merge promotes compact content to heap.
+            let mut last = (*parent).children;
+            if !last.is_null() {
+                while !(*last).next.is_null() {
+                    last = (*last).next;
+                }
+                if (*last).type_ == XML_TEXT_NODE as c_int {
+                    merge_into_text_node(last, ch, len);
+                    return;
+                }
             }
-            ptr::copy_nonoverlapping(ch, content, len as usize);
-            *content.add(len as usize) = 0;
 
-            let text = tree::new_text(content as *const xmlChar);
-            allocator::xmlFree(content as *mut c_void);
+            let text = parser_new_text_node(ctxt, ch, len);
 
             if !text.is_null() {
+                (*text).line = current_line(ctxt);
                 tree::add_child(parent, text);
             }
         }
@@ -425,6 +635,7 @@ pub(crate) mod default_sax_handler {
 
             let comment_node = tree::new_comment(value);
             if !comment_node.is_null() {
+                (*comment_node).line = current_line(ctxt);
                 tree::add_child(parent, comment_node);
             }
         }
@@ -465,6 +676,7 @@ pub(crate) mod default_sax_handler {
 
             let pi_node = tree::new_pi(target, data);
             if !pi_node.is_null() {
+                (*pi_node).line = current_line(ctxt);
                 tree::add_child(parent, pi_node);
             }
         }
@@ -505,6 +717,7 @@ pub(crate) mod default_sax_handler {
 
             let cdata = tree::new_cdata_block(c.myDoc, value, len);
             if !cdata.is_null() {
+                (*cdata).line = current_line(ctxt);
                 tree::add_child(parent, cdata);
             }
         }
@@ -882,10 +1095,45 @@ pub(crate) mod default_sax_handler {
     ///
     /// # SAFETY
     ///
+    /// Default `reference` handler.
+    ///
+    /// Creates an ENTITY_REF node in the tree (upstream default behavior when
+    /// entity substitution is off).
+    ///
+    /// # SAFETY
+    ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `name` must be a valid null-terminated string.
     pub unsafe extern "C" fn reference(ctx: *mut c_void, name: *const xmlChar) {
-        // No-op — references are expanded by the parser in default mode.
+        let ctxt = unsafe { ctxt_from_ctx(ctx) };
+        if ctxt.is_null() || name.is_null() {
+            return;
+        }
+
+        // SAFETY: The context is guaranteed valid by the caller.
+        unsafe {
+            let c = &*ctxt;
+
+            let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
+                let idx = (c.nodeNr - 1) as usize;
+                *c.nodeTab.add(idx)
+            } else {
+                c.myDoc as *mut _xmlNode
+            };
+
+            if parent.is_null() {
+                return;
+            }
+
+            let ref_node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
+            if !ref_node.is_null() {
+                (*ref_node).type_ = XML_ENTITY_REF_NODE as c_int;
+                (*ref_node).name = crate::xml::string::xml_strdup(name);
+                (*ref_node).doc = c.myDoc;
+                (*ref_node).line = current_line(ctxt);
+                tree::add_child(parent, ref_node);
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

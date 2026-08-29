@@ -1,6 +1,6 @@
 # libxml-rs
 
-**Phase 9: EXSLT + `xsltproc` — Complete EXSLT Modules and CLI.**
+**Phase 10: `xmllint` + `xmlcatalog` — CLI tools with differential oracle parity.**
 
 Custodial native-Rust reimplementation of the **libxml2 + libxslt** ecosystem:
 a forensic reconstruction of observable behavior, implemented in native Rust,
@@ -13,12 +13,29 @@ historical lifetimes.
 
 ---
 
-## Current Status: Phase 9 — EXSLT + `xsltproc` (§85)
+## Current Status: Phase 10 — `xmllint` + `xmlcatalog` (§85)
 
-Phase 9 delivers the **complete EXSLT module set** (§35) and the
-**`xsltproc` command-line tool** (§36). Per §85:
+Phase 10 delivers the **`xmllint`** and **`xmlcatalog`** command-line tools
+(§36). Per §85:
 
-> *Deliverable: EXSLT + `xsltproc` core oracle courts close.*
+> *Deliverable: `xmllint` + `xmlcatalog` core oracle courts close.*
+
+Both tools are faithful native-Rust ports of the upstream programs, verified
+byte-for-byte against the system libxml2 2.15.3 binaries:
+
+- **`xmllint` CLI** — `--debug`, `--copy`, `--format`, `--valid`/`--postvalid`, `--dtdvalid`, `--xpath`/`--xpath0`, `--xinclude`, `--html`/`--xmlout`, `--noent`, `--no-compact`, `--encode`, `--recover`, `--dropdtd`, `--pedantic`, `--noout`, `--quiet`, `--nonet`, `--huge`, … with upstream exit codes (0/1/3/4) and the upstream `file:line: parser error : MSG` + source-line/caret diagnostics
+- **`xmlcatalog` CLI** — `--create`, `--add`, `--del`, `--resolve` (system/public/URI), `--noout`, `--shell` (interactive `resolve`/`system`/`public`/`add`/`del`/`dump`/`help`/`exit`), SGML→XML catalog conversion, upstream exit codes
+- **Compact text nodes** — the parser reproduces libxml2's `XML_PARSE_COMPACT` inline text storage (≤15 bytes in the node struct), so `--debug` dumps show `TEXT compact` exactly like the oracle; merged/entity-interrupted text is correctly non-compact
+- **DTD validation diagnostics** — `--valid` output (messages, caret placement, exit codes) matches the oracle for both no-DTD and declaration errors
+- **Entity expansion** — `--noent` re-parses declared-entity content through the input stack (nested references and markup entities included), matching upstream trees
+- **HTML serialization** — meta-charset insertion, upstream formatting rules (p/pre/param never formatted, single-child and inline elements inline), HTML document headers
+- **1110 passing tests**: `cargo test --lib` — 0 failures
+- **Differential oracle parity**: a 44-case CLI suite (`target/difftest_summary.sh`) is **byte-identical** to the system tools (stdout + stderr + exit codes), plus a 30+ case edge corpus (entities, DTDs, HTML, compact/no-compact, debug dumps, XPath)
+
+### Phase 9 (historical)
+
+Phase 9 delivered the **complete EXSLT module set** (§35) and the
+**`xsltproc` command-line tool** (§36):
 
 All seven EXSLT modules are implemented natively and registered through the
 process-wide EXSLT registry (`exsltRegisterAll`, mirroring upstream):
@@ -208,7 +225,7 @@ at your option.
 | Validation family | 🟢 DTD (56) + XSD (62) + RELAX NG (56) + Schematron (40) |
 | XSLT 1.0 engine | 🟢 103 tests; full instruction surface; end-to-end transforms |
 | C headers | 🟢 45+19 headers, gcc & clang, zero warnings |
-| CLI parity | 🟢 `xsltproc` complete with upstream exit codes (Phase 9); `xmllint`/`xmlcatalog` staged (Phase 10) |
+| CLI parity | 🟢 `xsltproc` (Phase 9), `xmllint` + `xmlcatalog` (Phase 10) complete with upstream exit codes and differential oracle parity |
 | EXSLT | 🟢 All seven modules registered (34 tests); `exsl:node-set` on RTFs, math/set/str/dyn/date/func verified end-to-end |
 | Historical atlas | 🟡 Release manifests + API/ABI snapshots for current versions |
 | Oracle infrastructure | 🟢 Docker oracle built and verified |
