@@ -1,0 +1,32 @@
+{
+  "case_id": "CLI-XMLCATALOG-0005",
+  "surface": "cli-xmlcatalog",
+  "purpose": "--create dumps empty catalog to stdout",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--create",
+      "@TMP@/empty2.xml"
+    ],
+    "steps": [
+      [
+        "--create",
+        "@TMP@/empty2.xml"
+      ]
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

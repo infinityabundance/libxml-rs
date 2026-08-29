@@ -1,0 +1,28 @@
+{
+  "case_id": "CLI-XMLLINT-0031",
+  "surface": "cli-xmllint",
+  "purpose": "--xpath attribute on namespaced doc",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "ns.xml",
+      "--xpath",
+      "@id"
+    ],
+    "document": "ns.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

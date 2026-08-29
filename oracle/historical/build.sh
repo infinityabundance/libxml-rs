@@ -56,9 +56,11 @@ if [ ! -x ./configure ]; then
   fi
 fi
 
-CFLAGS="-O2 -w" ./configure --prefix="$PREFIX" --disable-shared --enable-static \
-  --without-python --without-http --without-ftp --without-icu --without-threads \
-  ${LIBXML2_PREFIX:+--with-libxml-prefix=$LIBXML2_PREFIX} >/dev/null 2>&1
+CFLAGS="-O2 -w" ./configure $(python3 "$ROOT/tools/evidence/oracle_manifest.py" argv "$PROJ" "$PREFIX" ${LIBXML2_PREFIX:+"$LIBXML2_PREFIX"}) >/dev/null 2>&1
 make -j"$(nproc)" >/dev/null 2>&1
 make install >/dev/null 2>&1
+# Record the oracle's full build identity (11.1-A): upstream tag/commit, source
+# tree hash, adaptation hash, host/libc/compiler, configure argv, feature
+# manifest, config-header hash, built binary/library hashes, header tree hash.
+python3 "$ROOT/tools/evidence/oracle_manifest.py" emit "$PROJ" "$TAG" ${LIBXML2_PREFIX:+"$LIBXML2_PREFIX"} >/dev/null
 echo "built $PROJ-$TAG -> $PREFIX"

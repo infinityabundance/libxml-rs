@@ -1,0 +1,25 @@
+{
+  "case_id": "CLI-XMLCATALOG-0004",
+  "surface": "cli-xmlcatalog",
+  "purpose": "unknown option handling",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--bogus"
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

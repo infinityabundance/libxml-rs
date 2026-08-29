@@ -1,0 +1,61 @@
+{
+  "schema": "oracle-manifest-1",
+  "project": "libxml2",
+  "version": "2.8.0",
+  "resolved_git_tag": "v2.8.0",
+  "upstream_commit_sha": "c943f708f1853de4eb15e5a94cf0b35d108da87a",
+  "source_tree_hash": "0a9523e9e765a5c193c36b7def434dfa09aab47c7cb465075df974c99b1cdf8e",
+  "source_tree_path": "oracle/historical/src/libxml2-2.8.0",
+  "adaptation_script": "oracle/historical/adapt/autotools-modernize.sed",
+  "adaptation_script_hash": "0deb823237073d47c0758950906fbfeaa61bde8ab8f73e39297d894b18e7fe5f",
+  "host": {
+    "hostname": "vanir",
+    "os": "Linux",
+    "kernel": "7.2.0-1-cachyos",
+    "architecture": "x86_64",
+    "libc": "ldd (GNU libc) 2.44"
+  },
+  "build_environment": {
+    "compiler": "gcc (GCC) 16.2.1 20260810",
+    "autoconf": "autoconf (GNU Autoconf) 2.73",
+    "automake": "automake (GNU automake) 1.18.1",
+    "libtool": "libtoolize (GNU libtool) 2.6.2",
+    "path": "/usr/bin:$PATH (cargo bin shadows autotools with Rust shims; forced to system)"
+  },
+  "configuration": {
+    "configure_argv": [
+      "--prefix=/mnt/1tb_kingston/libxml-rs/oracle/historical/prefix/libxml2-2.8.0",
+      "--disable-shared",
+      "--enable-static",
+      "--without-python",
+      "--without-http",
+      "--without-ftp",
+      "--without-icu",
+      "--without-threads"
+    ],
+    "CPPFLAGS": "",
+    "CFLAGS": "-O2 -w",
+    "LDFLAGS": "",
+    "enabled_features": null,
+    "disabled_features": [
+      "python",
+      "http",
+      "ftp",
+      "icu",
+      "threads",
+      "shared"
+    ],
+    "runtime_compiled_with": "compiled with: Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML Legacy C14N Catalog XPath XPointer XInclude Iconv ISO8859X Unicode Regexps Automata Expr Schemas Schematron Modules Debug Zlib Lzma"
+  },
+  "generated_config_header_hash": "c2810d30a6851ad1f32f320464297964b0f8aea9d5a41376fe653d7a35895822",
+  "built_binary_hashes": {
+    "xml2-config": "6695c96e4fc1848653828ce2d57162f1343a4debe1d2cc778f39b0d25d5c4368",
+    "xmlcatalog": "784ef7911c99a4795e76379163895a52e1bffd1158921d55eb7adc4d96dd7b39",
+    "xmllint": "0798851838f80d2c49e5dfa7279b0557fc82444a6f5c2b32967b952c6e312e2f"
+  },
+  "built_library_hashes": {
+    "libxml2.a": "a45f81480116c3881d4b8d1edf96a79250f72d92a885d78fb5047915bd042557"
+  },
+  "installed_header_tree_hash": "0e155358091f016aa5ecafcdefe11ff0cbc85fa694ba39490ff7f6efa171b289",
+  "doxygen_profile": null
+}

@@ -7,7 +7,9 @@
     "HIST-EPOCH-0001", "HIST-EPOCH-0002", "HIST-EPOCH-0003", "HIST-EPOCH-0004",
     "HIST-EPOCH-0005", "HIST-EPOCH-0006", "HIST-EPOCH-0007", "HIST-EPOCH-0008"
   ],
-  "candidate_commit": "424bec77cc3a7ec55fb46ebf8dddea92b40c7851 (Phase 11 infrastructure)",
+  "candidate_commit": "223caec (seal)",
+  "execution_commit": "424bec77cc3a7ec55fb46ebf8dddea92b40c7851 (matrix executed at this tree state)",
+  "seal_commit": "223caec69... (Phase 11 seal; matrix artifacts re-verified at seal)",
   "command": "oracle/historical/run_matrix.sh all  (runner: bash; epoch aggregation: python3)",
   "environment": {
     "host": "linux (glibc era-compatible build host)",

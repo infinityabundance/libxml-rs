@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XMLLINT-0019",
+  "surface": "cli-xmllint",
+  "purpose": "--html parse + dump",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "page.html",
+      "--html"
+    ],
+    "document": "page.html"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

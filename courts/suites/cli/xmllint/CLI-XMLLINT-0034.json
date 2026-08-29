@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0034",
+  "surface": "cli-xmllint",
+  "purpose": "markup entity in attribute value (R-000121)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "markattr.xml"
+    ],
+    "document": "markattr.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000121",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

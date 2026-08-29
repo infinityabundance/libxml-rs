@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XMLLINT-0004",
+  "surface": "cli-xmllint",
+  "purpose": "--format on compact input",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "fmt.xml",
+      "--format"
+    ],
+    "document": "fmt.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

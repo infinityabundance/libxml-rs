@@ -1,0 +1,3 @@
+bad.xml:1: parser error : Opening and ending tag mismatch: b line 1 and a
+<a><b></a>
+          ^

@@ -1,0 +1,45 @@
+{
+  "case_id": "CLI-XMLCATALOG-0010",
+  "surface": "cli-xmlcatalog",
+  "purpose": "interactive shell: resolve/system/public/del/dump",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--create",
+      "@TMP@/cat.xml"
+    ],
+    "stdin_script": "resolve http://ex.org/a\nsystem http://ex.org/a\npublic -//OASIS//DTD X//EN\ndel http://ex.org/a\ndump\nexit\n",
+    "steps": [
+      [
+        "--create",
+        "@TMP@/cat.xml"
+      ],
+      [
+        "--noout",
+        "--add",
+        "system",
+        "http://ex.org/a",
+        "http://ex.org/a.xml",
+        "@TMP@/cat.xml"
+      ],
+      [
+        "--shell",
+        "@TMP@/cat.xml"
+      ]
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

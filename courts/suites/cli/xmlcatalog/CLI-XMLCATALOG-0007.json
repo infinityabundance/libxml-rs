@@ -1,0 +1,46 @@
+{
+  "case_id": "CLI-XMLCATALOG-0007",
+  "surface": "cli-xmlcatalog",
+  "purpose": "--resolve system identifier",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--create",
+      "@TMP@/cat.xml"
+    ],
+    "steps": [
+      [
+        "--create",
+        "@TMP@/cat.xml"
+      ],
+      [
+        "--noout",
+        "--add",
+        "system",
+        "http://ex.org/a",
+        "http://ex.org/a.xml",
+        "@TMP@/cat.xml"
+      ],
+      [
+        "--noout",
+        "--resolve",
+        "http://ex.org/a",
+        "@TMP@/cat.xml"
+      ]
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

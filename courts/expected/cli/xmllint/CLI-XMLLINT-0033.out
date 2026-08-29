@@ -1,0 +1,10 @@
+DOCUMENT
+version=1.0
+URL=attrent.xml
+standalone=true
+  ELEMENT a
+    ATTRIBUTE p
+      TEXT
+        content=AT&T
+    TEXT compact
+      content=v

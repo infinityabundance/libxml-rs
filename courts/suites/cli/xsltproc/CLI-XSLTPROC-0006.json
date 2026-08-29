@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XSLTPROC-0006",
+  "surface": "cli-xsltproc",
+  "purpose": "xsl:if/xsl:when boolean conversion (node-set/number/string)",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "if.xsl",
+      "doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-09-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc"
+  ]
+}

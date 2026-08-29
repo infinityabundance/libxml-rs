@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library>
+  <book id="b1"><title>Rust Programming</title><author>Klabnik</author></book>
+  <book id="b2"><title>XML in Practice</title><author>Smith</author></book>
+  <book id="b3"><title>XSLT Cookbook</title><author>Jones</author></book>
+</library>

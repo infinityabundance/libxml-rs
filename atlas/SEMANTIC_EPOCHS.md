@@ -40,7 +40,12 @@ buildable on this host. A tier-3 container would be required for the 2.0–2.6 s
 
 Build identity: GCC 16.2.1, autoconf 2.73, automake 1.18.1; matrix runner: bash +
 python3; capture of a full run is `sha256(oracle/historical/results/matrix.json)` =
-`5776ade88bf37bf5694b325560c55c51fbad4f155f31d4e82e1c4c7d8fa7261f` (2026-08-29 run).
+`b270a9fb360987be70d22f33df238d9f9c99631e44c7744b42766471ab8b6141` (2026-08-29 run,
+11.1-A). Every oracle additionally carries a committed `oracle-manifest.json`
+(`atlas/oracle-manifests/`) binding upstream tag/commit SHA, source-tree hash,
+adaptation-script hash, host/libc/arch, compiler/autotools versions, configure
+argv, feature manifest, config-header hash and built binary/library hashes; the
+matrix hashes all 18 manifests in `matrix.json["_oracle_manifests"]`.
 
 ---
 

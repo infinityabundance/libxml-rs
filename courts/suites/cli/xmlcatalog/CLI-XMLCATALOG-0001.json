@@ -1,0 +1,33 @@
+{
+  "case_id": "CLI-XMLCATALOG-0001",
+  "surface": "cli-xmlcatalog",
+  "purpose": "xmlcatalog --create writes the catalog skeleton",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--create",
+      "@TMP@/cat.xml"
+    ],
+    "steps": [
+      [
+        "--create",
+        "@TMP@/cat.xml"
+      ]
+    ],
+    "created_file": "@TMP@/cat.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

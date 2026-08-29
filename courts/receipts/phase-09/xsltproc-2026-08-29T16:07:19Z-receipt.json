@@ -1,0 +1,210 @@
+{
+  "receipt_id": "CLI-XSLTPROC-09-2026-08-29T16:07:19Z",
+  "phase": "09",
+  "tool": "xsltproc",
+  "timestamp": "2026-08-29T16:07:19Z",
+  "candidate_commit": "223caec69c091c7cf50a726ebaf3fd1c96a2d3fc",
+  "oracle_identity": "Using libxml 21503-GITv2.15.3, libxslt 10145-GITv1.1.45 and libexslt 825-GITv1.1.45\nxsltproc was compiled against libxml 21501, libxslt 10145 and libexslt 825\nlibxslt 10145 was compiled against libxml 21501\nlibexslt 825 was compiled against libxml 21501",
+  "oracle_binary": "/usr/bin/xsltproc",
+  "candidate_binary": "/mnt/1tb_kingston/libxml-rs/target/debug/xsltproc",
+  "normalization": "argv0 path normalized to TOOL (tools echo their own invocation path); all other bytes compared raw",
+  "cases": [
+    {
+      "case_id": "CLI-XSLTPROC-0001",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "c6700f36788091d19d5a98db705f5bede31bb761d1a95976166257a959b2578a",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "c6700f36788091d19d5a98db705f5bede31bb761d1a95976166257a959b2578a",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0002",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "6d60c92b13fda84d1ddb7d1eb4c84f332711d905b53caf7e323bc383e099b797",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "6d60c92b13fda84d1ddb7d1eb4c84f332711d905b53caf7e323bc383e099b797",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0003",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "c68b35a2476d6285263a1f88d0fa6ad8e94f8e4ec2a41827a70d49da5863fef3",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "c68b35a2476d6285263a1f88d0fa6ad8e94f8e4ec2a41827a70d49da5863fef3",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0004",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "0d7c3121a24cafd5d704396746475d649422349c02c91067f6b7d75ebac14852",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "0d7c3121a24cafd5d704396746475d649422349c02c91067f6b7d75ebac14852",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0005",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "aa3f3675f91b24f9d2375246702979405aff6db9493b9cfa1c849a946741e290",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "aa3f3675f91b24f9d2375246702979405aff6db9493b9cfa1c849a946741e290",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0006",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "06e663bcb55f8fb2633ba4f008e965bec1b9b4c2da35db1d69a0b6efb413793a",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "06e663bcb55f8fb2633ba4f008e965bec1b9b4c2da35db1d69a0b6efb413793a",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0007",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "d76e89d3f3404eb8c5c2cea1bf0b4aef115b3cbd6c6a7667435a74bd0f58208f",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "d76e89d3f3404eb8c5c2cea1bf0b4aef115b3cbd6c6a7667435a74bd0f58208f",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0008",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "f12311a833eafa0559719fab77391a6a64dc035e094980e21d5cf5039037b616",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "f12311a833eafa0559719fab77391a6a64dc035e094980e21d5cf5039037b616",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0009",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "71a2e439a6ba2e2b371497228adea079814acd63f14d50c7859f62a11cc17598",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "71a2e439a6ba2e2b371497228adea079814acd63f14d50c7859f62a11cc17598",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0010",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "de5bffb2ef83417949f15bda43218950224d0e68c049d4392818c8485a110372",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "de5bffb2ef83417949f15bda43218950224d0e68c049d4392818c8485a110372",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0011",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "8e7c0b739e67dbbc5403911a2fc00a3743c6ff05935cf826c5a7ca195ec8191f",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "8e7c0b739e67dbbc5403911a2fc00a3743c6ff05935cf826c5a7ca195ec8191f",
+      "expected_present": false,
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XSLTPROC-0012",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "7ec26a2d8954bcc30a7d9044f72dcbfdb61d5271f81c024d0e55674a9b725cd9",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "7ec26a2d8954bcc30a7d9044f72dcbfdb61d5271f81c024d0e55674a9b725cd9",
+      "expected_present": false,
+      "expected_match": true
+    }
+  ],
+  "totals": {
+    "pass": 12,
+    "fail": 0
+  },
+  "verdict": "PASS"
+}

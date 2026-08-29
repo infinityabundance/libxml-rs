@@ -1,0 +1,2 @@
+/usr/bin/xmllint: using libxml version 21503-GITv2.15.3
+   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib 

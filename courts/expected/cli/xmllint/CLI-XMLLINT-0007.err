@@ -1,0 +1,3 @@
+ok.xml:2: validity error : Validation failed: no DTD found !
+<a><b>x</b><c>y</c></a>
+  ^

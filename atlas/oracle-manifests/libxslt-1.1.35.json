@@ -1,0 +1,62 @@
+{
+  "schema": "oracle-manifest-1",
+  "project": "libxslt",
+  "version": "1.1.35",
+  "resolved_git_tag": "v1.1.35",
+  "upstream_commit_sha": "50af4e65da712ceb59f98a7feeeab2ddc3324ab9",
+  "source_tree_hash": "373c0fba9529a15ff47298419ff9c78743e136c0e550edc34a167d45d0567ae0",
+  "source_tree_path": "oracle/historical/src/libxslt-1.1.35",
+  "adaptation_script": "oracle/historical/adapt/autotools-modernize.sed",
+  "adaptation_script_hash": "0deb823237073d47c0758950906fbfeaa61bde8ab8f73e39297d894b18e7fe5f",
+  "host": {
+    "hostname": "vanir",
+    "os": "Linux",
+    "kernel": "7.2.0-1-cachyos",
+    "architecture": "x86_64",
+    "libc": "ldd (GNU libc) 2.44"
+  },
+  "build_environment": {
+    "compiler": "gcc (GCC) 16.2.1 20260810",
+    "autoconf": "autoconf (GNU Autoconf) 2.73",
+    "automake": "automake (GNU automake) 1.18.1",
+    "libtool": "libtoolize (GNU libtool) 2.6.2",
+    "path": "/usr/bin:$PATH (cargo bin shadows autotools with Rust shims; forced to system)"
+  },
+  "configuration": {
+    "configure_argv": [
+      "--prefix=/mnt/1tb_kingston/libxml-rs/oracle/historical/prefix/libxslt-1.1.35",
+      "--disable-shared",
+      "--enable-static",
+      "--without-python",
+      "--without-http",
+      "--without-ftp",
+      "--without-icu",
+      "--without-threads",
+      "--with-libxml-prefix=/mnt/1tb_kingston/libxml-rs/oracle/historical/prefix/libxml2-2.9.10"
+    ],
+    "CPPFLAGS": "",
+    "CFLAGS": "-O2 -w",
+    "LDFLAGS": "",
+    "enabled_features": null,
+    "disabled_features": [
+      "python",
+      "http",
+      "ftp",
+      "icu",
+      "threads",
+      "shared"
+    ],
+    "runtime_compiled_with": null
+  },
+  "generated_config_header_hash": "09e8a9a3fc09dda15bf45c7f1e36c37c46432db1653cc0630c3a5dac68ffff51",
+  "built_binary_hashes": {
+    "xslt-config": "001b2eca53bb52f8eb9c4d59c0fc4a5475dac5ca2c60395c67272c75e6d09f88",
+    "xsltproc": "db4f3c4b8f0e1ff66b765fba02a1555dc4078e001ffcd81309d959e94dc481cd"
+  },
+  "built_library_hashes": {
+    "libexslt.a": "3d5278f1870e73cad61f5180d3428d6dd9f214d8ce82fc432046a3a3c95df7e6",
+    "libxslt.a": "100566022ff2b27c2731af61010f5fcb9a9ed19035baff20ba2eb3ccc464ae92"
+  },
+  "installed_header_tree_hash": "098ad50187266b6aca0d4c81885c6e7bfcad7c23970bebe16df2e24e9356c9de",
+  "doxygen_profile": null
+}

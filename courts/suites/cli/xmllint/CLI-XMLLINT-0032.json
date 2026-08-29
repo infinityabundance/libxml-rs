@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XMLLINT-0032",
+  "surface": "cli-xmllint",
+  "purpose": "--debug entity decl content (R-000119)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "dclent.xml",
+      "--debug"
+    ],
+    "document": "dclent.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000119",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

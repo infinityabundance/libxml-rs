@@ -1,0 +1,3 @@
+invalid.xml:3: element a: validity error : No declaration for element a
+<a>y</a>
+        ^

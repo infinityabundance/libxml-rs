@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XSLTPROC-0009",
+  "surface": "cli-xsltproc",
+  "purpose": "xsl:key + key() lookup",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "keys.xsl",
+      "doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-09-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc"
+  ]
+}

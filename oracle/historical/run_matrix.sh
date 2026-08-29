@@ -129,9 +129,9 @@ XEOF
 fi
 
 # ── Fingerprint + matrix emission ────────────────────────────────────────
-python3 - "$RES" "$TOOL" <<'PYEOF'
+python3 - "$RES" "$TOOL" "$OUT" <<'PYEOF'
 import hashlib, json, os, sys
-res, tool = sys.argv[1], sys.argv[2]
+res, tool, out = sys.argv[1], sys.argv[2], sys.argv[3]
 matrix = {}
 tools = ["xmllint", "xsltproc"] if tool == "all" else [tool]
 for t in tools:
@@ -155,13 +155,30 @@ for t in tools:
         with open(os.path.join(vdir, "fingerprint.json"), "w") as f:
             json.dump(fp, f, indent=1)
         matrix.setdefault(t, {})[v] = fp["cases"]
-out = os.path.join(res, "matrix.json")
-with open(out, "w") as f:
+
+# Oracle manifests (11.1-A): bind each oracle's build identity into the matrix.
+# Hash the committed evidence copies under atlas/oracle-manifests/ (survives
+# deletion of the build prefixes).
+manifests = {}
+mroot = os.path.join(out, "..", "..", "atlas", "oracle-manifests")
+mroot = os.path.normpath(mroot)
+for proj in ("libxml2", "libxslt"):
+    for entry in sorted(os.listdir(mroot)):
+        if entry.startswith(proj + "-") and entry.endswith(".json"):
+            mpath = os.path.join(mroot, entry)
+            manifests[entry[:-5]] = hashlib.sha256(open(mpath, "rb").read()).hexdigest()
+matrix["_oracle_manifests"] = manifests
+
+outf = os.path.join(res, "matrix.json")
+with open(outf, "w") as f:
     json.dump(matrix, f, indent=1, sort_keys=True)
-print("matrix written:", out)
+print("matrix written:", outf)
 
 # Epoch grouping: for each case, group versions by identical hash.
+# (skip metadata keys such as _oracle_manifests)
 for t, versions in matrix.items():
+    if not isinstance(versions, dict) or not versions or t.startswith("_"):
+        continue
     print(f"\n── {t} semantic epochs (per-case identical outputs) ──")
     all_cases = sorted({c for v in versions.values() for c in v})
     for case in all_cases:

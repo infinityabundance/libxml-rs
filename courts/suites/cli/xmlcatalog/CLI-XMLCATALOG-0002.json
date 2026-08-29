@@ -1,0 +1,34 @@
+{
+  "case_id": "CLI-XMLCATALOG-0002",
+  "surface": "cli-xmlcatalog",
+  "purpose": "--create with --noout",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "--create",
+      "@TMP@/scratch.xml",
+      "--noout"
+    ],
+    "steps": [
+      [
+        "--create",
+        "@TMP@/scratch.xml",
+        "--noout"
+      ]
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmlcatalog"
+  ]
+}

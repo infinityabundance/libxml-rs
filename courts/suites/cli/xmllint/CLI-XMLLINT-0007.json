@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XMLLINT-0007",
+  "surface": "cli-xmllint",
+  "purpose": "--valid with no DTD (exit epoch 4/3/0)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "ok.xml",
+      "--valid"
+    ],
+    "document": "ok.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-10-differential-corpus"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

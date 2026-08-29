@@ -1,66 +1,524 @@
 {
+  "schema_version": 2,
+  "generator": "tools/evidence/ledger_gen.py",
+  "generated": "2026-08-29",
+  "policy": "§70: Markdown generated from JSON; §71: every residual retains history after fixing. JSON is the only hand-maintained truth.",
+  "phases": ["0", "8", "9", "10", "11"],
   "ledger": [
     {
       "id": "R-000001",
       "status": "FIXED",
+      "phase": "0",
+      "title": "#line directive mapping uses wrong coordinate space",
       "surface": "tooling",
+      "component": ["tools/archaeology/apiatlas.py"],
       "discovery_date": "2026-08-20",
-      "component": "tools/archaeology/apiatlas.py",
-      "title": "#line directive mapping uses original source line number instead of preprocessed output line number",
-      "description": "The resolve_origin function used the original source line number from #line directives as the dict key. When multiple #line directives shared the same original line number (e.g., '# 1 \"xmlIO.h\"' at the start and '# 52 \"xmlIO.h\" 2' after an include), the later entry overwrote the earlier one. This caused declarations in the first part of a header to be attributed to a subsequently-included file, and declarations from included files to be attributed to the includer. The fix uses the actual preprocessed output line number (enumerate index) as the mapping key, which is always unique.",
-      "root_cause": "Dict key collision: line_map[orig_line] = filename overwrites when multiple #line directives share the same original line number but refer to different files at different positions in the preprocessed output.",
-      "fix": "Replaced dict with list of (preprocessed_output_line, filename) tuples. The preprocessed output line number (1-indexed enumerate index) is used as the key instead of the original source line number from the #line directive.",
-      "fix_commit": "current-session",
-      "courts": [],
-      "evidence": "45 system functions leaked into header inventory (stdio functions like fprintf, fopen, printf). ~840 functions captured vs expected ~900+. 9 globals captured vs expected ~89.",
-      "classification": "CANDIDATE_BUG"
+      "fixed_date": "2026-08-20",
+      "root_cause": "The resolve_origin function used the original source line number from #line directives as dict keys. When multiple directives shared the same original line number, they overwrote each other, causing incorrect file attribution. Furthermore, the #line mapping approach is fundamentally flawed because loc.line from clang's AST is in the original source file coordinate space, while #line directive positions are in the preprocessed output coordinate space — these are different and cannot be compared directly.",
+      "fix": "Replaced the #line mapping approach entirely. The new resolve_origin uses clang's AST location fields directly: (1) loc.file for type declarations from included files, (2) loc.includedFrom presence to detect function declarations from included files (filtered out — they'll be captured when their own header is processed), (3) absence of both for direct declarations in the main file.",
+      "evidence": "45 system functions leaked into header inventory; most HTML functions (44+) were missing; tree functions were missing.",
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-20", "note": "discovered during Phase 0 header census"},
+        {"status": "FIXED", "date": "2026-08-20", "note": "resolve_origin rewritten"}
+      ]
     },
     {
       "id": "R-000002",
       "status": "FIXED",
+      "phase": "0",
+      "title": "System header path filtering missing",
       "surface": "tooling",
+      "component": ["tools/archaeology/apiatlas.py"],
       "discovery_date": "2026-08-20",
-      "component": "tools/archaeology/apiatlas.py",
-      "title": "System header path filtering missing from declaration collector",
-      "description": "The collect function only checked whether the declaration's resolved origin started with the extracted header tree root. It did not filter declarations originating from known system paths (/usr/include/, /usr/lib/clang/, <built-in>). When the #line mapping or fallback resolved to a system path, the declaration could still pass the filter if the path happened to match (or if the fallback 'includedFrom' pointed to the libxml2 header). Added explicit system-path prefix filtering as a safety net.",
-      "root_cause": "No explicit filter for system header paths in the collect() function.",
-      "fix": "Added origin.startswith(('/usr/include/', '/usr/lib/', '<built-in>', '/usr/local/include/', '/usr/lib/clang/')) check before processing declarations.",
-      "fix_commit": "current-session",
-      "courts": [],
-      "evidence": "45 system functions in header inventory despite the hdr_root_str prefix check.",
-      "classification": "CANDIDATE_BUG"
+      "fixed_date": "2026-08-20",
+      "root_cause": "No explicit filter for system header paths in the collect() function. When resolve_origin returned None (for declarations from included files), the caller didn't handle it.",
+      "fix": "Added None check for origin, and added a comprehensive system function name denylist (SYSTEM_FUNCTION_NAMES) as a secondary defense for declarations that bypass origin-based filtering.",
+      "evidence": "45 system functions (fopen, fprintf, printf, etc.) in header inventory.",
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-20"},
+        {"status": "FIXED", "date": "2026-08-20"}
+      ]
     },
     {
       "id": "R-000003",
       "status": "FIXED",
+      "phase": "0",
+      "title": "Internal __xml* functions not classified",
       "surface": "tooling",
+      "component": ["tools/archaeology/symbols.py"],
       "discovery_date": "2026-08-20",
-      "component": "tools/archaeology/symbols.py",
-      "title": "Internal __xml* functions not classified separately from missing API",
-      "description": "The symbols.py ABI diff tool listed internal __xml* function declarations (__xmlFree, __xmlMalloc, __xmlRealloc, __xmlMemStrdup, __xmlMallocAtomic, __xmlOutputBufferCreateFilename) in the 'in_headers_only' category alongside potentially missing API functions. These are legitimate function declarations in the public headers that serve as internal implementations behind the public function-pointer variables (xmlFree, xmlMalloc, etc.). They are intentionally not exported from the DSO and should be classified separately.",
-      "root_cause": "No classification for internal __xml* functions that are declared in headers but not intended for export.",
-      "fix": "Added INTERNAL_FUNCTIONS set and is_internal_function() predicate. Internal functions are now reported separately in the 'internal_functions' field, not mixed in with 'in_headers_only_functions'.",
-      "fix_commit": "current-session",
-      "courts": [],
-      "evidence": "6 __xml* functions appeared in 'in_headers_only' list: __xmlFree, __xmlMalloc, __xmlMallocAtomic, __xmlMemStrdup, __xmlRealloc, __xmlOutputBufferCreateFilename.",
-      "classification": "CANDIDATE_BUG"
+      "fixed_date": "2026-08-20",
+      "root_cause": "Internal __xml* function declarations (the implementations behind public function-pointer variables) were listed alongside potentially missing API functions.",
+      "fix": "Added INTERNAL_FUNCTIONS set and separate reporting in internal_functions field.",
+      "evidence": "6 __xml* functions now correctly classified.",
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-20"},
+        {"status": "FIXED", "date": "2026-08-20"}
+      ]
     },
     {
       "id": "R-000004",
       "status": "FIXED",
+      "phase": "0",
+      "title": "SAX1 callback names not classified",
       "surface": "tooling",
+      "component": ["tools/archaeology/symbols.py"],
       "discovery_date": "2026-08-20",
-      "component": "tools/archaeology/symbols.py",
-      "title": "SAX1 callback names not classified separately from undocumented DSO exports",
-      "description": "The symbols.py ABI diff tool listed SAX1 callback names (internalSubset, isStandalone, startDocument, endElement, characters, etc.) in the 'in_dso_only' category. These are not individual exported functions — they are global function-pointer variables (fields of the xmlSAXHandler struct) that appear in the DSO symbol table as OBJECT type. They should be classified separately as SAX1 compatibility struct fields.",
-      "root_cause": "No classification for SAX1 callback struct fields that appear in DSO symbol tables but are not individual function declarations in headers.",
-      "fix": "Added SAX1_CALLBACK_NAMES set and is_sax1_callback() predicate. SAX1 callback names are now reported separately in the 'sax1_callbacks' field.",
-      "fix_commit": "current-session",
-      "courts": [],
-      "evidence": "32 SAX1 callback names appeared in 'in_dso_only' list.",
-      "classification": "CANDIDATE_BUG"
+      "fixed_date": "2026-08-20",
+      "root_cause": "SAX1 callback struct field names appeared in DSO symbol tables as OBJECT type but were listed as undocumented function exports.",
+      "fix": "Added SAX1_CALLBACK_NAMES set and separate reporting in sax1_callbacks field.",
+      "evidence": "24 SAX1 callback names now correctly classified.",
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-20"},
+        {"status": "FIXED", "date": "2026-08-20"}
+      ]
+    },
+    {
+      "id": "R-000005",
+      "status": "FIXED",
+      "phase": "0",
+      "title": "XML_TREE_INTERNALS not defined when processing tree.h",
+      "surface": "tooling",
+      "component": ["tools/archaeology/apiatlas.py"],
+      "discovery_date": "2026-08-20",
+      "fixed_date": "2026-08-20",
+      "root_cause": "tree.h has a circular dependency workaround: when XML_TREE_INTERNALS is not defined, it just includes parser.h and hides all tree declarations. Other headers (parser.h, entities.h, valid.h, xmlIO.h) define this before including tree.h, but when processing tree.h directly, the define was missing.",
+      "fix": "Added -DXML_TREE_INTERNALS to clang include args globally.",
+      "evidence": "tree.h showed 0 FunctionDecl declarations; xmlAddChild and all tree functions were missing from the API inventory.",
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-20"},
+        {"status": "FIXED", "date": "2026-08-20"}
+      ]
+    },
+    {
+      "id": "R-000101",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "Parser did not resolve element/attribute namespaces",
+      "surface": "parser / namespaces",
+      "component": ["src/xml/parser/state.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "oracle_versions": "libxml2 2.x (SAX2 namespace processing is core behavior)",
+      "root_cause": "sax_start_element passed the raw qualified name (e.g. xsl:stylesheet) as the SAX2 localname and always passed NULL prefix/URI, so the default tree builder never attached namespace pointers to elements or attributes. XSLT compilation therefore could not recognize xsl: instructions.",
+      "fix": "Split element QNames into prefix + localname, resolve prefixes against the element's namespace declarations (with the xml prefix special case), and pass resolved prefix/URI/namespace arrays to the SAX2 dispatcher.",
+      "regression_courts": ["XSLT end-to-end transform tests (test_end_to_end_*, test_xslt_*)"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28", "note": "SAX2 namespace resolution"}
+      ]
+    },
+    {
+      "id": "R-000102",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "XPath absolute paths evaluated from the root element",
+      "surface": "XPath",
+      "component": ["src/xml/xpath/eval.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "root_cause": "eval_absolute_path searched the document's children for a type-9 node (which never exists as a child), falling back to the root element. /root/item therefore looked for root inside the root element and returned empty.",
+      "fix": "The context node for absolute paths is now the document node itself (doc as *mut _xmlNode), matching XPath 1.0 / semantics.",
+      "regression_courts": ["test_end_to_end_template_transform", "test_xslt_variable_and_call_template"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28"}
+      ]
+    },
+    {
+      "id": "R-000103",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "Template content double-freed with stylesheet document",
+      "surface": "memory / ownership",
+      "component": ["src/xslt/templates/mod.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "root_cause": "xsltFreeTemplate freed the template's content tree, but template content nodes are owned by the stylesheet document (style->doc) and were freed a second time by xsltFreeStylesheet's xmlFreeDoc.",
+      "fix": "xsltFreeTemplate no longer frees the content tree (matching upstream libxslt); the document owns those nodes. The template's heap-copied name/mode strings are freed.",
+      "regression_courts": ["test_parse_stylesheet_memory"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28", "note": "ownership corrected to match upstream"}
+      ]
+    },
+    {
+      "id": "R-000104",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "Result document version/encoding strings double-freed",
+      "surface": "memory / ownership",
+      "component": ["src/xslt/transform/mod.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "root_cause": "xsltApplyStylesheetUser pointed the result document's version at a static literal and copied the stylesheet's encoding/version pointers; free_doc frees those fields with xmlFree, causing invalid frees / double frees.",
+      "fix": "The result document's version/encoding are heap-copied with xml_strdup.",
+      "regression_courts": ["test_end_to_end_*"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28"}
+      ]
+    },
+    {
+      "id": "R-000105",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "node()/text() etc. parsed as function calls",
+      "surface": "XSLT patterns",
+      "component": ["src/xslt/patterns/mod.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "root_cause": "Top-level node(), text(), comment(), processing-instruction() parse as FunctionCall nodes in the XPath AST, so collect_steps/compute_expr_priority treated them as unknown (priority 0.5, no match).",
+      "fix": "Translate bare node-test function calls into steps (child axis + node test) in collect_steps and map their priorities in compute_expr_priority (-0.25 for node(), 0.0 for the others).",
+      "regression_courts": ["pattern priority and compile tests"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28"}
+      ]
+    },
+    {
+      "id": "R-000106",
+      "status": "FIXED",
+      "phase": "8",
+      "title": "match=\"/\" matched the root element",
+      "surface": "XSLT patterns",
+      "component": ["src/xslt/patterns/mod.rs"],
+      "discovery_date": "2026-08-28",
+      "fixed_date": "2026-08-28",
+      "root_cause": "\"/\" parses as a bare Self_/node() step; the matcher treated it as matching any node, so the root template also matched the root element.",
+      "fix": "A bare Self_/node() step with no predicates and no other steps represents the document root pattern: empty steps with is_absolute=true, matching only document nodes.",
+      "regression_courts": ["test_end_to_end_simplified_stylesheet"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-28"},
+        {"status": "FIXED", "date": "2026-08-28"}
+      ]
+    },
+    {
+      "id": "R-000107",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "XPath core functions not registered in the XSLT transform context",
+      "surface": "XSLT / XPath integration",
+      "component": ["src/xslt/transform/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.x (core XPath functions always available during transforms)",
+      "root_cause": "register_xslt_functions registered only the XSLT extension functions (document(), key(), …) and EXSLT, never the XPath 1.0 core function library. Every XPath function call (count(library/book), substring('hello',1,2), …) failed evaluation with an unknown-function error, surfacing as 'Invalid expression' and empty output.",
+      "fix": "Register crate::xml::xpath::functions::core_functions() in the transform context before the XSLT-specific functions.",
+      "regression_courts": ["test_xslt_core_functions_in_value_of"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000108",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "Attribute value templates never evaluated",
+      "surface": "XSLT transform",
+      "component": ["src/xslt/transform/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.x (XSLT 1.0 §7.6.2)",
+      "root_cause": "Literal result element attributes were copied verbatim (id=\"{@id}\" appeared literally in the output); xsl:element/xsl:attribute/xsl:processing-instruction names were not AVT-evaluated either.",
+      "fix": "Implemented eval_avt ({{/}} escapes, {expr} evaluation via eval_xpath, unmatched { literal) and wired it into literal attributes and the name/namespace attributes of xsl:element, xsl:attribute, and xsl:processing-instruction.",
+      "regression_courts": ["test_xslt_avt_in_literal_attribute", "test_xslt_avt_in_xsl_element_name"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000109",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "RTF variable tree double-freed; exsl:node-set unsupported",
+      "surface": "memory / ownership; EXSLT",
+      "component": ["src/xslt/variables/mod.rs", "src/xslt/compiler/mod.rs", "src/xslt/documents/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.x (RVT semantics, exsltCommon.c)",
+      "root_cause": "(1) compile_variable set var->tree = inst->children — nodes owned by the stylesheet document; xsltFreeStackElem freed them, and xsltFreeStylesheet freed them again (double-free / heap corruption). (2) Inline variable content was flattened to a string, so exsl:node-set($var)/path navigation returned nothing.",
+      "fix": "xsltFreeStackElem no longer frees the stylesheet-owned tree. register_global_value deep-copies inline content into a context-owned RVT document registered in the docCache (freed exactly once at context teardown, after the XPath context) and binds the variable to a node-set containing the RVT document node — matching upstream xmlXPathNewValueTree.",
+      "regression_courts": ["test_xslt_variable_inline_content_rtf", "test_xslt_exsl_node_set_on_rtf"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000110",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "node_get_content ignored descendant text",
+      "surface": "tree / XPath string-value",
+      "component": ["src/xml/tree/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.x (xmlNodeGetContent)",
+      "root_cause": "For element nodes, node_get_content concatenated only direct text/CDATA children, so <book><title>Rust</title></book> had an empty string-value and <library>…</library> only whitespace.",
+      "fix": "Recurse into element children so the string-value is the concatenation of all descendant text nodes (XPath 1.0 §4.2 semantics).",
+      "regression_courts": ["test_node_get_content_recurses_descendants", "test_xslt_core_functions_in_value_of"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000111",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "Caller parameters parsed as name=value single strings",
+      "surface": "XSLT parameters",
+      "component": ["src/xslt/parameters/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.x (xsltEvalUserParams, variables.c)",
+      "root_cause": "xsltParseStylesheetParams parsed the params array as single \"name=value\" strings, but upstream passes a NULL-terminated array of (name, value) pairs where the value is an XPath expression evaluated later.",
+      "fix": "Parsed as (name, value) pairs; xsltParseStylesheetParam takes separate name/value arguments with {uri}name namespace support; values bound with XSLT_VAR_PARAM | XSLT_VAR_INTERNAL.",
+      "regression_courts": ["test_parse_params_array_pairs", "xslt::parameters::tests"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000112",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "date:date()/date:time() no-argument default missing",
+      "surface": "EXSLT dates",
+      "component": ["src/exslt/dates/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.x (EXSLT dates spec)",
+      "root_cause": "date_arg returned None for a missing argument, so no-argument calls to date:date()/date:time()/date:year() etc. returned the empty string instead of operating on the current date-time.",
+      "fix": "No-argument calls default to now() (matching EXSLT dates spec and upstream dateArg).",
+      "regression_courts": ["exslt::dates::tests"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000113",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "xsl:if/xsl:when boolean conversion read only boolval",
+      "surface": "XSLT transform",
+      "component": ["src/xslt/transform/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 (differential xsltproc corpus)",
+      "root_cause": "process_if/process_choose tested (*obj).boolval, which is only valid for boolean objects; node-set tests (test=\"author\"), numbers, and strings always converted to false.",
+      "fix": "Added xpath_obj_boolean applying XPath 1.0 §4.3 boolean conversion (node-set non-empty, number non-zero/non-NaN, string non-empty).",
+      "regression_courts": ["test_xslt_if_node_set_test", "CLI-XSLTPROC-0006"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000114",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "Attribute string-value empty in the XPath engine",
+      "surface": "XPath string-value",
+      "component": ["src/xml/xpath/types.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 / libxml2 2.15.3 (differential corpus)",
+      "root_cause": "node_string_value treated type 13 as attribute — but 13 is XML_HTML_DOCUMENT_NODE; attributes are type 2 and their value lives in the first text child (not content). Every string(@attr), @attr='x' predicate, and attribute-based sort returned empty.",
+      "fix": "Attributes (type 2) read the first text child; type 13 handled as a document node (descendant text).",
+      "regression_courts": ["test_xslt_attribute_string_value", "CLI-XSLTPROC-0004", "CLI-XSLTPROC-0005"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000115",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "xsl:sort never compiled or applied",
+      "surface": "XSLT sorting",
+      "component": ["src/xslt/transform/mod.rs", "src/xslt/sorting/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 (differential corpus sort.xsl)",
+      "root_cause": "(1) find_sort_children always passed ptr::null_mut() as the stylesheet, so xsltCompileSort bailed and no sort was applied. (2) xsltEvalSortKey evaluated the sort key expression without setting the internal XPath context node, so all keys evaluated against the wrong context and compared equal.",
+      "fix": "Pass (*ctxt).style into xsltCompileSort; set both the C-struct and internal XPath context node in xsltEvalSortKey.",
+      "regression_courts": ["test_xslt_sort_descending", "CLI-XSLTPROC-0008"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000116",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "key() XPath function was a stub",
+      "surface": "XSLT keys",
+      "component": ["src/xslt/transform/mod.rs", "src/xslt/keys/mod.rs", "src/abi/exports_xml2.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 (differential corpus keys.xsl)",
+      "root_cause": "(1) The registered key() closure returned an empty node-set; the real xsltEvalKeyFunction was never bridged (no transform-context pointer reachable from the XPath function). (2) build_key_table evaluated the use expression without setting the internal XPath context node, so key values were empty strings.",
+      "fix": "Stash the transform context in the internal XPath context's func_lookup_data slot; the key() closure calls xsltEvalKeyFunction (string value of the first node when the value is a node-set). Set the internal context node in build_key_table. Exported xmlXPathFreeNodeSet (missing ABI surface).",
+      "regression_courts": ["test_xslt_key_function", "CLI-XSLTPROC-0009"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000117",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "Local variables/params invisible to XPath evaluation",
+      "surface": "XSLT variables & parameters",
+      "component": ["src/xslt/variables/mod.rs", "src/xslt/parameters/mod.rs", "src/xslt/transform/mod.rs", "src/abi/exports_xml2.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 (differential corpus ct.xsl)",
+      "root_cause": "Local xsl:variable/xsl:param and xsl:with-param were pushed onto the transform variable/parameter stacks only — the XPath evaluator reads the internal XPathContext.variables hash, so $name resolved empty. process_param checked the wrong stack for passed values.",
+      "fix": "xsltPushVariable/xsltPushParam register their values in the XPath context hash (unregistered on pop); process_param consults the hash; object_to_xpathvalue handles XPATH_XSLT_TREE (RTF → node-set of the document node) so local RTF variables stringify and remain navigable.",
+      "regression_courts": ["test_xslt_call_template_with_params", "CLI-XSLTPROC-0010"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000118",
+      "status": "FIXED",
+      "phase": "9",
+      "title": "HTML output method differed from upstream",
+      "surface": "XSLT serialization (method=\"html\")",
+      "component": ["src/xml/html/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "fixed_date": "2026-08-29",
+      "oracle_versions": "libxslt 1.1.45 (differential corpus html.xsl)",
+      "root_cause": "The HTML serializer (1) never inserted <meta charset=\"...\"> into the root <head> and (2) used two-space indentation, while upstream htmlNodeDumpFormatOutput writes newlines only.",
+      "fix": "Insert <meta charset=\"ENCODING\"> as the first child of a root <head> lacking a <meta> element (encoding from the document, default UTF-8); formatting writes newlines without indentation spaces.",
+      "regression_courts": ["test_xslt_html_method_meta_charset", "CLI-XSLTPROC-0011"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "differential oracle discovery"},
+        {"status": "FIXED", "date": "2026-08-29"}
+      ]
+    },
+    {
+      "id": "R-000119",
+      "status": "OPEN",
+      "phase": "10",
+      "title": "Entity content children not built at reference time",
+      "surface": "DTD/entity debug dumps",
+      "component": ["src/xml/parser/state.rs", "src/xml/debug/mod.rs"],
+      "discovery_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.15.3 (xmllint --debug on entity-containing documents)",
+      "root_cause": "Upstream parses a referenced entity's content into ent->children (xmlCtxtParseEntity) and xmlCtxtDumpEntityDecl dumps that tree; our entity declarations store only the raw content string, so the debug dump synthesizes a TEXT compact node for plain content and nothing for markup content. The document tree, serialization and XPath are unaffected (the --noent re-parse path builds the correct in-document nodes).",
+      "observable_residual": "xmllint --debug on a document that references an entity whose content contains markup shows the raw content= line but not the parsed child element under ENTITYDECL.",
+      "triangulation": "E-004 (atlas/SEMANTIC_EPOCHS.md): the historical matrix shows the entity-content child node changed TEXT → TEXT compact at 2.13.0 (commit 8d04f0ee \"tree: Refactor text node updates\", first release v2.13.0). The crate's synthesized TEXT compact node therefore matches the current (2.13.0+) epoch, i.e. the 2.15.3 system oracle, not the pre-2.13 behavior. The remaining gap (markup entity content not parsed into children) is unchanged in every upstream version from 2.7.8 to 2.15.3.",
+      "regression_courts": ["CLI-XMLLINT-0032"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "discovered Phase 10 differential suite; epoch-triangulated Phase 11"}
+      ]
+    },
+    {
+      "id": "R-000120",
+      "status": "OPEN",
+      "phase": "10",
+      "title": "Entity-containing attribute values marked compact in --debug",
+      "surface": "debug dumps",
+      "component": ["src/xml/parser/state.rs", "src/xml/sax/default.rs"],
+      "discovery_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.15.3 (xmllint --debug on <a p=\"AT&amp;T\"/>)",
+      "root_cause": "Upstream attribute values containing entity/character references take the xmlNodeParseAttValue path and are never compact; our tokenizer decodes references before the SAX layer (substitute_refs), losing the \"had references\" signal, so short decoded values are marked compact.",
+      "observable_residual": "TEXT compact vs upstream TEXT for entity-containing attribute values in --debug output. Content, serialization and XPath results are identical.",
+      "triangulation": "The matrix's attr-entity case (<a p=\"AT&amp;T\">) is byte-identical across the entire 2.7.8 → 2.15.3 span — upstream never changed this observable. The crate's compact marking of entity-containing attribute values is a divergence from every epoch, not a version drift.",
+      "regression_courts": ["CLI-XMLLINT-0033"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "discovered Phase 10 differential suite"}
+      ]
+    },
+    {
+      "id": "R-000121",
+      "status": "OPEN",
+      "phase": "10",
+      "title": "'<' in entity ... is not allowed in attributes values reported once",
+      "surface": "parser diagnostics",
+      "component": ["src/xml/parser/state.rs"],
+      "discovery_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.15.3 (xmllint on a document referencing a markup entity in an attribute value)",
+      "root_cause": "Upstream reports the XML_ERR_LT_IN_ATTRIBUTE fatal error twice (parser + validation paths) with the caret at the &; ours reports it once with the caret past the start tag. The message text and exit code (4) match.",
+      "observable_residual": "Single diagnostic vs upstream's double diagnostic; caret column differs by one.",
+      "triangulation": "E-005 (atlas/SEMANTIC_EPOCHS.md): the matrix's attr-markup-entity case shows a real upstream epoch: reported once with exit 1 from 2.7.8 → 2.12.6, reported twice with exit 4 from 2.13.0 → 2.15.3 (boundary pinned to 2.13.0; correlates with NEWS 2.13.0 \"xmllint: Rework parsing\"/error consolidation). The crate's single report is the pre-2.13 epoch while its exit code 4 is the 2.13+ epoch — a hybrid of two epochs. The caret column differs from all upstream versions (ours points one column right of upstream's).",
+      "regression_courts": ["CLI-XMLLINT-0034"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "discovered Phase 10 differential suite; epoch-triangulated Phase 11"}
+      ]
+    },
+    {
+      "id": "R-000122",
+      "status": "OPEN",
+      "phase": "10",
+      "title": "xmlcatalog: option parsing does not stop at the first non-option argument",
+      "surface": "cli-xmlcatalog option parsing",
+      "component": ["src/bin/xmlcatalog.rs"],
+      "discovery_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.15.3 (CLI-XMLCATALOG-0002, promoted Phase 10 differential suite)",
+      "root_cause": "Upstream xmlcatalog.c parses options in a loop that breaks at the first non-option argument (if (argv[i][0] != '-') break;). With '--create FILE --noout' the trailing --noout is therefore never parsed as an option: it becomes a resolution operand against the freshly created catalog (upstream prints 'No entry for SYSTEM --noout' + 'No entry for URI --noout', still dumps the catalog because noout was never set, exit 4). Our parser recognizes --noout anywhere in argv, so we suppress the dump and exit 0.",
+      "observable_residual": "xmlcatalog --create FILE --noout: upstream exit 4 with two 'No entry' diagnostics and a dumped catalog; ours exit 0 with no dump.",
+      "regression_courts": ["CLI-XMLCATALOG-0002"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "discovered by 11.1-A evidence promotion (target/difftest.sh -> committed CLI court)"}
+      ]
+    },
+    {
+      "id": "R-000123",
+      "status": "OPEN",
+      "phase": "10",
+      "title": "xmlcatalog shell 'public' command accepts wrong argument count",
+      "surface": "cli-xmlcatalog shell",
+      "component": ["src/bin/xmlcatalog.rs"],
+      "discovery_date": "2026-08-29",
+      "oracle_versions": "libxml2 2.15.3 (CLI-XMLCATALOG-0010, promoted Phase 10 differential suite)",
+      "root_cause": "Upstream xmlcatalog.c shell command 'public' validates argument count: 'public requires 1 arguments' when the command is not given exactly one argument. Our shell treats the first token as the public identifier and performs a lookup, producing 'No entry for PUBLIC ...' instead.",
+      "observable_residual": "xmlcatalog --shell with 'public -//OASIS//DTD X//EN': upstream errors 'public requires 1 arguments'; ours answers 'No entry for PUBLIC -//OASIS//DTD'.",
+      "regression_courts": ["CLI-XMLCATALOG-0010"],
+      "classification": "CANDIDATE_BUG",
+      "history": [
+        {"status": "OPEN", "date": "2026-08-29", "note": "discovered by 11.1-A evidence promotion (target/difftest.sh -> committed CLI court)"}
+      ]
     }
-  ],
-  "generated": "2026-08-20T00:00:00Z",
-  "generator": "tools/archaeology/apiatlas.py (manual update)"
+  ]
 }

@@ -1,0 +1,67 @@
+{
+  "tools": {
+    "xmllint": {
+      "date": "2026-08-29T16:07:27Z",
+      "candidate_commit": "223caec69c091c7cf50a726ebaf3fd1c96a2d3fc",
+      "oracle_identity": "/usr/bin/xmllint: using libxml version 21503-GITv2.15.3\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib",
+      "pass": 32,
+      "fail": 2,
+      "cases": {
+        "CLI-XMLLINT-0001": "PASS",
+        "CLI-XMLLINT-0002": "PASS",
+        "CLI-XMLLINT-0003": "PASS",
+        "CLI-XMLLINT-0004": "PASS",
+        "CLI-XMLLINT-0005": "PASS",
+        "CLI-XMLLINT-0006": "PASS",
+        "CLI-XMLLINT-0007": "PASS",
+        "CLI-XMLLINT-0008": "PASS",
+        "CLI-XMLLINT-0009": "PASS",
+        "CLI-XMLLINT-0010": "PASS",
+        "CLI-XMLLINT-0011": "PASS",
+        "CLI-XMLLINT-0012": "PASS",
+        "CLI-XMLLINT-0013": "PASS",
+        "CLI-XMLLINT-0014": "PASS",
+        "CLI-XMLLINT-0015": "PASS",
+        "CLI-XMLLINT-0016": "PASS",
+        "CLI-XMLLINT-0017": "PASS",
+        "CLI-XMLLINT-0018": "PASS",
+        "CLI-XMLLINT-0019": "PASS",
+        "CLI-XMLLINT-0020": "PASS",
+        "CLI-XMLLINT-0021": "PASS",
+        "CLI-XMLLINT-0022": "PASS",
+        "CLI-XMLLINT-0023": "PASS",
+        "CLI-XMLLINT-0024": "PASS",
+        "CLI-XMLLINT-0025": "PASS",
+        "CLI-XMLLINT-0026": "PASS",
+        "CLI-XMLLINT-0027": "PASS",
+        "CLI-XMLLINT-0028": "PASS",
+        "CLI-XMLLINT-0029": "PASS",
+        "CLI-XMLLINT-0030": "PASS",
+        "CLI-XMLLINT-0031": "PASS",
+        "CLI-XMLLINT-0032": "PASS",
+        "CLI-XMLLINT-0033": "FAIL",
+        "CLI-XMLLINT-0034": "FAIL"
+      }
+    },
+    "xmlcatalog": {
+      "date": "2026-08-29T16:07:27Z",
+      "candidate_commit": "223caec69c091c7cf50a726ebaf3fd1c96a2d3fc",
+      "oracle_identity": "Usage : /usr/bin/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\nUnknown option --version",
+      "pass": 9,
+      "fail": 2,
+      "cases": {
+        "CLI-XMLCATALOG-0001": "PASS",
+        "CLI-XMLCATALOG-0002": "FAIL",
+        "CLI-XMLCATALOG-0003": "PASS",
+        "CLI-XMLCATALOG-0004": "PASS",
+        "CLI-XMLCATALOG-0005": "PASS",
+        "CLI-XMLCATALOG-0006": "PASS",
+        "CLI-XMLCATALOG-0007": "PASS",
+        "CLI-XMLCATALOG-0008": "PASS",
+        "CLI-XMLCATALOG-0009": "PASS",
+        "CLI-XMLCATALOG-0010": "FAIL",
+        "CLI-XMLCATALOG-0011": "PASS"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+DOCUMENT
+version=1.0
+URL=dclent.xml
+standalone=true
+  DTD(r)
+    ELEMDECL(r), MIXED (#PCDATA)
+    ENTITYDECL(foo), internal
+     content=FOO
+      TEXT compact
+        content=FOO
+  ELEMENT r
+    TEXT compact
+      content=a 
+    ENTITY_REF(foo)
+      INTERNAL_GENERAL_ENTITY foo
+      content=FOO
+    TEXT compact
+      content= b

@@ -1,0 +1,6 @@
+markattr.xml:1: parser error : '<' in entity 'foo' is not allowed in attributes values
+<?xml version="1.0"?><!DOCTYPE r [<!ENTITY foo "<b>X</b>">]><r p="&foo;">y</r>
+                                                                       ^
+markattr.xml:1: parser error : '<' in entity 'foo' is not allowed in attributes values
+<?xml version="1.0"?><!DOCTYPE r [<!ENTITY foo "<b>X</b>">]><r p="&foo;">y</r>
+                                                                       ^
