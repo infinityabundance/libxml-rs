@@ -1,0 +1,22 @@
+{
+  "case_id": "HIST-EPOCH-0007",
+  "surface": "historical",
+  "purpose": "Epoch: xmllint --html dump formatted (newlines) -> single line in 2.15.0; all six xmlOutputBufferWriteString(buf, \"\\n\") calls removed from HTMLtree.c dump path during the serializer rework (0d81d6f8 et al.)",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/page.html",
+    "argv": ["--html"]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-commit-0d81d6f8",
+    "upstream-commit-46f05ea4",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "html", "serializer"]
+}

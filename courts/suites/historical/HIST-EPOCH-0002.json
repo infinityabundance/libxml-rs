@@ -1,0 +1,22 @@
+{
+  "case_id": "HIST-EPOCH-0002",
+  "surface": "historical",
+  "purpose": "Epoch: parser second-diagnostic on mismatched tags — 2.9.10 regression ('EndTag: </' not found', commit de5b624f fixes in 2.9.11), second diagnostic dropped entirely by 2.12.x error-handling rework",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/bad.xml",
+    "argv": []
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-commit-de5b624f10e9d29ff1b3bbc07358774a3725898e",
+    "upstream-news-2.12.0-parser-error-handling",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "parser", "diagnostics"]
+}

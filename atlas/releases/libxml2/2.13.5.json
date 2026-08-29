@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.13.5.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "No epoch boundary: byte-identical to 2.13.0 across the whole matrix corpus (stability confirmation)",
+      "epoch": "E-004/E-005 continuation",
+      "commit": null,
+      "first_release": null,
+      "evidence": "atlas/SEMANTIC_EPOCHS.md"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

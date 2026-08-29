@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.9/libxml2-2.9.10.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "xmllint --xpath node-set output: nodes now printed one per line with terminating newline instead of concatenated (breaking change)",
+      "epoch": "E-001",
+      "commit": "da35eeae5b92b88d8ebdb64b4b327ac1c2cf1bce",
+      "first_release": "2.9.10",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case xpath-nodeset"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

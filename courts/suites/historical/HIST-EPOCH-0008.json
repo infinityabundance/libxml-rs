@@ -1,0 +1,21 @@
+{
+  "case_id": "HIST-EPOCH-0008",
+  "surface": "historical",
+  "purpose": "Epoch: libxslt core transform output is a fully stable epoch — xsltproc basic/num/empty cases byte-identical from 1.1.26 (2009) through 1.1.42 and system 1.1.45. XSLT 1.0 transform output frozen since at least 2009",
+  "oracle_profile": "libxslt-1.1.26..1.1.45 (6-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/items.xml",
+    "stylesheet": "oracle/historical/styles/basic.xsl",
+    "argv": ["-"]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "xsltproc", "stability"]
+}

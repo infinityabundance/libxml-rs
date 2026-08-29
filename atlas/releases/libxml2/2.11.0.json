@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.11.0.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "xmllint --xpath with empty node-set no longer fails: exit code 10 -> 0 (message 'XPath set is empty' unchanged)",
+      "epoch": "E-003",
+      "commit": "e85f9b98",
+      "first_release": "2.11.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case xpath-attr"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

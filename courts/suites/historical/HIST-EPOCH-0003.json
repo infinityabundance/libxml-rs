@@ -1,0 +1,22 @@
+{
+  "case_id": "HIST-EPOCH-0003",
+  "surface": "historical",
+  "purpose": "Epoch: xmllint --xpath empty node-set exit status 10 -> 0 (e85f9b98, first 2.11.0) -> 11 (387a952b, first 2.12.6); stderr message 'XPath set is empty' identical in all versions",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/lib.xml",
+    "expression": "@id",
+    "argv": ["--xpath", "@id"]
+  },
+  "observables": [
+    "exit_status",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-commit-e85f9b98",
+    "upstream-commit-387a952b",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "xpath", "exit-status"]
+}

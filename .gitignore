@@ -29,10 +29,10 @@ oracle/*.tar.xz
 
 # Historical oracle matrix (§41-42, §51) — regenerable build/capture artifacts.
 # Rebuild with: oracle/historical/build.sh; re-capture with: oracle/historical/run_matrix.sh
-oracle/historical/src/    # extracted upstream source trees
-oracle/historical/prefix/ # built historical oracle prefixes
-oracle/historical/results/# per-version capture outputs + matrix.json
-oracle/historical/styles/ # generated xsltproc stylesheets
+oracle/historical/src/
+oracle/historical/prefix/
+oracle/historical/results/
+oracle/historical/styles/
 
 # Receipts (generated during court runs)
 receipts/*.json

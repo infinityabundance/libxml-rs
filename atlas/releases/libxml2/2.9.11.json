@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.9/libxml2-2.9.11.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "Fix parser regression from 2.9.10: unexpected-EOF in xmlParseContent again reports 'Premature end of data' instead of 'EndTag: </' not found'",
+      "epoch": "E-002",
+      "commit": "de5b624f10e9d29ff1b3bbc07358774a3725898e",
+      "first_release": "2.9.11",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case parse-error"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

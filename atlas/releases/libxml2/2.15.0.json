@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.15.0.tar.xz",
@@ -42,7 +41,22 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "HTML serialization: formatted dump (newlines after elements) -> single line; all newline writes removed from HTMLtree.c dump path",
+      "epoch": "E-007",
+      "commit": "0d81d6f8 (html: Use xmlOutputBufferWrite if possible); 46f05ea4",
+      "first_release": "2.15.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case html-dump"
+    },
+    {
+      "change": "xmllint --valid with no DTD returns exit 0 instead of 3 ('Validation failed: no DTD found' becomes non-fatal)",
+      "epoch": "E-006",
+      "commit": "xmllint refactor (NEWS 2.15.0)",
+      "first_release": "2.15.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case valid-nodtd"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

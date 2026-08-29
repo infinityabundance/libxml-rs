@@ -1,0 +1,22 @@
+{
+  "case_id": "HIST-EPOCH-0005",
+  "surface": "historical",
+  "purpose": "Epoch: parser/validation exit codes reworked in 2.13.0 — parse-error/undeclared/entity-in-attribute exit 1 -> 4, --valid invalid exit 4 -> 3. Correlates with NEWS 2.13.0 'xmllint: Rework parsing' and error consolidation commits",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/markattr.xml",
+    "argv": []
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-news-2.13.0",
+    "residual-R-000121",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "exit-status", "entities", "residual-triangulation"]
+}

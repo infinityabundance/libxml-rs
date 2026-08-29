@@ -16,7 +16,7 @@ TOOL="${1:-all}"
 
 # ── Oracle registry ───────────────────────────────────────────────────────
 # Built historical libxml2 anchors (2.6.32 excluded: era toolchain required).
-XML2_VERSIONS="2.7.8 2.8.0 2.9.4 2.9.10 2.9.14 2.10.4 2.11.5 2.12.6 2.13.5 2.14.1"
+XML2_VERSIONS="2.7.8 2.8.0 2.9.4 2.9.10 2.9.14 2.10.4 2.11.5 2.12.6 2.13.0 2.13.5 2.14.1 2.15.0"
 XSLT_PAIRS="1.1.26:2.7.8 1.1.32:2.9.4 1.1.35:2.9.10 1.1.38:2.10.4 1.1.42:2.11.5"
 
 hash_case() { # version case exit_file out_file err_file
@@ -34,15 +34,24 @@ run_case() { # tool version name argv...
     local bin
     if [ "$v" = system ]; then bin="/usr/bin/xmllint"; else bin="$OUT/prefix/libxml2-$v/bin/xmllint"; fi
     [ -x "$bin" ] || { echo "  skip $v/$c (no binary)"; return; }
-    "$bin" "$@" >"$vdir/$c.out" 2>"$vdir/$c.err" || true
+    # Capture real exit status: `cmd || true` would reset $? to 0, so test the
+    # command directly and record the status from the conditional.
+    if "$bin" "$@" >"$vdir/$c.out" 2>"$vdir/$c.err"; then
+      echo 0 > "$vdir/$c.exit"
+    else
+      echo "$?" > "$vdir/$c.exit"
+    fi
   else
     local bin
     if [ "$v" = system ]; then bin="/usr/bin/xsltproc"; else bin="$OUT/prefix/libxslt-$v/bin/xsltproc"; fi
     [ -x "$bin" ] || { echo "  skip $v/$c (no binary)"; return; }
     # xsltproc cases: last arg is the document, preceded by stylesheet
-    "$bin" "$@" >"$vdir/$c.out" 2>"$vdir/$c.err" || true
+    if "$bin" "$@" >"$vdir/$c.out" 2>"$vdir/$c.err"; then
+      echo 0 > "$vdir/$c.exit"
+    else
+      echo "$?" > "$vdir/$c.exit"
+    fi
   fi
-  echo "$?" > "$vdir/$c.exit"
 }
 
 cd "$CORPUS"
@@ -63,6 +72,9 @@ if [ "$TOOL" = all ] || [ "$TOOL" = xmllint ]; then
     run_case xmllint "$v" noent-decl     --noent dclent.xml
     run_case xmllint "$v" undeclared     undeclared.xml
     run_case xmllint "$v" attr-entity    attrent.xml
+    run_case xmllint "$v" attr-markup-entity markattr.xml
+    run_case xmllint "$v" recover-bad     --recover bad.xml
+    run_case xmllint "$v" noent-debug     --debug --noent dclent.xml
     run_case xmllint "$v" xpath-nodeset  lib.xml --xpath '//book'
     run_case xmllint "$v" xpath-string   lib.xml --xpath 'string(//title)'
     run_case xmllint "$v" xpath-count    lib.xml --xpath 'count(//book)'
@@ -104,11 +116,13 @@ XEOF
   for pair in $XSLT_PAIRS; do
     v="${pair%%:*}"; xmlv="${pair##*:}"
     echo "── $v (vs libxml2-$xmlv) ──"
+    run_case xsltproc "$v" version --version
     run_case xsltproc "$v" basic  "$STYLES/basic.xsl" items.xml
     run_case xsltproc "$v" num    "$STYLES/num.xsl" items.xml
     run_case xsltproc "$v" empty  "$STYLES/basic.xsl" simple.xml
   done
   echo "── system ──"
+  run_case xsltproc system version --version
   run_case xsltproc system basic "$STYLES/basic.xsl" items.xml
   run_case xsltproc system num   "$STYLES/num.xsl" items.xml
   run_case xsltproc system empty "$STYLES/basic.xsl" simple.xml

@@ -1,0 +1,22 @@
+{
+  "case_id": "HIST-EPOCH-0004",
+  "surface": "historical",
+  "purpose": "Epoch: entity-decl content node in --debug --noent dumps changes TEXT -> TEXT compact in 2.13.0 (commit 8d04f0ee 'tree: Refactor text node updates'). Directly triangulates residual R-000119",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/dclent.xml",
+    "argv": ["--debug", "--noent"]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-commit-8d04f0eea0a7ca1c8c4c4fe992904f680ba9d7ad",
+    "residual-R-000119",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "entities", "debug", "residual-triangulation"]
+}

@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.13.0.tar.xz",
@@ -42,7 +41,29 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "Parser/validation error exit codes reworked: parse-error/undeclared/entity-in-attribute exit 1 -> 4; --valid invalid exit 4 -> 3; --valid no-DTD exit 4 -> 3",
+      "epoch": "E-005",
+      "commit": "xmllint rework (f8ff4d86 et al.); NEWS 2.13.0 'xmllint: Rework parsing'",
+      "first_release": "2.13.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix cases parse-error/undeclared/valid-*"
+    },
+    {
+      "change": "Entity-in-attribute fatal error ('<' in entity ... is not allowed in attributes values) reported twice instead of once",
+      "epoch": "E-005",
+      "commit": "parser error consolidation (v2.13.0)",
+      "first_release": "2.13.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case attr-markup-entity"
+    },
+    {
+      "change": "Entity-decl content node in --debug --noent dumps: TEXT -> TEXT compact",
+      "epoch": "E-004",
+      "commit": "8d04f0eea0a7ca1c8c4c4fe992904f680ba9d7ad (tree: Refactor text node updates)",
+      "first_release": "2.13.0",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case noent-debug; residual R-000119"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

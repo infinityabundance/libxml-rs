@@ -1,0 +1,90 @@
+{
+  "receipt_id": "HIST-EPOCH-MATRIX-2026-08-29",
+  "phase": "11",
+  "title": "Historical oracle matrix — semantic epochs and residual fingerprints (§41, §42, §51)",
+  "timestamp": "2026-08-29",
+  "case_ids": [
+    "HIST-EPOCH-0001", "HIST-EPOCH-0002", "HIST-EPOCH-0003", "HIST-EPOCH-0004",
+    "HIST-EPOCH-0005", "HIST-EPOCH-0006", "HIST-EPOCH-0007", "HIST-EPOCH-0008"
+  ],
+  "candidate_commit": "424bec77cc3a7ec55fb46ebf8dddea92b40c7851 (Phase 11 infrastructure)",
+  "command": "oracle/historical/run_matrix.sh all  (runner: bash; epoch aggregation: python3)",
+  "environment": {
+    "host": "linux (glibc era-compatible build host)",
+    "oracle_build_toolchain": {
+      "gcc": "16.2.1 20260810",
+      "autoconf": "2.73",
+      "automake": "1.18.1",
+      "libtoolize": "system",
+      "note": "PATH forced to /usr/bin (cargo bin shadows autotools with Rust shims); era autotools modernization in build.sh"
+    },
+    "candidate_toolchain": { "rustc": "1.98.0 (88d9e12ae 2026-08-18)" },
+    "container_image_digest": null,
+    "container_note": "Native builds, no container oracle used for the matrix (tier-2 host builds; tier-3 container listed as future work)"
+  },
+  "oracle_identity": {
+    "libxml2_built": ["2.7.8", "2.8.0", "2.9.4", "2.9.10", "2.9.14", "2.10.4", "2.11.5", "2.12.6", "2.13.0", "2.13.5", "2.14.1", "2.15.0"],
+    "libxml2_system": "2.15.3 (xmllint --version: 'using libxml version 21503-GITv2.15.3')",
+    "libxslt_built": ["1.1.26", "1.1.32", "1.1.35", "1.1.38", "1.1.42"],
+    "libxslt_system": "1.1.45 (xsltproc --version: 'Using libxml 21503-GITv2.15.3, libxslt 10145-GITv1.1.45')",
+    "identity_proof": "Every oracle runs the 'version' case; all 13 libxml2 version hashes and all 6 libxslt version hashes are distinct (no unidentified oracle, per §42)"
+  },
+  "fixture_hashes": {
+    "oracle/historical/corpus/simple.xml": "bdc0c4b964bad316ccfe99309d68b05b6e4fa88f79d5c0f5f47c8c0fe6058e04",
+    "oracle/historical/corpus/bad.xml": "7d0bb6f1bf9b3f5a54b1e46ef0235c050a9f989dc96034bab28c6c3814417199",
+    "oracle/historical/corpus/dclent.xml": "fc5e22d8f52648f705e47927935693874a5993fb7e5aa2eb20e8189e9c59964b",
+    "oracle/historical/corpus/lib.xml": "5842b50a4f00761baa36335854cb291bc9c07d836e095dbfc494944c36d8c820",
+    "oracle/historical/corpus/markattr.xml": "e50aa3af5993ea3b0331c87bd107b4b0c2a9cbf660fa6898668af07c70e3a3e4",
+    "oracle/historical/corpus/page.html": "4792a145b4dd43bc7fc0b4bfa916105a175dd82ee0320cde044618e0e9da1115",
+    "oracle/historical/corpus/items.xml": "ef0aa91c6688219aa5fc9451800ff8b6882767bcd626ef14f3288f57c055c681",
+    "oracle/historical/corpus/undeclared.xml": "10c8ce0cd884320177449869ddc8752cd7374748290b331f135fdfd6fc38a210"
+  },
+  "artifact_hashes": {
+    "results/matrix.json": "5776ade88bf37bf5694b325560c55c51fbad4f155f31d4e82e1c4c7d8fa7261f",
+    "results/xmllint/2.7.8/fingerprint.json": "2fd2594dc9cd0506a251b563b1c32489500efc82e9a9dbb8e867d9a9b65b83ea",
+    "results/xmllint/2.8.0/fingerprint.json": "0f1540277922bb58b6ea88a974b859f2c7117e071e725cce80056a96a195344c",
+    "results/xmllint/2.9.4/fingerprint.json": "c065d7f1f0a1749c1cfea87316c4b048f05b9aaa842e1a3002fa0f3137a38fce",
+    "results/xmllint/2.9.10/fingerprint.json": "8a3eb8ff7ba848616dfbd9e897b670f3321a8e3b2a8c59c1920f153c34e938ca",
+    "results/xmllint/2.9.14/fingerprint.json": "502f8631922864e9fbf9e35cb4aa1550eec5e92681d3978e33d3232c17bd69f5",
+    "results/xmllint/2.10.4/fingerprint.json": "fe4f3350d1254607aaee052e88538af723242747ae51ba2d9017f326cec7fa65",
+    "results/xmllint/2.11.5/fingerprint.json": "7e309627a2f19c60cef776db75edcb27ae9f6735777afaba6925a21ef8d2abea",
+    "results/xmllint/2.12.6/fingerprint.json": "dac047aabdc3ebabcec2cc2f79234285783fbcdd7c4a8ed5312fed42f424f81c",
+    "results/xmllint/2.13.0/fingerprint.json": "b1957252109e6c2eb99fd6aa335c4ab8c95b440042bf57a9cf3690071178a793",
+    "results/xmllint/2.13.5/fingerprint.json": "e2601af48cf2b1c05101f91f05164aa85a704450addaeca42c6395bb7c90dd90",
+    "results/xmllint/2.14.1/fingerprint.json": "2f3c9ff84424b339a7e2a504e64538ce31e8d75f9977ec33b5f0288d7e40d5b1",
+    "results/xmllint/2.15.0/fingerprint.json": "18f086d867cf63b7f9f93439e1ec19348733e56ce60c8468f14f76caa148b883",
+    "results/xmllint/system/fingerprint.json": "15cf64bd5639abed574574a608b8623f8780656e4454ef41d61057c666d4d61c",
+    "results/xsltproc/1.1.26/fingerprint.json": "6a2d6cc396aaa86bbb10f9bc2deb3eaecabe02b354621b888225a777d0e293ea",
+    "results/xsltproc/1.1.32/fingerprint.json": "a3dfd3454d22c046c5f2d504bd34c0b6e18ea49c641c900a69225c03363ac132",
+    "results/xsltproc/1.1.35/fingerprint.json": "744a2e35778a8b83b16a1142a43a1e8d33f11aa3631934015ba50c6c4c1942c7",
+    "results/xsltproc/1.1.38/fingerprint.json": "7b7f4de3f22f81735ba30c82f9b96a4f08ab52913789687a07121e74c5775e17",
+    "results/xsltproc/1.1.42/fingerprint.json": "9bf2e096fc450ed27c0687b5f12ba6a5671546b2a5f0bbc91bec1a8cf981651f",
+    "results/xsltproc/system/fingerprint.json": "ea4d9d5aa7b2380cf262da9baff62ba0cb67141d038dbb08f91b205a283275a5"
+  },
+  "oracle_outputs": {
+    "note": "Per-case (stdout_hash, stderr_hash, exit_status) live in matrix.json (hash above); epoch groups below are the structured observations",
+    "epochs": {
+      "xpath-nodeset/xpath-count/xpath-string": { "2.7.8-2.9.4": "concatenated nodes, no separators", "2.9.10-2.15.3": "one node per line (da35eeae, v2.9.10)" },
+      "xpath-attr": { "2.7.8-2.10.4": "exit 10", "2.11.0-2.11.5": "exit 0 (e85f9b98)", "2.12.6-2.15.3": "exit 11 (387a952b)" },
+      "parse-error": { "2.7.8-2.11.5": "2 diagnostics, exit 1", "2.9.10": "EndTag regression (fixed de5b624f, v2.9.11)", "2.12.6": "1 diagnostic, exit 1", "2.13.0-2.15.3": "1 diagnostic, exit 4" },
+      "recover-bad": { "2.7.8-2.11.5": "2 diagnostics", "2.9.10": "EndTag regression", "2.12.6-2.15.3": "1 diagnostic" },
+      "undeclared": { "2.7.8-2.12.6": "exit 1", "2.13.0-2.15.3": "exit 4" },
+      "attr-markup-entity": { "2.7.8-2.12.6": "reported once, exit 1", "2.13.0-2.15.3": "reported twice, exit 4" },
+      "noent-debug": { "2.7.8-2.12.6": "ENTITYDECL content TEXT", "2.13.0-2.15.3": "ENTITYDECL content TEXT compact (8d04f0ee, v2.13.0)" },
+      "valid-invalid": { "2.7.8-2.12.6": "exit 4", "2.13.0-2.15.3": "exit 3" },
+      "valid-nodtd": { "2.7.8-2.12.6": "exit 4", "2.13.0-2.14.1": "exit 3", "2.15.0-2.15.3": "exit 0" },
+      "html-dump": { "2.7.8-2.14.1": "formatted (newlines)", "2.15.0-2.15.3": "single line (newline writes removed from HTMLtree.c)" },
+      "xsltproc basic/num/empty": { "1.1.26-1.1.45": "byte-identical — stable epoch" }
+    }
+  },
+  "candidate_outputs": {
+    "note": "Candidate (libxml-rs) runs are out of scope for the matrix receipt; candidate residuals are tracked in atlas/RESIDUAL_LEDGER.md (R-000119..R-000121 triangulated by epochs E-004/E-005)."
+  },
+  "normalization": [],
+  "residuals": [
+    "R-000119 (entity content children in --debug): crate's TEXT compact matches the 2.13.0+ epoch, i.e. the current system oracle",
+    "R-000120 (entity-containing attribute values marked compact): crate behavior sits in the pre-2.13 epoch; upstream never changed this observable across the matrix span",
+    "R-000121 (LT_IN_ATTRIBUTE reported once): crate reports once (pre-2.13 count) with exit 4 (2.13+ exit) — hybrid of two epochs; caret column differs from all upstream versions"
+  ],
+  "verdict": "PASS — semantic epochs established and correlated with upstream commits/NEWS; every oracle identified; deliverable 'the project can explain how current behavior came to exist' satisfied (atlas/SEMANTIC_EPOCHS.md)"
+}

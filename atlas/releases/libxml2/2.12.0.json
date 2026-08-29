@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.12.0.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "Parser error-handling rework: second diagnostic for mismatched-tag premature EOF ('Premature end of data in tag') dropped; only the mismatch line remains",
+      "epoch": "E-002",
+      "commit": "c6083a32 (parser: Improve error handling in push parser)",
+      "first_release": "2.12.0 (observed at 2.12.6)",
+      "evidence": "atlas/SEMANTIC_EPOCHS.md; matrix case parse-error"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

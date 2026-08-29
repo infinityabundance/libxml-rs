@@ -1,6 +1,6 @@
 # libxml-rs
 
-**Phase 10: `xmllint` + `xmlcatalog` — CLI tools with differential oracle parity.**
+**Phase 11: Historical matrix — semantic epochs for libxml2/libxslt behavior.**
 
 Custodial native-Rust reimplementation of the **libxml2 + libxslt** ecosystem:
 a forensic reconstruction of observable behavior, implemented in native Rust,
@@ -13,12 +13,36 @@ historical lifetimes.
 
 ---
 
-## Current Status: Phase 10 — `xmllint` + `xmlcatalog` (§85)
+## Current Status: Phase 11 — Historical matrix (§85)
 
-Phase 10 delivers the **`xmllint`** and **`xmlcatalog`** command-line tools
-(§36). Per §85:
+Phase 11 delivers the cross-version archaeology of **§41 (historical oracle matrix), §42
+(version fingerprints), §51 (multi-version triangulation)**. Per §85:
 
-> *Deliverable: `xmllint` + `xmlcatalog` core oracle courts close.*
+> *Deliverable: The project can explain how current behavior came to exist.*
+
+A configurable oracle matrix (`oracle/historical/`) builds 12 historical libxml2
+releases (2.7.8 → 2.15.0) plus 5 libxslt releases (1.1.26 → 1.1.42) from the archaeology
+git clones and runs a 28-case behavioral corpus against every oracle and the system
+2.15.3/1.1.45 binaries, capturing byte-exact stdout/stderr/exit and per-version sha256
+fingerprints:
+
+- **`oracle/historical/build.sh`** — era-tolerant oracle builder (era tag spellings, autotools modernizations, `--without-threads` for modern glibc)
+- **`oracle/historical/run_matrix.sh`** — matrix runner + per-case epoch grouping; `results/matrix.json` holds version→case→sha256
+- **`atlas/SEMANTIC_EPOCHS.md`** — the epoch map: 10 behavioral epochs (E-001…E-008 + exit-code epochs) correlated with the exact upstream commits/NEWS that created them
+- **`courts/suites/historical/HIST-EPOCH-*.json`** — §43 casefiles; **`courts/receipts/historical-matrix-2026-08-29.json`** — §44 receipt
+
+Headline findings (all correlated to upstream commits in the atlas):
+
+- `xmllint --xpath` node-set output gained newline separators in **2.9.10** (commit `da35eeae`, an upstream-documented breaking change)
+- The 2.9.10 parser regression (`EndTag: '</' not found`) was fixed in **2.9.11** (`de5b624f`); the second parse-error diagnostic was dropped entirely in **2.12**
+- A **2.13.0** cluster: parser/validation exit codes reworked (1→4, 4→3), entity-in-attribute errors reported twice, entity-decl debug nodes became `TEXT compact` (`8d04f0ee`)
+- **2.15.0**: `--html` dumps became single-line (newline writes removed from `HTMLtree.c`); `--valid` with no DTD returns exit 0
+- libxslt core transform output is a **stable epoch** — byte-identical from 1.1.26 (2009) to 1.1.45
+
+### Phase 10 (historical)
+
+Phase 10 delivered the **`xmllint`** and **`xmlcatalog`** command-line tools
+(§36):
 
 Both tools are faithful native-Rust ports of the upstream programs, verified
 byte-for-byte against the system libxml2 2.15.3 binaries:
@@ -227,8 +251,8 @@ at your option.
 | C headers | 🟢 45+19 headers, gcc & clang, zero warnings |
 | CLI parity | 🟢 `xsltproc` (Phase 9), `xmllint` + `xmlcatalog` (Phase 10) complete with upstream exit codes and differential oracle parity |
 | EXSLT | 🟢 All seven modules registered (34 tests); `exsl:node-set` on RTFs, math/set/str/dyn/date/func verified end-to-end |
-| Historical atlas | 🟡 Release manifests + API/ABI snapshots for current versions |
-| Oracle infrastructure | 🟢 Docker oracle built and verified |
+| Historical atlas | 🟢 Semantic epochs (E-001…E-008) + release manifests + API/ABI snapshots; `atlas/SEMANTIC_EPOCHS.md` correlates every behavior change with its upstream commit |
+| Oracle infrastructure | 🟢 Docker oracle built and verified; 12 historical libxml2 + 5 libxslt oracles built from archaeology git with era-tolerant build tooling (`oracle/historical/`) |
 | Court coverage | 🟢 ABI courts passing; differential suites staged |
 | Downstream testing | 🔴 Not started (Phase 12) |
 

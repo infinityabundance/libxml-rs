@@ -1,0 +1,21 @@
+{
+  "case_id": "HIST-EPOCH-0006",
+  "surface": "historical",
+  "purpose": "Epoch: xmllint --valid with no DTD exit status 4 -> 3 (2.13.0) -> 0 (2.15.0); output bytes identical in every version. Correlates with NEWS 2.15.0 xmllint refactor",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/simple.xml",
+    "argv": ["--valid"]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-news-2.15.0",
+    "matrix-run-2026-08-29"
+  ],
+  "tags": ["epoch", "validation", "exit-status"]
+}

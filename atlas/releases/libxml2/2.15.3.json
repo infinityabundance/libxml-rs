@@ -15,8 +15,7 @@
     "public_headers",
     "exported_symbols",
     "tests_available",
-    "known_cves",
-    "major_semantic_changes"
+    "known_cves"
   ],
   "archive_url": {
     "gnome": "https://download.gnome.org/sources/libxml2/2.1/libxml2-2.15.3.tar.xz",
@@ -42,7 +41,15 @@
   "known_compatibility_fixes": [],
   "known_cves": [],
   "known_regressions": [],
-  "major_semantic_changes": [],
+  "major_semantic_changes": [
+    {
+      "change": "System oracle for the crate; inherits all epoch outcomes E-001..E-007 (see atlas/SEMANTIC_EPOCHS.md table 4)",
+      "epoch": "E-001..E-007",
+      "commit": null,
+      "first_release": null,
+      "evidence": "atlas/SEMANTIC_EPOCHS.md"
+    }
+  ],
   "platform_assumptions": {
     "confidence": "known",
     "macos": true,

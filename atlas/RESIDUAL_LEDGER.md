@@ -197,6 +197,7 @@ history is retained after fixing. This Markdown is generated from
 - **Oracle versions:** libxml2 2.15.3 (`xmllint --debug` on entity-containing documents)
 - **Root cause:** Upstream parses a referenced entity's content into `ent->children` (xmlCtxtParseEntity) and `xmlCtxtDumpEntityDecl` dumps that tree; our entity declarations store only the raw content string, so the debug dump synthesizes a `TEXT compact` node for plain content and nothing for markup content. The document tree, serialization and XPath are unaffected (the `--noent` re-parse path builds the correct in-document nodes).
 - **Observable residual:** `xmllint --debug` on a document that references an entity whose content contains markup shows the raw `content=` line but not the parsed child element under `ENTITYDECL`.
+- **Phase 11 triangulation (E-004, `atlas/SEMANTIC_EPOCHS.md`):** the historical matrix shows the entity-content child node changed `TEXT` → `TEXT compact` at **2.13.0** (commit `8d04f0ee` "tree: Refactor text node updates", first release v2.13.0). The crate's synthesized `TEXT compact` node therefore matches the **current (2.13.0+) epoch**, i.e. the 2.15.3 system oracle, not the pre-2.13 behavior. The remaining gap (markup entity content not parsed into children) is unchanged in every upstream version from 2.7.8 to 2.15.3 (2.13.0+ dump only plain content compactly; markup content is still dumped as raw `content=`).
 
 ### R-000120: Entity-containing attribute values marked compact in `--debug`
 
@@ -206,6 +207,7 @@ history is retained after fixing. This Markdown is generated from
 - **Oracle versions:** libxml2 2.15.3 (`xmllint --debug` on `<a p="AT&amp;T"/>`)
 - **Root cause:** Upstream attribute values containing entity/character references take the `xmlNodeParseAttValue` path and are never compact; our tokenizer decodes references before the SAX layer (`substitute_refs`), losing the "had references" signal, so short decoded values are marked compact.
 - **Observable residual:** `TEXT compact` vs upstream `TEXT` for entity-containing attribute values in `--debug` output. Content, serialization and XPath results are identical.
+- **Phase 11 triangulation:** the matrix's `attr-entity` case (`<a p="AT&amp;T">`) is **byte-identical across the entire 2.7.8 → 2.15.3 span** — upstream never changed this observable. The crate's compact marking of entity-containing attribute values is a divergence from **every** epoch, not a version drift.
 
 ### R-000121: `'<' in entity ... is not allowed in attributes values` reported once
 
@@ -214,6 +216,7 @@ history is retained after fixing. This Markdown is generated from
 - **Surface:** parser diagnostics
 - **Oracle versions:** libxml2 2.15.3 (`xmllint` on a document referencing a markup entity in an attribute value)
 - **Root cause:** Upstream reports the `XML_ERR_LT_IN_ATTRIBUTE` fatal error twice (parser + validation paths) with the caret at the `&`; ours reports it once with the caret past the start tag. The message text and exit code (4) match.
+- **Phase 11 triangulation (E-005):** the matrix's `attr-markup-entity` case shows a real upstream epoch: reported **once with exit 1** from 2.7.8 → 2.12.6, reported **twice with exit 4** from 2.13.0 → 2.15.3 (boundary pinned to 2.13.0; correlates with NEWS 2.13.0 "xmllint: Rework parsing"/error consolidation). The crate's **single report is the pre-2.13 epoch** while its **exit code 4 is the 2.13+ epoch** — a hybrid of two epochs. The caret column differs from all upstream versions (ours points one column right of upstream's).
 
 ## Fixed Residuals
 

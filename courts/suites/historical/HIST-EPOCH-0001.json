@@ -1,0 +1,26 @@
+{
+  "case_id": "HIST-EPOCH-0001",
+  "surface": "historical",
+  "purpose": "Epoch: xmllint --xpath node-set serialization changed from concatenated to newline-separated output in 2.9.10 (commit da35eeae, documented breaking change)",
+  "oracle_profile": "libxml2-2.7.8..2.15.3 (13-version matrix)",
+  "inputs": {
+    "document": "oracle/historical/corpus/lib.xml",
+    "expression": "//book",
+    "argv": ["--xpath", "//book"]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-commit-da35eeae5b92b88d8ebdb64b4b327ac1c2cf1bce",
+    "matrix-run-2026-08-29"
+  ],
+  "expected_oracle": {
+    "exit_status": 0,
+    "stdout_hash": "222f927be472 (epoch 2.9.10+); ae4cee0e20fb (epoch 2.7.8-2.9.4)"
+  },
+  "tags": ["epoch", "xpath", "xmllint"]
+}
