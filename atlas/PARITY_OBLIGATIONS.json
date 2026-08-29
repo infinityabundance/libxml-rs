@@ -1,6 +1,6 @@
 {
  "schema": "parity-obligations-1",
- "generated": "2026-08-29T18:58:43Z",
+ "generated": "2026-08-29T19:00:50Z",
  "projects": {
   "libxml2": {
    "oracle_dso": "/usr/lib/libxml2.so.2",
