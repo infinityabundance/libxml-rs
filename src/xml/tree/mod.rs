@@ -2331,6 +2331,102 @@ pub unsafe fn get_doc_entity(doc: *const _xmlDoc, name: *const xmlChar) -> *mut 
     crate::xml::entities::get_entity(doc as *mut _xmlDoc, name)
 }
 
+/// Add an entity declaration to the document's internal subset (upstream
+/// entities.c `xmlAddDocEntity`); creates the internal subset when absent.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid document pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn add_doc_entity(
+    doc: *mut _xmlDoc,
+    name: *const xmlChar,
+    etype: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+) -> *mut _xmlEntity {
+    if doc.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let mut dtd = (*doc).intSubset;
+        if dtd.is_null() {
+            dtd = new_dtd(
+                doc,
+                b"internal\0".as_ptr() as *const xmlChar,
+                ptr::null(),
+                ptr::null(),
+            );
+            if dtd.is_null() {
+                return ptr::null_mut();
+            }
+        }
+        crate::xml::entities::add_entity(dtd, name, etype, ExternalID, SystemID, content)
+    }
+}
+
+/// Add an entity declaration to the document's external subset (upstream
+/// entities.c `xmlAddDtdEntity`); creates the external subset when absent.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid document pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn add_dtd_entity(
+    doc: *mut _xmlDoc,
+    name: *const xmlChar,
+    etype: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+) -> *mut _xmlEntity {
+    if doc.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let mut dtd = (*doc).extSubset;
+        if dtd.is_null() {
+            dtd = new_dtd(
+                doc,
+                b"internal\0".as_ptr() as *const xmlChar,
+                ptr::null(),
+                ptr::null(),
+            );
+            if dtd.is_null() {
+                return ptr::null_mut();
+            }
+            (*doc).extSubset = dtd;
+        }
+        crate::xml::entities::add_entity(dtd, name, etype, ExternalID, SystemID, content)
+    }
+}
+
+/// Get an entity declaration from the internal or external subset (upstream
+/// entities.c `xmlGetDtdEntity`).
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid document pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn get_dtd_entity(doc: *const _xmlDoc, name: *const xmlChar) -> *mut _xmlEntity {
+    if doc.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        if !(*doc).intSubset.is_null() {
+            let e = crate::xml::entities::get_entity_from_dtd((*doc).intSubset, name);
+            if !e.is_null() {
+                return e;
+            }
+        }
+        if !(*doc).extSubset.is_null() {
+            return crate::xml::entities::get_entity_from_dtd((*doc).extSubset, name);
+        }
+        ptr::null_mut()
+    }
+}
+
 /// Get a parameter entity by name.
 ///
 /// # UPSTREAM-PARITY

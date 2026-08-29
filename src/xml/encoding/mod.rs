@@ -1338,6 +1338,74 @@ pub(crate) fn xmlParseCharEncoding(name: *const c_char) -> c_int {
     encoding_from_name(bytes) as c_int
 }
 
+// ── Encoding aliases (upstream encoding.c xmlAddEncodingAlias etc.) ──────────
+//
+// A global alias table maps alias names to canonical encoding names.
+// Upstream keeps a static hash of aliases; the candidate uses a
+// process-lifetime RwLock<HashMap>. Thread-safe; matches upstream's
+// observable contract (add/del/get by name).
+
+static ENCODING_ALIASES: std::sync::OnceLock<
+    parking_lot::RwLock<std::collections::HashMap<Vec<u8>, Vec<u8>>>,
+> = std::sync::OnceLock::new();
+
+fn encoding_aliases() -> &'static parking_lot::RwLock<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
+    ENCODING_ALIASES.get_or_init(|| {
+        let m = parking_lot::RwLock::new(std::collections::HashMap::new());
+        m
+    })
+}
+
+/// `xmlAddEncodingAlias` implementation: register `alias` for `name`.
+/// Returns 0 on success, -1 on error (NULL arguments).
+pub(crate) fn add_encoding_alias(name: *const c_char, alias: *const c_char) -> c_int {
+    if name.is_null() || alias.is_null() {
+        return -1;
+    }
+    let n = unsafe { CStr::from_ptr(name).to_bytes().to_vec() };
+    let a = unsafe { CStr::from_ptr(alias).to_bytes().to_vec() };
+    encoding_aliases().write().insert(a, n);
+    0
+}
+
+/// `xmlDelEncodingAlias` implementation: remove `alias`.
+/// Returns 0 on success, -1 if the alias does not exist.
+pub(crate) fn del_encoding_alias(alias: *const c_char) -> c_int {
+    if alias.is_null() {
+        return -1;
+    }
+    let a = unsafe { CStr::from_ptr(alias).to_bytes().to_vec() };
+    if encoding_aliases().write().remove(&a).is_some() {
+        0
+    } else {
+        -1
+    }
+}
+
+/// `xmlGetEncodingAlias` implementation: return the canonical name for
+/// `alias`, or NULL when not registered.
+pub(crate) fn get_encoding_alias(alias: *const c_char) -> *const c_char {
+    if alias.is_null() {
+        return ptr::null();
+    }
+    let a = unsafe { CStr::from_ptr(alias).to_bytes().to_vec() };
+    let guard = encoding_aliases().read();
+    match guard.get(&a) {
+        Some(v) => {
+            // leak the canonical name: upstream returns a pointer valid for
+            // the process lifetime (the alias hash owns the strings)
+            let leaked: &'static [u8] = Box::leak(v.clone().into_boxed_slice());
+            leaked.as_ptr() as *const c_char
+        }
+        None => ptr::null(),
+    }
+}
+
+/// `xmlCleanupEncodingAliases` implementation: drop all aliases.
+pub(crate) fn cleanup_encoding_aliases() {
+    encoding_aliases().write().clear();
+}
+
 /// `xmlCharEncInFunc` implementation.
 ///
 /// Converts the input buffer's encoding to UTF-8 using the given handler.

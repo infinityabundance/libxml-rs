@@ -172,6 +172,28 @@ pub unsafe fn get_entity(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut _xmlEn
     }
 }
 
+/// Look up an entity in a DTD's entity hash table (upstream
+/// `xmlGetDtdEntity` core).
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid DTD pointer or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn get_entity_from_dtd(dtd: *mut _xmlDtd, name: *const xmlChar) -> *mut _xmlEntity {
+    if dtd.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let entities = (*dtd).entities as *mut hash::HashTable;
+        let found = hash::hash_lookup(entities, name);
+        if found.is_null() {
+            ptr::null_mut()
+        } else {
+            found as *mut _xmlEntity
+        }
+    }
+}
+
 /// Get a parameter entity by name.
 ///
 /// # UPSTREAM-PARITY

@@ -1910,6 +1910,67 @@ pub unsafe extern "C" fn xmlAddEntity(
     crate::xml::entities::add_entity(dtd, name, type_, ExternalID, SystemID, content)
 }
 
+/// Add an entity declaration to a document's internal subset (upstream
+/// entities.c `xmlAddDocEntity`): if the document has no internal subset
+/// one is created.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlEntityPtr xmlAddDocEntity(xmlDocPtr doc, const xmlChar *name, int type,
+///                              const xmlChar *ExternalID, const xmlChar *SystemID,
+///                              const xmlChar *content);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAddDocEntity(
+    doc: *mut _xmlDoc,
+    name: *const xmlChar,
+    type_: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+) -> *mut _xmlEntity {
+    crate::xml::tree::add_doc_entity(doc, name, type_, ExternalID, SystemID, content)
+}
+
+/// Add an entity declaration to a document's external subset (upstream
+/// entities.c `xmlAddDtdEntity`).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlEntityPtr xmlAddDtdEntity(xmlDocPtr doc, const xmlChar *name, int type,
+///                              const xmlChar *ExternalID, const xmlChar *SystemID,
+///                              const xmlChar *content);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAddDtdEntity(
+    doc: *mut _xmlDoc,
+    name: *const xmlChar,
+    type_: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+) -> *mut _xmlEntity {
+    crate::xml::tree::add_dtd_entity(doc, name, type_, ExternalID, SystemID, content)
+}
+
+/// Get an entity declaration from a DTD (upstream entities.c
+/// `xmlGetDtdEntity`): searches the internal then external subset.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlEntityPtr xmlGetDtdEntity(xmlDocPtr doc, const xmlChar *name);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdEntity(
+    doc: *mut _xmlDoc,
+    name: *const xmlChar,
+) -> *mut _xmlEntity {
+    crate::xml::tree::get_dtd_entity(doc, name)
+}
+
 /// Get an entity by name.
 ///
 /// # UPSTREAM-PARITY
@@ -1959,6 +2020,91 @@ pub unsafe extern "C" fn xmlEncodeEntitiesReentrant(
     input: *const xmlChar,
 ) -> *mut xmlChar {
     crate::xml::entities::encode_entities_reentrant(doc, input)
+}
+
+/// Encode special characters in a string (upstream entities.c
+/// `xmlEncodeSpecialChars`): escapes `<`, `>`, `&`, `"` and `\r`.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlEncodeSpecialChars(const xmlDoc *doc, const xmlChar *input);
+/// ```
+///
+/// Returns a newly allocated string (free with `xmlFree`) or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlEncodeSpecialChars(
+    _doc: *const _xmlDoc,
+    input: *const xmlChar,
+) -> *mut xmlChar {
+    if input.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let len = crate::xml::string::xml_strlen(input);
+        // Worst case: every byte becomes a 6-byte entity (&#13; is 5; &quot;
+        // is 6).
+        let cap = len * 6 + 1;
+        let out = crate::abi::allocator::xmlMalloc(cap) as *mut xmlChar;
+        if out.is_null() {
+            return ptr::null_mut();
+        }
+        let mut o = 0usize;
+        let mut i = 0usize;
+        while i < len {
+            let c = *input.add(i);
+            let rep: &[u8] = match c {
+                b'<' => b"&lt;",
+                b'>' => b"&gt;",
+                b'&' => b"&amp;",
+                b'"' => b"&quot;",
+                b'\r' => b"&#13;",
+                _ => {
+                    *out.add(o) = c;
+                    o += 1;
+                    i += 1;
+                    continue;
+                }
+            };
+            core::ptr::copy_nonoverlapping(rep.as_ptr(), out.add(o), rep.len());
+            o += rep.len();
+            i += 1;
+        }
+        *out.add(o) = 0;
+        out
+    }
+}
+
+/// Deprecated entity encoder (upstream 2.15 `xmlEncodeEntities`): the
+/// symbol still exists for ABI compatibility but emits a one-time
+/// deprecation warning and returns NULL (verified against the oracle DSO
+/// disassembly — the 2.15 implementation returns NULL after warning).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlEncodeEntities(xmlDocPtr doc, const xmlChar *input);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlEncodeEntities(
+    _doc: *mut _xmlDoc,
+    _input: *const xmlChar,
+) -> *mut xmlChar {
+    use core::sync::atomic::{AtomicBool, Ordering};
+    static WARNED: AtomicBool = AtomicBool::new(false);
+    if !WARNED.swap(true, Ordering::Relaxed) {
+        // Match the oracle: one-time "deprecated" diagnostic on stderr.
+        let msg = b"xmlEncodeEntities is deprecated, use xmlEncodeSpecialChars or xmlEncodeEntitiesReentrant\n";
+        unsafe {
+            libc::fwrite(
+                msg.as_ptr() as *const c_void,
+                1,
+                msg.len(),
+                libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut libc::FILE,
+            );
+        }
+    }
+    ptr::null_mut()
 }
 
 /// Get the line number of a node.
@@ -4263,6 +4409,54 @@ pub extern "C" fn xmlGetCharEncodingName(enc: c_int) -> *const c_char {
 #[no_mangle]
 pub extern "C" fn xmlParseCharEncoding(name: *const c_char) -> c_int {
     crate::xml::encoding::xmlParseCharEncoding(name)
+}
+
+/// Add an encoding alias (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlAddEncodingAlias(const char *name, const char *alias);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlAddEncodingAlias(name: *const c_char, alias: *const c_char) -> c_int {
+    crate::xml::encoding::add_encoding_alias(name, alias)
+}
+
+/// Delete an encoding alias (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlDelEncodingAlias(const char *alias);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlDelEncodingAlias(alias: *const c_char) -> c_int {
+    crate::xml::encoding::del_encoding_alias(alias)
+}
+
+/// Look up an encoding alias (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// const char *xmlGetEncodingAlias(const char *alias);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlGetEncodingAlias(alias: *const c_char) -> *const c_char {
+    crate::xml::encoding::get_encoding_alias(alias)
+}
+
+/// Clean up the encoding alias table (upstream encoding.h).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlCleanupEncodingAliases(void);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCleanupEncodingAliases() {
+    crate::xml::encoding::cleanup_encoding_aliases();
 }
 
 /// Convert the input buffer using an encoding handler (upstream encoding.h).
