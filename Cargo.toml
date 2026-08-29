@@ -45,6 +45,13 @@ path = "src/bin/xmlcatalog.rs"
 name = "xsltproc"
 path = "src/bin/xsltproc.rs"
 
+# ABI mirror court measurement binary (tools/abi/rust_mirror_court.py): prints
+# size_of/align_of/offset_of for every #[repr(C)] ABI mirror type so the
+# Rust representation can be compared against the candidate C headers.
+[[example]]
+name = "abi_mirror"
+path = "examples/abi_mirror.rs"
+
 [profile.release]
 lto = true
 codegen-units = 1

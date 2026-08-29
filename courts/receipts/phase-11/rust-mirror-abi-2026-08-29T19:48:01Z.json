@@ -1,0 +1,1803 @@
+{
+  "court": "RUST-MIRROR-ABI",
+  "phase": "11.1-G",
+  "timestamp": "2026-08-29T19:48:01Z",
+  "triangle": [
+    "upstream C header (sealed by ABI_PARITY_LEDGER)",
+    "candidate C header (include/)",
+    "Rust #[repr(C)] mirrors (src/abi/structs.rs, src/abi/types.rs)"
+  ],
+  "accounting": {
+    "rust_repr_c_types": 55,
+    "measurable": 49,
+    "classified_unmeasurable": {
+      "OPAQUE_FORWARD_DECL": [
+        "_xmlBuf",
+        "_xsltNsAlias"
+      ],
+      "NOT_LAYOUT_OBSERVABLE": [
+        "EncodingInputUnion",
+        "EncodingOutputUnion",
+        "_xsltAttrSet",
+        "_xsltSort"
+      ]
+    },
+    "silently_omitted": 0
+  },
+  "mismatch_count": 121,
+  "mismatches": [
+    {
+      "type": "_xsltDecimalFormat",
+      "reason": "size/align",
+      "rust": [
+        96,
+        8
+      ],
+      "c": [
+        104,
+        8
+      ]
+    },
+    {
+      "type": "_xsltDecimalFormat",
+      "reason": "field count",
+      "rust": 12,
+      "c": 13,
+      "rust_fields": [
+        "next",
+        "name",
+        "digit",
+        "patternSeparator",
+        "decimalPoint",
+        "groupingSeparator",
+        "infinity",
+        "minusSign",
+        "NaN",
+        "percent",
+        "perMille",
+        "zeroDigit"
+      ],
+      "c_fields": [
+        "next",
+        "name",
+        "digit",
+        "patternSeparator",
+        "minusSign",
+        "infinity",
+        "noNumber",
+        "decimalPoint",
+        "grouping",
+        "percent",
+        "permille",
+        "zeroDigit",
+        "nsUri"
+      ]
+    },
+    {
+      "type": "_xsltDocument",
+      "reason": "field count",
+      "rust": 6,
+      "c": 7,
+      "rust_fields": [
+        "next",
+        "depth",
+        "doc",
+        "insert",
+        "style",
+        "compCtxt"
+      ],
+      "c_fields": [
+        "next",
+        "main",
+        "doc",
+        "keys",
+        "includes",
+        "preproc",
+        "nbKeysComputed"
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "size/align",
+      "rust": [
+        56,
+        8
+      ],
+      "c": [
+        80,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field count",
+      "rust": 5,
+      "c": 10,
+      "rust_fields": [
+        "next",
+        "style",
+        "inst",
+        "name",
+        "depth"
+      ],
+      "c_fields": [
+        "next",
+        "inst",
+        "name",
+        "nameURI",
+        "match",
+        "use",
+        "comp",
+        "usecomp",
+        "nsList",
+        "nsNr"
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field[4] depth vs match",
+      "rust": [
+        48,
+        4
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyTable",
+      "reason": "size/align",
+      "rust": [
+        40,
+        8
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyTable",
+      "reason": "field count",
+      "rust": 6,
+      "c": 4,
+      "rust_fields": [
+        "next",
+        "table",
+        "nb",
+        "max",
+        "name",
+        "depth"
+      ],
+      "c_fields": [
+        "next",
+        "name",
+        "nameURI",
+        "keys"
+      ]
+    },
+    {
+      "type": "_xsltKeyTable",
+      "reason": "field[2] nb vs nameURI",
+      "rust": [
+        16,
+        4
+      ],
+      "c": [
+        16,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyTable",
+      "reason": "field[3] max vs keys",
+      "rust": [
+        20,
+        4
+      ],
+      "c": [
+        24,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStackElem",
+      "reason": "size/align",
+      "rust": [
+        88,
+        8
+      ],
+      "c": [
+        96,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStackElem",
+      "reason": "field[2] inst vs computed",
+      "rust": [
+        16,
+        8
+      ],
+      "c": [
+        16,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStackElem",
+      "reason": "field[10] level vs context",
+      "rust": [
+        76,
+        4
+      ],
+      "c": [
+        80,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStackElem",
+      "reason": "field[11] compCtxt vs flags",
+      "rust": [
+        80,
+        4
+      ],
+      "c": [
+        88,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "size/align",
+      "rust": [
+        280,
+        8
+      ],
+      "c": [
+        440,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field count",
+      "rust": 41,
+      "c": 58,
+      "rust_fields": [
+        "doc",
+        "templates",
+        "templatesFree",
+        "internalHash",
+        "keys",
+        "parent",
+        "next",
+        "imports",
+        "method",
+        "methodURI",
+        "version",
+        "encoding",
+        "omitXmlDeclaration",
+        "standalone",
+        "nsList",
+        "nsNr",
+        "nsMax",
+        "decimalFormat",
+        "nsAliases",
+        "attributeSets",
+        "variables",
+        "params",
+        "stripSpaces",
+        "preserveSpaces",
+        "errors",
+        "warnings",
+        "name",
+        "profile",
+        "extInfos",
+        "secPrefs",
+        "skipDefaultNS",
+        "indent",
+        "doctypePublic",
+        "doctypeSystem",
+        "mediaType",
+        "psvi",
+        "varsNr",
+        "varsMax",
+        "varsTab",
+        "deepCtxt",
+        "includes"
+      ],
+      "c_fields": [
+        "parent",
+        "next",
+        "imports",
+        "docList",
+        "doc",
+        "stripSpaces",
+        "stripAll",
+        "cdataSection",
+        "variables",
+        "templates",
+        "templatesHash",
+        "rootMatch",
+        "keyMatch",
+        "elemMatch",
+        "attrMatch",
+        "parentMatch",
+        "textMatch",
+        "piMatch",
+        "commentMatch",
+        "nsAliases",
+        "attributeSets",
+        "nsHash",
+        "nsDefs",
+        "keys",
+        "method",
+        "methodURI",
+        "version",
+        "encoding",
+        "omitXmlDeclaration",
+        "decimalFormat",
+        "standalone",
+        "doctypePublic",
+        "doctypeSystem",
+        "indent",
+        "mediaType",
+        "preComps",
+        "warnings",
+        "errors",
+        "exclPrefix",
+        "exclPrefixTab",
+        "exclPrefixNr",
+        "exclPrefixMax",
+        "_private",
+        "extInfos",
+        "extrasNr",
+        "includes",
+        "dict",
+        "attVTs",
+        "defaultAlias",
+        "nopreproc",
+        "internalized",
+        "literal_result",
+        "principal",
+        "forwards_compatible",
+        "namedTemplates",
+        "xpathCtxt",
+        "opLimit",
+        "opCount"
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[6] next vs stripAll",
+      "rust": [
+        48,
+        8
+      ],
+      "c": [
+        48,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[12] omitXmlDeclaration vs keyMatch",
+      "rust": [
+        96,
+        4
+      ],
+      "c": [
+        96,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[13] standalone vs elemMatch",
+      "rust": [
+        100,
+        4
+      ],
+      "c": [
+        104,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[14] nsList vs attrMatch",
+      "rust": [
+        104,
+        8
+      ],
+      "c": [
+        112,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[15] nsNr vs parentMatch",
+      "rust": [
+        112,
+        4
+      ],
+      "c": [
+        120,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[16] nsMax vs textMatch",
+      "rust": [
+        116,
+        4
+      ],
+      "c": [
+        128,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[17] decimalFormat vs piMatch",
+      "rust": [
+        120,
+        8
+      ],
+      "c": [
+        136,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[18] nsAliases vs commentMatch",
+      "rust": [
+        128,
+        8
+      ],
+      "c": [
+        144,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[19] attributeSets vs nsAliases",
+      "rust": [
+        136,
+        8
+      ],
+      "c": [
+        152,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[20] variables vs attributeSets",
+      "rust": [
+        144,
+        8
+      ],
+      "c": [
+        160,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[21] params vs nsHash",
+      "rust": [
+        152,
+        8
+      ],
+      "c": [
+        168,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[22] stripSpaces vs nsDefs",
+      "rust": [
+        160,
+        8
+      ],
+      "c": [
+        176,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[23] preserveSpaces vs keys",
+      "rust": [
+        168,
+        8
+      ],
+      "c": [
+        184,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[24] errors vs method",
+      "rust": [
+        176,
+        4
+      ],
+      "c": [
+        192,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[25] warnings vs methodURI",
+      "rust": [
+        180,
+        4
+      ],
+      "c": [
+        200,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[26] name vs version",
+      "rust": [
+        184,
+        8
+      ],
+      "c": [
+        208,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[27] profile vs encoding",
+      "rust": [
+        192,
+        4
+      ],
+      "c": [
+        216,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[28] extInfos vs omitXmlDeclaration",
+      "rust": [
+        200,
+        8
+      ],
+      "c": [
+        224,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[29] secPrefs vs decimalFormat",
+      "rust": [
+        208,
+        8
+      ],
+      "c": [
+        232,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[30] skipDefaultNS vs standalone",
+      "rust": [
+        216,
+        4
+      ],
+      "c": [
+        240,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[31] indent vs doctypePublic",
+      "rust": [
+        220,
+        4
+      ],
+      "c": [
+        248,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[32] doctypePublic vs doctypeSystem",
+      "rust": [
+        224,
+        8
+      ],
+      "c": [
+        256,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[33] doctypeSystem vs indent",
+      "rust": [
+        232,
+        8
+      ],
+      "c": [
+        264,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[34] mediaType vs mediaType",
+      "rust": [
+        240,
+        8
+      ],
+      "c": [
+        272,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[35] psvi vs preComps",
+      "rust": [
+        248,
+        8
+      ],
+      "c": [
+        280,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[36] varsNr vs warnings",
+      "rust": [
+        256,
+        4
+      ],
+      "c": [
+        288,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[37] varsMax vs errors",
+      "rust": [
+        260,
+        4
+      ],
+      "c": [
+        292,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[38] varsTab vs exclPrefix",
+      "rust": [
+        264,
+        8
+      ],
+      "c": [
+        296,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[39] deepCtxt vs exclPrefixTab",
+      "rust": [
+        272,
+        4
+      ],
+      "c": [
+        304,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[40] includes vs exclPrefixNr",
+      "rust": [
+        276,
+        4
+      ],
+      "c": [
+        312,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "size/align",
+      "rust": [
+        80,
+        8
+      ],
+      "c": [
+        152,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field count",
+      "rust": 10,
+      "c": 20,
+      "rust_fields": [
+        "next",
+        "style",
+        "name",
+        "mode",
+        "priority",
+        "content",
+        "depth",
+        "flags",
+        "inheritedNsNr",
+        "inheritedNs"
+      ],
+      "c_fields": [
+        "next",
+        "style",
+        "match",
+        "priority",
+        "name",
+        "nameURI",
+        "mode",
+        "modeURI",
+        "content",
+        "elem",
+        "inheritedNsNr",
+        "inheritedNs",
+        "nbCalls",
+        "time",
+        "params",
+        "templNr",
+        "templMax",
+        "templCalledTab",
+        "templCountTab",
+        "position"
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[2] name vs match",
+      "rust": [
+        24,
+        8
+      ],
+      "c": [
+        16,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[3] mode vs priority",
+      "rust": [
+        32,
+        8
+      ],
+      "c": [
+        24,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[4] priority vs name",
+      "rust": [
+        40,
+        8
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[5] content vs nameURI",
+      "rust": [
+        48,
+        8
+      ],
+      "c": [
+        40,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[6] depth vs mode",
+      "rust": [
+        56,
+        4
+      ],
+      "c": [
+        48,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[7] flags vs modeURI",
+      "rust": [
+        60,
+        4
+      ],
+      "c": [
+        56,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[8] inheritedNsNr vs content",
+      "rust": [
+        64,
+        4
+      ],
+      "c": [
+        64,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "size/align",
+      "rust": [
+        416,
+        8
+      ],
+      "c": [
+        528,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field count",
+      "rust": 67,
+      "c": 74,
+      "rust_fields": [
+        "style",
+        "templ",
+        "document",
+        "node",
+        "nodeList",
+        "contextSize",
+        "proximityPosition",
+        "xpathCtxt",
+        "xpathReturn",
+        "xpathReturnNr",
+        "xpathReturnMax",
+        "xpathReturnTab",
+        "templNr",
+        "templMax",
+        "templTab",
+        "depth",
+        "maxDepth",
+        "varsNr",
+        "varsMax",
+        "varsBase",
+        "varsTab",
+        "paramsNr",
+        "paramsMax",
+        "paramsBase",
+        "paramsTab",
+        "keyTables",
+        "hasSort",
+        "output",
+        "errFunc",
+        "errCtxt",
+        "extInfos",
+        "extrasNr",
+        "extrasMax",
+        "extrasTab",
+        "state",
+        "priority",
+        "parserCtxt",
+        "save",
+        "opts",
+        "secPrefs",
+        "docCache",
+        "globalVars",
+        "profile",
+        "prof",
+        "extFunctionsNr",
+        "extFunctionsMax",
+        "extFunctionsTab",
+        "userData",
+        "frame",
+        "frameNr",
+        "frameMax",
+        "frameTab",
+        "insert",
+        "resultDoc",
+        "nsNr",
+        "nsMax",
+        "nsTab",
+        "nsNrOriginal",
+        "nsMaxOriginal",
+        "nsTabOriginal",
+        "currentTemplate",
+        "templHash",
+        "varsNrOriginal",
+        "varsMaxOriginal",
+        "varsTabOriginal",
+        "insertDepth",
+        "maxInsertDepth"
+      ],
+      "c_fields": [
+        "style",
+        "type",
+        "templ",
+        "templNr",
+        "templMax",
+        "templTab",
+        "vars",
+        "varsNr",
+        "varsMax",
+        "varsTab",
+        "varsBase",
+        "extFunctions",
+        "extElements",
+        "extInfos",
+        "mode",
+        "modeURI",
+        "docList",
+        "document",
+        "node",
+        "nodeList",
+        "output",
+        "insert",
+        "xpathCtxt",
+        "state",
+        "globalVars",
+        "inst",
+        "xinclude",
+        "outputFile",
+        "profile",
+        "prof",
+        "profNr",
+        "profMax",
+        "profTab",
+        "_private",
+        "extrasNr",
+        "extrasMax",
+        "extras",
+        "styleList",
+        "sec",
+        "error",
+        "errctx",
+        "sortfunc",
+        "tmpRVT",
+        "persistRVT",
+        "ctxtflags",
+        "lasttext",
+        "lasttsize",
+        "lasttuse",
+        "debugStatus",
+        "traceCode",
+        "parserOptions",
+        "dict",
+        "tmpDoc",
+        "internalized",
+        "nbKeys",
+        "hasTemplKeyPatterns",
+        "currentTemplateRule",
+        "initialContextNode",
+        "initialContextDoc",
+        "cache",
+        "contextVariable",
+        "localRVT",
+        "localRVTBase",
+        "keyInitLevel",
+        "depth",
+        "maxTemplateDepth",
+        "maxTemplateVars",
+        "opLimit",
+        "opCount",
+        "sourceDocDirty",
+        "currentId",
+        "newLocale",
+        "freeLocale",
+        "genSortKey"
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[1] templ vs type",
+      "rust": [
+        8,
+        8
+      ],
+      "c": [
+        8,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[3] node vs templNr",
+      "rust": [
+        24,
+        8
+      ],
+      "c": [
+        24,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[4] nodeList vs templMax",
+      "rust": [
+        32,
+        8
+      ],
+      "c": [
+        28,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[5] contextSize vs templTab",
+      "rust": [
+        40,
+        4
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[6] proximityPosition vs vars",
+      "rust": [
+        44,
+        4
+      ],
+      "c": [
+        40,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[7] xpathCtxt vs varsNr",
+      "rust": [
+        48,
+        8
+      ],
+      "c": [
+        48,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[8] xpathReturn vs varsMax",
+      "rust": [
+        56,
+        8
+      ],
+      "c": [
+        52,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[9] xpathReturnNr vs varsTab",
+      "rust": [
+        64,
+        4
+      ],
+      "c": [
+        56,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[10] xpathReturnMax vs varsBase",
+      "rust": [
+        68,
+        4
+      ],
+      "c": [
+        64,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[12] templNr vs extElements",
+      "rust": [
+        80,
+        4
+      ],
+      "c": [
+        80,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[13] templMax vs extInfos",
+      "rust": [
+        84,
+        4
+      ],
+      "c": [
+        88,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[14] templTab vs mode",
+      "rust": [
+        88,
+        8
+      ],
+      "c": [
+        96,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[15] depth vs modeURI",
+      "rust": [
+        96,
+        4
+      ],
+      "c": [
+        104,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[16] maxDepth vs docList",
+      "rust": [
+        100,
+        4
+      ],
+      "c": [
+        112,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[17] varsNr vs document",
+      "rust": [
+        104,
+        4
+      ],
+      "c": [
+        120,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[18] varsMax vs node",
+      "rust": [
+        108,
+        4
+      ],
+      "c": [
+        128,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[19] varsBase vs nodeList",
+      "rust": [
+        112,
+        4
+      ],
+      "c": [
+        136,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[20] varsTab vs output",
+      "rust": [
+        120,
+        8
+      ],
+      "c": [
+        144,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[21] paramsNr vs insert",
+      "rust": [
+        128,
+        4
+      ],
+      "c": [
+        152,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[22] paramsMax vs xpathCtxt",
+      "rust": [
+        132,
+        4
+      ],
+      "c": [
+        160,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[23] paramsBase vs state",
+      "rust": [
+        136,
+        4
+      ],
+      "c": [
+        168,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[24] paramsTab vs globalVars",
+      "rust": [
+        144,
+        8
+      ],
+      "c": [
+        176,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[25] keyTables vs inst",
+      "rust": [
+        152,
+        8
+      ],
+      "c": [
+        184,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[26] hasSort vs xinclude",
+      "rust": [
+        160,
+        4
+      ],
+      "c": [
+        192,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[27] output vs outputFile",
+      "rust": [
+        168,
+        8
+      ],
+      "c": [
+        200,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[28] errFunc vs profile",
+      "rust": [
+        176,
+        8
+      ],
+      "c": [
+        208,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[29] errCtxt vs prof",
+      "rust": [
+        184,
+        8
+      ],
+      "c": [
+        216,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[30] extInfos vs profNr",
+      "rust": [
+        192,
+        8
+      ],
+      "c": [
+        224,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[31] extrasNr vs profMax",
+      "rust": [
+        200,
+        4
+      ],
+      "c": [
+        228,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[32] extrasMax vs profTab",
+      "rust": [
+        204,
+        4
+      ],
+      "c": [
+        232,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[33] extrasTab vs _private",
+      "rust": [
+        208,
+        8
+      ],
+      "c": [
+        240,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[34] state vs extrasNr",
+      "rust": [
+        216,
+        4
+      ],
+      "c": [
+        248,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[35] priority vs extrasMax",
+      "rust": [
+        220,
+        4
+      ],
+      "c": [
+        252,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[36] parserCtxt vs extras",
+      "rust": [
+        224,
+        8
+      ],
+      "c": [
+        256,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[37] save vs styleList",
+      "rust": [
+        232,
+        4
+      ],
+      "c": [
+        264,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[38] opts vs sec",
+      "rust": [
+        236,
+        4
+      ],
+      "c": [
+        272,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[39] secPrefs vs error",
+      "rust": [
+        240,
+        8
+      ],
+      "c": [
+        280,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[40] docCache vs errctx",
+      "rust": [
+        248,
+        8
+      ],
+      "c": [
+        288,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[41] globalVars vs sortfunc",
+      "rust": [
+        256,
+        8
+      ],
+      "c": [
+        296,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[42] profile vs tmpRVT",
+      "rust": [
+        264,
+        8
+      ],
+      "c": [
+        304,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[43] prof vs persistRVT",
+      "rust": [
+        272,
+        8
+      ],
+      "c": [
+        312,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[44] extFunctionsNr vs ctxtflags",
+      "rust": [
+        280,
+        4
+      ],
+      "c": [
+        320,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[45] extFunctionsMax vs lasttext",
+      "rust": [
+        284,
+        4
+      ],
+      "c": [
+        328,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[46] extFunctionsTab vs lasttsize",
+      "rust": [
+        288,
+        8
+      ],
+      "c": [
+        336,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[47] userData vs lasttuse",
+      "rust": [
+        296,
+        8
+      ],
+      "c": [
+        340,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[48] frame vs debugStatus",
+      "rust": [
+        304,
+        4
+      ],
+      "c": [
+        344,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[49] frameNr vs traceCode",
+      "rust": [
+        308,
+        4
+      ],
+      "c": [
+        352,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[50] frameMax vs parserOptions",
+      "rust": [
+        312,
+        4
+      ],
+      "c": [
+        360,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[51] frameTab vs dict",
+      "rust": [
+        320,
+        8
+      ],
+      "c": [
+        368,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[52] insert vs tmpDoc",
+      "rust": [
+        328,
+        8
+      ],
+      "c": [
+        376,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[53] resultDoc vs internalized",
+      "rust": [
+        336,
+        8
+      ],
+      "c": [
+        384,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[54] nsNr vs nbKeys",
+      "rust": [
+        344,
+        4
+      ],
+      "c": [
+        388,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[55] nsMax vs hasTemplKeyPatterns",
+      "rust": [
+        348,
+        4
+      ],
+      "c": [
+        392,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[56] nsTab vs currentTemplateRule",
+      "rust": [
+        352,
+        8
+      ],
+      "c": [
+        400,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[57] nsNrOriginal vs initialContextNode",
+      "rust": [
+        360,
+        4
+      ],
+      "c": [
+        408,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[58] nsMaxOriginal vs initialContextDoc",
+      "rust": [
+        364,
+        4
+      ],
+      "c": [
+        416,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[59] nsTabOriginal vs cache",
+      "rust": [
+        368,
+        8
+      ],
+      "c": [
+        424,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[60] currentTemplate vs contextVariable",
+      "rust": [
+        376,
+        8
+      ],
+      "c": [
+        432,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[61] templHash vs localRVT",
+      "rust": [
+        384,
+        8
+      ],
+      "c": [
+        440,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[62] varsNrOriginal vs localRVTBase",
+      "rust": [
+        392,
+        4
+      ],
+      "c": [
+        448,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[63] varsMaxOriginal vs keyInitLevel",
+      "rust": [
+        396,
+        4
+      ],
+      "c": [
+        456,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[64] varsTabOriginal vs depth",
+      "rust": [
+        400,
+        8
+      ],
+      "c": [
+        460,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[65] insertDepth vs maxTemplateDepth",
+      "rust": [
+        408,
+        4
+      ],
+      "c": [
+        464,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTransformContext",
+      "reason": "field[66] maxInsertDepth vs maxTemplateVars",
+      "rust": [
+        412,
+        4
+      ],
+      "c": [
+        468,
+        4
+      ]
+    }
+  ],
+  "verdict": "FAIL",
+  "regenerate": "tools/abi/rust_mirror_court.py"
+}
