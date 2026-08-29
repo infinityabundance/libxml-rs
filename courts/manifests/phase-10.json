@@ -1,8 +1,8 @@
 {
   "tools": {
     "xmllint": {
-      "date": "2026-08-29T20:39:00Z",
-      "candidate_commit": "9b8a2233880e2273e723b0bceb75ddbf0b9a9399",
+      "date": "2026-08-29T20:51:06Z",
+      "candidate_commit": "53addca0a370aae796228111291ecdb0b0fa8bb1",
       "oracle_identity": "/usr/bin/xmllint: using libxml version 21503-GITv2.15.3\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib",
       "pass": 32,
       "fail": 2,
@@ -44,8 +44,8 @@
       }
     },
     "xmlcatalog": {
-      "date": "2026-08-29T20:39:00Z",
-      "candidate_commit": "9b8a2233880e2273e723b0bceb75ddbf0b9a9399",
+      "date": "2026-08-29T20:51:06Z",
+      "candidate_commit": "53addca0a370aae796228111291ecdb0b0fa8bb1",
       "oracle_identity": "Usage : /usr/bin/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\nUnknown option --version",
       "pass": 9,
       "fail": 2,

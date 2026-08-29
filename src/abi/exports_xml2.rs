@@ -3604,6 +3604,154 @@ pub unsafe extern "C" fn xmlOutputBufferWriteString(
     unsafe { xmlOutputBufferWrite(out, xmlStrlen(str as *const xmlChar), str) }
 }
 
+/// Allocate an output buffer with no I/O target (upstream xmlAllocOutputBuffer).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlOutputBufferPtr xmlAllocOutputBuffer(xmlCharEncodingHandlerPtr encoder);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAllocOutputBuffer(encoder: *mut c_void) -> *mut _xmlOutputBuffer {
+    crate::xml::io::output_buffer_create(
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+    )
+}
+
+/// Create an output buffer that writes into a `_xmlBuffer` (upstream
+/// xmlOutputBufferCreateBuffer).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlOutputBufferPtr xmlOutputBufferCreateBuffer(xmlBufferPtr buffer,
+///                                                xmlCharEncodingHandlerPtr encoder);
+/// ```
+///
+/// # SAFETY
+///
+/// - `buffer` must be a valid `_xmlBuffer`.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferCreateBuffer(
+    buffer: *mut crate::abi::structs::_xmlBuffer,
+    encoder: *mut c_void,
+) -> *mut _xmlOutputBuffer {
+    crate::xml::io::output_buffer_create_buffer(
+        buffer,
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+    )
+}
+
+/// Create an output buffer writing to a `FILE *` (upstream
+/// xmlOutputBufferCreateFile): the FILE is the I/O context with a
+/// write callback wrapping `fwrite` and a close callback wrapping `fflush`.
+///
+/// # SAFETY
+///
+/// - `file` must be a valid `FILE *` or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferCreateFile(
+    file: *mut libc::FILE,
+    encoder: *mut c_void,
+) -> *mut _xmlOutputBuffer {
+    crate::xml::io::output_buffer_create_file(
+        file,
+        encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
+    )
+}
+
+/// Get the current content of an output buffer (upstream xmlOutputBufferGetContent).
+///
+/// # SAFETY
+///
+/// - `out` must be a valid output buffer.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferGetContent(out: *mut _xmlOutputBuffer) -> *const c_char {
+    crate::xml::io::output_buffer_get_content(out) as *const c_char
+}
+
+/// Get the number of bytes currently in the output buffer (upstream
+/// xmlOutputBufferGetSize).
+///
+/// # SAFETY
+///
+/// - `out` must be a valid output buffer.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferGetSize(out: *mut _xmlOutputBuffer) -> c_int {
+    crate::xml::io::output_buffer_get_size(out)
+}
+
+/// Write to an output buffer, escaping special characters with the given
+/// escape function (upstream xmlOutputBufferWriteEscape).
+///
+/// # SAFETY
+///
+/// - `out` must be a valid output buffer; `str` a NUL-terminated string;
+///   `escaping` a valid escape callback or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferWriteEscape(
+    out: *mut _xmlOutputBuffer,
+    str: *const xmlChar,
+    escaping: Option<xmlCharEncodingOutputFunc>,
+) -> c_int {
+    if out.is_null() || str.is_null() {
+        return -1;
+    }
+    crate::xml::io::output_buffer_write_escape(out, str, escaping)
+}
+
+/// Global default `xmlOutputBufferCreateFilename` callback
+/// (upstream xmlOutputBufferCreateFilenameDefault).
+static mut OUTPUT_CREATE_FILENAME_DEFAULT: Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        *mut crate::abi::structs::_xmlCharEncodingHandler,
+        c_int,
+    ) -> *mut _xmlOutputBuffer,
+> = None;
+
+/// Set/query the default output-buffer filename callback
+/// (upstream xmlOutputBufferCreateFilenameDefault).
+///
+/// # SAFETY
+///
+/// - `func` must be a valid function pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlOutputBufferCreateFilenameDefault(
+    func: Option<
+        unsafe extern "C" fn(
+            *const c_char,
+            *mut crate::abi::structs::_xmlCharEncodingHandler,
+            c_int,
+        ) -> *mut _xmlOutputBuffer,
+    >,
+) -> Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        *mut crate::abi::structs::_xmlCharEncodingHandler,
+        c_int,
+    ) -> *mut _xmlOutputBuffer,
+> {
+    let old = unsafe { OUTPUT_CREATE_FILENAME_DEFAULT };
+    if func.is_some() {
+        unsafe { OUTPUT_CREATE_FILENAME_DEFAULT = func };
+    }
+    old
+}
+
+/// `__xmlOutputBufferCreateFilename` — accessor returning a pointer to the
+/// default callback (upstream xmlIO.c).
+#[no_mangle]
+pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        *mut crate::abi::structs::_xmlCharEncodingHandler,
+        c_int,
+    ) -> *mut _xmlOutputBuffer,
+> {
+    unsafe { core::ptr::addr_of_mut!(OUTPUT_CREATE_FILENAME_DEFAULT) }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 9. Dictionary
 // ═══════════════════════════════════════════════════════════════════════════════

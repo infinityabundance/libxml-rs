@@ -39,6 +39,7 @@ pub mod parser;
 pub mod reader;
 pub mod regex;
 pub mod relaxng;
+pub mod save;
 pub mod sax;
 pub mod schemas;
 pub mod schematron;

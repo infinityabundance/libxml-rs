@@ -1523,10 +1523,18 @@ pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
 
 /// Write to an output buffer.
 ///
-/// The data is appended to the internal buffer. Use `output_buffer_flush`
-/// to write the buffered data via the callback.
+/// The data is appended to the internal buffer; when a write callback is
+/// installed and the buffered size reaches the upstream threshold
+/// (`MINLEN` = 256), the buffered data is pushed through the callback.
 ///
-/// Returns the number of bytes written (always `len` on success), or -1 on error.
+/// # UPSTREAM-PARITY
+///
+/// Upstream 2.15 `xmlOutputBufferWrite` returns the number of bytes written
+/// to the I/O channel **in this call** — 0 when the data merely landed in
+/// the internal buffer (observable on the system DSO; verified by the
+/// SAVE-001 differential court). With no write callback, `len` is returned.
+///
+/// Returns the bytes written through the callback (possibly 0), or -1 on error.
 pub(crate) fn output_buffer_write(
     out: *mut _xmlOutputBuffer,
     len: c_int,
@@ -1553,7 +1561,18 @@ pub(crate) fn output_buffer_write(
         return -1;
     }
 
-    len
+    if ob.writecallback.is_none() {
+        return len; // no I/O channel: upstream returns len
+    }
+
+    // Push buffered data through the callback once it reaches the upstream
+    // MINLEN threshold; otherwise the write is only buffered and upstream
+    // reports 0 bytes written in this call.
+    let b = unsafe { &*buf };
+    if b.use_ < MIN_BUFFER_SIZE {
+        return 0;
+    }
+    output_buffer_flush(out)
 }
 
 /// Write a null-terminated string to an output buffer.
@@ -1593,6 +1612,224 @@ pub(crate) fn output_buffer_get_content(out: *mut _xmlOutputBuffer) -> *const xm
     }
 
     buf_content(buf)
+}
+
+/// Get the number of bytes currently buffered (upstream xmlOutputBufferGetSize).
+pub(crate) fn output_buffer_get_size(out: *mut _xmlOutputBuffer) -> c_int {
+    if out.is_null() {
+        return -1;
+    }
+    let ob = unsafe { &*out };
+    let buf = ob.buffer as *mut _xmlBuffer;
+    if buf.is_null() {
+        return -1;
+    }
+    buf_length(buf)
+}
+
+/// Allocate an output buffer with no I/O target (upstream xmlAllocOutputBuffer):
+/// a fresh internal buffer and no write/close callbacks.
+pub(crate) fn output_buffer_create(
+    _encoder: *mut crate::abi::structs::_xmlCharEncodingHandler,
+) -> *mut _xmlOutputBuffer {
+    let obuf = allocate_output_buffer();
+    if obuf.is_null() {
+        return ptr::null_mut();
+    }
+    let buf = buf_create(-1);
+    if buf.is_null() {
+        unsafe { xmlFree(obuf as *mut c_void) };
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*obuf).buffer = buf as *mut c_void;
+        (*obuf).encoder = _encoder as *mut c_void;
+    }
+    obuf
+}
+
+/// Create an output buffer writing to a `FILE *` (upstream
+/// xmlOutputBufferCreateFile): the FILE becomes the I/O context, writes go
+/// through `fwrite`, close goes through `fflush` (upstream xmlFileWrite /
+/// xmlFileFlush).
+///
+/// # SAFETY
+///
+/// - `file` must be a valid `FILE *` or NULL.
+pub(crate) fn output_buffer_create_file(
+    file: *mut libc::FILE,
+    _encoder: *mut crate::abi::structs::_xmlCharEncodingHandler,
+) -> *mut _xmlOutputBuffer {
+    if file.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe extern "C" fn file_write(ctx: *mut c_void, buffer: *const c_char, len: c_int) -> c_int {
+        let f = ctx as *mut libc::FILE;
+        if f.is_null() || buffer.is_null() || len <= 0 {
+            return 0;
+        }
+        let n = unsafe { libc::fwrite(buffer as *const libc::c_void, 1, len as usize, f) };
+        n as c_int
+    }
+    unsafe extern "C" fn file_flush(ctx: *mut c_void) -> c_int {
+        let f = ctx as *mut libc::FILE;
+        if f.is_null() {
+            return -1;
+        }
+        unsafe { libc::fflush(f) }
+    }
+    let obuf = output_buffer_create(_encoder);
+    if obuf.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*obuf).context = file as *mut c_void;
+        (*obuf).writecallback = Some(file_write);
+        (*obuf).closecallback = Some(file_flush);
+    }
+    obuf
+}
+
+/// Write to an output buffer, applying an escape callback to the string
+/// (upstream xmlOutputBufferWriteEscape).
+///
+/// # UPSTREAM-PARITY
+///
+/// With a NULL escape callback upstream runs the string through
+/// `xmlEscapeText(str, 0)` (xmlIO.c 2.15, codegen/escape.inc) and then
+/// `xmlOutputBufferWrite` — so `&`/`<`/`>` and CR become entities, tab/LF
+/// and quotes are left verbatim, and the return value follows the write
+/// path (0 while data is only buffered).
+///
+/// Returns the bytes written through the callback, or -1 on error.
+pub(crate) fn output_buffer_write_escape(
+    out: *mut _xmlOutputBuffer,
+    str: *const xmlChar,
+    escaping: Option<unsafe extern "C" fn(*mut u8, *mut c_int, *const u8, *mut c_int) -> c_int>,
+) -> c_int {
+    if out.is_null() || str.is_null() {
+        return -1;
+    }
+    if escaping.is_none() {
+        // Upstream xmlEscapeText(str, 0): only & < > and CR are escaped.
+        // SAFETY: escape_text reads `str` and allocates a fresh copy.
+        let escaped = unsafe { escape_text(str) };
+        if escaped.is_null() {
+            unsafe {
+                let ob = &mut *out;
+                ob.error = 1;
+            }
+            return -1;
+        }
+        let len = unsafe { libc::strlen(escaped as *const libc::c_char) as c_int };
+        let ret = output_buffer_write(out, len, escaped as *const c_char);
+        unsafe { libc::free(escaped as *mut libc::c_void) };
+        return ret;
+    }
+    let ob = unsafe { &mut *out };
+    if ob.error != 0 {
+        return -1;
+    }
+    let buf = ob.buffer as *mut _xmlBuffer;
+    if buf.is_null() {
+        return -1;
+    }
+    let mut inlen = unsafe { libc::strlen(str as *const libc::c_char) as c_int };
+    let mut inpos = 0i32;
+    let mut total = 0i32;
+    while inpos < inlen {
+        let mut outbuf = [0u8; 1024];
+        let mut outlen = 1024i32;
+        let chunk_in = unsafe { str.add(inpos as usize) };
+        let mut chunk_len = inlen - inpos;
+        // SAFETY: escaping is a valid callback; buffers are valid for the call.
+        let ret = unsafe {
+            escaping.unwrap()(outbuf.as_mut_ptr(), &mut outlen, chunk_in, &mut chunk_len)
+        };
+        if ret < 0 || outlen < 0 {
+            ob.error = 1;
+            return -1;
+        }
+        if outlen > 0 {
+            let r = output_buffer_write(out, outlen, outbuf.as_ptr() as *const c_char);
+            if r < 0 {
+                ob.error = 1;
+                return -1;
+            }
+            total += r;
+        }
+        if chunk_len <= 0 {
+            break; // escape consumed nothing: avoid an infinite loop
+        }
+        inpos += chunk_len;
+        if inpos > inlen {
+            break;
+        }
+    }
+    total
+}
+
+/// Upstream `xmlEscapeText(str, 0)` (xmlIO.c 2.15, codegen/escape.inc):
+/// escapes `&`/`<`/`>` and CR; tab/LF/quotes pass through; multi-byte UTF-8
+/// is copied verbatim (no XML_ESCAPE_NON_ASCII flag). Returns a
+/// heap-allocated NUL-terminated string (caller frees).
+unsafe fn escape_text(str: *const xmlChar) -> *mut xmlChar {
+    if str.is_null() {
+        return core::ptr::null_mut();
+    }
+    let mut out = Vec::<u8>::with_capacity(64);
+    let mut cur = str;
+    loop {
+        let c = unsafe { *cur };
+        if c == 0 {
+            break;
+        }
+        match c {
+            b'&' => out.extend_from_slice(b"&amp;"),
+            b'<' => out.extend_from_slice(b"&lt;"),
+            b'>' => out.extend_from_slice(b"&gt;"),
+            0x0d => out.extend_from_slice(b"&#13;"),
+            _ => {
+                // Copy a whole UTF-8 sequence verbatim (upstream copies
+                // bytes until the next escapable char).
+                let len = utf8_seq_len(c);
+                for _ in 0..len {
+                    let b = unsafe { *cur };
+                    if b == 0 {
+                        break;
+                    }
+                    out.push(b);
+                    cur = cur.add(1);
+                }
+                continue;
+            }
+        }
+        cur = cur.add(1);
+    }
+    out.push(0);
+    let p = libc::malloc(out.len()) as *mut xmlChar;
+    if p.is_null() {
+        return core::ptr::null_mut();
+    }
+    unsafe {
+        libc::memcpy(
+            p as *mut libc::c_void,
+            out.as_ptr() as *const libc::c_void,
+            out.len(),
+        );
+    }
+    p
+}
+
+/// Byte length of the UTF-8 sequence starting with `lead` (1 when invalid).
+fn utf8_seq_len(lead: u8) -> usize {
+    match lead {
+        0x00..=0x7f => 1,
+        0xc2..=0xdf => 2,
+        0xe0..=0xef => 3,
+        0xf0..=0xf4 => 4,
+        _ => 1,
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2215,8 +2452,11 @@ mod tests {
 
         // Write data
         let data = c("Hello Output");
+        // UPSTREAM-PARITY: with a write callback and < MINLEN buffered,
+        // xmlOutputBufferWrite returns 0 (verified against the system DSO
+        // by the SAVE-001 differential court).
         let ret = output_buffer_write(obuf, 12, data.as_ptr());
-        assert_eq!(ret, 12);
+        assert_eq!(ret, 0);
 
         // Flush - this writes buffered data via callback to the target buffer
         let flushed = output_buffer_flush(obuf);
@@ -2246,8 +2486,9 @@ mod tests {
         assert!(!obuf.is_null());
 
         let s = c("Hello");
+        // UPSTREAM-PARITY: buffered write returns 0 (see above).
         let ret = output_buffer_write_string(obuf, s.as_ptr());
-        assert_eq!(ret, 5);
+        assert_eq!(ret, 0);
 
         // output_buffer_close frees internal_buf via obuf.buffer
         output_buffer_close(obuf);
@@ -2260,7 +2501,8 @@ mod tests {
         assert!(!obuf.is_null());
 
         let ret = output_buffer_write_char(obuf, b'X' as c_char);
-        assert_eq!(ret, 1);
+        // UPSTREAM-PARITY: buffered write returns 0 (see above).
+        assert_eq!(ret, 0);
 
         output_buffer_close(obuf);
     }
@@ -2473,8 +2715,9 @@ mod tests {
 
         // Write UTF-8 "Hellö" = [0x48, 0x65, 0x6C, 0x6C, 0xC3, 0xB6]
         let utf8_data = unsafe { c_bytes(&[0x48, 0x65, 0x6C, 0x6C, 0xC3, 0xB6]) };
+        // UPSTREAM-PARITY: buffered write returns 0 (see above).
         let ret = output_buffer_write(obuf, 6, utf8_data.as_ptr());
-        assert_eq!(ret, 6);
+        assert_eq!(ret, 0);
 
         // Flush - this should convert via Latin-1 encoder
         let flushed = output_buffer_flush(obuf);

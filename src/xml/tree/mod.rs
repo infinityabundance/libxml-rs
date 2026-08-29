@@ -2592,17 +2592,22 @@ pub(crate) unsafe fn serialize_attr_value(buf: *mut _xmlBuffer, value: *const xm
 /// # SAFETY
 ///
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
-unsafe fn write_indent(buf: *mut _xmlBuffer, level: c_int) {
-    if buf.is_null() || level <= 0 {
+unsafe fn write_indent(
+    buf: *mut _xmlBuffer,
+    level: c_int,
+    indent: *const xmlChar,
+    indent_len: c_int,
+) {
+    if buf.is_null() || level <= 0 || indent.is_null() || indent_len <= 0 {
         return;
     }
-    let indent_nr = MAX_INDENT / INDENT.len() as c_int;
+    let indent_nr = MAX_INDENT / indent_len;
     let mut lvl = level;
     if lvl > indent_nr {
         lvl = indent_nr;
     }
     for _ in 0..lvl {
-        io::buf_add(buf, INDENT.as_ptr(), INDENT.len() as c_int);
+        io::buf_add(buf, indent, indent_len);
     }
 }
 
@@ -2648,6 +2653,13 @@ struct DumpState {
     /// The element whose children disabled formatting (upstream
     /// `unformattedNode`).
     unformatted: *mut _xmlNode,
+    /// Per-context indent string (upstream `ctxt->indent`); NULL falls back
+    /// to the default `xmlTreeIndentString`.
+    indent: *const xmlChar,
+    /// Byte length of `indent`.
+    indent_len: c_int,
+    /// Suppress the XML declaration (XML_SAVE_NO_DECL, upstream `no_decl`).
+    no_decl: c_int,
 }
 
 impl DumpState {
@@ -2657,6 +2669,37 @@ impl DumpState {
             format: f,
             saved: f,
             unformatted: ptr::null_mut(),
+            indent: INDENT.as_ptr(),
+            indent_len: INDENT.len() as c_int,
+            no_decl: 0,
+        }
+    }
+
+    /// Create a state with a custom indent string (xmlSaveSetIndentString)
+    /// and the XML_SAVE_NO_DECL option.
+    ///
+    /// # SAFETY
+    ///
+    /// - `indent` must be NULL or a valid NUL-terminated string that stays
+    ///   alive for the whole dump.
+    unsafe fn with_indent(format: c_int, indent: *const xmlChar, no_decl: c_int) -> Self {
+        let f = if format != 0 { 1 } else { 0 };
+        let (ptr, len) = if indent.is_null() {
+            (INDENT.as_ptr(), INDENT.len() as c_int)
+        } else {
+            let mut n = 0i32;
+            while unsafe { *indent.add(n as usize) } != 0 {
+                n += 1;
+            }
+            (indent, n)
+        };
+        DumpState {
+            format: f,
+            saved: f,
+            unformatted: ptr::null_mut(),
+            indent: ptr,
+            indent_len: len,
+            no_decl,
         }
     }
 }
@@ -3237,29 +3280,32 @@ unsafe fn doc_content_dump_output(
     let d = unsafe { &*doc };
 
     // XML declaration: `<?xml version="..."?>\n`. The encoding is included
-    // only when the document carries one.
-    io::buf_add(buf, b"<?xml version=\"" as *const u8, 15);
-    if !d.version.is_null() {
-        io::buf_cat(buf, d.version);
-    } else {
-        io::buf_add(buf, b"1.0" as *const u8, 3);
-    }
-    io::buf_ccat(buf, b'"');
-    if !d.encoding.is_null() {
-        io::buf_add(buf, b" encoding=\"" as *const u8, 11);
-        io::buf_cat(buf, d.encoding);
+    // only when the document carries one. Suppressed by the
+    // XML_SAVE_NO_DECL save option (upstream xmlsave.c `no_decl`).
+    if state.no_decl == 0 {
+        io::buf_add(buf, b"<?xml version=\"" as *const u8, 15);
+        if !d.version.is_null() {
+            io::buf_cat(buf, d.version);
+        } else {
+            io::buf_add(buf, b"1.0" as *const u8, 3);
+        }
         io::buf_ccat(buf, b'"');
-    }
-    match d.standalone {
-        0 => {
-            io::buf_add(buf, b" standalone=\"no\"" as *const u8, 16);
+        if !d.encoding.is_null() {
+            io::buf_add(buf, b" encoding=\"" as *const u8, 11);
+            io::buf_cat(buf, d.encoding);
+            io::buf_ccat(buf, b'"');
         }
-        1 => {
-            io::buf_add(buf, b" standalone=\"yes\"" as *const u8, 17);
+        match d.standalone {
+            0 => {
+                io::buf_add(buf, b" standalone=\"no\"" as *const u8, 16);
+            }
+            1 => {
+                io::buf_add(buf, b" standalone=\"yes\"" as *const u8, 17);
+            }
+            _ => {}
         }
-        _ => {}
+        io::buf_add(buf, b"?>\n" as *const u8, 3);
     }
-    io::buf_add(buf, b"?>\n" as *const u8, 3);
 
     // UPSTREAM-PARITY: the internal subset is serialized before the tree
     // children (it is stored on doc->intSubset, not in the children list).
@@ -3321,7 +3367,7 @@ unsafe fn node_dump_internal(
     match n.type_ {
         t if t == XML_ELEMENT_NODE as c_int => {
             if cur != root && state.format == 1 {
-                write_indent(buf, *level);
+                write_indent(buf, *level, state.indent, state.indent_len);
             }
             // Corrupted-tree fallback (upstream handles nodes passed with a
             // broken parent link by dumping the subtree as its own root).
@@ -3387,7 +3433,7 @@ unsafe fn node_dump_internal(
                     *level -= 1;
                 }
                 if state.format == 1 {
-                    write_indent(buf, *level);
+                    write_indent(buf, *level, state.indent, state.indent_len);
                 }
                 io::buf_add(buf, b"</" as *const u8, 2);
                 write_qname(buf, cur);
@@ -3451,7 +3497,7 @@ unsafe fn node_dump_internal(
         }
         t if t == XML_COMMENT_NODE as c_int => {
             if cur != root && state.format == 1 {
-                write_indent(buf, *level);
+                write_indent(buf, *level, state.indent, state.indent_len);
             }
             if !n.content.is_null() {
                 io::buf_add(buf, b"<!--" as *const u8, 4);
@@ -3461,7 +3507,7 @@ unsafe fn node_dump_internal(
         }
         t if t == XML_PI_NODE as c_int => {
             if cur != root && state.format == 1 {
-                write_indent(buf, *level);
+                write_indent(buf, *level, state.indent, state.indent_len);
             }
             io::buf_add(buf, b"<?" as *const u8, 2);
             if !n.name.is_null() {
@@ -3528,11 +3574,45 @@ pub(crate) unsafe fn serialize_node(
     format: c_int,
     level: c_int,
 ) {
+    unsafe { serialize_node_opt(node, buf, format, level, ptr::null()) };
+}
+
+/// Like `serialize_node`, with a per-context indent string
+/// (xmlSaveSetIndentString); NULL indent uses the default.
+///
+/// # SAFETY
+///
+/// - `indent` must be NULL or a valid NUL-terminated string that stays
+///   alive for the whole dump.
+pub(crate) unsafe fn serialize_node_opt(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+) {
+    unsafe { serialize_node_opts(node, buf, format, level, indent, 0) };
+}
+
+/// Like `serialize_node_opt`, plus the XML_SAVE_NO_DECL flag.
+///
+/// # SAFETY
+///
+/// - `indent` must be NULL or a valid NUL-terminated string that stays
+///   alive for the whole dump.
+pub(crate) unsafe fn serialize_node_opts(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+    no_decl: c_int,
+) {
     if node.is_null() || buf.is_null() {
         return;
     }
     let parent = unsafe { (*node).parent };
-    let mut state = DumpState::new(format);
+    let mut state = DumpState::with_indent(format, indent, no_decl);
     let mut lvl = level;
     node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
 }
