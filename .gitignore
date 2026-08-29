@@ -34,6 +34,16 @@ oracle/historical/prefix/
 oracle/historical/results/
 oracle/historical/styles/
 
+# Doxygen archaeology (11.1-B/C) — regenerable internals; the normalized census
+# (census.json, *-surface-epochs.json, conditions/coverage/configs.json) is committed.
+oracle/historical/doxygen/*/src/
+oracle/historical/doxygen/*/xml-public/
+oracle/historical/doxygen/*/xml-full/
+oracle/historical/doxygen/*/archive.tar
+oracle/historical/doxygen/*/Doxyfile-*
+oracle/historical/doxygen/*/profile-*.json
+oracle/historical/doxygen/.probe-*
+
 # Receipts (generated during court runs)
 receipts/*.json
 

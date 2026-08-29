@@ -1,0 +1,6344 @@
+{
+ "schema": "doxygen-inventory-1",
+ "project": "libxslt",
+ "version": "1.1.38",
+ "profile": "public",
+ "doxygen_version": "1.18.0",
+ "config_hash": "0767fe482fdce344bd4332ba0c991a5f71377289ab840410845b03d097e44cd9",
+ "source_tree_hash": "6b916ef0ac5f20edd58e057c9b0330b496a1056e12bea7ccea873350704394ce",
+ "raw_xml_hash": "672fba7add6e0fb90de2195e6e12aa9f4ddcd6ea46b4d5829fd8066ca5ef4bfe",
+ "counts": {
+  "define": 74,
+  "enum": 7,
+  "function": 251,
+  "typedef": 51,
+  "variable": 281,
+  "total": 664
+ },
+ "entities": [
+  {
+   "kind": "define",
+   "name": "EXSLT_COMMON_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/common\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "30"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_CRYPTO_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/crypto\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "36"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_DATE_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/dates-and-times\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "66"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_DYNAMIC_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/dynamic\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "72"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_FUNCTIONS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/functions\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_MATH_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/math\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "42"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_SETS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/sets\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "48"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_STRINGS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/strings\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "60"
+  },
+  {
+   "kind": "define",
+   "name": "SAXON_NAMESPACE",
+   "value": "((const xmlChar *) \"http://icl.com/saxon\")",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "79"
+  },
+  {
+   "kind": "define",
+   "name": "ATTRIBUTE_UNUSED",
+   "value": "",
+   "documented": false,
+   "header": "exsltconfig.h",
+   "line": "63"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_DOTTED_VERSION",
+   "value": "\"0.8.21\"",
+   "documented": false,
+   "header": "exsltconfig.h",
+   "line": "21"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION",
+   "value": "821",
+   "documented": false,
+   "header": "exsltconfig.h",
+   "line": "28"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION_EXTRA",
+   "value": "\"\"",
+   "documented": false,
+   "header": "exsltconfig.h",
+   "line": "42"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION_STRING",
+   "value": "\"821\"",
+   "documented": false,
+   "header": "exsltconfig.h",
+   "line": "35"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTCALL",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "38"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBFUN",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "47"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "31"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBVAR",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_PUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "58"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_LIBXSLT_NAMESPACE",
+   "value": "((xmlChar *) \"http://xmlsoft.org/XSLT/namespace\")",
+   "documented": false,
+   "header": "extra.h",
+   "line": "27"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_SAXON_NAMESPACE",
+   "value": "((xmlChar *) \"http://icl.com/saxon\")",
+   "documented": false,
+   "header": "extra.h",
+   "line": "34"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_XALAN_NAMESPACE",
+   "value": "((xmlChar *)    \\\n\"org.apache.xalan.xslt.extensions.Redirect\")",
+   "documented": false,
+   "header": "extra.h",
+   "line": "48"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_XT_NAMESPACE",
+   "value": "((xmlChar *) \"http://www.jclark.com/xt\")",
+   "documented": false,
+   "header": "extra.h",
+   "line": "41"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_REGISTER_FUNCTION_LOOKUP",
+   "value": "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\",
+   "documented": false,
+   "header": "functions.h",
+   "line": "27"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_GET_IMPORT_INT",
+   "value": "{           \\",
+   "documented": false,
+   "header": "imports.h",
+   "line": "40"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_GET_IMPORT_PTR",
+   "value": "{           \\",
+   "documented": false,
+   "header": "imports.h",
+   "line": "27"
+  },
+  {
+   "kind": "define",
+   "name": "NODE_IS_KEYED",
+   "value": "(1 >> 15)",
+   "documented": false,
+   "header": "keys.h",
+   "line": "26"
+  },
+  {
+   "kind": "define",
+   "name": "UNDEFINED_DEFAULT_NS",
+   "value": "(const xmlChar *) -1L",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "30"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_REGISTER_VARIABLE_LOOKUP",
+   "value": "xmlXPathRegisterVariableLookup((ctxt)->xpathCtxt,       \\",
+   "documented": false,
+   "header": "variables.h",
+   "line": "30"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RVT_FUNC_RESULT",
+   "value": "2",
+   "documented": false,
+   "header": "variables.h",
+   "line": "55"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RVT_GLOBAL",
+   "value": "3",
+   "documented": false,
+   "header": "variables.h",
+   "line": "62"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RVT_LOCAL",
+   "value": "1",
+   "documented": false,
+   "header": "variables.h",
+   "line": "46"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_DEFAULT_URL",
+   "value": "\"http://xmlsoft.org/XSLT/\"",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "39"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_DEFAULT_VENDOR",
+   "value": "\"libxslt\"",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "32"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_DEFAULT_VERSION",
+   "value": "\"1.0\"",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "25"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_NAMESPACE",
+   "value": "((const xmlChar *)\"http://www.w3.org/1999/XSL/Transform\")",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "46"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_PARSE_OPTIONS",
+   "value": "XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_NOCDATA",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "CHECK_STOPPED",
+   "value": "if (ctxt->state ==",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1807"
+  },
+  {
+   "kind": "define",
+   "name": "CHECK_STOPPED0",
+   "value": "if (ctxt->state ==",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1823"
+  },
+  {
+   "kind": "define",
+   "name": "CHECK_STOPPEDE",
+   "value": "if (ctxt->state ==",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1815"
+  },
+  {
+   "kind": "define",
+   "name": "XML_CAST_FPTR",
+   "value": "fptr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1845"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_FAST_IF",
+   "value": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "73"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_IS_RES_TREE_FRAG",
+   "value": "((n != NULL) && ((n)->type == XML_DOCUMENT_NODE) && \\\n ((n)->name != NULL) && ((n)->name[0] == ' '))",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "55"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_IS_TEXT_NODE",
+   "value": "((n != NULL) && \\\n(((n)->type == XML_TEXT_NODE) || \\\n ((n)->type == XML_CDATA_SECTION_NODE)))",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "37"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_MARK_RES_TREE_FRAG",
+   "value": "(n)->name = (char *) xmlStrdup(BAD_CAST \" fake node libxslt\");",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "47"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_MAX_SORT",
+   "value": "15",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "208"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_PAT_NO_PRIORITY",
+   "value": "-12345789",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "215"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_REFACTORED_KEYCOMP",
+   "value": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "65"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_REFACTORED_VARS",
+   "value": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "88"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RUNTIME_EXTRA",
+   "value": "(ctxt)->extras[(nr)].val.typ",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "256"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RUNTIME_EXTRA_FREE",
+   "value": "(ctxt)->extras[(nr)].deallocate",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "248"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_RUNTIME_EXTRA_LST",
+   "value": "(ctxt)->extras[(nr)].info",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "240"
+  },
+  {
+   "kind": "define",
+   "name": "ATTRIBUTE_UNUSED",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "148"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_ATTR_FORMAT",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "159"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_DOTTED_VERSION",
+   "value": "\"1.1.38\"",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "23"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_PUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "171"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_VERSION",
+   "value": "10138",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "30"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_VERSION_EXTRA",
+   "value": "\"\"",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "44"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_VERSION_STRING",
+   "value": "\"10138\"",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "37"
+  },
+  {
+   "kind": "define",
+   "name": "WITH_DEBUGGER",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "108"
+  },
+  {
+   "kind": "define",
+   "name": "WITH_PROFILER",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "121"
+  },
+  {
+   "kind": "define",
+   "name": "WITH_XSLT_DEBUG",
+   "value": "",
+   "documented": false,
+   "header": "xsltconfig.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXSLT_PUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "xsltexports.h",
+   "line": "59"
+  },
+  {
+   "kind": "define",
+   "name": "XSLTCALL",
+   "value": "",
+   "documented": false,
+   "header": "xsltexports.h",
+   "line": "39"
+  },
+  {
+   "kind": "define",
+   "name": "XSLTPUBFUN",
+   "value": "",
+   "documented": false,
+   "header": "xsltexports.h",
+   "line": "48"
+  },
+  {
+   "kind": "define",
+   "name": "XSLTPUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "xsltexports.h",
+   "line": "32"
+  },
+  {
+   "kind": "define",
+   "name": "XSLTPUBVAR",
+   "value": "",
+   "documented": false,
+   "header": "xsltexports.h",
+   "line": "55"
+  },
+  {
+   "kind": "define",
+   "name": "IS_XSLT_ELEM",
+   "value": "(((n) != NULL) && ((n)->type == XML_ELEMENT_NODE) &&                \\\n ((n)->ns != NULL) && (xmlStrEqual((n)->ns->href,",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "51"
+  },
+  {
+   "kind": "define",
+   "name": "IS_XSLT_NAME",
+   "value": "(xmlStrEqual((n)->name, (const xmlChar *) (val)))",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "60"
+  },
+  {
+   "kind": "define",
+   "name": "IS_XSLT_REAL_NODE",
+   "value": "(((n) != NULL) &&                           \\\n (((n)->type == XML_ELEMENT_NODE) ||                \\\n  ((n)->type == XML_TEXT_NODE) ||                   \\\n  ((n)->type == XML_CDATA_SECTION_NODE) ||              \\\n  ((n)->type == XML_ATTRIBUTE_NODE) ||              \\\n  ((n)->type == XML_DOCUMENT_NODE) ||               \\\n  ((n)->type == XML_HTML_DOCUMENT_NODE) ||              \\\n  ((n)->type == XML_COMMENT_NODE) ||                \\\n  ((n)->type == XML_PI_NODE)))",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "68"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_STRANGE",
+   "value": "",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "41"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_TIMESTAMP_TICS_PER_SEC",
+   "value": "100000l",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "297"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_TODO",
+   "value": "",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "31"
+  },
+  {
+   "kind": "define",
+   "name": "XSLT_TRACE",
+   "value": "if (ctxt->traceCode && (*(ctxt->traceCode) & code)) \\\n    call",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "132"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltLoadType",
+   "documented": false,
+   "header": "documents.h",
+   "line": "53"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltSecurityOption",
+   "documented": false,
+   "header": "security.h",
+   "line": "37"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltOutputType",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1657"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltStyleType",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "422"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltTransformState",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1670"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltDebugStatusCodes",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "303"
+  },
+  {
+   "kind": "enum",
+   "name": "xsltDebugTraceCodes",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "105"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyAttributeSet",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, const xmlChar *attributes)",
+   "definition": "void xsltApplyAttributeSet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "attributes.h",
+   "line": "28"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeAttributeSetsHashes",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeAttributeSetsHashes",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "attributes.h",
+   "line": "26"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetAttributeSet",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "void xsltParseStylesheetAttributeSet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "attributes.h",
+   "line": "23"
+  },
+  {
+   "kind": "function",
+   "name": "xsltResolveStylesheetAttributeSet",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltResolveStylesheetAttributeSet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "attributes.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFindDocument",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr doc)",
+   "definition": "xsltDocumentPtr xsltFindDocument",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "30"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeDocuments",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltFreeDocuments",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeStyleDocuments",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeStyleDocuments",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "42"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLoadDocument",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *URI)",
+   "definition": "xsltDocumentPtr xsltLoadDocument",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "27"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLoadStyleDocument",
+   "args": "(xsltStylesheetPtr style, const xmlChar *URI)",
+   "definition": "xsltDocumentPtr xsltLoadStyleDocument",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewDocument",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr doc)",
+   "definition": "xsltDocumentPtr xsltNewDocument",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "24"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewStyleDocument",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc)",
+   "definition": "xsltDocumentPtr xsltNewStyleDocument",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "39"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetLoaderFunc",
+   "args": "(xsltDocLoaderFunc f)",
+   "definition": "void xsltSetLoaderFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "documents.h",
+   "line": "83"
+  },
+  {
+   "kind": "function",
+   "name": "exsltCommonRegister",
+   "args": "(void)",
+   "definition": "void exsltCommonRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "81"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDateRegister",
+   "args": "(void)",
+   "definition": "void exsltDateRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "89"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDateXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltDateXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "95"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDynRegister",
+   "args": "(void)",
+   "definition": "void exsltDynRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "91"
+  },
+  {
+   "kind": "function",
+   "name": "exsltFuncRegister",
+   "args": "(void)",
+   "definition": "void exsltFuncRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "87"
+  },
+  {
+   "kind": "function",
+   "name": "exsltMathRegister",
+   "args": "(void)",
+   "definition": "void exsltMathRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "85"
+  },
+  {
+   "kind": "function",
+   "name": "exsltMathXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltMathXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "97"
+  },
+  {
+   "kind": "function",
+   "name": "exsltRegisterAll",
+   "args": "(void)",
+   "definition": "void exsltRegisterAll",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "93"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSaxonRegister",
+   "args": "(void)",
+   "definition": "void exsltSaxonRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "90"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSetsRegister",
+   "args": "(void)",
+   "definition": "void exsltSetsRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "86"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSetsXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltSetsXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "99"
+  },
+  {
+   "kind": "function",
+   "name": "exsltStrRegister",
+   "args": "(void)",
+   "definition": "void exsltStrRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "88"
+  },
+  {
+   "kind": "function",
+   "name": "exsltStrXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltStrXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "101"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCheckExtPrefix",
+   "args": "(xsltStylesheetPtr style, const xmlChar *URI)",
+   "definition": "int xsltCheckExtPrefix",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "223"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCheckExtURI",
+   "args": "(xsltStylesheetPtr style, const xmlChar *URI)",
+   "definition": "int xsltCheckExtURI",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "226"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDebugDumpExtensions",
+   "args": "(FILE *output)",
+   "definition": "void xsltDebugDumpExtensions",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "254"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtElementLookup",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *URI)",
+   "definition": "xsltTransformFunction xsltExtElementLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "164"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtModuleElementLookup",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "xsltTransformFunction xsltExtModuleElementLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "168"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtModuleElementPreComputeLookup",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "xsltPreComputeFunction xsltExtModuleElementPreComputeLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "172"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtModuleFunctionLookup",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "xmlXPathFunction xsltExtModuleFunctionLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "131"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtModuleTopLevelLookup",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "xsltTopLevelFunction xsltExtModuleTopLevelLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "192"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeCtxtExts",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltFreeCtxtExts",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "231"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeExts",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeExts",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "233"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetExtData",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *URI)",
+   "definition": "void * xsltGetExtData",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "100"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetExtInfo",
+   "args": "(xsltStylesheetPtr style, const xmlChar *URI)",
+   "definition": "xmlHashTablePtr xsltGetExtInfo",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "245"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitCtxtExts",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltInitCtxtExts",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "229"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitElemPreComp",
+   "args": "(xsltElemPreCompPtr comp, xsltStylesheetPtr style, xmlNodePtr inst, xsltTransformFunction function, xsltElemPreCompDeallocator freeFunc)",
+   "definition": "void xsltInitElemPreComp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "151"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitGlobals",
+   "args": "(void)",
+   "definition": "void xsltInitGlobals",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "34"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewElemPreComp",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr inst, xsltTransformFunction function)",
+   "definition": "xsltElemPreCompPtr xsltNewElemPreComp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "147"
+  },
+  {
+   "kind": "function",
+   "name": "xsltPreComputeExtModuleElement",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr inst)",
+   "definition": "xsltElemPreCompPtr xsltPreComputeExtModuleElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "236"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtElement",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *URI, xsltTransformFunction function)",
+   "definition": "int xsltRegisterExtElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "208"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtFunction",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *URI, xmlXPathFunction function)",
+   "definition": "int xsltRegisterExtFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "203"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtModule",
+   "args": "(const xmlChar *URI, xsltExtInitFunction initFunc, xsltExtShutdownFunction shutdownFunc)",
+   "definition": "int xsltRegisterExtModule",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "85"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtModuleElement",
+   "args": "(const xmlChar *name, const xmlChar *URI, xsltPreComputeFunction precomp, xsltTransformFunction transform)",
+   "definition": "int xsltRegisterExtModuleElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "158"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtModuleFull",
+   "args": "(const xmlChar *URI, xsltExtInitFunction initFunc, xsltExtShutdownFunction shutdownFunc, xsltStyleExtInitFunction styleInitFunc, xsltStyleExtShutdownFunction styleShutdownFunc)",
+   "definition": "int xsltRegisterExtModuleFull",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "89"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtModuleFunction",
+   "args": "(const xmlChar *name, const xmlChar *URI, xmlXPathFunction function)",
+   "definition": "int xsltRegisterExtModuleFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "126"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtModuleTopLevel",
+   "args": "(const xmlChar *name, const xmlChar *URI, xsltTopLevelFunction function)",
+   "definition": "int xsltRegisterExtModuleTopLevel",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "187"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtPrefix",
+   "args": "(xsltStylesheetPtr style, const xmlChar *prefix, const xmlChar *URI)",
+   "definition": "int xsltRegisterExtPrefix",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "219"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterTestModule",
+   "args": "(void)",
+   "definition": "void xsltRegisterTestModule",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "252"
+  },
+  {
+   "kind": "function",
+   "name": "xsltShutdownCtxtExts",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltShutdownCtxtExts",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "113"
+  },
+  {
+   "kind": "function",
+   "name": "xsltShutdownExts",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltShutdownExts",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "116"
+  },
+  {
+   "kind": "function",
+   "name": "xsltStyleGetExtData",
+   "args": "(xsltStylesheetPtr style, const xmlChar *URI)",
+   "definition": "void * xsltStyleGetExtData",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "104"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUnregisterExtModule",
+   "args": "(const xmlChar *URI)",
+   "definition": "int xsltUnregisterExtModule",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "97"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUnregisterExtModuleElement",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "int xsltUnregisterExtModuleElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "176"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUnregisterExtModuleFunction",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "int xsltUnregisterExtModuleFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "134"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUnregisterExtModuleTopLevel",
+   "args": "(const xmlChar *name, const xmlChar *URI)",
+   "definition": "int xsltUnregisterExtModuleTopLevel",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "196"
+  },
+  {
+   "kind": "function",
+   "name": "xsltXPathGetTransformContext",
+   "args": "(xmlXPathParserContextPtr ctxt)",
+   "definition": "xsltTransformContextPtr xsltXPathGetTransformContext",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "119"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDebug",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltDebug",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extra.h",
+   "line": "56"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFunctionNodeSet",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltFunctionNodeSet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extra.h",
+   "line": "53"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterAllExtras",
+   "args": "(void)",
+   "definition": "void xsltRegisterAllExtras",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extra.h",
+   "line": "65"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterExtras",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltRegisterExtras",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "extra.h",
+   "line": "63"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDocumentFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltDocumentFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "42"
+  },
+  {
+   "kind": "function",
+   "name": "xsltElementAvailableFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltElementAvailableFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "60"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFormatNumberFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltFormatNumberFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "51"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFunctionAvailableFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltFunctionAvailableFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "63"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGenerateIdFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltGenerateIdFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "54"
+  },
+  {
+   "kind": "function",
+   "name": "xsltKeyFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltKeyFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "45"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterAllFunctions",
+   "args": "(xmlXPathContextPtr ctxt)",
+   "definition": "void xsltRegisterAllFunctions",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "71"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSystemPropertyFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltSystemPropertyFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "57"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUnparsedEntityURIFunction",
+   "args": "(xmlXPathParserContextPtr ctxt, int nargs)",
+   "definition": "void xsltUnparsedEntityURIFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "48"
+  },
+  {
+   "kind": "function",
+   "name": "xsltXPathFunctionLookup",
+   "args": "(void *vctxt, const xmlChar *name, const xmlChar *ns_uri)",
+   "definition": "xmlXPathFunction xsltXPathFunctionLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "functions.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFindElemSpaceHandling",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node)",
+   "definition": "int xsltFindElemSpaceHandling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "63"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFindTemplate",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *nameURI)",
+   "definition": "xsltTemplatePtr xsltFindTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "66"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNeedElemSpaceHandling",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltNeedElemSpaceHandling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "61"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNextImport",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "xsltStylesheetPtr xsltNextImport",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "59"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetImport",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "int xsltParseStylesheetImport",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "52"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetInclude",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "int xsltParseStylesheetInclude",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "imports.h",
+   "line": "55"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAddKey",
+   "args": "(xsltStylesheetPtr style, const xmlChar *name, const xmlChar *nameURI, const xmlChar *match, const xmlChar *use, xmlNodePtr inst)",
+   "definition": "int xsltAddKey",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "keys.h",
+   "line": "29"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeDocumentKeys",
+   "args": "(xsltDocumentPtr doc)",
+   "definition": "void xsltFreeDocumentKeys",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "keys.h",
+   "line": "46"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeKeys",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeKeys",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "keys.h",
+   "line": "44"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetKey",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *nameURI, const xmlChar *value)",
+   "definition": "xmlNodeSetPtr xsltGetKey",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "keys.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitCtxtKeys",
+   "args": "(xsltTransformContextPtr ctxt, xsltDocumentPtr doc)",
+   "definition": "void xsltInitCtxtKeys",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "keys.h",
+   "line": "41"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCopyNamespace",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr elem, xmlNsPtr ns)",
+   "definition": "xmlNsPtr xsltCopyNamespace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "52"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCopyNamespaceList",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNsPtr cur)",
+   "definition": "xmlNsPtr xsltCopyNamespaceList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "56"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeNamespaceAliasHashes",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeNamespaceAliasHashes",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "60"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetNamespace",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur, xmlNsPtr ns, xmlNodePtr out)",
+   "definition": "xmlNsPtr xsltGetNamespace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetPlainNamespace",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur, xmlNsPtr ns, xmlNodePtr out)",
+   "definition": "xmlNsPtr xsltGetPlainNamespace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "41"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetSpecialNamespace",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur, const xmlChar *URI, const xmlChar *prefix, xmlNodePtr out)",
+   "definition": "xmlNsPtr xsltGetSpecialNamespace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "46"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNamespaceAlias",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr node)",
+   "definition": "void xsltNamespaceAlias",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "namespaces.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAddTemplate",
+   "args": "(xsltStylesheetPtr style, xsltTemplatePtr cur, const xmlChar *mode, const xmlChar *modeURI)",
+   "definition": "int xsltAddTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "59"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCleanupTemplates",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltCleanupTemplates",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "70"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCompMatchClearCache",
+   "args": "(xsltTransformContextPtr ctxt, xsltCompMatchPtr comp)",
+   "definition": "void xsltCompMatchClearCache",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "48"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCompilePattern",
+   "args": "(const xmlChar *pattern, xmlDocPtr doc, xmlNodePtr node, xsltStylesheetPtr style, xsltTransformContextPtr runtime)",
+   "definition": "xsltCompMatchPtr xsltCompilePattern",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeCompMatchList",
+   "args": "(xsltCompMatchPtr comp)",
+   "definition": "void xsltFreeCompMatchList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "42"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeTemplateHashes",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeTemplateHashes",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "68"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetTemplate",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xsltStylesheetPtr style)",
+   "definition": "xsltTemplatePtr xsltGetTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "64"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNormalizeCompSteps",
+   "args": "(void *payload, void *data, const xmlChar *name)",
+   "definition": "void xsltNormalizeCompSteps",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "51"
+  },
+  {
+   "kind": "function",
+   "name": "xsltTestCompMatchList",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xsltCompMatchPtr comp)",
+   "definition": "int xsltTestCompMatchList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "44"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDocumentComp",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr inst, xsltTransformFunction function)",
+   "definition": "xsltElemPreCompPtr xsltDocumentComp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "preproc.h",
+   "line": "28"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeStylePreComps",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeStylePreComps",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "preproc.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltStylePreCompute",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr inst)",
+   "definition": "void xsltStylePreCompute",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "preproc.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCheckRead",
+   "args": "(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt, const xmlChar *URL)",
+   "definition": "int xsltCheckRead",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "95"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCheckWrite",
+   "args": "(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt, const xmlChar *URL)",
+   "definition": "int xsltCheckWrite",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "91"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeSecurityPrefs",
+   "args": "(xsltSecurityPrefsPtr sec)",
+   "definition": "void xsltFreeSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "61"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetDefaultSecurityPrefs",
+   "args": "(void)",
+   "definition": "xsltSecurityPrefsPtr xsltGetDefaultSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "73"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetSecurityPrefs",
+   "args": "(xsltSecurityPrefsPtr sec, xsltSecurityOption option)",
+   "definition": "xsltSecurityCheck xsltGetSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "67"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewSecurityPrefs",
+   "args": "(void)",
+   "definition": "xsltSecurityPrefsPtr xsltNewSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "59"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSecurityAllow",
+   "args": "(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt, const char *value)",
+   "definition": "int xsltSecurityAllow",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "80"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSecurityForbid",
+   "args": "(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt, const char *value)",
+   "definition": "int xsltSecurityForbid",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "84"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetCtxtSecurityPrefs",
+   "args": "(xsltSecurityPrefsPtr sec, xsltTransformContextPtr ctxt)",
+   "definition": "int xsltSetCtxtSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "76"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetDefaultSecurityPrefs",
+   "args": "(xsltSecurityPrefsPtr sec)",
+   "definition": "void xsltSetDefaultSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "71"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetSecurityPrefs",
+   "args": "(xsltSecurityPrefsPtr sec, xsltSecurityOption option, xsltSecurityCheck func)",
+   "definition": "int xsltSetSecurityPrefs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "security.h",
+   "line": "63"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAttrListTemplateProcess",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr target, xmlAttrPtr cur)",
+   "definition": "xmlAttrPtr xsltAttrListTemplateProcess",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "58"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAttrTemplateProcess",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr target, xmlAttrPtr attr)",
+   "definition": "xmlAttrPtr xsltAttrTemplateProcess",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "62"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAttrTemplateValueProcess",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *attr)",
+   "definition": "xmlChar * xsltAttrTemplateValueProcess",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "66"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAttrTemplateValueProcessNode",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *str, xmlNodePtr node)",
+   "definition": "xmlChar * xsltAttrTemplateValueProcessNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "69"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalAttrValueTemplate",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, const xmlChar *name, const xmlChar *ns)",
+   "definition": "xmlChar * xsltEvalAttrValueTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "33"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalStaticAttrValueTemplate",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr node, const xmlChar *name, const xmlChar *ns, int *found)",
+   "definition": "const xmlChar * xsltEvalStaticAttrValueTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "38"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalTemplateString",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr contextNode, xmlNodePtr inst)",
+   "definition": "xmlChar * xsltEvalTemplateString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "29"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalXPathPredicate",
+   "args": "(xsltTransformContextPtr ctxt, xmlXPathCompExprPtr comp, xmlNsPtr *nsList, int nsNr)",
+   "definition": "int xsltEvalXPathPredicate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "24"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalXPathString",
+   "args": "(xsltTransformContextPtr ctxt, xmlXPathCompExprPtr comp)",
+   "definition": "xmlChar * xsltEvalXPathString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "46"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalXPathStringNs",
+   "args": "(xsltTransformContextPtr ctxt, xmlXPathCompExprPtr comp, int nsNr, xmlNsPtr *nsList)",
+   "definition": "xmlChar * xsltEvalXPathStringNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "49"
+  },
+  {
+   "kind": "function",
+   "name": "xsltTemplateProcess",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node)",
+   "definition": "xmlNodePtr * xsltTemplateProcess",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "templates.h",
+   "line": "55"
+  },
+  {
+   "kind": "function",
+   "name": "xslHandleDebugger",
+   "args": "(xmlNodePtr cur, xmlNodePtr node, xsltTemplatePtr templ, xsltTransformContextPtr ctxt)",
+   "definition": "void xslHandleDebugger",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "197"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyImports",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltApplyImports",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "146"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyOneTemplate",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr list, xsltTemplatePtr templ, xsltStackElemPtr params)",
+   "definition": "void xsltApplyOneTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "85"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyStripSpaces",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node)",
+   "definition": "void xsltApplyStripSpaces",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "57"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyStylesheet",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc, const char **params)",
+   "definition": "xmlDocPtr xsltApplyStylesheet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "60"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyStylesheetUser",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc, const char **params, const char *output, FILE *profile, xsltTransformContextPtr userCtxt)",
+   "definition": "xmlDocPtr xsltApplyStylesheetUser",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "43"
+  },
+  {
+   "kind": "function",
+   "name": "xsltApplyTemplates",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltApplyTemplates",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "156"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAttribute",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltAttribute",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "121"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCallTemplate",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltCallTemplate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "151"
+  },
+  {
+   "kind": "function",
+   "name": "xsltChoose",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltChoose",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "161"
+  },
+  {
+   "kind": "function",
+   "name": "xsltComment",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltComment",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "116"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCopy",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltCopy",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "101"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCopyOf",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltCopyOf",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "131"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCopyTextString",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr target, const xmlChar *string, int noescape)",
+   "definition": "xmlNodePtr xsltCopyTextString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "179"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDocumentElem",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltDocumentElem",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "91"
+  },
+  {
+   "kind": "function",
+   "name": "xsltElement",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "111"
+  },
+  {
+   "kind": "function",
+   "name": "xsltForEach",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltForEach",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "171"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeTransformContext",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltFreeTransformContext",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "40"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetXIncludeDefault",
+   "args": "(void)",
+   "definition": "int xsltGetXIncludeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "30"
+  },
+  {
+   "kind": "function",
+   "name": "xsltIf",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltIf",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "166"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLocalVariablePop",
+   "args": "(xsltTransformContextPtr ctxt, int limitNr, int level)",
+   "definition": "void xsltLocalVariablePop",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "186"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLocalVariablePush",
+   "args": "(xsltTransformContextPtr ctxt, xsltStackElemPtr variable, int level)",
+   "definition": "int xsltLocalVariablePush",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "190"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewTransformContext",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc)",
+   "definition": "xsltTransformContextPtr xsltNewTransformContext",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "36"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNumber",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltNumber",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "141"
+  },
+  {
+   "kind": "function",
+   "name": "xsltProcessOneNode",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xsltStackElemPtr params)",
+   "definition": "void xsltProcessOneNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "50"
+  },
+  {
+   "kind": "function",
+   "name": "xsltProcessingInstruction",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltProcessingInstruction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "126"
+  },
+  {
+   "kind": "function",
+   "name": "xsltProfileStylesheet",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc, const char **params, FILE *output)",
+   "definition": "xmlDocPtr xsltProfileStylesheet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "64"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterAllElement",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltRegisterAllElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "176"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRunStylesheet",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc, const char **params, const char *output, xmlSAXHandlerPtr SAX, xmlOutputBufferPtr IObuf)",
+   "definition": "int xsltRunStylesheet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "69"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRunStylesheetUser",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc, const char **params, const char *output, xmlSAXHandlerPtr SAX, xmlOutputBufferPtr IObuf, FILE *profile, xsltTransformContextPtr userCtxt)",
+   "definition": "int xsltRunStylesheetUser",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "76"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetXIncludeDefault",
+   "args": "(int xinclude)",
+   "definition": "void xsltSetXIncludeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "28"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSort",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltSort",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "96"
+  },
+  {
+   "kind": "function",
+   "name": "xsltText",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltText",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "106"
+  },
+  {
+   "kind": "function",
+   "name": "xsltValueOf",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)",
+   "definition": "void xsltValueOf",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "transform.h",
+   "line": "136"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAddStackElemList",
+   "args": "(xsltTransformContextPtr ctxt, xsltStackElemPtr elems)",
+   "definition": "int xsltAddStackElemList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "101"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalGlobalVariables",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltEvalGlobalVariables",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "69"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalOneUserParam",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *value)",
+   "definition": "int xsltEvalOneUserParam",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "77"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalUserParams",
+   "args": "(xsltTransformContextPtr ctxt, const char **params)",
+   "definition": "int xsltEvalUserParams",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "71"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeGlobalVariables",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltFreeGlobalVariables",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "104"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseGlobalParam",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "void xsltParseGlobalParam",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "89"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseGlobalVariable",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "void xsltParseGlobalVariable",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "86"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetCallerParam",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur)",
+   "definition": "xsltStackElemPtr xsltParseStylesheetCallerParam",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "98"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetParam",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur)",
+   "definition": "void xsltParseStylesheetParam",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "95"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetVariable",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr cur)",
+   "definition": "void xsltParseStylesheetVariable",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "92"
+  },
+  {
+   "kind": "function",
+   "name": "xsltQuoteOneUserParam",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *value)",
+   "definition": "int xsltQuoteOneUserParam",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "81"
+  },
+  {
+   "kind": "function",
+   "name": "xsltQuoteUserParams",
+   "args": "(xsltTransformContextPtr ctxt, const char **params)",
+   "definition": "int xsltQuoteUserParams",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "74"
+  },
+  {
+   "kind": "function",
+   "name": "xsltVariableLookup",
+   "args": "(xsltTransformContextPtr ctxt, const xmlChar *name, const xmlChar *ns_uri)",
+   "definition": "xmlXPathObjectPtr xsltVariableLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "106"
+  },
+  {
+   "kind": "function",
+   "name": "xsltXPathVariableLookup",
+   "args": "(void *ctxt, const xmlChar *name, const xmlChar *ns_uri)",
+   "definition": "xmlXPathObjectPtr xsltXPathVariableLookup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "variables.h",
+   "line": "110"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCleanupGlobals",
+   "args": "(void)",
+   "definition": "void xsltCleanupGlobals",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "103"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInit",
+   "args": "(void)",
+   "definition": "void xsltInit",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "97"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAllocateExtra",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "int xsltAllocateExtra",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1900"
+  },
+  {
+   "kind": "function",
+   "name": "xsltAllocateExtraCtxt",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltAllocateExtraCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1902"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCompileAttr",
+   "args": "(xsltStylesheetPtr style, xmlAttrPtr attr)",
+   "definition": "void xsltCompileAttr",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1938"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCreateRVT",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "xmlDocPtr xsltCreateRVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1907"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDecimalFormatGetByName",
+   "args": "(xsltStylesheetPtr style, xmlChar *name)",
+   "definition": "xsltDecimalFormatPtr xsltDecimalFormatGetByName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1863"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDecimalFormatGetByQName",
+   "args": "(xsltStylesheetPtr style, const xmlChar *nsUri, const xmlChar *name)",
+   "definition": "xsltDecimalFormatPtr xsltDecimalFormatGetByQName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1866"
+  },
+  {
+   "kind": "function",
+   "name": "xsltEvalAVT",
+   "args": "(xsltTransformContextPtr ctxt, void *avt, xmlNodePtr node)",
+   "definition": "xmlChar * xsltEvalAVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1941"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtensionInstructionResultFinalize",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltExtensionInstructionResultFinalize",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1922"
+  },
+  {
+   "kind": "function",
+   "name": "xsltExtensionInstructionResultRegister",
+   "args": "(xsltTransformContextPtr ctxt, xmlXPathObjectPtr obj)",
+   "definition": "int xsltExtensionInstructionResultRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1918"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFlagRVTs",
+   "args": "(xsltTransformContextPtr ctxt, xmlXPathObjectPtr obj, int val)",
+   "definition": "int xsltFlagRVTs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1925"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFormatNumberConversion",
+   "args": "(xsltDecimalFormatPtr self, xmlChar *format, double number, xmlChar **result)",
+   "definition": "xmlXPathError xsltFormatNumberConversion",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1891"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeAVTList",
+   "args": "(void *avt)",
+   "definition": "void xsltFreeAVTList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1945"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeRVTs",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "void xsltFreeRVTs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1930"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeStackElemList",
+   "args": "(xsltStackElemPtr elem)",
+   "definition": "void xsltFreeStackElemList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1861"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeStylesheet",
+   "args": "(xsltStylesheetPtr style)",
+   "definition": "void xsltFreeStylesheet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1857"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitAllDocKeys",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "int xsltInitAllDocKeys",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1986"
+  },
+  {
+   "kind": "function",
+   "name": "xsltInitCtxtKey",
+   "args": "(xsltTransformContextPtr ctxt, xsltDocumentPtr doc, xsltKeyDefPtr keyd)",
+   "definition": "int xsltInitCtxtKey",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1982"
+  },
+  {
+   "kind": "function",
+   "name": "xsltIsBlank",
+   "args": "(xmlChar *str)",
+   "definition": "int xsltIsBlank",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1859"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLoadStylesheetPI",
+   "args": "(xmlDocPtr doc)",
+   "definition": "xsltStylesheetPtr xsltLoadStylesheetPI",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1885"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewStylesheet",
+   "args": "(void)",
+   "definition": "xsltStylesheetPtr xsltNewStylesheet",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1853"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNumberFormat",
+   "args": "(xsltTransformContextPtr ctxt, xsltNumberDataPtr data, xmlNodePtr node)",
+   "definition": "void xsltNumberFormat",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1887"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetDoc",
+   "args": "(xmlDocPtr doc)",
+   "definition": "xsltStylesheetPtr xsltParseStylesheetDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1877"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetFile",
+   "args": "(const xmlChar *filename)",
+   "definition": "xsltStylesheetPtr xsltParseStylesheetFile",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1855"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetImportedDoc",
+   "args": "(xmlDocPtr doc, xsltStylesheetPtr style)",
+   "definition": "xsltStylesheetPtr xsltParseStylesheetImportedDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1879"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetOutput",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr cur)",
+   "definition": "void xsltParseStylesheetOutput",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1874"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetProcess",
+   "args": "(xsltStylesheetPtr ret, xmlDocPtr doc)",
+   "definition": "xsltStylesheetPtr xsltParseStylesheetProcess",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1871"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseStylesheetUser",
+   "args": "(xsltStylesheetPtr style, xmlDocPtr doc)",
+   "definition": "int xsltParseStylesheetUser",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1882"
+  },
+  {
+   "kind": "function",
+   "name": "xsltParseTemplateContent",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr templ)",
+   "definition": "void xsltParseTemplateContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1897"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterLocalRVT",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr RVT)",
+   "definition": "int xsltRegisterLocalRVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1912"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterPersistRVT",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr RVT)",
+   "definition": "int xsltRegisterPersistRVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1915"
+  },
+  {
+   "kind": "function",
+   "name": "xsltRegisterTmpRVT",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr RVT)",
+   "definition": "int xsltRegisterTmpRVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1909"
+  },
+  {
+   "kind": "function",
+   "name": "xsltReleaseRVT",
+   "args": "(xsltTransformContextPtr ctxt, xmlDocPtr RVT)",
+   "definition": "void xsltReleaseRVT",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1932"
+  },
+  {
+   "kind": "function",
+   "name": "xsltUninit",
+   "args": "(void)",
+   "definition": "void xsltUninit",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1952"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeLocale",
+   "args": "(void *locale)",
+   "definition": "void xsltFreeLocale",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "21"
+  },
+  {
+   "kind": "function",
+   "name": "xsltFreeLocales",
+   "args": "(void)",
+   "definition": "void xsltFreeLocales",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "26"
+  },
+  {
+   "kind": "function",
+   "name": "xsltLocaleStrcmp",
+   "args": "(void *locale, const xmlChar *str1, const xmlChar *str2)",
+   "definition": "int xsltLocaleStrcmp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "32"
+  },
+  {
+   "kind": "function",
+   "name": "xsltNewLocale",
+   "args": "(const xmlChar *langName, int lowerFirst)",
+   "definition": "void * xsltNewLocale",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "18"
+  },
+  {
+   "kind": "function",
+   "name": "xsltStrxfrm",
+   "args": "(void *locale, const xmlChar *string)",
+   "definition": "xmlChar * xsltStrxfrm",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "23"
+  },
+  {
+   "kind": "function",
+   "name": "xslAddCall",
+   "args": "(xsltTemplatePtr templ, xmlNodePtr source)",
+   "definition": "int xslAddCall",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "331"
+  },
+  {
+   "kind": "function",
+   "name": "xslDropCall",
+   "args": "(void)",
+   "definition": "void xslDropCall",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "334"
+  },
+  {
+   "kind": "function",
+   "name": "xsltCalibrateAdjust",
+   "args": "(long delta)",
+   "definition": "void xsltCalibrateAdjust",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "289"
+  },
+  {
+   "kind": "function",
+   "name": "xsltComputeSortResult",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr sort)",
+   "definition": "xmlXPathObjectPtr * xsltComputeSortResult",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "202"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDebugGetDefaultTrace",
+   "args": "(void)",
+   "definition": "xsltDebugTraceCodes xsltDebugGetDefaultTrace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "139"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDebugSetDefaultTrace",
+   "args": "(xsltDebugTraceCodes val)",
+   "definition": "void xsltDebugSetDefaultTrace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "137"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDefaultSortFunction",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr *sorts, int nbsorts)",
+   "definition": "void xsltDefaultSortFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "194"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDoSortFunction",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr *sorts, int nbsorts)",
+   "definition": "void xsltDoSortFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "198"
+  },
+  {
+   "kind": "function",
+   "name": "xsltDocumentSortFunction",
+   "args": "(xmlNodeSetPtr list)",
+   "definition": "void xsltDocumentSortFunction",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "182"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetCNsProp",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr node, const xmlChar *name, const xmlChar *nameSpace)",
+   "definition": "const xmlChar * xsltGetCNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "87"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetDebuggerStatus",
+   "args": "(void)",
+   "definition": "int xsltGetDebuggerStatus",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "324"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetNsProp",
+   "args": "(xmlNodePtr node, const xmlChar *name, const xmlChar *nameSpace)",
+   "definition": "xmlChar * xsltGetNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "83"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetProfileInformation",
+   "args": "(xsltTransformContextPtr ctxt)",
+   "definition": "xmlDocPtr xsltGetProfileInformation",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "284"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetQNameURI",
+   "args": "(xmlNodePtr node, xmlChar **name)",
+   "definition": "const xmlChar * xsltGetQNameURI",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "214"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetQNameURI2",
+   "args": "(xsltStylesheetPtr style, xmlNodePtr node, const xmlChar **name)",
+   "definition": "const xmlChar * xsltGetQNameURI2",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "218"
+  },
+  {
+   "kind": "function",
+   "name": "xsltGetUTF8Char",
+   "args": "(const unsigned char *utf, int *len)",
+   "definition": "int xsltGetUTF8Char",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "92"
+  },
+  {
+   "kind": "function",
+   "name": "xsltMessage",
+   "args": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst)",
+   "definition": "void xsltMessage",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "154"
+  },
+  {
+   "kind": "function",
+   "name": "xsltPrintErrorContext",
+   "args": "(xsltTransformContextPtr ctxt, xsltStylesheetPtr style, xmlNodePtr node)",
+   "definition": "void xsltPrintErrorContext",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "150"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveProfiling",
+   "args": "(xsltTransformContextPtr ctxt, FILE *output)",
+   "definition": "void xsltSaveProfiling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "281"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveResultTo",
+   "args": "(xmlOutputBufferPtr buf, xmlDocPtr result, xsltStylesheetPtr style)",
+   "definition": "int xsltSaveResultTo",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "226"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveResultToFd",
+   "args": "(int fd, xmlDocPtr result, xsltStylesheetPtr style)",
+   "definition": "int xsltSaveResultToFd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "239"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveResultToFile",
+   "args": "(FILE *file, xmlDocPtr result, xsltStylesheetPtr style)",
+   "definition": "int xsltSaveResultToFile",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "235"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveResultToFilename",
+   "args": "(const char *URI, xmlDocPtr result, xsltStylesheetPtr style, int compression)",
+   "definition": "int xsltSaveResultToFilename",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "230"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSaveResultToString",
+   "args": "(xmlChar **doc_txt_ptr, int *doc_txt_len, xmlDocPtr result, xsltStylesheetPtr style)",
+   "definition": "int xsltSaveResultToString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "243"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetCtxtLocaleHandlers",
+   "args": "(xsltTransformContextPtr ctxt, xsltNewLocaleFunc newLocale, xsltFreeLocaleFunc freeLocale, xsltGenSortKeyFunc genSortKey)",
+   "definition": "void xsltSetCtxtLocaleHandlers",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "189"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetCtxtParseOptions",
+   "args": "(xsltTransformContextPtr ctxt, int options)",
+   "definition": "int xsltSetCtxtParseOptions",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "175"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetCtxtSortFunc",
+   "args": "(xsltTransformContextPtr ctxt, xsltSortFunc handler)",
+   "definition": "void xsltSetCtxtSortFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "186"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetDebuggerCallbacks",
+   "args": "(int no, void *block)",
+   "definition": "int xsltSetDebuggerCallbacks",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "329"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetDebuggerStatus",
+   "args": "(int value)",
+   "definition": "void xsltSetDebuggerStatus",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "327"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetGenericDebugFunc",
+   "args": "(void *ctx, xmlGenericErrorFunc handler)",
+   "definition": "void xsltSetGenericDebugFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "161"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetGenericErrorFunc",
+   "args": "(void *ctx, xmlGenericErrorFunc handler)",
+   "definition": "void xsltSetGenericErrorFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "158"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetSortFunc",
+   "args": "(xsltSortFunc handler)",
+   "definition": "void xsltSetSortFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "184"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSetTransformErrorFunc",
+   "args": "(xsltTransformContextPtr ctxt, void *ctx, xmlGenericErrorFunc handler)",
+   "definition": "void xsltSetTransformErrorFunc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "164"
+  },
+  {
+   "kind": "function",
+   "name": "xsltSplitQName",
+   "args": "(xmlDictPtr dict, const xmlChar *name, const xmlChar **prefix)",
+   "definition": "const xmlChar * xsltSplitQName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "210"
+  },
+  {
+   "kind": "function",
+   "name": "xsltTimestamp",
+   "args": "(void)",
+   "definition": "long xsltTimestamp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "287"
+  },
+  {
+   "kind": "function",
+   "name": "xsltTransformError",
+   "args": "(xsltTransformContextPtr ctxt, xsltStylesheetPtr style, xmlNodePtr node, const char *msg,...)",
+   "definition": "void xsltTransformError",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "168"
+  },
+  {
+   "kind": "function",
+   "name": "xsltXPathCompile",
+   "args": "(xsltStylesheetPtr style, const xmlChar *str)",
+   "definition": "xmlXPathCompExprPtr xsltXPathCompile",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "252"
+  },
+  {
+   "kind": "function",
+   "name": "xsltXPathCompileFlags",
+   "args": "(xsltStylesheetPtr style, const xmlChar *str, int flags)",
+   "definition": "xmlXPathCompExprPtr xsltXPathCompileFlags",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "255"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDocLoaderFunc",
+   "type": "xmlDocPtr(*)",
+   "documented": false,
+   "header": "documents.h",
+   "line": "76"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltExtInitFunction",
+   "type": "void *(*)",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "69"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltExtShutdownFunction",
+   "type": "void(*)",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "80"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltPreComputeFunction",
+   "type": "",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "141"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStyleExtInitFunction",
+   "type": "void *(*)",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "45"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStyleExtShutdownFunction",
+   "type": "void(*)",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "56"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTopLevelFunction",
+   "type": "void(*)",
+   "documented": false,
+   "header": "extensions.h",
+   "line": "183"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltFormatNumberInfo",
+   "type": "struct",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "55"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltFormatNumberInfoPtr",
+   "type": "",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "56"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltNumberData",
+   "type": "struct",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "27"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltNumberDataPtr",
+   "type": "",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "28"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltCompMatch",
+   "type": "struct _xsltCompMatch",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "28"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltCompMatchPtr",
+   "type": "",
+   "documented": false,
+   "header": "pattern.h",
+   "line": "29"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltSecurityCheck",
+   "type": "int(*)",
+   "documented": false,
+   "header": "security.h",
+   "line": "51"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltSecurityPrefs",
+   "type": "struct _xsltSecurityPrefs",
+   "documented": false,
+   "header": "security.h",
+   "line": "29"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltSecurityPrefsPtr",
+   "type": "",
+   "documented": false,
+   "header": "security.h",
+   "line": "30"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDecimalFormat",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "303"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDecimalFormatPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "304"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDocument",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "329"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDocumentPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "330"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltElemPreComp",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "393"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltElemPreCompDeallocator",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "463"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltElemPreCompPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "394"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltFreeLocaleFunc",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1665"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltGenSortKeyFunc",
+   "type": "xmlChar *(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1667"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltKeyDef",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "346"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltKeyDefPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "347"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltKeyTable",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "367"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltKeyTablePtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "368"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltNewLocaleFunc",
+   "type": "void *(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1663"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltRuntimeExtra",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "222"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltRuntimeExtraPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "223"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltSortFunc",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "419"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStackElem",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1418"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStackElemPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1419"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStylePreComp",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "494"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStylePreCompPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "495"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStylesheet",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "381"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltStylesheetPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "382"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTemplate",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "263"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTemplatePtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "264"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTransformCache",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1639"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTransformCachePtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1640"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTransformContext",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "384"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTransformContextPtr",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "385"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltTransformFunction",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "406"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltLocale",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "29"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltLocaleChar",
+   "type": "xmlChar",
+   "documented": false,
+   "header": "xsltlocale.h",
+   "line": "30"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltAddCallCallback",
+   "type": "int(*)",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "320"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltDropCallCallback",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "321"
+  },
+  {
+   "kind": "typedef",
+   "name": "xsltHandleDebuggerCallback",
+   "type": "void(*)",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "318"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltDocDefaultLoader",
+   "type": "externxsltDocLoaderFunc",
+   "documented": false,
+   "header": "documents.h",
+   "line": "86"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibexsltVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "21"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibraryVersion",
+   "type": "externconst char *",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "20"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibxmlVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "23"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibxsltVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "22"
+  },
+  {
+   "kind": "variable",
+   "name": "add_decimal",
+   "type": "char",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "65",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "frac_digits",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "61",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "frac_hash",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "62",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "group",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "63",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "integer_digits",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "60",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "integer_hash",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "59",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "is_multiplier_set",
+   "type": "char",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "66",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "is_negative_pattern",
+   "type": "char",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "67",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "multiplier",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "64",
+   "struct": "_xsltFormatNumberInfo"
+  },
+  {
+   "kind": "variable",
+   "name": "count",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "32",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "countPat",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "42",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "digitsPerGroup",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "37",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "40",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "format",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "35",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "from",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "33",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "fromPat",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "43",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "groupingCharacter",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "38",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "groupingCharacterLen",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "39",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "has_format",
+   "type": "int",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "36",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "level",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "31",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "node",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "41",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "value",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "numbersInternals.h",
+   "line": "34",
+   "struct": "_xsltNumberData"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltExtMarker",
+   "type": "externconst xmlChar *",
+   "documented": false,
+   "header": "preproc.h",
+   "line": "25"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltEngineVersion",
+   "type": "externconst char *",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "76"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltLibxmlVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "90"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltLibxsltVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "83"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltMaxDepth",
+   "type": "externint",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "62"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltMaxVars",
+   "type": "externint",
+   "documented": false,
+   "header": "xslt.h",
+   "line": "69"
+  },
+  {
+   "kind": "variable",
+   "name": "ival",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "229",
+   "union": "_xsltRuntimeExtra::[union].val"
+  },
+  {
+   "kind": "variable",
+   "name": "ptr",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "228",
+   "union": "_xsltRuntimeExtra::[union].val"
+  },
+  {
+   "kind": "variable",
+   "name": "decimalPoint",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "316",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "digit",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "309",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "grouping",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "317",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "infinity",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "313",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "minusSign",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "312",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "307",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "306",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "noNumber",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "314",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "nsUri",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "321",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "patternSeparator",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "310",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "percent",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "318",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "permille",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "319",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "zeroDigit",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "320",
+   "struct": "_xsltDecimalFormat"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "334",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "includes",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "336",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "keys",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "335",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "main",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "333",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "nbKeysComputed",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "338",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "332",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "preproc",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "337",
+   "struct": "_xsltDocument"
+  },
+  {
+   "kind": "variable",
+   "name": "free",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "482",
+   "struct": "_xsltElemPreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "func",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "477",
+   "struct": "_xsltElemPreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "inst",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "478",
+   "struct": "_xsltElemPreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "474",
+   "struct": "_xsltElemPreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "476",
+   "struct": "_xsltElemPreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "comp",
+   "type": "xmlXPathCompExprPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "355",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "inst",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "350",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "match",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "353",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "351",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "nameURI",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "352",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "349",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "nsList",
+   "type": "xmlNsPtr *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "357",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "nsNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "358",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "use",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "354",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "usecomp",
+   "type": "xmlXPathCompExprPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "356",
+   "struct": "_xsltKeyDef"
+  },
+  {
+   "kind": "variable",
+   "name": "keys",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "373",
+   "struct": "_xsltKeyTable"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "371",
+   "struct": "_xsltKeyTable"
+  },
+  {
+   "kind": "variable",
+   "name": "nameURI",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "372",
+   "struct": "_xsltKeyTable"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "370",
+   "struct": "_xsltKeyTable"
+  },
+  {
+   "kind": "variable",
+   "name": "deallocate",
+   "type": "xmlFreeFunc",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "226",
+   "struct": "_xsltRuntimeExtra"
+  },
+  {
+   "kind": "variable",
+   "name": "info",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "225",
+   "struct": "_xsltRuntimeExtra"
+  },
+  {
+   "kind": "variable",
+   "name": "val",
+   "type": "union _xsltRuntimeExtra::@277317216053261317353226172136000015255053051004",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "230",
+   "struct": "_xsltRuntimeExtra"
+  },
+  {
+   "kind": "variable",
+   "name": "comp",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1422",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "computed",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1423",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "context",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1434",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "flags",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1436",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "fragment",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1430",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "level",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1432",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1424",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "nameURI",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1425",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1421",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "select",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1426",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "tree",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1427",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "value",
+   "type": "xmlXPathObjectPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1429",
+   "struct": "_xsltStackElem"
+  },
+  {
+   "kind": "variable",
+   "name": "case_order",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1378",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "comp",
+   "type": "xmlXPathCompExprPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1406",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "descending",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1375",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "filename",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1401",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "func",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1363",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_filename",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1402",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_lang",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1377",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_name",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1387",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_ns",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1389",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_order",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1374",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_stype",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1371",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "has_use",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1382",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "inst",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1364",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "lang",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1376",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "lower_first",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1379",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "mode",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1391",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "modeURI",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1392",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1386",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1361",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "noescape",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1384",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "ns",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1388",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "nsList",
+   "type": "xmlNsPtr *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1407",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "nsNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1408",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "number",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1372",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "numdata",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1404",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "order",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1373",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "select",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1398",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "stype",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1370",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "templ",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1396",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "test",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1394",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1362",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "use",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1381",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "ver11",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1400",
+   "struct": "_xsltStylePreComp"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1579",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "attVTs",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1599",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "attrMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1509",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "attributeSets",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1525",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "cdataSection",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1493",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "commentMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1514",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "decimalFormat",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1560",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "defaultAlias",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1604",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "dict",
+   "type": "xmlDictPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1595",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1489",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "docList",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1484",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "doctypePublic",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1562",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "doctypeSystem",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1563",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "elemMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1508",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "encoding",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1554",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "errors",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1572",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "exclPrefix",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1574",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "exclPrefixMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1577",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "exclPrefixNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1576",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "exclPrefixTab",
+   "type": "xmlChar **",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1575",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "extInfos",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1584",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "extrasNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1585",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "forwards_compatible",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1632",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "imports",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1482",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "includes",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1590",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "indent",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1564",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "internalized",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1612",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "keyMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1507",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "keys",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1546",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "literal_result",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1616",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "mediaType",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1565",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "method",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1551",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "methodURI",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1552",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "namedTemplates",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1634",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1481",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "nopreproc",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1608",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "nsAliases",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1520",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "nsDefs",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1538",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "nsHash",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1531",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "omitXmlDeclaration",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1555",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1480",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "parentMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1510",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "piMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1512",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "preComps",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1570",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "principal",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1620",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "rootMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1506",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "standalone",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1561",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "stripAll",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1492",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "stripSpaces",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1490",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "templates",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1503",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "templatesHash",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1504",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "textMatch",
+   "type": "struct _xsltCompMatch *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1511",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "variables",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1498",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "version",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1553",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "warnings",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1571",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "xpathCtxt",
+   "type": "xmlXPathContextPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1636",
+   "struct": "_xsltStylesheet"
+  },
+  {
+   "kind": "variable",
+   "name": "content",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "274",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "elem",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "275",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "inheritedNs",
+   "type": "xmlNsPtr *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "282",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "inheritedNsNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "281",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "match",
+   "type": "xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "268",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "mode",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "272",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "modeURI",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "273",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "270",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "nameURI",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "271",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "nbCalls",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "285",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "266",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "params",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "287",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "position",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "295",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "priority",
+   "type": "float",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "269",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "style",
+   "type": "struct",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "267",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "templCalledTab",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "291",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "templCountTab",
+   "type": "int *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "292",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "templMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "290",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "templNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "289",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "time",
+   "type": "unsigned long",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "286",
+   "struct": "_xsltTemplate"
+  },
+  {
+   "kind": "variable",
+   "name": "RVT",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1642",
+   "struct": "_xsltTransformCache"
+  },
+  {
+   "kind": "variable",
+   "name": "nbRVT",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1643",
+   "struct": "_xsltTransformCache"
+  },
+  {
+   "kind": "variable",
+   "name": "nbStackItems",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1645",
+   "struct": "_xsltTransformCache"
+  },
+  {
+   "kind": "variable",
+   "name": "stackItems",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1644",
+   "struct": "_xsltTransformCache"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1731",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "cache",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1781",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "contextVariable",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1782",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "ctxtflags",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1751",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "currentId",
+   "type": "unsigned long",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1794",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "currentTemplateRule",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1778",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "debugStatus",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1762",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "depth",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1788",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "dict",
+   "type": "xmlDictPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1770",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "docList",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1701",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "document",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1703",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "errctx",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1741",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "error",
+   "type": "xmlGenericErrorFunc",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1740",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extElements",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1695",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extFunctions",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1694",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extInfos",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1696",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extras",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1735",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extrasMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1734",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "extrasNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1733",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "freeLocale",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1797",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "genSortKey",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1798",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "globalVars",
+   "type": "xmlHashTablePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1717",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "hasTemplKeyPatterns",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1777",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "initialContextDoc",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1780",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "initialContextNode",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1779",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "insert",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1709",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "inst",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1719",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "internalized",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1775",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "keyInitLevel",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1787",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "lasttext",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1756",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "lasttsize",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1757",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "lasttuse",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1758",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "localRVT",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1783",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "localRVTBase",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1786",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "maxTemplateDepth",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1789",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "maxTemplateVars",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1790",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "mode",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1698",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "modeURI",
+   "type": "const xmlChar *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1699",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "nbKeys",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1776",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "newLocale",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1796",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "node",
+   "type": "xmlNodePtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1704",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "nodeList",
+   "type": "xmlNodeSetPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1705",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "opCount",
+   "type": "unsigned long",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1792",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "opLimit",
+   "type": "unsigned long",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1791",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "output",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1708",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "outputFile",
+   "type": "const char *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1723",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "parserOptions",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1765",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "persistRVT",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1750",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "prof",
+   "type": "long",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1726",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "profMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1728",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "profNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1727",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "profTab",
+   "type": "long *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1729",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "profile",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1725",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "sec",
+   "type": "void *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1738",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "sortfunc",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1743",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "sourceDocDirty",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1793",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "state",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1712",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "style",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1677",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "styleList",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1737",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "templ",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1680",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "templMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1682",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "templNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1681",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "templTab",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1683",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "tmpDoc",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1771",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "tmpRVT",
+   "type": "xmlDocPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1749",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "traceCode",
+   "type": "unsigned long *",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1763",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1678",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "vars",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1685",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "varsBase",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1689",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "varsMax",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1687",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "varsNr",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1686",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "varsTab",
+   "type": "",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1688",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "xinclude",
+   "type": "int",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1721",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "xpathCtxt",
+   "type": "xmlXPathContextPtr",
+   "documented": false,
+   "header": "xsltInternals.h",
+   "line": "1711",
+   "struct": "_xsltTransformContext"
+  },
+  {
+   "kind": "variable",
+   "name": "xslDebugStatus",
+   "type": "externint",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "316"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltGenericDebug",
+   "type": "externxmlGenericErrorFunc",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "146"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltGenericDebugContext",
+   "type": "externvoid *",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "147"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltGenericError",
+   "type": "externxmlGenericErrorFunc",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "144"
+  },
+  {
+   "kind": "variable",
+   "name": "xsltGenericErrorContext",
+   "type": "externvoid *",
+   "documented": false,
+   "header": "xsltutils.h",
+   "line": "145"
+  }
+ ],
+ "inventory_hash": "7b72dd038d1d35a00a64d0efad62ae84f743274f8c516b772970a184f866dbed"
+}

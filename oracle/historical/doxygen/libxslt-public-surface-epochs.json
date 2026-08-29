@@ -1,0 +1,4706 @@
+{
+ "schema": "doxygen-diff-1",
+ "project": "libxslt",
+ "profile": "public",
+ "versions": [
+  "1.1.26",
+  "1.1.32",
+  "1.1.35",
+  "1.1.38",
+  "1.1.42"
+ ],
+ "inventory_hashes": {
+  "1.1.26": "ea2ef225a7df088fab6e3667d195d9e607f7232e68990d7e2508a7b42959c359",
+  "1.1.32": "30060c1e7886cca9a61f792af0c2868c48223a395f1427e7ea905b7983ad3523",
+  "1.1.35": "b4ca8ef7d8519fc61fdd114b8384b0a2f85d7085d46ed11d9eeead9ce38f7cd2",
+  "1.1.38": "7b72dd038d1d35a00a64d0efad62ae84f743274f8c516b772970a184f866dbed",
+  "1.1.42": "df1024b39580aa90c7e312bc5294c8c61af2a859a18c72eee8c5ea4146b507b1"
+ },
+ "deltas": {
+  "1.1.26->1.1.32": {
+   "added": [
+    [
+     "define",
+     "LIBXSLT_ATTR_FORMAT",
+     "xsltconfig.h",
+     "",
+     ""
+    ],
+    [
+     "define",
+     "XSLT_RVT_FUNC_RESULT",
+     "variables.h",
+     "",
+     ""
+    ],
+    [
+     "define",
+     "XSLT_RVT_GLOBAL",
+     "variables.h",
+     "",
+     ""
+    ],
+    [
+     "define",
+     "XSLT_RVT_LOCAL",
+     "variables.h",
+     "",
+     ""
+    ],
+    [
+     "define",
+     "XSLT_RVT_VARIABLE",
+     "variables.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltDecimalFormatGetByQName",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltFlagRVTs",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltFreeLocales",
+     "xsltlocale.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltXPathCompileFlags",
+     "xsltutils.h",
+     "",
+     ""
+    ],
+    [
+     "variable",
+     "countPat",
+     "numbersInternals.h",
+     "_xsltNumberData",
+     ""
+    ],
+    [
+     "variable",
+     "depth",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "forwards_compatible",
+     "xsltInternals.h",
+     "_xsltStylesheet",
+     ""
+    ],
+    [
+     "variable",
+     "fromPat",
+     "numbersInternals.h",
+     "_xsltNumberData",
+     ""
+    ],
+    [
+     "variable",
+     "maxTemplateDepth",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "maxTemplateVars",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "namedTemplates",
+     "xsltInternals.h",
+     "_xsltStylesheet",
+     ""
+    ],
+    [
+     "variable",
+     "nsUri",
+     "xsltInternals.h",
+     "_xsltDecimalFormat",
+     ""
+    ],
+    [
+     "variable",
+     "templCalledTab",
+     "xsltInternals.h",
+     "_xsltTemplate",
+     ""
+    ],
+    [
+     "variable",
+     "templCountTab",
+     "xsltInternals.h",
+     "_xsltTemplate",
+     ""
+    ],
+    [
+     "variable",
+     "templMax",
+     "xsltInternals.h",
+     "_xsltTemplate",
+     ""
+    ],
+    [
+     "variable",
+     "templNr",
+     "xsltInternals.h",
+     "_xsltTemplate",
+     ""
+    ],
+    [
+     "variable",
+     "xsltMaxVars",
+     "xslt.h",
+     "",
+     ""
+    ]
+   ],
+   "removed": [
+    [
+     "define",
+     "XSLT_NORM_SAXON_NAMESPACE",
+     "extra.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltTransStorageAdd",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltTransStorageRemove",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "variable",
+     "funcLevel",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ]
+   ],
+   "changed": [
+    [
+     "define",
+     "IS_XSLT_ELEM",
+     "(((n) != NULL) && ((n)->ns != NULL) &&              \\\n (xmlStrEqual((n)->ns->href,",
+     "(((n) != NULL) && ((n)->type == XML_ELEMENT_NODE) &&                \\\n ((n)->ns != NULL) && (xmlStrEqual((n)->ns->href,"
+    ],
+    [
+     "define",
+     "LIBEXSLT_DOTTED_VERSION",
+     "\"1.1.26\"",
+     "\"1.1.32\""
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION",
+     "815",
+     "820"
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION_STRING",
+     "\"815\"",
+     "\"820\""
+    ],
+    [
+     "define",
+     "LIBXSLT_DOTTED_VERSION",
+     "\"1.1.26\"",
+     "\"1.1.32\""
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION",
+     "10126",
+     "10132"
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION_STRING",
+     "\"10126\"",
+     "\"10132\""
+    ],
+    [
+     "define",
+     "XSLT_NAMESPACE",
+     "((xmlChar *) \"http://www.w3.org/1999/XSL/Transform\")",
+     "((const xmlChar *)\"http://www.w3.org/1999/XSL/Transform\")"
+    ],
+    [
+     "variable",
+     "lasttsize",
+     "unsigned int",
+     "int"
+    ],
+    [
+     "variable",
+     "lasttuse",
+     "unsigned int",
+     "int"
+    ],
+    [
+     "variable",
+     "val",
+     "union _xsltRuntimeExtra::@275107126263375047222165207213270210261012237213",
+     "union _xsltRuntimeExtra::@300011270343147063110347034114071124200275127271"
+    ]
+   ]
+  },
+  "1.1.32->1.1.35": {
+   "added": [
+    [
+     "define",
+     "WITH_PROFILER",
+     "xsltconfig.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltCompMatchClearCache",
+     "pattern.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltParseStylesheetUser",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "variable",
+     "opCount",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "opLimit",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "position",
+     "xsltInternals.h",
+     "_xsltTemplate",
+     ""
+    ],
+    [
+     "variable",
+     "xpathCtxt",
+     "xsltInternals.h",
+     "_xsltStylesheet",
+     ""
+    ]
+   ],
+   "removed": [
+    [
+     "define",
+     "XSLT_RVT_VARIABLE",
+     "variables.h",
+     "",
+     ""
+    ]
+   ],
+   "changed": [
+    [
+     "define",
+     "LIBEXSLT_DOTTED_VERSION",
+     "\"1.1.32\"",
+     "\"0.8.20\""
+    ],
+    [
+     "define",
+     "LIBXSLT_DOTTED_VERSION",
+     "\"1.1.32\"",
+     "\"1.1.35\""
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION",
+     "10132",
+     "10135"
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION_STRING",
+     "\"10132\"",
+     "\"10135\""
+    ],
+    [
+     "define",
+     "XSLT_REGISTER_FUNCTION_LOOKUP",
+     "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\\n(xmlXPathFuncLookupFunc)",
+     "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\"
+    ],
+    [
+     "define",
+     "XSLT_RVT_FUNC_RESULT",
+     "((void *)3)",
+     "((void *)2)"
+    ],
+    [
+     "define",
+     "XSLT_RVT_GLOBAL",
+     "((void *)4)",
+     "((void *)3)"
+    ],
+    [
+     "function",
+     "xsltApplyImports",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltApplyTemplates",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltAttribute",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltCallTemplate",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltChoose",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltComment",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltCopy",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltCopyOf",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltDebug",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltDocumentElem",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltElement",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltForEach",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltIf",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltNumber",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltProcessingInstruction",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltSort",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltText",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltValueOf",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltStylePreCompPtr comp)",
+     "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    ],
+    [
+     "function",
+     "xsltXPathFunctionLookup",
+     "(xmlXPathContextPtr ctxt, const xmlChar *name, const xmlChar *ns_uri)",
+     "(void *vctxt, const xmlChar *name, const xmlChar *ns_uri)"
+    ],
+    [
+     "variable",
+     "attrMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "commentMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "elemMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "keyMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "parentMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "piMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "rootMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "templatesHash",
+     "void *",
+     "xmlHashTablePtr"
+    ],
+    [
+     "variable",
+     "textMatch",
+     "void *",
+     "struct _xsltCompMatch *"
+    ],
+    [
+     "variable",
+     "val",
+     "union _xsltRuntimeExtra::@300011270343147063110347034114071124200275127271",
+     "union _xsltRuntimeExtra::@076063231140370361022027017217001235323110316301"
+    ]
+   ]
+  },
+  "1.1.35->1.1.38": {
+   "added": [
+    [
+     "define",
+     "EXSLTPUBLIC",
+     "exsltexports.h",
+     "",
+     ""
+    ],
+    [
+     "define",
+     "XSLTPUBLIC",
+     "xsltexports.h",
+     "",
+     ""
+    ],
+    [
+     "function",
+     "xsltSetCtxtLocaleHandlers",
+     "xsltutils.h",
+     "",
+     ""
+    ],
+    [
+     "typedef",
+     "xsltFreeLocaleFunc",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "typedef",
+     "xsltGenSortKeyFunc",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "typedef",
+     "xsltNewLocaleFunc",
+     "xsltInternals.h",
+     "",
+     ""
+    ],
+    [
+     "variable",
+     "currentId",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "freeLocale",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "genSortKey",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "newLocale",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ],
+    [
+     "variable",
+     "sourceDocDirty",
+     "xsltInternals.h",
+     "_xsltTransformContext",
+     ""
+    ]
+   ],
+   "removed": [
+    [
+     "define",
+     "XSLT_LOCALE_NONE",
+     "xsltlocale.h",
+     "",
+     ""
+    ],
+    [
+     "variable",
+     "locale",
+     "xsltInternals.h",
+     "_xsltStylePreComp",
+     ""
+    ]
+   ],
+   "changed": [
+    [
+     "define",
+     "EXSLTPUBVAR",
+     "extern",
+     ""
+    ],
+    [
+     "define",
+     "LIBEXSLT_DOTTED_VERSION",
+     "\"0.8.20\"",
+     "\"0.8.21\""
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION",
+     "820",
+     "821"
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION_STRING",
+     "\"820\"",
+     "\"821\""
+    ],
+    [
+     "define",
+     "LIBXSLT_DOTTED_VERSION",
+     "\"1.1.35\"",
+     "\"1.1.38\""
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION",
+     "10135",
+     "10138"
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION_STRING",
+     "\"10135\"",
+     "\"10138\""
+    ],
+    [
+     "define",
+     "XSLTPUBVAR",
+     "extern",
+     ""
+    ],
+    [
+     "define",
+     "XSLT_RVT_FUNC_RESULT",
+     "((void *)2)",
+     "2"
+    ],
+    [
+     "define",
+     "XSLT_RVT_GLOBAL",
+     "((void *)3)",
+     "3"
+    ],
+    [
+     "define",
+     "XSLT_RVT_LOCAL",
+     "((void *)1)",
+     "1"
+    ],
+    [
+     "function",
+     "xsltFlagRVTs",
+     "(xsltTransformContextPtr ctxt, xmlXPathObjectPtr obj, void *val)",
+     "(xsltTransformContextPtr ctxt, xmlXPathObjectPtr obj, int val)"
+    ],
+    [
+     "function",
+     "xsltFreeLocale",
+     "(xsltLocale locale)",
+     "(void *locale)"
+    ],
+    [
+     "function",
+     "xsltLocaleStrcmp",
+     "(xsltLocale locale, const xsltLocaleChar *str1, const xsltLocaleChar *str2)",
+     "(void *locale, const xmlChar *str1, const xmlChar *str2)"
+    ],
+    [
+     "function",
+     "xsltNewLocale",
+     "(const xmlChar *langName)",
+     "(const xmlChar *langName, int lowerFirst)"
+    ],
+    [
+     "function",
+     "xsltStrxfrm",
+     "(xsltLocale locale, const xmlChar *string)",
+     "(void *locale, const xmlChar *string)"
+    ],
+    [
+     "variable",
+     "exsltLibexsltVersion",
+     "const int",
+     "externconst int"
+    ],
+    [
+     "variable",
+     "exsltLibraryVersion",
+     "const char *",
+     "externconst char *"
+    ],
+    [
+     "variable",
+     "exsltLibxmlVersion",
+     "const int",
+     "externconst int"
+    ],
+    [
+     "variable",
+     "exsltLibxsltVersion",
+     "const int",
+     "externconst int"
+    ],
+    [
+     "variable",
+     "val",
+     "union _xsltRuntimeExtra::@076063231140370361022027017217001235323110316301",
+     "union _xsltRuntimeExtra::@277317216053261317353226172136000015255053051004"
+    ],
+    [
+     "variable",
+     "xslDebugStatus",
+     "int",
+     "externint"
+    ],
+    [
+     "variable",
+     "xsltDocDefaultLoader",
+     "",
+     "externxsltDocLoaderFunc"
+    ],
+    [
+     "variable",
+     "xsltEngineVersion",
+     "const char *",
+     "externconst char *"
+    ],
+    [
+     "variable",
+     "xsltExtMarker",
+     "const xmlChar *",
+     "externconst xmlChar *"
+    ],
+    [
+     "variable",
+     "xsltGenericDebug",
+     "xmlGenericErrorFunc",
+     "externxmlGenericErrorFunc"
+    ],
+    [
+     "variable",
+     "xsltGenericDebugContext",
+     "void *",
+     "externvoid *"
+    ],
+    [
+     "variable",
+     "xsltGenericError",
+     "xmlGenericErrorFunc",
+     "externxmlGenericErrorFunc"
+    ],
+    [
+     "variable",
+     "xsltGenericErrorContext",
+     "void *",
+     "externvoid *"
+    ],
+    [
+     "variable",
+     "xsltLibxmlVersion",
+     "const int",
+     "externconst int"
+    ],
+    [
+     "variable",
+     "xsltLibxsltVersion",
+     "const int",
+     "externconst int"
+    ],
+    [
+     "variable",
+     "xsltMaxDepth",
+     "int",
+     "externint"
+    ],
+    [
+     "variable",
+     "xsltMaxVars",
+     "int",
+     "externint"
+    ]
+   ]
+  },
+  "1.1.38->1.1.42": {
+   "added": [
+    [
+     "variable",
+     "opCount",
+     "xsltInternals.h",
+     "_xsltStylesheet",
+     ""
+    ],
+    [
+     "variable",
+     "opLimit",
+     "xsltInternals.h",
+     "_xsltStylesheet",
+     ""
+    ]
+   ],
+   "removed": [
+    [
+     "define",
+     "ATTRIBUTE_UNUSED",
+     "xsltconfig.h",
+     "",
+     ""
+    ]
+   ],
+   "changed": [
+    [
+     "define",
+     "LIBEXSLT_DOTTED_VERSION",
+     "\"0.8.21\"",
+     "\"0.8.23\""
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION",
+     "821",
+     "823"
+    ],
+    [
+     "define",
+     "LIBEXSLT_VERSION_STRING",
+     "\"821\"",
+     "\"823\""
+    ],
+    [
+     "define",
+     "LIBXSLT_DOTTED_VERSION",
+     "\"1.1.38\"",
+     "\"1.1.42\""
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION",
+     "10138",
+     "10142"
+    ],
+    [
+     "define",
+     "LIBXSLT_VERSION_STRING",
+     "\"10138\"",
+     "\"10142\""
+    ],
+    [
+     "variable",
+     "val",
+     "union _xsltRuntimeExtra::@277317216053261317353226172136000015255053051004",
+     "union _xsltRuntimeExtra::@147235072110216142124310136036134211360317004114"
+    ]
+   ]
+  }
+ },
+ "first_seen_last_seen": {
+  "[\"define\", \"EXSLT_COMMON_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_CRYPTO_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_DATE_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_DYNAMIC_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_FUNCTIONS_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_MATH_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_SETS_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLT_STRINGS_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"SAXON_NAMESPACE\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"ATTRIBUTE_UNUSED\", \"exsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBEXSLT_DOTTED_VERSION\", \"exsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "\"1.1.32\""
+    },
+    {
+     "version": "1.1.35",
+     "to": "\"0.8.20\""
+    },
+    {
+     "version": "1.1.38",
+     "to": "\"0.8.21\""
+    },
+    {
+     "version": "1.1.42",
+     "to": "\"0.8.23\""
+    }
+   ]
+  },
+  "[\"define\", \"LIBEXSLT_VERSION\", \"exsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "820"
+    },
+    {
+     "version": "1.1.38",
+     "to": "821"
+    },
+    {
+     "version": "1.1.42",
+     "to": "823"
+    }
+   ]
+  },
+  "[\"define\", \"LIBEXSLT_VERSION_EXTRA\", \"exsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBEXSLT_VERSION_STRING\", \"exsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "\"820\""
+    },
+    {
+     "version": "1.1.38",
+     "to": "\"821\""
+    },
+    {
+     "version": "1.1.42",
+     "to": "\"823\""
+    }
+   ]
+  },
+  "[\"define\", \"EXSLTCALL\", \"exsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLTPUBFUN\", \"exsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLTPUBVAR\", \"exsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": ""
+    }
+   ]
+  },
+  "[\"define\", \"LIBEXSLT_PUBLIC\", \"exsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_LIBXSLT_NAMESPACE\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_NORM_SAXON_NAMESPACE\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.26",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_SAXON_NAMESPACE\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_XALAN_NAMESPACE\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_XT_NAMESPACE\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_REGISTER_FUNCTION_LOOKUP\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_GET_IMPORT_INT\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_GET_IMPORT_PTR\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"NODE_IS_KEYED\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"UNDEFINED_DEFAULT_NS\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_REGISTER_VARIABLE_LOOKUP\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_DEFAULT_URL\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_DEFAULT_VENDOR\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_DEFAULT_VERSION\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_NAMESPACE\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "((const xmlChar *)\"http://www.w3.org/1999/XSL/Transform\")"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_PARSE_OPTIONS\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"CHECK_STOPPED\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"CHECK_STOPPED0\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"CHECK_STOPPEDE\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XML_CAST_FPTR\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_FAST_IF\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_IS_RES_TREE_FRAG\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_IS_TEXT_NODE\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_MARK_RES_TREE_FRAG\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_MAX_SORT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_PAT_NO_PRIORITY\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_REFACTORED_KEYCOMP\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_REFACTORED_VARS\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_RUNTIME_EXTRA\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_RUNTIME_EXTRA_FREE\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_RUNTIME_EXTRA_LST\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"ATTRIBUTE_UNUSED\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.38",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBXSLT_DOTTED_VERSION\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "\"1.1.32\""
+    },
+    {
+     "version": "1.1.35",
+     "to": "\"1.1.35\""
+    },
+    {
+     "version": "1.1.38",
+     "to": "\"1.1.38\""
+    },
+    {
+     "version": "1.1.42",
+     "to": "\"1.1.42\""
+    }
+   ]
+  },
+  "[\"define\", \"LIBXSLT_PUBLIC\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBXSLT_VERSION\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "10132"
+    },
+    {
+     "version": "1.1.35",
+     "to": "10135"
+    },
+    {
+     "version": "1.1.38",
+     "to": "10138"
+    },
+    {
+     "version": "1.1.42",
+     "to": "10142"
+    }
+   ]
+  },
+  "[\"define\", \"LIBXSLT_VERSION_EXTRA\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBXSLT_VERSION_STRING\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "\"10132\""
+    },
+    {
+     "version": "1.1.35",
+     "to": "\"10135\""
+    },
+    {
+     "version": "1.1.38",
+     "to": "\"10138\""
+    },
+    {
+     "version": "1.1.42",
+     "to": "\"10142\""
+    }
+   ]
+  },
+  "[\"define\", \"WITH_DEBUGGER\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"WITH_XSLT_DEBUG\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBXSLT_PUBLIC\", \"xsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLTCALL\", \"xsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLTPUBFUN\", \"xsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLTPUBVAR\", \"xsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": ""
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_LOCALE_NONE\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.35",
+   "signature_changes": []
+  },
+  "[\"define\", \"IS_XSLT_ELEM\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "(((n) != NULL) && ((n)->type == XML_ELEMENT_NODE) &&                \\\n ((n)->ns != NULL) && (xmlStrEqual((n)->ns->href,"
+    }
+   ]
+  },
+  "[\"define\", \"IS_XSLT_NAME\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"IS_XSLT_REAL_NODE\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_STRANGE\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_TIMESTAMP_TICS_PER_SEC\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_TODO\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLT_TRACE\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltLoadType\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltSecurityOption\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltOutputType\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltStyleType\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltTransformState\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltDebugStatusCodes\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"enum\", \"xsltDebugTraceCodes\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyAttributeSet\", \"attributes.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeAttributeSetsHashes\", \"attributes.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetAttributeSet\", \"attributes.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltResolveStylesheetAttributeSet\", \"attributes.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFindDocument\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeDocuments\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeStyleDocuments\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltLoadDocument\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltLoadStyleDocument\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewDocument\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewStyleDocument\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetLoaderFunc\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltCommonRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltDateRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltDateXpathCtxtRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltDynRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltFuncRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltMathRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltMathXpathCtxtRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltRegisterAll\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltSaxonRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltSetsRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltSetsXpathCtxtRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltStrRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"exsltStrXpathCtxtRegister\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCheckExtPrefix\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCheckExtURI\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDebugDumpExtensions\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtElementLookup\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtModuleElementLookup\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtModuleElementPreComputeLookup\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtModuleFunctionLookup\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtModuleTopLevelLookup\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeCtxtExts\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeExts\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetExtData\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetExtInfo\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitCtxtExts\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitElemPreComp\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitGlobals\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewElemPreComp\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltPreComputeExtModuleElement\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtElement\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtModule\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtModuleElement\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtModuleFull\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtModuleFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtModuleTopLevel\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtPrefix\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterTestModule\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltShutdownCtxtExts\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltShutdownExts\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltStyleGetExtData\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUnregisterExtModule\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUnregisterExtModuleElement\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUnregisterExtModuleFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUnregisterExtModuleTopLevel\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltXPathGetTransformContext\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDebug\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltFunctionNodeSet\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterAllExtras\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterExtras\", \"extra.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDocumentFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltElementAvailableFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFormatNumberFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFunctionAvailableFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGenerateIdFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltKeyFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterAllFunctions\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSystemPropertyFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUnparsedEntityURIFunction\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltXPathFunctionLookup\", \"functions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(void *vctxt, const xmlChar *name, const xmlChar *ns_uri)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltFindElemSpaceHandling\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFindTemplate\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNeedElemSpaceHandling\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNextImport\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetImport\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetInclude\", \"imports.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAddKey\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeDocumentKeys\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeKeys\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetKey\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitCtxtKeys\", \"keys.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCopyNamespace\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCopyNamespaceList\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeNamespaceAliasHashes\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetNamespace\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetPlainNamespace\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetSpecialNamespace\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNamespaceAlias\", \"namespaces.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAddTemplate\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCleanupTemplates\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCompilePattern\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeCompMatchList\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeTemplateHashes\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetTemplate\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNormalizeCompSteps\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTestCompMatchList\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDocumentComp\", \"preproc.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeStylePreComps\", \"preproc.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltStylePreCompute\", \"preproc.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCheckRead\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCheckWrite\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetDefaultSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSecurityAllow\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSecurityForbid\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetCtxtSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetDefaultSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAttrListTemplateProcess\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAttrTemplateProcess\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAttrTemplateValueProcess\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAttrTemplateValueProcessNode\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalAttrValueTemplate\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalStaticAttrValueTemplate\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalTemplateString\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalXPathPredicate\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalXPathString\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalXPathStringNs\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTemplateProcess\", \"templates.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xslHandleDebugger\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyImports\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltApplyOneTemplate\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyStripSpaces\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyStylesheet\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyStylesheetUser\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltApplyTemplates\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltAttribute\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltCallTemplate\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltChoose\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltComment\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltCopy\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltCopyOf\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltCopyTextString\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDocumentElem\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltElement\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltForEach\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltFreeTransformContext\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetXIncludeDefault\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltIf\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltLocalVariablePop\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltLocalVariablePush\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewTransformContext\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNumber\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltProcessOneNode\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltProcessingInstruction\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltProfileStylesheet\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterAllElement\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRunStylesheet\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRunStylesheetUser\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetXIncludeDefault\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSort\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltText\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltValueOf\", \"transform.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "(xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst, xsltElemPreCompPtr comp)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltAddStackElemList\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalGlobalVariables\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalOneUserParam\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalUserParams\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeGlobalVariables\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseGlobalParam\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseGlobalVariable\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetCallerParam\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetParam\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetVariable\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltQuoteOneUserParam\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltQuoteUserParams\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltVariableLookup\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltXPathVariableLookup\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCleanupGlobals\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInit\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAllocateExtra\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltAllocateExtraCtxt\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCompileAttr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCreateRVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDecimalFormatGetByName\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltEvalAVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtensionInstructionResultFinalize\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltExtensionInstructionResultRegister\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFormatNumberConversion\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeAVTList\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeRVTs\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeStackElemList\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeStylesheet\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitAllDocKeys\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltInitCtxtKey\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltIsBlank\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltLoadStylesheetPI\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNewStylesheet\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltNumberFormat\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetDoc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetFile\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetImportedDoc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetOutput\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetProcess\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseTemplateContent\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterLocalRVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterPersistRVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltRegisterTmpRVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltReleaseRVT\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTransStorageAdd\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.26",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTransStorageRemove\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.26",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltUninit\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFreeLocale\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "(void *locale)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltLocaleStrcmp\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "(void *locale, const xmlChar *str1, const xmlChar *str2)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltNewLocale\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "(const xmlChar *langName, int lowerFirst)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltStrxfrm\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "(void *locale, const xmlChar *string)"
+    }
+   ]
+  },
+  "[\"function\", \"xslAddCall\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xslDropCall\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCalibrateAdjust\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltComputeSortResult\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDebugGetDefaultTrace\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDebugSetDefaultTrace\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDefaultSortFunction\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDoSortFunction\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDocumentSortFunction\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetCNsProp\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetDebuggerStatus\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetNsProp\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetProfileInformation\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetQNameURI\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetQNameURI2\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltGetUTF8Char\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltMessage\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltPrintErrorContext\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveProfiling\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveResultTo\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveResultToFd\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveResultToFile\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveResultToFilename\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSaveResultToString\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetCtxtParseOptions\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetCtxtSortFunc\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetDebuggerCallbacks\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetDebuggerStatus\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetGenericDebugFunc\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetGenericErrorFunc\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetSortFunc\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetTransformErrorFunc\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSplitQName\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTimestamp\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltTransformError\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltXPathCompile\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDocLoaderFunc\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltExtInitFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltExtShutdownFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltPreComputeFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStyleExtInitFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStyleExtShutdownFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTopLevelFunction\", \"extensions.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltFormatNumberInfo\", \"numbersInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltFormatNumberInfoPtr\", \"numbersInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltNumberData\", \"numbersInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltNumberDataPtr\", \"numbersInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltCompMatch\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltCompMatchPtr\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltSecurityCheck\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltSecurityPrefs\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltSecurityPrefsPtr\", \"security.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDecimalFormat\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDecimalFormatPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDocument\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDocumentPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltElemPreComp\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltElemPreCompDeallocator\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltElemPreCompPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltKeyDef\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltKeyDefPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltKeyTable\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltKeyTablePtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltRuntimeExtra\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltRuntimeExtraPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltSortFunc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStackElem\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStackElemPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStylePreComp\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStylePreCompPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStylesheet\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltStylesheetPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTemplate\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTemplatePtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTransformCache\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTransformCachePtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTransformContext\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTransformContextPtr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltTransformFunction\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltLocale\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltLocaleChar\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltAddCallCallback\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltDropCallCallback\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltHandleDebuggerCallback\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xsltDocDefaultLoader\", \"documents.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externxsltDocLoaderFunc"
+    }
+   ]
+  },
+  "[\"variable\", \"exsltLibexsltVersion\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst int"
+    }
+   ]
+  },
+  "[\"variable\", \"exsltLibraryVersion\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst char *"
+    }
+   ]
+  },
+  "[\"variable\", \"exsltLibxmlVersion\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst int"
+    }
+   ]
+  },
+  "[\"variable\", \"exsltLibxsltVersion\", \"exslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst int"
+    }
+   ]
+  },
+  "[\"variable\", \"add_decimal\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"frac_digits\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"frac_hash\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"group\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"integer_digits\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"integer_hash\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"is_multiplier_set\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"is_negative_pattern\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"multiplier\", \"numbersInternals.h\", \"_xsltFormatNumberInfo\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"count\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"digitsPerGroup\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"doc\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"format\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"from\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"groupingCharacter\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"groupingCharacterLen\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_format\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"level\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"node\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"value\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xsltExtMarker\", \"preproc.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst xmlChar *"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltEngineVersion\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst char *"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltLibxmlVersion\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst int"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltLibxsltVersion\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externconst int"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltMaxDepth\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externint"
+    }
+   ]
+  },
+  "[\"variable\", \"ival\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"ptr\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"decimalPoint\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"digit\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"grouping\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"infinity\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"minusSign\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"noNumber\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"patternSeparator\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"percent\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"permille\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"zeroDigit\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"doc\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"includes\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"keys\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"main\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nbKeysComputed\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"preproc\", \"xsltInternals.h\", \"_xsltDocument\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"free\", \"xsltInternals.h\", \"_xsltElemPreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"func\", \"xsltInternals.h\", \"_xsltElemPreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inst\", \"xsltInternals.h\", \"_xsltElemPreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltElemPreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"type\", \"xsltInternals.h\", \"_xsltElemPreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"comp\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inst\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"match\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nameURI\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsList\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsNr\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"use\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"usecomp\", \"xsltInternals.h\", \"_xsltKeyDef\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"keys\", \"xsltInternals.h\", \"_xsltKeyTable\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltKeyTable\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nameURI\", \"xsltInternals.h\", \"_xsltKeyTable\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltKeyTable\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"deallocate\", \"xsltInternals.h\", \"_xsltRuntimeExtra\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"info\", \"xsltInternals.h\", \"_xsltRuntimeExtra\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"val\", \"xsltInternals.h\", \"_xsltRuntimeExtra\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "union _xsltRuntimeExtra::@300011270343147063110347034114071124200275127271"
+    },
+    {
+     "version": "1.1.35",
+     "to": "union _xsltRuntimeExtra::@076063231140370361022027017217001235323110316301"
+    },
+    {
+     "version": "1.1.38",
+     "to": "union _xsltRuntimeExtra::@277317216053261317353226172136000015255053051004"
+    },
+    {
+     "version": "1.1.42",
+     "to": "union _xsltRuntimeExtra::@147235072110216142124310136036134211360317004114"
+    }
+   ]
+  },
+  "[\"variable\", \"comp\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"computed\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"context\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"flags\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"fragment\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"level\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nameURI\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"select\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"tree\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"value\", \"xsltInternals.h\", \"_xsltStackElem\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"case_order\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"comp\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"descending\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"filename\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"func\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_filename\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_lang\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_name\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_ns\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_order\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_stype\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"has_use\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inst\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"lang\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"locale\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.35",
+   "signature_changes": []
+  },
+  "[\"variable\", \"lower_first\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"mode\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"modeURI\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"noescape\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"ns\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsList\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsNr\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"number\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"numdata\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"order\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"select\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"stype\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templ\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"test\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"type\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"use\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"ver11\", \"xsltInternals.h\", \"_xsltStylePreComp\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"_private\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"attVTs\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"attrMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"attributeSets\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"cdataSection\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"commentMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"decimalFormat\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"defaultAlias\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"dict\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"doc\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"docList\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"doctypePublic\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"doctypeSystem\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"elemMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"encoding\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"errors\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"exclPrefix\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"exclPrefixMax\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"exclPrefixNr\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"exclPrefixTab\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extInfos\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extrasNr\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"imports\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"includes\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"indent\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"internalized\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"keyMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"keys\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"literal_result\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"mediaType\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"method\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"methodURI\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nopreproc\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsAliases\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsDefs\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nsHash\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"omitXmlDeclaration\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"parent\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"parentMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"piMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"preComps\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"principal\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"rootMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"standalone\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"stripAll\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"stripSpaces\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templates\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templatesHash\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "xmlHashTablePtr"
+    }
+   ]
+  },
+  "[\"variable\", \"textMatch\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "struct _xsltCompMatch *"
+    }
+   ]
+  },
+  "[\"variable\", \"variables\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"version\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"warnings\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"content\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"elem\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inheritedNs\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inheritedNsNr\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"match\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"mode\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"modeURI\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"name\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nameURI\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nbCalls\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"next\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"params\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"priority\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"style\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"time\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"RVT\", \"xsltInternals.h\", \"_xsltTransformCache\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nbRVT\", \"xsltInternals.h\", \"_xsltTransformCache\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nbStackItems\", \"xsltInternals.h\", \"_xsltTransformCache\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"stackItems\", \"xsltInternals.h\", \"_xsltTransformCache\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"_private\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"cache\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"contextVariable\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"ctxtflags\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"currentTemplateRule\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"debugStatus\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"dict\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"docList\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"document\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"errctx\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"error\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extElements\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extFunctions\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extInfos\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extras\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extrasMax\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"extrasNr\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"funcLevel\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.26",
+   "signature_changes": []
+  },
+  "[\"variable\", \"globalVars\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"hasTemplKeyPatterns\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"initialContextDoc\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"initialContextNode\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"insert\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"inst\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"internalized\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"keyInitLevel\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"lasttext\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"lasttsize\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "int"
+    }
+   ]
+  },
+  "[\"variable\", \"lasttuse\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.32",
+     "to": "int"
+    }
+   ]
+  },
+  "[\"variable\", \"localRVT\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"localRVTBase\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"mode\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"modeURI\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nbKeys\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"node\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"nodeList\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"output\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"outputFile\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"parserOptions\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"persistRVT\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"prof\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"profMax\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"profNr\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"profTab\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"profile\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"sec\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"sortfunc\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"state\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"style\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"styleList\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templ\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templMax\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templNr\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templTab\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"tmpDoc\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"tmpRVT\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"traceCode\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"type\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"vars\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"varsBase\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"varsMax\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"varsNr\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"varsTab\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xinclude\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xpathCtxt\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xslDebugStatus\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externint"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltGenericDebug\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externxmlGenericErrorFunc"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltGenericDebugContext\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externvoid *"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltGenericError\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externxmlGenericErrorFunc"
+    }
+   ]
+  },
+  "[\"variable\", \"xsltGenericErrorContext\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.26",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externvoid *"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_RVT_FUNC_RESULT\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "((void *)2)"
+    },
+    {
+     "version": "1.1.38",
+     "to": "2"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_RVT_GLOBAL\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.35",
+     "to": "((void *)3)"
+    },
+    {
+     "version": "1.1.38",
+     "to": "3"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_RVT_LOCAL\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "1"
+    }
+   ]
+  },
+  "[\"define\", \"XSLT_RVT_VARIABLE\", \"variables.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.32",
+   "signature_changes": []
+  },
+  "[\"define\", \"LIBXSLT_ATTR_FORMAT\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltDecimalFormatGetByQName\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltFlagRVTs\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "(xsltTransformContextPtr ctxt, xmlXPathObjectPtr obj, int val)"
+    }
+   ]
+  },
+  "[\"function\", \"xsltFreeLocales\", \"xsltlocale.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltXPathCompileFlags\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"countPat\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"fromPat\", \"numbersInternals.h\", \"_xsltNumberData\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xsltMaxVars\", \"xslt.h\", \"\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": [
+    {
+     "version": "1.1.38",
+     "to": "externint"
+    }
+   ]
+  },
+  "[\"variable\", \"nsUri\", \"xsltInternals.h\", \"_xsltDecimalFormat\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"forwards_compatible\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"namedTemplates\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templCalledTab\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templCountTab\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templMax\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"templNr\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"depth\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"maxTemplateDepth\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"maxTemplateVars\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.32",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"WITH_PROFILER\", \"xsltconfig.h\", \"\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltCompMatchClearCache\", \"pattern.h\", \"\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltParseStylesheetUser\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"xpathCtxt\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"position\", \"xsltInternals.h\", \"_xsltTemplate\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"opCount\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"opLimit\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.35",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"EXSLTPUBLIC\", \"exsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"define\", \"XSLTPUBLIC\", \"xsltexports.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"function\", \"xsltSetCtxtLocaleHandlers\", \"xsltutils.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltFreeLocaleFunc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltGenSortKeyFunc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"typedef\", \"xsltNewLocaleFunc\", \"xsltInternals.h\", \"\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"currentId\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"freeLocale\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"genSortKey\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"newLocale\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"sourceDocDirty\", \"xsltInternals.h\", \"_xsltTransformContext\", \"\"]": {
+   "first": "1.1.38",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"opCount\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.42",
+   "last": "1.1.42",
+   "signature_changes": []
+  },
+  "[\"variable\", \"opLimit\", \"xsltInternals.h\", \"_xsltStylesheet\", \"\"]": {
+   "first": "1.1.42",
+   "last": "1.1.42",
+   "signature_changes": []
+  }
+ }
+}
