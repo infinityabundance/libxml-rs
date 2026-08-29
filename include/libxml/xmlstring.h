@@ -15,6 +15,10 @@ extern "C" {
 
 typedef unsigned char xmlChar;
 
+#ifndef BAD_CAST
+#define BAD_CAST (const xmlChar *)
+#endif
+
 XMLPUBFUN xmlChar *xmlStrdup(const xmlChar *cur);
 XMLPUBFUN xmlChar *xmlStrndup(const xmlChar *cur, int len);
 XMLPUBFUN int xmlStrlen(const xmlChar *str);

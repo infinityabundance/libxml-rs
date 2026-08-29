@@ -43,7 +43,7 @@ use core::ptr;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
@@ -5260,6 +5260,15 @@ unsafe fn object_to_xpathvalue(obj: *mut _xmlXPathObject) -> XPathValue {
     }
 }
 
+/// Public wrapper for `xpath_to_object` (used by the XPath export bridge).
+///
+/// # Safety
+///
+/// - `val` is consumed and converted into a heap-allocated `_xmlXPathObject`.
+pub unsafe fn xpath_to_object_pub(val: XPathValue) -> *mut _xmlXPathObject {
+    xpath_to_object(val)
+}
+
 /// Public wrapper for `object_to_xpathvalue` (used by the XSLT engine).
 ///
 /// # Safety
@@ -5278,6 +5287,12 @@ pub unsafe fn object_to_xpathvalue_pub(obj: *mut _xmlXPathObject) -> XPathValue 
 static COMPILED_EXPRS: Lazy<Mutex<HashMap<u64, Box<CompiledExpr>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 static NEXT_COMPILED_KEY: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
+
+/// Accessor for the compiled-expression registry (used by the XPath export
+/// bridge for `xmlXPathCompiledEval` / `xmlXPathCompiledEvalToBoolean`).
+pub(crate) fn xpath_compiled_registry() -> &'static Mutex<HashMap<u64, Box<CompiledExpr>>> {
+    &COMPILED_EXPRS
+}
 
 // ── C extension-function registry ──────────────────────────────────────
 //
@@ -5299,6 +5314,22 @@ unsafe impl Sync for SendSyncPtr {}
 
 static C_FUNCTIONS: Lazy<Mutex<HashMap<(SendSyncPtr, String), CXPathFunc>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Look up a C-registered extension function for the context identified by
+/// `extra` (the internal XPathContext pointer). Used by
+/// `xmlXPathFunctionLookupNS`.
+pub(crate) fn xpath_cfunc_lookup(extra: *mut c_void, qualified: &str) -> Option<CXPathFunc> {
+    C_FUNCTIONS
+        .lock()
+        .get(&(SendSyncPtr(extra), qualified.to_string()))
+        .copied()
+}
+
+/// Drop every C extension-function registration belonging to the context
+/// identified by `extra` (upstream `xmlXPathRegisteredFuncsCleanup`).
+pub(crate) fn xpath_cfunc_cleanup(extra: *mut c_void) {
+    C_FUNCTIONS.lock().retain(|(k, _), _| k.0 != extra);
+}
 
 /// Rust-side wrapper that is registered in the internal XPathContext when a
 /// C extension function is registered. It looks up the C function pointer and
@@ -5337,7 +5368,14 @@ pub unsafe extern "C" fn xmlXPathNewContext(doc: *mut _xmlDoc) -> *mut _xmlXPath
     (*ctxt).proximityPosition = 1;
 
     // Create the internal XPathContext and store it in `extra`.
-    let internal = Box::new(XPathContext::new(doc));
+    let mut internal = Box::new(XPathContext::new(doc));
+    // UPSTREAM-PARITY: the standard function library is implicitly available
+    // in every context (upstream compiles it in; xmlXPathRegisterAllFunctions
+    // is a no-op since 2.14.0). Without this, core-function calls such as
+    // count() would fail as unknown functions.
+    for (name, func) in crate::xml::xpath::functions::core_functions() {
+        internal.register_function(&name, func);
+    }
     (*ctxt).extra = Box::into_raw(internal) as *mut c_void;
 
     ctxt
@@ -5359,6 +5397,13 @@ pub unsafe extern "C" fn xmlXPathFreeContext(ctxt: *mut _xmlXPathContext) {
     if !(*ctxt).extra.is_null() {
         let _ = Box::from_raw((*ctxt).extra as *mut XPathContext);
         (*ctxt).extra = ptr::null_mut();
+    }
+    // Drop the registered-namespace C-string hash (xmlXPathNsLookup pointers).
+    if !(*ctxt).nsHash.is_null() {
+        drop(Box::from_raw(
+            (*ctxt).nsHash as *mut HashMap<String, CString>,
+        ));
+        (*ctxt).nsHash = ptr::null_mut();
     }
     // Free the C ABI context struct.
     xmlFree(ctxt as *mut c_void);
@@ -5940,6 +5985,22 @@ pub unsafe extern "C" fn xmlXPathRegisterNs(
     };
 
     internal.register_namespace(prefix_str, uri_str);
+
+    // Mirror the registration into the C context's nsHash (Box<HashMap<
+    // String, CString>>): xmlXPathNsLookup hands out pointers into these
+    // owned C strings, matching upstream ownership (strdup'd in nsHash,
+    // freed by xmlXPathRegisteredNsCleanup / xmlXPathFreeContext).
+    let map: &mut HashMap<String, CString> = if (*ctxt).nsHash.is_null() {
+        let b: Box<HashMap<String, CString>> = Box::new(HashMap::new());
+        (*ctxt).nsHash = Box::into_raw(b) as *mut c_void;
+        &mut *((*ctxt).nsHash as *mut HashMap<String, CString>)
+    } else {
+        &mut *((*ctxt).nsHash as *mut HashMap<String, CString>)
+    };
+    map.insert(
+        prefix_str.to_string(),
+        CString::new(uri_str.as_bytes()).unwrap_or_default(),
+    );
     0
 }
 

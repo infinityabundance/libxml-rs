@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "0cf0e976ae97089d26df3548f931a7bd51a6842a",
+  "candidate_commit_time": 1788042216,
+  "case_id": "CLI-XSLTPROC-0006",
+  "observations": {
+    "candidate": {
+      "exit_status": 1,
+      "stderr": "xsltproc: not yet implemented (Phase 0 \u2014 Archaeological Seizure)\n",
+      "stderr_hash": "5031404aa3d7a59303ee80d6943f582323ca5e711f84435d38f9c271764a91bd",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-29T23:08:43.246762+00:00",
+  "verdict": "UNKNOWN"
+}

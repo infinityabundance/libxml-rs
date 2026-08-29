@@ -20,9 +20,11 @@ pub mod ast;
 pub mod axes;
 pub mod context;
 pub mod eval;
+pub mod exports;
 pub mod functions;
 pub mod lexer;
 pub mod parser;
+pub mod parser_context;
 pub mod types;
 
 use ast::{CompiledExpr, Expr};

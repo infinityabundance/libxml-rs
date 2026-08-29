@@ -469,6 +469,39 @@ pub const XML_MAX_NAME_LENGTH: c_int = 50_000;
 pub const XML_MAX_DICTIONARY_LIMIT: c_int = 1_000_000;
 pub const XML_MAX_LOOKUP_LIMIT: c_int = 1_000_000;
 pub const XML_MAX_HUGE_LENGTH: c_int = 100_000_000;
+
+// ── XPath parser-context error codes (upstream xmlXPathError) ──────────
+//
+// Source: xpath.h (typedef enum { ... } xmlXPathError). The numeric values
+// are part of the observable ABI (ctxt->error after evaluation).
+
+pub const XPATH_EXPRESSION_OK: c_int = 0;
+pub const XPATH_NUMBER_ERROR: c_int = 1;
+pub const XPATH_UNFINISHED_LITERAL_ERROR: c_int = 2;
+pub const XPATH_START_LITERAL_ERROR: c_int = 3;
+pub const XPATH_VARIABLE_REF_ERROR: c_int = 4;
+pub const XPATH_UNDEF_VARIABLE_ERROR: c_int = 5;
+pub const XPATH_INVALID_PREDICATE_ERROR: c_int = 6;
+pub const XPATH_EXPR_ERROR: c_int = 7;
+pub const XPATH_UNCLOSED_ERROR: c_int = 8;
+pub const XPATH_UNKNOWN_FUNC_ERROR: c_int = 9;
+pub const XPATH_INVALID_OPERAND: c_int = 10;
+pub const XPATH_INVALID_TYPE: c_int = 11;
+pub const XPATH_INVALID_ARITY: c_int = 12;
+pub const XPATH_INVALID_CTXT_SIZE: c_int = 13;
+pub const XPATH_INVALID_CTXT_POSITION: c_int = 14;
+pub const XPATH_MEMORY_ERROR: c_int = 15;
+pub const XPTR_SYNTAX_ERROR: c_int = 16;
+pub const XPTR_RESOURCE_ERROR: c_int = 17;
+pub const XPTR_SUB_RESOURCE_ERROR: c_int = 18;
+pub const XPATH_UNDEF_PREFIX_ERROR: c_int = 19;
+pub const XPATH_ENCODING_ERROR: c_int = 20;
+pub const XPATH_INVALID_CHAR_ERROR: c_int = 21;
+pub const XPATH_INVALID_CTXT: c_int = 22;
+pub const XPATH_STACK_ERROR: c_int = 23;
+pub const XPATH_FORBID_VARIABLE_ERROR: c_int = 24;
+pub const XPATH_OP_LIMIT_EXCEEDED: c_int = 25;
+pub const XPATH_RECURSION_LIMIT_EXCEEDED: c_int = 26;
 pub const XML_MAX_NAMELEN: c_int = 100;
 pub const XML_MAX_ATTRIBUTE_LENGTH: c_int = 500_000;
 

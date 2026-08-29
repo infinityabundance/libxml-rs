@@ -277,7 +277,7 @@ unsafe fn get_valid_dtd(doc: *mut _xmlDoc) -> *mut _xmlDtd {
 ///  [\u{370}-\u{37D}] | [\u{37F}-\u{1FFF}] | [\u{200C}-\u{200D}] |
 ///  [\u{2070}-\u{218F}] | [\u{2C00}-\u{2FEF}] | [\u{3001}-\u{D7FF}] |
 ///  [\u{F900}-\u{FDCF}] | [\u{FDF0}-\u{FFFD}]`
-fn is_xml_name_start(c: char) -> bool {
+pub(crate) fn is_xml_name_start(c: char) -> bool {
     matches!(c,
         'a'..='z' | 'A'..='Z' | '_' | ':' |
         '\u{C0}'..='\u{D6}' | '\u{D8}'..='\u{F6}' | '\u{F8}'..='\u{2FF}' |
@@ -295,7 +295,7 @@ fn is_xml_name_start(c: char) -> bool {
 ///
 /// Matches NameChar production: NameStartChar | '-' | '.' | [0-9] |
 /// \u{B7} | [\u{0300}-\u{036F}] | [\u{203F}-\u{2040}]
-fn is_xml_name_char(c: char) -> bool {
+pub(crate) fn is_xml_name_char(c: char) -> bool {
     is_xml_name_start(c)
         || matches!(c,
             '-' | '.' | '0'..='9' | '\u{B7}' |
