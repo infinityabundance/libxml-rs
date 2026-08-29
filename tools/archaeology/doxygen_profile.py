@@ -131,7 +131,7 @@ def gen(project, version, profile="public"):
     tag = resolve_tag(project, version) if version != "system" else None
     if version == "system":
         # system oracle: use the installed system headers
-        src = "/usr/include/libxml2" if project == "libxml2" else None
+        src = {"libxml2": "/usr/include/libxml2", "libxslt": "/usr/include/libxslt"}[project]
         commit = None
         src_hash = None
         prefix_inc = src
