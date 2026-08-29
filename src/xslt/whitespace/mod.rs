@@ -64,8 +64,11 @@ pub unsafe fn xsltAddStripSpace(
         (*entry).next = (*style).stripSpaces as *mut _xsltStripSpace;
         (*style).stripSpaces = entry as *mut c_void;
     } else {
-        (*entry).next = (*style).preserveSpaces as *mut _xsltStripSpace;
-        (*style).preserveSpaces = entry as *mut c_void;
+        // UPSTREAM-PARITY: upstream has no preserveSpaces field (only a
+        // stripSpaces hash + stripAll); the candidate's preserve-list head
+        // lives in the unused nsDefs void* slot (documented divergence).
+        (*entry).next = (*style).nsDefs as *mut _xsltStripSpace;
+        (*style).nsDefs = entry as *mut c_void;
     }
     0
 }
@@ -101,8 +104,8 @@ pub unsafe fn xsltFreeStripSpaces(style: *mut _xsltStylesheet) {
         xsltFreeStripSpaceEntry(cur);
         cur = next;
     }
-    let mut cur = (*style).preserveSpaces as *mut _xsltStripSpace;
-    (*style).preserveSpaces = ptr::null_mut();
+    let mut cur = (*style).nsDefs as *mut _xsltStripSpace;
+    (*style).nsDefs = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
         xsltFreeStripSpaceEntry(cur);
@@ -155,9 +158,9 @@ pub unsafe fn xsltShouldStripSpace(style: *mut _xsltStylesheet, name: *const xml
     if strip_depth < 0 {
         return 0;
     }
-    // Find the best matching preserve rule.
+    // Find the best matching preserve rule (list head in nsDefs).
     let mut preserve_depth = -1;
-    let mut cur = (*style).preserveSpaces as *mut _xsltStripSpace;
+    let mut cur = (*style).nsDefs as *mut _xsltStripSpace;
     while !cur.is_null() {
         if name_matches((*cur).name, name) && (*cur).depth > preserve_depth {
             preserve_depth = (*cur).depth;

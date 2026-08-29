@@ -63,7 +63,7 @@ pub unsafe fn xsltPushVariable(
         if new_tab.is_null() {
             return -1;
         }
-        ctx.varsTab = new_tab as *mut c_void;
+        ctx.varsTab = new_tab;
         ctx.varsMax = new_max;
     }
     // Chain the new variable onto the existing stack head.
@@ -218,10 +218,8 @@ pub unsafe fn xsltFreeStackElem(var: *mut _xsltStackElem) {
         return;
     }
     let v = &mut *var;
-    if !v.comp.is_null() {
-        xmlXPathFreeObject(v.comp);
-        v.comp = ptr::null_mut();
-    }
+    // UPSTREAM-PARITY: comp is xsltStylePreComp (opaque); the candidate does
+    // not allocate it, so nothing to free here.
     if !v.value.is_null() {
         xmlXPathFreeObject(v.value);
         v.value = ptr::null_mut();
@@ -301,16 +299,20 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
     if style.is_null() {
         return;
     }
-    // First, register caller-provided parameters (they take precedence).
-    let mut param = (*style).params as *mut _xsltStackElem;
+    // First, register caller-provided parameters. UPSTREAM-PARITY: global
+    // params and variables both live in the stylesheet's `variables` list
+    // (params are marked by the XSLT_VAR_PARAM flag).
+    let mut param = (*style).variables;
     while !param.is_null() {
-        register_global_value(ctxt, param, false);
+        if ((*param).flags & XSLT_VAR_PARAM) != 0 {
+            register_global_value(ctxt, param, false);
+        }
         param = (*param).next;
     }
     // Then evaluate stylesheet-defined global variables/params, skipping
     // names already bound by the caller (upstream xsltEvalGlobalVariables
     // consults ctxt->globalVars).
-    let mut var = (*style).variables as *mut _xsltStackElem;
+    let mut var = (*style).variables;
     while !var.is_null() {
         register_global_value(ctxt, var, true);
         var = (*var).next;
@@ -378,11 +380,11 @@ unsafe fn register_global_value(
         }
         // Save and set the context to the document node.
         let saved_node = (*xpath_ctxt).node;
-        (*xpath_ctxt).node = (*ctxt).document as *mut _xmlNode;
+        (*xpath_ctxt).node = (*(*ctxt).document).doc as *mut _xmlNode;
         let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
         if !internal.is_null() {
-            (*internal).context_node = (*ctxt).document as *mut _xmlNode;
-            (*internal).document = (*ctxt).document;
+            (*internal).context_node = (*(*ctxt).document).doc as *mut _xmlNode;
+            (*internal).document = (*(*ctxt).document).doc;
         }
         let obj = crate::abi::exports_xml2::xmlXPathEvalExpression((*var).select, xpath_ctxt);
         (*xpath_ctxt).node = saved_node;
@@ -489,119 +491,33 @@ mod tests {
 
     fn make_stack_elem(name: &[u8]) -> *mut _xsltStackElem {
         unsafe {
-            let v = xmlMalloc(core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
+            // Zeroed stack element; the name is heap-copied with
+            // XSLT_VAR_INTERNAL so xsltFreeStackElem frees it.
+            let v = libc::calloc(1, core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
             if v.is_null() {
                 return ptr::null_mut();
             }
-            core::ptr::write(v, {
-                let cname = libc::malloc(name.len() + 1) as *mut xmlChar;
-                if !cname.is_null() {
-                    libc::memcpy(
-                        cname as *mut libc::c_void,
-                        name.as_ptr() as *const libc::c_void,
-                        name.len(),
-                    );
-                    *cname.add(name.len()) = 0;
-                }
-                _xsltStackElem {
-                    next: ptr::null_mut(),
-                    style: ptr::null_mut(),
-                    inst: ptr::null_mut(),
-                    name: cname,
-                    nameURI: ptr::null(),
-                    select: ptr::null(),
-                    comp: ptr::null_mut(),
-                    tree: ptr::null_mut(),
-                    value: ptr::null_mut(),
-                    flags: XSLT_VAR_INTERNAL,
-                    level: 0,
-                    compCtxt: 0,
-                }
-            });
+            let cname = libc::malloc(name.len() + 1) as *mut xmlChar;
+            if !cname.is_null() {
+                libc::memcpy(
+                    cname as *mut libc::c_void,
+                    name.as_ptr() as *const libc::c_void,
+                    name.len(),
+                );
+                *cname.add(name.len()) = 0;
+                (*v).name = cname;
+                (*v).flags = XSLT_VAR_INTERNAL;
+            }
             v
         }
     }
 
     fn make_ctxt() -> *mut _xsltTransformContext {
         unsafe {
-            let c = xmlMalloc(core::mem::size_of::<_xsltTransformContext>())
-                as *mut _xsltTransformContext;
-            if c.is_null() {
-                return ptr::null_mut();
-            }
-            core::ptr::write(
-                c,
-                _xsltTransformContext {
-                    style: ptr::null_mut(),
-                    templ: ptr::null_mut(),
-                    document: ptr::null_mut(),
-                    node: ptr::null_mut(),
-                    nodeList: ptr::null_mut(),
-                    contextSize: 0,
-                    proximityPosition: 0,
-                    xpathCtxt: ptr::null_mut(),
-                    xpathReturn: ptr::null_mut(),
-                    xpathReturnNr: 0,
-                    xpathReturnMax: 0,
-                    xpathReturnTab: ptr::null_mut(),
-                    templNr: 0,
-                    templMax: 0,
-                    templTab: ptr::null_mut(),
-                    depth: 0,
-                    maxDepth: 0,
-                    varsNr: 0,
-                    varsMax: 0,
-                    varsBase: 0,
-                    varsTab: ptr::null_mut(),
-                    paramsNr: 0,
-                    paramsMax: 0,
-                    paramsBase: 0,
-                    paramsTab: ptr::null_mut(),
-                    keyTables: ptr::null_mut(),
-                    hasSort: 0,
-                    output: ptr::null_mut(),
-                    errFunc: ptr::null_mut(),
-                    errCtxt: ptr::null_mut(),
-                    extInfos: ptr::null_mut(),
-                    extrasNr: 0,
-                    extrasMax: 0,
-                    extrasTab: ptr::null_mut(),
-                    state: 0,
-                    priority: 0,
-                    parserCtxt: ptr::null_mut(),
-                    save: 0,
-                    opts: 0,
-                    secPrefs: ptr::null_mut(),
-                    docCache: ptr::null_mut(),
-                    globalVars: ptr::null_mut(),
-                    profile: ptr::null_mut(),
-                    prof: 0,
-                    extFunctionsNr: 0,
-                    extFunctionsMax: 0,
-                    extFunctionsTab: ptr::null_mut(),
-                    userData: ptr::null_mut(),
-                    frame: 0,
-                    frameNr: 0,
-                    frameMax: 0,
-                    frameTab: ptr::null_mut(),
-                    insert: ptr::null_mut(),
-                    resultDoc: ptr::null_mut(),
-                    nsNr: 0,
-                    nsMax: 0,
-                    nsTab: ptr::null_mut(),
-                    nsNrOriginal: 0,
-                    nsMaxOriginal: 0,
-                    nsTabOriginal: ptr::null_mut(),
-                    currentTemplate: ptr::null_mut(),
-                    templHash: ptr::null_mut(),
-                    varsNrOriginal: 0,
-                    varsMaxOriginal: 0,
-                    varsTabOriginal: ptr::null_mut(),
-                    insertDepth: 0,
-                    maxInsertDepth: 0,
-                },
-            );
-            c
+            // Zeroed context: every field NULL/0, matching calloc in
+            // xsltNewTransformContext.
+            libc::calloc(1, core::mem::size_of::<_xsltTransformContext>())
+                as *mut _xsltTransformContext
         }
     }
 

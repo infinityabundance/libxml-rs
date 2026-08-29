@@ -73,26 +73,15 @@ pub unsafe extern "C" fn xsltAddTemplate(
     // Mark the owning stylesheet.
     (*templ).style = style;
 
-    // Determine which flags to set based on the template's populated fields.
-    let mut flags: c_int = 0;
-    if !(*templ).r#match.is_null() {
-        flags |= XSLT_TEMPLATE_HAS_MATCH;
-    }
-    if !(*templ).name.is_null() {
-        flags |= XSLT_TEMPLATE_HAS_NAME;
-    }
-    if !(*templ).mode.is_null() {
-        flags |= XSLT_TEMPLATE_HAS_MODE;
-    }
-    // Preserve any flags already set (e.g. XSLT_TEMPLATE_HAS_PRIORITY may
-    // have been set by the compiler when an explicit priority was given).
-    flags |= (*templ).flags & XSLT_TEMPLATE_HAS_PRIORITY;
-    (*templ).flags = flags;
+    // UPSTREAM-PARITY: xsltTemplate has no flags field. The candidate's
+    // markers are derived: HAS_MATCH = compiled pattern in params, HAS_NAME
+    // = name non-null, HAS_MODE = mode non-null, HAS_PRIORITY = priority
+    // != XSLT_PAT_NO_PRIORITY.
 
     // Insert into the linked list in priority order (highest first).
-    // Ties are broken by import depth: deeper (higher depth) wins.
-    let priority = (*templ).priority;
-    let depth = (*templ).depth;
+    // Ties are broken by import depth (stored in `position`; deeper wins).
+    let priority = (*templ).priority as f64;
+    let depth = (*templ).position;
 
     // Find the insertion point: walk the list until we find a template
     // whose priority is lower (or equal but with smaller depth).
@@ -100,8 +89,8 @@ pub unsafe extern "C" fn xsltAddTemplate(
     let mut cur: *mut _xsltTemplate = (*style).templates;
 
     while !cur.is_null() {
-        let cur_priority = (*cur).priority;
-        let cur_depth = (*cur).depth;
+        let cur_priority = (*cur).priority as f64;
+        let cur_depth = (*cur).position;
 
         // We want descending priority order. If the new template has
         // strictly higher priority, insert before `cur`.
@@ -157,30 +146,40 @@ pub unsafe extern "C" fn xsltFreeTemplate(templ: *mut _xsltTemplate) {
     // structs. We free the array itself but not the individual namespace
     // declarations (they are owned by the document or stylesheet).
     if !(*templ).inheritedNs.is_null() {
-        xmlFree((*templ).inheritedNs);
+        xmlFree((*templ).inheritedNs as *mut c_void);
         (*templ).inheritedNs = ptr::null_mut();
         (*templ).inheritedNsNr = 0;
     }
 
-    // Free the compiled match pattern.
-    // The match field stores a `*mut _xsltPattern` cast to `*mut _xmlNode`.
-    // We cast it back and delegate to xsltFreePattern, which handles
-    // the internal Rust allocations (Vec, String) and the outer allocation.
-    if !(*templ).r#match.is_null() {
-        let pattern_ptr = (*templ).r#match as *mut _xsltPattern;
+    // Free the compiled match pattern (carried in `params`; the `match`
+    // string itself is freed below).
+    if !(*templ).params.is_null() {
+        let pattern_ptr = (*templ).params as *mut _xsltPattern;
         xsltFreePattern(pattern_ptr);
+        (*templ).params = ptr::null_mut();
+    }
+    // Free the match string (compiler copy).
+    if !(*templ).r#match.is_null() {
+        libc::free((*templ).r#match as *mut libc::c_void);
         (*templ).r#match = ptr::null_mut();
     }
-
     // Free the name/mode strings (heap copies made by the compiler via
     // xmlGetProp). These are NOT borrowed from the stylesheet document.
     if !(*templ).name.is_null() {
         libc::free((*templ).name as *mut libc::c_void);
         (*templ).name = ptr::null_mut();
     }
+    if !(*templ).nameURI.is_null() {
+        libc::free((*templ).nameURI as *mut libc::c_void);
+        (*templ).nameURI = ptr::null_mut();
+    }
     if !(*templ).mode.is_null() {
         libc::free((*templ).mode as *mut libc::c_void);
         (*templ).mode = ptr::null_mut();
+    }
+    if !(*templ).modeURI.is_null() {
+        libc::free((*templ).modeURI as *mut libc::c_void);
+        (*templ).modeURI = ptr::null_mut();
     }
 
     // The template content (instruction tree) is NOT freed here: it is
@@ -193,7 +192,6 @@ pub unsafe extern "C" fn xsltFreeTemplate(templ: *mut _xsltTemplate) {
     // deterministically rather than silently corrupting.
     (*templ).next = ptr::null_mut();
     (*templ).style = ptr::null_mut();
-    (*templ).flags = 0;
 
     // Free the template struct itself.
     xmlFree(templ as *mut c_void);
@@ -224,15 +222,6 @@ pub unsafe extern "C" fn xsltFreeTemplates(style: *mut _xsltStylesheet) {
         templ = next;
     }
     (*style).templates = ptr::null_mut();
-
-    // Free any templates on the free list.
-    let mut free_templ: *mut _xsltTemplate = (*style).templatesFree;
-    while !free_templ.is_null() {
-        let next: *mut _xsltTemplate = (*free_templ).next;
-        xsltFreeTemplate(free_templ);
-        free_templ = next;
-    }
-    (*style).templatesFree = ptr::null_mut();
 }
 
 // ── Template matching (XSLT 1.0 §5.2) ────────────────────────────────────
@@ -276,15 +265,15 @@ pub unsafe extern "C" fn xsltFindTemplate(
 
     let mut templ: *mut _xsltTemplate = (*style).templates;
     while !templ.is_null() {
-        // Only consider templates with a match pattern.
-        if (*templ).flags & XSLT_TEMPLATE_HAS_MATCH == 0 {
+        // Only consider templates with a compiled match pattern (params).
+        if (*templ).params.is_null() {
             templ = (*templ).next;
             continue;
         }
 
         // ── Mode compatibility ──────────────────────────────────────────
         // XSLT 1.0 §5.2: template mode matching.
-        let templ_has_mode = (*templ).flags & XSLT_TEMPLATE_HAS_MODE != 0;
+        let templ_has_mode = !(*templ).mode.is_null();
         if templ_has_mode {
             // Template has an explicit mode: it must match the requested
             // mode. If no mode was requested, skip.
@@ -306,9 +295,9 @@ pub unsafe extern "C" fn xsltFindTemplate(
         }
 
         // ── Pattern matching ────────────────────────────────────────────
-        // The match field stores a compiled `_xsltPattern` pointer cast to
-        // `*mut _xmlNode`. Cast it back and test against the source node.
-        let pattern_ptr = (*templ).r#match as *mut _xsltPattern;
+        // The compiled pattern is carried in `params` (candidate-internal;
+        // upstream carries the match string in `match`).
+        let pattern_ptr = (*templ).params as *mut _xsltPattern;
         if pattern_ptr.is_null() {
             templ = (*templ).next;
             continue;
@@ -329,15 +318,16 @@ pub unsafe extern "C" fn xsltFindTemplate(
         // Determine the effective priority. If the template has an
         // explicit priority attribute, use it; otherwise compute the
         // default priority from the compiled pattern.
-        let effective_priority: f64 = if (*templ).flags & XSLT_TEMPLATE_HAS_PRIORITY != 0 {
-            (*templ).priority
-        } else {
-            xsltDefaultPriorityFromNode((*templ).r#match)
-        };
+        let effective_priority: f64 =
+            if (*templ).priority as f64 != crate::xslt::patterns::XSLT_PAT_NO_PRIORITY {
+                (*templ).priority as f64
+            } else {
+                xsltDefaultPriorityFromNode((*templ).params as *mut _xmlNode)
+            };
 
         // Higher priority wins; ties broken by higher import depth
-        // (later import = higher precedence).
-        let templ_depth = (*templ).depth;
+        // (stored in `position`; later import = higher precedence).
+        let templ_depth = (*templ).position;
         if best.is_null()
             || effective_priority > best_priority
             || ((effective_priority - best_priority).abs() < f64::EPSILON
@@ -380,7 +370,7 @@ pub unsafe extern "C" fn xsltLookupTemplate(
     // Search this stylesheet's template list.
     let mut templ: *mut _xsltTemplate = (*style).templates;
     while !templ.is_null() {
-        if (*templ).flags & XSLT_TEMPLATE_HAS_NAME != 0 {
+        if !(*templ).name.is_null() {
             if xml_strcmp((*templ).name, name) == 0 {
                 return templ;
             }

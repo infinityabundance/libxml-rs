@@ -801,11 +801,11 @@ pub unsafe fn free_element(elem: *mut _xmlElement) {
             free_content_model((*elem).content);
         }
 
-        // Free the compiled content-model regexp (xmlValidBuildContentModel)
+        // Free the compiled content-model NFA (xmlValidBuildContentModel)
         // UPSTREAM-PARITY: xmlFreeElement releases contModel via xmlRegFreeRegexp.
         if !(*elem).cont_model.is_null() {
-            crate::xml::regex::xmlRegFreeRegexp(
-                (*elem).cont_model as *mut crate::xml::regex::XmlRegexp,
+            crate::xml::validation::free_content_model_nfa(
+                (*elem).cont_model as *mut crate::xml::validation::ContentModelNfa,
             );
         }
 

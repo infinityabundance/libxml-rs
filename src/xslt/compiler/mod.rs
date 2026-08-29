@@ -71,7 +71,6 @@ pub unsafe fn compile(style: *mut _xsltStylesheet, doc: *mut _xmlDoc) -> c_int {
             if ns == XSLT_NAMESPACE && (name == "stylesheet" || name == "transform") =>
         {
             // Normal stylesheet.
-            (*style).name = doc_URL(doc);
             compile_top_level(style, root, 0);
         }
         _ => {
@@ -521,16 +520,23 @@ unsafe fn compile_simplified(style: *mut _xsltStylesheet, root: *mut _xmlNode) {
         return;
     }
     (*templ).style = style;
-    (*templ).depth = 0;
-    (*templ).priority = 0.5; // match="/" has implicit priority 0.5
+    (*templ).priority = 0.5; // match="/" has implicit priority 0.5 (f32)
     (*templ).content = root;
     // Compile the "/" pattern so the template matches the document node.
+    // UPSTREAM-PARITY: templ->match holds the match STRING; the compiled
+    // pattern is carried in templ->params (void*, unused upstream for the
+    // candidate's internal pattern pointer — documented safe divergence).
+    // The match string is heap-copied: xsltFreeTemplate owns r#match.
+    (*templ).r#match = libc::malloc(2) as *mut xmlChar;
+    if (*templ).r#match.is_null() {
+        libc::free(templ as *mut libc::c_void);
+        return;
+    }
+    *(*templ).r#match = b'/';
+    *(*templ).r#match.add(1) = 0;
     let compiled =
         crate::xslt::patterns::xsltCompilePattern(b"/\0".as_ptr() as *const xmlChar, (*style).doc);
-    (*templ).r#match = compiled as *mut _xmlNode;
-    if !compiled.is_null() {
-        (*templ).flags |= 1; // HAS_MATCH
-    }
+    (*templ).params = compiled as *mut c_void;
     // The root element becomes the template content.
     add_template_to_style(style, templ);
 }
@@ -561,23 +567,18 @@ unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, dep
         return;
     }
     (*templ).style = style;
-    (*templ).depth = depth;
     (*templ).content = (*inst).children;
 
     // match attribute.
     let match_str = get_prop(inst, b"match\0".as_ptr() as *const xmlChar);
     if !match_str.is_null() {
-        // Compile the match pattern; the compiled pattern is stored in
-        // the template's `match` field (as an opaque pointer), matching
-        // upstream where xsltTemplate.match holds the compiled pattern.
+        // UPSTREAM-PARITY: templ->match holds the match STRING; the compiled
+        // pattern is carried in templ->params (candidate-internal pointer).
         let compiled = crate::xslt::patterns::xsltCompilePattern(match_str, (*style).doc);
-        if !compiled.is_null() {
-            (*templ).r#match = compiled as *mut _xmlNode;
-            (*templ).flags |= 1; // HAS_MATCH
-        }
+        (*templ).r#match = match_str; // ownership of the string transfers
+        (*templ).params = compiled as *mut c_void;
         // Compute the default priority from the pattern string.
-        (*templ).priority = crate::xslt::patterns::xsltDefaultPriority(match_str);
-        libc::free(match_str as *mut libc::c_void);
+        (*templ).priority = crate::xslt::patterns::xsltDefaultPriority(match_str) as f32;
     } else {
         (*templ).priority = 0.0;
     }
@@ -586,14 +587,12 @@ unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, dep
     let name_str = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
     if !name_str.is_null() {
         (*templ).name = name_str;
-        (*templ).flags |= 2; // HAS_NAME
     }
 
     // mode attribute.
     let mode_str = get_prop(inst, b"mode\0".as_ptr() as *const xmlChar);
     if !mode_str.is_null() {
         (*templ).mode = mode_str;
-        (*templ).flags |= 4; // HAS_MODE
     }
 
     // priority attribute.
@@ -601,8 +600,7 @@ unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, dep
     if !priority_str.is_null() {
         let p = crate::abi::exports_xml2::xmlXPathCastStringToNumber(priority_str);
         if !p.is_nan() {
-            (*templ).priority = p;
-            (*templ).flags |= 8; // HAS_PRIORITY
+            (*templ).priority = p as f32;
         }
         libc::free(priority_str as *mut libc::c_void);
     }
@@ -625,8 +623,8 @@ unsafe fn compile_variable(
     if var.is_null() {
         return;
     }
-    (*var).style = style;
-    (*var).inst = inst;
+    // UPSTREAM-PARITY: xsltStackElem has no style/inst/depth fields; the
+    // scope level lives in `level`, the PARAM marker in `flags`.
     (*var).level = depth;
     (*var).flags = if is_param != 0 { 2 } else { 0 }; // PARAM flag
 
@@ -641,9 +639,10 @@ unsafe fn compile_variable(
     // Content (inline value template).
     (*var).tree = (*inst).children;
 
-    // Add to the stylesheet's variable list (hash chain via `variables`).
-    (*var).next = (*style).variables as *mut _xsltStackElem;
-    (*style).variables = var as *mut c_void;
+    // Add to the stylesheet's variable list (upstream: `variables` is the
+    // xsltStackElem list head).
+    (*var).next = (*style).variables;
+    (*style).variables = var;
 }
 
 /// Compile an `xsl:key` element.
@@ -674,14 +673,12 @@ unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c
         libc::free(use_str as *mut libc::c_void);
         return;
     }
-    (*def).style = style;
     (*def).inst = inst;
     (*def).name = name;
     (*def).r#match = match_str;
     (*def).r#use = use_str;
-    (*def).depth = depth;
-    (*def).next = (*style).keys;
-    (*style).keys = def;
+    (*def).next = (*style).keys as *mut _xsltKeyDef;
+    (*style).keys = def as *mut c_void;
 }
 
 /// Compile an `xsl:decimal-format` element.
@@ -713,8 +710,8 @@ unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *mut _xmlNod
     set_fmt_char(fmt, b"pattern-separator\0", b";\0", 9);
 
     // Prepend to the stylesheet's decimal format chain.
-    (*fmt).next = (*style).decimalFormat as *mut _xsltDecimalFormat;
-    (*style).decimalFormat = fmt as *mut c_void;
+    (*fmt).next = (*style).decimalFormat;
+    (*style).decimalFormat = fmt;
 }
 
 /// Set a decimal format character from the instruction attributes or default.
@@ -740,12 +737,12 @@ unsafe fn set_fmt_char(
     };
     match field {
         0 => (*fmt).decimalPoint = chosen,
-        1 => (*fmt).groupingSeparator = chosen,
+        1 => (*fmt).grouping = chosen,
         2 => (*fmt).infinity = chosen,
         3 => (*fmt).minusSign = chosen,
-        4 => (*fmt).NaN = chosen,
+        4 => (*fmt).noNumber = chosen,
         5 => (*fmt).percent = chosen,
-        6 => (*fmt).perMille = chosen,
+        6 => (*fmt).permille = chosen,
         7 => (*fmt).zeroDigit = chosen,
         8 => (*fmt).digit = chosen,
         _ => (*fmt).patternSeparator = chosen,
@@ -904,9 +901,11 @@ unsafe fn compile_space_rules(
             (*entry).next = (*style).stripSpaces as *mut crate::xslt::whitespace::_xsltStripSpace;
             (*style).stripSpaces = entry as *mut c_void;
         } else {
-            (*entry).next =
-                (*style).preserveSpaces as *mut crate::xslt::whitespace::_xsltStripSpace;
-            (*style).preserveSpaces = entry as *mut c_void;
+            // UPSTREAM-PARITY: upstream keeps only a stripSpaces hash + a
+            // stripAll flag; the candidate's preserve-list head is carried in
+            // the unused nsDefs void* slot (documented divergence).
+            (*entry).next = (*style).nsDefs as *mut crate::xslt::whitespace::_xsltStripSpace;
+            (*style).nsDefs = entry as *mut c_void;
         }
     }
     libc::free(elements as *mut libc::c_void);
@@ -1008,14 +1007,14 @@ unsafe fn merge_strip_spaces(src: *mut _xsltStylesheet, dst: *mut _xsltStyleshee
         cur = next;
     }
     (*src).stripSpaces = ptr::null_mut();
-    let mut cur = (*src).preserveSpaces as *mut crate::xslt::whitespace::_xsltStripSpace;
+    let mut cur = (*src).nsDefs as *mut crate::xslt::whitespace::_xsltStripSpace;
     while !cur.is_null() {
         let next = (*cur).next;
-        (*cur).next = (*dst).preserveSpaces as *mut crate::xslt::whitespace::_xsltStripSpace;
-        (*dst).preserveSpaces = cur as *mut c_void;
+        (*cur).next = (*dst).nsDefs as *mut crate::xslt::whitespace::_xsltStripSpace;
+        (*dst).nsDefs = cur as *mut c_void;
         cur = next;
     }
-    (*src).preserveSpaces = ptr::null_mut();
+    (*src).nsDefs = ptr::null_mut();
 }
 
 #[cfg(test)]

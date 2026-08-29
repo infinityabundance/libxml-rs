@@ -54,8 +54,11 @@ pub(crate) unsafe fn xsltRegisterRVT(ctxt: *mut _xsltTransformContext, doc: *mut
     }
     (*entry).uri = ptr::null_mut();
     (*entry).doc = doc;
-    (*entry).next = (*ctxt).docCache as *mut _xsltDocCacheEntry;
-    (*ctxt).docCache = entry as *mut c_void;
+    // UPSTREAM-PARITY: the candidate's RVT/cached-doc list head lives in the
+    // `cache` slot (xsltTransformCachePtr upstream; unused by the candidate
+    // for that purpose — documented divergence).
+    (*entry).next = (*ctxt).cache as *mut _xsltDocCacheEntry;
+    (*ctxt).cache = entry as *mut c_void;
 }
 
 /// Default XSLT loader function (file loading).
@@ -143,9 +146,15 @@ pub unsafe fn xsltLoadDocument(
         return cached;
     }
     // Resolve the URI against the source document's base.
-    let base = if !(*ctxt).document.is_null() && !(*(*ctxt).document).URL.is_null() {
-        let len = libc::strlen((*(*ctxt).document).URL as *const libc::c_char) as usize;
-        Some(core::slice::from_raw_parts((*(*ctxt).document).URL, len))
+    let base = if !(*ctxt).document.is_null()
+        && !(*(*ctxt).document).doc.is_null()
+        && !(*(*(*ctxt).document).doc).URL.is_null()
+    {
+        let len = libc::strlen((*(*(*ctxt).document).doc).URL as *const libc::c_char) as usize;
+        Some(core::slice::from_raw_parts(
+            (*(*(*ctxt).document).doc).URL,
+            len,
+        ))
     } else {
         None
     };
@@ -207,7 +216,7 @@ unsafe fn cache_lookup(
     ctxt: *mut _xsltTransformContext,
     uri: *const xmlChar,
 ) -> Option<*mut _xmlDoc> {
-    let mut cur = (*ctxt).docCache as *mut _xsltDocCacheEntry;
+    let mut cur = (*ctxt).cache as *mut _xsltDocCacheEntry;
     while !cur.is_null() {
         if !(*cur).uri.is_null()
             && libc::strcmp(
@@ -243,8 +252,8 @@ unsafe fn cache_store(ctxt: *mut _xsltTransformContext, uri: *const xmlChar, doc
     *copy.add(len) = 0;
     (*entry).uri = copy;
     (*entry).doc = doc;
-    (*entry).next = (*ctxt).docCache as *mut _xsltDocCacheEntry;
-    (*ctxt).docCache = entry as *mut c_void;
+    (*entry).next = (*ctxt).cache as *mut _xsltDocCacheEntry;
+    (*ctxt).cache = entry as *mut c_void;
 }
 
 /// Free the document cache of a transform context.
@@ -256,8 +265,8 @@ pub unsafe fn xsltFreeDocCache(ctxt: *mut _xsltTransformContext) {
     if ctxt.is_null() {
         return;
     }
-    let mut cur = (*ctxt).docCache as *mut _xsltDocCacheEntry;
-    (*ctxt).docCache = ptr::null_mut();
+    let mut cur = (*ctxt).cache as *mut _xsltDocCacheEntry;
+    (*ctxt).cache = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
         if !(*cur).uri.is_null() {

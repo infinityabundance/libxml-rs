@@ -1224,6 +1224,43 @@
     }
    ],
    "lesson": "The C-header ABI court is blind to the Rust implementation representation. A permanent three-way court (upstream C header ↔ candidate C header ↔ Rust repr(C)) is now required so this class of defect is caught by construction."
+  },
+  {
+   "id": "R-000140",
+   "status": "FIXED",
+   "phase": "11.1-I",
+   "title": "Eight libxslt Rust #[repr(C)] mirrors diverged from the oracle ABI (121 mismatches)",
+   "surface": "Rust #[repr(C)] mirrors of _xsltStylesheet, _xsltTransformContext, _xsltTemplate, _xsltStackElem, _xsltKeyDef, _xsltKeyTable, _xsltDocument, _xsltDecimalFormat",
+   "component": [
+    "src/abi/structs.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/templates/mod.rs",
+    "src/xslt/stylesheet/mod.rs",
+    "src/xslt/variables/mod.rs",
+    "src/xslt/parameters/mod.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/extensions/mod.rs",
+    "src/xslt/errors/mod.rs",
+    "src/xslt/transform/mod.rs",
+    "src/xslt/sorting/mod.rs",
+    "src/xslt/documents/mod.rs"
+   ],
+   "discovery_date": "2026-08-29",
+   "root_cause": "The candidate's libxslt Rust mirrors were authored against an invented layout rather than the upstream C headers. The RUST-MIRROR-ABI court (first run, commit ef00daf) measured 121 mismatches across eight structs: _xsltStylesheet (280 vs 440 bytes), _xsltTransformContext, _xsltTemplate (missing the match field entirely in the mirror's field order), _xsltStackElem (invented style/inst fields; real comp/computed/level/context fields absent), _xsltKeyDef (missing match/use), _xsltKeyTable (invented table/nb/max/depth array fields; real struct is next/name/nameURI/keys), _xsltDocument and _xsltDecimalFormat. A C consumer traversing these fields directly would read the wrong offsets. This is the same defect class as _xmlElement (R-000139), now caught for the whole libxslt family by the permanent three-way mirror court.",
+   "fix": "Rewrote all eight mirrors from the authoritative clang -fdump-record-layouts-complete field lists of the candidate C headers (verbatim 1.1.42) and remapped every downstream accessor: transform context (sec/error/errctx, extFunctions/extElements, output, maxTemplateDepth/maxTemplateVars, varsTab stack, initialContextNode/initialContextDoc, no paramsTab/keyTables/contextSize fields — those live on xpathCtxt or the document wrapper), template (match string in r#match, compiled pattern carried in params, import depth in position), stylesheet (no params field; caller params merge into variables with XSLT_VAR_PARAM; preserve-space head in nsDefs; XSLT_REFACTORED-gated compCtxt/principalData omitted because the oracle DSO ships with XSLT_REFACTORED disabled), key tables (candidate array storage moved behind the keys void* slot as a private sidecar), stack elements (no style field), decimal formats (nsUri is const), plus document wrapper (main/doc/keys/includes/preproc/nbKeysComputed) and the whole xslt module compile+test pass. Committed with the mirror PASS receipt.",
+   "evidence": [
+    "courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json",
+    "src/abi/structs.rs"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-29",
+     "event": "discovered by first RUST-MIRROR-ABI court run (commit ef00daf): 121 mismatches, all in the eight libxslt mirrors; fixed and sealed with a PASS receipt",
+     "status": "FIXED"
+    }
+   ],
+   "lesson": "Every repr(C) mirror must be generated or verified against the clang record-layout dump of the actual oracle-era headers, not authored by hand from memory. Conditional fields (e.g. XSLT_REFACTORED) must be resolved against the oracle's real configuration: the system libxslt 1.1.45 has XSLT_REFACTORED disabled, so including those fields breaks offsets. The mirror court parser must also accept raw identifiers (r#match, r#use) or it silently drops fields."
   }
  ]
 }

@@ -2686,13 +2686,7 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltDecimalFormat>();
     let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
-    println!("FIELD _xsltDecimalFormat.decimalPoint offsetof={} size={}", offset_of!(_xsltDecimalFormat, decimalPoint), size_of_val(&(*p).decimalPoint));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltDecimalFormat>();
-    let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
-    println!("FIELD _xsltDecimalFormat.groupingSeparator offsetof={} size={}", offset_of!(_xsltDecimalFormat, groupingSeparator), size_of_val(&(*p).groupingSeparator));
+    println!("FIELD _xsltDecimalFormat.minusSign offsetof={} size={}", offset_of!(_xsltDecimalFormat, minusSign), size_of_val(&(*p).minusSign));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2704,13 +2698,19 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltDecimalFormat>();
     let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
-    println!("FIELD _xsltDecimalFormat.minusSign offsetof={} size={}", offset_of!(_xsltDecimalFormat, minusSign), size_of_val(&(*p).minusSign));
+    println!("FIELD _xsltDecimalFormat.noNumber offsetof={} size={}", offset_of!(_xsltDecimalFormat, noNumber), size_of_val(&(*p).noNumber));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltDecimalFormat>();
     let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
-    println!("FIELD _xsltDecimalFormat.NaN offsetof={} size={}", offset_of!(_xsltDecimalFormat, NaN), size_of_val(&(*p).NaN));
+    println!("FIELD _xsltDecimalFormat.decimalPoint offsetof={} size={}", offset_of!(_xsltDecimalFormat, decimalPoint), size_of_val(&(*p).decimalPoint));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltDecimalFormat>();
+    let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
+    println!("FIELD _xsltDecimalFormat.grouping offsetof={} size={}", offset_of!(_xsltDecimalFormat, grouping), size_of_val(&(*p).grouping));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2722,13 +2722,19 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltDecimalFormat>();
     let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
-    println!("FIELD _xsltDecimalFormat.perMille offsetof={} size={}", offset_of!(_xsltDecimalFormat, perMille), size_of_val(&(*p).perMille));
+    println!("FIELD _xsltDecimalFormat.permille offsetof={} size={}", offset_of!(_xsltDecimalFormat, permille), size_of_val(&(*p).permille));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltDecimalFormat>();
     let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
     println!("FIELD _xsltDecimalFormat.zeroDigit offsetof={} size={}", offset_of!(_xsltDecimalFormat, zeroDigit), size_of_val(&(*p).zeroDigit));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltDecimalFormat>();
+    let p = alloc_zeroed(layout) as *mut _xsltDecimalFormat;
+    println!("FIELD _xsltDecimalFormat.nsUri offsetof={} size={}", offset_of!(_xsltDecimalFormat, nsUri), size_of_val(&(*p).nsUri));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltDocument sizeof={} alignof={}", size_of::<_xsltDocument>(), align_of::<_xsltDocument>());
@@ -2741,7 +2747,7 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltDocument>();
     let p = alloc_zeroed(layout) as *mut _xsltDocument;
-    println!("FIELD _xsltDocument.depth offsetof={} size={}", offset_of!(_xsltDocument, depth), size_of_val(&(*p).depth));
+    println!("FIELD _xsltDocument.main offsetof={} size={}", offset_of!(_xsltDocument, main), size_of_val(&(*p).main));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2753,19 +2759,25 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltDocument>();
     let p = alloc_zeroed(layout) as *mut _xsltDocument;
-    println!("FIELD _xsltDocument.insert offsetof={} size={}", offset_of!(_xsltDocument, insert), size_of_val(&(*p).insert));
+    println!("FIELD _xsltDocument.keys offsetof={} size={}", offset_of!(_xsltDocument, keys), size_of_val(&(*p).keys));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltDocument>();
     let p = alloc_zeroed(layout) as *mut _xsltDocument;
-    println!("FIELD _xsltDocument.style offsetof={} size={}", offset_of!(_xsltDocument, style), size_of_val(&(*p).style));
+    println!("FIELD _xsltDocument.includes offsetof={} size={}", offset_of!(_xsltDocument, includes), size_of_val(&(*p).includes));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltDocument>();
     let p = alloc_zeroed(layout) as *mut _xsltDocument;
-    println!("FIELD _xsltDocument.compCtxt offsetof={} size={}", offset_of!(_xsltDocument, compCtxt), size_of_val(&(*p).compCtxt));
+    println!("FIELD _xsltDocument.preproc offsetof={} size={}", offset_of!(_xsltDocument, preproc), size_of_val(&(*p).preproc));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltDocument>();
+    let p = alloc_zeroed(layout) as *mut _xsltDocument;
+    println!("FIELD _xsltDocument.nbKeysComputed offsetof={} size={}", offset_of!(_xsltDocument, nbKeysComputed), size_of_val(&(*p).nbKeysComputed));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltKeyDef sizeof={} alignof={}", size_of::<_xsltKeyDef>(), align_of::<_xsltKeyDef>());
@@ -2773,12 +2785,6 @@ fn main() {
     let layout = Layout::new::<_xsltKeyDef>();
     let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
     println!("FIELD _xsltKeyDef.next offsetof={} size={}", offset_of!(_xsltKeyDef, next), size_of_val(&(*p).next));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltKeyDef>();
-    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
-    println!("FIELD _xsltKeyDef.style offsetof={} size={}", offset_of!(_xsltKeyDef, style), size_of_val(&(*p).style));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2796,7 +2802,43 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltKeyDef>();
     let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
-    println!("FIELD _xsltKeyDef.depth offsetof={} size={}", offset_of!(_xsltKeyDef, depth), size_of_val(&(*p).depth));
+    println!("FIELD _xsltKeyDef.nameURI offsetof={} size={}", offset_of!(_xsltKeyDef, nameURI), size_of_val(&(*p).nameURI));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.r#match offsetof={} size={}", offset_of!(_xsltKeyDef, r#match), size_of_val(&(*p).r#match));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.r#use offsetof={} size={}", offset_of!(_xsltKeyDef, r#use), size_of_val(&(*p).r#use));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.comp offsetof={} size={}", offset_of!(_xsltKeyDef, comp), size_of_val(&(*p).comp));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.usecomp offsetof={} size={}", offset_of!(_xsltKeyDef, usecomp), size_of_val(&(*p).usecomp));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.nsList offsetof={} size={}", offset_of!(_xsltKeyDef, nsList), size_of_val(&(*p).nsList));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyDef>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyDef;
+    println!("FIELD _xsltKeyDef.nsNr offsetof={} size={}", offset_of!(_xsltKeyDef, nsNr), size_of_val(&(*p).nsNr));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltKeyTable sizeof={} alignof={}", size_of::<_xsltKeyTable>(), align_of::<_xsltKeyTable>());
@@ -2809,31 +2851,19 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltKeyTable>();
     let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
-    println!("FIELD _xsltKeyTable.table offsetof={} size={}", offset_of!(_xsltKeyTable, table), size_of_val(&(*p).table));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltKeyTable>();
-    let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
-    println!("FIELD _xsltKeyTable.nb offsetof={} size={}", offset_of!(_xsltKeyTable, nb), size_of_val(&(*p).nb));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltKeyTable>();
-    let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
-    println!("FIELD _xsltKeyTable.max offsetof={} size={}", offset_of!(_xsltKeyTable, max), size_of_val(&(*p).max));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltKeyTable>();
-    let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
     println!("FIELD _xsltKeyTable.name offsetof={} size={}", offset_of!(_xsltKeyTable, name), size_of_val(&(*p).name));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltKeyTable>();
     let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
-    println!("FIELD _xsltKeyTable.depth offsetof={} size={}", offset_of!(_xsltKeyTable, depth), size_of_val(&(*p).depth));
+    println!("FIELD _xsltKeyTable.nameURI offsetof={} size={}", offset_of!(_xsltKeyTable, nameURI), size_of_val(&(*p).nameURI));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltKeyTable>();
+    let p = alloc_zeroed(layout) as *mut _xsltKeyTable;
+    println!("FIELD _xsltKeyTable.keys offsetof={} size={}", offset_of!(_xsltKeyTable, keys), size_of_val(&(*p).keys));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltNsAlias sizeof={} alignof={}", size_of::<_xsltNsAlias>(), align_of::<_xsltNsAlias>());
@@ -2938,13 +2968,13 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStackElem>();
     let p = alloc_zeroed(layout) as *mut _xsltStackElem;
-    println!("FIELD _xsltStackElem.style offsetof={} size={}", offset_of!(_xsltStackElem, style), size_of_val(&(*p).style));
+    println!("FIELD _xsltStackElem.comp offsetof={} size={}", offset_of!(_xsltStackElem, comp), size_of_val(&(*p).comp));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStackElem>();
     let p = alloc_zeroed(layout) as *mut _xsltStackElem;
-    println!("FIELD _xsltStackElem.inst offsetof={} size={}", offset_of!(_xsltStackElem, inst), size_of_val(&(*p).inst));
+    println!("FIELD _xsltStackElem.computed offsetof={} size={}", offset_of!(_xsltStackElem, computed), size_of_val(&(*p).computed));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2968,12 +2998,6 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStackElem>();
     let p = alloc_zeroed(layout) as *mut _xsltStackElem;
-    println!("FIELD _xsltStackElem.comp offsetof={} size={}", offset_of!(_xsltStackElem, comp), size_of_val(&(*p).comp));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStackElem>();
-    let p = alloc_zeroed(layout) as *mut _xsltStackElem;
     println!("FIELD _xsltStackElem.tree offsetof={} size={}", offset_of!(_xsltStackElem, tree), size_of_val(&(*p).tree));
     dealloc(p as *mut u8, layout);
   } }
@@ -2986,7 +3010,7 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStackElem>();
     let p = alloc_zeroed(layout) as *mut _xsltStackElem;
-    println!("FIELD _xsltStackElem.flags offsetof={} size={}", offset_of!(_xsltStackElem, flags), size_of_val(&(*p).flags));
+    println!("FIELD _xsltStackElem.fragment offsetof={} size={}", offset_of!(_xsltStackElem, fragment), size_of_val(&(*p).fragment));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -2998,40 +3022,16 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStackElem>();
     let p = alloc_zeroed(layout) as *mut _xsltStackElem;
-    println!("FIELD _xsltStackElem.compCtxt offsetof={} size={}", offset_of!(_xsltStackElem, compCtxt), size_of_val(&(*p).compCtxt));
+    println!("FIELD _xsltStackElem.context offsetof={} size={}", offset_of!(_xsltStackElem, context), size_of_val(&(*p).context));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStackElem>();
+    let p = alloc_zeroed(layout) as *mut _xsltStackElem;
+    println!("FIELD _xsltStackElem.flags offsetof={} size={}", offset_of!(_xsltStackElem, flags), size_of_val(&(*p).flags));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltStylesheet sizeof={} alignof={}", size_of::<_xsltStylesheet>(), align_of::<_xsltStylesheet>());
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.doc offsetof={} size={}", offset_of!(_xsltStylesheet, doc), size_of_val(&(*p).doc));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.templates offsetof={} size={}", offset_of!(_xsltStylesheet, templates), size_of_val(&(*p).templates));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.templatesFree offsetof={} size={}", offset_of!(_xsltStylesheet, templatesFree), size_of_val(&(*p).templatesFree));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.internalHash offsetof={} size={}", offset_of!(_xsltStylesheet, internalHash), size_of_val(&(*p).internalHash));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.keys offsetof={} size={}", offset_of!(_xsltStylesheet, keys), size_of_val(&(*p).keys));
-    dealloc(p as *mut u8, layout);
-  } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
@@ -3048,6 +3048,132 @@ fn main() {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
     println!("FIELD _xsltStylesheet.imports offsetof={} size={}", offset_of!(_xsltStylesheet, imports), size_of_val(&(*p).imports));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.docList offsetof={} size={}", offset_of!(_xsltStylesheet, docList), size_of_val(&(*p).docList));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.doc offsetof={} size={}", offset_of!(_xsltStylesheet, doc), size_of_val(&(*p).doc));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.stripSpaces offsetof={} size={}", offset_of!(_xsltStylesheet, stripSpaces), size_of_val(&(*p).stripSpaces));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.stripAll offsetof={} size={}", offset_of!(_xsltStylesheet, stripAll), size_of_val(&(*p).stripAll));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.cdataSection offsetof={} size={}", offset_of!(_xsltStylesheet, cdataSection), size_of_val(&(*p).cdataSection));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.variables offsetof={} size={}", offset_of!(_xsltStylesheet, variables), size_of_val(&(*p).variables));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.templates offsetof={} size={}", offset_of!(_xsltStylesheet, templates), size_of_val(&(*p).templates));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.templatesHash offsetof={} size={}", offset_of!(_xsltStylesheet, templatesHash), size_of_val(&(*p).templatesHash));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.rootMatch offsetof={} size={}", offset_of!(_xsltStylesheet, rootMatch), size_of_val(&(*p).rootMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.keyMatch offsetof={} size={}", offset_of!(_xsltStylesheet, keyMatch), size_of_val(&(*p).keyMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.elemMatch offsetof={} size={}", offset_of!(_xsltStylesheet, elemMatch), size_of_val(&(*p).elemMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.attrMatch offsetof={} size={}", offset_of!(_xsltStylesheet, attrMatch), size_of_val(&(*p).attrMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.parentMatch offsetof={} size={}", offset_of!(_xsltStylesheet, parentMatch), size_of_val(&(*p).parentMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.textMatch offsetof={} size={}", offset_of!(_xsltStylesheet, textMatch), size_of_val(&(*p).textMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.piMatch offsetof={} size={}", offset_of!(_xsltStylesheet, piMatch), size_of_val(&(*p).piMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.commentMatch offsetof={} size={}", offset_of!(_xsltStylesheet, commentMatch), size_of_val(&(*p).commentMatch));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.nsAliases offsetof={} size={}", offset_of!(_xsltStylesheet, nsAliases), size_of_val(&(*p).nsAliases));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.attributeSets offsetof={} size={}", offset_of!(_xsltStylesheet, attributeSets), size_of_val(&(*p).attributeSets));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.nsHash offsetof={} size={}", offset_of!(_xsltStylesheet, nsHash), size_of_val(&(*p).nsHash));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.nsDefs offsetof={} size={}", offset_of!(_xsltStylesheet, nsDefs), size_of_val(&(*p).nsDefs));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.keys offsetof={} size={}", offset_of!(_xsltStylesheet, keys), size_of_val(&(*p).keys));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3083,115 +3209,13 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.standalone offsetof={} size={}", offset_of!(_xsltStylesheet, standalone), size_of_val(&(*p).standalone));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.nsList offsetof={} size={}", offset_of!(_xsltStylesheet, nsList), size_of_val(&(*p).nsList));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.nsNr offsetof={} size={}", offset_of!(_xsltStylesheet, nsNr), size_of_val(&(*p).nsNr));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.nsMax offsetof={} size={}", offset_of!(_xsltStylesheet, nsMax), size_of_val(&(*p).nsMax));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
     println!("FIELD _xsltStylesheet.decimalFormat offsetof={} size={}", offset_of!(_xsltStylesheet, decimalFormat), size_of_val(&(*p).decimalFormat));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.nsAliases offsetof={} size={}", offset_of!(_xsltStylesheet, nsAliases), size_of_val(&(*p).nsAliases));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.attributeSets offsetof={} size={}", offset_of!(_xsltStylesheet, attributeSets), size_of_val(&(*p).attributeSets));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.variables offsetof={} size={}", offset_of!(_xsltStylesheet, variables), size_of_val(&(*p).variables));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.params offsetof={} size={}", offset_of!(_xsltStylesheet, params), size_of_val(&(*p).params));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.stripSpaces offsetof={} size={}", offset_of!(_xsltStylesheet, stripSpaces), size_of_val(&(*p).stripSpaces));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.preserveSpaces offsetof={} size={}", offset_of!(_xsltStylesheet, preserveSpaces), size_of_val(&(*p).preserveSpaces));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.errors offsetof={} size={}", offset_of!(_xsltStylesheet, errors), size_of_val(&(*p).errors));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.warnings offsetof={} size={}", offset_of!(_xsltStylesheet, warnings), size_of_val(&(*p).warnings));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.name offsetof={} size={}", offset_of!(_xsltStylesheet, name), size_of_val(&(*p).name));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.profile offsetof={} size={}", offset_of!(_xsltStylesheet, profile), size_of_val(&(*p).profile));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.extInfos offsetof={} size={}", offset_of!(_xsltStylesheet, extInfos), size_of_val(&(*p).extInfos));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.secPrefs offsetof={} size={}", offset_of!(_xsltStylesheet, secPrefs), size_of_val(&(*p).secPrefs));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.skipDefaultNS offsetof={} size={}", offset_of!(_xsltStylesheet, skipDefaultNS), size_of_val(&(*p).skipDefaultNS));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltStylesheet>();
-    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.indent offsetof={} size={}", offset_of!(_xsltStylesheet, indent), size_of_val(&(*p).indent));
+    println!("FIELD _xsltStylesheet.standalone offsetof={} size={}", offset_of!(_xsltStylesheet, standalone), size_of_val(&(*p).standalone));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3209,43 +3233,151 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.indent offsetof={} size={}", offset_of!(_xsltStylesheet, indent), size_of_val(&(*p).indent));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
     println!("FIELD _xsltStylesheet.mediaType offsetof={} size={}", offset_of!(_xsltStylesheet, mediaType), size_of_val(&(*p).mediaType));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.psvi offsetof={} size={}", offset_of!(_xsltStylesheet, psvi), size_of_val(&(*p).psvi));
+    println!("FIELD _xsltStylesheet.preComps offsetof={} size={}", offset_of!(_xsltStylesheet, preComps), size_of_val(&(*p).preComps));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.varsNr offsetof={} size={}", offset_of!(_xsltStylesheet, varsNr), size_of_val(&(*p).varsNr));
+    println!("FIELD _xsltStylesheet.warnings offsetof={} size={}", offset_of!(_xsltStylesheet, warnings), size_of_val(&(*p).warnings));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.varsMax offsetof={} size={}", offset_of!(_xsltStylesheet, varsMax), size_of_val(&(*p).varsMax));
+    println!("FIELD _xsltStylesheet.errors offsetof={} size={}", offset_of!(_xsltStylesheet, errors), size_of_val(&(*p).errors));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.varsTab offsetof={} size={}", offset_of!(_xsltStylesheet, varsTab), size_of_val(&(*p).varsTab));
+    println!("FIELD _xsltStylesheet.exclPrefix offsetof={} size={}", offset_of!(_xsltStylesheet, exclPrefix), size_of_val(&(*p).exclPrefix));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
-    println!("FIELD _xsltStylesheet.deepCtxt offsetof={} size={}", offset_of!(_xsltStylesheet, deepCtxt), size_of_val(&(*p).deepCtxt));
+    println!("FIELD _xsltStylesheet.exclPrefixTab offsetof={} size={}", offset_of!(_xsltStylesheet, exclPrefixTab), size_of_val(&(*p).exclPrefixTab));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.exclPrefixNr offsetof={} size={}", offset_of!(_xsltStylesheet, exclPrefixNr), size_of_val(&(*p).exclPrefixNr));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.exclPrefixMax offsetof={} size={}", offset_of!(_xsltStylesheet, exclPrefixMax), size_of_val(&(*p).exclPrefixMax));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet._private offsetof={} size={}", offset_of!(_xsltStylesheet, _private), size_of_val(&(*p)._private));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.extInfos offsetof={} size={}", offset_of!(_xsltStylesheet, extInfos), size_of_val(&(*p).extInfos));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.extrasNr offsetof={} size={}", offset_of!(_xsltStylesheet, extrasNr), size_of_val(&(*p).extrasNr));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltStylesheet>();
     let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
     println!("FIELD _xsltStylesheet.includes offsetof={} size={}", offset_of!(_xsltStylesheet, includes), size_of_val(&(*p).includes));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.dict offsetof={} size={}", offset_of!(_xsltStylesheet, dict), size_of_val(&(*p).dict));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.attVTs offsetof={} size={}", offset_of!(_xsltStylesheet, attVTs), size_of_val(&(*p).attVTs));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.defaultAlias offsetof={} size={}", offset_of!(_xsltStylesheet, defaultAlias), size_of_val(&(*p).defaultAlias));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.nopreproc offsetof={} size={}", offset_of!(_xsltStylesheet, nopreproc), size_of_val(&(*p).nopreproc));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.internalized offsetof={} size={}", offset_of!(_xsltStylesheet, internalized), size_of_val(&(*p).internalized));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.literal_result offsetof={} size={}", offset_of!(_xsltStylesheet, literal_result), size_of_val(&(*p).literal_result));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.principal offsetof={} size={}", offset_of!(_xsltStylesheet, principal), size_of_val(&(*p).principal));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.forwards_compatible offsetof={} size={}", offset_of!(_xsltStylesheet, forwards_compatible), size_of_val(&(*p).forwards_compatible));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.namedTemplates offsetof={} size={}", offset_of!(_xsltStylesheet, namedTemplates), size_of_val(&(*p).namedTemplates));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.xpathCtxt offsetof={} size={}", offset_of!(_xsltStylesheet, xpathCtxt), size_of_val(&(*p).xpathCtxt));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.opLimit offsetof={} size={}", offset_of!(_xsltStylesheet, opLimit), size_of_val(&(*p).opLimit));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltStylesheet>();
+    let p = alloc_zeroed(layout) as *mut _xsltStylesheet;
+    println!("FIELD _xsltStylesheet.opCount offsetof={} size={}", offset_of!(_xsltStylesheet, opCount), size_of_val(&(*p).opCount));
     dealloc(p as *mut u8, layout);
   } }
   println!("STRUCT _xsltTemplate sizeof={} alignof={}", size_of::<_xsltTemplate>(), align_of::<_xsltTemplate>());
@@ -3264,13 +3396,7 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTemplate>();
     let p = alloc_zeroed(layout) as *mut _xsltTemplate;
-    println!("FIELD _xsltTemplate.name offsetof={} size={}", offset_of!(_xsltTemplate, name), size_of_val(&(*p).name));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTemplate>();
-    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
-    println!("FIELD _xsltTemplate.mode offsetof={} size={}", offset_of!(_xsltTemplate, mode), size_of_val(&(*p).mode));
+    println!("FIELD _xsltTemplate.r#match offsetof={} size={}", offset_of!(_xsltTemplate, r#match), size_of_val(&(*p).r#match));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3282,19 +3408,37 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTemplate>();
     let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.name offsetof={} size={}", offset_of!(_xsltTemplate, name), size_of_val(&(*p).name));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.nameURI offsetof={} size={}", offset_of!(_xsltTemplate, nameURI), size_of_val(&(*p).nameURI));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.mode offsetof={} size={}", offset_of!(_xsltTemplate, mode), size_of_val(&(*p).mode));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.modeURI offsetof={} size={}", offset_of!(_xsltTemplate, modeURI), size_of_val(&(*p).modeURI));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
     println!("FIELD _xsltTemplate.content offsetof={} size={}", offset_of!(_xsltTemplate, content), size_of_val(&(*p).content));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTemplate>();
     let p = alloc_zeroed(layout) as *mut _xsltTemplate;
-    println!("FIELD _xsltTemplate.depth offsetof={} size={}", offset_of!(_xsltTemplate, depth), size_of_val(&(*p).depth));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTemplate>();
-    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
-    println!("FIELD _xsltTemplate.flags offsetof={} size={}", offset_of!(_xsltTemplate, flags), size_of_val(&(*p).flags));
+    println!("FIELD _xsltTemplate.elem offsetof={} size={}", offset_of!(_xsltTemplate, elem), size_of_val(&(*p).elem));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3309,6 +3453,54 @@ fn main() {
     println!("FIELD _xsltTemplate.inheritedNs offsetof={} size={}", offset_of!(_xsltTemplate, inheritedNs), size_of_val(&(*p).inheritedNs));
     dealloc(p as *mut u8, layout);
   } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.nbCalls offsetof={} size={}", offset_of!(_xsltTemplate, nbCalls), size_of_val(&(*p).nbCalls));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.time offsetof={} size={}", offset_of!(_xsltTemplate, time), size_of_val(&(*p).time));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.params offsetof={} size={}", offset_of!(_xsltTemplate, params), size_of_val(&(*p).params));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.templNr offsetof={} size={}", offset_of!(_xsltTemplate, templNr), size_of_val(&(*p).templNr));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.templMax offsetof={} size={}", offset_of!(_xsltTemplate, templMax), size_of_val(&(*p).templMax));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.templCalledTab offsetof={} size={}", offset_of!(_xsltTemplate, templCalledTab), size_of_val(&(*p).templCalledTab));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.templCountTab offsetof={} size={}", offset_of!(_xsltTemplate, templCountTab), size_of_val(&(*p).templCountTab));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTemplate>();
+    let p = alloc_zeroed(layout) as *mut _xsltTemplate;
+    println!("FIELD _xsltTemplate.position offsetof={} size={}", offset_of!(_xsltTemplate, position), size_of_val(&(*p).position));
+    dealloc(p as *mut u8, layout);
+  } }
   println!("STRUCT _xsltTransformContext sizeof={} alignof={}", size_of::<_xsltTransformContext>(), align_of::<_xsltTransformContext>());
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
@@ -3319,67 +3511,13 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.type_ offsetof={} size={}", offset_of!(_xsltTransformContext, type_), size_of_val(&(*p).type_));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
     println!("FIELD _xsltTransformContext.templ offsetof={} size={}", offset_of!(_xsltTransformContext, templ), size_of_val(&(*p).templ));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.document offsetof={} size={}", offset_of!(_xsltTransformContext, document), size_of_val(&(*p).document));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.node offsetof={} size={}", offset_of!(_xsltTransformContext, node), size_of_val(&(*p).node));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nodeList offsetof={} size={}", offset_of!(_xsltTransformContext, nodeList), size_of_val(&(*p).nodeList));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.contextSize offsetof={} size={}", offset_of!(_xsltTransformContext, contextSize), size_of_val(&(*p).contextSize));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.proximityPosition offsetof={} size={}", offset_of!(_xsltTransformContext, proximityPosition), size_of_val(&(*p).proximityPosition));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.xpathCtxt offsetof={} size={}", offset_of!(_xsltTransformContext, xpathCtxt), size_of_val(&(*p).xpathCtxt));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.xpathReturn offsetof={} size={}", offset_of!(_xsltTransformContext, xpathReturn), size_of_val(&(*p).xpathReturn));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.xpathReturnNr offsetof={} size={}", offset_of!(_xsltTransformContext, xpathReturnNr), size_of_val(&(*p).xpathReturnNr));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.xpathReturnMax offsetof={} size={}", offset_of!(_xsltTransformContext, xpathReturnMax), size_of_val(&(*p).xpathReturnMax));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.xpathReturnTab offsetof={} size={}", offset_of!(_xsltTransformContext, xpathReturnTab), size_of_val(&(*p).xpathReturnTab));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3403,13 +3541,7 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.depth offsetof={} size={}", offset_of!(_xsltTransformContext, depth), size_of_val(&(*p).depth));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.maxDepth offsetof={} size={}", offset_of!(_xsltTransformContext, maxDepth), size_of_val(&(*p).maxDepth));
+    println!("FIELD _xsltTransformContext.vars offsetof={} size={}", offset_of!(_xsltTransformContext, vars), size_of_val(&(*p).vars));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3427,67 +3559,25 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.varsBase offsetof={} size={}", offset_of!(_xsltTransformContext, varsBase), size_of_val(&(*p).varsBase));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
     println!("FIELD _xsltTransformContext.varsTab offsetof={} size={}", offset_of!(_xsltTransformContext, varsTab), size_of_val(&(*p).varsTab));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.paramsNr offsetof={} size={}", offset_of!(_xsltTransformContext, paramsNr), size_of_val(&(*p).paramsNr));
+    println!("FIELD _xsltTransformContext.varsBase offsetof={} size={}", offset_of!(_xsltTransformContext, varsBase), size_of_val(&(*p).varsBase));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.paramsMax offsetof={} size={}", offset_of!(_xsltTransformContext, paramsMax), size_of_val(&(*p).paramsMax));
+    println!("FIELD _xsltTransformContext.extFunctions offsetof={} size={}", offset_of!(_xsltTransformContext, extFunctions), size_of_val(&(*p).extFunctions));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.paramsBase offsetof={} size={}", offset_of!(_xsltTransformContext, paramsBase), size_of_val(&(*p).paramsBase));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.paramsTab offsetof={} size={}", offset_of!(_xsltTransformContext, paramsTab), size_of_val(&(*p).paramsTab));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.keyTables offsetof={} size={}", offset_of!(_xsltTransformContext, keyTables), size_of_val(&(*p).keyTables));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.hasSort offsetof={} size={}", offset_of!(_xsltTransformContext, hasSort), size_of_val(&(*p).hasSort));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.output offsetof={} size={}", offset_of!(_xsltTransformContext, output), size_of_val(&(*p).output));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.errFunc offsetof={} size={}", offset_of!(_xsltTransformContext, errFunc), size_of_val(&(*p).errFunc));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.errCtxt offsetof={} size={}", offset_of!(_xsltTransformContext, errCtxt), size_of_val(&(*p).errCtxt));
+    println!("FIELD _xsltTransformContext.extElements offsetof={} size={}", offset_of!(_xsltTransformContext, extElements), size_of_val(&(*p).extElements));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3499,19 +3589,55 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extrasNr offsetof={} size={}", offset_of!(_xsltTransformContext, extrasNr), size_of_val(&(*p).extrasNr));
+    println!("FIELD _xsltTransformContext.mode offsetof={} size={}", offset_of!(_xsltTransformContext, mode), size_of_val(&(*p).mode));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extrasMax offsetof={} size={}", offset_of!(_xsltTransformContext, extrasMax), size_of_val(&(*p).extrasMax));
+    println!("FIELD _xsltTransformContext.modeURI offsetof={} size={}", offset_of!(_xsltTransformContext, modeURI), size_of_val(&(*p).modeURI));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extrasTab offsetof={} size={}", offset_of!(_xsltTransformContext, extrasTab), size_of_val(&(*p).extrasTab));
+    println!("FIELD _xsltTransformContext.docList offsetof={} size={}", offset_of!(_xsltTransformContext, docList), size_of_val(&(*p).docList));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.document offsetof={} size={}", offset_of!(_xsltTransformContext, document), size_of_val(&(*p).document));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.node offsetof={} size={}", offset_of!(_xsltTransformContext, node), size_of_val(&(*p).node));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.nodeList offsetof={} size={}", offset_of!(_xsltTransformContext, nodeList), size_of_val(&(*p).nodeList));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.output offsetof={} size={}", offset_of!(_xsltTransformContext, output), size_of_val(&(*p).output));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.insert offsetof={} size={}", offset_of!(_xsltTransformContext, insert), size_of_val(&(*p).insert));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.xpathCtxt offsetof={} size={}", offset_of!(_xsltTransformContext, xpathCtxt), size_of_val(&(*p).xpathCtxt));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3523,43 +3649,25 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.priority offsetof={} size={}", offset_of!(_xsltTransformContext, priority), size_of_val(&(*p).priority));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.parserCtxt offsetof={} size={}", offset_of!(_xsltTransformContext, parserCtxt), size_of_val(&(*p).parserCtxt));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.save offsetof={} size={}", offset_of!(_xsltTransformContext, save), size_of_val(&(*p).save));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.opts offsetof={} size={}", offset_of!(_xsltTransformContext, opts), size_of_val(&(*p).opts));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.secPrefs offsetof={} size={}", offset_of!(_xsltTransformContext, secPrefs), size_of_val(&(*p).secPrefs));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.docCache offsetof={} size={}", offset_of!(_xsltTransformContext, docCache), size_of_val(&(*p).docCache));
-    dealloc(p as *mut u8, layout);
-  } }
-  { unsafe {
-    let layout = Layout::new::<_xsltTransformContext>();
-    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
     println!("FIELD _xsltTransformContext.globalVars offsetof={} size={}", offset_of!(_xsltTransformContext, globalVars), size_of_val(&(*p).globalVars));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.inst offsetof={} size={}", offset_of!(_xsltTransformContext, inst), size_of_val(&(*p).inst));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.xinclude offsetof={} size={}", offset_of!(_xsltTransformContext, xinclude), size_of_val(&(*p).xinclude));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.outputFile offsetof={} size={}", offset_of!(_xsltTransformContext, outputFile), size_of_val(&(*p).outputFile));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
@@ -3577,139 +3685,265 @@ fn main() {
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extFunctionsNr offsetof={} size={}", offset_of!(_xsltTransformContext, extFunctionsNr), size_of_val(&(*p).extFunctionsNr));
+    println!("FIELD _xsltTransformContext.profNr offsetof={} size={}", offset_of!(_xsltTransformContext, profNr), size_of_val(&(*p).profNr));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extFunctionsMax offsetof={} size={}", offset_of!(_xsltTransformContext, extFunctionsMax), size_of_val(&(*p).extFunctionsMax));
+    println!("FIELD _xsltTransformContext.profMax offsetof={} size={}", offset_of!(_xsltTransformContext, profMax), size_of_val(&(*p).profMax));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.extFunctionsTab offsetof={} size={}", offset_of!(_xsltTransformContext, extFunctionsTab), size_of_val(&(*p).extFunctionsTab));
+    println!("FIELD _xsltTransformContext.profTab offsetof={} size={}", offset_of!(_xsltTransformContext, profTab), size_of_val(&(*p).profTab));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.userData offsetof={} size={}", offset_of!(_xsltTransformContext, userData), size_of_val(&(*p).userData));
+    println!("FIELD _xsltTransformContext._private offsetof={} size={}", offset_of!(_xsltTransformContext, _private), size_of_val(&(*p)._private));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.frame offsetof={} size={}", offset_of!(_xsltTransformContext, frame), size_of_val(&(*p).frame));
+    println!("FIELD _xsltTransformContext.extrasNr offsetof={} size={}", offset_of!(_xsltTransformContext, extrasNr), size_of_val(&(*p).extrasNr));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.frameNr offsetof={} size={}", offset_of!(_xsltTransformContext, frameNr), size_of_val(&(*p).frameNr));
+    println!("FIELD _xsltTransformContext.extrasMax offsetof={} size={}", offset_of!(_xsltTransformContext, extrasMax), size_of_val(&(*p).extrasMax));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.frameMax offsetof={} size={}", offset_of!(_xsltTransformContext, frameMax), size_of_val(&(*p).frameMax));
+    println!("FIELD _xsltTransformContext.extras offsetof={} size={}", offset_of!(_xsltTransformContext, extras), size_of_val(&(*p).extras));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.frameTab offsetof={} size={}", offset_of!(_xsltTransformContext, frameTab), size_of_val(&(*p).frameTab));
+    println!("FIELD _xsltTransformContext.styleList offsetof={} size={}", offset_of!(_xsltTransformContext, styleList), size_of_val(&(*p).styleList));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.insert offsetof={} size={}", offset_of!(_xsltTransformContext, insert), size_of_val(&(*p).insert));
+    println!("FIELD _xsltTransformContext.sec offsetof={} size={}", offset_of!(_xsltTransformContext, sec), size_of_val(&(*p).sec));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.resultDoc offsetof={} size={}", offset_of!(_xsltTransformContext, resultDoc), size_of_val(&(*p).resultDoc));
+    println!("FIELD _xsltTransformContext.error offsetof={} size={}", offset_of!(_xsltTransformContext, error), size_of_val(&(*p).error));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsNr offsetof={} size={}", offset_of!(_xsltTransformContext, nsNr), size_of_val(&(*p).nsNr));
+    println!("FIELD _xsltTransformContext.errctx offsetof={} size={}", offset_of!(_xsltTransformContext, errctx), size_of_val(&(*p).errctx));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsMax offsetof={} size={}", offset_of!(_xsltTransformContext, nsMax), size_of_val(&(*p).nsMax));
+    println!("FIELD _xsltTransformContext.sortfunc offsetof={} size={}", offset_of!(_xsltTransformContext, sortfunc), size_of_val(&(*p).sortfunc));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsTab offsetof={} size={}", offset_of!(_xsltTransformContext, nsTab), size_of_val(&(*p).nsTab));
+    println!("FIELD _xsltTransformContext.tmpRVT offsetof={} size={}", offset_of!(_xsltTransformContext, tmpRVT), size_of_val(&(*p).tmpRVT));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsNrOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, nsNrOriginal), size_of_val(&(*p).nsNrOriginal));
+    println!("FIELD _xsltTransformContext.persistRVT offsetof={} size={}", offset_of!(_xsltTransformContext, persistRVT), size_of_val(&(*p).persistRVT));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsMaxOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, nsMaxOriginal), size_of_val(&(*p).nsMaxOriginal));
+    println!("FIELD _xsltTransformContext.ctxtflags offsetof={} size={}", offset_of!(_xsltTransformContext, ctxtflags), size_of_val(&(*p).ctxtflags));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.nsTabOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, nsTabOriginal), size_of_val(&(*p).nsTabOriginal));
+    println!("FIELD _xsltTransformContext.lasttext offsetof={} size={}", offset_of!(_xsltTransformContext, lasttext), size_of_val(&(*p).lasttext));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.currentTemplate offsetof={} size={}", offset_of!(_xsltTransformContext, currentTemplate), size_of_val(&(*p).currentTemplate));
+    println!("FIELD _xsltTransformContext.lasttsize offsetof={} size={}", offset_of!(_xsltTransformContext, lasttsize), size_of_val(&(*p).lasttsize));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.templHash offsetof={} size={}", offset_of!(_xsltTransformContext, templHash), size_of_val(&(*p).templHash));
+    println!("FIELD _xsltTransformContext.lasttuse offsetof={} size={}", offset_of!(_xsltTransformContext, lasttuse), size_of_val(&(*p).lasttuse));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.varsNrOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, varsNrOriginal), size_of_val(&(*p).varsNrOriginal));
+    println!("FIELD _xsltTransformContext.debugStatus offsetof={} size={}", offset_of!(_xsltTransformContext, debugStatus), size_of_val(&(*p).debugStatus));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.varsMaxOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, varsMaxOriginal), size_of_val(&(*p).varsMaxOriginal));
+    println!("FIELD _xsltTransformContext.traceCode offsetof={} size={}", offset_of!(_xsltTransformContext, traceCode), size_of_val(&(*p).traceCode));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.varsTabOriginal offsetof={} size={}", offset_of!(_xsltTransformContext, varsTabOriginal), size_of_val(&(*p).varsTabOriginal));
+    println!("FIELD _xsltTransformContext.parserOptions offsetof={} size={}", offset_of!(_xsltTransformContext, parserOptions), size_of_val(&(*p).parserOptions));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.insertDepth offsetof={} size={}", offset_of!(_xsltTransformContext, insertDepth), size_of_val(&(*p).insertDepth));
+    println!("FIELD _xsltTransformContext.dict offsetof={} size={}", offset_of!(_xsltTransformContext, dict), size_of_val(&(*p).dict));
     dealloc(p as *mut u8, layout);
   } }
   { unsafe {
     let layout = Layout::new::<_xsltTransformContext>();
     let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
-    println!("FIELD _xsltTransformContext.maxInsertDepth offsetof={} size={}", offset_of!(_xsltTransformContext, maxInsertDepth), size_of_val(&(*p).maxInsertDepth));
+    println!("FIELD _xsltTransformContext.tmpDoc offsetof={} size={}", offset_of!(_xsltTransformContext, tmpDoc), size_of_val(&(*p).tmpDoc));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.internalized offsetof={} size={}", offset_of!(_xsltTransformContext, internalized), size_of_val(&(*p).internalized));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.nbKeys offsetof={} size={}", offset_of!(_xsltTransformContext, nbKeys), size_of_val(&(*p).nbKeys));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.hasTemplKeyPatterns offsetof={} size={}", offset_of!(_xsltTransformContext, hasTemplKeyPatterns), size_of_val(&(*p).hasTemplKeyPatterns));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.currentTemplateRule offsetof={} size={}", offset_of!(_xsltTransformContext, currentTemplateRule), size_of_val(&(*p).currentTemplateRule));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.initialContextNode offsetof={} size={}", offset_of!(_xsltTransformContext, initialContextNode), size_of_val(&(*p).initialContextNode));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.initialContextDoc offsetof={} size={}", offset_of!(_xsltTransformContext, initialContextDoc), size_of_val(&(*p).initialContextDoc));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.cache offsetof={} size={}", offset_of!(_xsltTransformContext, cache), size_of_val(&(*p).cache));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.contextVariable offsetof={} size={}", offset_of!(_xsltTransformContext, contextVariable), size_of_val(&(*p).contextVariable));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.localRVT offsetof={} size={}", offset_of!(_xsltTransformContext, localRVT), size_of_val(&(*p).localRVT));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.localRVTBase offsetof={} size={}", offset_of!(_xsltTransformContext, localRVTBase), size_of_val(&(*p).localRVTBase));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.keyInitLevel offsetof={} size={}", offset_of!(_xsltTransformContext, keyInitLevel), size_of_val(&(*p).keyInitLevel));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.depth offsetof={} size={}", offset_of!(_xsltTransformContext, depth), size_of_val(&(*p).depth));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.maxTemplateDepth offsetof={} size={}", offset_of!(_xsltTransformContext, maxTemplateDepth), size_of_val(&(*p).maxTemplateDepth));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.maxTemplateVars offsetof={} size={}", offset_of!(_xsltTransformContext, maxTemplateVars), size_of_val(&(*p).maxTemplateVars));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.opLimit offsetof={} size={}", offset_of!(_xsltTransformContext, opLimit), size_of_val(&(*p).opLimit));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.opCount offsetof={} size={}", offset_of!(_xsltTransformContext, opCount), size_of_val(&(*p).opCount));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.sourceDocDirty offsetof={} size={}", offset_of!(_xsltTransformContext, sourceDocDirty), size_of_val(&(*p).sourceDocDirty));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.currentId offsetof={} size={}", offset_of!(_xsltTransformContext, currentId), size_of_val(&(*p).currentId));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.newLocale offsetof={} size={}", offset_of!(_xsltTransformContext, newLocale), size_of_val(&(*p).newLocale));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.freeLocale offsetof={} size={}", offset_of!(_xsltTransformContext, freeLocale), size_of_val(&(*p).freeLocale));
+    dealloc(p as *mut u8, layout);
+  } }
+  { unsafe {
+    let layout = Layout::new::<_xsltTransformContext>();
+    let p = alloc_zeroed(layout) as *mut _xsltTransformContext;
+    println!("FIELD _xsltTransformContext.genSortKey offsetof={} size={}", offset_of!(_xsltTransformContext, genSortKey), size_of_val(&(*p).genSortKey));
     dealloc(p as *mut u8, layout);
   } }
   println!("ENUM xmlAttributeDefault sizeof={} alignof={}", size_of::<xmlAttributeDefault>(), align_of::<xmlAttributeDefault>());

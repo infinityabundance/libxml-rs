@@ -26,11 +26,13 @@ use crate::abi::structs::*;
 use crate::abi::types::*;
 use crate::xml::string::xmlstr_to_string;
 use crate::xml::xpath::ast::{Axis, Expr, NameTest, NodeTest, Step};
-
 use crate::xml::xpath::parser::parse_xpath;
 use crate::xml::xpath::types::{NodeSet, XPathValue};
 use std::os::raw::c_int;
 use std::ptr;
+
+/// Sentinel for "no explicit priority" (upstream XSLT_PAT_NO_PRIORITY).
+pub const XSLT_PAT_NO_PRIORITY: f64 = -1.0e9;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Internal Pattern Representation

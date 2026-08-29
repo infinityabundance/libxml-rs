@@ -1,0 +1,525 @@
+{
+  "court": "RUST-MIRROR-ABI",
+  "phase": "11.1-G",
+  "timestamp": "2026-08-29T20:06:47Z",
+  "triangle": [
+    "upstream C header (sealed by ABI_PARITY_LEDGER)",
+    "candidate C header (include/)",
+    "Rust #[repr(C)] mirrors (src/abi/structs.rs, src/abi/types.rs)"
+  ],
+  "accounting": {
+    "rust_repr_c_types": 55,
+    "measurable": 49,
+    "classified_unmeasurable": {
+      "OPAQUE_FORWARD_DECL": [
+        "_xmlBuf",
+        "_xsltNsAlias"
+      ],
+      "NOT_LAYOUT_OBSERVABLE": [
+        "EncodingInputUnion",
+        "EncodingOutputUnion",
+        "_xsltAttrSet",
+        "_xsltSort"
+      ]
+    },
+    "silently_omitted": 0
+  },
+  "mismatch_count": 27,
+  "mismatches": [
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field count",
+      "rust": 8,
+      "c": 10,
+      "rust_fields": [
+        "next",
+        "inst",
+        "name",
+        "nameURI",
+        "comp",
+        "usecomp",
+        "nsList",
+        "nsNr"
+      ],
+      "c_fields": [
+        "next",
+        "inst",
+        "name",
+        "nameURI",
+        "match",
+        "use",
+        "comp",
+        "usecomp",
+        "nsList",
+        "nsNr"
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field[4] comp vs match",
+      "rust": [
+        48,
+        8
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field[5] usecomp vs use",
+      "rust": [
+        56,
+        8
+      ],
+      "c": [
+        40,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field[6] nsList vs comp",
+      "rust": [
+        64,
+        8
+      ],
+      "c": [
+        48,
+        8
+      ]
+    },
+    {
+      "type": "_xsltKeyDef",
+      "reason": "field[7] nsNr vs usecomp",
+      "rust": [
+        72,
+        4
+      ],
+      "c": [
+        56,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "size/align",
+      "rust": [
+        456,
+        8
+      ],
+      "c": [
+        440,
+        8
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field count",
+      "rust": 60,
+      "c": 58,
+      "rust_fields": [
+        "parent",
+        "next",
+        "imports",
+        "docList",
+        "doc",
+        "stripSpaces",
+        "stripAll",
+        "cdataSection",
+        "variables",
+        "templates",
+        "templatesHash",
+        "rootMatch",
+        "keyMatch",
+        "elemMatch",
+        "attrMatch",
+        "parentMatch",
+        "textMatch",
+        "piMatch",
+        "commentMatch",
+        "nsAliases",
+        "attributeSets",
+        "nsHash",
+        "nsDefs",
+        "keys",
+        "method",
+        "methodURI",
+        "version",
+        "encoding",
+        "omitXmlDeclaration",
+        "decimalFormat",
+        "standalone",
+        "doctypePublic",
+        "doctypeSystem",
+        "indent",
+        "mediaType",
+        "preComps",
+        "warnings",
+        "errors",
+        "exclPrefix",
+        "exclPrefixTab",
+        "exclPrefixNr",
+        "exclPrefixMax",
+        "_private",
+        "extInfos",
+        "extrasNr",
+        "includes",
+        "dict",
+        "attVTs",
+        "defaultAlias",
+        "nopreproc",
+        "internalized",
+        "literal_result",
+        "principal",
+        "compCtxt",
+        "principalData",
+        "forwards_compatible",
+        "namedTemplates",
+        "xpathCtxt",
+        "opLimit",
+        "opCount"
+      ],
+      "c_fields": [
+        "parent",
+        "next",
+        "imports",
+        "docList",
+        "doc",
+        "stripSpaces",
+        "stripAll",
+        "cdataSection",
+        "variables",
+        "templates",
+        "templatesHash",
+        "rootMatch",
+        "keyMatch",
+        "elemMatch",
+        "attrMatch",
+        "parentMatch",
+        "textMatch",
+        "piMatch",
+        "commentMatch",
+        "nsAliases",
+        "attributeSets",
+        "nsHash",
+        "nsDefs",
+        "keys",
+        "method",
+        "methodURI",
+        "version",
+        "encoding",
+        "omitXmlDeclaration",
+        "decimalFormat",
+        "standalone",
+        "doctypePublic",
+        "doctypeSystem",
+        "indent",
+        "mediaType",
+        "preComps",
+        "warnings",
+        "errors",
+        "exclPrefix",
+        "exclPrefixTab",
+        "exclPrefixNr",
+        "exclPrefixMax",
+        "_private",
+        "extInfos",
+        "extrasNr",
+        "includes",
+        "dict",
+        "attVTs",
+        "defaultAlias",
+        "nopreproc",
+        "internalized",
+        "literal_result",
+        "principal",
+        "forwards_compatible",
+        "namedTemplates",
+        "xpathCtxt",
+        "opLimit",
+        "opCount"
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[53] compCtxt vs forwards_compatible",
+      "rust": [
+        400,
+        8
+      ],
+      "c": [
+        400,
+        4
+      ]
+    },
+    {
+      "type": "_xsltStylesheet",
+      "reason": "field[55] forwards_compatible vs xpathCtxt",
+      "rust": [
+        416,
+        4
+      ],
+      "c": [
+        416,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field count",
+      "rust": 19,
+      "c": 20,
+      "rust_fields": [
+        "next",
+        "style",
+        "priority",
+        "name",
+        "nameURI",
+        "mode",
+        "modeURI",
+        "content",
+        "elem",
+        "inheritedNsNr",
+        "inheritedNs",
+        "nbCalls",
+        "time",
+        "params",
+        "templNr",
+        "templMax",
+        "templCalledTab",
+        "templCountTab",
+        "position"
+      ],
+      "c_fields": [
+        "next",
+        "style",
+        "match",
+        "priority",
+        "name",
+        "nameURI",
+        "mode",
+        "modeURI",
+        "content",
+        "elem",
+        "inheritedNsNr",
+        "inheritedNs",
+        "nbCalls",
+        "time",
+        "params",
+        "templNr",
+        "templMax",
+        "templCalledTab",
+        "templCountTab",
+        "position"
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[2] priority vs match",
+      "rust": [
+        24,
+        4
+      ],
+      "c": [
+        16,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[3] name vs priority",
+      "rust": [
+        32,
+        8
+      ],
+      "c": [
+        24,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[4] nameURI vs name",
+      "rust": [
+        40,
+        8
+      ],
+      "c": [
+        32,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[5] mode vs nameURI",
+      "rust": [
+        48,
+        8
+      ],
+      "c": [
+        40,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[6] modeURI vs mode",
+      "rust": [
+        56,
+        8
+      ],
+      "c": [
+        48,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[7] content vs modeURI",
+      "rust": [
+        64,
+        8
+      ],
+      "c": [
+        56,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[8] elem vs content",
+      "rust": [
+        72,
+        8
+      ],
+      "c": [
+        64,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[9] inheritedNsNr vs elem",
+      "rust": [
+        80,
+        4
+      ],
+      "c": [
+        72,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[10] inheritedNs vs inheritedNsNr",
+      "rust": [
+        88,
+        8
+      ],
+      "c": [
+        80,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[11] nbCalls vs inheritedNs",
+      "rust": [
+        96,
+        4
+      ],
+      "c": [
+        88,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[12] time vs nbCalls",
+      "rust": [
+        104,
+        8
+      ],
+      "c": [
+        96,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[13] params vs time",
+      "rust": [
+        112,
+        8
+      ],
+      "c": [
+        104,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[14] templNr vs params",
+      "rust": [
+        120,
+        4
+      ],
+      "c": [
+        112,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[15] templMax vs templNr",
+      "rust": [
+        124,
+        4
+      ],
+      "c": [
+        120,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[16] templCalledTab vs templMax",
+      "rust": [
+        128,
+        8
+      ],
+      "c": [
+        124,
+        4
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[17] templCountTab vs templCalledTab",
+      "rust": [
+        136,
+        8
+      ],
+      "c": [
+        128,
+        8
+      ]
+    },
+    {
+      "type": "_xsltTemplate",
+      "reason": "field[18] position vs templCountTab",
+      "rust": [
+        144,
+        4
+      ],
+      "c": [
+        136,
+        8
+      ]
+    }
+  ],
+  "verdict": "FAIL",
+  "regenerate": "tools/abi/rust_mirror_court.py"
+}

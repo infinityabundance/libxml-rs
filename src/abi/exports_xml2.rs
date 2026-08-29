@@ -672,6 +672,35 @@ pub unsafe extern "C" fn xmlStrlen(str: *const xmlChar) -> c_int {
     unsafe { libc::strlen(str as *const c_char) as c_int }
 }
 
+/// Find the first occurrence of a character in a string (upstream tree.c
+/// `xmlStrchr`): returns a pointer to the first occurrence or NULL.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// const xmlChar *xmlStrchr(const xmlChar *str, xmlChar val);
+/// ```
+///
+/// # SAFETY
+///
+/// - `str` must be a valid null-terminated string or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlStrchr(str: *const xmlChar, val: xmlChar) -> *const xmlChar {
+    if str.is_null() {
+        return ptr::null();
+    }
+    unsafe {
+        let mut cur = str;
+        while *cur != 0 {
+            if *cur == val {
+                return cur;
+            }
+            cur = cur.add(1);
+        }
+        ptr::null()
+    }
+}
+
 /// Compare two xmlChar strings.
 ///
 /// # UPSTREAM-PARITY
@@ -6519,52 +6548,531 @@ pub unsafe extern "C" fn xmlValidateIDRefs(
     crate::xml::validation::validate_id_refs(ctxt, doc, node, value)
 }
 
-/// Validate an NMTOKEN value.
+/// Validate an NCName value (modern 2-arg form, upstream tree.c).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateNmtoken(const xmlChar *value);
+/// int xmlValidateNCName(const xmlChar *value, int space);
 /// ```
+///
+/// Returns -1 on NULL, 0 if valid, 1 if invalid.
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateNmtoken(value: *const xmlChar) -> c_int {
-    crate::xml::validation::validate_nmtoken(value)
+pub unsafe extern "C" fn xmlValidateNCName(value: *const xmlChar, space: c_int) -> c_int {
+    crate::xml::validation::validate_ncname(value, space)
 }
 
-/// Validate a whitespace-separated list of NMTOKENs.
+/// Validate a QName value (modern 2-arg form, upstream tree.c).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateNmtokens(const xmlChar *value);
+/// int xmlValidateQName(const xmlChar *value, int space);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateNmtokens(value: *const xmlChar) -> c_int {
-    crate::xml::validation::validate_nmtokens(value)
+pub unsafe extern "C" fn xmlValidateQName(value: *const xmlChar, space: c_int) -> c_int {
+    crate::xml::validation::validate_qname(value, space)
 }
 
-/// Validate an XML Name value.
+/// Validate an XML Name value (modern 2-arg form, upstream tree.c).
 ///
-/// # UPSTREAM-PARITY
+/// # UPSTREAM-PARITY / HISTORICAL
+///
+/// Since libxml2 2.12 the DSO symbol carries a second `int space` parameter
+/// with inverted return semantics (0 valid / 1 invalid / -1 NULL); the
+/// pre-2.12 1-arg form no longer exists in the DSO. The candidate matches
+/// the current oracle. (The 1-arg semantics live on as xmlValidateNameValue.)
 ///
 /// ```c
-/// int xmlValidateName(const xmlChar *value);
+/// int xmlValidateName(const xmlChar *value, int space);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateName(value: *const xmlChar) -> c_int {
-    crate::xml::validation::validate_name(value)
+pub unsafe extern "C" fn xmlValidateName(value: *const xmlChar, space: c_int) -> c_int {
+    crate::xml::validation::validate_name_space(value, space)
 }
 
-/// Validate a whitespace-separated list of XML Names.
+/// Validate an NMToken value (modern 2-arg form, upstream tree.c).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateNames(const xmlChar *value);
+/// int xmlValidateNMToken(const xmlChar *value, int space);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateNames(value: *const xmlChar) -> c_int {
-    crate::xml::validation::validate_names(value)
+pub unsafe extern "C" fn xmlValidateNMToken(value: *const xmlChar, space: c_int) -> c_int {
+    crate::xml::validation::validate_nmtoken_space(value, space)
+}
+
+/// Validate a Name value (1-arg form, upstream valid.c).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateNameValue(const xmlChar *value);
+/// ```
+///
+/// Returns 1 if valid, 0 if not (NULL included).
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateNameValue(value: *const xmlChar) -> c_int {
+    crate::xml::validation::validate_name_value(value)
+}
+
+/// Validate a whitespace-separated list of Names (separator is exactly
+/// 0x20, upstream erratum E20).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateNamesValue(const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateNamesValue(value: *const xmlChar) -> c_int {
+    crate::xml::validation::validate_names_value(value)
+}
+
+/// Validate an Nmtoken value (1-arg form, upstream valid.c).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateNmtokenValue(const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateNmtokenValue(value: *const xmlChar) -> c_int {
+    crate::xml::validation::validate_nmtoken_value(value)
+}
+
+/// Validate a whitespace-separated list of Nmtokens.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateNmtokensValue(const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateNmtokensValue(value: *const xmlChar) -> c_int {
+    crate::xml::validation::validate_nmtokens_value(value)
+}
+
+/// Validate a single element declaration (VC: Unique Element Type
+/// Declaration, VC: No Duplicate Types).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateElementDecl(xmlValidCtxtPtr ctxt,
+///                            xmlDocPtr doc,
+///                            xmlElementPtr elem);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateElementDecl(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlElement,
+) -> c_int {
+    crate::xml::validation::validate_element_decl(ctxt, doc, elem)
+}
+
+/// Validate a notation declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// Modern libxml2 has no validity constraint on notation declarations; the
+/// oracle returns 1 unconditionally (verified by DSO disassembly).
+///
+/// ```c
+/// int xmlValidateNotationDecl(xmlValidCtxtPtr ctxt,
+///                             xmlDocPtr doc,
+///                             xmlNotationPtr nota);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateNotationDecl(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    nota: *mut _xmlNotation,
+) -> c_int {
+    crate::xml::validation::validate_notation_decl(ctxt, doc, nota)
+}
+
+/// Validate a single attribute against its declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateOneAttribute(xmlValidCtxtPtr ctxt,
+///                             xmlDocPtr doc,
+///                             xmlNodePtr elem,
+///                             xmlAttrPtr attr,
+///                             const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateOneAttribute(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    attr: *mut _xmlAttr,
+    value: *const xmlChar,
+) -> c_int {
+    crate::xml::validation::validate_one_attribute(ctxt, doc, elem, attr, value)
+}
+
+/// Validate a single element against its declaration (without recursing).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateOneElement(xmlValidCtxtPtr ctxt,
+///                           xmlDocPtr doc,
+///                           xmlNodePtr elem);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateOneElement(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+) -> c_int {
+    crate::xml::validation::validate_one_element(ctxt, doc, elem)
+}
+
+/// Validate a namespace declaration attribute.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidateOneNamespace(xmlValidCtxtPtr ctxt,
+///                             xmlDocPtr doc,
+///                             xmlNodePtr elem,
+///                             const xmlChar *prefix,
+///                             xmlNsPtr ns,
+///                             const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidateOneNamespace(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    prefix: *const xmlChar,
+    ns: *mut _xmlNs,
+    value: *const xmlChar,
+) -> c_int {
+    crate::xml::validation::validate_one_namespace(ctxt, doc, elem, prefix, ns, value)
+}
+
+/// Push a new element start onto the validation stack (streaming DTD
+/// validation).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidatePushElement(xmlValidCtxtPtr ctxt,
+///                            xmlDocPtr doc,
+///                            xmlNodePtr elem,
+///                            const xmlChar *qname);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidatePushElement(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    qname: *const xmlChar,
+) -> c_int {
+    crate::xml::validation::validate_push_element(ctxt, doc, elem, qname)
+}
+
+/// Push character data onto the validation stack.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidatePushCData(xmlValidCtxtPtr ctxt,
+///                          const xmlChar *data,
+///                          int len);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidatePushCData(
+    ctxt: *mut _xmlValidCtxt,
+    data: *const xmlChar,
+    len: c_int,
+) -> c_int {
+    crate::xml::validation::validate_push_cdata(ctxt, data, len)
+}
+
+/// Pop an element end from the validation stack.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidatePopElement(xmlValidCtxtPtr ctxt,
+///                           xmlDocPtr doc,
+///                           xmlNodePtr elem,
+///                           const xmlChar *qname);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidatePopElement(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    qname: *const xmlChar,
+) -> c_int {
+    crate::xml::validation::validate_pop_element(ctxt, doc, elem, qname)
+}
+
+/// Build the content-model automaton for an element declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlValidBuildContentModel(xmlValidCtxtPtr ctxt,
+///                               xmlElementPtr elem);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlValidBuildContentModel(
+    ctxt: *mut _xmlValidCtxt,
+    elem: *mut _xmlElement,
+) -> c_int {
+    crate::xml::validation::validate_build_content_model(ctxt, elem)
+}
+
+/// Add an attribute to the document's ID table.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlIDPtr xmlAddID(xmlValidCtxtPtr ctxt,
+///                   xmlDocPtr doc,
+///                   const xmlChar *value,
+///                   xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAddID(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    value: *const xmlChar,
+    attr: *mut _xmlAttr,
+) -> *mut _xmlID {
+    crate::xml::validation::add_id(ctxt, doc, value, attr)
+}
+
+/// Remove an attribute from the document's ID table.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlRemoveID(xmlDocPtr doc, xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRemoveID(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
+    crate::xml::validation::remove_id(doc, attr)
+}
+
+/// Register an IDREF in the document's ref table.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlRefPtr xmlAddRef(xmlValidCtxtPtr ctxt,
+///                     xmlDocPtr doc,
+///                     const xmlChar *value,
+///                     xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAddRef(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    value: *const xmlChar,
+    attr: *mut _xmlAttr,
+) -> *mut _xmlRef {
+    crate::xml::validation::add_ref(ctxt, doc, value, attr)
+}
+
+/// Remove an attribute's IDREF entries.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlRemoveRef(xmlDocPtr doc, xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlRemoveRef(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
+    crate::xml::validation::remove_ref(doc, attr)
+}
+
+/// Add an ID without a validation context (2.13+).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlAddIDSafe(xmlAttrPtr attr, const xmlChar *value);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlAddIDSafe(attr: *mut _xmlAttr, value: *const xmlChar) -> c_int {
+    crate::xml::validation::add_id_safe(attr, value)
+}
+
+/// Free an ID hash table.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeIDTable(xmlIDTablePtr table);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeIDTable(table: *mut c_void) {
+    crate::xml::validation::free_id_table(table as *mut crate::xml::hash::HashTable);
+}
+
+/// Free an IDREF hash table.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeRefTable(xmlRefTablePtr table);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlFreeRefTable(table: *mut c_void) {
+    crate::xml::validation::free_ref_table(table as *mut crate::xml::hash::HashTable);
+}
+
+/// Look up the attribute holding an ID.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlAttrPtr xmlGetID(xmlDocPtr doc, const xmlChar *ID);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetID(doc: *mut _xmlDoc, id: *const xmlChar) -> *mut _xmlAttr {
+    crate::xml::validation::get_id(doc, id)
+}
+
+/// Look up the list of references for an ID.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlListPtr xmlGetRefs(xmlDocPtr doc, const xmlChar *ID);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetRefs(doc: *mut _xmlDoc, id: *const xmlChar) -> *mut c_void {
+    crate::xml::validation::get_refs(doc, id) as *mut c_void
+}
+
+/// Is this attribute an ID?
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlIsID(xmlDocPtr doc, xmlNodePtr elem, xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlIsID(
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    attr: *mut _xmlAttr,
+) -> c_int {
+    crate::xml::validation::is_id(doc, elem, attr)
+}
+
+/// Is this attribute an IDREF?
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlIsRef(xmlDocPtr doc, xmlNodePtr elem, xmlAttrPtr attr);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlIsRef(
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    attr: *mut _xmlAttr,
+) -> c_int {
+    crate::xml::validation::is_ref(doc, elem, attr)
+}
+
+/// Search a DTD for an element declaration (with QName splitting).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlElementPtr xmlGetDtdElementDesc(xmlDtdPtr dtd, const xmlChar *name);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdElementDesc(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+) -> *mut _xmlElement {
+    crate::xml::validation::get_dtd_element_desc(dtd, name)
+}
+
+/// Search a DTD for an attribute declaration (with QName splitting).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlAttributePtr xmlGetDtdAttrDesc(xmlDtdPtr dtd,
+///                                   const xmlChar *elem,
+///                                   const xmlChar *name);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdAttrDesc(
+    dtd: *mut _xmlDtd,
+    elem: *const xmlChar,
+    name: *const xmlChar,
+) -> *mut _xmlAttribute {
+    crate::xml::validation::get_dtd_attr_desc(dtd, elem, name)
+}
+
+/// Search a DTD for a qualified element declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlElementPtr xmlGetDtdQElementDesc(xmlDtdPtr dtd,
+///                                     const xmlChar *name,
+///                                     const xmlChar *prefix);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdQElementDesc(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+    prefix: *const xmlChar,
+) -> *mut _xmlElement {
+    crate::xml::validation::get_dtd_qelement_desc(dtd, name, prefix)
+}
+
+/// Search a DTD for a qualified attribute declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlAttributePtr xmlGetDtdQAttrDesc(xmlDtdPtr dtd,
+///                                    const xmlChar *elem,
+///                                    const xmlChar *name,
+///                                    const xmlChar *prefix);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdQAttrDesc(
+    dtd: *mut _xmlDtd,
+    elem: *const xmlChar,
+    name: *const xmlChar,
+    prefix: *const xmlChar,
+) -> *mut _xmlAttribute {
+    crate::xml::validation::get_dtd_qattr_desc(dtd, elem, name, prefix)
+}
+
+/// Search a DTD for a notation declaration.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNotationPtr xmlGetDtdNotationDesc(xmlDtdPtr dtd, const xmlChar *name);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xmlGetDtdNotationDesc(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+) -> *mut _xmlNotation {
+    crate::xml::validation::get_dtd_notation_desc(dtd, name)
 }
 
 /// Validate the root element of a document.

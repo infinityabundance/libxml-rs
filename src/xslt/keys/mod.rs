@@ -32,6 +32,18 @@ use std::ffi::c_void;
 use std::os::raw::c_int;
 use std::ptr;
 
+/// Candidate-internal storage for a key table's value→node-set index.
+///
+/// Lives behind `_xsltKeyTable.keys` (the upstream `xmlHashTablePtr` slot),
+/// which the candidate repurposes as an opaque pointer to this array
+/// structure. `_xsltKeyTable` itself stays layout-identical to upstream.
+#[repr(C)]
+struct _xsltKeyTableData {
+    table: *mut *mut _xmlXPathObject,
+    nb: c_int,
+    max: c_int,
+}
+
 /// Add a key definition to a stylesheet.
 ///
 /// # SAFETY
@@ -53,15 +65,14 @@ pub unsafe fn xsltAddKeyDef(
     if def.is_null() {
         return -1;
     }
-    (*def).style = style;
     (*def).inst = inst;
-    (*def).name = name;
-    (*def).r#match = match_pattern;
-    (*def).r#use = use_expr;
+    (*def).name = name as *mut xmlChar;
+    (*def).r#match = match_pattern as *mut xmlChar;
+    (*def).r#use = use_expr as *mut xmlChar;
     // Prepend to the stylesheet's key list (upstream appends; order is
-    // preserved for matching semantics).
-    (*def).next = (*style).keys;
-    (*style).keys = def;
+    // preserved for matching semantics). `style->keys` is a void* slot.
+    (*def).next = (*style).keys as *mut _xsltKeyDef;
+    (*style).keys = def as *mut c_void;
     0
 }
 
@@ -88,7 +99,7 @@ pub unsafe fn xsltFreeKeys(style: *mut _xsltStylesheet) {
     if style.is_null() {
         return;
     }
-    let mut cur = (*style).keys;
+    let mut cur = (*style).keys as *mut _xsltKeyDef;
     (*style).keys = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
@@ -106,19 +117,27 @@ pub unsafe fn xsltFreeKeyTable(key_table: *mut _xsltKeyTable) {
     if key_table.is_null() {
         return;
     }
-    if !(*key_table).table.is_null() {
-        let mut i = 0;
-        while i < (*key_table).nb {
-            let obj = *(*key_table).table.offset(i as isize);
-            if !obj.is_null() {
-                xmlXPathFreeObject(obj);
+    let data = (*key_table).keys as *mut _xsltKeyTableData;
+    if !data.is_null() {
+        if !(*data).table.is_null() {
+            let mut i = 0;
+            while i < (*data).nb {
+                let obj = *(*data).table.offset(i as isize);
+                if !obj.is_null() {
+                    xmlXPathFreeObject(obj);
+                }
+                i += 1;
             }
-            i += 1;
+            libc::free((*data).table as *mut libc::c_void);
         }
-        libc::free((*key_table).table as *mut libc::c_void);
+        libc::free(data as *mut libc::c_void);
+        (*key_table).keys = ptr::null_mut();
     }
     if !(*key_table).name.is_null() {
         libc::free((*key_table).name as *mut libc::c_void);
+    }
+    if !(*key_table).nameURI.is_null() {
+        libc::free((*key_table).nameURI as *mut libc::c_void);
     }
     (*key_table).next = ptr::null_mut();
     xmlFree(key_table as *mut libc::c_void);
@@ -133,8 +152,15 @@ pub unsafe fn xsltFreeKeyTables(ctxt: *mut _xsltTransformContext) {
     if ctxt.is_null() {
         return;
     }
-    let mut cur = (*ctxt).keyTables as *mut _xsltKeyTable;
-    (*ctxt).keyTables = ptr::null_mut();
+    // UPSTREAM-PARITY: key tables hang off the document wrapper's `keys`
+    // slot (`_xsltDocument.keys`, xsltFreeDocumentKeys in keys.c); the
+    // transform context itself has no keyTables field.
+    if (*ctxt).document.is_null() {
+        return;
+    }
+    let doc = (*ctxt).document;
+    let mut cur = (*doc).keys as *mut _xsltKeyTable;
+    (*doc).keys = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
         xsltFreeKeyTable(cur);
@@ -155,7 +181,11 @@ pub unsafe fn xsltInitKeys(ctxt: *mut _xsltTransformContext, style: *mut _xsltSt
     if ctxt.is_null() || style.is_null() {
         return -1;
     }
-    let doc = (*ctxt).document;
+    let docw = (*ctxt).document;
+    if docw.is_null() {
+        return 0;
+    }
+    let doc = (*docw).doc;
     if doc.is_null() {
         return 0;
     }
@@ -164,7 +194,7 @@ pub unsafe fn xsltInitKeys(ctxt: *mut _xsltTransformContext, style: *mut _xsltSt
         return 0;
     }
 
-    let mut def = (*style).keys;
+    let mut def = (*style).keys as *mut _xsltKeyDef;
     while !def.is_null() {
         // Compile the match pattern and the use expression.
         let pat = xsltCompilePattern((*def).r#match, doc);
@@ -190,20 +220,47 @@ pub unsafe fn xsltInitKeys(ctxt: *mut _xsltTransformContext, style: *mut _xsltSt
             );
             *cname.add(name_len) = 0;
         }
+        let uri_len = if (*def).nameURI.is_null() {
+            0
+        } else {
+            libc::strlen((*def).nameURI as *const libc::c_char)
+        };
+        let curi = libc::malloc(uri_len + 1) as *mut xmlChar;
+        if !curi.is_null() {
+            if uri_len > 0 {
+                libc::memcpy(
+                    curi as *mut libc::c_void,
+                    (*def).nameURI as *const libc::c_void,
+                    uri_len,
+                );
+            }
+            *curi.add(uri_len) = 0;
+        }
         (*table).name = cname;
-        (*table).depth = (*def).depth;
-        (*table).nb = 0;
-        (*table).max = 0;
-        (*table).table = ptr::null_mut();
+        (*table).nameURI = curi;
+        let data =
+            libc::calloc(1, core::mem::size_of::<_xsltKeyTableData>()) as *mut _xsltKeyTableData;
+        if data.is_null() {
+            libc::free(cname as *mut libc::c_void);
+            libc::free(curi as *mut libc::c_void);
+            libc::free(table as *mut libc::c_void);
+            xsltFreePattern(pat);
+            def = (*def).next;
+            continue;
+        }
+        (*data).nb = 0;
+        (*data).max = 0;
+        (*data).table = ptr::null_mut();
+        (*table).keys = data as *mut c_void;
 
         // Walk the document tree and build the index.
         build_key_table(ctxt, doc, root, pat, use_expr, table);
 
         xsltFreePattern(pat);
 
-        // Prepend the table to the context's key table list.
-        (*table).next = (*ctxt).keyTables as *mut _xsltKeyTable;
-        (*ctxt).keyTables = table as *mut c_void;
+        // Prepend the table to the document's key table list.
+        (*table).next = (*docw).keys as *mut _xsltKeyTable;
+        (*docw).keys = table as *mut c_void;
 
         def = (*def).next;
     }
@@ -299,10 +356,14 @@ unsafe fn add_key_entry(table: *mut _xsltKeyTable, value: *const xmlChar, node: 
     if table.is_null() || value.is_null() || node.is_null() {
         return;
     }
+    let data = (*table).keys as *mut _xsltKeyTableData;
+    if data.is_null() {
+        return;
+    }
     // Look for an existing entry with this value.
     let mut i = 0;
-    while i < (*table).nb {
-        let obj = *(*table).table.offset(i as isize);
+    while i < (*data).nb {
+        let obj = *(*data).table.offset(i as isize);
         if !obj.is_null()
             && (*obj).stringval != ptr::null_mut()
             && libc::strcmp(
@@ -357,25 +418,25 @@ unsafe fn add_key_entry(table: *mut _xsltKeyTable, value: *const xmlChar, node: 
     (*obj).stringval = vcopy;
 
     // Grow the table if needed.
-    if (*table).nb >= (*table).max {
-        let new_max = if (*table).max == 0 {
+    if (*data).nb >= (*data).max {
+        let new_max = if (*data).max == 0 {
             16
         } else {
-            (*table).max * 2
+            (*data).max * 2
         };
         let new_tab = libc::realloc(
-            (*table).table as *mut libc::c_void,
+            (*data).table as *mut libc::c_void,
             (new_max as usize) * core::mem::size_of::<*mut _xmlXPathObject>(),
         ) as *mut *mut _xmlXPathObject;
         if new_tab.is_null() {
             xmlXPathFreeObject(obj);
             return;
         }
-        (*table).table = new_tab;
-        (*table).max = new_max;
+        (*data).table = new_tab;
+        (*data).max = new_max;
     }
-    *(*table).table.offset((*table).nb as isize) = obj;
-    (*table).nb += 1;
+    *(*data).table.offset((*data).nb as isize) = obj;
+    (*data).nb += 1;
 }
 
 /// Evaluate the key() function.
@@ -394,8 +455,13 @@ pub unsafe fn xsltEvalKeyFunction(
     if ctxt.is_null() || name.is_null() || value.is_null() {
         return ptr::null_mut();
     }
-    // Find the key table for this name.
-    let mut table = (*ctxt).keyTables as *mut _xsltKeyTable;
+    // Find the key table for this name. Tables live on the document wrapper's
+    // `keys` slot (UPSTREAM-PARITY: xsltEvalKeyFunction scans
+    // doc->keys / ctxt->document->keys).
+    if (*ctxt).document.is_null() {
+        return ptr::null_mut();
+    }
+    let mut table = (*(*ctxt).document).keys as *mut _xsltKeyTable;
     while !table.is_null() {
         if !(*table).name.is_null()
             && libc::strcmp(
@@ -404,9 +470,10 @@ pub unsafe fn xsltEvalKeyFunction(
             ) == 0
         {
             // Look up the value.
+            let data = (*table).keys as *mut _xsltKeyTableData;
             let mut i = 0;
-            while i < (*table).nb {
-                let obj = *(*table).table.offset(i as isize);
+            while i < (*data).nb {
+                let obj = *(*data).table.offset(i as isize);
                 if !obj.is_null()
                     && !(*obj).stringval.is_null()
                     && libc::strcmp(

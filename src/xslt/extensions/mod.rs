@@ -7,7 +7,7 @@
 //! # UPSTREAM-PARITY
 //!
 //! Upstream libxslt (extensions.c) stores extension function registrations
-//! in the transform context (`extFunctionsTab`), each entry holding the
+//! in the transform context (`extFunctions`), each entry holding the
 //! namespace URI, name, and function pointer. Extension elements are stored
 //! similarly with their transform function.
 //!
@@ -72,11 +72,10 @@ pub unsafe extern "C" fn xsltRegisterExtFunction(
         return -1;
     }
     (*entry).func = f.map(|fp| fp as *mut c_void).unwrap_or(ptr::null_mut());
-    // Prepend to the context's extension function list (extFunctionsTab
+    // Prepend to the context's extension function list (extFunctions
     // is a void* chain in the struct; we use a linked list here).
-    (*entry).next = (*ctxt).extFunctionsTab as *mut _xsltExtFunction;
-    (*ctxt).extFunctionsTab = entry as *mut c_void;
-    (*ctxt).extFunctionsNr += 1;
+    (*entry).next = (*ctxt).extFunctions as *mut _xsltExtFunction;
+    (*ctxt).extFunctions = entry as *mut c_void;
     0
 }
 
@@ -116,8 +115,8 @@ pub unsafe extern "C" fn xsltRegisterExtElement(
         return -1;
     }
     (*entry).func = f.map(|fp| fp as *mut c_void).unwrap_or(ptr::null_mut());
-    (*entry).next = (*ctxt).extInfos as *mut _xsltExtElement;
-    (*ctxt).extInfos = entry as *mut c_void;
+    (*entry).next = (*ctxt).extElements as *mut _xsltExtElement;
+    (*ctxt).extElements = entry as *mut c_void;
     0
 }
 
@@ -135,7 +134,7 @@ pub unsafe fn xsltFindExtFunction(
     if ctxt.is_null() || name.is_null() || ns.is_null() {
         return ptr::null_mut();
     }
-    let mut cur = (*ctxt).extFunctionsTab as *mut _xsltExtFunction;
+    let mut cur = (*ctxt).extFunctions as *mut _xsltExtFunction;
     while !cur.is_null() {
         if !(*cur).name.is_null()
             && !(*cur).ns.is_null()
@@ -166,7 +165,7 @@ pub unsafe fn xsltFindExtElement(
     if ctxt.is_null() || name.is_null() || ns.is_null() {
         return ptr::null_mut();
     }
-    let mut cur = (*ctxt).extInfos as *mut _xsltExtElement;
+    let mut cur = (*ctxt).extElements as *mut _xsltExtElement;
     while !cur.is_null() {
         if !(*cur).name.is_null()
             && !(*cur).ns.is_null()
@@ -193,9 +192,8 @@ pub unsafe fn xsltFreeExts(ctxt: *mut _xsltTransformContext) {
         return;
     }
     // Free extension functions.
-    let mut cur = (*ctxt).extFunctionsTab as *mut _xsltExtFunction;
-    (*ctxt).extFunctionsTab = ptr::null_mut();
-    (*ctxt).extFunctionsNr = 0;
+    let mut cur = (*ctxt).extFunctions as *mut _xsltExtFunction;
+    (*ctxt).extFunctions = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
         if !(*cur).name.is_null() {
@@ -208,8 +206,8 @@ pub unsafe fn xsltFreeExts(ctxt: *mut _xsltTransformContext) {
         cur = next;
     }
     // Free extension elements.
-    let mut cur = (*ctxt).extInfos as *mut _xsltExtElement;
-    (*ctxt).extInfos = ptr::null_mut();
+    let mut cur = (*ctxt).extElements as *mut _xsltExtElement;
+    (*ctxt).extElements = ptr::null_mut();
     while !cur.is_null() {
         let next = (*cur).next;
         if !(*cur).name.is_null() {

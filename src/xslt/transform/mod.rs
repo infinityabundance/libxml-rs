@@ -102,14 +102,12 @@ pub unsafe extern "C" fn xsltNewTransformContext(
         return ptr::null_mut();
     }
     (*ctxt).style = style;
-    (*ctxt).document = doc;
     (*ctxt).state = XSLT_STATE_OK;
     // UPSTREAM-PARITY: the per-context depth/vars limits come from the
     // process-wide xsltMaxDepth/xsltMaxVars globals (adjustable via
     // xsltproc --maxdepth/--maxvars).
-    (*ctxt).maxDepth = unsafe { xsltMaxDepth };
-    (*ctxt).maxInsertDepth = XSLT_MAX_INSERT_DEPTH;
-    (*ctxt).profile = ptr::null_mut();
+    (*ctxt).maxTemplateDepth = unsafe { xsltMaxDepth };
+    (*ctxt).maxTemplateVars = unsafe { xsltMaxVars };
 
     // Create the XPath context.
     let xpath_ctxt = xmlXPathNewContext(doc);
@@ -126,11 +124,27 @@ pub unsafe extern "C" fn xsltNewTransformContext(
         register_xslt_functions(ctxt);
     }
 
-    // Security preferences: use the default if none set.
-    if (*style).secPrefs.is_null() {
-        (*ctxt).secPrefs = crate::xslt::security::xsltGetDefaultSecurityPrefs();
-    } else {
-        (*ctxt).secPrefs = (*style).secPrefs;
+    // Security preferences: upstream xsltNewTransformContext binds the
+    // process-wide default (transform.c 1.1.42); there is no per-stylesheet
+    // security slot.
+    (*ctxt).sec = crate::xslt::security::xsltGetDefaultSecurityPrefs();
+
+    // UPSTREAM-PARITY: wrap the source document in an _xsltDocument
+    // (docu->main = 1, transform.c) so ctxt->document is a proper document
+    // wrapper; key tables and loaded documents hang off it.
+    if !doc.is_null() {
+        let docu = libc::calloc(1, core::mem::size_of::<_xsltDocument>()) as *mut _xsltDocument;
+        if !docu.is_null() {
+            (*docu).main = 1;
+            (*docu).doc = doc;
+            (*ctxt).document = docu;
+            (*ctxt).docList = docu;
+        }
+        // Upstream xsltApplyStylesheetInternal records the initial context
+        // here (transform.c); xsltEvalGlobalVariable evaluates global
+        // variables against it (variables.c).
+        (*ctxt).initialContextDoc = doc;
+        (*ctxt).initialContextNode = doc as *mut _xmlNode;
     }
     ctxt
 }
@@ -166,11 +180,16 @@ pub unsafe extern "C" fn xsltFreeTransformContext(ctxt: *mut _xsltTransformConte
     if !(*ctxt).varsTab.is_null() {
         libc::free((*ctxt).varsTab as *mut libc::c_void);
     }
-    if !(*ctxt).paramsTab.is_null() {
-        libc::free((*ctxt).paramsTab as *mut libc::c_void);
-    }
     if !(*ctxt).templTab.is_null() {
         libc::free((*ctxt).templTab as *mut libc::c_void);
+    }
+    // Free the document wrapper (the wrapped _xmlDoc belongs to the caller;
+    // only the _xsltDocument shell and its key tables are owned here).
+    if !(*ctxt).document.is_null() {
+        let docu = (*ctxt).document;
+        (*docu).doc = ptr::null_mut();
+        libc::free(docu as *mut libc::c_void);
+        (*ctxt).document = ptr::null_mut();
     }
     libc::free(ctxt as *mut libc::c_void);
 }
@@ -270,16 +289,24 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
         }
     }
 
-    (*ctxt).resultDoc = result;
+    // UPSTREAM-PARITY: xsltApplyStylesheetInternal records the initial
+    // context here (transform.c 1.1.42); global variable evaluation uses it.
+    (*ctxt).initialContextDoc = doc;
+    (*ctxt).initialContextNode = doc as *mut _xmlNode;
+
+    (*ctxt).output = result;
     (*ctxt).insert = result as *mut _xmlNode;
 
     // Apply the root template: XSLT 1.0 §5.1 applies the template
     // matching "/" to the document node (the root of the source tree).
     // The document node is the doc cast to a node; its parent is null.
     (*ctxt).node = doc as *mut _xmlNode;
-    (*ctxt).document = doc;
-    (*ctxt).contextSize = 1;
-    (*ctxt).proximityPosition = 1;
+    if !(*ctxt).xpathCtxt.is_null() {
+        (*(*ctxt).xpathCtxt).node = doc as *mut _xmlNode;
+        (*(*ctxt).xpathCtxt).doc = doc;
+        (*(*ctxt).xpathCtxt).contextSize = 1;
+        (*(*ctxt).xpathCtxt).proximityPosition = 1;
+    }
     let result_code = apply_templates_to_node(ctxt, doc as *mut _xmlNode, ptr::null());
     let _ = result_code;
 
@@ -295,7 +322,7 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
 
     if own_ctxt {
         // Detach the result document from the context before freeing.
-        (*ctxt).resultDoc = ptr::null_mut();
+        (*ctxt).output = ptr::null_mut();
         xsltFreeTransformContext(ctxt);
     }
     final_result
@@ -423,8 +450,10 @@ unsafe fn apply_root_template(ctxt: *mut _xsltTransformContext, doc: *mut _xmlDo
     // Use the document node itself as the context node.
     let doc_node = doc as *mut _xmlNode;
     (*ctxt).node = doc_node;
-    (*ctxt).contextSize = 1;
-    (*ctxt).proximityPosition = 1;
+    if !(*ctxt).xpathCtxt.is_null() {
+        (*(*ctxt).xpathCtxt).contextSize = 1;
+        (*(*ctxt).xpathCtxt).proximityPosition = 1;
+    }
     let templ = crate::xslt::templates::xsltFindTemplate(style, doc_node, ptr::null());
     if templ.is_null() {
         // No match: copy nothing (empty result).
@@ -480,14 +509,16 @@ unsafe fn apply_templates_to_node(
         return 0;
     }
     // Check recursion depth.
-    if (*ctxt).depth >= (*ctxt).maxDepth {
+    if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
         return -1;
     }
     (*ctxt).depth += 1;
     (*ctxt).templ = templ;
     (*ctxt).node = node;
-    (*ctxt).contextSize = 1;
-    (*ctxt).proximityPosition = 1;
+    if !(*ctxt).xpathCtxt.is_null() {
+        (*(*ctxt).xpathCtxt).contextSize = 1;
+        (*(*ctxt).xpathCtxt).proximityPosition = 1;
+    }
     execute_content(ctxt, (*templ).content);
     (*ctxt).depth -= 1;
     (*ctxt).templ = ptr::null_mut();
@@ -514,10 +545,14 @@ unsafe fn apply_templates_to_children(
     // Sort if xsl:sort children are present on the apply-templates
     // instruction (handled by the caller via sort handling).
     let size = children.len();
-    (*ctxt).contextSize = size as c_int;
+    if !(*ctxt).xpathCtxt.is_null() {
+        (*(*ctxt).xpathCtxt).contextSize = size as c_int;
+    }
     for (i, node) in children.iter().enumerate() {
         (*ctxt).node = *node;
-        (*ctxt).proximityPosition = (i + 1) as c_int;
+        if !(*ctxt).xpathCtxt.is_null() {
+            (*(*ctxt).xpathCtxt).proximityPosition = (i + 1) as c_int;
+        }
         apply_templates_to_node(ctxt, *node, mode);
     }
     0
@@ -755,12 +790,12 @@ unsafe fn process_exsl_document(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     (*frag).type_ = XML_DOCUMENT_NODE as c_int;
     (*frag).doc = frag;
     let saved_insert = (*ctxt).insert;
-    let saved_result = (*ctxt).resultDoc;
+    let saved_output = (*ctxt).output;
     (*ctxt).insert = frag as *mut _xmlNode;
-    (*ctxt).resultDoc = frag;
+    (*ctxt).output = frag;
     execute_content(ctxt, (*inst).children);
     (*ctxt).insert = saved_insert;
-    (*ctxt).resultDoc = saved_result;
+    (*ctxt).output = saved_output;
 
     // Write the fragment to the file.
     let fname = crate::abi::versioning::c_str_to_bytes(href as *const c_char);
@@ -808,18 +843,22 @@ unsafe fn eval_xpath(
     }
     // Set the context node and position on both the C ABI struct and the
     // internal Rust XPathContext (which is what the evaluator actually
-    // reads via the `extra` field).
+    // reads via the `extra` field). contextSize/proximityPosition live on
+    // the XPath context (UPSTREAM-PARITY: libxml2 xpath.h), so the mirror
+    // copies from there.
     (*xpath_ctxt).node = (*ctxt).node;
-    (*xpath_ctxt).doc = (*ctxt).document;
-    (*xpath_ctxt).contextSize = (*ctxt).contextSize;
-    (*xpath_ctxt).proximityPosition = (*ctxt).proximityPosition;
+    if !(*ctxt).document.is_null() {
+        (*xpath_ctxt).doc = (*(*ctxt).document).doc;
+    }
     let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
     if !internal.is_null() {
         (*internal).context_node = (*ctxt).node;
-        (*internal).document = (*ctxt).document;
-        (*internal).context_size = (*ctxt).contextSize;
-        (*internal).context_position = (*ctxt).proximityPosition;
-        (*internal).proximity_position = (*ctxt).proximityPosition;
+        if !(*ctxt).document.is_null() {
+            (*internal).document = (*(*ctxt).document).doc;
+        }
+        (*internal).context_size = (*xpath_ctxt).contextSize;
+        (*internal).context_position = (*xpath_ctxt).proximityPosition;
+        (*internal).proximity_position = (*xpath_ctxt).proximityPosition;
     }
     xmlXPathEvalExpression(expr, xpath_ctxt)
 }
@@ -895,8 +934,10 @@ unsafe fn process_apply_templates(ctxt: *mut _xsltTransformContext, inst: *mut _
                     let n = *(*sorted).nodeTab.offset(k as isize);
                     if !n.is_null() {
                         (*ctxt).node = n;
-                        (*ctxt).contextSize = (*sorted).nodeNr;
-                        (*ctxt).proximityPosition = k + 1;
+                        if !(*ctxt).xpathCtxt.is_null() {
+                            (*(*ctxt).xpathCtxt).contextSize = (*sorted).nodeNr;
+                            (*(*ctxt).xpathCtxt).proximityPosition = k + 1;
+                        }
                         apply_templates_with_params(ctxt, n, mode, params);
                     }
                     k += 1;
@@ -905,11 +946,15 @@ unsafe fn process_apply_templates(ctxt: *mut _xsltTransformContext, inst: *mut _
                 libc::free(sorted as *mut libc::c_void);
             }
         } else {
-            (*ctxt).contextSize = node_ptrs.len() as c_int;
+            if !(*ctxt).xpathCtxt.is_null() {
+                (*(*ctxt).xpathCtxt).contextSize = node_ptrs.len() as c_int;
+            }
             for (i, n) in node_ptrs.iter().enumerate() {
                 if !n.is_null() {
                     (*ctxt).node = *n;
-                    (*ctxt).proximityPosition = (i + 1) as c_int;
+                    if !(*ctxt).xpathCtxt.is_null() {
+                        (*(*ctxt).xpathCtxt).proximityPosition = (i + 1) as c_int;
+                    }
                     apply_templates_with_params(ctxt, *n, mode, params);
                 }
             }
@@ -1109,12 +1154,12 @@ unsafe fn eval_content_fragment(
     (*frag).doc = frag;
     // Save the insert point and redirect into the fragment.
     let saved_insert = (*ctxt).insert;
-    let saved_result = (*ctxt).resultDoc;
+    let saved_output = (*ctxt).output;
     (*ctxt).insert = frag as *mut _xmlNode;
-    (*ctxt).resultDoc = frag;
+    (*ctxt).output = frag;
     execute_content(ctxt, content);
     (*ctxt).insert = saved_insert;
-    (*ctxt).resultDoc = saved_result;
+    (*ctxt).output = saved_output;
 
     let obj = xmlMalloc_zero_obj();
     if obj.is_null() {
@@ -1142,7 +1187,7 @@ unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     if templ.is_null() {
         return;
     }
-    if (*ctxt).depth >= (*ctxt).maxDepth {
+    if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
         return;
     }
     (*ctxt).depth += 1;
@@ -1184,18 +1229,20 @@ unsafe fn process_apply_imports(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     }
     // The current template's import depth; imported templates have HIGHER
     // depth values. apply-imports considers templates with depth strictly
-    // greater than the current template's depth.
-    let current_depth = (*current_templ).depth;
+    // greater than the current template's depth. (Depth is carried in
+    // `position`, candidate-internal; upstream tracks it via the stylesheet
+    // import chain.)
+    let current_depth = (*current_templ).position;
     let mode = (*current_templ).mode;
 
     let mut best: *mut _xsltTemplate = ptr::null_mut();
-    let mut best_priority: f64 = f64::NEG_INFINITY;
+    let mut best_priority: f32 = f32::NEG_INFINITY;
     let mut best_depth: c_int = -1;
 
     let mut templ = (*style).templates;
     while !templ.is_null() {
         // Only templates imported more deeply than the current one.
-        if (*templ).depth <= current_depth {
+        if (*templ).position <= current_depth {
             templ = (*templ).next;
             continue;
         }
@@ -1214,8 +1261,9 @@ unsafe fn process_apply_imports(ctxt: *mut _xsltTransformContext, inst: *mut _xm
             templ = (*templ).next;
             continue;
         }
-        // Pattern must match.
-        let pattern_ptr = (*templ).r#match as *mut crate::xslt::patterns::_xsltPattern;
+        // Pattern must match. The compiled pattern is carried in `params`
+        // (candidate-internal; see xsltAddTemplate).
+        let pattern_ptr = (*templ).params as *mut crate::xslt::patterns::_xsltPattern;
         if pattern_ptr.is_null() {
             templ = (*templ).next;
             continue;
@@ -1226,16 +1274,17 @@ unsafe fn process_apply_imports(ctxt: *mut _xsltTransformContext, inst: *mut _xm
         }
         // Priority: explicit or default.
         let priority = (*templ).priority;
-        if priority > best_priority || (priority == best_priority && (*templ).depth > best_depth) {
+        if priority > best_priority || (priority == best_priority && (*templ).position > best_depth)
+        {
             best = templ;
             best_priority = priority;
-            best_depth = (*templ).depth;
+            best_depth = (*templ).position;
         }
         templ = (*templ).next;
     }
 
     if !best.is_null() {
-        if (*ctxt).depth >= (*ctxt).maxDepth {
+        if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
             return;
         }
         (*ctxt).depth += 1;
@@ -1273,10 +1322,15 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
     }
     // Check for xsl:sort children.
     let sort = find_sort_children(ctxt, inst);
-    // Save the current node list state.
+    // Save the current node list state (contextSize/proximityPosition live
+    // on the XPath context; UPSTREAM-PARITY: xpath.h).
     let saved_node = (*ctxt).node;
-    let saved_size = (*ctxt).contextSize;
-    let saved_pos = (*ctxt).proximityPosition;
+    let xpath_ctxt = (*ctxt).xpathCtxt;
+    let (saved_size, saved_pos) = if xpath_ctxt.is_null() {
+        (0, 0)
+    } else {
+        ((*xpath_ctxt).contextSize, (*xpath_ctxt).proximityPosition)
+    };
 
     let mut node_ptrs: Vec<*mut _xmlNode> = Vec::new();
     let mut i = 0;
@@ -1303,13 +1357,17 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
                 }
             }
             crate::xslt::sorting::xsltSortNodeSet(ctxt, sorted, sort);
-            (*ctxt).contextSize = (*sorted).nodeNr;
+            if !xpath_ctxt.is_null() {
+                (*xpath_ctxt).contextSize = (*sorted).nodeNr;
+            }
             let mut k = 0;
             while k < (*sorted).nodeNr {
                 let n = *(*sorted).nodeTab.offset(k as isize);
                 if !n.is_null() {
                     (*ctxt).node = n;
-                    (*ctxt).proximityPosition = k + 1;
+                    if !xpath_ctxt.is_null() {
+                        (*xpath_ctxt).proximityPosition = k + 1;
+                    }
                     execute_content(ctxt, (*inst).children);
                 }
                 k += 1;
@@ -1318,11 +1376,15 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
             libc::free(sorted as *mut libc::c_void);
         }
     } else {
-        (*ctxt).contextSize = node_ptrs.len() as c_int;
+        if !xpath_ctxt.is_null() {
+            (*xpath_ctxt).contextSize = node_ptrs.len() as c_int;
+        }
         for (i, n) in node_ptrs.iter().enumerate() {
             if !n.is_null() {
                 (*ctxt).node = *n;
-                (*ctxt).proximityPosition = (i + 1) as c_int;
+                if !xpath_ctxt.is_null() {
+                    (*xpath_ctxt).proximityPosition = (i + 1) as c_int;
+                }
                 execute_content(ctxt, (*inst).children);
             }
         }
@@ -1330,8 +1392,10 @@ unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode
 
     // Restore the current node state.
     (*ctxt).node = saved_node;
-    (*ctxt).contextSize = saved_size;
-    (*ctxt).proximityPosition = saved_pos;
+    if !xpath_ctxt.is_null() {
+        (*xpath_ctxt).contextSize = saved_size;
+        (*xpath_ctxt).proximityPosition = saved_pos;
+    }
     xmlXPathFreeObject(obj);
 }
 

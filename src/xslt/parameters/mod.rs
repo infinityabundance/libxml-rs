@@ -55,8 +55,11 @@ pub unsafe fn xsltParseStylesheetParams(
         let parsed = xsltParseStylesheetParam(style, name, value);
         if !parsed.is_null() {
             let p = &mut *parsed;
-            p.next = (*style).params as *mut _xsltStackElem;
-            (*style).params = parsed as *mut c_void;
+            // UPSTREAM-PARITY: caller params are prepended to the
+            // stylesheet's global variable list, flagged XSLT_VAR_PARAM
+            // (xsltInitGlobalVariables processes both in one pass).
+            p.next = (*style).variables;
+            (*style).variables = parsed;
             count += 1;
         }
         i += 2;
@@ -154,7 +157,6 @@ unsafe fn xmlFree_alloc_stack_elem(
         None => ptr::null(),
     };
     (*v).flags = XSLT_VAR_PARAM | XSLT_VAR_INTERNAL;
-    (*v).style = ptr::null_mut();
     Some(v)
 }
 
@@ -217,50 +219,10 @@ pub unsafe fn xsltPushParam(ctxt: *mut _xsltTransformContext, param: *mut _xsltS
     if ctxt.is_null() || param.is_null() {
         return -1;
     }
-    let ctx = &mut *ctxt;
-    let new_nr = ctx.paramsNr + 1;
-    if new_nr > ctx.paramsMax {
-        let new_max = if ctx.paramsMax == 0 {
-            16
-        } else {
-            ctx.paramsMax * 2
-        };
-        let new_tab = libc::realloc(
-            ctx.paramsTab as *mut libc::c_void,
-            (new_max as usize) * core::mem::size_of::<*mut _xsltStackElem>(),
-        ) as *mut *mut _xsltStackElem;
-        if new_tab.is_null() {
-            return -1;
-        }
-        ctx.paramsTab = new_tab as *mut c_void;
-        ctx.paramsMax = new_max;
-    }
-    (*param).next = if ctx.paramsNr > 0 {
-        *((ctx.paramsTab as *mut *mut _xsltStackElem).offset((ctx.paramsNr - 1) as isize))
-    } else {
-        ptr::null_mut()
-    };
-    *((ctx.paramsTab as *mut *mut _xsltStackElem).offset(ctx.paramsNr as isize)) = param;
-    ctx.paramsNr = new_nr;
-
-    // Register the parameter in the internal XPath context's variable hash
-    // so `$name` resolves during XPath evaluation (with-param values).
-    let xpath_ctxt = ctx.xpathCtxt;
-    if !xpath_ctxt.is_null() && !(*param).name.is_null() {
-        let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
-        if !internal.is_null() {
-            let name_len = libc::strlen((*param).name as *const libc::c_char);
-            let name_bytes = core::slice::from_raw_parts((*param).name, name_len);
-            let name = String::from_utf8_lossy(name_bytes).into_owned();
-            let value = if (*param).value.is_null() {
-                crate::xml::xpath::types::XPathValue::String(String::new())
-            } else {
-                crate::abi::exports_xml2::object_to_xpathvalue_pub((*param).value)
-            };
-            (*internal).register_variable(&name, value);
-        }
-    }
-    0
+    // UPSTREAM-PARITY: local with-param bindings live on the same variable
+    // stack as xsl:variable bindings (xsltVariableLookup walks varsTab);
+    // there is no separate parameter stack in the transform context.
+    xsltPushVariable(ctxt, param)
 }
 
 /// Pop a parameter from the parameter stack.
@@ -272,28 +234,7 @@ pub unsafe fn xsltPopParam(ctxt: *mut _xsltTransformContext) -> *mut _xsltStackE
     if ctxt.is_null() {
         return ptr::null_mut();
     }
-    let ctx = &mut *ctxt;
-    if ctx.paramsNr == 0 {
-        return ptr::null_mut();
-    }
-    ctx.paramsNr -= 1;
-    let param = *((ctx.paramsTab as *mut *mut _xsltStackElem).offset(ctx.paramsNr as isize));
-    (*param).next = ptr::null_mut();
-
-    // Unregister the parameter from the internal XPath context's hash.
-    if !(*param).name.is_null() {
-        let xpath_ctxt = ctx.xpathCtxt;
-        if !xpath_ctxt.is_null() {
-            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
-            if !internal.is_null() {
-                let name_len = libc::strlen((*param).name as *const libc::c_char);
-                let name_bytes = core::slice::from_raw_parts((*param).name, name_len);
-                let name = String::from_utf8_lossy(name_bytes).into_owned();
-                (*internal).unregister_variable(&name);
-            }
-        }
-    }
-    param
+    xsltPopVariable(ctxt)
 }
 
 #[cfg(test)]

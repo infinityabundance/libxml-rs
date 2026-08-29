@@ -71,7 +71,12 @@ GUARDS = (
 
 
 def parse_structs():
-    """Parse #[repr(C)] structs/unions from structs.rs -> ordered {name: [fields]}."""
+    """Parse #[repr(C)] structs/unions from structs.rs -> ordered {name: [fields]}.
+
+    Field names are kept RAW (raw identifiers keep their `r#` prefix) so the
+    generated probe can reference them; comparisons normalize with
+    norm_field().
+    """
     text = open(SRC_STRUCTS).read()
     out = {}
     # find repr(C) attribute followed by struct/union NAME { ... }
@@ -88,12 +93,17 @@ def parse_structs():
                 continue
             if s.startswith("#"):
                 continue
-            # pub name: Type,
-            fm = re.match(r"pub\s+([A-Za-z_]\w*)\s*:", s)
+            # pub name: Type,  (raw identifiers may be r#name)
+            fm = re.match(r"pub\s+(r#)?([A-Za-z_]\w*)\s*:", s)
             if fm:
-                fields.append(fm.group(1))
+                fields.append((fm.group(1) or "") + fm.group(2))
         out[name] = {"kind": kind, "fields": fields}
     return out
+
+
+def norm_field(f):
+    """Strip the `r#` raw-identifier prefix for cross-language comparison."""
+    return f[2:] if f.startswith("r#") else f
 
 
 def parse_enums():
@@ -436,7 +446,7 @@ def main():
             mismatches.append({"type": name, "reason": "size/align",
                                "rust": rs["sizes"], "c": c["sizes"]})
         # positional field comparison (declaration order)
-        rfields = structs[name]["fields"]
+        rfields = [norm_field(f) for f in structs[name]["fields"]]
         cfields = c_fields.get(name, [])
         if len(rfields) != len(cfields):
             mismatches.append({"type": name, "reason": "field count",
@@ -446,7 +456,7 @@ def main():
             if i >= len(cfields):
                 break
             cf = cfields[i]
-            rv = rs["fields"].get(rf)
+            rv = rs["fields"].get(structs[name]["fields"][i])
             cv = c["fields"].get(cf)
             if rv is None or cv is None or rv != cv:
                 mismatches.append({"type": name, "reason": f"field[{i}] {rf} vs {cf}",

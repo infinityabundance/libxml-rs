@@ -188,10 +188,8 @@ pub fn xsltSetTransformErrorFunc(
     }
     // SAFETY: ctxt must be a valid _xsltTransformContext.
     unsafe {
-        (*ctxt).errFunc = handler
-            .map(|h| h as *mut std::ffi::c_void)
-            .unwrap_or(std::ptr::null_mut());
-        (*ctxt).errCtxt = ctx;
+        (*ctxt).error = handler;
+        (*ctxt).errctx = ctx;
     }
 }
 
@@ -253,15 +251,11 @@ pub fn xsltTransformError(
     if !ctxt.is_null() {
         // SAFETY: ctxt must be a valid _xsltTransformContext.
         let ctx = unsafe { &*ctxt };
-        if !ctx.errFunc.is_null() {
-            // SAFETY: errFunc is a valid handler registered by
-            // xsltSetTransformErrorFunc; errCtxt is the matching context.
-            let handler: unsafe extern "C" fn(*mut std::ffi::c_void, *const std::os::raw::c_char) =
-                unsafe { std::mem::transmute(ctx.errFunc) };
+        if let Some(handler) = ctx.error {
             let full = format!("{}{}", prefix, text);
             let mut cmsg = full.into_bytes();
             cmsg.push(0);
-            unsafe { handler(ctx.errCtxt, cmsg.as_ptr() as *const std::os::raw::c_char) };
+            unsafe { handler(ctx.errctx, cmsg.as_ptr() as *const std::os::raw::c_char) };
             return;
         }
     }

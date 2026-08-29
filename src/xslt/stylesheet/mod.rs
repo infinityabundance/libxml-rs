@@ -64,7 +64,6 @@ pub unsafe extern "C" fn xsltStylesheetCreate() -> *mut _xsltStylesheet {
         return ptr::null_mut();
     }
     (*style).templates = ptr::null_mut();
-    (*style).templatesFree = ptr::null_mut();
     (*style).keys = ptr::null_mut();
     (*style).parent = ptr::null_mut();
     (*style).next = ptr::null_mut();
@@ -112,33 +111,24 @@ pub unsafe extern "C" fn xsltFreeStylesheet(style: *mut _xsltStylesheet) {
     crate::xslt::attributes::xsltFreeAttrSets(style);
     // Free strip/preserve-space rules.
     crate::xslt::whitespace::xsltFreeStripSpaces(style);
-    // Free global variables and parameters.
-    free_stack_elems((*style).variables as *mut _xsltStackElem);
+    // Free global variables and parameters (both live in `variables`).
+    free_stack_elems((*style).variables);
     (*style).variables = ptr::null_mut();
-    free_stack_elems((*style).params as *mut _xsltStackElem);
-    (*style).params = ptr::null_mut();
     // Free decimal formats.
-    free_decimal_formats((*style).decimalFormat as *mut _xsltDecimalFormat);
+    free_decimal_formats((*style).decimalFormat);
     (*style).decimalFormat = ptr::null_mut();
-    // Free the namespace list.
-    if !(*style).nsList.is_null() {
-        let mut i = 0;
-        while i < (*style).nsNr {
-            let ns = *(*style).nsList.offset(i as isize);
-            if !ns.is_null() {
-                libc::free(ns as *mut libc::c_void);
-            }
-            i += 1;
+    // Free the preserve-space list (carried in nsDefs; see whitespace).
+    if !(*style).nsDefs.is_null() {
+        let mut cur = (*style).nsDefs as *mut crate::xslt::whitespace::_xsltStripSpace;
+        while !cur.is_null() {
+            let next = (*cur).next;
+            crate::xslt::whitespace::xsltFreeStripSpaceEntry(cur);
+            cur = next;
         }
-        libc::free((*style).nsList as *mut libc::c_void);
     }
     // Free the stylesheet document.
     if !(*style).doc.is_null() {
         free_doc((*style).doc);
-    }
-    // Free the internal hash (templates lookup).
-    if !(*style).internalHash.is_null() {
-        libc::free((*style).internalHash as *mut libc::c_void);
     }
     // Free the string fields that we own (heap-allocated by the compiler).
     free_owned_str((*style).method);
@@ -178,12 +168,12 @@ unsafe fn free_decimal_formats(head: *mut _xsltDecimalFormat) {
             libc::free((*cur).name as *mut libc::c_void);
         }
         free_owned_str((*cur).decimalPoint);
-        free_owned_str((*cur).groupingSeparator);
+        free_owned_str((*cur).grouping);
         free_owned_str((*cur).infinity);
         free_owned_str((*cur).minusSign);
-        free_owned_str((*cur).NaN);
+        free_owned_str((*cur).noNumber);
         free_owned_str((*cur).percent);
-        free_owned_str((*cur).perMille);
+        free_owned_str((*cur).permille);
         free_owned_str((*cur).zeroDigit);
         free_owned_str((*cur).digit);
         free_owned_str((*cur).patternSeparator);

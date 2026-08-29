@@ -40,11 +40,13 @@ use crate::abi::types::xmlElementContentOccur::*;
 use crate::abi::types::xmlElementContentType::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::xmlElementTypeVal::*;
+use crate::abi::types::xmlEntityType::*;
 use crate::abi::types::*;
 use crate::xml::dtd;
 use crate::xml::entities;
 use crate::xml::hash;
 use crate::xml::string;
+use crate::xml::tree;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Constants
@@ -282,7 +284,8 @@ fn is_xml_name_start(c: char) -> bool {
         '\u{370}'..='\u{37D}' | '\u{37F}'..='\u{1FFF}' |
         '\u{200C}'..='\u{200D}' | '\u{2070}'..='\u{218F}' |
         '\u{2C00}'..='\u{2FEF}' | '\u{3001}'..='\u{D7FF}' |
-        '\u{F900}'..='\u{FDCF}' | '\u{FDF0}'..='\u{FFFD}'
+        '\u{F900}'..='\u{FDCF}' | '\u{FDF0}'..='\u{FFFD}' |
+        '\u{10000}'..='\u{EFFFF}'
     )
 }
 
@@ -487,69 +490,25 @@ pub unsafe fn validate_nmtokens(value: *const xmlChar) -> c_int {
 ///
 /// - `value` must be a valid null-terminated string or NULL.
 pub unsafe fn validate_attribute_value(atype: c_int, value: *const xmlChar) -> c_int {
-    if value.is_null() {
-        return 0;
-    }
-
-    // CDATA accepts anything (including empty string per XML spec)
-    if atype == XML_ATTRIBUTE_CDATA as c_int {
-        return 1;
-    }
-
-    let s = unsafe { string::xmlstr_to_bytes(value) };
-    let s = core::str::from_utf8(s).unwrap_or("");
-
-    if s.is_empty() {
-        // UPSTREAM-PARITY: Empty values are not valid for non-CDATA types.
-        return 0;
-    }
-
+    // UPSTREAM-PARITY: upstream xmlValidateAttributeValue dispatches to
+    // xmlValidateAttributeValueInternal(NULL, type, value) whose switch
+    // matches this exactly; CDATA (and unknown types) fall through to 1.
     match atype as u32 {
-        t if t == XML_ATTRIBUTE_CDATA as u32 => 1,
-
-        t if t == XML_ATTRIBUTE_ID as u32 => {
-            // ID must be a valid XML Name
-            unsafe { validate_name(value) }
+        t if t == XML_ATTRIBUTE_ENTITIES as u32 || t == XML_ATTRIBUTE_IDREFS as u32 => {
+            validate_values_internal(value, 0)
         }
-
-        t if t == XML_ATTRIBUTE_IDREF as u32 => {
-            // IDREF must be a valid XML Name
-            unsafe { validate_name(value) }
+        t if t == XML_ATTRIBUTE_ENTITY as u32
+            || t == XML_ATTRIBUTE_IDREF as u32
+            || t == XML_ATTRIBUTE_ID as u32
+            || t == XML_ATTRIBUTE_NOTATION as u32 =>
+        {
+            validate_value_internal(value, 0)
         }
-
-        t if t == XML_ATTRIBUTE_IDREFS as u32 => {
-            // IDREFS is whitespace-separated list of XML Names
-            unsafe { validate_names(value) }
+        t if t == XML_ATTRIBUTE_NMTOKENS as u32 || t == XML_ATTRIBUTE_ENUMERATION as u32 => {
+            validate_values_internal(value, XML_SCAN_NMTOKEN)
         }
-
-        t if t == XML_ATTRIBUTE_ENTITY as u32 => {
-            // ENTITY must be a valid XML Name
-            unsafe { validate_name(value) }
-        }
-
-        t if t == XML_ATTRIBUTE_ENTITIES as u32 => {
-            // ENTITIES is whitespace-separated list of XML Names
-            unsafe { validate_names(value) }
-        }
-
-        t if t == XML_ATTRIBUTE_NMTOKEN as u32 => unsafe { validate_nmtoken(value) },
-
-        t if t == XML_ATTRIBUTE_NMTOKENS as u32 => unsafe { validate_nmtokens(value) },
-
-        t if t == XML_ATTRIBUTE_ENUMERATION as u32 => {
-            // Enumeration values are NMTOKENs, checked separately in
-            // validate_enumeration. Here we just accept any non-empty value.
-            // UPSTREAM-PARITY: xmlValidateAttributeValue returns 1 for
-            // ENUMERATION since the actual enumeration check happens elsewhere.
-            1
-        }
-
-        t if t == XML_ATTRIBUTE_NOTATION as u32 => {
-            // NOTATION must be a valid XML Name
-            unsafe { validate_name(value) }
-        }
-
-        _ => 0,
+        t if t == XML_ATTRIBUTE_NMTOKEN as u32 => validate_value_internal(value, XML_SCAN_NMTOKEN),
+        _ => 1, // CDATA / unknown
     }
 }
 
@@ -696,7 +655,8 @@ pub unsafe fn validate_id(
     }
 
     // First, check that the value is a valid XML Name
-    if unsafe { validate_name(value) } == 0 {
+    // UPSTREAM-PARITY: xmlValidateID uses xmlValidateNameValue semantics.
+    if unsafe { validate_name_value(value) } == 0 {
         unsafe {
             let msg = string::xmlstr_to_string(value);
             let err_msg = format!("ID value '{}' is not a valid XML Name\0", msg);
@@ -761,7 +721,8 @@ pub unsafe fn validate_id_ref(
     }
 
     // Check that the value is a valid XML Name
-    if unsafe { validate_name(value) } == 0 {
+    // UPSTREAM-PARITY: xmlValidateIDRef uses xmlValidateNameValue semantics.
+    if unsafe { validate_name_value(value) } == 0 {
         unsafe {
             let msg = string::xmlstr_to_string(value);
             let err_msg = format!("IDREF value '{}' is not a valid XML Name\0", msg);
@@ -905,7 +866,7 @@ pub unsafe fn validate_attribute_decl(
             let mut cur = a.tree;
             while !cur.is_null() {
                 if !(*cur).name.is_null() {
-                    if validate_nmtoken((*cur).name) == 0 {
+                    if validate_nmtoken_value((*cur).name) == 0 {
                         let val_str = string::xmlstr_to_string((*cur).name);
                         let err_msg =
                             format!("Enumeration value '{}' is not a valid NMTOKEN\0", val_str);
@@ -1864,6 +1825,2593 @@ pub unsafe fn validate_dtd_final(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) ->
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 11.1-I validation surface closure
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Closes the missing xmlValidate* exports against the oracle (system libxml2
+// 2.15.3): the modern 2-arg name validators (xmlValidateNCName/QName/Name/
+// NMToken), the 1-arg *Value family (xmlValidateNameValue/NamesValue/
+// NmtokenValue/NmtokensValue), the declaration validators (ElementDecl /
+// NotationDecl / OneAttribute / OneElement / OneNamespace), the streaming
+// push family (xmlValidatePushElement/PushCData/PopElement +
+// xmlValidBuildContentModel), and the ID/REF table machinery they depend on
+// (xmlAddID/xmlAddRef/xmlRemoveID/xmlRemoveRef).
+//
+// UPSTREAM-PARITY notes:
+// - The modern 2-arg validators return -1 on NULL, 0 if valid, 1 if invalid.
+// - The 1-arg *Value validators return 1 if valid, 0 otherwise (NULL too).
+// - Names/Nmtokens separators are exactly 0x20 (upstream erratum E20: no
+//   other whitespace is accepted).
+// - The char classes are the XML 1.0 Fifth-Edition productions including the
+//   supplementary plane 0x10000..0xEFFFF (upstream xmlIsNameStartCharNew /
+//   xmlIsNameCharNew in parser.c).
+
+// XML_SCAN_* flags (upstream parser.c xmlScanName)
+const XML_SCAN_NC: u32 = 1; // stop at ':'
+const XML_SCAN_NMTOKEN: u32 = 2; // first char may be any NameChar
+
+/// Upstream IS_BLANK_CH: space, tab, LF, CR.
+fn is_blank_byte(b: u8) -> bool {
+    b == b' ' || b == b'\t' || b == b'\n' || b == b'\r'
+}
+
+/// UTF-8 sequence length from the lead byte (0 when invalid).
+fn utf8_char_len(lead: u8) -> usize {
+    if lead < 0x80 {
+        1
+    } else if lead >= 0xC0 && lead <= 0xDF {
+        2
+    } else if lead >= 0xE0 && lead <= 0xEF {
+        3
+    } else if lead >= 0xF0 && lead <= 0xF7 {
+        4
+    } else {
+        0
+    }
+}
+
+/// Byte-level scan mirroring upstream `xmlScanName(ptr, SIZE_MAX, flags)`
+/// (parser.c): consumes a Name (or NCName / Nmtoken) starting at `start`.
+///
+/// Semantics preserved:
+/// - NC mode stops (without consuming) at ':'.
+/// - The first character must be a NameStartChar unless XML_SCAN_NMTOKEN;
+///   every later character must be a NameChar.
+/// - Invalid UTF-8 stops the scan (upstream xmlGetUTF8Char < 0).
+/// - With SIZE_MAX the length bound never triggers.
+///
+/// Returns the offset of the first byte past the name; equals `start` when
+/// nothing was consumed.
+unsafe fn scan_name_offsets(bytes: &[u8], start: usize, flags: u32) -> usize {
+    let stop = if flags & XML_SCAN_NC != 0 {
+        Some(b':')
+    } else {
+        None
+    };
+    let mut i = start;
+    let mut is_nmtoken = flags & XML_SCAN_NMTOKEN != 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b < 0x80 {
+            if stop == Some(b) {
+                break;
+            }
+            let c = b as char;
+            let ok = if is_nmtoken {
+                is_xml_name_char(c)
+            } else {
+                is_xml_name_start(c)
+            };
+            if !ok {
+                break;
+            }
+            i += 1;
+        } else {
+            let len = utf8_char_len(b);
+            if len == 0 || i + len > bytes.len() {
+                break;
+            }
+            let ch = match core::str::from_utf8(&bytes[i..i + len])
+                .ok()
+                .and_then(|s| s.chars().next())
+            {
+                Some(c) => c,
+                None => break,
+            };
+            let ok = if is_nmtoken {
+                is_xml_name_char(ch)
+            } else {
+                is_xml_name_start(ch)
+            };
+            if !ok {
+                break;
+            }
+            i += len;
+        }
+        // subsequent characters use the NameChar production
+        is_nmtoken = true;
+    }
+    i
+}
+
+/// Modern 2-arg form, upstream tree.c `xmlValidateNCName(value, space)`.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_ncname(value: *const xmlChar, space: c_int) -> c_int {
+    if value.is_null() {
+        return -1;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    let mut start = 0usize;
+    if space != 0 {
+        while start < bytes.len() && is_blank_byte(bytes[start]) {
+            start += 1;
+        }
+    }
+    let end = scan_name_offsets(bytes, start, XML_SCAN_NC);
+    if end == start {
+        return 1;
+    }
+    let mut end2 = end;
+    if space != 0 {
+        while end2 < bytes.len() && is_blank_byte(bytes[end2]) {
+            end2 += 1;
+        }
+    }
+    if end2 == bytes.len() {
+        0
+    } else {
+        1
+    }
+}
+
+/// Modern 2-arg form, upstream tree.c `xmlValidateQName(value, space)`.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_qname(value: *const xmlChar, space: c_int) -> c_int {
+    if value.is_null() {
+        return -1;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    let mut start = 0usize;
+    if space != 0 {
+        while start < bytes.len() && is_blank_byte(bytes[start]) {
+            start += 1;
+        }
+    }
+    let mut end = scan_name_offsets(bytes, start, XML_SCAN_NC);
+    if end == start {
+        return 1;
+    }
+    if end < bytes.len() && bytes[end] == b':' {
+        end += 1;
+        let end2 = scan_name_offsets(bytes, end, XML_SCAN_NC);
+        if end2 == end {
+            return 1;
+        }
+        end = end2;
+    }
+    if space != 0 {
+        while end < bytes.len() && is_blank_byte(bytes[end]) {
+            end += 1;
+        }
+    }
+    if end == bytes.len() {
+        0
+    } else {
+        1
+    }
+}
+
+/// Modern 2-arg form, upstream tree.c `xmlValidateName(value, space)`.
+///
+/// NOTE: this is the CURRENT oracle ABI — since libxml2 2.12 the symbol
+/// carries a second `int space` parameter (tree.c) and inverted return
+/// semantics (0 valid / 1 invalid / -1 NULL). The pre-2.12 1-arg form is
+/// gone from the DSO; the 1-arg semantics live on as xmlValidateNameValue.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_name_space(value: *const xmlChar, space: c_int) -> c_int {
+    if value.is_null() {
+        return -1;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    let mut start = 0usize;
+    if space != 0 {
+        while start < bytes.len() && is_blank_byte(bytes[start]) {
+            start += 1;
+        }
+    }
+    let end = scan_name_offsets(bytes, start, 0);
+    if end == start {
+        return 1;
+    }
+    let mut end2 = end;
+    if space != 0 {
+        while end2 < bytes.len() && is_blank_byte(bytes[end2]) {
+            end2 += 1;
+        }
+    }
+    if end2 == bytes.len() {
+        0
+    } else {
+        1
+    }
+}
+
+/// Modern 2-arg form, upstream tree.c `xmlValidateNMToken(value, space)`.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_nmtoken_space(value: *const xmlChar, space: c_int) -> c_int {
+    if value.is_null() {
+        return -1;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    let mut start = 0usize;
+    if space != 0 {
+        while start < bytes.len() && is_blank_byte(bytes[start]) {
+            start += 1;
+        }
+    }
+    let end = scan_name_offsets(bytes, start, XML_SCAN_NMTOKEN);
+    if end == start {
+        return 1;
+    }
+    let mut end2 = end;
+    if space != 0 {
+        while end2 < bytes.len() && is_blank_byte(bytes[end2]) {
+            end2 += 1;
+        }
+    }
+    if end2 == bytes.len() {
+        0
+    } else {
+        1
+    }
+}
+
+/// 1-arg form, upstream valid.c `xmlValidate*ValueInternal(value, flags)`.
+/// Returns 1 if valid, 0 if not (including NULL / empty).
+unsafe fn validate_value_internal(value: *const xmlChar, flags: u32) -> c_int {
+    if value.is_null() {
+        return 0;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    if bytes.is_empty() {
+        return 0;
+    }
+    let end = scan_name_offsets(bytes, 0, flags);
+    if end == 0 {
+        return 0;
+    }
+    if end == bytes.len() {
+        1
+    } else {
+        0
+    }
+}
+
+/// 1-arg Names/Nmtokens list form. Separator is exactly 0x20 — upstream
+/// valid.c deliberately does NOT use IS_BLANK here (XML erratum E20).
+unsafe fn validate_values_internal(value: *const xmlChar, flags: u32) -> c_int {
+    if value.is_null() {
+        return 0;
+    }
+    let bytes = string::xmlstr_to_bytes(value);
+    let mut cur = scan_name_offsets(bytes, 0, flags);
+    if cur == 0 {
+        return 0;
+    }
+    while cur < bytes.len() && bytes[cur] == b' ' {
+        while cur < bytes.len() && bytes[cur] == b' ' {
+            cur += 1;
+        }
+        let end = scan_name_offsets(bytes, cur, flags);
+        if end == cur {
+            return 0;
+        }
+        cur = end;
+    }
+    if cur == bytes.len() {
+        1
+    } else {
+        0
+    }
+}
+
+/// Upstream `xmlValidateNameValue(value)` — 1 if valid, 0 otherwise.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_name_value(value: *const xmlChar) -> c_int {
+    validate_value_internal(value, 0)
+}
+
+/// Upstream `xmlValidateNamesValue(value)` — 1 if valid, 0 otherwise.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_names_value(value: *const xmlChar) -> c_int {
+    validate_values_internal(value, 0)
+}
+
+/// Upstream `xmlValidateNmtokenValue(value)` — 1 if valid, 0 otherwise.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_nmtoken_value(value: *const xmlChar) -> c_int {
+    validate_value_internal(value, XML_SCAN_NMTOKEN)
+}
+
+/// Upstream `xmlValidateNmtokensValue(value)` — 1 if valid, 0 otherwise.
+///
+/// # SAFETY
+///
+/// - `value` must be a valid null-terminated string or NULL.
+pub unsafe fn validate_nmtokens_value(value: *const xmlChar) -> c_int {
+    validate_values_internal(value, XML_SCAN_NMTOKEN)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DTD description lookups (upstream valid.c xmlGetDtd*Desc)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Upstream `xmlGetDtdQElementDesc(dtd, name, prefix)`.
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer or NULL; `name`/`prefix` NULL-terminated
+///   strings or NULL.
+pub unsafe fn get_dtd_qelement_desc(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+    prefix: *const xmlChar,
+) -> *mut _xmlElement {
+    if dtd.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let elements = (*dtd).elements;
+        if elements.is_null() {
+            return ptr::null_mut();
+        }
+        hash::hash_lookup2(elements as *mut hash::HashTable, name, prefix) as *mut _xmlElement
+    }
+}
+
+/// Upstream `xmlGetDtdQAttrDesc(dtd, elem, name, prefix)` — the attribute
+/// declaration table is keyed by (name, prefix, elem).
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer or NULL; `elem`/`name`/`prefix`
+///   NULL-terminated strings or NULL.
+pub unsafe fn get_dtd_qattr_desc(
+    dtd: *mut _xmlDtd,
+    elem: *const xmlChar,
+    name: *const xmlChar,
+    prefix: *const xmlChar,
+) -> *mut _xmlAttribute {
+    if dtd.is_null() || elem.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let attrs = (*dtd).attributes;
+        if attrs.is_null() {
+            return ptr::null_mut();
+        }
+        hash::hash_lookup3(attrs as *mut hash::HashTable, name, prefix, elem) as *mut _xmlAttribute
+    }
+}
+
+/// Upstream `xmlGetDtdNotationDesc(dtd, name)`.
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer or NULL; `name` a NULL-terminated string.
+pub unsafe fn get_dtd_notation_desc(dtd: *mut _xmlDtd, name: *const xmlChar) -> *mut _xmlNotation {
+    if dtd.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        let notations = (*dtd).notations;
+        if notations.is_null() {
+            return ptr::null_mut();
+        }
+        hash::hash_lookup(notations as *mut hash::HashTable, name) as *mut _xmlNotation
+    }
+}
+
+/// Split a QName at the FIRST ':' (upstream tree.c `xmlSplitQName4`):
+/// `prefix` receives a duplicated prefix (or NULL) and the local name
+/// (a pointer into the original string) is returned.
+///
+/// # SAFETY
+///
+/// - `name` must be a valid null-terminated string; `prefix` a valid
+///   out-pointer.
+unsafe fn split_qname4(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *const xmlChar {
+    if prefix.is_null() {
+        return name;
+    }
+    unsafe {
+        *prefix = ptr::null_mut();
+        if name.is_null() {
+            return ptr::null();
+        }
+        let bytes = string::xmlstr_to_bytes(name);
+        match bytes.iter().position(|&b| b == b':') {
+            None => name,
+            Some(pos) => {
+                let p = string::bytes_to_xmlstr(&bytes[..pos]);
+                *prefix = p;
+                name.add(pos + 1)
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ID / REF tables (upstream valid.c xmlAddID / xmlAddRef / xmlRemoveID / xmlRemoveRef)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Free an xmlID entry (upstream xmlFreeID). Also clears the owning
+/// attribute's id/atype back-references.
+unsafe fn free_id(id: *mut _xmlID) {
+    if id.is_null() {
+        return;
+    }
+    unsafe {
+        if !(*id).value.is_null() {
+            allocator::xmlFree((*id).value as *mut c_void);
+        }
+        if !(*id).name.is_null() {
+            allocator::xmlFree((*id).name as *mut c_void);
+        }
+        if !(*id).attr.is_null() {
+            (*(*id).attr).id = ptr::null_mut();
+            (*(*id).attr).atype = 0;
+        }
+        allocator::xmlFree(id as *mut c_void);
+    }
+}
+
+/// Hash-table deallocator for ID entries (name is *mut per
+/// xmlHashDeallocator).
+unsafe extern "C" fn free_id_entry(payload: *mut c_void, _name: *mut xmlChar) {
+    free_id(payload as *mut _xmlID);
+}
+
+/// Upstream xmlAddIDInternal: add an attribute value as an ID.
+/// Returns 1 on success, 0 if the ID already exists, -1 on OOM.
+unsafe fn add_id_internal(
+    attr: *mut _xmlAttr,
+    value: *const xmlChar,
+    id_ptr: *mut *mut _xmlID,
+) -> c_int {
+    unsafe {
+        if !id_ptr.is_null() {
+            *id_ptr = ptr::null_mut();
+        }
+        if value.is_null() || *value == 0 {
+            return 0;
+        }
+        if attr.is_null() {
+            return 0;
+        }
+        let doc = (*attr).doc;
+        if doc.is_null() {
+            return 0;
+        }
+
+        let mut table = (*doc).ids as *mut hash::HashTable;
+        if table.is_null() {
+            (*doc).ids = hash::hash_create(0) as *mut c_void;
+            table = (*doc).ids as *mut hash::HashTable;
+            if table.is_null() {
+                return -1;
+            }
+        } else if !hash::hash_lookup(table, value).is_null() {
+            return 0;
+        }
+
+        let id = allocator::xmlMallocZero(size_of::<_xmlID>() as usize) as *mut _xmlID;
+        if id.is_null() {
+            return -1;
+        }
+        (*id).doc = doc;
+        (*id).value = string::xml_strdup(value);
+        if (*id).value.is_null() {
+            free_id(id);
+            return -1;
+        }
+        // re-registering an attribute drops its previous ID
+        if !(*attr).id.is_null() {
+            remove_id(doc, attr);
+        }
+        if hash::hash_add_entry(table, value, id as *mut c_void) != 0 {
+            free_id(id);
+            return -1;
+        }
+        if !id_ptr.is_null() {
+            *id_ptr = id;
+        }
+        (*id).attr = attr;
+        (*id).lineno = tree::get_line_no((*attr).parent);
+        (*attr).atype = XML_ATTRIBUTE_ID as c_int;
+        (*attr).id = id as *mut c_void;
+        1
+    }
+}
+
+/// Upstream `xmlAddID(ctxt, doc, value, attr)` — returns the xmlID or NULL.
+/// Reports "ID %s already defined" through the validation context on
+/// duplicates and a memory error on OOM.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`attr` must be valid pointers (attr->doc == doc).
+pub unsafe fn add_id(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    value: *const xmlChar,
+    attr: *mut _xmlAttr,
+) -> *mut _xmlID {
+    unsafe {
+        if attr.is_null() || doc != (*attr).doc {
+            return ptr::null_mut();
+        }
+        let mut id = ptr::null_mut();
+        let res = add_id_internal(attr, value, &mut id);
+        if res < 0 {
+            vctxt_error(
+                ctxt,
+                b"Memory allocation failed : xmlAddID\0" as *const u8 as *const c_char,
+            );
+        } else if res == 0 && !ctxt.is_null() {
+            let msg = format!("ID {} already defined\0", string::xmlstr_to_string(value));
+            vctxt_error(ctxt, msg.as_ptr() as *const c_char);
+        }
+        id
+    }
+}
+
+/// Upstream `xmlRemoveID(doc, attr)` — removes the attribute's ID entry.
+/// Returns 0 on success, -1 otherwise.
+///
+/// # SAFETY
+///
+/// - `doc`/`attr` must be valid pointers or NULL.
+pub unsafe fn remove_id(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
+    unsafe {
+        if doc.is_null() {
+            return -1;
+        }
+        if attr.is_null() || (*attr).id.is_null() {
+            return -1;
+        }
+        let table = (*doc).ids as *mut hash::HashTable;
+        if table.is_null() {
+            return -1;
+        }
+        let value = (*((*attr).id as *mut _xmlID)).value;
+        if hash::hash_remove_entry(table, value, Some(free_id_entry)) < 0 {
+            return -1;
+        }
+        0
+    }
+}
+
+/// Free an xmlRef entry.
+unsafe fn free_ref(r: *mut _xmlRef) {
+    if r.is_null() {
+        return;
+    }
+    unsafe {
+        if !(*r).value.is_null() {
+            allocator::xmlFree((*r).value as *mut c_void);
+        }
+        if !(*r).name.is_null() {
+            allocator::xmlFree((*r).name as *mut c_void);
+        }
+        allocator::xmlFree(r as *mut c_void);
+    }
+}
+
+/// xmlList deallocator for REF entries.
+unsafe extern "C" fn free_ref_list_entry(data: *mut c_void) {
+    free_ref(data as *mut _xmlRef);
+}
+
+/// xmlList comparator (upstream xmlDummyCompare: never equal).
+unsafe extern "C" fn dummy_compare(_a: *const c_void, _b: *const c_void) -> c_int {
+    1
+}
+
+/// Hash-table deallocator for REF lists.
+unsafe extern "C" fn free_ref_table_entry(payload: *mut c_void, _name: *mut xmlChar) {
+    crate::xml::list::list_delete(payload as *mut crate::xml::list::List);
+}
+
+/// Upstream `xmlAddRef(ctxt, doc, value, attr)` — registers an IDREF.
+/// Returns the xmlRef or NULL.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`attr`/`value` must be valid pointers.
+pub unsafe fn add_ref(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    value: *const xmlChar,
+    attr: *mut _xmlAttr,
+) -> *mut _xmlRef {
+    unsafe {
+        if doc.is_null() || value.is_null() || attr.is_null() {
+            return ptr::null_mut();
+        }
+
+        let mut table = (*doc).refs as *mut hash::HashTable;
+        if table.is_null() {
+            (*doc).refs = hash::hash_create(0) as *mut c_void;
+            table = (*doc).refs as *mut hash::HashTable;
+            if table.is_null() {
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+                );
+                return ptr::null_mut();
+            }
+        }
+
+        let ret = allocator::xmlMallocZero(size_of::<_xmlRef>() as usize) as *mut _xmlRef;
+        if ret.is_null() {
+            vctxt_error(
+                ctxt,
+                b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+            );
+            return ptr::null_mut();
+        }
+        (*ret).value = string::xml_strdup(value);
+        if (*ret).value.is_null() {
+            free_ref(ret);
+            vctxt_error(
+                ctxt,
+                b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+            );
+            return ptr::null_mut();
+        }
+        // Upstream xmlIsStreaming(ctxt): streaming (reader) mode stores the
+        // attr name because the attribute node will be destroyed; tree mode
+        // stores the attribute pointer.
+        let streaming = !ctxt.is_null()
+            && !(*ctxt).userData.is_null()
+            && (*((*ctxt).userData as *mut _xmlParserCtxt)).parseMode
+                == crate::abi::types::xmlParserMode::XML_PARSE_READER as c_int;
+        if streaming {
+            (*ret).name = string::xml_strdup((*attr).name);
+            (*ret).attr = ptr::null_mut();
+        } else {
+            (*ret).name = ptr::null();
+            (*ret).attr = attr;
+        }
+        (*ret).lineno = tree::get_line_no((*attr).parent);
+
+        // References are lists of xmlRef per value.
+        let ref_list = hash::hash_lookup(table, value) as *mut crate::xml::list::List;
+        if ref_list.is_null() {
+            let l = crate::xml::list::list_create(Some(free_ref_list_entry), Some(dummy_compare));
+            if l.is_null() {
+                free_ref(ret);
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+                );
+                return ptr::null_mut();
+            }
+            if hash::hash_add_entry(table, value, l as *mut c_void) != 0 {
+                crate::xml::list::list_delete(l);
+                free_ref(ret);
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+                );
+                return ptr::null_mut();
+            }
+            crate::xml::list::list_append(l, ret as *mut c_void);
+        } else {
+            if crate::xml::list::list_append(ref_list, ret as *mut c_void) != 0 {
+                free_ref(ret);
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlAddRef\0" as *const u8 as *const c_char,
+                );
+                return ptr::null_mut();
+            }
+        }
+        ret
+    }
+}
+
+/// Upstream `xmlRemoveRef(doc, attr)` — removes the attribute's IDREF
+/// entry. Returns 0 on success, -1 otherwise.
+///
+/// # SAFETY
+///
+/// - `doc`/`attr` must be valid pointers or NULL.
+pub unsafe fn remove_ref(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
+    // The candidate does not track a back-pointer from attribute to ref
+    // (upstream keeps the ref's value only in the table key). Re-scan the
+    // ref table for entries owned by this attribute.
+    if doc.is_null() || attr.is_null() {
+        return -1;
+    }
+    unsafe {
+        let table = (*doc).refs as *mut hash::HashTable;
+        if table.is_null() {
+            return -1;
+        }
+        let mut removed = -1;
+        // iterate: hash_scan with a callback that removes matching entries
+        struct ScanCtx {
+            table: *mut hash::HashTable,
+            attr: *mut _xmlAttr,
+            removed: c_int,
+        }
+        extern "C" fn scan_remove(payload: *mut c_void, data: *mut c_void, name: *const xmlChar) {
+            let ctx = unsafe { &mut *(data as *mut ScanCtx) };
+            let l = payload as *mut crate::xml::list::List;
+            // remove every list element whose attr matches
+            let mut cur: *mut c_void = crate::xml::list::list_front(l);
+            while !cur.is_null() {
+                let next: *mut c_void = unsafe { (*(cur as *mut _xmlRef)).next as *mut c_void };
+                let r = cur as *mut _xmlRef;
+                if unsafe { (*r).attr } == ctx.attr {
+                    unsafe {
+                        crate::xml::list::list_remove_first(l, cur);
+                    }
+                    unsafe { ctx.removed = 0 };
+                }
+                cur = next;
+            }
+            if crate::xml::list::list_empty(l) != 0 {
+                unsafe {
+                    hash::hash_remove_entry(ctx.table, name, Some(free_ref_table_entry));
+                }
+            }
+            let _ = name;
+        }
+        let mut ctx = ScanCtx {
+            table,
+            attr,
+            removed: -1,
+        };
+        hash::hash_scan(
+            table,
+            Some(scan_remove),
+            &mut ctx as *mut ScanCtx as *mut c_void,
+        );
+        removed = ctx.removed;
+        removed
+    }
+}
+
+/// Upstream `xmlAddIDSafe(attr, value)` (2.13+): add an ID without a
+/// validation context. Returns 1 on success, 0 if the ID already exists,
+/// -1 on OOM.
+///
+/// # SAFETY
+///
+/// - `attr`/`value` must be valid pointers or NULL.
+pub unsafe fn add_id_safe(attr: *mut _xmlAttr, value: *const xmlChar) -> c_int {
+    add_id_internal(attr, value, ptr::null_mut())
+}
+
+/// Upstream `xmlFreeIDTable(table)`.
+///
+/// # SAFETY
+///
+/// - `table` must be a valid ID hash table or NULL.
+pub unsafe fn free_id_table(table: *mut hash::HashTable) {
+    hash::hash_free(table, Some(free_id_entry));
+}
+
+/// Upstream `xmlFreeRefTable(table)`.
+///
+/// # SAFETY
+///
+/// - `table` must be a valid ref hash table or NULL.
+pub unsafe fn free_ref_table(table: *mut hash::HashTable) {
+    hash::hash_free(table, Some(free_ref_table_entry));
+}
+
+/// Upstream `xmlGetID(doc, ID)`: returns the attribute holding the ID, or
+/// the document pointer itself when operating on a stream (attribute node no
+/// longer exists).
+///
+/// # SAFETY
+///
+/// - `doc`/`ID` must be valid pointers or NULL.
+pub unsafe fn get_id(doc: *mut _xmlDoc, id: *const xmlChar) -> *mut _xmlAttr {
+    unsafe {
+        if doc.is_null() || id.is_null() {
+            return ptr::null_mut();
+        }
+        let table = (*doc).ids as *mut hash::HashTable;
+        if table.is_null() {
+            return ptr::null_mut();
+        }
+        let id_entry = hash::hash_lookup(table, id) as *mut _xmlID;
+        if id_entry.is_null() {
+            return ptr::null_mut();
+        }
+        if (*id_entry).attr.is_null() {
+            // streaming mode: return the document as a well-known reference
+            doc as *mut _xmlAttr
+        } else {
+            (*id_entry).attr
+        }
+    }
+}
+
+/// Upstream `xmlGetRefs(doc, ID)`: returns the list of references for an ID.
+///
+/// # SAFETY
+///
+/// - `doc`/`ID` must be valid pointers or NULL.
+pub unsafe fn get_refs(doc: *mut _xmlDoc, id: *const xmlChar) -> *mut crate::xml::list::List {
+    unsafe {
+        if doc.is_null() || id.is_null() {
+            return ptr::null_mut();
+        }
+        let table = (*doc).refs as *mut hash::HashTable;
+        if table.is_null() {
+            return ptr::null_mut();
+        }
+        hash::hash_lookup(table, id) as *mut crate::xml::list::List
+    }
+}
+
+/// Upstream `xmlIsID(doc, elem, attr)`: is this attribute an ID? Handles the
+/// HTML special cases (id attribute; name attribute on <a>) and the DTD
+/// declaration lookup, plus the xml:id namespace convention.
+///
+/// # SAFETY
+///
+/// - `doc`/`elem`/`attr` must be valid pointers or NULL.
+pub unsafe fn is_id(doc: *mut _xmlDoc, elem: *mut _xmlNode, attr: *mut _xmlAttr) -> c_int {
+    unsafe {
+        if attr.is_null() || (*attr).name.is_null() {
+            return 0;
+        }
+        if !doc.is_null() && (*doc).type_ == XML_HTML_DOCUMENT_NODE as c_int {
+            if string::xml_strcmp(b"id\0" as *const u8 as *const xmlChar, (*attr).name) == 0 {
+                return 1;
+            }
+            if elem.is_null() || (*elem).type_ != XML_ELEMENT_NODE as c_int {
+                return 0;
+            }
+            if string::xml_strcmp(b"name\0" as *const u8 as *const xmlChar, (*attr).name) == 0
+                && string::xml_strcmp(b"a\0" as *const u8 as *const xmlChar, (*elem).name) == 0
+            {
+                return 1;
+            }
+        } else {
+            // xml:id convention
+            if !(*attr).ns.is_null()
+                && !(*(*attr).ns).prefix.is_null()
+                && string::xml_strcmp(
+                    (*(*attr).ns).prefix,
+                    b"xml\0" as *const u8 as *const xmlChar,
+                ) == 0
+                && string::xml_strcmp((*attr).name, b"id\0" as *const u8 as *const xmlChar) == 0
+            {
+                return 1;
+            }
+            if doc.is_null() || ((*doc).intSubset.is_null() && (*doc).extSubset.is_null()) {
+                return 0;
+            }
+            if elem.is_null()
+                || (*elem).type_ != XML_ELEMENT_NODE as c_int
+                || (*elem).name.is_null()
+            {
+                return 0;
+            }
+            let mut fullname = (*elem).name;
+            let mut owned = false;
+            if !(*elem).ns.is_null() && !(*(*elem).ns).prefix.is_null() {
+                let f = string::build_qname((*elem).name, (*(*elem).ns).prefix, ptr::null_mut(), 0);
+                if f.is_null() {
+                    return -1;
+                }
+                fullname = f;
+                owned = true;
+            }
+            let aprefix = if !(*attr).ns.is_null() {
+                (*(*attr).ns).prefix
+            } else {
+                ptr::null()
+            };
+            let mut attr_decl =
+                get_dtd_qattr_desc((*doc).intSubset, fullname, (*attr).name, aprefix);
+            if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                attr_decl = get_dtd_qattr_desc((*doc).extSubset, fullname, (*attr).name, aprefix);
+            }
+            if owned {
+                allocator::xmlFree(fullname as *mut c_void);
+            }
+            if !attr_decl.is_null() && (*attr_decl).atype == XML_ATTRIBUTE_ID as c_int {
+                return 1;
+            }
+        }
+        0
+    }
+}
+
+/// Upstream `xmlIsRef(doc, elem, attr)`: is this attribute an IDREF?
+///
+/// # SAFETY
+///
+/// - `doc`/`elem`/`attr` must be valid pointers or NULL.
+pub unsafe fn is_ref(doc: *mut _xmlDoc, elem: *mut _xmlNode, attr: *mut _xmlAttr) -> c_int {
+    unsafe {
+        if attr.is_null() {
+            return 0;
+        }
+        let doc = if doc.is_null() { (*attr).doc } else { doc };
+        if doc.is_null() {
+            return 0;
+        }
+        if (*doc).intSubset.is_null() && (*doc).extSubset.is_null() {
+            return 0;
+        }
+        if (*doc).type_ == XML_HTML_DOCUMENT_NODE as c_int {
+            return 0;
+        }
+        if elem.is_null() {
+            return 0;
+        }
+        let aprefix = if !(*attr).ns.is_null() {
+            (*(*attr).ns).prefix
+        } else {
+            ptr::null()
+        };
+        let mut attr_decl =
+            get_dtd_qattr_desc((*doc).intSubset, (*elem).name, (*attr).name, aprefix);
+        if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+            attr_decl = get_dtd_qattr_desc((*doc).extSubset, (*elem).name, (*attr).name, aprefix);
+        }
+        if !attr_decl.is_null()
+            && ((*attr_decl).atype == XML_ATTRIBUTE_IDREF as c_int
+                || (*attr_decl).atype == XML_ATTRIBUTE_IDREFS as c_int)
+        {
+            return 1;
+        }
+        0
+    }
+}
+
+/// Upstream `xmlGetDtdElementDesc(dtd, name)` — plain element declaration
+/// lookup with QName splitting.
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer or NULL; `name` a NULL-terminated string.
+pub unsafe fn get_dtd_element_desc(dtd: *mut _xmlDtd, name: *const xmlChar) -> *mut _xmlElement {
+    unsafe {
+        if dtd.is_null() || name.is_null() {
+            return ptr::null_mut();
+        }
+        let elements = (*dtd).elements;
+        if elements.is_null() {
+            return ptr::null_mut();
+        }
+        let mut prefix = ptr::null_mut();
+        let local = split_qname4(name, &mut prefix);
+        if local.is_null() {
+            if !prefix.is_null() {
+                allocator::xmlFree(prefix as *mut c_void);
+            }
+            return ptr::null_mut();
+        }
+        let cur =
+            hash::hash_lookup2(elements as *mut hash::HashTable, local, prefix) as *mut _xmlElement;
+        if !prefix.is_null() {
+            allocator::xmlFree(prefix as *mut c_void);
+        }
+        cur
+    }
+}
+
+/// Upstream `xmlGetDtdAttrDesc(dtd, elem, name)` — attribute declaration
+/// lookup splitting the attribute QName into (local, prefix).
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer or NULL; `elem`/`name` NULL-terminated
+///   strings.
+pub unsafe fn get_dtd_attr_desc(
+    dtd: *mut _xmlDtd,
+    elem: *const xmlChar,
+    name: *const xmlChar,
+) -> *mut _xmlAttribute {
+    unsafe {
+        if dtd.is_null() || elem.is_null() || name.is_null() {
+            return ptr::null_mut();
+        }
+        let attrs = (*dtd).attributes;
+        if attrs.is_null() {
+            return ptr::null_mut();
+        }
+        let mut prefix = ptr::null_mut();
+        let local = split_qname4(name, &mut prefix);
+        if local.is_null() {
+            if !prefix.is_null() {
+                allocator::xmlFree(prefix as *mut c_void);
+            }
+            return ptr::null_mut();
+        }
+        let cur = hash::hash_lookup3(attrs as *mut hash::HashTable, local, prefix, elem)
+            as *mut _xmlAttribute;
+        if !prefix.is_null() {
+            allocator::xmlFree(prefix as *mut c_void);
+        }
+        cur
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Declaration validators (upstream valid.c xmlValidateElementDecl / NotationDecl
+// / OneAttribute / OneElement / OneNamespace)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Emit a validation error with node context, mirroring upstream
+/// xmlErrValidNode's formatting. The candidate's valid context carries a
+/// generic error callback only (no structured error slot), so the error
+/// code is not stored — the message text matches upstream byte-for-byte.
+unsafe fn vctxt_error_node(ctxt: *mut _xmlValidCtxt, _node: *mut _xmlNode, msg: *const c_char) {
+    vctxt_error(ctxt, msg);
+}
+
+/// Upstream `xmlValidateElementDecl(ctxt, doc, elem)`: verifies the
+/// declaration is not duplicated and that MIXED content models do not list
+/// the same element twice.
+///
+/// # SAFETY
+///
+/// - `ctxt`/`doc` may be NULL; `elem` a valid pointer or NULL.
+pub unsafe fn validate_element_decl(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlElement,
+) -> c_int {
+    unsafe {
+        if doc.is_null() || (*doc).intSubset.is_null() && (*doc).extSubset.is_null() {
+            return 1;
+        }
+        if elem.is_null() {
+            return 1;
+        }
+        let mut ret = 1;
+
+        // No Duplicate Types (VC: No Duplicate Types) — only for MIXED
+        // declarations: walk the OR chain and compare element names.
+        if (*elem).etype == XML_ELEMENT_TYPE_MIXED as c_int {
+            let mut cur = (*elem).content;
+            while !cur.is_null() {
+                if (*cur).type_ != XML_ELEMENT_CONTENT_OR as c_int {
+                    break;
+                }
+                if (*cur).c1.is_null() {
+                    break;
+                }
+                if (*(*cur).c1).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                    let name = (*(*cur).c1).name;
+                    let mut next = (*cur).c2;
+                    while !next.is_null() {
+                        if (*next).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                            if string::xml_strcmp((*next).name, name) == 0
+                                && string::xml_strcmp((*next).prefix, (*(*cur).c1).prefix) == 0
+                            {
+                                if (*(*cur).c1).prefix.is_null() {
+                                    let msg = format!(
+                                        "Definition of {} has duplicate references of {}\0",
+                                        string::xmlstr_to_string((*elem).name),
+                                        string::xmlstr_to_string(name)
+                                    );
+                                    vctxt_error_node(
+                                        ctxt,
+                                        elem as *mut _xmlNode,
+                                        msg.as_ptr() as *const c_char,
+                                    );
+                                } else {
+                                    let msg = format!(
+                                        "Definition of {} has duplicate references of {}:{}\0",
+                                        string::xmlstr_to_string((*elem).name),
+                                        string::xmlstr_to_string((*(*cur).c1).prefix),
+                                        string::xmlstr_to_string(name)
+                                    );
+                                    vctxt_error_node(
+                                        ctxt,
+                                        elem as *mut _xmlNode,
+                                        msg.as_ptr() as *const c_char,
+                                    );
+                                }
+                                ret = 0;
+                            }
+                            break;
+                        }
+                        if (*next).c1.is_null() {
+                            break;
+                        }
+                        if (*(*next).c1).type_ != XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                            break;
+                        }
+                        if string::xml_strcmp((*(*next).c1).name, name) == 0
+                            && string::xml_strcmp((*(*next).c1).prefix, (*(*cur).c1).prefix) == 0
+                        {
+                            if (*(*cur).c1).prefix.is_null() {
+                                let msg = format!(
+                                    "Definition of {} has duplicate references to {}\0",
+                                    string::xmlstr_to_string((*elem).name),
+                                    string::xmlstr_to_string(name)
+                                );
+                                vctxt_error_node(
+                                    ctxt,
+                                    elem as *mut _xmlNode,
+                                    msg.as_ptr() as *const c_char,
+                                );
+                            } else {
+                                let msg = format!(
+                                    "Definition of {} has duplicate references to {}:{}\0",
+                                    string::xmlstr_to_string((*elem).name),
+                                    string::xmlstr_to_string((*(*cur).c1).prefix),
+                                    string::xmlstr_to_string(name)
+                                );
+                                vctxt_error_node(
+                                    ctxt,
+                                    elem as *mut _xmlNode,
+                                    msg.as_ptr() as *const c_char,
+                                );
+                            }
+                            ret = 0;
+                        }
+                        next = (*next).c2;
+                    }
+                }
+                cur = (*cur).c2;
+            }
+        }
+
+        // VC: Unique Element Type Declaration — the declaration must not
+        // already exist (with the same prefix) in either subset.
+        let mut prefix = ptr::null_mut();
+        let local_name = split_qname4((*elem).name, &mut prefix);
+        if local_name.is_null() {
+            vctxt_error(
+                ctxt,
+                b"Memory allocation failed : xmlValidateElementDecl\0" as *const u8
+                    as *const c_char,
+            );
+            if !prefix.is_null() {
+                allocator::xmlFree(prefix as *mut c_void);
+            }
+            return 0;
+        }
+
+        for subset in [(*doc).intSubset, (*doc).extSubset] {
+            if subset.is_null() {
+                continue;
+            }
+            let tst = get_dtd_qelement_desc(subset, local_name, prefix);
+            if !tst.is_null()
+                && tst != elem
+                && ((*tst).prefix == (*elem).prefix
+                    || string::xml_strcmp((*tst).prefix, (*elem).prefix) == 0)
+                && (*tst).etype != XML_ELEMENT_TYPE_UNDEFINED as c_int
+            {
+                let msg = format!(
+                    "Redefinition of element {}\0",
+                    string::xmlstr_to_string((*elem).name)
+                );
+                vctxt_error_node(ctxt, elem as *mut _xmlNode, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+        }
+        if !prefix.is_null() {
+            allocator::xmlFree(prefix as *mut c_void);
+        }
+        ret
+    }
+}
+
+/// Upstream `xmlValidateNotationDecl(ctxt, doc, nota)`: modern libxml2 has
+/// no validity constraint on notation declarations and returns 1 always
+/// (verified by disassembly of the system DSO: `mov $1,%eax; ret`).
+pub unsafe fn validate_notation_decl(
+    _ctxt: *mut _xmlValidCtxt,
+    _doc: *mut _xmlDoc,
+    _nota: *mut _xmlNotation,
+) -> c_int {
+    1
+}
+
+/// Upstream `xmlValidateOneAttribute(ctxt, doc, elem, attr, value)`.
+///
+/// Performs [VC: Attribute Value Type], [VC: Fixed Attribute Default],
+/// [VC: ID], [VC: IDREF], [VC: Notation Attributes], [VC: Enumeration],
+/// and the ENTITY existence check via xmlValidateAttributeValue2.
+///
+/// # SAFETY
+///
+/// - `ctxt`/`doc` may be NULL; `elem`/`attr`/`value` valid pointers or NULL.
+pub unsafe fn validate_one_attribute(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    attr: *mut _xmlAttr,
+    value: *const xmlChar,
+) -> c_int {
+    unsafe {
+        if doc.is_null() {
+            return 0;
+        }
+        if elem.is_null() || (*elem).name.is_null() {
+            return 0;
+        }
+        if attr.is_null() || (*attr).name.is_null() {
+            return 0;
+        }
+        let mut ret = 1;
+
+        let aprefix = if !(*attr).ns.is_null() {
+            (*(*attr).ns).prefix
+        } else {
+            ptr::null()
+        };
+
+        let mut attr_decl = ptr::null_mut();
+        if !(*elem).ns.is_null() && !(*(*elem).ns).prefix.is_null() {
+            let fullname =
+                string::build_qname((*elem).name, (*(*elem).ns).prefix, ptr::null_mut(), 0);
+            if fullname.is_null() {
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlValidateOneAttribute\0" as *const u8
+                        as *const c_char,
+                );
+                return 0;
+            }
+            attr_decl = get_dtd_qattr_desc((*doc).intSubset, fullname, (*attr).name, aprefix);
+            if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                attr_decl = get_dtd_qattr_desc((*doc).extSubset, fullname, (*attr).name, aprefix);
+            }
+            if fullname != (*elem).name as *mut xmlChar {
+                allocator::xmlFree(fullname as *mut c_void);
+            }
+        }
+        if attr_decl.is_null() {
+            attr_decl = get_dtd_qattr_desc((*doc).intSubset, (*elem).name, (*attr).name, aprefix);
+            if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                attr_decl =
+                    get_dtd_qattr_desc((*doc).extSubset, (*elem).name, (*attr).name, aprefix);
+            }
+        }
+
+        // [VC: Attribute Value Type]
+        if attr_decl.is_null() {
+            let msg = format!(
+                "No declaration for attribute {} of element {}\0",
+                string::xmlstr_to_string((*attr).name),
+                string::xmlstr_to_string((*elem).name)
+            );
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            return 0;
+        }
+        if !(*attr).id.is_null() {
+            remove_id(doc, attr);
+        }
+        (*attr).atype = (*attr_decl).atype;
+
+        // syntax check against the declared type (with OLD10 doc flag)
+        let val = if (*doc).properties & crate::abi::types::xmlDocProperties::XML_DOC_OLD10 as c_int
+            != 0
+        {
+            // OLD10 name classes are not implemented; the modern classes are
+            // a superset for ASCII and match for all BMP ranges used here.
+            match (*attr_decl).atype as u32 {
+                t if t == XML_ATTRIBUTE_ENTITIES as u32 || t == XML_ATTRIBUTE_IDREFS as u32 => {
+                    validate_values_internal(value, 0)
+                }
+                t if t == XML_ATTRIBUTE_ENTITY as u32
+                    || t == XML_ATTRIBUTE_IDREF as u32
+                    || t == XML_ATTRIBUTE_ID as u32
+                    || t == XML_ATTRIBUTE_NOTATION as u32 =>
+                {
+                    validate_value_internal(value, 0)
+                }
+                t if t == XML_ATTRIBUTE_NMTOKENS as u32
+                    || t == XML_ATTRIBUTE_ENUMERATION as u32 =>
+                {
+                    validate_values_internal(value, XML_SCAN_NMTOKEN)
+                }
+                t if t == XML_ATTRIBUTE_NMTOKEN as u32 => {
+                    validate_value_internal(value, XML_SCAN_NMTOKEN)
+                }
+                _ => 1,
+            }
+        } else {
+            validate_attribute_value((*attr_decl).atype, value)
+        };
+        if val == 0 {
+            let msg = format!(
+                "Syntax of value for attribute {} of {} is not valid\0",
+                string::xmlstr_to_string((*attr).name),
+                string::xmlstr_to_string((*elem).name)
+            );
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            ret = 0;
+        }
+
+        // [VC: Fixed Attribute Default]
+        if (*attr_decl).def == XML_ATTRIBUTE_FIXED as c_int {
+            if string::xml_strcmp(value, (*attr_decl).defaultValue) != 0 {
+                let msg = format!(
+                    "Value for attribute {} of {} is different from default \"{}\n\0",
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string((*elem).name),
+                    string::xmlstr_to_string((*attr_decl).defaultValue)
+                );
+                // upstream format: "Value for attribute %s of %s is different from default \"%s\"\n"
+                let msg = format!(
+                    "Value for attribute {} of {} is different from default \"{}\"\0",
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string((*elem).name),
+                    string::xmlstr_to_string((*attr_decl).defaultValue)
+                );
+                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+        }
+
+        // [VC: ID] uniqueness (skipped inside entities)
+        const XML_VCTXT_IN_ENTITY: c_uint = 4; // upstream valid.h
+        if (*attr_decl).atype == XML_ATTRIBUTE_ID as c_int
+            && (ctxt.is_null() || (*ctxt).flags & XML_VCTXT_IN_ENTITY == 0)
+        {
+            if add_id(ctxt, doc, value, attr).is_null() {
+                ret = 0;
+            }
+        }
+        if (*attr_decl).atype == XML_ATTRIBUTE_IDREF as c_int
+            || (*attr_decl).atype == XML_ATTRIBUTE_IDREFS as c_int
+        {
+            if add_ref(ctxt, doc, value, attr).is_null() {
+                ret = 0;
+            }
+        }
+
+        // [VC: Notation Attributes]
+        if (*attr_decl).atype == XML_ATTRIBUTE_NOTATION as c_int {
+            let mut nota = get_dtd_notation_desc((*doc).intSubset, value);
+            if nota.is_null() {
+                nota = get_dtd_notation_desc((*doc).extSubset, value);
+            }
+            if nota.is_null() {
+                let msg = format!(
+                    "Value \"{}\" for attribute {} of {} is not a declared Notation\0",
+                    string::xmlstr_to_string(value),
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string((*elem).name)
+                );
+                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+            let mut tree = (*attr_decl).tree;
+            while !tree.is_null() {
+                if string::xml_strcmp((*tree).name, value) == 0 {
+                    break;
+                }
+                tree = (*tree).next;
+            }
+            if tree.is_null() {
+                let msg = format!(
+                    "Value \"{}\" for attribute {} of {} is not among the enumerated notations\0",
+                    string::xmlstr_to_string(value),
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string((*elem).name)
+                );
+                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+        }
+
+        // [VC: Enumeration]
+        if (*attr_decl).atype == XML_ATTRIBUTE_ENUMERATION as c_int {
+            let mut tree = (*attr_decl).tree;
+            while !tree.is_null() {
+                if string::xml_strcmp((*tree).name, value) == 0 {
+                    break;
+                }
+                tree = (*tree).next;
+            }
+            if tree.is_null() {
+                let msg = format!(
+                    "Value \"{}\" for attribute {} of {} is not among the enumerated set\0",
+                    string::xmlstr_to_string(value),
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string((*elem).name)
+                );
+                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+        }
+
+        // Fixed Attribute Default (second occurrence, upstream)
+        if (*attr_decl).def == XML_ATTRIBUTE_FIXED as c_int
+            && string::xml_strcmp((*attr_decl).defaultValue, value) != 0
+        {
+            let msg = format!(
+                "Value for attribute {} of {} must be \"{}\"\0",
+                string::xmlstr_to_string((*attr).name),
+                string::xmlstr_to_string((*elem).name),
+                string::xmlstr_to_string((*attr_decl).defaultValue)
+            );
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            ret = 0;
+        }
+
+        // [VC: Entity Name] — ENTITY must name a declared unparsed entity
+        if (*attr_decl).atype == XML_ATTRIBUTE_ENTITY as c_int {
+            let ent = tree::get_doc_entity(doc, value);
+            if ent.is_null() {
+                let msg = format!(
+                    "ENTITY attribute {} reference an unknown entity \"{}\"\0",
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string(value)
+                );
+                vctxt_error_node(ctxt, doc as *mut _xmlNode, msg.as_ptr() as *const c_char);
+                ret = 0;
+            } else if (*ent).etype != XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int {
+                let msg = format!(
+                    "ENTITY attribute {} reference an entity \"{}\" of wrong type\0",
+                    string::xmlstr_to_string((*attr).name),
+                    string::xmlstr_to_string(value)
+                );
+                vctxt_error_node(ctxt, doc as *mut _xmlNode, msg.as_ptr() as *const c_char);
+                ret = 0;
+            }
+        }
+        ret
+    }
+}
+
+/// Upstream `xmlValidateOneNamespace(ctxt, doc, elem, prefix, ns, value)` —
+/// namespace-declaration attribute validation.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`elem`/`ns` valid pointers or NULL.
+pub unsafe fn validate_one_namespace(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    prefix: *const xmlChar,
+    ns: *mut _xmlNs,
+    value: *const xmlChar,
+) -> c_int {
+    unsafe {
+        if doc.is_null() {
+            return 0;
+        }
+        if elem.is_null() || (*elem).name.is_null() {
+            return 0;
+        }
+        if ns.is_null() || (*ns).href.is_null() {
+            return 0;
+        }
+        let mut ret = 1;
+
+        let mut attr_decl = ptr::null_mut();
+        if !prefix.is_null() {
+            let fullname = string::build_qname((*elem).name, prefix, ptr::null_mut(), 0);
+            if fullname.is_null() {
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlValidateOneNamespace\0" as *const u8
+                        as *const c_char,
+                );
+                return 0;
+            }
+            if !(*ns).prefix.is_null() {
+                attr_decl = get_dtd_qattr_desc(
+                    (*doc).intSubset,
+                    fullname,
+                    (*ns).prefix,
+                    b"xmlns\0" as *const u8 as *const xmlChar,
+                );
+                if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                    attr_decl = get_dtd_qattr_desc(
+                        (*doc).extSubset,
+                        fullname,
+                        (*ns).prefix,
+                        b"xmlns\0" as *const u8 as *const xmlChar,
+                    );
+                }
+            } else {
+                attr_decl = get_dtd_qattr_desc(
+                    (*doc).intSubset,
+                    fullname,
+                    b"xmlns\0" as *const u8 as *const xmlChar,
+                    ptr::null(),
+                );
+                if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                    attr_decl = get_dtd_qattr_desc(
+                        (*doc).extSubset,
+                        fullname,
+                        b"xmlns\0" as *const u8 as *const xmlChar,
+                        ptr::null(),
+                    );
+                }
+            }
+            if fullname != (*elem).name as *mut xmlChar {
+                allocator::xmlFree(fullname as *mut c_void);
+            }
+        }
+        if attr_decl.is_null() {
+            if !(*ns).prefix.is_null() {
+                attr_decl = get_dtd_qattr_desc(
+                    (*doc).intSubset,
+                    (*elem).name,
+                    (*ns).prefix,
+                    b"xmlns\0" as *const u8 as *const xmlChar,
+                );
+                if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                    attr_decl = get_dtd_qattr_desc(
+                        (*doc).extSubset,
+                        (*elem).name,
+                        (*ns).prefix,
+                        b"xmlns\0" as *const u8 as *const xmlChar,
+                    );
+                }
+            } else {
+                attr_decl = get_dtd_qattr_desc(
+                    (*doc).intSubset,
+                    (*elem).name,
+                    b"xmlns\0" as *const u8 as *const xmlChar,
+                    ptr::null(),
+                );
+                if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+                    attr_decl = get_dtd_qattr_desc(
+                        (*doc).extSubset,
+                        (*elem).name,
+                        b"xmlns\0" as *const u8 as *const xmlChar,
+                        ptr::null(),
+                    );
+                }
+            }
+        }
+
+        // [VC: Attribute Value Type]
+        if attr_decl.is_null() {
+            let msg = if !(*ns).prefix.is_null() {
+                format!(
+                    "No declaration for attribute xmlns:{} of element {}\0",
+                    string::xmlstr_to_string((*ns).prefix),
+                    string::xmlstr_to_string((*elem).name)
+                )
+            } else {
+                format!(
+                    "No declaration for attribute xmlns of element {}\0",
+                    string::xmlstr_to_string((*elem).name)
+                )
+            };
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            return 0;
+        }
+
+        let val = validate_attribute_value((*attr_decl).atype, value);
+        if val == 0 {
+            let msg = if !(*ns).prefix.is_null() {
+                format!(
+                    "Syntax of value for attribute xmlns:{} of {} is not valid\0",
+                    string::xmlstr_to_string((*ns).prefix),
+                    string::xmlstr_to_string((*elem).name)
+                )
+            } else {
+                format!(
+                    "Syntax of value for attribute xmlns of {} is not valid\0",
+                    string::xmlstr_to_string((*elem).name)
+                )
+            };
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            ret = 0;
+        }
+
+        // [VC: Fixed Attribute Default]
+        if (*attr_decl).def == XML_ATTRIBUTE_FIXED as c_int
+            && string::xml_strcmp(value, (*attr_decl).defaultValue) != 0
+        {
+            let msg = if !(*ns).prefix.is_null() {
+                format!(
+                    "Value for attribute xmlns:{} of {} is different from default \"{}\"\0",
+                    string::xmlstr_to_string((*ns).prefix),
+                    string::xmlstr_to_string((*elem).name),
+                    string::xmlstr_to_string((*attr_decl).defaultValue)
+                )
+            } else {
+                format!(
+                    "Value for attribute xmlns of {} is different from default \"{}\"\0",
+                    string::xmlstr_to_string((*elem).name),
+                    string::xmlstr_to_string((*attr_decl).defaultValue)
+                )
+            };
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            ret = 0;
+        }
+        ret
+    }
+}
+
+/// Upstream `xmlValidateOneElement(ctxt, doc, elem)` — validates a single
+/// element against its declaration (content model + attributes), WITHOUT
+/// recursing into children.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`elem` valid pointers or NULL.
+pub unsafe fn validate_one_element(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+) -> c_int {
+    unsafe {
+        if doc.is_null() {
+            return 0;
+        }
+        if elem.is_null() {
+            return 0;
+        }
+        match (*elem).type_ {
+            t if t == XML_TEXT_NODE as c_int
+                || t == XML_CDATA_SECTION_NODE as c_int
+                || t == XML_ENTITY_REF_NODE as c_int
+                || t == XML_PI_NODE as c_int
+                || t == XML_COMMENT_NODE as c_int
+                || t == XML_XINCLUDE_START as c_int
+                || t == XML_XINCLUDE_END as c_int =>
+            {
+                return 1;
+            }
+            t if t == XML_ELEMENT_NODE as c_int => {}
+            _ => {
+                vctxt_error_node(
+                    ctxt,
+                    elem,
+                    b"unexpected element type\0" as *const u8 as *const c_char,
+                );
+                return 0;
+            }
+        }
+
+        let mut ret = 1;
+        let mut extsubset = 0;
+        let elem_decl = valid_get_elem_decl(ctxt, doc, elem, &mut extsubset);
+        if elem_decl.is_null() {
+            return 0;
+        }
+
+        // Continuous (push) validation already checks the content model via
+        // the vstate stack; skip the tree walk when active.
+        if (*ctxt).vstateNr == 0 {
+            match (*elem_decl).etype as u32 {
+                t if t == XML_ELEMENT_TYPE_UNDEFINED as u32 => {
+                    let msg = format!(
+                        "No declaration for element {}\0",
+                        string::xmlstr_to_string((*elem).name)
+                    );
+                    vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                    return 0;
+                }
+                t if t == XML_ELEMENT_TYPE_EMPTY as u32 => {
+                    if !(*elem).children.is_null() {
+                        let msg = format!(
+                            "Element {} was declared EMPTY this one has content\0",
+                            string::xmlstr_to_string((*elem).name)
+                        );
+                        vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                        ret = 0;
+                    }
+                }
+                t if t == XML_ELEMENT_TYPE_ANY as u32 => {}
+                t if t == XML_ELEMENT_TYPE_MIXED as u32 => {
+                    if !(*elem_decl).content.is_null()
+                        && (*(*elem_decl).content).type_ == XML_ELEMENT_CONTENT_PCDATA as c_int
+                    {
+                        // #PCDATA-only: any element child is an error
+                        let mut child = (*elem).children;
+                        while !child.is_null() {
+                            if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                                let msg = format!(
+                                    "Element {} was declared #PCDATA but contains non text nodes\0",
+                                    string::xmlstr_to_string((*elem).name)
+                                );
+                                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                                ret = 0;
+                                break;
+                            }
+                            child = (*child).next;
+                        }
+                    } else {
+                        // check each child element against the mixed list
+                        let mut child = (*elem).children;
+                        while !child.is_null() {
+                            if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                                let mut fullname = (*child).name;
+                                let mut own = false;
+                                if !(*child).ns.is_null() && !(*(*child).ns).prefix.is_null() {
+                                    let fnp = string::build_qname(
+                                        (*child).name,
+                                        (*(*child).ns).prefix,
+                                        ptr::null_mut(),
+                                        0,
+                                    );
+                                    if fnp.is_null() {
+                                        vctxt_error(
+                                            ctxt,
+                                            b"Memory allocation failed : xmlValidateOneElement\0"
+                                                as *const u8
+                                                as *const c_char,
+                                        );
+                                        return 0;
+                                    }
+                                    fullname = fnp;
+                                    own = true;
+                                }
+                                if validate_check_mixed(ctxt, (*elem_decl).content, fullname) != 1 {
+                                    let msg = format!(
+                                        "Element {} is not declared in {} list of possible children\0",
+                                        string::xmlstr_to_string(fullname),
+                                        string::xmlstr_to_string((*elem).name)
+                                    );
+                                    vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                                    ret = 0;
+                                }
+                                if own {
+                                    allocator::xmlFree(fullname as *mut c_void);
+                                }
+                            }
+                            child = (*child).next;
+                        }
+                    }
+                }
+                t if t == XML_ELEMENT_TYPE_ELEMENT as u32 => {
+                    // Element-only content: collect child element names and
+                    // check against the content model.
+                    let mut names: Vec<*const xmlChar> = Vec::new();
+                    let mut owned: Vec<*mut xmlChar> = Vec::new();
+                    let mut child = (*elem).children;
+                    while !child.is_null() {
+                        if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                            let mut fullname = (*child).name;
+                            if !(*child).ns.is_null() && !(*(*child).ns).prefix.is_null() {
+                                let fnp = string::build_qname(
+                                    (*child).name,
+                                    (*(*child).ns).prefix,
+                                    ptr::null_mut(),
+                                    0,
+                                );
+                                if !fnp.is_null() {
+                                    fullname = fnp;
+                                    owned.push(fnp);
+                                }
+                            }
+                            names.push(fullname);
+                        }
+                        child = (*child).next;
+                    }
+                    let result = dtd::valid_content_model((*elem_decl).content, &names);
+                    for n in owned {
+                        allocator::xmlFree(n as *mut c_void);
+                    }
+                    if result != dtd::ContentModelResult::Valid {
+                        let msg = format!(
+                            "Element {} content does not follow the DTD\0",
+                            string::xmlstr_to_string((*elem).name)
+                        );
+                        vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+                        ret = 0;
+                    }
+                }
+                _ => {}
+            }
+
+            // Required attributes + attribute value checks
+            let mut attr = (*elem).properties;
+            while !attr.is_null() {
+                let aval = if !(*attr).children.is_null() {
+                    (*(*attr).children).content
+                } else {
+                    ptr::null()
+                };
+                if validate_one_attribute(ctxt, doc, elem, attr, aval) == 0 {
+                    ret = 0;
+                }
+                attr = (*attr).next;
+            }
+        }
+        ret
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Streaming (push) validation — upstream valid.c xmlValidatePushElement /
+// PushCData / PopElement + xmlValidBuildContentModel
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream keeps a stack of validation states (one per open element). Each
+// state holds the element declaration and, for ELEMENT content, a regexp
+// exec context over the compiled content model. The candidate reproduces
+// the same observable contract: per-push checks against the current state,
+// "Misplaced"/"Text not allowed"/"Expecting more children" diagnostics,
+// and the vstate push/pop stack on the public _xmlValidCtxt layout
+// (vstate/vstateNr/vstateMax/vstateTab).
+
+/// Mirror of upstream `_xmlValidState` (valid.c): one entry per open element.
+#[repr(C)]
+struct ValidState {
+    elem_decl: *mut _xmlElement,
+    node: *mut _xmlNode,
+    exec: *mut ContentModelExec,
+}
+
+/// Find the declaration for an element (upstream xmlValidGetElemDecl).
+/// Reports "No declaration for element %s" when absent.
+unsafe fn valid_get_elem_decl(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    extsubset: *mut c_int,
+) -> *mut _xmlElement {
+    unsafe {
+        if ctxt.is_null() || doc.is_null() || elem.is_null() || (*elem).name.is_null() {
+            return ptr::null_mut();
+        }
+        if !extsubset.is_null() {
+            *extsubset = 0;
+        }
+        let mut elem_decl = ptr::null_mut();
+
+        let prefix = if !(*elem).ns.is_null() && !(*(*elem).ns).prefix.is_null() {
+            (*(*elem).ns).prefix
+        } else {
+            ptr::null()
+        };
+        if !prefix.is_null() {
+            elem_decl = get_dtd_qelement_desc((*doc).intSubset, (*elem).name, prefix);
+            if elem_decl.is_null() && !(*doc).extSubset.is_null() {
+                elem_decl = get_dtd_qelement_desc((*doc).extSubset, (*elem).name, prefix);
+                if !elem_decl.is_null() && !extsubset.is_null() {
+                    *extsubset = 1;
+                }
+            }
+        }
+        if elem_decl.is_null() {
+            // non-strict fallback: plain name against either subset
+            elem_decl = get_dtd_qelement_desc((*doc).intSubset, (*elem).name, ptr::null());
+            if elem_decl.is_null() && !(*doc).extSubset.is_null() {
+                elem_decl = get_dtd_qelement_desc((*doc).extSubset, (*elem).name, ptr::null());
+                if !elem_decl.is_null() && !extsubset.is_null() {
+                    *extsubset = 1;
+                }
+            }
+        }
+        if elem_decl.is_null() {
+            let msg = format!(
+                "No declaration for element {}\0",
+                string::xmlstr_to_string((*elem).name)
+            );
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+        }
+        elem_decl
+    }
+}
+
+/// Upstream xmlValidateCheckMixed: is `qname` in the MIXED content list?
+unsafe fn validate_check_mixed(
+    ctxt: *mut _xmlValidCtxt,
+    cont: *mut _xmlElementContent,
+    qname: *const xmlChar,
+) -> c_int {
+    unsafe {
+        let mut plen: c_int = 0;
+        let has_colon = string::split_qname3(qname, &mut plen) != 0;
+        // upstream xmlSplitQName3 returns the local-name pointer (NULL when
+        // the qname has no colon); the candidate's split_qname3 returns the
+        // prefix length, so the local part is qname + plen + 1.
+        let local = if has_colon {
+            qname.add(plen as usize + 1)
+        } else {
+            ptr::null()
+        };
+        let mut cur = cont;
+        if local.is_null() {
+            while !cur.is_null() {
+                if (*cur).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                    if (*cur).prefix.is_null() && string::xml_strcmp((*cur).name, qname) == 0 {
+                        return 1;
+                    }
+                } else if (*cur).type_ == XML_ELEMENT_CONTENT_OR as c_int
+                    && !(*cur).c1.is_null()
+                    && (*(*cur).c1).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int
+                {
+                    if (*(*cur).c1).prefix.is_null()
+                        && string::xml_strcmp((*(*cur).c1).name, qname) == 0
+                    {
+                        return 1;
+                    }
+                } else if (*cur).type_ != XML_ELEMENT_CONTENT_OR as c_int
+                    || (*cur).c1.is_null()
+                    || (*(*cur).c1).type_ != XML_ELEMENT_CONTENT_PCDATA as c_int
+                {
+                    vctxt_error(
+                        ctxt,
+                        b"Internal: MIXED struct corrupted\0" as *const u8 as *const c_char,
+                    );
+                    break;
+                }
+                cur = (*cur).c2;
+            }
+        } else {
+            while !cur.is_null() {
+                if (*cur).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int {
+                    if !(*cur).prefix.is_null()
+                        && prefix_matches((*cur).prefix, qname, plen)
+                        && string::xml_strcmp((*cur).name, local) == 0
+                    {
+                        return 1;
+                    }
+                } else if (*cur).type_ == XML_ELEMENT_CONTENT_OR as c_int
+                    && !(*cur).c1.is_null()
+                    && (*(*cur).c1).type_ == XML_ELEMENT_CONTENT_ELEMENT as c_int
+                {
+                    if !(*(*cur).c1).prefix.is_null()
+                        && prefix_matches((*(*cur).c1).prefix, qname, plen)
+                        && string::xml_strcmp((*(*cur).c1).name, local) == 0
+                    {
+                        return 1;
+                    }
+                } else if (*cur).type_ != XML_ELEMENT_CONTENT_OR as c_int
+                    || (*cur).c1.is_null()
+                    || (*(*cur).c1).type_ != XML_ELEMENT_CONTENT_PCDATA as c_int
+                {
+                    vctxt_error(
+                        ctxt,
+                        b"Internal: MIXED struct corrupted\0" as *const u8 as *const c_char,
+                    );
+                    break;
+                }
+                cur = (*cur).c2;
+            }
+        }
+        0
+    }
+}
+
+/// Does `prefix` equal the first `len` bytes of `qname` (upstream
+/// xmlStrncmp(prefix, qname, plen))?
+unsafe fn prefix_matches(prefix: *const xmlChar, qname: *const xmlChar, len: c_int) -> bool {
+    unsafe {
+        let p = string::xmlstr_to_bytes(prefix);
+        let q = string::xmlstr_to_bytes(qname);
+        p.len() == len as usize && q.len() >= len as usize && p[..len as usize] == q[..len as usize]
+    }
+}
+
+/// Incremental content-model matcher stored in `_xmlElement.cont_model`.
+///
+/// The candidate's regex engine matches character-by-character, which does
+/// not model upstream's whole-name content-model tokens, so the content
+/// model is compiled into a dedicated small NFA over full element names.
+/// Upstream builds the same automaton (xmlValidBuildAContentModel) and then
+/// converts it with xmlRegFromAutomata; the observable push/pop contract is
+/// identical (per-push "Misplaced" errors, completion checks on pop).
+#[repr(C)]
+pub struct ContentModelNfa {
+    /// Flat transition list: (from_state, name, to_state); name NULL = epsilon.
+    transitions: Vec<(u32, *const xmlChar, u32)>,
+    /// start state index
+    start: u32,
+    /// accepting state indices (match complete)
+    accept: Vec<u32>,
+}
+
+/// Runtime exec state for one open element's content model.
+#[repr(C)]
+pub struct ContentModelExec {
+    /// the compiled NFA
+    nfa: *mut ContentModelNfa,
+    /// current state set after epsilon closure
+    current: Vec<u32>,
+}
+
+/// Thompson-style NFA builder over the content tree.
+struct NfaBuilder {
+    transitions: Vec<(u32, *const xmlChar, u32)>,
+    n_states: u32,
+}
+
+impl NfaBuilder {
+    fn new() -> Self {
+        NfaBuilder {
+            transitions: Vec::new(),
+            n_states: 0,
+        }
+    }
+    fn new_state(&mut self) -> u32 {
+        let s = self.n_states;
+        self.n_states += 1;
+        s
+    }
+    fn eps(&mut self, from: u32, to: u32) {
+        self.transitions.push((from, ptr::null(), to));
+    }
+    fn name_trans(&mut self, from: u32, name: *const xmlChar, to: u32) {
+        self.transitions.push((from, name, to));
+    }
+}
+
+/// Compile one content-model subtree. Returns (in_state, out_states); the
+/// occurrence quantifier on the node is applied by wrapping the fragment
+/// with epsilon edges (standard Thompson construction, matching upstream's
+/// automaton shape for OPT/MULT/PLUS).
+unsafe fn compile_content_sub(
+    b: &mut NfaBuilder,
+    model: *mut _xmlElementContent,
+) -> (u32, Vec<u32>) {
+    if model.is_null() {
+        let s = b.new_state();
+        return (s, vec![s]);
+    }
+    let m = unsafe { &*model };
+    let (mut in_s, mut outs) = match m.type_ as u32 {
+        t if t == XML_ELEMENT_CONTENT_ELEMENT as u32 => {
+            let s = b.new_state();
+            let to = b.new_state();
+            b.name_trans(s, m.name, to);
+            (s, vec![to])
+        }
+        t if t == XML_ELEMENT_CONTENT_SEQ as u32 => {
+            let (in1, out1) = compile_content_sub(b, m.c1);
+            let (in2, out2) = compile_content_sub(b, m.c2);
+            for &o in &out1 {
+                b.eps(o, in2);
+            }
+            (in1, out2)
+        }
+        t if t == XML_ELEMENT_CONTENT_OR as u32 => {
+            let (in1, out1) = compile_content_sub(b, m.c1);
+            let (in2, out2) = compile_content_sub(b, m.c2);
+            let s = b.new_state();
+            b.eps(s, in1);
+            b.eps(s, in2);
+            let mut all = out1;
+            all.extend(out2);
+            (s, all)
+        }
+        // PCDATA cannot appear in an ELEMENT content model; the caller
+        // rejects it before compiling (upstream xmlValidBuildAContentModel
+        // emits "Found PCDATA in content model of %s"). A PCDATA node here
+        // compiles to an empty fragment so a malformed tree cannot crash.
+        _ => {
+            let s = b.new_state();
+            (s, vec![s])
+        }
+    };
+    match m.ocur as u32 {
+        o if o == XML_ELEMENT_CONTENT_OPT as u32 => {
+            let s = b.new_state();
+            b.eps(s, in_s);
+            for &o2 in &outs {
+                b.eps(s, o2);
+            }
+            in_s = s;
+        }
+        o if o == XML_ELEMENT_CONTENT_MULT as u32 => {
+            let s = b.new_state();
+            b.eps(s, in_s);
+            for &o2 in &outs {
+                b.eps(s, o2);
+                b.eps(o2, s);
+            }
+            in_s = s;
+        }
+        o if o == XML_ELEMENT_CONTENT_PLUS as u32 => {
+            let s = b.new_state();
+            b.eps(s, in_s);
+            for &o2 in &outs {
+                b.eps(o2, s);
+            }
+            in_s = s;
+        }
+        _ => {}
+    }
+    (in_s, outs)
+}
+
+/// Does the content tree contain a PCDATA node (illegal in ELEMENT models)?
+unsafe fn content_has_pcdata(model: *mut _xmlElementContent) -> bool {
+    if model.is_null() {
+        return false;
+    }
+    unsafe {
+        let m = &*model;
+        if m.type_ == XML_ELEMENT_CONTENT_PCDATA as c_int {
+            return true;
+        }
+        content_has_pcdata(m.c1) || content_has_pcdata(m.c2)
+    }
+}
+
+/// Compile an element content tree into a ContentModelNfa.
+///
+/// # SAFETY
+///
+/// - `content` must be a valid content tree or NULL (returns NULL).
+unsafe fn build_content_nfa(content: *mut _xmlElementContent) -> *mut ContentModelNfa {
+    unsafe {
+        if content.is_null() {
+            return ptr::null_mut();
+        }
+        let mut b = NfaBuilder::new();
+        let (start, outs) = compile_content_sub(&mut b, content);
+        let nfa = Box::new(ContentModelNfa {
+            transitions: b.transitions,
+            start,
+            accept: outs,
+        });
+        Box::into_raw(nfa)
+    }
+}
+
+/// Free a compiled content-model NFA (called from xmlFreeElement).
+///
+/// # SAFETY
+///
+/// - `nfa` must be a pointer from build_content_nfa or NULL.
+pub unsafe fn free_content_model_nfa(nfa: *mut ContentModelNfa) {
+    if nfa.is_null() {
+        return;
+    }
+    unsafe {
+        ptr::drop_in_place(nfa);
+        allocator::xmlFree(nfa as *mut c_void);
+    }
+}
+
+/// Epsilon closure of a state set.
+unsafe fn eps_closure(nfa: &ContentModelNfa, states: &[u32]) -> Vec<u32> {
+    let mut out = states.to_vec();
+    let mut stack = states.to_vec();
+    while let Some(s) = stack.pop() {
+        for &(from, name, to) in &nfa.transitions {
+            if from == s && name.is_null() && !out.contains(&to) {
+                out.push(to);
+                stack.push(to);
+            }
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
+/// Create an exec context over a compiled content model. Returns NULL on OOM.
+unsafe fn new_content_exec(nfa: *mut ContentModelNfa) -> *mut ContentModelExec {
+    unsafe {
+        let exec = allocator::xmlMalloc(size_of::<ContentModelExec>()) as *mut ContentModelExec;
+        if exec.is_null() {
+            return ptr::null_mut();
+        }
+        let cur = eps_closure(&*nfa, &[(*nfa).start]);
+        ptr::write(&mut (*exec).nfa, nfa);
+        ptr::write(&mut (*exec).current, cur);
+        exec
+    }
+}
+
+/// Free an exec context.
+unsafe fn free_content_exec(exec: *mut ContentModelExec) {
+    if exec.is_null() {
+        return;
+    }
+    unsafe {
+        ptr::drop_in_place(&mut (*exec).current);
+        allocator::xmlFree(exec as *mut c_void);
+    }
+}
+
+/// Push a full element name (or NULL = end of input) into the exec context.
+///
+/// Mirrors upstream xmlRegExecPushString contract: 1 = match complete,
+/// 0 = more input needed, -1 = cannot continue (Misplaced).
+unsafe fn content_exec_push(exec: *mut ContentModelExec, value: *const xmlChar) -> c_int {
+    unsafe {
+        if exec.is_null() {
+            return -1;
+        }
+        let nfa = &*(*exec).nfa;
+        if value.is_null() {
+            let cur = eps_closure(nfa, &(*exec).current);
+            return if cur.iter().any(|&s| nfa.accept.contains(&s)) {
+                1
+            } else {
+                0
+            };
+        }
+        let mut next: Vec<u32> = Vec::new();
+        for &s in &(*exec).current {
+            for &(from, name, to) in &nfa.transitions {
+                if from == s && !name.is_null() && string::xml_strcmp(name, value) == 0 {
+                    next.push(to);
+                }
+            }
+        }
+        next.sort_unstable();
+        next.dedup();
+        if next.is_empty() {
+            return -1;
+        }
+        let closed = eps_closure(nfa, &next);
+        (*exec).current = closed;
+        if (*exec).current.iter().any(|&s| nfa.accept.contains(&s)) {
+            1
+        } else {
+            0
+        }
+    }
+}
+
+/// Upstream vstateVPush: push a validation state for an open element.
+unsafe fn vstate_vpush(
+    ctxt: *mut _xmlValidCtxt,
+    elem_decl: *mut _xmlElement,
+    node: *mut _xmlNode,
+) -> c_int {
+    unsafe {
+        if (*ctxt).vstateNr >= (*ctxt).vstateMax {
+            let new_max = if (*ctxt).vstateMax == 0 {
+                10
+            } else {
+                (*ctxt).vstateMax * 2
+            };
+            let new_tab = allocator::xmlRealloc(
+                (*ctxt).vstateTab as *mut c_void,
+                (new_max as usize) * size_of::<ValidState>(),
+            ) as *mut ValidState;
+            if new_tab.is_null() {
+                vctxt_error(
+                    ctxt,
+                    b"Memory allocation failed : xmlValidCtxt\0" as *const u8 as *const c_char,
+                );
+                return -1;
+            }
+            (*ctxt).vstateTab = new_tab as *mut c_void;
+            (*ctxt).vstateMax = new_max;
+        }
+        let idx = (*ctxt).vstateNr as usize;
+        let tab = (*ctxt).vstateTab as *mut ValidState;
+        (*tab.add(idx)).elem_decl = elem_decl;
+        (*tab.add(idx)).node = node;
+        (*tab.add(idx)).exec = ptr::null_mut();
+        if !elem_decl.is_null() && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
+            if (*elem_decl).cont_model.is_null() {
+                validate_build_content_model(ctxt, elem_decl);
+            }
+            if !(*elem_decl).cont_model.is_null() {
+                let exec = new_content_exec((*elem_decl).cont_model as *mut ContentModelNfa);
+                if exec.is_null() {
+                    vctxt_error(
+                        ctxt,
+                        b"Memory allocation failed : xmlValidCtxt\0" as *const u8 as *const c_char,
+                    );
+                    return -1;
+                }
+                (*tab.add(idx)).exec = exec;
+            } else {
+                let msg = format!(
+                    "Failed to build content model regexp for {}\0",
+                    string::xmlstr_to_string((*elem_decl).name)
+                );
+                vctxt_error_node(ctxt, node, msg.as_ptr() as *const c_char);
+            }
+        }
+        (*ctxt).vstate = tab.add(idx) as *mut c_void;
+        (*ctxt).vstateNr += 1;
+        0
+    }
+}
+
+/// Upstream vstateVPop: pop the current validation state, freeing its exec.
+unsafe fn vstate_vpop(ctxt: *mut _xmlValidCtxt) -> c_int {
+    unsafe {
+        if (*ctxt).vstateNr < 1 {
+            return -1;
+        }
+        (*ctxt).vstateNr -= 1;
+        let idx = (*ctxt).vstateNr as usize;
+        let tab = (*ctxt).vstateTab as *mut ValidState;
+        let elem_decl = (*tab.add(idx)).elem_decl;
+        (*tab.add(idx)).elem_decl = ptr::null_mut();
+        (*tab.add(idx)).node = ptr::null_mut();
+        if !elem_decl.is_null() && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
+            if !(*tab.add(idx)).exec.is_null() {
+                free_content_exec((*tab.add(idx)).exec);
+            }
+        }
+        (*tab.add(idx)).exec = ptr::null_mut();
+        if (*ctxt).vstateNr >= 1 {
+            (*ctxt).vstate = tab.add((*ctxt).vstateNr as usize - 1) as *mut c_void;
+        } else {
+            (*ctxt).vstate = ptr::null_mut();
+        }
+        0
+    }
+}
+
+/// Upstream `xmlValidBuildContentModel(ctxt, elem)`: compile the element's
+/// content tree into a content-model NFA cached in `elem->contModel`.
+/// Returns 1 on success, 0 on failure.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `elem` a valid pointer.
+pub unsafe fn validate_build_content_model(
+    ctxt: *mut _xmlValidCtxt,
+    elem: *mut _xmlElement,
+) -> c_int {
+    unsafe {
+        if ctxt.is_null() {
+            return 0;
+        }
+        if (*elem).type_ != XML_ELEMENT_DECL as c_int {
+            return 0;
+        }
+        if (*elem).etype != XML_ELEMENT_TYPE_ELEMENT as c_int {
+            return 1;
+        }
+        if !(*elem).cont_model.is_null() {
+            return 1;
+        }
+        if (*elem).content.is_null() {
+            return 1;
+        }
+        if content_has_pcdata((*elem).content) {
+            let msg = format!(
+                "Found PCDATA in content model of {}\0",
+                string::xmlstr_to_string((*elem).name)
+            );
+            vctxt_error_node(ctxt, elem as *mut _xmlNode, msg.as_ptr() as *const c_char);
+            return 0;
+        }
+        let nfa = build_content_nfa((*elem).content);
+        if nfa.is_null() {
+            vctxt_error(
+                ctxt,
+                b"Memory allocation failed : xmlValidBuildContentModel\0" as *const u8
+                    as *const c_char,
+            );
+            return 0;
+        }
+        (*elem).cont_model = nfa as *mut c_void;
+        1
+    }
+}
+
+/// Upstream `xmlValidatePushElement(ctxt, doc, elem, qname)`: validate a
+/// start tag against the parent's content model and push the new element's
+/// validation state.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`elem`/`qname` valid pointers or NULL.
+pub unsafe fn validate_push_element(
+    ctxt: *mut _xmlValidCtxt,
+    doc: *mut _xmlDoc,
+    elem: *mut _xmlNode,
+    qname: *const xmlChar,
+) -> c_int {
+    unsafe {
+        let mut ret = 1;
+        if ctxt.is_null() {
+            return 0;
+        }
+        if (*ctxt).vstateNr > 0 && !(*ctxt).vstate.is_null() {
+            let state = (*ctxt).vstate as *mut ValidState;
+            let elem_decl = (*state).elem_decl;
+            if !elem_decl.is_null() {
+                match (*elem_decl).etype as u32 {
+                    t if t == XML_ELEMENT_TYPE_UNDEFINED as u32 => ret = 0,
+                    t if t == XML_ELEMENT_TYPE_EMPTY as u32 => {
+                        let msg = format!(
+                            "Element {} was declared EMPTY this one has content\0",
+                            string::xmlstr_to_string((*(*state).node).name)
+                        );
+                        vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                        ret = 0;
+                    }
+                    t if t == XML_ELEMENT_TYPE_ANY as u32 => {}
+                    t if t == XML_ELEMENT_TYPE_MIXED as u32 => {
+                        if !(*elem_decl).content.is_null()
+                            && (*(*elem_decl).content).type_ == XML_ELEMENT_CONTENT_PCDATA as c_int
+                        {
+                            let msg = format!(
+                                "Element {} was declared #PCDATA but contains non text nodes\0",
+                                string::xmlstr_to_string((*(*state).node).name)
+                            );
+                            vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                            ret = 0;
+                        } else {
+                            ret = validate_check_mixed(ctxt, (*elem_decl).content, qname);
+                            if ret != 1 {
+                                let msg = format!(
+                                    "Element {} is not declared in {} list of possible children\0",
+                                    string::xmlstr_to_string(qname),
+                                    string::xmlstr_to_string((*(*state).node).name)
+                                );
+                                vctxt_error_node(
+                                    ctxt,
+                                    (*state).node,
+                                    msg.as_ptr() as *const c_char,
+                                );
+                            }
+                        }
+                    }
+                    t if t == XML_ELEMENT_TYPE_ELEMENT as u32 => {
+                        if !(*state).exec.is_null() {
+                            ret = content_exec_push((*state).exec, qname);
+                            if ret < 0 {
+                                let msg = format!(
+                                    "Element {} content does not follow the DTD, Misplaced {}\0",
+                                    string::xmlstr_to_string((*(*state).node).name),
+                                    string::xmlstr_to_string(qname)
+                                );
+                                vctxt_error_node(
+                                    ctxt,
+                                    (*state).node,
+                                    msg.as_ptr() as *const c_char,
+                                );
+                                ret = 0;
+                            } else {
+                                ret = 1;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        let mut extsubset = 0;
+        let e_decl = valid_get_elem_decl(ctxt, doc, elem, &mut extsubset);
+        // upstream ignores the vstateVPush return here
+        let _ = vstate_vpush(ctxt, e_decl, elem);
+        ret
+    }
+}
+
+/// Upstream `xmlValidatePushCData(ctxt, data, len)`: character data is only
+/// legal as whitespace inside ELEMENT content.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `data` a valid buffer of `len` bytes or NULL.
+pub unsafe fn validate_push_cdata(
+    ctxt: *mut _xmlValidCtxt,
+    data: *const xmlChar,
+    len: c_int,
+) -> c_int {
+    unsafe {
+        let mut ret = 1;
+        if ctxt.is_null() {
+            return 0;
+        }
+        if len <= 0 {
+            return 1;
+        }
+        if (*ctxt).vstateNr > 0 && !(*ctxt).vstate.is_null() {
+            let state = (*ctxt).vstate as *mut ValidState;
+            let elem_decl = (*state).elem_decl;
+            if !elem_decl.is_null() {
+                match (*elem_decl).etype as u32 {
+                    t if t == XML_ELEMENT_TYPE_UNDEFINED as u32 => ret = 0,
+                    t if t == XML_ELEMENT_TYPE_EMPTY as u32 => {
+                        let msg = format!(
+                            "Element {} was declared EMPTY this one has content\0",
+                            string::xmlstr_to_string((*(*state).node).name)
+                        );
+                        vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                        ret = 0;
+                    }
+                    t if t == XML_ELEMENT_TYPE_ANY as u32 || t == XML_ELEMENT_TYPE_MIXED as u32 => {
+                    }
+                    t if t == XML_ELEMENT_TYPE_ELEMENT as u32 => {
+                        let bytes = core::slice::from_raw_parts(data, len as usize);
+                        for &b in bytes {
+                            if !is_blank_byte(b) {
+                                let msg = format!(
+                                    "Element {} content does not follow the DTD, Text not allowed\0",
+                                    string::xmlstr_to_string((*(*state).node).name)
+                                );
+                                vctxt_error_node(
+                                    ctxt,
+                                    (*state).node,
+                                    msg.as_ptr() as *const c_char,
+                                );
+                                ret = 0;
+                                break;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        ret
+    }
+}
+
+/// Upstream `xmlValidatePopElement(ctxt, doc, elem, qname)`: verify the
+/// parent content model completed and pop the validation state.
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `doc`/`elem`/`qname` valid pointers or NULL.
+pub unsafe fn validate_pop_element(
+    ctxt: *mut _xmlValidCtxt,
+    _doc: *mut _xmlDoc,
+    _elem: *mut _xmlNode,
+    _qname: *const xmlChar,
+) -> c_int {
+    unsafe {
+        let mut ret = 1;
+        if ctxt.is_null() {
+            return 0;
+        }
+        if (*ctxt).vstateNr > 0 && !(*ctxt).vstate.is_null() {
+            let state = (*ctxt).vstate as *mut ValidState;
+            let elem_decl = (*state).elem_decl;
+            if !elem_decl.is_null() && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
+                if !(*state).exec.is_null() {
+                    ret = content_exec_push((*state).exec, ptr::null());
+                    if ret <= 0 {
+                        let msg = format!(
+                            "Element {} content does not follow the DTD, Expecting more children\0",
+                            string::xmlstr_to_string((*(*state).node).name)
+                        );
+                        vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                        ret = 0;
+                    } else {
+                        ret = 1;
+                    }
+                }
+            }
+            let _ = vstate_vpop(ctxt);
+        }
+        ret
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2135,8 +4683,15 @@ mod tests {
     #[test]
     fn test_validate_attribute_value_null() {
         unsafe {
+            // UPSTREAM-PARITY: xmlValidateAttributeValueInternal's switch
+            // breaks out of CDATA and returns 1 (valid.c 2.15.0), even for
+            // a NULL value; unknown types also fall through to 1.
             assert_eq!(
                 validate_attribute_value(XML_ATTRIBUTE_CDATA as c_int, ptr::null()),
+                1
+            );
+            assert_eq!(
+                validate_attribute_value(XML_ATTRIBUTE_ID as c_int, ptr::null()),
                 0
             );
         }
@@ -2785,8 +5340,10 @@ mod tests {
     #[test]
     fn test_validate_attribute_value_unknown_type() {
         unsafe {
+            // UPSTREAM-PARITY: unknown attribute types fall through to the
+            // default return of 1 (valid.c xmlValidateAttributeValueInternal).
             let s = c_str("test");
-            assert_eq!(validate_attribute_value(999, s), 0);
+            assert_eq!(validate_attribute_value(999, s), 1);
             allocator::xmlFree(s as *mut c_void);
         }
     }

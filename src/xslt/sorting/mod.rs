@@ -207,11 +207,11 @@ unsafe fn xsltEvalSortKey(
     let saved_node = (*xpath_ctxt).node;
     let saved_doc = (*xpath_ctxt).doc;
     (*xpath_ctxt).node = node;
-    (*xpath_ctxt).doc = (*ctxt).document;
+    (*xpath_ctxt).doc = (*(*ctxt).document).doc;
     let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
     if !internal.is_null() {
         (*internal).context_node = node;
-        (*internal).document = (*ctxt).document;
+        (*internal).document = (*(*ctxt).document).doc;
     }
     let select = (*sort).select;
     let xpath_obj = xmlXPathEvalExpression(select, xpath_ctxt);
