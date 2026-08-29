@@ -75,7 +75,7 @@ def parse_inventory(project, version, profile):
                 elif kind == "enumvalue":
                     ent["value"] = (mdef.findtext("initializer") or "").strip()
                     ent["enum"] = comp_name
-                ent["documented"] = bool((mdef.findtext("briefdescription") or "").strip())
+                ent["documented"] = bool((mdef.findtext("briefdescription/para") or "").strip())
                 loc = mdef.find("location")
                 if loc is not None:
                     fpath = loc.get("file") or ""

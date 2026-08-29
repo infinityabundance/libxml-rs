@@ -1,19 +1,19 @@
 {
  "schema": "doxygen-inventory-1",
  "project": "libxml2",
- "version": "2.15.0",
+ "version": "system",
  "profile": "public",
  "doxygen_version": "1.18.0",
- "config_hash": "466024154963659a6d777d3076f91afed6978752bf9792a199c843c5ebb7e474",
- "source_tree_hash": "f1a98bbaa6a4a1ae59820a953ecab62b35c989003d77d96bc61998bc1643e7d4",
- "raw_xml_hash": "b29ae4ab4a64cf92152cc5ba8a049f03d956ef3aa3a2ddee80fe16c6c41dce96",
+ "config_hash": "fd73e1f5065326c3c9c9aab0afca8f757564ce91782c7d77d89629f24c67a7e9",
+ "source_tree_hash": null,
+ "raw_xml_hash": "47f97bc9d5ab85712466bb11980b77c2a9e703a8477d7dcd8275916951dfc9e7",
  "counts": {
-  "define": 242,
-  "enum": 40,
-  "function": 1345,
-  "typedef": 247,
+  "define": 247,
+  "enum": 41,
+  "function": 1374,
+  "typedef": 255,
   "variable": 625,
-  "total": 2499
+  "total": 2542
  },
  "entities": [
   {
@@ -1422,7 +1422,7 @@
    "value": "",
    "documented": false,
    "header": "xmlexports.h",
-   "line": "64"
+   "line": "68"
   },
   {
    "kind": "define",
@@ -1430,7 +1430,7 @@
    "value": "",
    "documented": false,
    "header": "xmlexports.h",
-   "line": "74"
+   "line": "78"
   },
   {
    "kind": "define",
@@ -1475,7 +1475,7 @@
   {
    "kind": "define",
    "name": "LIBXML_DOTTED_VERSION",
-   "value": "\"2.15.0\"",
+   "value": "\"2.15.3\"",
    "documented": true,
    "header": "xmlversion.h",
    "line": "19"
@@ -1490,11 +1490,27 @@
   },
   {
    "kind": "define",
+   "name": "LIBXML_HTTP_STUBS_ENABLED",
+   "value": "",
+   "documented": true,
+   "header": "xmlversion.h",
+   "line": "107"
+  },
+  {
+   "kind": "define",
    "name": "LIBXML_ICONV_ENABLED",
    "value": "",
    "documented": true,
    "header": "xmlversion.h",
    "line": "169"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXML_ICU_ENABLED",
+   "value": "",
+   "documented": true,
+   "header": "xmlversion.h",
+   "line": "176"
   },
   {
    "kind": "define",
@@ -1586,6 +1602,14 @@
   },
   {
    "kind": "define",
+   "name": "LIBXML_SCHEMATRON_ENABLED",
+   "value": "",
+   "documented": true,
+   "header": "xmlversion.h",
+   "line": "230"
+  },
+  {
+   "kind": "define",
    "name": "LIBXML_SGML_CATALOG_ENABLED",
    "value": "",
    "documented": false,
@@ -1599,6 +1623,14 @@
    "documented": true,
    "header": "xmlversion.h",
    "line": "40"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXML_THREAD_ENABLED",
+   "value": "",
+   "documented": true,
+   "header": "xmlversion.h",
+   "line": "46"
   },
   {
    "kind": "define",
@@ -1619,7 +1651,7 @@
   {
    "kind": "define",
    "name": "LIBXML_VERSION",
-   "value": "21500",
+   "value": "21503",
    "documented": true,
    "header": "xmlversion.h",
    "line": "24"
@@ -1627,7 +1659,7 @@
   {
    "kind": "define",
    "name": "LIBXML_VERSION_EXTRA",
-   "value": "\"\"",
+   "value": "\"-GITv2.15.3\"",
    "documented": true,
    "header": "xmlversion.h",
    "line": "34"
@@ -1635,7 +1667,7 @@
   {
    "kind": "define",
    "name": "LIBXML_VERSION_STRING",
-   "value": "\"21500\"",
+   "value": "\"21503\"",
    "documented": true,
    "header": "xmlversion.h",
    "line": "29"
@@ -1671,6 +1703,14 @@
    "documented": true,
    "header": "xmlversion.h",
    "line": "155"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXML_ZLIB_ENABLED",
+   "value": "",
+   "documented": true,
+   "header": "xmlversion.h",
+   "line": "248"
   },
   {
    "kind": "define",
@@ -2077,6 +2117,13 @@
    "documented": true,
    "header": "schemasInternals.h",
    "line": "36"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlSchematronValidOptions",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "31"
   },
   {
    "kind": "enum",
@@ -3429,7 +3476,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "152"
+   "line": "154"
   },
   {
    "kind": "function",
@@ -3440,7 +3487,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "173"
+   "line": "175"
   },
   {
    "kind": "function",
@@ -3462,7 +3509,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "163"
+   "line": "165"
   },
   {
    "kind": "function",
@@ -3477,6 +3524,17 @@
   },
   {
    "kind": "function",
+   "name": "xmlCatalogDumpDoc",
+   "args": "(void)",
+   "definition": "xmlDocPtr xmlCatalogDumpDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "catalog.h",
+   "line": "142"
+  },
+  {
+   "kind": "function",
    "name": "xmlCatalogFreeLocal",
    "args": "(void *catalogs)",
    "definition": "void xmlCatalogFreeLocal",
@@ -3484,7 +3542,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "171"
+   "line": "173"
   },
   {
    "kind": "function",
@@ -3495,7 +3553,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "193"
+   "line": "195"
   },
   {
    "kind": "function",
@@ -3506,7 +3564,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "202"
+   "line": "204"
   },
   {
    "kind": "function",
@@ -3517,7 +3575,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "199"
+   "line": "201"
   },
   {
    "kind": "function",
@@ -3539,7 +3597,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "176"
+   "line": "178"
   },
   {
    "kind": "function",
@@ -3550,7 +3608,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "180"
+   "line": "182"
   },
   {
    "kind": "function",
@@ -3561,7 +3619,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "156"
+   "line": "158"
   },
   {
    "kind": "function",
@@ -3572,7 +3630,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "143"
+   "line": "145"
   },
   {
    "kind": "function",
@@ -3583,7 +3641,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "148"
+   "line": "150"
   },
   {
    "kind": "function",
@@ -3594,7 +3652,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "146"
+   "line": "148"
   },
   {
    "kind": "function",
@@ -3605,7 +3663,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "150"
+   "line": "152"
   },
   {
    "kind": "function",
@@ -3616,7 +3674,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "186"
+   "line": "188"
   },
   {
    "kind": "function",
@@ -3627,7 +3685,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "189"
+   "line": "191"
   },
   {
    "kind": "function",
@@ -3638,7 +3696,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "191"
+   "line": "193"
   },
   {
    "kind": "function",
@@ -3737,7 +3795,7 @@
    "prot": "public",
    "documented": false,
    "header": "catalog.h",
-   "line": "159"
+   "line": "161"
   },
   {
    "kind": "function",
@@ -5124,6 +5182,193 @@
    "documented": false,
    "header": "list.h",
    "line": "119"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPAuthHeader",
+   "args": "(void *ctx)",
+   "definition": "const char * xmlNanoHTTPAuthHeader",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "69"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPCleanup",
+   "args": "(void)",
+   "definition": "void xmlNanoHTTPCleanup",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "29"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPClose",
+   "args": "(void *ctx)",
+   "definition": "void xmlNanoHTTPClose",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "95"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPContentLength",
+   "args": "(void *ctx)",
+   "definition": "int xmlNanoHTTPContentLength",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "75"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPEncoding",
+   "args": "(void *ctx)",
+   "definition": "const char * xmlNanoHTTPEncoding",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "78"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPFetch",
+   "args": "(const char *URL, const char *filename, char **contentType)",
+   "definition": "int xmlNanoHTTPFetch",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "35"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPInit",
+   "args": "(void)",
+   "definition": "void xmlNanoHTTPInit",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "26"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPMethod",
+   "args": "(const char *URL, const char *method, const char *input, char **contentType, const char *headers, int ilen)",
+   "definition": "void * xmlNanoHTTPMethod",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "40"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPMethodRedir",
+   "args": "(const char *URL, const char *method, const char *input, char **contentType, char **redir, const char *headers, int ilen)",
+   "definition": "void * xmlNanoHTTPMethodRedir",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "48"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPMimeType",
+   "args": "(void *ctx)",
+   "definition": "const char * xmlNanoHTTPMimeType",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "81"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPOpen",
+   "args": "(const char *URL, char **contentType)",
+   "definition": "void * xmlNanoHTTPOpen",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "57"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPOpenRedir",
+   "args": "(const char *URL, char **contentType, char **redir)",
+   "definition": "void * xmlNanoHTTPOpenRedir",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "61"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPRead",
+   "args": "(void *ctx, void *dest, int len)",
+   "definition": "int xmlNanoHTTPRead",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "84"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPRedir",
+   "args": "(void *ctx)",
+   "definition": "const char * xmlNanoHTTPRedir",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "72"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPReturnCode",
+   "args": "(void *ctx)",
+   "definition": "int xmlNanoHTTPReturnCode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "66"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPSave",
+   "args": "(void *ctxt, const char *filename)",
+   "definition": "int xmlNanoHTTPSave",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "90"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNanoHTTPScanProxy",
+   "args": "(const char *URL)",
+   "definition": "void xmlNanoHTTPScanProxy",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "nanohttp.h",
+   "line": "32"
   },
   {
    "kind": "function",
@@ -7422,7 +7667,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "166"
+   "line": "170"
   },
   {
    "kind": "function",
@@ -7433,7 +7678,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "171"
+   "line": "175"
   },
   {
    "kind": "function",
@@ -7444,7 +7689,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "163"
+   "line": "167"
   },
   {
    "kind": "function",
@@ -7455,7 +7700,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "140"
+   "line": "144"
   },
   {
    "kind": "function",
@@ -7466,7 +7711,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "193"
+   "line": "197"
   },
   {
    "kind": "function",
@@ -7477,7 +7722,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "147"
+   "line": "151"
   },
   {
    "kind": "function",
@@ -7488,7 +7733,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "183"
+   "line": "187"
   },
   {
    "kind": "function",
@@ -7543,7 +7788,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "191"
+   "line": "195"
   },
   {
    "kind": "function",
@@ -7554,7 +7799,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "161"
+   "line": "165"
   },
   {
    "kind": "function",
@@ -7565,7 +7810,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "142"
+   "line": "146"
   },
   {
    "kind": "function",
@@ -7576,7 +7821,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "152"
+   "line": "156"
   },
   {
    "kind": "function",
@@ -7587,7 +7832,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "157"
+   "line": "161"
   },
   {
    "kind": "function",
@@ -7598,7 +7843,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "178"
+   "line": "182"
   },
   {
    "kind": "function",
@@ -7609,7 +7854,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "188"
+   "line": "192"
   },
   {
    "kind": "function",
@@ -7620,7 +7865,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "217"
+   "line": "221"
   },
   {
    "kind": "function",
@@ -7631,7 +7876,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "195"
+   "line": "199"
   },
   {
    "kind": "function",
@@ -7642,7 +7887,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "213"
+   "line": "217"
   },
   {
    "kind": "function",
@@ -7653,7 +7898,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "209"
+   "line": "213"
   },
   {
    "kind": "function",
@@ -7664,7 +7909,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "205"
+   "line": "209"
   },
   {
    "kind": "function",
@@ -7675,7 +7920,7 @@
    "prot": "public",
    "documented": false,
    "header": "relaxng.h",
-   "line": "201"
+   "line": "205"
   },
   {
    "kind": "function",
@@ -7687,6 +7932,17 @@
    "documented": false,
    "header": "relaxng.h",
    "line": "136"
+  },
+  {
+   "kind": "function",
+   "name": "xmlRelaxParserSetIncLImit",
+   "args": "(xmlRelaxNGParserCtxt *ctxt, int limit)",
+   "definition": "int xmlRelaxParserSetIncLImit",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "relaxng.h",
+   "line": "140"
   },
   {
    "kind": "function",
@@ -7709,6 +7965,116 @@
    "documented": false,
    "header": "schemasInternals.h",
    "line": "798"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronFree",
+   "args": "(xmlSchematron *schema)",
+   "definition": "void xmlSchematronFree",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "107"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronFreeParserCtxt",
+   "args": "(xmlSchematronParserCtxt *ctxt)",
+   "definition": "void xmlSchematronFreeParserCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "89"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronFreeValidCtxt",
+   "args": "(xmlSchematronValidCtxt *ctxt)",
+   "definition": "void xmlSchematronFreeValidCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "141"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronNewDocParserCtxt",
+   "args": "(xmlDoc *doc)",
+   "definition": "xmlSchematronParserCtxt * xmlSchematronNewDocParserCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "87"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronNewMemParserCtxt",
+   "args": "(const char *buffer, int size)",
+   "definition": "xmlSchematronParserCtxt * xmlSchematronNewMemParserCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "84"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronNewParserCtxt",
+   "args": "(const char *URL)",
+   "definition": "xmlSchematronParserCtxt * xmlSchematronNewParserCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "82"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronNewValidCtxt",
+   "args": "(xmlSchematron *schema, int options)",
+   "definition": "xmlSchematronValidCtxt * xmlSchematronNewValidCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "138"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronParse",
+   "args": "(xmlSchematronParserCtxt *ctxt)",
+   "definition": "xmlSchematron * xmlSchematronParse",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "105"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronSetValidStructuredErrors",
+   "args": "(xmlSchematronValidCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx)",
+   "definition": "void xmlSchematronSetValidStructuredErrors",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "112"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSchematronValidateDoc",
+   "args": "(xmlSchematronValidCtxt *ctxt, xmlDoc *instance)",
+   "definition": "int xmlSchematronValidateDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "143"
   },
   {
    "kind": "function",
@@ -10425,7 +10791,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "426"
+   "line": "425"
   },
   {
    "kind": "function",
@@ -10447,7 +10813,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "400"
+   "line": "399"
   },
   {
    "kind": "function",
@@ -10458,7 +10824,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "407"
+   "line": "406"
   },
   {
    "kind": "function",
@@ -10568,7 +10934,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "412"
+   "line": "411"
   },
   {
    "kind": "function",
@@ -10579,7 +10945,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "414"
+   "line": "413"
   },
   {
    "kind": "function",
@@ -10590,7 +10956,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "416"
+   "line": "415"
   },
   {
    "kind": "function",
@@ -10601,7 +10967,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "418"
+   "line": "417"
   },
   {
    "kind": "function",
@@ -10667,7 +11033,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "442"
+   "line": "441"
   },
   {
    "kind": "function",
@@ -10678,7 +11044,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "437"
+   "line": "436"
   },
   {
    "kind": "function",
@@ -10689,7 +11055,7 @@
    "prot": "public",
    "documented": false,
    "header": "valid.h",
-   "line": "431"
+   "line": "430"
   },
   {
    "kind": "function",
@@ -11822,7 +12188,7 @@
    "prot": "public",
    "documented": false,
    "header": "xmlexports.h",
-   "line": "86"
+   "line": "90"
   },
   {
    "kind": "function",
@@ -17901,6 +18267,70 @@
   },
   {
    "kind": "typedef",
+   "name": "xmlSchematron",
+   "type": "struct _xmlSchematron",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "49"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronParserCtxt",
+   "type": "struct _xmlSchematronParserCtxt",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "71"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronParserCtxtPtr",
+   "type": "",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "72"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronPtr",
+   "type": "",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "50"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronValidCtxt",
+   "type": "struct _xmlSchematronValidCtxt",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "75"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronValidCtxtPtr",
+   "type": "",
+   "documented": false,
+   "header": "schematron.h",
+   "line": "76"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronValidityErrorFunc",
+   "type": "void(*)",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "59"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSchematronValidityWarningFunc",
+   "type": "void(*)",
+   "documented": true,
+   "header": "schematron.h",
+   "line": "68"
+  },
+  {
+   "kind": "typedef",
    "name": "xmlMutex",
    "type": "struct _xmlMutex",
    "documented": true,
@@ -19060,7 +19490,7 @@
   {
    "kind": "variable",
    "name": "input",
-   "type": "union _xmlCharEncodingHandler::@074344250153310154007266361331262164212003110041",
+   "type": "union _xmlCharEncodingHandler::@132102311212137324044023047273144031016361265027",
    "documented": false,
    "header": "encoding.h",
    "line": "204",
@@ -19087,7 +19517,7 @@
   {
    "kind": "variable",
    "name": "output",
-   "type": "union _xmlCharEncodingHandler::@140143247115256362350022107231035333025044254063",
+   "type": "union _xmlCharEncodingHandler::@047240227232052132065114107161220210071024354055",
    "documented": false,
    "header": "encoding.h",
    "line": "208",
@@ -24623,5 +25053,5 @@
    "struct": "_xmlXPathParserContext"
   }
  ],
- "inventory_hash": "d0209ce0155ef1e721e35222a9d84caaa68e251a21145f58a190c89d75e80694"
+ "inventory_hash": "2a9f6129ac70f4be4dabc9970c7ee755934ee033a8017f0aae6d98931fa4b166"
 }

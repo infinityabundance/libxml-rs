@@ -4,9 +4,9 @@
  "version": "1.1.32",
  "profile": "full",
  "doxygen_version": "1.18.0",
- "config_hash": "c503ca7ce4f454b1678786e1359b626df35e56f3456f5d7289d7d0a347315992",
+ "config_hash": "eff8d5a05483b24d9a000da1ba8da7bc9fa1067699a62b3edc4e40504fdcff8f",
  "source_tree_hash": "770f78d0f1da3ceb88d13f7c1ec2f5bb350a2f69b2a0d7578df55bae6a510662",
- "raw_xml_hash": "78b1de9f7b79725f458025bd2dfe899fcf26c4cfe36bae0ce8662d7bd2dfa626",
+ "raw_xml_hash": "a9d573c45c9e479ed7a28e6362492b11e026f89c7ddf007cf644dbc9e63a07b6",
  "counts": {
   "define": 265,
   "enum": 11,
@@ -140,7 +140,7 @@
    "kind": "define",
    "name": "FORMAT_2_DIGITS",
    "value": "*cur = '0' + ((num / 10) % 10);             \\\ncur++;                          \\\n*cur = '0' + (num % 10);                \\\ncur++;",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "320"
   },
@@ -148,7 +148,7 @@
    "kind": "define",
    "name": "FORMAT_DATE",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "467"
   },
@@ -156,7 +156,7 @@
    "kind": "define",
    "name": "FORMAT_FLOAT",
    "value": "{                           \\\n        xmlChar *sav, *str;                                 \\\n        if ((pad) && (num < 10.0))                          \\\n            *cur++ = '0';                                   \\\n        str = xmlXPathCastNumberToString(num);              \\\n        sav = str;                                          \\\n        while (*str != 0)                                   \\\n            *cur++ = *str++;                                \\\n        xmlFree(sav);                                       \\\n}",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "363"
   },
@@ -164,7 +164,7 @@
    "kind": "define",
    "name": "FORMAT_GDAY",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "456"
   },
@@ -172,7 +172,7 @@
    "kind": "define",
    "name": "FORMAT_GMONTH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "414"
   },
@@ -180,7 +180,7 @@
    "kind": "define",
    "name": "FORMAT_GYEAR",
    "value": "if (yr <= 0) {                          \\\n    *cur = '-';                     \\\n    cur++;                      \\\n}                           \\\n{                           \\\n    long year = (yr <= 0) ? -yr + 1 : yr;               \\\n    xmlChar tmp_buf[100], *tmp = tmp_buf;       \\\n                \\\n    while (year > 0) {                  \\\n    *tmp = '0' + (xmlChar)(year % 10);      \\\n    year /= 10;                 \\\n    tmp++;                      \\\n    }                           \\\n                \\\n    while ((tmp - tmp_buf) < 4)             \\\n    *tmp++ = '0';                   \\\n                \\\n    while (tmp > tmp_buf) {             \\\n    tmp--;                      \\\n    *cur = *tmp;                    \\\n    cur++;                      \\\n    }                           \\\n}",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "261"
   },
@@ -188,7 +188,7 @@
    "kind": "define",
    "name": "FORMAT_ITEM",
    "value": "if (num >= limit) {                 \\\n    double comp = floor(num / limit);           \\",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1176"
   },
@@ -196,7 +196,7 @@
    "kind": "define",
    "name": "FORMAT_TIME",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "540"
   },
@@ -204,7 +204,7 @@
    "kind": "define",
    "name": "FORMAT_TZ",
    "value": "if (tzo == 0) {                         \\\n    *cur = 'Z';                     \\\n    cur++;                      \\\n} else {                        \\\n    int aTzo = (tzo < 0) ? - tzo : tzo;                 \\\n    int tzHh = aTzo / 60, tzMm = aTzo % 60;     \\\n    *cur = (tzo < 0) ? '-' : '+' ;          \\\n    cur++;                      \\",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "634"
   },
@@ -268,7 +268,7 @@
    "kind": "define",
    "name": "PARSE_2_DIGITS",
    "value": "if ((cur[0] < '0') || (cur[0] > '9') ||         \\\n    (cur[1] < '0') || (cur[1] > '9'))           \\\n    invalid = 1;                    \\\nelse {                          \\\n    int val;                        \\\n    val = (cur[0] - '0') * 10 + (cur[1] - '0');     \\\n    if (!func(val))                 \\\n        invalid = 2;                    \\\n    else                        \\\n        num = val;                  \\\n}                           \\\ncur += 2;",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "298"
   },
@@ -276,7 +276,7 @@
    "kind": "define",
    "name": "PARSE_FLOAT",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "338"
   },
@@ -316,7 +316,7 @@
    "kind": "define",
    "name": "TIME_TO_NUMBER",
    "value": "((double)((dt->hour *",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1419"
   },
@@ -468,7 +468,7 @@
    "kind": "define",
    "name": "EXSLT_COMMON_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/common\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "24"
   },
@@ -476,7 +476,7 @@
    "kind": "define",
    "name": "EXSLT_CRYPTO_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/crypto\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "30"
   },
@@ -484,7 +484,7 @@
    "kind": "define",
    "name": "EXSLT_DATE_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/dates-and-times\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "60"
   },
@@ -492,7 +492,7 @@
    "kind": "define",
    "name": "EXSLT_DYNAMIC_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/dynamic\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "66"
   },
@@ -500,7 +500,7 @@
    "kind": "define",
    "name": "EXSLT_FUNCTIONS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/functions\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "48"
   },
@@ -508,7 +508,7 @@
    "kind": "define",
    "name": "EXSLT_MATH_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/math\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "36"
   },
@@ -516,7 +516,7 @@
    "kind": "define",
    "name": "EXSLT_SETS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/sets\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "42"
   },
@@ -524,7 +524,7 @@
    "kind": "define",
    "name": "EXSLT_STRINGS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/strings\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "54"
   },
@@ -532,7 +532,7 @@
    "kind": "define",
    "name": "SAXON_NAMESPACE",
    "value": "((const xmlChar *) \"http://icl.com/saxon\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "73"
   },
@@ -540,7 +540,7 @@
    "kind": "define",
    "name": "EXSLTCALL",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "41"
   },
@@ -548,7 +548,7 @@
    "kind": "define",
    "name": "EXSLTPUBFUN",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "29"
   },
@@ -556,7 +556,7 @@
    "kind": "define",
    "name": "EXSLTPUBVAR",
    "value": "extern",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "35"
   },
@@ -564,7 +564,7 @@
    "kind": "define",
    "name": "LIBEXSLT_PUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "135"
   },
@@ -604,7 +604,7 @@
    "kind": "define",
    "name": "XSLT_LIBXSLT_NAMESPACE",
    "value": "((xmlChar *) \"http://xmlsoft.org/XSLT/namespace\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "27"
   },
@@ -612,7 +612,7 @@
    "kind": "define",
    "name": "XSLT_SAXON_NAMESPACE",
    "value": "((xmlChar *) \"http://icl.com/saxon\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "34"
   },
@@ -620,7 +620,7 @@
    "kind": "define",
    "name": "XSLT_XALAN_NAMESPACE",
    "value": "((xmlChar *)    \\\n\"org.apache.xalan.xslt.extensions.Redirect\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "48"
   },
@@ -628,7 +628,7 @@
    "kind": "define",
    "name": "XSLT_XT_NAMESPACE",
    "value": "((xmlChar *) \"http://www.jclark.com/xt\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "41"
   },
@@ -668,7 +668,7 @@
    "kind": "define",
    "name": "XSLT_REGISTER_FUNCTION_LOOKUP",
    "value": "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\\n(xmlXPathFuncLookupFunc)",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "27"
   },
@@ -684,7 +684,7 @@
    "kind": "define",
    "name": "XSLT_GET_IMPORT_INT",
    "value": "{           \\",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "40"
   },
@@ -692,7 +692,7 @@
    "kind": "define",
    "name": "XSLT_GET_IMPORT_PTR",
    "value": "{           \\",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "27"
   },
@@ -716,7 +716,7 @@
    "kind": "define",
    "name": "NODE_IS_KEYED",
    "value": "(1 >> 15)",
-   "documented": false,
+   "documented": true,
    "header": "keys.h",
    "line": "26"
   },
@@ -884,7 +884,7 @@
    "kind": "define",
    "name": "UNDEFINED_DEFAULT_NS",
    "value": "(const xmlChar *) -1L",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "30"
   },
@@ -1468,7 +1468,7 @@
    "kind": "define",
    "name": "XSLT_REGISTER_VARIABLE_LOOKUP",
    "value": "xmlXPathRegisterVariableLookup((ctxt)->xpathCtxt,       \\",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "30"
   },
@@ -1476,7 +1476,7 @@
    "kind": "define",
    "name": "XSLT_RVT_FUNC_RESULT",
    "value": "((void *)3)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "63"
   },
@@ -1484,7 +1484,7 @@
    "kind": "define",
    "name": "XSLT_RVT_GLOBAL",
    "value": "((void *)4)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "70"
   },
@@ -1492,7 +1492,7 @@
    "kind": "define",
    "name": "XSLT_RVT_LOCAL",
    "value": "((void *)1)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "46"
   },
@@ -1500,7 +1500,7 @@
    "kind": "define",
    "name": "XSLT_RVT_VARIABLE",
    "value": "((void *)2)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "54"
   },
@@ -1716,7 +1716,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_URL",
    "value": "\"http://xmlsoft.org/XSLT/\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "39"
   },
@@ -1724,7 +1724,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_VENDOR",
    "value": "\"libxslt\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "32"
   },
@@ -1732,7 +1732,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_VERSION",
    "value": "\"1.0\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "25"
   },
@@ -1740,7 +1740,7 @@
    "kind": "define",
    "name": "XSLT_NAMESPACE",
    "value": "((const xmlChar *)\"http://www.w3.org/1999/XSL/Transform\")",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "46"
   },
@@ -1748,7 +1748,7 @@
    "kind": "define",
    "name": "XSLT_PARSE_OPTIONS",
    "value": "XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_NOCDATA",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "54"
   },
@@ -1764,7 +1764,7 @@
    "kind": "define",
    "name": "CHECK_STOPPED",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1800"
   },
@@ -1772,7 +1772,7 @@
    "kind": "define",
    "name": "CHECK_STOPPED0",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1816"
   },
@@ -1780,7 +1780,7 @@
    "kind": "define",
    "name": "CHECK_STOPPEDE",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1808"
   },
@@ -1788,7 +1788,7 @@
    "kind": "define",
    "name": "XML_CAST_FPTR",
    "value": "fptr",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1838"
   },
@@ -1796,7 +1796,7 @@
    "kind": "define",
    "name": "XSLT_FAST_IF",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "74"
   },
@@ -1804,7 +1804,7 @@
    "kind": "define",
    "name": "XSLT_IS_RES_TREE_FRAG",
    "value": "((n != NULL) && ((n)->type == XML_DOCUMENT_NODE) && \\\n ((n)->name != NULL) && ((n)->name[0] == ' '))",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "56"
   },
@@ -1812,7 +1812,7 @@
    "kind": "define",
    "name": "XSLT_IS_TEXT_NODE",
    "value": "((n != NULL) && \\\n(((n)->type == XML_TEXT_NODE) || \\\n ((n)->type == XML_CDATA_SECTION_NODE)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "38"
   },
@@ -1820,7 +1820,7 @@
    "kind": "define",
    "name": "XSLT_MARK_RES_TREE_FRAG",
    "value": "(n)->name = (char *) xmlStrdup(BAD_CAST \" fake node libxslt\");",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "48"
   },
@@ -1828,7 +1828,7 @@
    "kind": "define",
    "name": "XSLT_MAX_SORT",
    "value": "15",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "217"
   },
@@ -1836,7 +1836,7 @@
    "kind": "define",
    "name": "XSLT_PAT_NO_PRIORITY",
    "value": "-12345789",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "224"
   },
@@ -1844,7 +1844,7 @@
    "kind": "define",
    "name": "XSLT_REFACTORED_KEYCOMP",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "66"
   },
@@ -1852,7 +1852,7 @@
    "kind": "define",
    "name": "XSLT_REFACTORED_VARS",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "89"
   },
@@ -1860,7 +1860,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA",
    "value": "(ctxt)->extras[(nr)].val.typ",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "265"
   },
@@ -1868,7 +1868,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA_FREE",
    "value": "(ctxt)->extras[(nr)].deallocate",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "257"
   },
@@ -1876,7 +1876,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA_LST",
    "value": "(ctxt)->extras[(nr)].info",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "249"
   },
@@ -1884,7 +1884,7 @@
    "kind": "define",
    "name": "LIBXSLT_PUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "137"
   },
@@ -1892,7 +1892,7 @@
    "kind": "define",
    "name": "XSLTCALL",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "43"
   },
@@ -1900,7 +1900,7 @@
    "kind": "define",
    "name": "XSLTPUBFUN",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "31"
   },
@@ -1908,7 +1908,7 @@
    "kind": "define",
    "name": "XSLTPUBVAR",
    "value": "extern",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "37"
   },
@@ -2028,7 +2028,7 @@
    "kind": "define",
    "name": "IS_XSLT_ELEM",
    "value": "(((n) != NULL) && ((n)->type == XML_ELEMENT_NODE) &&                \\\n ((n)->ns != NULL) && (xmlStrEqual((n)->ns->href,",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "54"
   },
@@ -2036,7 +2036,7 @@
    "kind": "define",
    "name": "IS_XSLT_NAME",
    "value": "(xmlStrEqual((n)->name, (const xmlChar *) (val)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "63"
   },
@@ -2044,7 +2044,7 @@
    "kind": "define",
    "name": "IS_XSLT_REAL_NODE",
    "value": "(((n) != NULL) &&                           \\\n (((n)->type == XML_ELEMENT_NODE) ||                \\\n  ((n)->type == XML_TEXT_NODE) ||                   \\\n  ((n)->type == XML_CDATA_SECTION_NODE) ||              \\\n  ((n)->type == XML_ATTRIBUTE_NODE) ||              \\\n  ((n)->type == XML_DOCUMENT_NODE) ||               \\\n  ((n)->type == XML_HTML_DOCUMENT_NODE) ||              \\\n  ((n)->type == XML_COMMENT_NODE) ||                \\\n  ((n)->type == XML_PI_NODE)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "71"
   },
@@ -2052,7 +2052,7 @@
    "kind": "define",
    "name": "XSLT_STRANGE",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "44"
   },
@@ -2060,7 +2060,7 @@
    "kind": "define",
    "name": "XSLT_TIMESTAMP_TICS_PER_SEC",
    "value": "100000l",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "269"
   },
@@ -2068,7 +2068,7 @@
    "kind": "define",
    "name": "XSLT_TODO",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "34"
   },
@@ -2076,7 +2076,7 @@
    "kind": "define",
    "name": "XSLT_TRACE",
    "value": "if (ctxt->traceCode && (*(ctxt->traceCode) & code)) \\\n    call",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "128"
   },
@@ -2084,7 +2084,7 @@
    "kind": "define",
    "name": "LIBXSLT_DOTTED_VERSION",
    "value": "\"1.1.32\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "26"
   },
@@ -2100,7 +2100,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION",
    "value": "10132",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "33"
   },
@@ -2108,7 +2108,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION_EXTRA",
    "value": "\"-win32\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "47"
   },
@@ -2116,7 +2116,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION_STRING",
    "value": "\"10132\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "40"
   },
@@ -2124,7 +2124,7 @@
    "kind": "define",
    "name": "WITH_MODULES",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "67"
   },
@@ -2132,7 +2132,7 @@
    "kind": "define",
    "name": "WITH_XSLT_DEBUG",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltwin32config.h",
    "line": "57"
   },
@@ -3089,7 +3089,7 @@
    "definition": "static xsltAttrElemPtr xsltAddAttrElemList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "183"
   },
@@ -3100,7 +3100,7 @@
    "definition": "static xsltUseAttrSetPtr xsltAddUseAttrSetList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "266"
   },
@@ -3111,7 +3111,7 @@
    "definition": "void xsltApplyAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "1122"
   },
@@ -3122,7 +3122,7 @@
    "definition": "void xsltAttribute",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "752"
   },
@@ -3133,7 +3133,7 @@
    "definition": "static void xsltFreeAttrElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "152"
   },
@@ -3144,7 +3144,7 @@
    "definition": "static void xsltFreeAttrElemList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "163"
   },
@@ -3155,7 +3155,7 @@
    "definition": "static void xsltFreeAttrSet",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "316"
   },
@@ -3166,7 +3166,7 @@
    "definition": "void xsltFreeAttributeSetsHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "1235"
   },
@@ -3177,7 +3177,7 @@
    "definition": "static void xsltFreeUseAttrSet",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "234"
   },
@@ -3188,7 +3188,7 @@
    "definition": "static void xsltFreeUseAttrSetList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "245"
   },
@@ -3199,7 +3199,7 @@
    "definition": "static void xsltMergeAttrSets",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "334"
   },
@@ -3210,7 +3210,7 @@
    "definition": "static xsltAttrElemPtr xsltNewAttrElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "131"
   },
@@ -3221,7 +3221,7 @@
    "definition": "static xsltAttrSetPtr xsltNewAttrSet",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "296"
   },
@@ -3232,7 +3232,7 @@
    "definition": "static xsltUseAttrSetPtr xsltNewUseAttrSet",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "212"
   },
@@ -3243,7 +3243,7 @@
    "definition": "void xsltParseStylesheetAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "386"
   },
@@ -3276,7 +3276,7 @@
    "definition": "void xsltResolveStylesheetAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "706"
   },
@@ -3287,7 +3287,7 @@
    "definition": "static void xsltResolveUseAttrSets",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.c",
    "line": "569"
   },
@@ -3298,7 +3298,7 @@
    "definition": "void xsltApplyAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.h",
    "line": "27"
   },
@@ -3309,7 +3309,7 @@
    "definition": "void xsltFreeAttributeSetsHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.h",
    "line": "25"
   },
@@ -3320,7 +3320,7 @@
    "definition": "void xsltParseStylesheetAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.h",
    "line": "22"
   },
@@ -3331,7 +3331,7 @@
    "definition": "void xsltResolveStylesheetAttributeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attributes.h",
    "line": "32"
   },
@@ -3342,7 +3342,7 @@
    "definition": "void xsltCompileAttr",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "171"
   },
@@ -3353,7 +3353,7 @@
    "definition": "xmlChar * xsltEvalAVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "359"
   },
@@ -3364,7 +3364,7 @@
    "definition": "void xsltFreeAVTList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "125"
   },
@@ -3375,7 +3375,7 @@
    "definition": "static void xsltFreeAttrVT",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "95"
   },
@@ -3386,7 +3386,7 @@
    "definition": "static xsltAttrVTPtr xsltNewAttrVT",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "63"
   },
@@ -3397,7 +3397,7 @@
    "definition": "static xsltAttrVTPtr xsltSetAttrVTsegment",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "attrvt.c",
    "line": "147"
   },
@@ -3408,7 +3408,7 @@
    "definition": "void exsltCommonRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "common.c",
    "line": "120"
   },
@@ -3441,7 +3441,7 @@
    "definition": "static exsltDateValPtr _exsltDateAdd",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1497"
   },
@@ -3452,7 +3452,7 @@
    "definition": "static int _exsltDateAddDurCalc",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1714"
   },
@@ -3463,7 +3463,7 @@
    "definition": "static exsltDateDurValPtr _exsltDateAddDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1769"
   },
@@ -3474,7 +3474,7 @@
    "definition": "static long _exsltDateCastYMToDays",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1393"
   },
@@ -3485,7 +3485,7 @@
    "definition": "static long _exsltDateDayInWeek",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1472"
   },
@@ -3496,7 +3496,7 @@
    "definition": "static exsltDateDurValPtr _exsltDateDifference",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1643"
   },
@@ -3507,7 +3507,7 @@
    "definition": "static int _exsltDateParseGDay",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "429"
   },
@@ -3518,7 +3518,7 @@
    "definition": "static int _exsltDateParseGMonth",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "387"
   },
@@ -3529,7 +3529,7 @@
    "definition": "static int _exsltDateParseGYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "207"
   },
@@ -3540,7 +3540,7 @@
    "definition": "static int _exsltDateParseTime",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "489"
   },
@@ -3551,7 +3551,7 @@
    "definition": "static int _exsltDateParseTimeZone",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "561"
   },
@@ -3562,7 +3562,7 @@
    "definition": "static int _exsltDateTruncateDate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1433"
   },
@@ -3573,7 +3573,7 @@
    "definition": "static xmlChar * exsltDateAdd",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2725"
   },
@@ -3584,7 +3584,7 @@
    "definition": "static xmlChar * exsltDateAddDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2784"
   },
@@ -3595,7 +3595,7 @@
    "definition": "static void exsltDateAddDurationFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3649"
   },
@@ -3606,7 +3606,7 @@
    "definition": "static void exsltDateAddFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3612"
   },
@@ -3617,7 +3617,7 @@
    "definition": "static exsltDateValPtr exsltDateCreateDate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "664"
   },
@@ -3628,7 +3628,7 @@
    "definition": "static exsltDateDurValPtr exsltDateCreateDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "707"
   },
@@ -3639,7 +3639,7 @@
    "definition": "static xmlChar * exsltDateDate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1835"
   },
@@ -3650,7 +3650,7 @@
    "definition": "static void exsltDateDateFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3166"
   },
@@ -3661,7 +3661,7 @@
    "definition": "static xmlChar * exsltDateDateTime",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1802"
   },
@@ -3672,7 +3672,7 @@
    "definition": "static const xmlChar * exsltDateDayAbbreviation",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2540"
   },
@@ -3683,7 +3683,7 @@
    "definition": "static void exsltDateDayAbbreviationFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3514"
   },
@@ -3694,7 +3694,7 @@
    "definition": "static double exsltDateDayInMonth",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2351"
   },
@@ -3705,7 +3705,7 @@
    "definition": "static void exsltDateDayInMonthFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3449"
   },
@@ -3716,7 +3716,7 @@
    "definition": "static double exsltDateDayInWeek",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2448"
   },
@@ -3727,7 +3727,7 @@
    "definition": "static void exsltDateDayInWeekFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3467"
   },
@@ -3738,7 +3738,7 @@
    "definition": "static double exsltDateDayInYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2302"
   },
@@ -3749,7 +3749,7 @@
    "definition": "static void exsltDateDayInYearFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3440"
   },
@@ -3760,7 +3760,7 @@
    "definition": "static const xmlChar * exsltDateDayName",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2499"
   },
@@ -3771,7 +3771,7 @@
    "definition": "static void exsltDateDayNameFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3477"
   },
@@ -3782,7 +3782,7 @@
    "definition": "static double exsltDateDayOfWeekInMonth",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2399"
   },
@@ -3793,7 +3793,7 @@
    "definition": "static void exsltDateDayOfWeekInMonthFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3458"
   },
@@ -3804,7 +3804,7 @@
    "definition": "static xmlChar * exsltDateDifference",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3037"
   },
@@ -3815,7 +3815,7 @@
    "definition": "static void exsltDateDifferenceFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3686"
   },
@@ -3826,7 +3826,7 @@
    "definition": "static xmlChar * exsltDateDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3098"
   },
@@ -3837,7 +3837,7 @@
    "definition": "static void exsltDateDurationFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3723"
   },
@@ -3848,7 +3848,7 @@
    "definition": "static xmlChar * exsltDateFormat",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1344"
   },
@@ -3859,7 +3859,7 @@
    "definition": "static xmlChar * exsltDateFormatDate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1292"
   },
@@ -3870,7 +3870,7 @@
    "definition": "static xmlChar * exsltDateFormatDateTime",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1266"
   },
@@ -3881,7 +3881,7 @@
    "definition": "static xmlChar * exsltDateFormatDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1193"
   },
@@ -3892,7 +3892,7 @@
    "definition": "static xmlChar * exsltDateFormatTime",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1317"
   },
@@ -3903,7 +3903,7 @@
    "definition": "static void exsltDateFreeDate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "692"
   },
@@ -3914,7 +3914,7 @@
    "definition": "static void exsltDateFreeDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "729"
   },
@@ -3925,7 +3925,7 @@
    "definition": "static double exsltDateHourInDay",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2579"
   },
@@ -3936,7 +3936,7 @@
    "definition": "static void exsltDateHourInDayFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3551"
   },
@@ -3947,7 +3947,7 @@
    "definition": "static xmlXPathObjectPtr exsltDateLeapYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1979"
   },
@@ -3958,7 +3958,7 @@
    "definition": "static void exsltDateLeapYearFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3278"
   },
@@ -3969,7 +3969,7 @@
    "definition": "static double exsltDateMinuteInHour",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2625"
   },
@@ -3980,7 +3980,7 @@
    "definition": "static void exsltDateMinuteInHourFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3560"
   },
@@ -3991,7 +3991,7 @@
    "definition": "static const xmlChar * exsltDateMonthAbbreviation",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2133"
   },
@@ -4002,7 +4002,7 @@
    "definition": "static void exsltDateMonthAbbreviationFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3386"
   },
@@ -4013,7 +4013,7 @@
    "definition": "static double exsltDateMonthInYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2031"
   },
@@ -4024,7 +4024,7 @@
    "definition": "static void exsltDateMonthInYearFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3339"
   },
@@ -4035,7 +4035,7 @@
    "definition": "static const xmlChar * exsltDateMonthName",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2084"
   },
@@ -4046,7 +4046,7 @@
    "definition": "static void exsltDateMonthNameFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3349"
   },
@@ -4057,7 +4057,7 @@
    "definition": "static exsltDateValPtr exsltDateParse",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "861"
   },
@@ -4068,7 +4068,7 @@
    "definition": "static exsltDateDurValPtr exsltDateParseDuration",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1011"
   },
@@ -4079,7 +4079,7 @@
    "definition": "void exsltDateRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3758"
   },
@@ -4090,7 +4090,7 @@
    "definition": "static double exsltDateSecondInMinute",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2673"
   },
@@ -4101,7 +4101,7 @@
    "definition": "static void exsltDateSecondInMinuteFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3569"
   },
@@ -4112,7 +4112,7 @@
    "definition": "static double exsltDateSeconds",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2946"
   },
@@ -4123,7 +4123,7 @@
    "definition": "static void exsltDateSecondsFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3579"
   },
@@ -4134,7 +4134,7 @@
    "definition": "static void exsltDateSumFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2836"
   },
@@ -4145,7 +4145,7 @@
    "definition": "static xmlChar * exsltDateTime",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1879"
   },
@@ -4156,7 +4156,7 @@
    "definition": "static void exsltDateTimeFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3205"
   },
@@ -4167,7 +4167,7 @@
    "definition": "static double exsltDateWeekInMonth",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2248"
   },
@@ -4178,7 +4178,7 @@
    "definition": "static void exsltDateWeekInMonthFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3431"
   },
@@ -4189,7 +4189,7 @@
    "definition": "static double exsltDateWeekInYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "2180"
   },
@@ -4200,7 +4200,7 @@
    "definition": "static void exsltDateWeekInYearFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3422"
   },
@@ -4211,7 +4211,7 @@
    "definition": "int exsltDateXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3845"
   },
@@ -4222,7 +4222,7 @@
    "definition": "static double exsltDateYear",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "1927"
   },
@@ -4233,7 +4233,7 @@
    "definition": "static void exsltDateYearFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "date.c",
    "line": "3244"
   },
@@ -4244,7 +4244,7 @@
    "definition": "static xmlDocPtr xsltDocDefaultLoaderFunc",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "61"
   },
@@ -4255,7 +4255,7 @@
    "definition": "xsltDocumentPtr xsltFindDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "415"
   },
@@ -4266,7 +4266,7 @@
    "definition": "void xsltFreeDocuments",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "251"
   },
@@ -4277,7 +4277,7 @@
    "definition": "void xsltFreeStyleDocuments",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "210"
   },
@@ -4288,7 +4288,7 @@
    "definition": "xsltDocumentPtr xsltLoadDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "285"
   },
@@ -4299,7 +4299,7 @@
    "definition": "xsltDocumentPtr xsltLoadStyleDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "359"
   },
@@ -4310,7 +4310,7 @@
    "definition": "xsltDocumentPtr xsltNewDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "144"
   },
@@ -4321,7 +4321,7 @@
    "definition": "xsltDocumentPtr xsltNewStyleDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "183"
   },
@@ -4332,7 +4332,7 @@
    "definition": "void xsltSetLoaderFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.c",
    "line": "121"
   },
@@ -4343,7 +4343,7 @@
    "definition": "xsltDocumentPtr xsltFindDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "30"
   },
@@ -4354,7 +4354,7 @@
    "definition": "void xsltFreeDocuments",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "33"
   },
@@ -4365,7 +4365,7 @@
    "definition": "void xsltFreeStyleDocuments",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "42"
   },
@@ -4376,7 +4376,7 @@
    "definition": "xsltDocumentPtr xsltLoadDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "27"
   },
@@ -4387,7 +4387,7 @@
    "definition": "xsltDocumentPtr xsltLoadStyleDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "36"
   },
@@ -4398,7 +4398,7 @@
    "definition": "xsltDocumentPtr xsltNewDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "24"
   },
@@ -4409,7 +4409,7 @@
    "definition": "xsltDocumentPtr xsltNewStyleDocument",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "39"
   },
@@ -4420,7 +4420,7 @@
    "definition": "void xsltSetLoaderFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "documents.h",
    "line": "83"
   },
@@ -4431,7 +4431,7 @@
    "definition": "static void exsltDynEvaluateFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "dynamic.c",
    "line": "54"
   },
@@ -4442,7 +4442,7 @@
    "definition": "static void exsltDynMapFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "dynamic.c",
    "line": "97"
   },
@@ -4453,7 +4453,7 @@
    "definition": "void exsltDynRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "dynamic.c",
    "line": "284"
   },
@@ -4464,7 +4464,7 @@
    "definition": "void exsltRegisterAll",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.c",
    "line": "26"
   },
@@ -4475,7 +4475,7 @@
    "definition": "void exsltCommonRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "75"
   },
@@ -4486,7 +4486,7 @@
    "definition": "void exsltDateRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "83"
   },
@@ -4497,7 +4497,7 @@
    "definition": "int exsltDateXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "89"
   },
@@ -4508,7 +4508,7 @@
    "definition": "void exsltDynRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "85"
   },
@@ -4519,7 +4519,7 @@
    "definition": "void exsltFuncRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "81"
   },
@@ -4530,7 +4530,7 @@
    "definition": "void exsltMathRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "79"
   },
@@ -4541,7 +4541,7 @@
    "definition": "int exsltMathXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "91"
   },
@@ -4552,7 +4552,7 @@
    "definition": "void exsltRegisterAll",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "87"
   },
@@ -4563,7 +4563,7 @@
    "definition": "void exsltSaxonRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "84"
   },
@@ -4574,7 +4574,7 @@
    "definition": "void exsltSetsRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "80"
   },
@@ -4585,7 +4585,7 @@
    "definition": "int exsltSetsXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "93"
   },
@@ -4596,7 +4596,7 @@
    "definition": "void exsltStrRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "82"
   },
@@ -4607,7 +4607,7 @@
    "definition": "int exsltStrXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "95"
   },
@@ -4640,7 +4640,7 @@
    "definition": "int xsltCheckExtPrefix",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1160"
   },
@@ -4651,7 +4651,7 @@
    "definition": "int xsltCheckExtURI",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1220"
   },
@@ -4662,7 +4662,7 @@
    "definition": "void xsltCleanupGlobals",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2276"
   },
@@ -4684,7 +4684,7 @@
    "definition": "void xsltDebugDumpExtensions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2327"
   },
@@ -4717,7 +4717,7 @@
    "definition": "static xsltElemPreCompPtr xsltExtElementPreCompTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2027"
   },
@@ -4728,7 +4728,7 @@
    "definition": "static void xsltExtElementTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2071"
   },
@@ -4739,7 +4739,7 @@
    "definition": "static void xsltExtFunctionTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1977"
   },
@@ -4750,7 +4750,7 @@
    "definition": "static void * xsltExtInitTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2123"
   },
@@ -4816,7 +4816,7 @@
    "definition": "static void xsltExtShutdownTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2157"
   },
@@ -4827,7 +4827,7 @@
    "definition": "static void * xsltExtStyleInitTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2184"
   },
@@ -4838,7 +4838,7 @@
    "definition": "static void xsltExtStyleShutdownTest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2208"
   },
@@ -4849,7 +4849,7 @@
    "definition": "void xsltFreeCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "644"
   },
@@ -4860,7 +4860,7 @@
    "definition": "static void xsltFreeExtData",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "241"
   },
@@ -4871,7 +4871,7 @@
    "definition": "static void xsltFreeExtDef",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "132"
   },
@@ -4882,7 +4882,7 @@
    "definition": "static void xsltFreeExtDefList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "150"
   },
@@ -4893,7 +4893,7 @@
    "definition": "static void xsltFreeExtElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "285"
   },
@@ -4904,7 +4904,7 @@
    "definition": "static void xsltFreeExtModule",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "200"
   },
@@ -4915,7 +4915,7 @@
    "definition": "void xsltFreeExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "481"
   },
@@ -4926,7 +4926,7 @@
    "definition": "void * xsltGetExtData",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "864"
   },
@@ -4937,7 +4937,7 @@
    "definition": "xmlHashTablePtr xsltGetExtInfo",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1935"
   },
@@ -4959,7 +4959,7 @@
    "definition": "static void xsltInitCtxtExt",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "939"
   },
@@ -4970,7 +4970,7 @@
    "definition": "int xsltInitCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1017"
   },
@@ -4981,7 +4981,7 @@
    "definition": "void xsltInitElemPreComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1535"
   },
@@ -4992,7 +4992,7 @@
    "definition": "void xsltInitGlobals",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2263"
   },
@@ -5003,7 +5003,7 @@
    "definition": "xsltElemPreCompPtr xsltNewElemPreComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1502"
   },
@@ -5014,7 +5014,7 @@
    "definition": "static xsltExtDataPtr xsltNewExtData",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "217"
   },
@@ -5025,7 +5025,7 @@
    "definition": "static xsltExtDefPtr xsltNewExtDef",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "107"
   },
@@ -5036,7 +5036,7 @@
    "definition": "static xsltExtElementPtr xsltNewExtElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "259"
   },
@@ -5047,7 +5047,7 @@
    "definition": "static xsltExtModulePtr xsltNewExtModule",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "173"
   },
@@ -5058,7 +5058,7 @@
    "definition": "xsltElemPreCompPtr xsltPreComputeExtModuleElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1558"
   },
@@ -5091,7 +5091,7 @@
    "definition": "int xsltRegisterExtModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1302"
   },
@@ -5113,7 +5113,7 @@
    "definition": "int xsltRegisterExtModuleFull",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1250"
   },
@@ -5146,7 +5146,7 @@
    "definition": "int xsltRegisterExtPrefix",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "505"
   },
@@ -5157,7 +5157,7 @@
    "definition": "void xsltRegisterTestModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "2231"
   },
@@ -5168,7 +5168,7 @@
    "definition": "static void xsltShutdownCtxtExt",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1057"
   },
@@ -5179,7 +5179,7 @@
    "definition": "void xsltShutdownCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1082"
   },
@@ -5190,7 +5190,7 @@
    "definition": "static void xsltShutdownExt",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1103"
   },
@@ -5201,7 +5201,7 @@
    "definition": "void xsltShutdownExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1135"
   },
@@ -5212,7 +5212,7 @@
    "definition": "void * xsltStyleGetExtData",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "758"
   },
@@ -5223,7 +5223,7 @@
    "definition": "static xsltExtDataPtr xsltStyleInitializeStylesheetModule",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "665"
   },
@@ -5234,7 +5234,7 @@
    "definition": "static void xsltUnregisterAllExtModuleElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1804"
   },
@@ -5245,7 +5245,7 @@
    "definition": "static void xsltUnregisterAllExtModuleFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1480"
   },
@@ -5256,7 +5256,7 @@
    "definition": "static void xsltUnregisterAllExtModuleTopLevel",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1915"
   },
@@ -5267,7 +5267,7 @@
    "definition": "static void xsltUnregisterAllExtModules",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1344"
   },
@@ -5278,7 +5278,7 @@
    "definition": "int xsltUnregisterExtModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1319"
   },
@@ -5322,7 +5322,7 @@
    "definition": "xsltTransformContextPtr xsltXPathGetTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.c",
    "line": "1371"
   },
@@ -5333,7 +5333,7 @@
    "definition": "int xsltCheckExtPrefix",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "223"
   },
@@ -5344,7 +5344,7 @@
    "definition": "int xsltCheckExtURI",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "226"
   },
@@ -5355,7 +5355,7 @@
    "definition": "void xsltDebugDumpExtensions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "254"
   },
@@ -5421,7 +5421,7 @@
    "definition": "void xsltFreeCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "231"
   },
@@ -5432,7 +5432,7 @@
    "definition": "void xsltFreeExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "233"
   },
@@ -5443,7 +5443,7 @@
    "definition": "void * xsltGetExtData",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "100"
   },
@@ -5454,7 +5454,7 @@
    "definition": "xmlHashTablePtr xsltGetExtInfo",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "245"
   },
@@ -5465,7 +5465,7 @@
    "definition": "int xsltInitCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "229"
   },
@@ -5476,7 +5476,7 @@
    "definition": "void xsltInitElemPreComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "151"
   },
@@ -5487,7 +5487,7 @@
    "definition": "void xsltInitGlobals",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "34"
   },
@@ -5498,7 +5498,7 @@
    "definition": "xsltElemPreCompPtr xsltNewElemPreComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "147"
   },
@@ -5509,7 +5509,7 @@
    "definition": "xsltElemPreCompPtr xsltPreComputeExtModuleElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "236"
   },
@@ -5542,7 +5542,7 @@
    "definition": "int xsltRegisterExtModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "85"
   },
@@ -5564,7 +5564,7 @@
    "definition": "int xsltRegisterExtModuleFull",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "89"
   },
@@ -5597,7 +5597,7 @@
    "definition": "int xsltRegisterExtPrefix",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "219"
   },
@@ -5608,7 +5608,7 @@
    "definition": "void xsltRegisterTestModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "252"
   },
@@ -5619,7 +5619,7 @@
    "definition": "void xsltShutdownCtxtExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "113"
   },
@@ -5630,7 +5630,7 @@
    "definition": "void xsltShutdownExts",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "116"
   },
@@ -5641,7 +5641,7 @@
    "definition": "void * xsltStyleGetExtData",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "104"
   },
@@ -5652,7 +5652,7 @@
    "definition": "int xsltUnregisterExtModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "97"
   },
@@ -5696,7 +5696,7 @@
    "definition": "xsltTransformContextPtr xsltXPathGetTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "119"
   },
@@ -5718,7 +5718,7 @@
    "definition": "void xsltDebug",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.c",
    "line": "55"
   },
@@ -5729,7 +5729,7 @@
    "definition": "void xsltFunctionNodeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.c",
    "line": "131"
   },
@@ -5740,7 +5740,7 @@
    "definition": "void xsltRegisterAllExtras",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.c",
    "line": "169"
   },
@@ -5751,7 +5751,7 @@
    "definition": "void xsltRegisterExtras",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.c",
    "line": "159"
   },
@@ -5762,7 +5762,7 @@
    "definition": "void xsltDebug",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "56"
   },
@@ -5773,7 +5773,7 @@
    "definition": "void xsltFunctionNodeSet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "53"
   },
@@ -5784,7 +5784,7 @@
    "definition": "void xsltRegisterAllExtras",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "65"
   },
@@ -5795,7 +5795,7 @@
    "definition": "void xsltRegisterExtras",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "63"
   },
@@ -5806,7 +5806,7 @@
    "definition": "static void exsltFreeFuncResultPreComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "258"
   },
@@ -5828,7 +5828,7 @@
    "definition": "static void exsltFuncFunctionFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "277"
   },
@@ -5839,7 +5839,7 @@
    "definition": "static exsltFuncData * exsltFuncInit",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "143"
   },
@@ -5850,7 +5850,7 @@
    "definition": "static exsltFuncFunctionData * exsltFuncNewFunctionData",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "234"
   },
@@ -5861,7 +5861,7 @@
    "definition": "void exsltFuncRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "784"
   },
@@ -5916,7 +5916,7 @@
    "definition": "static void exsltFuncShutdown",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "186"
   },
@@ -5927,7 +5927,7 @@
    "definition": "static xmlHashTablePtr exsltFuncStyleInit",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "205"
   },
@@ -5938,7 +5938,7 @@
    "definition": "static void exsltFuncStyleShutdown",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "220"
   },
@@ -5949,7 +5949,7 @@
    "definition": "static void xsltCurrentFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "956"
   },
@@ -5960,7 +5960,7 @@
    "definition": "void xsltDocumentFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "226"
   },
@@ -5982,7 +5982,7 @@
    "definition": "void xsltElementAvailableFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "836"
   },
@@ -5993,7 +5993,7 @@
    "definition": "void xsltFormatNumberFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "600"
   },
@@ -6004,7 +6004,7 @@
    "definition": "void xsltFunctionAvailableFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "903"
   },
@@ -6015,7 +6015,7 @@
    "definition": "void xsltGenerateIdFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "682"
   },
@@ -6026,7 +6026,7 @@
    "definition": "void xsltKeyFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "360"
   },
@@ -6037,7 +6037,7 @@
    "definition": "void xsltRegisterAllFunctions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "988"
   },
@@ -6048,7 +6048,7 @@
    "definition": "void xsltSystemPropertyFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "742"
   },
@@ -6059,7 +6059,7 @@
    "definition": "void xsltUnparsedEntityURIFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.c",
    "line": "557"
   },
@@ -6081,7 +6081,7 @@
    "definition": "void xsltDocumentFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "42"
   },
@@ -6092,7 +6092,7 @@
    "definition": "void xsltElementAvailableFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "60"
   },
@@ -6103,7 +6103,7 @@
    "definition": "void xsltFormatNumberFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "51"
   },
@@ -6114,7 +6114,7 @@
    "definition": "void xsltFunctionAvailableFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "63"
   },
@@ -6125,7 +6125,7 @@
    "definition": "void xsltGenerateIdFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "54"
   },
@@ -6136,7 +6136,7 @@
    "definition": "void xsltKeyFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "45"
   },
@@ -6147,7 +6147,7 @@
    "definition": "void xsltRegisterAllFunctions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "71"
   },
@@ -6158,7 +6158,7 @@
    "definition": "void xsltSystemPropertyFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "57"
   },
@@ -6169,7 +6169,7 @@
    "definition": "void xsltUnparsedEntityURIFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "48"
   },
@@ -6334,7 +6334,7 @@
    "definition": "skip_function",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "generator.py",
    "line": "249"
   },
@@ -6367,7 +6367,7 @@
    "definition": "int xsltFindElemSpaceHandling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "340"
   },
@@ -6389,7 +6389,7 @@
    "definition": "static void xsltFixImportedCompSteps",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "65"
   },
@@ -6400,7 +6400,7 @@
    "definition": "int xsltNeedElemSpaceHandling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "313"
   },
@@ -6411,7 +6411,7 @@
    "definition": "xsltStylesheetPtr xsltNextImport",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "288"
   },
@@ -6422,7 +6422,7 @@
    "definition": "int xsltParseStylesheetImport",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "87"
   },
@@ -6433,7 +6433,7 @@
    "definition": "int xsltParseStylesheetInclude",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.c",
    "line": "184"
   },
@@ -6444,7 +6444,7 @@
    "definition": "int xsltFindElemSpaceHandling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "63"
   },
@@ -6466,7 +6466,7 @@
    "definition": "int xsltNeedElemSpaceHandling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "61"
   },
@@ -6477,7 +6477,7 @@
    "definition": "xsltStylesheetPtr xsltNextImport",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "59"
   },
@@ -6488,7 +6488,7 @@
    "definition": "int xsltParseStylesheetImport",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "52"
   },
@@ -6499,7 +6499,7 @@
    "definition": "int xsltParseStylesheetInclude",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "55"
   },
@@ -7104,7 +7104,7 @@
    "definition": "static int skipPredicate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "239"
   },
@@ -7115,7 +7115,7 @@
    "definition": "static int skipString",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "214"
   },
@@ -7137,7 +7137,7 @@
    "definition": "void xsltFreeDocumentKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "934"
   },
@@ -7148,7 +7148,7 @@
    "definition": "static void xsltFreeKeyDef",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "81"
   },
@@ -7159,7 +7159,7 @@
    "definition": "static void xsltFreeKeyDefList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "109"
   },
@@ -7170,7 +7170,7 @@
    "definition": "static void xsltFreeKeyTable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "154"
   },
@@ -7181,7 +7181,7 @@
    "definition": "static void xsltFreeKeyTableList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "175"
   },
@@ -7192,7 +7192,7 @@
    "definition": "void xsltFreeKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "199"
   },
@@ -7214,7 +7214,7 @@
    "definition": "int xsltInitAllDocKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "547"
   },
@@ -7225,7 +7225,7 @@
    "definition": "int xsltInitCtxtKey",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "616"
   },
@@ -7236,7 +7236,7 @@
    "definition": "void xsltInitCtxtKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "893"
   },
@@ -7247,7 +7247,7 @@
    "definition": "static int xsltInitDocKeyTable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.c",
    "line": "491"
   },
@@ -7291,7 +7291,7 @@
    "definition": "void xsltFreeDocumentKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.h",
    "line": "46"
   },
@@ -7302,7 +7302,7 @@
    "definition": "void xsltFreeKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.h",
    "line": "44"
   },
@@ -7324,7 +7324,7 @@
    "definition": "void xsltInitCtxtKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "keys.h",
    "line": "41"
   },
@@ -7874,7 +7874,7 @@
    "definition": "static xsltElemPreCompPtr libxslt_xsltElementPreCompCallback",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "libxslt.c",
    "line": "213"
   },
@@ -8226,7 +8226,7 @@
    "definition": "static void exsltMathConstantFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "440"
   },
@@ -8237,7 +8237,7 @@
    "definition": "static xmlNodeSetPtr exsltMathHighest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "177"
   },
@@ -8248,7 +8248,7 @@
    "definition": "static void exsltMathHighestFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "218"
   },
@@ -8259,7 +8259,7 @@
    "definition": "static xmlNodeSetPtr exsltMathLowest",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "257"
   },
@@ -8270,7 +8270,7 @@
    "definition": "static void exsltMathLowestFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "298"
   },
@@ -8281,7 +8281,7 @@
    "definition": "static double exsltMathMax",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "110"
   },
@@ -8292,7 +8292,7 @@
    "definition": "static void exsltMathMaxFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "137"
   },
@@ -8303,7 +8303,7 @@
    "definition": "static double exsltMathMin",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "41"
   },
@@ -8314,7 +8314,7 @@
    "definition": "static void exsltMathMinFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "68"
   },
@@ -8325,7 +8325,7 @@
    "definition": "void exsltMathRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "1048"
   },
@@ -8336,7 +8336,7 @@
    "definition": "int exsltMathXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "math.c",
    "line": "1116"
   },
@@ -8347,7 +8347,7 @@
    "definition": "xmlNsPtr xsltCopyNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "827"
   },
@@ -8358,7 +8358,7 @@
    "definition": "xmlNsPtr xsltCopyNamespaceList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "735"
   },
@@ -8369,7 +8369,7 @@
    "definition": "void xsltFreeNamespaceAliasHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "849"
   },
@@ -8380,7 +8380,7 @@
    "definition": "xmlNsPtr xsltGetNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "634"
   },
@@ -8391,7 +8391,7 @@
    "definition": "xmlNsPtr xsltGetPlainNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "707"
   },
@@ -8402,7 +8402,7 @@
    "definition": "xmlNsPtr xsltGetSpecialNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "337"
   },
@@ -8413,7 +8413,7 @@
    "definition": "void xsltNamespaceAlias",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.c",
    "line": "93"
   },
@@ -8424,7 +8424,7 @@
    "definition": "xmlNsPtr xsltCopyNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "52"
   },
@@ -8435,7 +8435,7 @@
    "definition": "xmlNsPtr xsltCopyNamespaceList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "56"
   },
@@ -8446,7 +8446,7 @@
    "definition": "void xsltFreeNamespaceAliasHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "60"
   },
@@ -8457,7 +8457,7 @@
    "definition": "xmlNsPtr xsltGetNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "36"
   },
@@ -8468,7 +8468,7 @@
    "definition": "xmlNsPtr xsltGetPlainNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "41"
   },
@@ -8479,7 +8479,7 @@
    "definition": "xmlNsPtr xsltGetSpecialNamespace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "46"
   },
@@ -8490,7 +8490,7 @@
    "definition": "void xsltNamespaceAlias",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "33"
   },
@@ -8501,7 +8501,7 @@
    "definition": "xmlXPathError xsltFormatNumberConversion",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "numbers.c",
    "line": "927"
   },
@@ -8534,7 +8534,7 @@
    "definition": "void xsltNumberFormat",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "numbers.c",
    "line": "725"
   },
@@ -8644,7 +8644,7 @@
    "definition": "static int xsltUTF8Charcmp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "numbers.c",
    "line": "82"
   },
@@ -8655,7 +8655,7 @@
    "definition": "int xsltAddTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "2090"
   },
@@ -8666,7 +8666,7 @@
    "definition": "void xsltCleanupTemplates",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "2568"
   },
@@ -8677,7 +8677,7 @@
    "definition": "static int xsltCompMatchAdd",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "295"
   },
@@ -8699,7 +8699,7 @@
    "definition": "static void xsltCompileLocationPathPattern",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1812"
   },
@@ -8710,7 +8710,7 @@
    "definition": "xsltCompMatchPtr xsltCompilePattern",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "2066"
   },
@@ -8721,7 +8721,7 @@
    "definition": "static xsltCompMatchPtr xsltCompilePatternInternal",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1890"
   },
@@ -8732,7 +8732,7 @@
    "definition": "static void xsltCompileRelativePathPattern",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1769"
   },
@@ -8743,7 +8743,7 @@
    "definition": "static void xsltCompileStepPattern",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1566"
   },
@@ -8765,7 +8765,7 @@
    "definition": "static void xsltFreeCompMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "178"
   },
@@ -8776,7 +8776,7 @@
    "definition": "void xsltFreeCompMatchList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "211"
   },
@@ -8787,7 +8787,7 @@
    "definition": "static void xsltFreeParserContext",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "275"
   },
@@ -8798,7 +8798,7 @@
    "definition": "void xsltFreeTemplateHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "2578"
   },
@@ -8809,7 +8809,7 @@
    "definition": "xsltTemplatePtr xsltGetTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "2323"
   },
@@ -8820,7 +8820,7 @@
    "definition": "static xsltCompMatchPtr xsltNewCompMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "145"
   },
@@ -8831,7 +8831,7 @@
    "definition": "static xsltParserContextPtr xsltNewParserContext",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "253"
   },
@@ -8864,7 +8864,7 @@
    "definition": "static void xsltReverseCompMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "415"
   },
@@ -8875,7 +8875,7 @@
    "definition": "static xmlChar * xsltScanLiteral",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1286"
   },
@@ -8886,7 +8886,7 @@
    "definition": "static xmlChar * xsltScanNCName",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1342"
   },
@@ -8897,7 +8897,7 @@
    "definition": "static void xsltSwapTopCompMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "370"
   },
@@ -8908,7 +8908,7 @@
    "definition": "static int xsltTestCompMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "914"
   },
@@ -8919,7 +8919,7 @@
    "definition": "static int xsltTestCompMatchDirect",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "530"
   },
@@ -8930,7 +8930,7 @@
    "definition": "int xsltTestCompMatchList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "1226"
   },
@@ -8941,7 +8941,7 @@
    "definition": "static int xsltTestPredicateMatch",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.c",
    "line": "640"
   },
@@ -8952,7 +8952,7 @@
    "definition": "int xsltAddTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "56"
   },
@@ -8963,7 +8963,7 @@
    "definition": "void xsltCleanupTemplates",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "67"
   },
@@ -8974,7 +8974,7 @@
    "definition": "xsltCompMatchPtr xsltCompilePattern",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "36"
   },
@@ -8985,7 +8985,7 @@
    "definition": "void xsltFreeCompMatchList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "42"
   },
@@ -8996,7 +8996,7 @@
    "definition": "void xsltFreeTemplateHashes",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "65"
   },
@@ -9007,7 +9007,7 @@
    "definition": "xsltTemplatePtr xsltGetTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "61"
   },
@@ -9029,7 +9029,7 @@
    "definition": "int xsltTestCompMatchList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "pattern.h",
    "line": "44"
   },
@@ -9040,7 +9040,7 @@
    "definition": "static void xsltApplyImportsComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1524"
   },
@@ -9051,7 +9051,7 @@
    "definition": "static void xsltApplyTemplatesComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1593"
   },
@@ -9062,7 +9062,7 @@
    "definition": "static void xsltAttributeComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "993"
   },
@@ -9073,7 +9073,7 @@
    "definition": "static void xsltCallTemplateComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1554"
   },
@@ -9084,7 +9084,7 @@
    "definition": "static void xsltCheckInstructionElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "110"
   },
@@ -9095,7 +9095,7 @@
    "definition": "static void xsltCheckParentElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "165"
   },
@@ -9106,7 +9106,7 @@
    "definition": "static int xsltCheckTopLevelElement",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "72"
   },
@@ -9117,7 +9117,7 @@
    "definition": "static void xsltChooseComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1645"
   },
@@ -9128,7 +9128,7 @@
    "definition": "static void xsltCommentComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1105"
   },
@@ -9139,7 +9139,7 @@
    "definition": "static void xsltCopyComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "784"
   },
@@ -9150,7 +9150,7 @@
    "definition": "static void xsltCopyOfComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1169"
   },
@@ -9161,7 +9161,7 @@
    "definition": "xsltElemPreCompPtr xsltDocumentComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "532"
   },
@@ -9172,7 +9172,7 @@
    "definition": "static void xsltElementComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "873"
   },
@@ -9183,7 +9183,7 @@
    "definition": "static void xsltForEachComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1768"
   },
@@ -9194,7 +9194,7 @@
    "definition": "static void xsltFreeStylePreComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "381"
   },
@@ -9205,7 +9205,7 @@
    "definition": "void xsltFreeStylePreComps",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1959"
   },
@@ -9227,7 +9227,7 @@
    "definition": "static void xsltIfComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1676"
   },
@@ -9238,7 +9238,7 @@
    "definition": "static xsltStylePreCompPtr xsltNewStylePreComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "225"
   },
@@ -9249,7 +9249,7 @@
    "definition": "static void xsltNumberComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1400"
   },
@@ -9260,7 +9260,7 @@
    "definition": "static void xsltParamComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1895"
   },
@@ -9271,7 +9271,7 @@
    "definition": "static void xsltProcessingInstructionComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1135"
   },
@@ -9282,7 +9282,7 @@
    "definition": "static void xsltSortComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "677"
   },
@@ -9293,7 +9293,7 @@
    "definition": "void xsltStylePreCompute",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "2199"
   },
@@ -9304,7 +9304,7 @@
    "definition": "static void xsltTextComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "827"
   },
@@ -9315,7 +9315,7 @@
    "definition": "static void xsltValueOfComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1215"
   },
@@ -9326,7 +9326,7 @@
    "definition": "static void xsltVariableComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1816"
   },
@@ -9337,7 +9337,7 @@
    "definition": "static void xsltWhenComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1722"
   },
@@ -9348,7 +9348,7 @@
    "definition": "static void xsltWithParamComp",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.c",
    "line": "1342"
   },
@@ -9359,7 +9359,7 @@
    "definition": "xsltElemPreCompPtr xsltDocumentComp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.h",
    "line": "28"
   },
@@ -9370,7 +9370,7 @@
    "definition": "void xsltFreeStylePreComps",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.h",
    "line": "36"
   },
@@ -9381,7 +9381,7 @@
    "definition": "void xsltStylePreCompute",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "preproc.h",
    "line": "33"
   },
@@ -9469,7 +9469,7 @@
    "definition": "static void exsltSaxonEvalFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "131"
   },
@@ -9480,7 +9480,7 @@
    "definition": "static void exsltSaxonEvaluateFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "174"
   },
@@ -9491,7 +9491,7 @@
    "definition": "static void exsltSaxonExpressionFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "78"
   },
@@ -9502,7 +9502,7 @@
    "definition": "static xmlHashTablePtr exsltSaxonInit",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "33"
   },
@@ -9513,7 +9513,7 @@
    "definition": "static void exsltSaxonLineNumberFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "230"
   },
@@ -9524,7 +9524,7 @@
    "definition": "void exsltSaxonRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "294"
   },
@@ -9535,7 +9535,7 @@
    "definition": "static void exsltSaxonShutdown",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "47"
   },
@@ -9546,7 +9546,7 @@
    "definition": "static void exsltSaxonSystemIdFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "saxon.c",
    "line": "194"
   },
@@ -9557,7 +9557,7 @@
    "definition": "static int xsltCheckFilename",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "278"
   },
@@ -9568,7 +9568,7 @@
    "definition": "int xsltCheckRead",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "433"
   },
@@ -9579,7 +9579,7 @@
    "definition": "int xsltCheckWrite",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "368"
   },
@@ -9601,7 +9601,7 @@
    "definition": "void xsltFreeSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "111"
   },
@@ -9612,7 +9612,7 @@
    "definition": "xsltSecurityPrefsPtr xsltGetDefaultSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "196"
   },
@@ -9623,7 +9623,7 @@
    "definition": "xsltSecurityCheck xsltGetSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "158"
   },
@@ -9634,7 +9634,7 @@
    "definition": "xsltSecurityPrefsPtr xsltNewSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "89"
   },
@@ -9645,7 +9645,7 @@
    "definition": "int xsltSecurityAllow",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "230"
   },
@@ -9656,7 +9656,7 @@
    "definition": "int xsltSecurityForbid",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "247"
   },
@@ -9667,7 +9667,7 @@
    "definition": "int xsltSetCtxtSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "210"
   },
@@ -9678,7 +9678,7 @@
    "definition": "void xsltSetDefaultSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "183"
   },
@@ -9689,7 +9689,7 @@
    "definition": "int xsltSetSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.c",
    "line": "128"
   },
@@ -9700,7 +9700,7 @@
    "definition": "int xsltCheckRead",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "95"
   },
@@ -9711,7 +9711,7 @@
    "definition": "int xsltCheckWrite",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "91"
   },
@@ -9722,7 +9722,7 @@
    "definition": "void xsltFreeSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "61"
   },
@@ -9733,7 +9733,7 @@
    "definition": "xsltSecurityPrefsPtr xsltGetDefaultSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "73"
   },
@@ -9744,7 +9744,7 @@
    "definition": "xsltSecurityCheck xsltGetSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "67"
   },
@@ -9755,7 +9755,7 @@
    "definition": "xsltSecurityPrefsPtr xsltNewSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "59"
   },
@@ -9766,7 +9766,7 @@
    "definition": "int xsltSecurityAllow",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "80"
   },
@@ -9777,7 +9777,7 @@
    "definition": "int xsltSecurityForbid",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "84"
   },
@@ -9788,7 +9788,7 @@
    "definition": "int xsltSetCtxtSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "76"
   },
@@ -9799,7 +9799,7 @@
    "definition": "void xsltSetDefaultSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "71"
   },
@@ -9810,7 +9810,7 @@
    "definition": "int xsltSetSecurityPrefs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "63"
   },
@@ -9821,7 +9821,7 @@
    "definition": "static void exsltSetsDifferenceFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "28"
   },
@@ -9832,7 +9832,7 @@
    "definition": "static void exsltSetsDistinctFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "97"
   },
@@ -9843,7 +9843,7 @@
    "definition": "static void exsltSetsHasSameNodesFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "138"
   },
@@ -9854,7 +9854,7 @@
    "definition": "static void exsltSetsIntersectionFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "63"
   },
@@ -9865,7 +9865,7 @@
    "definition": "static void exsltSetsLeadingFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "174"
   },
@@ -9876,7 +9876,7 @@
    "definition": "void exsltSetsRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "263"
   },
@@ -9887,7 +9887,7 @@
    "definition": "static void exsltSetsTrailingFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "219"
   },
@@ -9898,7 +9898,7 @@
    "definition": "int exsltSetsXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "sets.c",
    "line": "290"
   },
@@ -9909,7 +9909,7 @@
    "definition": "static void exsltStrAlignFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "429"
   },
@@ -9920,7 +9920,7 @@
    "definition": "static void exsltStrConcatFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "507"
   },
@@ -9931,7 +9931,7 @@
    "definition": "static void exsltStrDecodeUriFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "292"
   },
@@ -9942,7 +9942,7 @@
    "definition": "static void exsltStrEncodeUriFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "242"
   },
@@ -9953,7 +9953,7 @@
    "definition": "static void exsltStrPaddingFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "349"
   },
@@ -9964,7 +9964,7 @@
    "definition": "void exsltStrRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "828"
   },
@@ -9975,7 +9975,7 @@
    "definition": "static void exsltStrReplaceFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "604"
   },
@@ -9986,7 +9986,7 @@
    "definition": "static int exsltStrReturnString",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "562"
   },
@@ -9997,7 +9997,7 @@
    "definition": "static void exsltStrSplitFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "137"
   },
@@ -10008,7 +10008,7 @@
    "definition": "static void exsltStrTokenizeFunction",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "33"
   },
@@ -10019,7 +10019,7 @@
    "definition": "int exsltStrXpathCtxtRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "strings.c",
    "line": "861"
   },
@@ -10030,7 +10030,7 @@
    "definition": "xmlAttrPtr xsltAttrListTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "645"
   },
@@ -10041,7 +10041,7 @@
    "definition": "xmlAttrPtr xsltAttrTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "489"
   },
@@ -10052,7 +10052,7 @@
    "definition": "xmlChar * xsltAttrTemplateValueProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "382"
   },
@@ -10063,7 +10063,7 @@
    "definition": "xmlChar * xsltAttrTemplateValueProcessNode",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "270"
   },
@@ -10096,7 +10096,7 @@
    "definition": "xmlChar * xsltEvalTemplateString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "207"
   },
@@ -10107,7 +10107,7 @@
    "definition": "int xsltEvalXPathPredicate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "57"
   },
@@ -10118,7 +10118,7 @@
    "definition": "xmlChar * xsltEvalXPathString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "189"
   },
@@ -10129,7 +10129,7 @@
    "definition": "xmlChar * xsltEvalXPathStringNs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "123"
   },
@@ -10140,7 +10140,7 @@
    "definition": "xmlNodePtr * xsltTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.c",
    "line": "849"
   },
@@ -10151,7 +10151,7 @@
    "definition": "xmlAttrPtr xsltAttrListTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "58"
   },
@@ -10162,7 +10162,7 @@
    "definition": "xmlAttrPtr xsltAttrTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "62"
   },
@@ -10173,7 +10173,7 @@
    "definition": "xmlChar * xsltAttrTemplateValueProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "66"
   },
@@ -10184,7 +10184,7 @@
    "definition": "xmlChar * xsltAttrTemplateValueProcessNode",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "69"
   },
@@ -10217,7 +10217,7 @@
    "definition": "xmlChar * xsltEvalTemplateString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "29"
   },
@@ -10228,7 +10228,7 @@
    "definition": "int xsltEvalXPathPredicate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "24"
   },
@@ -10239,7 +10239,7 @@
    "definition": "xmlChar * xsltEvalXPathString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "46"
   },
@@ -10250,7 +10250,7 @@
    "definition": "xmlChar * xsltEvalXPathStringNs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "49"
   },
@@ -10261,7 +10261,7 @@
    "definition": "xmlNodePtr * xsltTemplateProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "templates.h",
    "line": "55"
   },
@@ -10294,7 +10294,7 @@
    "definition": "static long profPop",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "279"
   },
@@ -10305,7 +10305,7 @@
    "definition": "static int profPush",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "245"
   },
@@ -10316,7 +10316,7 @@
    "definition": "static xsltTemplatePtr templPop",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "156"
   },
@@ -10327,7 +10327,7 @@
    "definition": "static int templPush",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "120"
   },
@@ -10338,7 +10338,7 @@
    "definition": "static xmlNodePtr xsltAddChild",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "783"
   },
@@ -10349,7 +10349,7 @@
    "definition": "static xmlNodePtr xsltAddTextString",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "809"
   },
@@ -10360,7 +10360,7 @@
    "definition": "static int xsltApplyFallbacks",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1833"
   },
@@ -10371,7 +10371,7 @@
    "definition": "void xsltApplyImports",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4646"
   },
@@ -10382,7 +10382,7 @@
    "definition": "void xsltApplyOneTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "3312"
   },
@@ -10393,7 +10393,7 @@
    "definition": "static void xsltApplySequenceConstructor",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "2339"
   },
@@ -10404,7 +10404,7 @@
    "definition": "void xsltApplyStripSpaces",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5708"
   },
@@ -10415,7 +10415,7 @@
    "definition": "xmlDocPtr xsltApplyStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6231"
   },
@@ -10426,7 +10426,7 @@
    "definition": "static xmlDocPtr xsltApplyStylesheetInternal",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5828"
   },
@@ -10437,7 +10437,7 @@
    "definition": "xmlDocPtr xsltApplyStylesheetUser",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6274"
   },
@@ -10448,7 +10448,7 @@
    "definition": "void xsltApplyTemplates",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4818"
   },
@@ -10470,7 +10470,7 @@
    "definition": "void xsltCallTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4715"
   },
@@ -10481,7 +10481,7 @@
    "definition": "void xsltChoose",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5195"
   },
@@ -10492,7 +10492,7 @@
    "definition": "void xsltComment",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4261"
   },
@@ -10503,7 +10503,7 @@
    "definition": "void xsltCopy",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "3897"
   },
@@ -10514,18 +10514,18 @@
    "definition": "static int xsltCopyAttrListNoOverwrite",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1250"
   },
   {
    "kind": "function",
    "name": "xsltCopyNamespaceListInternal",
-   "args": "(xmlNodePtr node, xmlNsPtr cur)",
+   "args": "(xmlNodePtr elem, xmlNsPtr ns)",
    "definition": "static xmlNsPtr xsltCopyNamespaceListInternal",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1454"
   },
@@ -10536,7 +10536,7 @@
    "definition": "void xsltCopyOf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4371"
   },
@@ -10547,7 +10547,7 @@
    "definition": "static xmlNodePtr xsltCopyText",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "977"
   },
@@ -10558,7 +10558,7 @@
    "definition": "xmlNodePtr xsltCopyTextString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "881"
   },
@@ -10569,7 +10569,7 @@
    "definition": "static xmlNodePtr xsltCopyTree",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1622"
   },
@@ -10580,7 +10580,7 @@
    "definition": "static xmlNodePtr xsltCopyTreeList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1418"
   },
@@ -10602,7 +10602,7 @@
    "definition": "xsltDebugTraceCodes xsltDebugGetDefaultTrace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "491"
   },
@@ -10613,7 +10613,7 @@
    "definition": "void xsltDebugSetDefaultTrace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "480"
   },
@@ -10635,7 +10635,7 @@
    "definition": "static void xsltDefaultProcessOneNode",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1889"
   },
@@ -10646,7 +10646,7 @@
    "definition": "void xsltDocumentElem",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "3362"
   },
@@ -10657,7 +10657,7 @@
    "definition": "void xsltElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4053"
   },
@@ -10668,7 +10668,7 @@
    "definition": "void xsltForEach",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5460"
   },
@@ -10679,7 +10679,7 @@
    "definition": "void xsltFreeTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "721"
   },
@@ -10690,7 +10690,7 @@
    "definition": "static int xsltGetHTMLIDs",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5680"
   },
@@ -10701,7 +10701,7 @@
    "definition": "int xsltGetXIncludeDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "468"
   },
@@ -10712,7 +10712,7 @@
    "definition": "void xsltIf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "5354"
   },
@@ -10723,7 +10723,7 @@
    "definition": "void xsltLocalVariablePop",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "185"
   },
@@ -10734,7 +10734,7 @@
    "definition": "int xsltLocalVariablePush",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "2257"
   },
@@ -10745,7 +10745,7 @@
    "definition": "xsltTransformContextPtr xsltNewTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "567"
   },
@@ -10756,7 +10756,7 @@
    "definition": "void xsltNumber",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4589"
   },
@@ -10767,7 +10767,7 @@
    "definition": "static xmlXPathObjectPtr xsltPreCompEval",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "352"
   },
@@ -10778,7 +10778,7 @@
    "definition": "static int xsltPreCompEvalToBoolean",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "401"
   },
@@ -10789,7 +10789,7 @@
    "definition": "void xsltProcessOneNode",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "2135"
   },
@@ -10800,7 +10800,7 @@
    "definition": "void xsltProcessingInstruction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4305"
   },
@@ -10811,7 +10811,7 @@
    "definition": "xmlDocPtr xsltProfileStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6250"
   },
@@ -10822,7 +10822,7 @@
    "definition": "void xsltRegisterAllElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6388"
   },
@@ -10833,7 +10833,7 @@
    "definition": "static void xsltReleaseLocalRVTs",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "2295"
   },
@@ -10844,7 +10844,7 @@
    "definition": "int xsltRunStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6373"
   },
@@ -10855,7 +10855,7 @@
    "definition": "int xsltRunStylesheetUser",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "6312"
   },
@@ -10866,7 +10866,7 @@
    "definition": "void xsltSetXIncludeDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "456"
   },
@@ -10877,7 +10877,7 @@
    "definition": "static xmlAttrPtr xsltShallowCopyAttr",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1151"
   },
@@ -10888,7 +10888,7 @@
    "definition": "static xmlNodePtr xsltShallowCopyElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1326"
   },
@@ -10899,7 +10899,7 @@
    "definition": "static xmlNsPtr xsltShallowCopyNsNode",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "1511"
   },
@@ -10910,7 +10910,7 @@
    "definition": "void xsltSort",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "3875"
   },
@@ -10921,7 +10921,7 @@
    "definition": "static void xsltTemplateParamsCleanup",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "215"
   },
@@ -10932,7 +10932,7 @@
    "definition": "void xsltText",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4016"
   },
@@ -10965,7 +10965,7 @@
    "definition": "void xsltValueOf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "4515"
   },
@@ -10976,7 +10976,7 @@
    "definition": "void xslHandleDebugger",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "197"
   },
@@ -10987,7 +10987,7 @@
    "definition": "void xsltApplyImports",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "146"
   },
@@ -10998,7 +10998,7 @@
    "definition": "void xsltApplyOneTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "85"
   },
@@ -11009,7 +11009,7 @@
    "definition": "void xsltApplyStripSpaces",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "57"
   },
@@ -11020,7 +11020,7 @@
    "definition": "xmlDocPtr xsltApplyStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "60"
   },
@@ -11031,7 +11031,7 @@
    "definition": "xmlDocPtr xsltApplyStylesheetUser",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "43"
   },
@@ -11042,7 +11042,7 @@
    "definition": "void xsltApplyTemplates",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "156"
   },
@@ -11053,7 +11053,7 @@
    "definition": "void xsltAttribute",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "121"
   },
@@ -11064,7 +11064,7 @@
    "definition": "void xsltCallTemplate",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "151"
   },
@@ -11075,7 +11075,7 @@
    "definition": "void xsltChoose",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "161"
   },
@@ -11086,7 +11086,7 @@
    "definition": "void xsltComment",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "116"
   },
@@ -11097,7 +11097,7 @@
    "definition": "void xsltCopy",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "101"
   },
@@ -11108,7 +11108,7 @@
    "definition": "void xsltCopyOf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "131"
   },
@@ -11119,7 +11119,7 @@
    "definition": "xmlNodePtr xsltCopyTextString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "179"
   },
@@ -11130,7 +11130,7 @@
    "definition": "void xsltDocumentElem",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "91"
   },
@@ -11141,7 +11141,7 @@
    "definition": "void xsltElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "111"
   },
@@ -11152,7 +11152,7 @@
    "definition": "void xsltForEach",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "171"
   },
@@ -11163,7 +11163,7 @@
    "definition": "void xsltFreeTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "40"
   },
@@ -11174,7 +11174,7 @@
    "definition": "int xsltGetXIncludeDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "30"
   },
@@ -11185,7 +11185,7 @@
    "definition": "void xsltIf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "166"
   },
@@ -11196,7 +11196,7 @@
    "definition": "void xsltLocalVariablePop",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "186"
   },
@@ -11207,7 +11207,7 @@
    "definition": "int xsltLocalVariablePush",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "190"
   },
@@ -11218,7 +11218,7 @@
    "definition": "xsltTransformContextPtr xsltNewTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "36"
   },
@@ -11229,7 +11229,7 @@
    "definition": "void xsltNumber",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "141"
   },
@@ -11240,7 +11240,7 @@
    "definition": "void xsltProcessOneNode",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "50"
   },
@@ -11251,7 +11251,7 @@
    "definition": "void xsltProcessingInstruction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "126"
   },
@@ -11262,7 +11262,7 @@
    "definition": "xmlDocPtr xsltProfileStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "64"
   },
@@ -11273,7 +11273,7 @@
    "definition": "void xsltRegisterAllElement",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "176"
   },
@@ -11284,7 +11284,7 @@
    "definition": "int xsltRunStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "69"
   },
@@ -11295,7 +11295,7 @@
    "definition": "int xsltRunStylesheetUser",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "76"
   },
@@ -11306,7 +11306,7 @@
    "definition": "void xsltSetXIncludeDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "28"
   },
@@ -11317,7 +11317,7 @@
    "definition": "void xsltSort",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "96"
   },
@@ -11328,7 +11328,7 @@
    "definition": "void xsltText",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "106"
   },
@@ -11339,7 +11339,7 @@
    "definition": "void xsltValueOf",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "136"
   },
@@ -12065,7 +12065,7 @@
    "definition": "static void libxml_xmlXPathDestructNsNode",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "types.c",
    "line": "348"
   },
@@ -12109,7 +12109,7 @@
    "definition": "static int xsltAddStackElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "754"
   },
@@ -12120,7 +12120,7 @@
    "definition": "int xsltAddStackElemList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "800"
   },
@@ -12131,7 +12131,7 @@
    "definition": "static xsltStackElemPtr xsltBuildVariable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1775"
   },
@@ -12153,7 +12153,7 @@
    "definition": "static xsltStackElemPtr xsltCopyStackElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "547"
   },
@@ -12164,7 +12164,7 @@
    "definition": "xmlDocPtr xsltCreateRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "65"
   },
@@ -12175,7 +12175,7 @@
    "definition": "static xmlXPathObjectPtr xsltEvalGlobalVariable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1047"
   },
@@ -12186,7 +12186,7 @@
    "definition": "int xsltEvalGlobalVariables",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1268"
   },
@@ -12208,7 +12208,7 @@
    "definition": "int xsltEvalUserParams",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1671"
   },
@@ -12219,7 +12219,7 @@
    "definition": "static xmlXPathObjectPtr xsltEvalVariable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "822"
   },
@@ -12230,7 +12230,7 @@
    "definition": "int xsltExtensionInstructionResultFinalize",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "209"
   },
@@ -12241,7 +12241,7 @@
    "definition": "int xsltExtensionInstructionResultRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "234"
   },
@@ -12252,7 +12252,7 @@
    "definition": "int xsltFlagRVTs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "257"
   },
@@ -12263,7 +12263,7 @@
    "definition": "void xsltFreeGlobalVariables",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "2236"
   },
@@ -12274,7 +12274,7 @@
    "definition": "void xsltFreeRVTs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "447"
   },
@@ -12285,7 +12285,7 @@
    "definition": "static void xsltFreeStackElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "573"
   },
@@ -12296,7 +12296,7 @@
    "definition": "void xsltFreeStackElemList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "626"
   },
@@ -12318,7 +12318,7 @@
    "definition": "static xsltStackElemPtr xsltNewStackElem",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "511"
   },
@@ -12329,7 +12329,7 @@
    "definition": "void xsltParseGlobalParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "2096"
   },
@@ -12340,7 +12340,7 @@
    "definition": "void xsltParseGlobalVariable",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "2033"
   },
@@ -12351,7 +12351,7 @@
    "definition": "xsltStackElemPtr xsltParseStylesheetCallerParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1971"
   },
@@ -12362,7 +12362,7 @@
    "definition": "void xsltParseStylesheetParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "2200"
   },
@@ -12373,7 +12373,7 @@
    "definition": "void xsltParseStylesheetVariable",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "2158"
   },
@@ -12406,7 +12406,7 @@
    "definition": "int xsltQuoteUserParams",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1701"
   },
@@ -12428,7 +12428,7 @@
    "definition": "int xsltRegisterLocalRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "159"
   },
@@ -12439,7 +12439,7 @@
    "definition": "int xsltRegisterPersistRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "425"
   },
@@ -12450,7 +12450,7 @@
    "definition": "int xsltRegisterTmpRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "120"
   },
@@ -12461,7 +12461,7 @@
    "definition": "static int xsltRegisterVariable",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "1822"
   },
@@ -12472,7 +12472,7 @@
    "definition": "void xsltReleaseRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.c",
    "line": "354"
   },
@@ -12516,7 +12516,7 @@
    "definition": "int xsltAddStackElemList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "109"
   },
@@ -12527,7 +12527,7 @@
    "definition": "int xsltEvalGlobalVariables",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "77"
   },
@@ -12549,7 +12549,7 @@
    "definition": "int xsltEvalUserParams",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "79"
   },
@@ -12560,7 +12560,7 @@
    "definition": "void xsltFreeGlobalVariables",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "112"
   },
@@ -12571,7 +12571,7 @@
    "definition": "void xsltParseGlobalParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "97"
   },
@@ -12582,7 +12582,7 @@
    "definition": "void xsltParseGlobalVariable",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "94"
   },
@@ -12593,7 +12593,7 @@
    "definition": "xsltStackElemPtr xsltParseStylesheetCallerParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "106"
   },
@@ -12604,7 +12604,7 @@
    "definition": "void xsltParseStylesheetParam",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "103"
   },
@@ -12615,7 +12615,7 @@
    "definition": "void xsltParseStylesheetVariable",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "100"
   },
@@ -12637,7 +12637,7 @@
    "definition": "int xsltQuoteUserParams",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "82"
   },
@@ -12692,7 +12692,7 @@
    "definition": "static xmlChar * exclPrefixPop",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "199"
   },
@@ -12703,7 +12703,7 @@
    "definition": "static int exclPrefixPush",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "156"
   },
@@ -12725,7 +12725,7 @@
    "definition": "int xsltAllocateExtra",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "822"
   },
@@ -12736,7 +12736,7 @@
    "definition": "int xsltAllocateExtraCtxt",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "838"
   },
@@ -12747,7 +12747,7 @@
    "definition": "static int xsltCleanupStylesheetTree",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "908"
   },
@@ -12802,7 +12802,7 @@
    "definition": "void xsltFreeStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "963"
   },
@@ -12813,7 +12813,7 @@
    "definition": "static void xsltFreeStylesheetList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "886"
   },
@@ -12824,7 +12824,7 @@
    "definition": "static void xsltFreeTemplate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "444"
   },
@@ -12835,7 +12835,7 @@
    "definition": "static void xsltFreeTemplateList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "474"
   },
@@ -12846,7 +12846,7 @@
    "definition": "static void xsltGatherNamespaces",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "3688"
   },
@@ -12857,7 +12857,7 @@
    "definition": "static int xsltGetInheritedNsList",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1096"
   },
@@ -12868,7 +12868,7 @@
    "definition": "void xsltInit",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "230"
   },
@@ -12879,7 +12879,7 @@
    "definition": "int xsltIsBlank",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "263"
   },
@@ -12890,7 +12890,7 @@
    "definition": "xsltStylesheetPtr xsltLoadStylesheetPI",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6904"
   },
@@ -12912,7 +12912,7 @@
    "definition": "xsltStylesheetPtr xsltNewStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "771"
   },
@@ -12923,7 +12923,7 @@
    "definition": "static xsltTemplatePtr xsltNewTemplate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "423"
   },
@@ -12934,7 +12934,7 @@
    "definition": "static void xsltParseContentError",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "126"
   },
@@ -12945,7 +12945,7 @@
    "definition": "static void xsltParseStylesheetDecimalFormat",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1409"
   },
@@ -12956,7 +12956,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetDoc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6709"
   },
@@ -12967,7 +12967,7 @@
    "definition": "static int xsltParseStylesheetExcludePrefix",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1745"
   },
@@ -12978,7 +12978,7 @@
    "definition": "static void xsltParseStylesheetExtPrefix",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1609"
   },
@@ -12989,7 +12989,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetFile",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6743"
   },
@@ -13000,7 +13000,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetImportedDoc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6528"
   },
@@ -13011,7 +13011,7 @@
    "definition": "static void xsltParseStylesheetKey",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "5112"
   },
@@ -13022,7 +13022,7 @@
    "definition": "void xsltParseStylesheetOutput",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1191"
   },
@@ -13033,7 +13033,7 @@
    "definition": "static xmlChar * xsltParseStylesheetPI",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6814"
   },
@@ -13044,7 +13044,7 @@
    "definition": "static void xsltParseStylesheetPreserveSpace",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1536"
   },
@@ -13055,7 +13055,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6420"
   },
@@ -13066,7 +13066,7 @@
    "definition": "static void xsltParseStylesheetStripSpace",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "1675"
   },
@@ -13077,7 +13077,7 @@
    "definition": "static void xsltParseStylesheetTemplate",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "5364"
   },
@@ -13088,7 +13088,7 @@
    "definition": "static void xsltParseStylesheetTop",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "6092"
   },
@@ -13099,7 +13099,7 @@
    "definition": "void xsltParseTemplateContent",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "4892"
   },
@@ -13121,7 +13121,7 @@
    "definition": "void xsltUninit",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "246"
   },
@@ -13132,7 +13132,7 @@
    "definition": "void xsltCleanupGlobals",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "103"
   },
@@ -13143,7 +13143,7 @@
    "definition": "void xsltInit",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "97"
   },
@@ -13154,7 +13154,7 @@
    "definition": "void xsltICUSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltICUSort.c",
    "line": "40"
   },
@@ -13165,7 +13165,7 @@
    "definition": "int xsltAllocateExtra",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1890"
   },
@@ -13176,7 +13176,7 @@
    "definition": "int xsltAllocateExtraCtxt",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1892"
   },
@@ -13187,7 +13187,7 @@
    "definition": "void xsltCompileAttr",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1928"
   },
@@ -13198,7 +13198,7 @@
    "definition": "xmlDocPtr xsltCreateRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1897"
   },
@@ -13231,7 +13231,7 @@
    "definition": "xmlChar * xsltEvalAVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1931"
   },
@@ -13242,7 +13242,7 @@
    "definition": "int xsltExtensionInstructionResultFinalize",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1912"
   },
@@ -13253,7 +13253,7 @@
    "definition": "int xsltExtensionInstructionResultRegister",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1908"
   },
@@ -13264,7 +13264,7 @@
    "definition": "int xsltFlagRVTs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1915"
   },
@@ -13275,7 +13275,7 @@
    "definition": "xmlXPathError xsltFormatNumberConversion",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1881"
   },
@@ -13286,7 +13286,7 @@
    "definition": "void xsltFreeAVTList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1935"
   },
@@ -13297,7 +13297,7 @@
    "definition": "void xsltFreeRVTs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1920"
   },
@@ -13308,7 +13308,7 @@
    "definition": "void xsltFreeStackElemList",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1854"
   },
@@ -13319,7 +13319,7 @@
    "definition": "void xsltFreeStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1850"
   },
@@ -13330,7 +13330,7 @@
    "definition": "int xsltInitAllDocKeys",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1976"
   },
@@ -13341,7 +13341,7 @@
    "definition": "int xsltInitCtxtKey",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1972"
   },
@@ -13352,7 +13352,7 @@
    "definition": "int xsltIsBlank",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1852"
   },
@@ -13363,7 +13363,7 @@
    "definition": "xsltStylesheetPtr xsltLoadStylesheetPI",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1875"
   },
@@ -13374,7 +13374,7 @@
    "definition": "xsltStylesheetPtr xsltNewStylesheet",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1846"
   },
@@ -13385,7 +13385,7 @@
    "definition": "void xsltNumberFormat",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1877"
   },
@@ -13396,7 +13396,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetDoc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1870"
   },
@@ -13407,7 +13407,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetFile",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1848"
   },
@@ -13418,7 +13418,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetImportedDoc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1872"
   },
@@ -13429,7 +13429,7 @@
    "definition": "void xsltParseStylesheetOutput",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1867"
   },
@@ -13440,7 +13440,7 @@
    "definition": "xsltStylesheetPtr xsltParseStylesheetProcess",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1864"
   },
@@ -13451,7 +13451,7 @@
    "definition": "void xsltParseTemplateContent",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1887"
   },
@@ -13462,7 +13462,7 @@
    "definition": "int xsltRegisterLocalRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1902"
   },
@@ -13473,7 +13473,7 @@
    "definition": "int xsltRegisterPersistRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1905"
   },
@@ -13484,7 +13484,7 @@
    "definition": "int xsltRegisterTmpRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1899"
   },
@@ -13495,7 +13495,7 @@
    "definition": "void xsltReleaseRVT",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1922"
   },
@@ -13506,7 +13506,7 @@
    "definition": "void xsltUninit",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1942"
   },
@@ -13528,7 +13528,7 @@
    "definition": "void xsltFreeLocale",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.c",
    "line": "347"
   },
@@ -13539,7 +13539,7 @@
    "definition": "void xsltFreeLocales",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.c",
    "line": "68"
   },
@@ -13550,7 +13550,7 @@
    "definition": "int xsltLocaleStrcmp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.c",
    "line": "427"
   },
@@ -13561,7 +13561,7 @@
    "definition": "xsltLocale xsltNewLocale",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.c",
    "line": "87"
   },
@@ -13572,7 +13572,7 @@
    "definition": "xsltLocaleChar * xsltStrxfrm",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.c",
    "line": "364"
   },
@@ -13583,7 +13583,7 @@
    "definition": "void xsltFreeLocale",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.h",
    "line": "65"
   },
@@ -13594,7 +13594,7 @@
    "definition": "void xsltFreeLocales",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.h",
    "line": "74"
   },
@@ -13605,7 +13605,7 @@
    "definition": "int xsltLocaleStrcmp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.h",
    "line": "70"
   },
@@ -13616,7 +13616,7 @@
    "definition": "xsltLocale xsltNewLocale",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.h",
    "line": "63"
   },
@@ -13627,7 +13627,7 @@
    "definition": "xsltLocaleChar * xsltStrxfrm",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltlocale.h",
    "line": "67"
   },
@@ -13737,7 +13737,7 @@
    "definition": "int xslAddCall",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2463"
   },
@@ -13748,7 +13748,7 @@
    "definition": "void xslDropCall",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2476"
   },
@@ -13759,7 +13759,7 @@
    "definition": "void xslHandleDebugger",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2446"
   },
@@ -13770,7 +13770,7 @@
    "definition": "void xsltCalibrateAdjust",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1826"
   },
@@ -13781,7 +13781,7 @@
    "definition": "xmlXPathObjectPtr * xsltComputeSortResult",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "961"
   },
@@ -13792,7 +13792,7 @@
    "definition": "void xsltDefaultSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1088"
   },
@@ -13803,7 +13803,7 @@
    "definition": "void xsltDoSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1356"
   },
@@ -13814,7 +13814,7 @@
    "definition": "void xsltDocumentSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "927"
   },
@@ -13825,7 +13825,7 @@
    "definition": "static void xsltGenericDebugDefaultFunc",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "561"
   },
@@ -13836,7 +13836,7 @@
    "definition": "static void xsltGenericErrorDefaultFunc",
    "static": true,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "515"
   },
@@ -13858,7 +13858,7 @@
    "definition": "int xsltGetDebuggerStatus",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2403"
   },
@@ -13880,7 +13880,7 @@
    "definition": "xmlDocPtr xsltGetProfileInformation",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2181"
   },
@@ -13913,7 +13913,7 @@
    "definition": "int xsltGetUTF8Char",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "251"
   },
@@ -13924,7 +13924,7 @@
    "definition": "void xsltMessage",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "432"
   },
@@ -13935,7 +13935,7 @@
    "definition": "void xsltPrintErrorContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "607"
   },
@@ -13946,7 +13946,7 @@
    "definition": "void xsltSaveProfiling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1961"
   },
@@ -13957,7 +13957,7 @@
    "definition": "int xsltSaveResultTo",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1447"
   },
@@ -13968,7 +13968,7 @@
    "definition": "int xsltSaveResultToFd",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1701"
   },
@@ -13990,7 +13990,7 @@
    "definition": "int xsltSaveResultToFilename",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1613"
   },
@@ -14001,7 +14001,7 @@
    "definition": "int xsltSaveResultToString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1744"
   },
@@ -14012,7 +14012,7 @@
    "definition": "int xsltSetCtxtParseOptions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1412"
   },
@@ -14023,7 +14023,7 @@
    "definition": "void xsltSetCtxtSortFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1391"
   },
@@ -14034,7 +14034,7 @@
    "definition": "int xsltSetDebuggerCallbacks",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2420"
   },
@@ -14045,7 +14045,7 @@
    "definition": "void xsltSetDebuggerStatus",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2390"
   },
@@ -14056,7 +14056,7 @@
    "definition": "void xsltSetGenericDebugFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "590"
   },
@@ -14067,7 +14067,7 @@
    "definition": "void xsltSetGenericErrorFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "544"
   },
@@ -14078,7 +14078,7 @@
    "definition": "void xsltSetSortFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1373"
   },
@@ -14089,7 +14089,7 @@
    "definition": "void xsltSetTransformErrorFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "683"
   },
@@ -14111,7 +14111,7 @@
    "definition": "long xsltTimestamp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "1839"
   },
@@ -14122,7 +14122,7 @@
    "definition": "void xsltTransformError",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "702"
   },
@@ -14133,7 +14133,7 @@
    "definition": "xmlXPathCompExprPtr xsltXPathCompile",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2351"
   },
@@ -14144,7 +14144,7 @@
    "definition": "xmlXPathCompExprPtr xsltXPathCompileFlags",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.c",
    "line": "2286"
   },
@@ -14155,7 +14155,7 @@
    "definition": "int xslAddCall",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "302"
   },
@@ -14166,7 +14166,7 @@
    "definition": "void xslDropCall",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "305"
   },
@@ -14177,7 +14177,7 @@
    "definition": "void xsltCalibrateAdjust",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "262"
   },
@@ -14188,7 +14188,7 @@
    "definition": "xmlXPathObjectPtr * xsltComputeSortResult",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "193"
   },
@@ -14199,7 +14199,7 @@
    "definition": "xsltDebugTraceCodes xsltDebugGetDefaultTrace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "135"
   },
@@ -14210,7 +14210,7 @@
    "definition": "void xsltDebugSetDefaultTrace",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "133"
   },
@@ -14221,7 +14221,7 @@
    "definition": "void xsltDefaultSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "185"
   },
@@ -14232,7 +14232,7 @@
    "definition": "void xsltDoSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "189"
   },
@@ -14243,7 +14243,7 @@
    "definition": "void xsltDocumentSortFunction",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "178"
   },
@@ -14265,7 +14265,7 @@
    "definition": "int xsltGetDebuggerStatus",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "298"
   },
@@ -14287,7 +14287,7 @@
    "definition": "xmlDocPtr xsltGetProfileInformation",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "257"
   },
@@ -14320,7 +14320,7 @@
    "definition": "int xsltGetUTF8Char",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "95"
   },
@@ -14331,7 +14331,7 @@
    "definition": "void xsltMessage",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "150"
   },
@@ -14342,7 +14342,7 @@
    "definition": "void xsltPrintErrorContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "146"
   },
@@ -14353,7 +14353,7 @@
    "definition": "void xsltSaveProfiling",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "254"
   },
@@ -14364,7 +14364,7 @@
    "definition": "int xsltSaveResultTo",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "217"
   },
@@ -14375,7 +14375,7 @@
    "definition": "int xsltSaveResultToFd",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "230"
   },
@@ -14397,7 +14397,7 @@
    "definition": "int xsltSaveResultToFilename",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "221"
   },
@@ -14408,7 +14408,7 @@
    "definition": "int xsltSaveResultToString",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "234"
   },
@@ -14419,7 +14419,7 @@
    "definition": "int xsltSetCtxtParseOptions",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "171"
   },
@@ -14430,7 +14430,7 @@
    "definition": "void xsltSetCtxtSortFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "182"
   },
@@ -14441,7 +14441,7 @@
    "definition": "int xsltSetDebuggerCallbacks",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "300"
   },
@@ -14452,7 +14452,7 @@
    "definition": "void xsltSetDebuggerStatus",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "296"
   },
@@ -14463,7 +14463,7 @@
    "definition": "void xsltSetGenericDebugFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "157"
   },
@@ -14474,7 +14474,7 @@
    "definition": "void xsltSetGenericErrorFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "154"
   },
@@ -14485,7 +14485,7 @@
    "definition": "void xsltSetSortFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "180"
   },
@@ -14496,7 +14496,7 @@
    "definition": "void xsltSetTransformErrorFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "160"
   },
@@ -14518,7 +14518,7 @@
    "definition": "long xsltTimestamp",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "260"
   },
@@ -14529,7 +14529,7 @@
    "definition": "void xsltTransformError",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "164"
   },
@@ -14540,7 +14540,7 @@
    "definition": "xmlXPathCompExprPtr xsltXPathCompile",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "243"
   },
@@ -14551,7 +14551,7 @@
    "definition": "xmlXPathCompExprPtr xsltXPathCompileFlags",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "246"
   },
@@ -15015,7 +15015,7 @@
    "kind": "typedef",
    "name": "xsltSecurityPrefs",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "29"
   },
@@ -17277,7 +17277,7 @@
    "kind": "variable",
    "name": "libxml2_classes_type",
    "type": "dict",
-   "documented": false,
+   "documented": true,
    "header": "generator.py",
    "line": "474"
   },
@@ -17301,7 +17301,7 @@
    "kind": "variable",
    "name": "py_types",
    "type": "dict",
-   "documented": false,
+   "documented": true,
    "header": "generator.py",
    "line": "167"
   },
@@ -17309,7 +17309,7 @@
    "kind": "variable",
    "name": "skipped_modules",
    "type": "dict",
-   "documented": false,
+   "documented": true,
    "header": "generator.py",
    "line": "138"
   },
@@ -18441,7 +18441,7 @@
    "kind": "variable",
    "name": "xsltMaxDepth",
    "type": "int",
-   "documented": false,
+   "documented": true,
    "header": "transform.c",
    "line": "70"
   },
@@ -18500,7 +18500,7 @@
    "kind": "variable",
    "name": "xsltEngineVersion",
    "type": "const char *",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "52"
   },
@@ -18508,7 +18508,7 @@
    "kind": "variable",
    "name": "xsltLibxmlVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "54"
   },
@@ -18516,7 +18516,7 @@
    "kind": "variable",
    "name": "xsltLibxsltVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.c",
    "line": "53"
   },
@@ -18524,7 +18524,7 @@
    "kind": "variable",
    "name": "xsltEngineVersion",
    "type": "const char *",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "76"
   },
@@ -18532,7 +18532,7 @@
    "kind": "variable",
    "name": "xsltLibxmlVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "90"
   },
@@ -18540,7 +18540,7 @@
    "kind": "variable",
    "name": "xsltLibxsltVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "83"
   },
@@ -18548,7 +18548,7 @@
    "kind": "variable",
    "name": "xsltMaxDepth",
    "type": "int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "62"
   },
@@ -20983,5 +20983,5 @@
    "line": "141"
   }
  ],
- "inventory_hash": "a6f9b9773dfaf4024b327bdb95e9d9ab448e08e29e9aa022e0a5e4753e667b99"
+ "inventory_hash": "20b26e454b1244da0d9ba36e889dcc5ab7068d47ae3c6feb1fe67dafe0fc38a2"
 }

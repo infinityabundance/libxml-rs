@@ -2,8 +2,8 @@
  "libxml2:!(defined(DEBUG) || defined(NDEBUG))": {
   "expression": "!(defined(DEBUG) || defined(NDEBUG))",
   "public_header": false,
-  "true_config_count": 13376,
-  "false_config_count": 23,
+  "true_config_count": 13369,
+  "false_config_count": 30,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -16,13 +16,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-3f8aa57a4d",
    "libxml2-2.10.4-targeted-d574366af9",
    "libxml2-2.10.4-targeted-dc30ec2070",
    "libxml2-2.11.5-all-absent-defined",
+   "libxml2-2.11.5-targeted-3f8aa57a4d",
    "libxml2-2.11.5-targeted-d574366af9",
-   "libxml2-2.11.5-targeted-dc30ec2070",
-   "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-d574366af9"
+   "libxml2-2.11.5-targeted-dc30ec2070"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -34,8 +34,8 @@
  "libxml2:!(defined(TRIO_COMPILER_SUPPORTS_C89) || defined(__cplusplus))": {
   "expression": "!(defined(TRIO_COMPILER_SUPPORTS_C89) || defined(__cplusplus))",
   "public_header": false,
-  "true_config_count": 13359,
-  "false_config_count": 40,
+  "true_config_count": 13367,
+  "false_config_count": 32,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -50,11 +50,11 @@
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-1d09f9fc37",
    "libxml2-2.10.4-targeted-33581326da",
-   "libxml2-2.10.4-targeted-6b2cfa3b2f",
    "libxml2-2.10.4-targeted-e3bd4d950f",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-1d09f9fc37",
-   "libxml2-2.11.5-targeted-33581326da"
+   "libxml2-2.11.5-targeted-33581326da",
+   "libxml2-2.11.5-targeted-e3bd4d950f"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -346,8 +346,8 @@
  "libxml2:!defined(HAVE_GETADDRINFO) || !defined(_WIN32)": {
   "expression": "!defined(HAVE_GETADDRINFO) || !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 12022,
-  "false_config_count": 79,
+  "true_config_count": 12031,
+  "false_config_count": 70,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -366,7 +366,7 @@
    "libxml2-2.10.4-targeted-7a8ea33c4d",
    "libxml2-2.10.4-targeted-a6cfb5667a",
    "libxml2-2.10.4-targeted-ad495647e7",
-   "libxml2-2.10.4-targeted-dd137005d4"
+   "libxml2-2.10.4-targeted-de99dd3775"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -410,8 +410,8 @@
  "libxml2:!defined(HAVE_PTHREAD_H) && !defined(HAVE_WIN32_THREADS) && !defined(_WIN32_WCE)": {
   "expression": "!defined(HAVE_PTHREAD_H) && !defined(HAVE_WIN32_THREADS) && !defined(_WIN32_WCE)",
   "public_header": true,
-  "true_config_count": 11371,
-  "false_config_count": 59,
+  "true_config_count": 11374,
+  "false_config_count": 56,
   "true_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
    "libxml2-2.7.8-oracle",
@@ -429,7 +429,7 @@
    "libxml2-2.7.8-targeted-187ea34918",
    "libxml2-2.7.8-targeted-4751a7a015",
    "libxml2-2.7.8-targeted-57e84ea48c",
-   "libxml2-2.7.8-targeted-924b1a0b31",
+   "libxml2-2.7.8-targeted-95a8f6b257",
    "libxml2-2.7.8-targeted-992603e520"
   ],
   "config_kinds_exercised": [
@@ -598,8 +598,8 @@
  "libxml2:!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL)": {
   "expression": "!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL)",
   "public_header": false,
-  "true_config_count": 3660,
-  "false_config_count": 9,
+  "true_config_count": 3657,
+  "false_config_count": 12,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-all-defined-undef",
@@ -613,12 +613,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-targeted-3bb1b13d45",
    "libxml2-2.10.4-targeted-c4a6ca741a",
+   "libxml2-2.10.4-targeted-d12bb6874b",
    "libxml2-2.10.4-targeted-f4820332ed",
    "libxml2-2.11.5-targeted-3bb1b13d45",
    "libxml2-2.11.5-targeted-c4a6ca741a",
-   "libxml2-2.11.5-targeted-f4820332ed",
-   "libxml2-2.9.14-targeted-3bb1b13d45",
-   "libxml2-2.9.14-targeted-c4a6ca741a"
+   "libxml2-2.11.5-targeted-d12bb6874b",
+   "libxml2-2.11.5-targeted-f4820332ed"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -630,8 +630,8 @@
  "libxml2:!defined(LIBXML_THREAD_ENABLED) && !defined(LIBXML_THREAD_ALLOC_ENABLED)": {
   "expression": "!defined(LIBXML_THREAD_ENABLED) && !defined(LIBXML_THREAD_ALLOC_ENABLED)",
   "public_header": false,
-  "true_config_count": 13337,
-  "false_config_count": 62,
+  "true_config_count": 13336,
+  "false_config_count": 63,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -822,8 +822,8 @@
  "libxml2:!defined(PIC) && !defined(NOLIBTOOL) && !defined(LIBXML_STATIC)": {
   "expression": "!defined(PIC) && !defined(NOLIBTOOL) && !defined(LIBXML_STATIC)",
   "public_header": false,
-  "true_config_count": 5284,
-  "false_config_count": 16,
+  "true_config_count": 5282,
+  "false_config_count": 18,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -839,10 +839,10 @@
    "libxml2-2.10.4-targeted-3bb1b13d45",
    "libxml2-2.10.4-targeted-9bdef9c5dd",
    "libxml2-2.10.4-targeted-c4a6ca741a",
+   "libxml2-2.10.4-targeted-d12bb6874b",
    "libxml2-2.10.4-targeted-f4820332ed",
    "libxml2-2.9.10-all-absent-defined",
-   "libxml2-2.9.10-targeted-68780d6dcd",
-   "libxml2-2.9.10-targeted-9bdef9c5dd"
+   "libxml2-2.9.10-targeted-68780d6dcd"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -854,8 +854,8 @@
  "libxml2:!defined(TRIO_COMPILER_SUPPORTS_C99)": {
   "expression": "!defined(TRIO_COMPILER_SUPPORTS_C99)",
   "public_header": false,
-  "true_config_count": 13361,
-  "false_config_count": 38,
+  "true_config_count": 13345,
+  "false_config_count": 54,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -868,13 +868,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-6b2cfa3b2f",
+   "libxml2-2.10.4-targeted-86d884d01d",
    "libxml2-2.10.4-targeted-abc1ec5d85",
    "libxml2-2.10.4-targeted-bce8a669a9",
    "libxml2-2.10.4-targeted-d810c0e4be",
    "libxml2-2.10.4-targeted-fb3ffca98e",
-   "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-abc1ec5d85",
-   "libxml2-2.11.5-targeted-bce8a669a9"
+   "libxml2-2.11.5-all-absent-defined"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -886,8 +886,8 @@
  "libxml2:!defined(TRIO_MINIMAL)": {
   "expression": "!defined(TRIO_MINIMAL)",
   "public_header": false,
-  "true_config_count": 13375,
-  "false_config_count": 24,
+  "true_config_count": 13367,
+  "false_config_count": 32,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -901,12 +901,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-8664f6cad9",
+   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-b5af61747c",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-8664f6cad9",
-   "libxml2-2.11.5-targeted-b5af61747c",
-   "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-8664f6cad9"
+   "libxml2-2.11.5-targeted-924b1a0b31",
+   "libxml2-2.11.5-targeted-b5af61747c"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -918,8 +918,8 @@
  "libxml2:!defined(TRIO_MINIMAL) && !defined(_WIN32_WCE)": {
   "expression": "!defined(TRIO_MINIMAL) && !defined(_WIN32_WCE)",
   "public_header": false,
-  "true_config_count": 13340,
-  "false_config_count": 59,
+  "true_config_count": 13338,
+  "false_config_count": 61,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -1206,8 +1206,8 @@
  "libxml2:!defined(_MSC_VER)": {
   "expression": "!defined(_MSC_VER)",
   "public_header": false,
-  "true_config_count": 12049,
-  "false_config_count": 52,
+  "true_config_count": 12040,
+  "false_config_count": 61,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -1238,8 +1238,8 @@
  "libxml2:!defined(_WIN32)": {
   "expression": "!defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 14841,
-  "false_config_count": 127,
+  "true_config_count": 14846,
+  "false_config_count": 122,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -1258,7 +1258,7 @@
    "libxml2-2.10.4-targeted-7a8ea33c4d",
    "libxml2-2.10.4-targeted-a6cfb5667a",
    "libxml2-2.10.4-targeted-ad495647e7",
-   "libxml2-2.10.4-targeted-dd137005d4"
+   "libxml2-2.10.4-targeted-de99dd3775"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -1270,8 +1270,8 @@
  "libxml2:!defined(_WIN32) && !defined(__CYGWIN__) && (defined(__clang__) || (defined(__GNUC__) && (__GNUC__ >= 4)))": {
   "expression": "!defined(_WIN32) && !defined(__CYGWIN__) && (defined(__clang__) || (defined(__GNUC__) && (__GNUC__ >= 4)))",
   "public_header": false,
-  "true_config_count": 2798,
-  "false_config_count": 69,
+  "true_config_count": 2800,
+  "false_config_count": 67,
   "true_config_samples": [
    "libxml2-2.11.5-oracle",
    "libxml2-2.11.5-targeted-01a0e5e596",
@@ -1302,8 +1302,8 @@
  "libxml2:!defined(_WIN32) || defined(__CYGWIN__)": {
   "expression": "!defined(_WIN32) || defined(__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 11369,
-  "false_config_count": 61,
+  "true_config_count": 11377,
+  "false_config_count": 53,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-all-defined-undef",
@@ -1315,14 +1315,14 @@
    "libxml2-2.7.8-targeted-00ab57d7c9"
   ],
   "false_config_samples": [
-   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-57bda023ac",
    "libxml2-2.7.8-targeted-7a8ea33c4d",
    "libxml2-2.7.8-targeted-94215fde4f",
    "libxml2-2.7.8-targeted-942eb5209e",
    "libxml2-2.7.8-targeted-a34e3407ec",
-   "libxml2-2.7.8-targeted-a6cfb5667a"
+   "libxml2-2.7.8-targeted-a6cfb5667a",
+   "libxml2-2.7.8-targeted-ad495647e7"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -1334,8 +1334,8 @@
  "libxml2:!defined(_WIN32_WCE)": {
   "expression": "!defined(_WIN32_WCE)",
   "public_header": false,
-  "true_config_count": 13356,
-  "false_config_count": 43,
+  "true_config_count": 13362,
+  "false_config_count": 37,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -1350,11 +1350,11 @@
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-0e2054069d",
    "libxml2-2.10.4-targeted-57e84ea48c",
-   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-95a8f6b257",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-0e2054069d",
-   "libxml2-2.11.5-targeted-57e84ea48c"
+   "libxml2-2.11.5-targeted-57e84ea48c",
+   "libxml2-2.11.5-targeted-95a8f6b257"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -1547,8 +1547,8 @@
  "libxml2:(!(defined(TRIO_COMPILER_SUPPORTS_C99) || defined(TRIO_COMPILER_SUPPORTS_UNIX01))) && !defined(_WIN32_WCE)": {
   "expression": "(!(defined(TRIO_COMPILER_SUPPORTS_C99) || defined(TRIO_COMPILER_SUPPORTS_UNIX01))) && !defined(_WIN32_WCE)",
   "public_header": false,
-  "true_config_count": 13318,
-  "false_config_count": 81,
+  "true_config_count": 13316,
+  "false_config_count": 83,
   "true_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-oracle",
@@ -1563,8 +1563,8 @@
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-0e2054069d",
    "libxml2-2.10.4-targeted-57e84ea48c",
+   "libxml2-2.10.4-targeted-6b2cfa3b2f",
    "libxml2-2.10.4-targeted-86d884d01d",
-   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-95a8f6b257",
    "libxml2-2.10.4-targeted-abc1ec5d85",
    "libxml2-2.10.4-targeted-bce8a669a9"
@@ -1764,8 +1764,8 @@
  "libxml2:(__GNUC__ == 3 && __GNUC_MINOR__ >= 3) || (__GNUC__ > 3)": {
   "expression": "(__GNUC__ == 3 && __GNUC_MINOR__ >= 3) || (__GNUC__ > 3)",
   "public_header": false,
-  "true_config_count": 11396,
-  "false_config_count": 34,
+  "true_config_count": 11397,
+  "false_config_count": 33,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-oracle",
@@ -1924,8 +1924,8 @@
  "libxml2:(defined (_MSC_VER) && _MSC_VER >= 1400)": {
   "expression": "(defined (_MSC_VER) && _MSC_VER >= 1400)",
   "public_header": false,
-  "true_config_count": 42,
-  "false_config_count": 5814,
+  "true_config_count": 44,
+  "false_config_count": 5812,
   "true_config_samples": [
    "libxml2-2.10.4-targeted-669b21eebf",
    "libxml2-2.10.4-targeted-6a8f62678e",
@@ -1956,8 +1956,8 @@
  "libxml2:(defined(LIBXML_RELAXNG_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)) && defined(LIBXML_XPATH_ENABLED)": {
   "expression": "(defined(LIBXML_RELAXNG_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)) && defined(LIBXML_XPATH_ENABLED)",
   "public_header": false,
-  "true_config_count": 375,
-  "false_config_count": 7,
+  "true_config_count": 376,
+  "false_config_count": 6,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -1973,7 +1973,6 @@
    "libxml2-2.14.1-targeted-18a1f1d365",
    "libxml2-2.14.1-targeted-6e49a35a9a",
    "libxml2-2.14.1-targeted-7eadeaf121",
-   "libxml2-2.14.1-targeted-9cd9472afb",
    "libxml2-2.14.1-targeted-e399903407",
    "libxml2-2.14.1-targeted-efd32e1e9d"
   ],
@@ -1987,8 +1986,8 @@
  "libxml2:(defined(LIBXML_RELAXNG_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "(defined(LIBXML_RELAXNG_ENABLED) || defined(LIBXML_SCHEMAS_ENABLED)) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 323,
-  "false_config_count": 8,
+  "true_config_count": 318,
+  "false_config_count": 13,
   "true_config_samples": [
    "libxml2-2.15.0-all-absent-defined",
    "libxml2-2.15.0-oracle",
@@ -2002,12 +2001,12 @@
   "false_config_samples": [
    "libxml2-2.15.0-all-defined-undef",
    "libxml2-2.15.0-targeted-18a1f1d365",
+   "libxml2-2.15.0-targeted-1fb1e67d50",
+   "libxml2-2.15.0-targeted-253c90890f",
    "libxml2-2.15.0-targeted-2752957c31",
-   "libxml2-2.15.0-targeted-748d6d9244",
-   "libxml2-2.15.0-targeted-7eadeaf121",
-   "libxml2-2.15.0-targeted-95b6530fe5",
-   "libxml2-2.15.0-targeted-9cae881985",
-   "libxml2-2.15.0-targeted-e399903407"
+   "libxml2-2.15.0-targeted-4808466a07",
+   "libxml2-2.15.0-targeted-690c30a410",
+   "libxml2-2.15.0-targeted-748d6d9244"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -2083,17 +2082,17 @@
  "libxml2:(defined(_MSC_VER) || defined(__MINGW32__)) && !defined(vsnprintf)": {
   "expression": "(defined(_MSC_VER) || defined(__MINGW32__)) && !defined(vsnprintf)",
   "public_header": false,
-  "true_config_count": 11,
-  "false_config_count": 2225,
+  "true_config_count": 13,
+  "false_config_count": 2223,
   "true_config_samples": [
+   "libxml2-2.7.8-targeted-05f2d7b374",
+   "libxml2-2.7.8-targeted-09a1aa7383",
    "libxml2-2.7.8-targeted-28ad75eebb",
    "libxml2-2.7.8-targeted-4b134f15d1",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-669b21eebf",
    "libxml2-2.7.8-targeted-69cde5d030",
-   "libxml2-2.7.8-targeted-7f6dad2b17",
-   "libxml2-2.7.8-targeted-8d96850142",
-   "libxml2-2.7.8-targeted-942eb5209e"
+   "libxml2-2.7.8-targeted-7f6dad2b17"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -2179,8 +2178,8 @@
  "libxml2:(defined(__STDC_ISO_10646__) || defined(MB_LEN_MAX) || defined(USE_MULTIBYTE) || TRIO_WIDECHAR) && !defined(_WIN32_WCE)": {
   "expression": "(defined(__STDC_ISO_10646__) || defined(MB_LEN_MAX) || defined(USE_MULTIBYTE) || TRIO_WIDECHAR) && !defined(_WIN32_WCE)",
   "public_header": false,
-  "true_config_count": 13346,
-  "false_config_count": 53,
+  "true_config_count": 13354,
+  "false_config_count": 45,
   "true_config_samples": [
    "libxml2-2.10.4-oracle",
    "libxml2-2.10.4-targeted-01d92cccce",
@@ -2196,10 +2195,10 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-0e2054069d",
    "libxml2-2.10.4-targeted-57e84ea48c",
-   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-95a8f6b257",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-all-defined-undef"
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-0e2054069d"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -6845,8 +6844,8 @@
  "libxml2:HAVE_FUNC_ATTRIBUTE_DESTRUCTOR": {
   "expression": "HAVE_FUNC_ATTRIBUTE_DESTRUCTOR",
   "public_header": false,
-  "true_config_count": 707,
-  "false_config_count": 6,
+  "true_config_count": 705,
+  "false_config_count": 8,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -6859,9 +6858,11 @@
   ],
   "false_config_samples": [
    "libxml2-2.14.1-all-defined-undef",
+   "libxml2-2.14.1-targeted-48411c4e2c",
    "libxml2-2.14.1-targeted-8e26438ac1",
    "libxml2-2.14.1-values-extreme-lo",
    "libxml2-2.15.0-all-defined-undef",
+   "libxml2-2.15.0-targeted-48411c4e2c",
    "libxml2-2.15.0-targeted-8e26438ac1",
    "libxml2-2.15.0-values-extreme-lo"
   ],
@@ -9258,6 +9259,38 @@
  "libxml2:LIBXML_C14N_ENABLED": {
   "expression": "LIBXML_C14N_ENABLED",
   "public_header": true,
+  "true_config_count": 14940,
+  "false_config_count": 28,
+  "true_config_samples": [
+   "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-oracle",
+   "libxml2-2.10.4-targeted-01d92cccce",
+   "libxml2-2.10.4-targeted-02124543c6",
+   "libxml2-2.10.4-targeted-03788bcb0f",
+   "libxml2-2.10.4-targeted-03a9cfb53c",
+   "libxml2-2.10.4-targeted-0427eb52ff",
+   "libxml2-2.10.4-targeted-056097eaad"
+  ],
+  "false_config_samples": [
+   "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-76493b4c7a",
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-76493b4c7a",
+   "libxml2-2.12.6-all-defined-undef",
+   "libxml2-2.12.6-targeted-76493b4c7a",
+   "libxml2-2.12.6-targeted-77592921c4",
+   "libxml2-2.13.0-all-defined-undef"
+  ],
+  "config_kinds_exercised": [
+   "lattice",
+   "oracle",
+   "targeted"
+  ],
+  "covered": true
+ },
+ "libxml2:LIBXML_CATALOG_ENABLED": {
+  "expression": "LIBXML_CATALOG_ENABLED",
+  "public_header": true,
   "true_config_count": 14933,
   "false_config_count": 35,
   "true_config_samples": [
@@ -9272,45 +9305,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-76493b4c7a",
-   "libxml2-2.10.4-targeted-aa1e2f5d36",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-76493b4c7a",
-   "libxml2-2.11.5-targeted-aa1e2f5d36",
-   "libxml2-2.12.6-all-defined-undef",
-   "libxml2-2.12.6-targeted-76493b4c7a"
-  ],
-  "config_kinds_exercised": [
-   "lattice",
-   "oracle",
-   "targeted"
-  ],
-  "covered": true
- },
- "libxml2:LIBXML_CATALOG_ENABLED": {
-  "expression": "LIBXML_CATALOG_ENABLED",
-  "public_header": true,
-  "true_config_count": 14921,
-  "false_config_count": 47,
-  "true_config_samples": [
-   "libxml2-2.10.4-all-absent-defined",
-   "libxml2-2.10.4-oracle",
-   "libxml2-2.10.4-targeted-01d92cccce",
-   "libxml2-2.10.4-targeted-02124543c6",
-   "libxml2-2.10.4-targeted-03788bcb0f",
-   "libxml2-2.10.4-targeted-03a9cfb53c",
-   "libxml2-2.10.4-targeted-0427eb52ff",
-   "libxml2-2.10.4-targeted-056097eaad"
-  ],
-  "false_config_samples": [
-   "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-861d05ad6f",
    "libxml2-2.10.4-targeted-f635bf1e7e",
    "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-1fb1e67d50",
    "libxml2-2.11.5-targeted-861d05ad6f",
-   "libxml2-2.11.5-targeted-f635bf1e7e"
+   "libxml2-2.11.5-targeted-f635bf1e7e",
+   "libxml2-2.12.6-all-defined-undef",
+   "libxml2-2.12.6-targeted-861d05ad6f"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9322,8 +9323,8 @@
  "libxml2:LIBXML_DEBUG_ENABLED": {
   "expression": "LIBXML_DEBUG_ENABLED",
   "public_header": true,
-  "true_config_count": 14918,
-  "false_config_count": 50,
+  "true_config_count": 14886,
+  "false_config_count": 82,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9337,12 +9338,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ddf933b8",
+   "libxml2-2.10.4-targeted-6925abe3c8",
+   "libxml2-2.10.4-targeted-727a5988e2",
+   "libxml2-2.10.4-targeted-9cd9472afb",
    "libxml2-2.10.4-targeted-d5eb267e60",
    "libxml2-2.10.4-targeted-d9bc925c86",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-15ddf933b8",
-   "libxml2-2.11.5-targeted-d5eb267e60",
-   "libxml2-2.11.5-targeted-d9bc925c86"
+   "libxml2-2.11.5-all-defined-undef"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9514,8 +9515,8 @@
  "libxml2:LIBXML_HTML_ENABLED": {
   "expression": "LIBXML_HTML_ENABLED",
   "public_header": true,
-  "true_config_count": 14865,
-  "false_config_count": 103,
+  "true_config_count": 14864,
+  "false_config_count": 104,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9528,11 +9529,11 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1ba16c72f1",
    "libxml2-2.10.4-targeted-6597417480",
    "libxml2-2.10.4-targeted-76d9f5d43a",
    "libxml2-2.10.4-targeted-a5fbd71980",
    "libxml2-2.10.4-targeted-b4b54ce387",
-   "libxml2-2.10.4-targeted-d1bed035d5",
    "libxml2-2.10.4-targeted-e8e6637ed4",
    "libxml2-2.10.4-targeted-efae98241b"
   ],
@@ -9700,8 +9701,8 @@
  "libxml2:LIBXML_LEGACY_ENABLED": {
   "expression": "LIBXML_LEGACY_ENABLED",
   "public_header": true,
-  "true_config_count": 11417,
-  "false_config_count": 2838,
+  "true_config_count": 11419,
+  "false_config_count": 2836,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-186c2c551d",
@@ -9796,8 +9797,8 @@
  "libxml2:LIBXML_OUTPUT_ENABLED": {
   "expression": "LIBXML_OUTPUT_ENABLED",
   "public_header": true,
-  "true_config_count": 14918,
-  "false_config_count": 50,
+  "true_config_count": 14825,
+  "false_config_count": 143,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9810,13 +9811,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-2752957c31",
-   "libxml2-2.11.5-targeted-748d6d9244",
-   "libxml2-2.11.5-targeted-9cae881985"
+   "libxml2-2.10.4-targeted-9cae881985"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9828,8 +9829,8 @@
  "libxml2:LIBXML_PATTERN_ENABLED": {
   "expression": "LIBXML_PATTERN_ENABLED",
   "public_header": true,
-  "true_config_count": 14933,
-  "false_config_count": 35,
+  "true_config_count": 14921,
+  "false_config_count": 47,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9843,12 +9844,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-4718b8a4bc",
+   "libxml2-2.10.4-targeted-8f37b27e81",
    "libxml2-2.10.4-targeted-dc1cf3d807",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-4718b8a4bc",
-   "libxml2-2.11.5-targeted-dc1cf3d807",
-   "libxml2-2.12.6-all-defined-undef",
-   "libxml2-2.12.6-targeted-4718b8a4bc"
+   "libxml2-2.11.5-targeted-8f37b27e81",
+   "libxml2-2.11.5-targeted-dc1cf3d807"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9860,8 +9861,8 @@
  "libxml2:LIBXML_PUSH_ENABLED": {
   "expression": "LIBXML_PUSH_ENABLED",
   "public_header": true,
-  "true_config_count": 14911,
-  "false_config_count": 57,
+  "true_config_count": 14928,
+  "false_config_count": 40,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9874,13 +9875,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-1ba16c72f1",
    "libxml2-2.10.4-targeted-659e9a3a43",
    "libxml2-2.10.4-targeted-70404c6254",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-1b5dee06ae",
-   "libxml2-2.11.5-targeted-1ba16c72f1",
-   "libxml2-2.11.5-targeted-659e9a3a43"
+   "libxml2-2.11.5-targeted-659e9a3a43",
+   "libxml2-2.11.5-targeted-70404c6254",
+   "libxml2-2.12.6-all-defined-undef"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9892,8 +9893,8 @@
  "libxml2:LIBXML_READER_ENABLED": {
   "expression": "LIBXML_READER_ENABLED",
   "public_header": true,
-  "true_config_count": 14881,
-  "false_config_count": 87,
+  "true_config_count": 14923,
+  "false_config_count": 45,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9906,13 +9907,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-821fe50d10",
    "libxml2-2.10.4-targeted-8620e1cf3c",
-   "libxml2-2.10.4-targeted-8f37b27e81",
    "libxml2-2.10.4-targeted-8f46e035d0",
-   "libxml2-2.10.4-targeted-ab5fb1a9b6",
-   "libxml2-2.10.4-targeted-b909979c8b"
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-821fe50d10",
+   "libxml2-2.11.5-targeted-8620e1cf3c",
+   "libxml2-2.11.5-targeted-8f46e035d0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9924,8 +9925,8 @@
  "libxml2:LIBXML_REGEXP_ENABLED": {
   "expression": "LIBXML_REGEXP_ENABLED",
   "public_header": true,
-  "true_config_count": 14919,
-  "false_config_count": 49,
+  "true_config_count": 14908,
+  "false_config_count": 60,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -9940,11 +9941,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-2745850e5a",
    "libxml2-2.10.4-targeted-60b15ae038",
+   "libxml2-2.10.4-targeted-673cb4d56e",
    "libxml2-2.10.4-targeted-d53d756443",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-2745850e5a",
-   "libxml2-2.11.5-targeted-60b15ae038",
-   "libxml2-2.11.5-targeted-d53d756443"
+   "libxml2-2.11.5-targeted-60b15ae038"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -9988,8 +9989,8 @@
  "libxml2:LIBXML_SAX1_ENABLED": {
   "expression": "LIBXML_SAX1_ENABLED",
   "public_header": true,
-  "true_config_count": 14870,
-  "false_config_count": 98,
+  "true_config_count": 14882,
+  "false_config_count": 86,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -10002,13 +10003,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-4808466a07",
    "libxml2-2.10.4-targeted-a7020a1ef0",
    "libxml2-2.10.4-targeted-b3cb02c327",
    "libxml2-2.10.4-targeted-e7ddd0aca5",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-1b5dee06ae",
-   "libxml2-2.11.5-targeted-4808466a07"
+   "libxml2-2.11.5-targeted-4da7438cdf",
+   "libxml2-2.11.5-targeted-a7020a1ef0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -10036,9 +10037,9 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-3397159592",
+   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-678610b8fa",
-   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-6cbb19cce7",
    "libxml2-2.10.4-targeted-76d9f5d43a"
   ],
@@ -10206,8 +10207,8 @@
  "libxml2:LIBXML_TREE_ENABLED": {
   "expression": "LIBXML_TREE_ENABLED",
   "public_header": true,
-  "true_config_count": 14132,
-  "false_config_count": 123,
+  "true_config_count": 14142,
+  "false_config_count": 113,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -10222,11 +10223,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-2f833028a2",
-   "libxml2-2.10.4-targeted-4f3a3c4664",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-76d9f5d43a",
    "libxml2-2.10.4-targeted-79c78308d6",
-   "libxml2-2.10.4-targeted-9362dd157c"
+   "libxml2-2.10.4-targeted-9362dd157c",
+   "libxml2-2.10.4-targeted-a5fbd71980"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -10270,8 +10271,8 @@
  "libxml2:LIBXML_VALID_ENABLED": {
   "expression": "LIBXML_VALID_ENABLED",
   "public_header": true,
-  "true_config_count": 14875,
-  "false_config_count": 93,
+  "true_config_count": 14897,
+  "false_config_count": 71,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -10286,11 +10287,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-2e6b18f494",
    "libxml2-2.10.4-targeted-3397159592",
-   "libxml2-2.10.4-targeted-673cb4d56e",
-   "libxml2-2.10.4-targeted-727a5988e2",
    "libxml2-2.10.4-targeted-ca17d890be",
    "libxml2-2.10.4-targeted-e8e6637ed4",
-   "libxml2-2.11.5-all-defined-undef"
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-1b5dee06ae",
+   "libxml2-2.11.5-targeted-2e6b18f494"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -10302,8 +10303,8 @@
  "libxml2:LIBXML_WRITER_ENABLED": {
   "expression": "LIBXML_WRITER_ENABLED",
   "public_header": true,
-  "true_config_count": 14913,
-  "false_config_count": 55,
+  "true_config_count": 14908,
+  "false_config_count": 60,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -10366,8 +10367,8 @@
  "libxml2:LIBXML_XPATH_ENABLED": {
   "expression": "LIBXML_XPATH_ENABLED",
   "public_header": true,
-  "true_config_count": 14874,
-  "false_config_count": 94,
+  "true_config_count": 14904,
+  "false_config_count": 64,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -10382,11 +10383,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
-   "libxml2-2.10.4-targeted-6925abe3c8",
    "libxml2-2.10.4-targeted-7eadeaf121",
-   "libxml2-2.10.4-targeted-9cd9472afb",
-   "libxml2-2.10.4-targeted-eb8a149d7f",
-   "libxml2-2.10.4-targeted-efd32e1e9d"
+   "libxml2-2.10.4-targeted-efd32e1e9d",
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-15ee75bf91",
+   "libxml2-2.11.5-targeted-18a1f1d365"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -12266,17 +12267,17 @@
  "libxml2:TRIO_BSD": {
   "expression": "TRIO_BSD",
   "public_header": false,
-  "true_config_count": 24,
-  "false_config_count": 13375,
+  "true_config_count": 16,
+  "false_config_count": 13383,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-4f4453efd0",
-   "libxml2-2.10.4-targeted-57dcec3145",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-4f4453efd0",
-   "libxml2-2.11.5-targeted-57dcec3145",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-4f4453efd0"
+   "libxml2-2.12.6-targeted-4f4453efd0",
+   "libxml2-2.7.8-all-absent-defined",
+   "libxml2-2.7.8-targeted-4f4453efd0"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -12458,17 +12459,17 @@
  "libxml2:TRIO_GNU": {
   "expression": "TRIO_GNU",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 13383,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-57dcec3145",
    "libxml2-2.10.4-targeted-dd55e05913",
    "libxml2-2.11.5-all-absent-defined",
+   "libxml2-2.11.5-targeted-57dcec3145",
    "libxml2-2.11.5-targeted-dd55e05913",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-dd55e05913",
-   "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-dd55e05913"
+   "libxml2-2.12.6-targeted-57dcec3145"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -14800,8 +14801,8 @@
  "libxml2:_MSC_VER": {
   "expression": "_MSC_VER",
   "public_header": true,
-  "true_config_count": 76,
-  "false_config_count": 14561,
+  "true_config_count": 77,
+  "false_config_count": 14560,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-4b134f15d1",
@@ -14832,8 +14833,8 @@
  "libxml2:_MSC_VER < 1500": {
   "expression": "_MSC_VER < 1500",
   "public_header": true,
-  "true_config_count": 14600,
-  "false_config_count": 37,
+  "true_config_count": 14599,
+  "false_config_count": 38,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-all-defined-undef",
@@ -14864,8 +14865,8 @@
  "libxml2:_MSC_VER < 1900": {
   "expression": "_MSC_VER < 1900",
   "public_header": true,
-  "true_config_count": 10117,
-  "false_config_count": 35,
+  "true_config_count": 10116,
+  "false_config_count": 36,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-all-defined-undef",
@@ -14926,17 +14927,17 @@
  "libxml2:_MSC_VER >= 1900": {
   "expression": "_MSC_VER >= 1900",
   "public_header": false,
-  "true_config_count": 10,
-  "false_config_count": 703,
+  "true_config_count": 12,
+  "false_config_count": 701,
   "true_config_samples": [
+   "libxml2-2.14.1-targeted-1f79efe4ea",
    "libxml2-2.14.1-targeted-669b21eebf",
    "libxml2-2.14.1-targeted-6a8f62678e",
    "libxml2-2.14.1-targeted-6c885bb01f",
    "libxml2-2.14.1-targeted-7990af4682",
    "libxml2-2.14.1-targeted-9ff291900f",
    "libxml2-2.14.1-targeted-a73c249e19",
-   "libxml2-2.15.0-targeted-6c885bb01f",
-   "libxml2-2.15.0-targeted-7990af4682"
+   "libxml2-2.15.0-targeted-1f79efe4ea"
   ],
   "false_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
@@ -15396,8 +15397,8 @@
  "libxml2:__GNUC__": {
   "expression": "__GNUC__",
   "public_header": true,
-  "true_config_count": 14891,
-  "false_config_count": 77,
+  "true_config_count": 14892,
+  "false_config_count": 76,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -15838,8 +15839,8 @@
  "libxml2:__STDC_VERSION__ >= 199901L": {
   "expression": "__STDC_VERSION__ >= 199901L",
   "public_header": false,
-  "true_config_count": 21,
-  "false_config_count": 8146,
+  "true_config_count": 19,
+  "false_config_count": 8148,
   "true_config_samples": [
    "libxml2-2.10.4-targeted-106ec105fd",
    "libxml2-2.10.4-targeted-5512468e29",
@@ -17532,8 +17533,8 @@
  "libxml2:__linux__": {
   "expression": "__linux__",
   "public_header": false,
-  "true_config_count": 4617,
-  "false_config_count": 12,
+  "true_config_count": 4619,
+  "false_config_count": 10,
   "true_config_samples": [
    "libxml2-2.9.10-all-absent-defined",
    "libxml2-2.9.10-oracle",
@@ -17549,10 +17550,10 @@
    "libxml2-2.9.10-targeted-27a581c577",
    "libxml2-2.9.10-targeted-91116b7be8",
    "libxml2-2.9.10-targeted-9ec2a97754",
-   "libxml2-2.9.10-targeted-d59221bcf2",
    "libxml2-2.9.10-values-extreme-lo",
    "libxml2-2.9.14-all-defined-undef",
-   "libxml2-2.9.14-targeted-27a581c577"
+   "libxml2-2.9.14-targeted-27a581c577",
+   "libxml2-2.9.14-targeted-91116b7be8"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -19002,8 +19003,8 @@
  "libxml2:defined (_MSC_VER) && (_MSC_VER >= 1400)": {
   "expression": "defined (_MSC_VER) && (_MSC_VER >= 1400)",
   "public_header": false,
-  "true_config_count": 34,
-  "false_config_count": 2833,
+  "true_config_count": 36,
+  "false_config_count": 2831,
   "true_config_samples": [
    "libxml2-2.11.5-targeted-669b21eebf",
    "libxml2-2.11.5-targeted-6a8f62678e",
@@ -19034,8 +19035,8 @@
  "libxml2:defined (_MSC_VER) || defined(__BORLANDC__)": {
   "expression": "defined (_MSC_VER) || defined(__BORLANDC__)",
   "public_header": false,
-  "true_config_count": 46,
-  "false_config_count": 6755,
+  "true_config_count": 47,
+  "false_config_count": 6754,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-05f2d7b374",
@@ -19066,8 +19067,8 @@
  "libxml2:defined (_WIN32)": {
   "expression": "defined (_WIN32)",
   "public_header": false,
-  "true_config_count": 46,
-  "false_config_count": 2779,
+  "true_config_count": 47,
+  "false_config_count": 2778,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-49b52e1253",
@@ -19076,7 +19077,7 @@
    "libxml2-2.10.4-targeted-7a8ea33c4d",
    "libxml2-2.10.4-targeted-a6cfb5667a",
    "libxml2-2.10.4-targeted-ad495647e7",
-   "libxml2-2.10.4-targeted-dd137005d4"
+   "libxml2-2.10.4-targeted-de99dd3775"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -19098,17 +19099,17 @@
  "libxml2:defined (_WIN32) && !defined(__CYGWIN__)": {
   "expression": "defined (_WIN32) && !defined(__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 38,
-  "false_config_count": 6763,
+  "true_config_count": 32,
+  "false_config_count": 6769,
   "true_config_samples": [
-   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-57bda023ac",
    "libxml2-2.7.8-targeted-7a8ea33c4d",
    "libxml2-2.7.8-targeted-94215fde4f",
    "libxml2-2.7.8-targeted-942eb5209e",
    "libxml2-2.7.8-targeted-a34e3407ec",
-   "libxml2-2.7.8-targeted-a6cfb5667a"
+   "libxml2-2.7.8-targeted-a6cfb5667a",
+   "libxml2-2.7.8-targeted-ad495647e7"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -19130,17 +19131,17 @@
  "libxml2:defined (_WIN32) || defined (__DJGPP__) && !defined(__CYGWIN__)": {
   "expression": "defined (_WIN32) || defined (__DJGPP__) && !defined(__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 79,
-  "false_config_count": 11351,
+  "true_config_count": 71,
+  "false_config_count": 11359,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-18a6a6ad27",
    "libxml2-2.7.8-targeted-34236f0d9a",
-   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-57bda023ac",
    "libxml2-2.7.8-targeted-7a8ea33c4d",
-   "libxml2-2.7.8-targeted-94215fde4f"
+   "libxml2-2.7.8-targeted-94215fde4f",
+   "libxml2-2.7.8-targeted-942eb5209e"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -19290,17 +19291,17 @@
  "libxml2:defined WIN32": {
   "expression": "defined WIN32",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 6785,
+  "true_config_count": 19,
+  "false_config_count": 6782,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
+   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-3bf08e6fc1",
    "libxml2-2.7.8-targeted-621251a990",
    "libxml2-2.7.8-targeted-9866c96adc",
    "libxml2-2.7.8-targeted-e912444175",
    "libxml2-2.8.0-all-absent-defined",
-   "libxml2-2.8.0-targeted-3bf08e6fc1",
-   "libxml2-2.8.0-targeted-621251a990"
+   "libxml2-2.8.0-targeted-35310ffecf"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -19386,17 +19387,17 @@
  "libxml2:defined( __MINGW32__ ) || defined( _MSC_VER )": {
   "expression": "defined( __MINGW32__ ) || defined( _MSC_VER )",
   "public_header": true,
-  "true_config_count": 29,
-  "false_config_count": 4536,
+  "true_config_count": 33,
+  "false_config_count": 4532,
   "true_config_samples": [
    "libxml2-2.8.0-all-absent-defined",
+   "libxml2-2.8.0-targeted-05f2d7b374",
+   "libxml2-2.8.0-targeted-09a1aa7383",
    "libxml2-2.8.0-targeted-28ad75eebb",
    "libxml2-2.8.0-targeted-353a65903d",
    "libxml2-2.8.0-targeted-4b134f15d1",
    "libxml2-2.8.0-targeted-4c7b991db4",
-   "libxml2-2.8.0-targeted-4fedf08a22",
-   "libxml2-2.8.0-targeted-669b21eebf",
-   "libxml2-2.8.0-targeted-69cde5d030"
+   "libxml2-2.8.0-targeted-4fedf08a22"
   ],
   "false_config_samples": [
    "libxml2-2.8.0-all-defined-undef",
@@ -19450,17 +19451,17 @@
  "libxml2:defined(DEBUG) || defined(DEBUG_STEP)": {
   "expression": "defined(DEBUG) || defined(DEBUG_STEP)",
   "public_header": false,
-  "true_config_count": 28,
-  "false_config_count": 12753,
+  "true_config_count": 35,
+  "false_config_count": 12746,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-312a2ca8c8",
    "libxml2-2.10.4-targeted-3f8aa57a4d",
+   "libxml2-2.10.4-targeted-d574366af9",
    "libxml2-2.10.4-targeted-dc30ec2070",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-312a2ca8c8",
-   "libxml2-2.11.5-targeted-3f8aa57a4d",
-   "libxml2-2.11.5-targeted-dc30ec2070"
+   "libxml2-2.11.5-targeted-3f8aa57a4d"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -19795,8 +19796,8 @@
  "libxml2:defined(HAVE_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_STATIC) && !defined(_WIN32)": {
   "expression": "defined(HAVE_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_STATIC) && !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 3622,
-  "false_config_count": 47,
+  "true_config_count": 3624,
+  "false_config_count": 45,
   "true_config_samples": [
    "libxml2-2.10.4-oracle",
    "libxml2-2.10.4-targeted-01d92cccce",
@@ -19827,8 +19828,8 @@
  "libxml2:defined(HAVE_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && !defined(LIBXML_STATIC) && !defined(_WIN32)": {
   "expression": "defined(HAVE_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && !defined(LIBXML_STATIC) && !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 1429,
-  "false_config_count": 45,
+  "true_config_count": 1428,
+  "false_config_count": 46,
   "true_config_samples": [
    "libxml2-2.12.6-oracle",
    "libxml2-2.12.6-targeted-01a0e5e596",
@@ -19842,12 +19843,12 @@
   "false_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
    "libxml2-2.12.6-all-defined-undef",
+   "libxml2-2.12.6-targeted-305570c203",
    "libxml2-2.12.6-targeted-30d301b9a9",
    "libxml2-2.12.6-targeted-3bb1b13d45",
    "libxml2-2.12.6-targeted-49b52e1253",
    "libxml2-2.12.6-targeted-4c7b991db4",
-   "libxml2-2.12.6-targeted-4dab0c6ecc",
-   "libxml2-2.12.6-targeted-57bda023ac"
+   "libxml2-2.12.6-targeted-4dab0c6ecc"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -19921,8 +19922,8 @@
  "libxml2:defined(HAVE_DLOPEN) && !defined(_WIN32)": {
   "expression": "defined(HAVE_DLOPEN) && !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 14829,
-  "false_config_count": 139,
+  "true_config_count": 14834,
+  "false_config_count": 134,
   "true_config_samples": [
    "libxml2-2.10.4-oracle",
    "libxml2-2.10.4-targeted-01d92cccce",
@@ -19953,8 +19954,8 @@
  "libxml2:defined(HAVE_FUNC_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && !defined(LIBXML_STATIC) && !defined(_WIN32)": {
   "expression": "defined(HAVE_FUNC_ATTRIBUTE_DESTRUCTOR) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && !defined(LIBXML_STATIC) && !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 690,
-  "false_config_count": 23,
+  "true_config_count": 688,
+  "false_config_count": 25,
   "true_config_samples": [
    "libxml2-2.14.1-oracle",
    "libxml2-2.14.1-targeted-01a0e5e596",
@@ -19968,12 +19969,12 @@
   "false_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-all-defined-undef",
+   "libxml2-2.14.1-targeted-305570c203",
    "libxml2-2.14.1-targeted-30d301b9a9",
    "libxml2-2.14.1-targeted-3bb1b13d45",
    "libxml2-2.14.1-targeted-48411c4e2c",
    "libxml2-2.14.1-targeted-49b52e1253",
-   "libxml2-2.14.1-targeted-57bda023ac",
-   "libxml2-2.14.1-targeted-7a8ea33c4d"
+   "libxml2-2.14.1-targeted-57bda023ac"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -20017,8 +20018,8 @@
  "libxml2:defined(HAVE_GETADDRINFO) && defined(SUPPORT_IP6) && !defined(_WIN32)": {
   "expression": "defined(HAVE_GETADDRINFO) && defined(SUPPORT_IP6) && !defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 11998,
-  "false_config_count": 103,
+  "true_config_count": 12007,
+  "false_config_count": 94,
   "true_config_samples": [
    "libxml2-2.10.4-oracle",
    "libxml2-2.10.4-targeted-01d92cccce",
@@ -20141,17 +20142,17 @@
  "libxml2:defined(HAVE_HTML_FUZZER) || defined(HAVE_XML_FUZZER)": {
   "expression": "defined(HAVE_HTML_FUZZER) || defined(HAVE_XML_FUZZER)",
   "public_header": false,
-  "true_config_count": 8,
-  "false_config_count": 705,
+  "true_config_count": 10,
+  "false_config_count": 703,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
+   "libxml2-2.14.1-targeted-2007b17639",
    "libxml2-2.14.1-targeted-503a6de182",
    "libxml2-2.14.1-targeted-903b926c46",
    "libxml2-2.14.1-targeted-994e09d852",
    "libxml2-2.15.0-all-absent-defined",
-   "libxml2-2.15.0-targeted-503a6de182",
-   "libxml2-2.15.0-targeted-903b926c46",
-   "libxml2-2.15.0-targeted-994e09d852"
+   "libxml2-2.15.0-targeted-2007b17639",
+   "libxml2-2.15.0-targeted-503a6de182"
   ],
   "false_config_samples": [
    "libxml2-2.14.1-all-defined-undef",
@@ -20459,15 +20460,13 @@
  "libxml2:defined(HAVE_SCHEMA_FUZZER)": {
   "expression": "defined(HAVE_SCHEMA_FUZZER)",
   "public_header": false,
-  "true_config_count": 8,
-  "false_config_count": 705,
+  "true_config_count": 6,
+  "false_config_count": 707,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
-   "libxml2-2.14.1-targeted-2007b17639",
    "libxml2-2.14.1-targeted-716fb37567",
    "libxml2-2.14.1-targeted-f5f5dd6207",
    "libxml2-2.15.0-all-absent-defined",
-   "libxml2-2.15.0-targeted-2007b17639",
    "libxml2-2.15.0-targeted-716fb37567",
    "libxml2-2.15.0-targeted-f5f5dd6207"
   ],
@@ -20491,17 +20490,17 @@
  "libxml2:defined(HAVE_SCHEMA_FUZZER) || defined(HAVE_XML_FUZZER)": {
   "expression": "defined(HAVE_SCHEMA_FUZZER) || defined(HAVE_XML_FUZZER)",
   "public_header": false,
-  "true_config_count": 30,
-  "false_config_count": 2837,
+  "true_config_count": 26,
+  "false_config_count": 2841,
   "true_config_samples": [
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-2007b17639",
-   "libxml2-2.11.5-targeted-5820ed8709",
    "libxml2-2.11.5-targeted-903b926c46",
    "libxml2-2.11.5-targeted-f5f5dd6207",
    "libxml2-2.12.6-all-absent-defined",
    "libxml2-2.12.6-targeted-2007b17639",
-   "libxml2-2.12.6-targeted-5820ed8709"
+   "libxml2-2.12.6-targeted-903b926c46",
+   "libxml2-2.12.6-targeted-f5f5dd6207"
   ],
   "false_config_samples": [
    "libxml2-2.11.5-all-defined-undef",
@@ -20923,8 +20922,8 @@
  "libxml2:defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 12739,
-  "false_config_count": 42,
+  "true_config_count": 12687,
+  "false_config_count": 94,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -20937,13 +20936,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-76493b4c7a",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.10.4-targeted-aa1e2f5d36",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-2752957c31"
+   "libxml2-2.10.4-targeted-76493b4c7a"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -20955,8 +20954,8 @@
  "libxml2:defined(LIBXML_CATALOG_ENABLED)": {
   "expression": "defined(LIBXML_CATALOG_ENABLED)",
   "public_header": false,
-  "true_config_count": 14593,
-  "false_config_count": 44,
+  "true_config_count": 14604,
+  "false_config_count": 33,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -20969,13 +20968,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-861d05ad6f",
    "libxml2-2.10.4-targeted-f635bf1e7e",
    "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-1fb1e67d50",
    "libxml2-2.11.5-targeted-861d05ad6f",
-   "libxml2-2.11.5-targeted-f635bf1e7e"
+   "libxml2-2.11.5-targeted-f635bf1e7e",
+   "libxml2-2.12.6-all-defined-undef",
+   "libxml2-2.12.6-targeted-861d05ad6f"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -20987,8 +20986,8 @@
  "libxml2:defined(LIBXML_CATALOG_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_CATALOG_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14883,
-  "false_config_count": 85,
+  "true_config_count": 14802,
+  "false_config_count": 166,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21003,11 +21002,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-861d05ad6f",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.10.4-targeted-f635bf1e7e",
-   "libxml2-2.11.5-all-defined-undef"
+   "libxml2-2.10.4-targeted-861d05ad6f"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21019,8 +21018,8 @@
  "libxml2:defined(LIBXML_DEBUG_ENABLED)": {
   "expression": "defined(LIBXML_DEBUG_ENABLED)",
   "public_header": false,
-  "true_config_count": 14589,
-  "false_config_count": 48,
+  "true_config_count": 14557,
+  "false_config_count": 80,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21034,12 +21033,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ddf933b8",
+   "libxml2-2.10.4-targeted-6925abe3c8",
+   "libxml2-2.10.4-targeted-727a5988e2",
+   "libxml2-2.10.4-targeted-9cd9472afb",
    "libxml2-2.10.4-targeted-d5eb267e60",
    "libxml2-2.10.4-targeted-d9bc925c86",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-15ddf933b8",
-   "libxml2-2.11.5-targeted-d5eb267e60",
-   "libxml2-2.11.5-targeted-d9bc925c86"
+   "libxml2-2.11.5-all-defined-undef"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21069,9 +21068,9 @@
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
    "libxml2-2.10.4-targeted-6925abe3c8",
+   "libxml2-2.10.4-targeted-727a5988e2",
    "libxml2-2.10.4-targeted-7eadeaf121",
-   "libxml2-2.10.4-targeted-9cd9472afb",
-   "libxml2-2.10.4-targeted-d5eb267e60"
+   "libxml2-2.10.4-targeted-9cd9472afb"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21083,8 +21082,8 @@
  "libxml2:defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14110,
-  "false_config_count": 145,
+  "true_config_count": 14027,
+  "false_config_count": 228,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21100,10 +21099,10 @@
    "libxml2-2.10.4-targeted-15ddf933b8",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
-   "libxml2-2.10.4-targeted-6925abe3c8",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-7eadeaf121"
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21115,8 +21114,8 @@
  "libxml2:defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_VALID_ENABLED)": {
   "expression": "defined(LIBXML_DEBUG_ENABLED) && defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_VALID_ENABLED)",
   "public_header": false,
-  "true_config_count": 14071,
-  "false_config_count": 184,
+  "true_config_count": 14092,
+  "false_config_count": 163,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21134,8 +21133,8 @@
    "libxml2-2.10.4-targeted-18a1f1d365",
    "libxml2-2.10.4-targeted-2e6b18f494",
    "libxml2-2.10.4-targeted-3397159592",
-   "libxml2-2.10.4-targeted-673cb4d56e",
-   "libxml2-2.10.4-targeted-6925abe3c8"
+   "libxml2-2.10.4-targeted-6925abe3c8",
+   "libxml2-2.10.4-targeted-727a5988e2"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21179,8 +21178,8 @@
  "libxml2:defined(LIBXML_DOCB_ENABLED) && defined(LIBXML_LEGACY_ENABLED) && defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_DOCB_ENABLED) && defined(LIBXML_LEGACY_ENABLED) && defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 11360,
-  "false_config_count": 70,
+  "true_config_count": 11367,
+  "false_config_count": 63,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-oracle",
@@ -21196,10 +21195,10 @@
    "libxml2-2.7.8-targeted-1395660734",
    "libxml2-2.7.8-targeted-186c2c551d",
    "libxml2-2.7.8-targeted-1b8492beae",
-   "libxml2-2.7.8-targeted-4808466a07",
    "libxml2-2.7.8-targeted-52d7514878",
-   "libxml2-2.7.8-targeted-53c9597d3c",
-   "libxml2-2.7.8-targeted-5e95cce3de"
+   "libxml2-2.7.8-targeted-5e95cce3de",
+   "libxml2-2.7.8-targeted-a7020a1ef0",
+   "libxml2-2.7.8-targeted-a8835b45f0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21275,8 +21274,8 @@
  "libxml2:defined(LIBXML_HTML_ENABLED)": {
   "expression": "defined(LIBXML_HTML_ENABLED)",
   "public_header": false,
-  "true_config_count": 14865,
-  "false_config_count": 103,
+  "true_config_count": 14864,
+  "false_config_count": 104,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21289,11 +21288,11 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1ba16c72f1",
    "libxml2-2.10.4-targeted-6597417480",
    "libxml2-2.10.4-targeted-76d9f5d43a",
    "libxml2-2.10.4-targeted-a5fbd71980",
    "libxml2-2.10.4-targeted-b4b54ce387",
-   "libxml2-2.10.4-targeted-d1bed035d5",
    "libxml2-2.10.4-targeted-e8e6637ed4",
    "libxml2-2.10.4-targeted-efae98241b"
   ],
@@ -21322,12 +21321,12 @@
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
    "libxml2-2.7.8-targeted-186c2c551d",
+   "libxml2-2.7.8-targeted-1ba16c72f1",
    "libxml2-2.7.8-targeted-53c9597d3c",
    "libxml2-2.7.8-targeted-6597417480",
    "libxml2-2.7.8-targeted-76d9f5d43a",
    "libxml2-2.7.8-targeted-a5fbd71980",
-   "libxml2-2.7.8-targeted-a8835b45f0",
-   "libxml2-2.7.8-targeted-b4b54ce387"
+   "libxml2-2.7.8-targeted-a8835b45f0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21339,8 +21338,8 @@
  "libxml2:defined(LIBXML_HTML_ENABLED) && defined(LIBXML_LEGACY_ENABLED) && defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_HTML_ENABLED) && defined(LIBXML_LEGACY_ENABLED) && defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 6900,
-  "false_config_count": 2014,
+  "true_config_count": 6903,
+  "false_config_count": 2011,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-186c2c551d",
@@ -21371,8 +21370,8 @@
  "libxml2:defined(LIBXML_HTML_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_HTML_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14506,
-  "false_config_count": 131,
+  "true_config_count": 14416,
+  "false_config_count": 221,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21385,13 +21384,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1ba16c72f1",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
    "libxml2-2.10.4-targeted-6597417480",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-76d9f5d43a",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.10.4-targeted-a5fbd71980",
-   "libxml2-2.10.4-targeted-b4b54ce387"
+   "libxml2-2.10.4-targeted-6985860ff5"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21403,8 +21402,8 @@
  "libxml2:defined(LIBXML_HTML_ENABLED) && defined(LIBXML_PUSH_ENABLED)": {
   "expression": "defined(LIBXML_HTML_ENABLED) && defined(LIBXML_PUSH_ENABLED)",
   "public_header": false,
-  "true_config_count": 14820,
-  "false_config_count": 148,
+  "true_config_count": 14836,
+  "false_config_count": 132,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21435,8 +21434,8 @@
  "libxml2:defined(LIBXML_HTML_ENABLED) && defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_HTML_ENABLED) && defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 2783,
-  "false_config_count": 84,
+  "true_config_count": 2790,
+  "false_config_count": 77,
   "true_config_samples": [
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-oracle",
@@ -21450,7 +21449,7 @@
   "false_config_samples": [
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-1b5dee06ae",
-   "libxml2-2.11.5-targeted-4808466a07",
+   "libxml2-2.11.5-targeted-1ba16c72f1",
    "libxml2-2.11.5-targeted-4da7438cdf",
    "libxml2-2.11.5-targeted-6597417480",
    "libxml2-2.11.5-targeted-76d9f5d43a",
@@ -21659,8 +21658,8 @@
  "libxml2:defined(LIBXML_LEGACY_ENABLED)": {
   "expression": "defined(LIBXML_LEGACY_ENABLED)",
   "public_header": false,
-  "true_config_count": 11407,
-  "false_config_count": 23,
+  "true_config_count": 11409,
+  "false_config_count": 21,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-oracle",
@@ -21674,12 +21673,12 @@
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
    "libxml2-2.7.8-targeted-186c2c551d",
-   "libxml2-2.7.8-targeted-53c9597d3c",
    "libxml2-2.7.8-targeted-a8835b45f0",
    "libxml2-2.8.0-all-defined-undef",
    "libxml2-2.8.0-targeted-186c2c551d",
-   "libxml2-2.8.0-targeted-53c9597d3c",
-   "libxml2-2.8.0-targeted-a8835b45f0"
+   "libxml2-2.8.0-targeted-a8835b45f0",
+   "libxml2-2.9.10-all-defined-undef",
+   "libxml2-2.9.10-targeted-186c2c551d"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21755,8 +21754,8 @@
  "libxml2:defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14918,
-  "false_config_count": 50,
+  "true_config_count": 14825,
+  "false_config_count": 143,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21769,13 +21768,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-2752957c31",
-   "libxml2-2.11.5-targeted-748d6d9244",
-   "libxml2-2.11.5-targeted-9cae881985"
+   "libxml2-2.10.4-targeted-9cae881985"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21787,8 +21786,8 @@
  "libxml2:defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_HTML_ENABLED)": {
   "expression": "defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_HTML_ENABLED)",
   "public_header": false,
-  "true_config_count": 691,
-  "false_config_count": 22,
+  "true_config_count": 682,
+  "false_config_count": 31,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -21801,13 +21800,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.14.1-all-defined-undef",
+   "libxml2-2.14.1-targeted-1ba16c72f1",
+   "libxml2-2.14.1-targeted-1fb1e67d50",
    "libxml2-2.14.1-targeted-253c90890f",
    "libxml2-2.14.1-targeted-2752957c31",
+   "libxml2-2.14.1-targeted-4808466a07",
    "libxml2-2.14.1-targeted-6597417480",
-   "libxml2-2.14.1-targeted-6b0cf449b3",
-   "libxml2-2.14.1-targeted-748d6d9244",
-   "libxml2-2.14.1-targeted-9cae881985",
-   "libxml2-2.14.1-targeted-a5fbd71980"
+   "libxml2-2.14.1-targeted-690c30a410"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21851,8 +21850,8 @@
  "libxml2:defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_READER_ENABLED)": {
   "expression": "defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_READER_ENABLED)",
   "public_header": false,
-  "true_config_count": 668,
-  "false_config_count": 12,
+  "true_config_count": 662,
+  "false_config_count": 18,
   "true_config_samples": [
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-oracle",
@@ -21865,13 +21864,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-1fb1e67d50",
    "libxml2-2.11.5-targeted-2752957c31",
-   "libxml2-2.11.5-targeted-4fcf4a9b51",
+   "libxml2-2.11.5-targeted-4808466a07",
+   "libxml2-2.11.5-targeted-4f3a3c4664",
+   "libxml2-2.11.5-targeted-6985860ff5",
    "libxml2-2.11.5-targeted-748d6d9244",
-   "libxml2-2.11.5-targeted-821fe50d10",
-   "libxml2-2.11.5-targeted-8620e1cf3c",
-   "libxml2-2.11.5-targeted-8f37b27e81",
-   "libxml2-2.11.5-targeted-8f46e035d0"
+   "libxml2-2.11.5-targeted-821fe50d10"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21883,8 +21882,8 @@
  "libxml2:defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_READER_ENABLED) && defined(LIBXML_XINCLUDE_ENABLED)": {
   "expression": "defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_READER_ENABLED) && defined(LIBXML_XINCLUDE_ENABLED)",
   "public_header": false,
-  "true_config_count": 2957,
-  "false_config_count": 32,
+  "true_config_count": 2948,
+  "false_config_count": 41,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21897,13 +21896,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-23dd66c36c",
    "libxml2-2.10.4-targeted-2752957c31",
-   "libxml2-2.10.4-targeted-4fcf4a9b51",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-79c78308d6",
-   "libxml2-2.10.4-targeted-821fe50d10",
-   "libxml2-2.10.4-targeted-8620e1cf3c"
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
+   "libxml2-2.10.4-targeted-748d6d9244"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21915,8 +21914,8 @@
  "libxml2:defined(LIBXML_PATTERN_ENABLED)": {
   "expression": "defined(LIBXML_PATTERN_ENABLED)",
   "public_header": false,
-  "true_config_count": 14604,
-  "false_config_count": 33,
+  "true_config_count": 14593,
+  "false_config_count": 44,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21930,12 +21929,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-4718b8a4bc",
+   "libxml2-2.10.4-targeted-8f37b27e81",
    "libxml2-2.10.4-targeted-dc1cf3d807",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-4718b8a4bc",
-   "libxml2-2.11.5-targeted-dc1cf3d807",
-   "libxml2-2.12.6-all-defined-undef",
-   "libxml2-2.12.6-targeted-4718b8a4bc"
+   "libxml2-2.11.5-targeted-8f37b27e81",
+   "libxml2-2.11.5-targeted-dc1cf3d807"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21947,8 +21946,8 @@
  "libxml2:defined(LIBXML_PUSH_ENABLED)": {
   "expression": "defined(LIBXML_PUSH_ENABLED)",
   "public_header": false,
-  "true_config_count": 14584,
-  "false_config_count": 53,
+  "true_config_count": 14599,
+  "false_config_count": 38,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -21961,13 +21960,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-1ba16c72f1",
    "libxml2-2.10.4-targeted-659e9a3a43",
    "libxml2-2.10.4-targeted-70404c6254",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-1b5dee06ae",
-   "libxml2-2.11.5-targeted-1ba16c72f1",
-   "libxml2-2.11.5-targeted-659e9a3a43"
+   "libxml2-2.11.5-targeted-659e9a3a43",
+   "libxml2-2.11.5-targeted-70404c6254",
+   "libxml2-2.12.6-all-defined-undef"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -21979,8 +21978,8 @@
  "libxml2:defined(LIBXML_PUSH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_PUSH_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 2142,
-  "false_config_count": 45,
+  "true_config_count": 2118,
+  "false_config_count": 69,
   "true_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
    "libxml2-2.12.6-oracle",
@@ -21994,12 +21993,12 @@
   "false_config_samples": [
    "libxml2-2.12.6-all-defined-undef",
    "libxml2-2.12.6-targeted-1b5dee06ae",
-   "libxml2-2.12.6-targeted-1ba16c72f1",
+   "libxml2-2.12.6-targeted-1fb1e67d50",
    "libxml2-2.12.6-targeted-2752957c31",
+   "libxml2-2.12.6-targeted-4808466a07",
+   "libxml2-2.12.6-targeted-4f3a3c4664",
    "libxml2-2.12.6-targeted-659e9a3a43",
-   "libxml2-2.12.6-targeted-690c30a410",
-   "libxml2-2.12.6-targeted-70404c6254",
-   "libxml2-2.12.6-targeted-748d6d9244"
+   "libxml2-2.12.6-targeted-690c30a410"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22011,8 +22010,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED)",
   "public_header": false,
-  "true_config_count": 14881,
-  "false_config_count": 87,
+  "true_config_count": 14923,
+  "false_config_count": 45,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22025,13 +22024,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-821fe50d10",
    "libxml2-2.10.4-targeted-8620e1cf3c",
-   "libxml2-2.10.4-targeted-8f37b27e81",
    "libxml2-2.10.4-targeted-8f46e035d0",
-   "libxml2-2.10.4-targeted-ab5fb1a9b6",
-   "libxml2-2.10.4-targeted-b909979c8b"
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-821fe50d10",
+   "libxml2-2.11.5-targeted-8620e1cf3c",
+   "libxml2-2.11.5-targeted-8f46e035d0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22043,8 +22042,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED)",
   "public_header": false,
-  "true_config_count": 14858,
-  "false_config_count": 110,
+  "true_config_count": 14888,
+  "false_config_count": 80,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22058,12 +22057,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-4718b8a4bc",
-   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-821fe50d10",
    "libxml2-2.10.4-targeted-8620e1cf3c",
    "libxml2-2.10.4-targeted-8f37b27e81",
    "libxml2-2.10.4-targeted-8f46e035d0",
-   "libxml2-2.10.4-targeted-ab5fb1a9b6"
+   "libxml2-2.10.4-targeted-dc1cf3d807",
+   "libxml2-2.11.5-all-defined-undef"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22075,8 +22074,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED) && defined(LIBXML_PATTERN_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14820,
-  "false_config_count": 148,
+  "true_config_count": 14757,
+  "false_config_count": 211,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22089,13 +22088,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
    "libxml2-2.10.4-targeted-4718b8a4bc",
-   "libxml2-2.10.4-targeted-4fcf4a9b51",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-821fe50d10",
-   "libxml2-2.10.4-targeted-8620e1cf3c",
-   "libxml2-2.10.4-targeted-8f37b27e81"
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5",
+   "libxml2-2.10.4-targeted-748d6d9244"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22107,8 +22106,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED) && defined(LIBXML_RELAXNG_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED) && defined(LIBXML_RELAXNG_ENABLED)",
   "public_header": false,
-  "true_config_count": 370,
-  "false_config_count": 12,
+  "true_config_count": 373,
+  "false_config_count": 9,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -22122,12 +22121,12 @@
   "false_config_samples": [
    "libxml2-2.14.1-all-defined-undef",
    "libxml2-2.14.1-targeted-2462fada70",
-   "libxml2-2.14.1-targeted-4fcf4a9b51",
    "libxml2-2.14.1-targeted-7d99d57848",
    "libxml2-2.14.1-targeted-821fe50d10",
    "libxml2-2.14.1-targeted-8620e1cf3c",
-   "libxml2-2.14.1-targeted-8f37b27e81",
-   "libxml2-2.14.1-targeted-8f46e035d0"
+   "libxml2-2.14.1-targeted-8f46e035d0",
+   "libxml2-2.14.1-targeted-96c89ba10e",
+   "libxml2-2.14.1-targeted-e399903407"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22139,8 +22138,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED) && defined(LIBXML_SCHEMAS_ENABLED)",
   "public_header": false,
-  "true_config_count": 14436,
-  "false_config_count": 201,
+  "true_config_count": 14476,
+  "false_config_count": 161,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22158,8 +22157,8 @@
    "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-678610b8fa",
-   "libxml2-2.10.4-targeted-6985860ff5",
-   "libxml2-2.10.4-targeted-6cbb19cce7"
+   "libxml2-2.10.4-targeted-6cbb19cce7",
+   "libxml2-2.10.4-targeted-76d9f5d43a"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22171,8 +22170,8 @@
  "libxml2:defined(LIBXML_READER_ENABLED) && defined(LIBXML_WRITER_ENABLED)": {
   "expression": "defined(LIBXML_READER_ENABLED) && defined(LIBXML_WRITER_ENABLED)",
   "public_header": false,
-  "true_config_count": 11369,
-  "false_config_count": 61,
+  "true_config_count": 11385,
+  "false_config_count": 45,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-oracle",
@@ -22187,11 +22186,11 @@
    "libxml2-2.7.8-all-defined-undef",
    "libxml2-2.7.8-targeted-090b9e3ca4",
    "libxml2-2.7.8-targeted-116961ea08",
-   "libxml2-2.7.8-targeted-4fcf4a9b51",
    "libxml2-2.7.8-targeted-821fe50d10",
    "libxml2-2.7.8-targeted-8620e1cf3c",
-   "libxml2-2.7.8-targeted-8f37b27e81",
-   "libxml2-2.7.8-targeted-ab5fb1a9b6"
+   "libxml2-2.7.8-targeted-c248f2e377",
+   "libxml2-2.7.8-targeted-c73d555494",
+   "libxml2-2.7.8-targeted-f77b7ec539"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22203,8 +22202,8 @@
  "libxml2:defined(LIBXML_REGEXP_ENABLED)": {
   "expression": "defined(LIBXML_REGEXP_ENABLED)",
   "public_header": false,
-  "true_config_count": 14919,
-  "false_config_count": 49,
+  "true_config_count": 14908,
+  "false_config_count": 60,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22219,11 +22218,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-2745850e5a",
    "libxml2-2.10.4-targeted-60b15ae038",
+   "libxml2-2.10.4-targeted-673cb4d56e",
    "libxml2-2.10.4-targeted-d53d756443",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-2745850e5a",
-   "libxml2-2.11.5-targeted-60b15ae038",
-   "libxml2-2.11.5-targeted-d53d756443"
+   "libxml2-2.11.5-targeted-60b15ae038"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22235,8 +22234,8 @@
  "libxml2:defined(LIBXML_REGEXP_ENABLED) && defined(LIBXML_AUTOMATA_ENABLED)": {
   "expression": "defined(LIBXML_REGEXP_ENABLED) && defined(LIBXML_AUTOMATA_ENABLED)",
   "public_header": false,
-  "true_config_count": 14198,
-  "false_config_count": 57,
+  "true_config_count": 14188,
+  "false_config_count": 67,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22252,10 +22251,10 @@
    "libxml2-2.10.4-targeted-0427eb52ff",
    "libxml2-2.10.4-targeted-2745850e5a",
    "libxml2-2.10.4-targeted-60b15ae038",
+   "libxml2-2.10.4-targeted-673cb4d56e",
    "libxml2-2.10.4-targeted-d53d756443",
    "libxml2-2.11.5-all-defined-undef",
-   "libxml2-2.11.5-targeted-0427eb52ff",
-   "libxml2-2.11.5-targeted-2745850e5a"
+   "libxml2-2.11.5-targeted-0427eb52ff"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22267,8 +22266,8 @@
  "libxml2:defined(LIBXML_REGEXP_ENABLED) && defined(LIBXML_EXPR_ENABLED)": {
   "expression": "defined(LIBXML_REGEXP_ENABLED) && defined(LIBXML_EXPR_ENABLED)",
   "public_header": false,
-  "true_config_count": 6807,
-  "false_config_count": 7830,
+  "true_config_count": 6804,
+  "false_config_count": 7833,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-0ac8db6191",
@@ -22328,8 +22327,8 @@
  "libxml2:defined(LIBXML_RELAXNG_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_RELAXNG_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 373,
-  "false_config_count": 9,
+  "true_config_count": 367,
+  "false_config_count": 15,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -22342,13 +22341,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.14.1-all-defined-undef",
+   "libxml2-2.14.1-targeted-1fb1e67d50",
    "libxml2-2.14.1-targeted-2462fada70",
+   "libxml2-2.14.1-targeted-253c90890f",
    "libxml2-2.14.1-targeted-2752957c31",
-   "libxml2-2.14.1-targeted-748d6d9244",
-   "libxml2-2.14.1-targeted-96c89ba10e",
-   "libxml2-2.14.1-targeted-9cae881985",
-   "libxml2-2.14.1-targeted-e399903407",
-   "libxml2-2.14.1-targeted-ef1a30f4b4"
+   "libxml2-2.14.1-targeted-4808466a07",
+   "libxml2-2.14.1-targeted-690c30a410",
+   "libxml2-2.14.1-targeted-748d6d9244"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22388,8 +22387,8 @@
  "libxml2:defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 14870,
-  "false_config_count": 98,
+  "true_config_count": 14882,
+  "false_config_count": 86,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22402,13 +22401,13 @@
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
-   "libxml2-2.10.4-targeted-4808466a07",
    "libxml2-2.10.4-targeted-a7020a1ef0",
    "libxml2-2.10.4-targeted-b3cb02c327",
    "libxml2-2.10.4-targeted-e7ddd0aca5",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-1b5dee06ae",
-   "libxml2-2.11.5-targeted-4808466a07"
+   "libxml2-2.11.5-targeted-4da7438cdf",
+   "libxml2-2.11.5-targeted-a7020a1ef0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22420,8 +22419,8 @@
  "libxml2:defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_LEGACY_ENABLED)": {
   "expression": "defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_LEGACY_ENABLED)",
   "public_header": false,
-  "true_config_count": 11382,
-  "false_config_count": 2017,
+  "true_config_count": 11389,
+  "false_config_count": 2010,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-186c2c551d",
@@ -22452,8 +22451,8 @@
  "libxml2:defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_VALID_ENABLED)": {
   "expression": "defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_VALID_ENABLED)",
   "public_header": false,
-  "true_config_count": 685,
-  "false_config_count": 28,
+  "true_config_count": 688,
+  "false_config_count": 25,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -22469,10 +22468,10 @@
    "libxml2-2.14.1-targeted-1b5dee06ae",
    "libxml2-2.14.1-targeted-2e6b18f494",
    "libxml2-2.14.1-targeted-2f896e1a55",
-   "libxml2-2.14.1-targeted-4808466a07",
    "libxml2-2.14.1-targeted-4da7438cdf",
-   "libxml2-2.14.1-targeted-673cb4d56e",
-   "libxml2-2.14.1-targeted-6b0cf449b3"
+   "libxml2-2.14.1-targeted-6b0cf449b3",
+   "libxml2-2.14.1-targeted-96c89ba10e",
+   "libxml2-2.14.1-targeted-a7020a1ef0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22651,9 +22650,9 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-3397159592",
+   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-678610b8fa",
-   "libxml2-2.10.4-targeted-6985860ff5",
    "libxml2-2.10.4-targeted-6cbb19cce7",
    "libxml2-2.10.4-targeted-76d9f5d43a"
   ],
@@ -22667,8 +22666,8 @@
  "libxml2:defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_DEBUG_ENABLED)": {
   "expression": "defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_DEBUG_ENABLED)",
   "public_header": false,
-  "true_config_count": 372,
-  "false_config_count": 10,
+  "true_config_count": 370,
+  "false_config_count": 12,
   "true_config_samples": [
    "libxml2-2.14.1-all-absent-defined",
    "libxml2-2.14.1-oracle",
@@ -22683,11 +22682,11 @@
    "libxml2-2.14.1-all-defined-undef",
    "libxml2-2.14.1-targeted-15ddf933b8",
    "libxml2-2.14.1-targeted-3a3ef565f7",
+   "libxml2-2.14.1-targeted-4fcf4a9b51",
    "libxml2-2.14.1-targeted-678610b8fa",
    "libxml2-2.14.1-targeted-7b4887a800",
    "libxml2-2.14.1-targeted-8f46e035d0",
-   "libxml2-2.14.1-targeted-a5fbd71980",
-   "libxml2-2.14.1-targeted-d9bc925c86"
+   "libxml2-2.14.1-targeted-9cd9472afb"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22699,8 +22698,8 @@
  "libxml2:defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14097,
-  "false_config_count": 158,
+  "true_config_count": 14014,
+  "false_config_count": 241,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22714,12 +22713,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
    "libxml2-2.10.4-targeted-3397159592",
-   "libxml2-2.10.4-targeted-569c3de881",
-   "libxml2-2.10.4-targeted-678610b8fa",
-   "libxml2-2.10.4-targeted-6985860ff5",
-   "libxml2-2.10.4-targeted-6cbb19cce7"
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-4fcf4a9b51"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22731,8 +22730,8 @@
  "libxml2:defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_XPATH_ENABLED)": {
   "expression": "defined(LIBXML_SCHEMAS_ENABLED) && defined(LIBXML_XPATH_ENABLED)",
   "public_header": false,
-  "true_config_count": 14077,
-  "false_config_count": 178,
+  "true_config_count": 14107,
+  "false_config_count": 148,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -22748,10 +22747,10 @@
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
    "libxml2-2.10.4-targeted-3397159592",
+   "libxml2-2.10.4-targeted-4fcf4a9b51",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-678610b8fa",
-   "libxml2-2.10.4-targeted-6925abe3c8",
-   "libxml2-2.10.4-targeted-6985860ff5"
+   "libxml2-2.10.4-targeted-6cbb19cce7"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -22795,17 +22794,17 @@
  "libxml2:defined(LIBXML_STATIC) && !defined(LIBXML_STATIC_FOR_DLL)": {
   "expression": "defined(LIBXML_STATIC) && !defined(LIBXML_STATIC_FOR_DLL)",
   "public_header": false,
-  "true_config_count": 31,
-  "false_config_count": 14937,
+  "true_config_count": 32,
+  "false_config_count": 14936,
   "true_config_samples": [
    "libxml2-2.10.4-targeted-3bb1b13d45",
    "libxml2-2.10.4-targeted-c4a6ca741a",
+   "libxml2-2.10.4-targeted-d12bb6874b",
    "libxml2-2.10.4-targeted-f4820332ed",
    "libxml2-2.11.5-targeted-3bb1b13d45",
    "libxml2-2.11.5-targeted-c4a6ca741a",
-   "libxml2-2.11.5-targeted-f4820332ed",
-   "libxml2-2.12.6-targeted-3bb1b13d45",
-   "libxml2-2.12.6-targeted-c4a6ca741a"
+   "libxml2-2.11.5-targeted-d12bb6874b",
+   "libxml2-2.11.5-targeted-f4820332ed"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
@@ -22891,17 +22890,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED)": {
   "expression": "defined(LIBXML_THREAD_ENABLED)",
   "public_header": true,
-  "true_config_count": 31,
-  "false_config_count": 11399,
+  "true_config_count": 36,
+  "false_config_count": 11394,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-22a35a53d0",
+   "libxml2-2.7.8-targeted-5808043032",
    "libxml2-2.7.8-targeted-6abb9f8acd",
    "libxml2-2.7.8-targeted-777cc93169",
    "libxml2-2.7.8-targeted-99214ac71e",
    "libxml2-2.7.8-targeted-b3bf6736b8",
-   "libxml2-2.7.8-targeted-cb9172432a",
-   "libxml2-2.8.0-all-absent-defined"
+   "libxml2-2.7.8-targeted-cb9172432a"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -22923,17 +22922,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED) && !defined(USE_TLS)": {
   "expression": "defined(LIBXML_THREAD_ENABLED) && !defined(USE_TLS)",
   "public_header": false,
-  "true_config_count": 23,
-  "false_config_count": 2164,
+  "true_config_count": 24,
+  "false_config_count": 2163,
   "true_config_samples": [
    "libxml2-2.12.6-targeted-30d301b9a9",
    "libxml2-2.12.6-targeted-361cd24e18",
+   "libxml2-2.12.6-targeted-5808043032",
    "libxml2-2.12.6-targeted-99214ac71e",
    "libxml2-2.12.6-targeted-b3bf6736b8",
    "libxml2-2.12.6-targeted-e2a48db787",
    "libxml2-2.13.0-targeted-30d301b9a9",
-   "libxml2-2.13.0-targeted-361cd24e18",
-   "libxml2-2.13.0-targeted-99214ac71e"
+   "libxml2-2.13.0-targeted-361cd24e18"
   ],
   "false_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
@@ -22955,17 +22954,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED) && !defined(XML_GLOBALS_NO_REDEFINITION)": {
   "expression": "defined(LIBXML_THREAD_ENABLED) && !defined(XML_GLOBALS_NO_REDEFINITION)",
   "public_header": true,
-  "true_config_count": 15,
-  "false_config_count": 1459,
+  "true_config_count": 16,
+  "false_config_count": 1458,
   "true_config_samples": [
    "libxml2-2.12.6-targeted-30d301b9a9",
    "libxml2-2.12.6-targeted-361cd24e18",
+   "libxml2-2.12.6-targeted-5808043032",
    "libxml2-2.12.6-targeted-99214ac71e",
    "libxml2-2.12.6-targeted-b3bf6736b8",
    "libxml2-2.12.6-targeted-e2a48db787",
    "libxml2-2.13.0-targeted-30d301b9a9",
-   "libxml2-2.13.0-targeted-361cd24e18",
-   "libxml2-2.13.0-targeted-99214ac71e"
+   "libxml2-2.13.0-targeted-361cd24e18"
   ],
   "false_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
@@ -22987,17 +22986,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED)": {
   "expression": "defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED)",
   "public_header": false,
-  "true_config_count": 68,
-  "false_config_count": 14900,
+  "true_config_count": 76,
+  "false_config_count": 14892,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-5808043032",
    "libxml2-2.10.4-targeted-777cc93169",
    "libxml2-2.10.4-targeted-99214ac71e",
    "libxml2-2.10.4-targeted-b3bf6736b8",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-0324918d2e",
-   "libxml2-2.11.5-targeted-777cc93169",
-   "libxml2-2.11.5-targeted-99214ac71e"
+   "libxml2-2.11.5-targeted-5808043032"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -23019,17 +23018,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED) && defined (LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED) && defined (LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 21,
-  "false_config_count": 6780,
+  "true_config_count": 24,
+  "false_config_count": 6777,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-22a35a53d0",
+   "libxml2-2.7.8-targeted-5808043032",
    "libxml2-2.7.8-targeted-6abb9f8acd",
    "libxml2-2.7.8-targeted-777cc93169",
    "libxml2-2.7.8-targeted-99214ac71e",
    "libxml2-2.7.8-targeted-b3bf6736b8",
-   "libxml2-2.7.8-targeted-cb9172432a",
-   "libxml2-2.8.0-all-absent-defined"
+   "libxml2-2.7.8-targeted-cb9172432a"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -23051,17 +23050,17 @@
  "libxml2:defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED) && defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_THREAD_ENABLED) && defined(LIBXML_CATALOG_ENABLED) && defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 21,
-  "false_config_count": 6780,
+  "true_config_count": 24,
+  "false_config_count": 6777,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-22a35a53d0",
+   "libxml2-2.7.8-targeted-5808043032",
    "libxml2-2.7.8-targeted-6abb9f8acd",
    "libxml2-2.7.8-targeted-777cc93169",
    "libxml2-2.7.8-targeted-99214ac71e",
    "libxml2-2.7.8-targeted-b3bf6736b8",
-   "libxml2-2.7.8-targeted-cb9172432a",
-   "libxml2-2.8.0-all-absent-defined"
+   "libxml2-2.7.8-targeted-cb9172432a"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -23140,8 +23139,8 @@
  "libxml2:defined(LIBXML_TREE_ENABLED)": {
   "expression": "defined(LIBXML_TREE_ENABLED)",
   "public_header": false,
-  "true_config_count": 14132,
-  "false_config_count": 123,
+  "true_config_count": 14142,
+  "false_config_count": 113,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23156,11 +23155,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-2f833028a2",
-   "libxml2-2.10.4-targeted-4f3a3c4664",
    "libxml2-2.10.4-targeted-569c3de881",
    "libxml2-2.10.4-targeted-76d9f5d43a",
    "libxml2-2.10.4-targeted-79c78308d6",
-   "libxml2-2.10.4-targeted-9362dd157c"
+   "libxml2-2.10.4-targeted-9362dd157c",
+   "libxml2-2.10.4-targeted-a5fbd71980"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23172,8 +23171,8 @@
  "libxml2:defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_TREE_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14102,
-  "false_config_count": 153,
+  "true_config_count": 14029,
+  "false_config_count": 226,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23187,12 +23186,12 @@
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
    "libxml2-2.10.4-targeted-2f833028a2",
+   "libxml2-2.10.4-targeted-4808466a07",
    "libxml2-2.10.4-targeted-4f3a3c4664",
-   "libxml2-2.10.4-targeted-569c3de881",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-76d9f5d43a"
+   "libxml2-2.10.4-targeted-569c3de881"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23576,8 +23575,8 @@
  "libxml2:defined(LIBXML_VALID_ENABLED)": {
   "expression": "defined(LIBXML_VALID_ENABLED)",
   "public_header": false,
-  "true_config_count": 14875,
-  "false_config_count": 93,
+  "true_config_count": 14897,
+  "false_config_count": 71,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23592,11 +23591,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-2e6b18f494",
    "libxml2-2.10.4-targeted-3397159592",
-   "libxml2-2.10.4-targeted-673cb4d56e",
-   "libxml2-2.10.4-targeted-727a5988e2",
    "libxml2-2.10.4-targeted-ca17d890be",
    "libxml2-2.10.4-targeted-e8e6637ed4",
-   "libxml2-2.11.5-all-defined-undef"
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-1b5dee06ae",
+   "libxml2-2.11.5-targeted-2e6b18f494"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23608,8 +23607,8 @@
  "libxml2:defined(LIBXML_VALID_ENABLED) && defined(LIBXML_READER_ENABLED)": {
   "expression": "defined(LIBXML_VALID_ENABLED) && defined(LIBXML_READER_ENABLED)",
   "public_header": false,
-  "true_config_count": 663,
-  "false_config_count": 17,
+  "true_config_count": 669,
+  "false_config_count": 11,
   "true_config_samples": [
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-oracle",
@@ -23625,10 +23624,10 @@
    "libxml2-2.11.5-targeted-1b5dee06ae",
    "libxml2-2.11.5-targeted-2e6b18f494",
    "libxml2-2.11.5-targeted-3397159592",
-   "libxml2-2.11.5-targeted-4fcf4a9b51",
-   "libxml2-2.11.5-targeted-673cb4d56e",
-   "libxml2-2.11.5-targeted-727a5988e2",
-   "libxml2-2.11.5-targeted-821fe50d10"
+   "libxml2-2.11.5-targeted-821fe50d10",
+   "libxml2-2.11.5-targeted-8620e1cf3c",
+   "libxml2-2.11.5-targeted-8f46e035d0",
+   "libxml2-2.11.5-targeted-ca17d890be"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23640,8 +23639,8 @@
  "libxml2:defined(LIBXML_VALID_ENABLED) && defined(LIBXML_REGEXP_ENABLED)": {
   "expression": "defined(LIBXML_VALID_ENABLED) && defined(LIBXML_REGEXP_ENABLED)",
   "public_header": false,
-  "true_config_count": 14515,
-  "false_config_count": 122,
+  "true_config_count": 14526,
+  "false_config_count": 111,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23659,8 +23658,8 @@
    "libxml2-2.10.4-targeted-3397159592",
    "libxml2-2.10.4-targeted-60b15ae038",
    "libxml2-2.10.4-targeted-673cb4d56e",
-   "libxml2-2.10.4-targeted-727a5988e2",
-   "libxml2-2.10.4-targeted-ca17d890be"
+   "libxml2-2.10.4-targeted-ca17d890be",
+   "libxml2-2.10.4-targeted-d53d756443"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23764,8 +23763,8 @@
  "libxml2:defined(LIBXML_WRITER_ENABLED)": {
   "expression": "defined(LIBXML_WRITER_ENABLED)",
   "public_header": false,
-  "true_config_count": 14584,
-  "false_config_count": 53,
+  "true_config_count": 14579,
+  "false_config_count": 58,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23796,8 +23795,8 @@
  "libxml2:defined(LIBXML_WRITER_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_WRITER_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14875,
-  "false_config_count": 93,
+  "true_config_count": 14777,
+  "false_config_count": 191,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23812,11 +23811,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-090b9e3ca4",
    "libxml2-2.10.4-targeted-116961ea08",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-9cae881985",
-   "libxml2-2.10.4-targeted-fa666c2a55",
-   "libxml2-2.11.5-all-defined-undef"
+   "libxml2-2.10.4-targeted-4808466a07",
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23860,8 +23859,8 @@
  "libxml2:defined(LIBXML_XINCLUDE_ENABLED) && defined(LIBXML_READER_ENABLED)": {
   "expression": "defined(LIBXML_XINCLUDE_ENABLED) && defined(LIBXML_READER_ENABLED)",
   "public_header": false,
-  "true_config_count": 666,
-  "false_config_count": 14,
+  "true_config_count": 669,
+  "false_config_count": 11,
   "true_config_samples": [
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-oracle",
@@ -23875,12 +23874,12 @@
   "false_config_samples": [
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-23dd66c36c",
-   "libxml2-2.11.5-targeted-4fcf4a9b51",
    "libxml2-2.11.5-targeted-79c78308d6",
    "libxml2-2.11.5-targeted-821fe50d10",
    "libxml2-2.11.5-targeted-8620e1cf3c",
-   "libxml2-2.11.5-targeted-8f37b27e81",
-   "libxml2-2.11.5-targeted-8f46e035d0"
+   "libxml2-2.11.5-targeted-8f46e035d0",
+   "libxml2-2.11.5-targeted-a5fbd71980",
+   "libxml2-2.11.5-targeted-c70bb65e93"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23892,8 +23891,8 @@
  "libxml2:defined(LIBXML_XPATH_ENABLED)": {
   "expression": "defined(LIBXML_XPATH_ENABLED)",
   "public_header": false,
-  "true_config_count": 14874,
-  "false_config_count": 94,
+  "true_config_count": 14904,
+  "false_config_count": 64,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23908,11 +23907,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
-   "libxml2-2.10.4-targeted-6925abe3c8",
    "libxml2-2.10.4-targeted-7eadeaf121",
-   "libxml2-2.10.4-targeted-9cd9472afb",
-   "libxml2-2.10.4-targeted-eb8a149d7f",
-   "libxml2-2.10.4-targeted-efd32e1e9d"
+   "libxml2-2.10.4-targeted-efd32e1e9d",
+   "libxml2-2.11.5-all-defined-undef",
+   "libxml2-2.11.5-targeted-15ee75bf91",
+   "libxml2-2.11.5-targeted-18a1f1d365"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23924,8 +23923,8 @@
  "libxml2:defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_DEBUG_ENABLED)": {
   "expression": "defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_DEBUG_ENABLED)",
   "public_header": false,
-  "true_config_count": 14514,
-  "false_config_count": 123,
+  "true_config_count": 14513,
+  "false_config_count": 124,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23942,9 +23941,9 @@
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
    "libxml2-2.10.4-targeted-6925abe3c8",
+   "libxml2-2.10.4-targeted-727a5988e2",
    "libxml2-2.10.4-targeted-7eadeaf121",
-   "libxml2-2.10.4-targeted-9cd9472afb",
-   "libxml2-2.10.4-targeted-d5eb267e60"
+   "libxml2-2.10.4-targeted-9cd9472afb"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23956,8 +23955,8 @@
  "libxml2:defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_SAX1_ENABLED)": {
   "expression": "defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_SAX1_ENABLED)",
   "public_header": false,
-  "true_config_count": 14793,
-  "false_config_count": 175,
+  "true_config_count": 14835,
+  "false_config_count": 133,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -23972,11 +23971,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
-   "libxml2-2.10.4-targeted-4808466a07",
-   "libxml2-2.10.4-targeted-6925abe3c8",
    "libxml2-2.10.4-targeted-7eadeaf121",
-   "libxml2-2.10.4-targeted-9cd9472afb",
-   "libxml2-2.10.4-targeted-a7020a1ef0"
+   "libxml2-2.10.4-targeted-a7020a1ef0",
+   "libxml2-2.10.4-targeted-b3cb02c327",
+   "libxml2-2.10.4-targeted-e7ddd0aca5",
+   "libxml2-2.10.4-targeted-efd32e1e9d"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -23988,8 +23987,8 @@
  "libxml2:defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)": {
   "expression": "defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_SAX1_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)",
   "public_header": false,
-  "true_config_count": 14755,
-  "false_config_count": 213,
+  "true_config_count": 14704,
+  "false_config_count": 264,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -24004,11 +24003,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-15ee75bf91",
    "libxml2-2.10.4-targeted-18a1f1d365",
+   "libxml2-2.10.4-targeted-1fb1e67d50",
    "libxml2-2.10.4-targeted-2752957c31",
    "libxml2-2.10.4-targeted-4808466a07",
-   "libxml2-2.10.4-targeted-6925abe3c8",
-   "libxml2-2.10.4-targeted-748d6d9244",
-   "libxml2-2.10.4-targeted-7eadeaf121"
+   "libxml2-2.10.4-targeted-4f3a3c4664",
+   "libxml2-2.10.4-targeted-6985860ff5"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -24020,8 +24019,8 @@
  "libxml2:defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_VALID_ENABLED)": {
   "expression": "defined(LIBXML_XPATH_ENABLED) && defined(LIBXML_VALID_ENABLED)",
   "public_header": false,
-  "true_config_count": 2117,
-  "false_config_count": 70,
+  "true_config_count": 2133,
+  "false_config_count": 54,
   "true_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
    "libxml2-2.12.6-oracle",
@@ -24039,8 +24038,8 @@
    "libxml2-2.12.6-targeted-1b5dee06ae",
    "libxml2-2.12.6-targeted-2e6b18f494",
    "libxml2-2.12.6-targeted-3397159592",
-   "libxml2-2.12.6-targeted-673cb4d56e",
-   "libxml2-2.12.6-targeted-6925abe3c8"
+   "libxml2-2.12.6-targeted-6b0cf449b3",
+   "libxml2-2.12.6-targeted-7eadeaf121"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -24271,17 +24270,17 @@
  "libxml2:defined(QUALIFIER_FIXED_SIZE)": {
   "expression": "defined(QUALIFIER_FIXED_SIZE)",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 13383,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-59234f7d0f",
    "libxml2-2.10.4-targeted-6b943c67c6",
    "libxml2-2.11.5-all-absent-defined",
+   "libxml2-2.11.5-targeted-59234f7d0f",
    "libxml2-2.11.5-targeted-6b943c67c6",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-6b943c67c6",
-   "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-6b943c67c6"
+   "libxml2-2.12.6-targeted-59234f7d0f"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -24495,17 +24494,17 @@
  "libxml2:defined(QUALIFIER_SIZE_T)": {
   "expression": "defined(QUALIFIER_SIZE_T)",
   "public_header": false,
-  "true_config_count": 24,
-  "false_config_count": 13375,
+  "true_config_count": 16,
+  "false_config_count": 13383,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
-   "libxml2-2.10.4-targeted-6feb1c62f1",
    "libxml2-2.10.4-targeted-82f2db7d5e",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-6feb1c62f1",
    "libxml2-2.11.5-targeted-82f2db7d5e",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-6feb1c62f1"
+   "libxml2-2.12.6-targeted-82f2db7d5e",
+   "libxml2-2.7.8-all-absent-defined",
+   "libxml2-2.7.8-targeted-82f2db7d5e"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -24559,17 +24558,17 @@
  "libxml2:defined(QUALIFIER_SIZE_T_UPPER)": {
   "expression": "defined(QUALIFIER_SIZE_T_UPPER)",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 13383,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-6feb1c62f1",
    "libxml2-2.10.4-targeted-b1abf39226",
    "libxml2-2.11.5-all-absent-defined",
+   "libxml2-2.11.5-targeted-6feb1c62f1",
    "libxml2-2.11.5-targeted-b1abf39226",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-b1abf39226",
-   "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-b1abf39226"
+   "libxml2-2.12.6-targeted-6feb1c62f1"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -24623,17 +24622,17 @@
  "libxml2:defined(QUALIFIER_VARSIZE)": {
   "expression": "defined(QUALIFIER_VARSIZE)",
   "public_header": false,
-  "true_config_count": 24,
-  "false_config_count": 13375,
+  "true_config_count": 16,
+  "false_config_count": 13383,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
-   "libxml2-2.10.4-targeted-59234f7d0f",
    "libxml2-2.10.4-targeted-7b7ae62b5d",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-59234f7d0f",
    "libxml2-2.11.5-targeted-7b7ae62b5d",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-59234f7d0f"
+   "libxml2-2.12.6-targeted-7b7ae62b5d",
+   "libxml2-2.7.8-all-absent-defined",
+   "libxml2-2.7.8-targeted-7b7ae62b5d"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -25135,17 +25134,17 @@
  "libxml2:defined(TRIO_COMPILER_DECC)": {
   "expression": "defined(TRIO_COMPILER_DECC)",
   "public_header": false,
-  "true_config_count": 32,
-  "false_config_count": 13367,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-27a581c577",
    "libxml2-2.10.4-targeted-3baa7312de",
-   "libxml2-2.10.4-targeted-7cad78429c",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-27a581c577",
    "libxml2-2.11.5-targeted-3baa7312de",
-   "libxml2-2.11.5-targeted-7cad78429c"
+   "libxml2-2.12.6-all-absent-defined",
+   "libxml2-2.12.6-targeted-27a581c577"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -25327,17 +25326,17 @@
  "libxml2:defined(TRIO_COMPILER_MSVC)": {
   "expression": "defined(TRIO_COMPILER_MSVC)",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 13383,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-094635eb88",
+   "libxml2-2.10.4-targeted-dd137005d4",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-094635eb88",
+   "libxml2-2.11.5-targeted-dd137005d4",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-094635eb88",
-   "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-094635eb88"
+   "libxml2-2.12.6-targeted-094635eb88"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -25359,17 +25358,17 @@
  "libxml2:defined(TRIO_COMPILER_MSVC) || defined(TRIO_COMPILER_BCB)": {
   "expression": "defined(TRIO_COMPILER_MSVC) || defined(TRIO_COMPILER_BCB)",
   "public_header": false,
-  "true_config_count": 40,
-  "false_config_count": 13359,
+  "true_config_count": 48,
+  "false_config_count": 13351,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-094635eb88",
    "libxml2-2.10.4-targeted-315a4d767c",
    "libxml2-2.10.4-targeted-89648f7414",
    "libxml2-2.10.4-targeted-b28a98c107",
+   "libxml2-2.10.4-targeted-dd137005d4",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-094635eb88",
-   "libxml2-2.11.5-targeted-315a4d767c"
+   "libxml2-2.11.5-targeted-094635eb88"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -25391,8 +25390,8 @@
  "libxml2:defined(TRIO_COMPILER_MSVC) || defined(WIN32) || defined(_WIN32)": {
   "expression": "defined(TRIO_COMPILER_MSVC) || defined(WIN32) || defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 120,
-  "false_config_count": 13279,
+  "true_config_count": 122,
+  "false_config_count": 13277,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-094635eb88",
@@ -25455,17 +25454,17 @@
  "libxml2:defined(TRIO_COMPILER_SUPPORTS_C99)": {
   "expression": "defined(TRIO_COMPILER_SUPPORTS_C99)",
   "public_header": false,
-  "true_config_count": 38,
-  "false_config_count": 13361,
+  "true_config_count": 54,
+  "false_config_count": 13345,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-6b2cfa3b2f",
+   "libxml2-2.10.4-targeted-86d884d01d",
    "libxml2-2.10.4-targeted-abc1ec5d85",
    "libxml2-2.10.4-targeted-bce8a669a9",
    "libxml2-2.10.4-targeted-d810c0e4be",
    "libxml2-2.10.4-targeted-fb3ffca98e",
-   "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-abc1ec5d85",
-   "libxml2-2.11.5-targeted-bce8a669a9"
+   "libxml2-2.11.5-all-absent-defined"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -25487,17 +25486,17 @@
  "libxml2:defined(TRIO_COMPILER_SUPPORTS_C99) && !defined( __VMS )": {
   "expression": "defined(TRIO_COMPILER_SUPPORTS_C99) && !defined( __VMS )",
   "public_header": false,
-  "true_config_count": 24,
-  "false_config_count": 8890,
+  "true_config_count": 36,
+  "false_config_count": 8878,
   "true_config_samples": [
+   "libxml2-2.10.4-targeted-6b2cfa3b2f",
+   "libxml2-2.10.4-targeted-86d884d01d",
    "libxml2-2.10.4-targeted-abc1ec5d85",
    "libxml2-2.10.4-targeted-bce8a669a9",
    "libxml2-2.10.4-targeted-d810c0e4be",
    "libxml2-2.10.4-targeted-fb3ffca98e",
-   "libxml2-2.11.5-targeted-abc1ec5d85",
-   "libxml2-2.11.5-targeted-bce8a669a9",
-   "libxml2-2.11.5-targeted-d810c0e4be",
-   "libxml2-2.11.5-targeted-fb3ffca98e"
+   "libxml2-2.11.5-targeted-6b2cfa3b2f",
+   "libxml2-2.11.5-targeted-86d884d01d"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
@@ -25555,9 +25554,9 @@
   "false_config_count": 13329,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
-   "libxml2-2.10.4-targeted-1d09f9fc37",
    "libxml2-2.10.4-targeted-33581326da",
    "libxml2-2.10.4-targeted-6b2cfa3b2f",
+   "libxml2-2.10.4-targeted-86d884d01d",
    "libxml2-2.10.4-targeted-abc1ec5d85",
    "libxml2-2.10.4-targeted-bce8a669a9",
    "libxml2-2.10.4-targeted-d810c0e4be",
@@ -26027,17 +26026,17 @@
  "libxml2:defined(TRIO_MINIMAL)": {
   "expression": "defined(TRIO_MINIMAL)",
   "public_header": false,
-  "true_config_count": 24,
-  "false_config_count": 13375,
+  "true_config_count": 32,
+  "false_config_count": 13367,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-8664f6cad9",
+   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-b5af61747c",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-8664f6cad9",
-   "libxml2-2.11.5-targeted-b5af61747c",
-   "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-8664f6cad9"
+   "libxml2-2.11.5-targeted-924b1a0b31",
+   "libxml2-2.11.5-targeted-b5af61747c"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -26123,17 +26122,17 @@
  "libxml2:defined(TRIO_PLATFORM_OS400)": {
   "expression": "defined(TRIO_PLATFORM_OS400)",
   "public_header": false,
-  "true_config_count": 18,
-  "false_config_count": 8896,
+  "true_config_count": 12,
+  "false_config_count": 8902,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-1130f8384e",
-   "libxml2-2.10.4-targeted-7fe8aa3dd3",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-1130f8384e",
-   "libxml2-2.11.5-targeted-7fe8aa3dd3",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-1130f8384e"
+   "libxml2-2.12.6-targeted-1130f8384e",
+   "libxml2-2.9.10-all-absent-defined",
+   "libxml2-2.9.10-targeted-1130f8384e"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -26219,17 +26218,17 @@
  "libxml2:defined(TRIO_PLATFORM_UNIX)": {
   "expression": "defined(TRIO_PLATFORM_UNIX)",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 13383,
+  "true_config_count": 22,
+  "false_config_count": 13377,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
+   "libxml2-2.10.4-targeted-7fe8aa3dd3",
    "libxml2-2.10.4-targeted-f266c1e283",
    "libxml2-2.11.5-all-absent-defined",
+   "libxml2-2.11.5-targeted-7fe8aa3dd3",
    "libxml2-2.11.5-targeted-f266c1e283",
    "libxml2-2.12.6-all-absent-defined",
-   "libxml2-2.12.6-targeted-f266c1e283",
-   "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-f266c1e283"
+   "libxml2-2.12.6-targeted-7fe8aa3dd3"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -26857,17 +26856,17 @@
  "libxml2:defined(WIN32)": {
   "expression": "defined(WIN32)",
   "public_header": false,
-  "true_config_count": 16,
-  "false_config_count": 6785,
+  "true_config_count": 19,
+  "false_config_count": 6782,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
+   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-3bf08e6fc1",
    "libxml2-2.7.8-targeted-621251a990",
    "libxml2-2.7.8-targeted-9866c96adc",
    "libxml2-2.7.8-targeted-e912444175",
    "libxml2-2.8.0-all-absent-defined",
-   "libxml2-2.8.0-targeted-3bf08e6fc1",
-   "libxml2-2.8.0-targeted-621251a990"
+   "libxml2-2.8.0-targeted-35310ffecf"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -26889,17 +26888,17 @@
  "libxml2:defined(WIN32) && !defined (__CYGWIN__)": {
   "expression": "defined(WIN32) && !defined (__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 13,
-  "false_config_count": 6788,
+  "true_config_count": 16,
+  "false_config_count": 6785,
   "true_config_samples": [
+   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-3bf08e6fc1",
    "libxml2-2.7.8-targeted-621251a990",
    "libxml2-2.7.8-targeted-9866c96adc",
    "libxml2-2.7.8-targeted-e912444175",
+   "libxml2-2.8.0-targeted-35310ffecf",
    "libxml2-2.8.0-targeted-3bf08e6fc1",
-   "libxml2-2.8.0-targeted-621251a990",
-   "libxml2-2.8.0-targeted-9866c96adc",
-   "libxml2-2.8.0-targeted-e912444175"
+   "libxml2-2.8.0-targeted-621251a990"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -26921,17 +26920,17 @@
  "libxml2:defined(WIN32) && !defined(__CYGWIN__)": {
   "expression": "defined(WIN32) && !defined(__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 13,
-  "false_config_count": 6788,
+  "true_config_count": 16,
+  "false_config_count": 6785,
   "true_config_samples": [
+   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-3bf08e6fc1",
    "libxml2-2.7.8-targeted-621251a990",
    "libxml2-2.7.8-targeted-9866c96adc",
    "libxml2-2.7.8-targeted-e912444175",
+   "libxml2-2.8.0-targeted-35310ffecf",
    "libxml2-2.8.0-targeted-3bf08e6fc1",
-   "libxml2-2.8.0-targeted-621251a990",
-   "libxml2-2.8.0-targeted-9866c96adc",
-   "libxml2-2.8.0-targeted-e912444175"
+   "libxml2-2.8.0-targeted-621251a990"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -26979,8 +26978,8 @@
  "libxml2:defined(WIN32) || defined(_WIN32)": {
   "expression": "defined(WIN32) || defined(_WIN32)",
   "public_header": false,
-  "true_config_count": 57,
-  "false_config_count": 6744,
+  "true_config_count": 54,
+  "false_config_count": 6747,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-18a6a6ad27",
@@ -27157,17 +27156,17 @@
  "libxml2:defined(_AIX)": {
   "expression": "defined(_AIX)",
   "public_header": false,
-  "true_config_count": 40,
-  "false_config_count": 13359,
+  "true_config_count": 32,
+  "false_config_count": 13367,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-0c18ab62a8",
    "libxml2-2.10.4-targeted-3492e85f54",
-   "libxml2-2.10.4-targeted-3fc8c3ed73",
    "libxml2-2.10.4-targeted-abe79e100b",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-0c18ab62a8",
-   "libxml2-2.11.5-targeted-3492e85f54"
+   "libxml2-2.11.5-targeted-3492e85f54",
+   "libxml2-2.11.5-targeted-abe79e100b"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -27253,8 +27252,8 @@
  "libxml2:defined(_MSC_VER)": {
   "expression": "defined(_MSC_VER)",
   "public_header": true,
-  "true_config_count": 105,
-  "false_config_count": 14863,
+  "true_config_count": 116,
+  "false_config_count": 14852,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-28ad75eebb",
@@ -27285,17 +27284,17 @@
  "libxml2:defined(_MSC_VER) && !defined(IN_LIBXML) && !defined(LIBXML_STATIC)": {
   "expression": "defined(_MSC_VER) && !defined(IN_LIBXML) && !defined(LIBXML_STATIC)",
   "public_header": true,
-  "true_config_count": 30,
-  "false_config_count": 9082,
+  "true_config_count": 38,
+  "false_config_count": 9074,
   "true_config_samples": [
+   "libxml2-2.7.8-targeted-05f2d7b374",
+   "libxml2-2.7.8-targeted-09a1aa7383",
    "libxml2-2.7.8-targeted-28ad75eebb",
    "libxml2-2.7.8-targeted-4b134f15d1",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-669b21eebf",
    "libxml2-2.7.8-targeted-69cde5d030",
-   "libxml2-2.7.8-targeted-7f6dad2b17",
-   "libxml2-2.8.0-targeted-28ad75eebb",
-   "libxml2-2.8.0-targeted-353a65903d"
+   "libxml2-2.7.8-targeted-7f6dad2b17"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -27317,16 +27316,17 @@
  "libxml2:defined(_MSC_VER) && !defined(vsnprintf)": {
   "expression": "defined(_MSC_VER) && !defined(vsnprintf)",
   "public_header": false,
-  "true_config_count": 7,
-  "false_config_count": 2242,
+  "true_config_count": 9,
+  "false_config_count": 2240,
   "true_config_samples": [
+   "libxml2-2.8.0-targeted-05f2d7b374",
+   "libxml2-2.8.0-targeted-09a1aa7383",
    "libxml2-2.8.0-targeted-28ad75eebb",
    "libxml2-2.8.0-targeted-353a65903d",
    "libxml2-2.8.0-targeted-4b134f15d1",
    "libxml2-2.8.0-targeted-4c7b991db4",
    "libxml2-2.8.0-targeted-669b21eebf",
-   "libxml2-2.8.0-targeted-69cde5d030",
-   "libxml2-2.8.0-targeted-7f6dad2b17"
+   "libxml2-2.8.0-targeted-69cde5d030"
   ],
   "false_config_samples": [
    "libxml2-2.8.0-all-absent-defined",
@@ -27348,8 +27348,8 @@
  "libxml2:defined(_MSC_VER) && _MSC_VER >= 1400": {
   "expression": "defined(_MSC_VER) && _MSC_VER >= 1400",
   "public_header": true,
-  "true_config_count": 18,
-  "false_config_count": 1123,
+  "true_config_count": 20,
+  "false_config_count": 1121,
   "true_config_samples": [
    "libxml2-2.13.5-targeted-669b21eebf",
    "libxml2-2.13.5-targeted-6a8f62678e",
@@ -27357,8 +27357,8 @@
    "libxml2-2.13.5-targeted-7990af4682",
    "libxml2-2.13.5-targeted-9ff291900f",
    "libxml2-2.13.5-targeted-b633828d3c",
-   "libxml2-2.14.1-targeted-669b21eebf",
-   "libxml2-2.14.1-targeted-6a8f62678e"
+   "libxml2-2.14.1-targeted-1f79efe4ea",
+   "libxml2-2.14.1-targeted-669b21eebf"
   ],
   "false_config_samples": [
    "libxml2-2.13.5-all-absent-defined",
@@ -27412,8 +27412,8 @@
  "libxml2:defined(_MSC_VER) || defined(__BORLANDC__)": {
   "expression": "defined(_MSC_VER) || defined(__BORLANDC__)",
   "public_header": true,
-  "true_config_count": 75,
-  "false_config_count": 11355,
+  "true_config_count": 76,
+  "false_config_count": 11354,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-05f2d7b374",
@@ -27476,8 +27476,8 @@
  "libxml2:defined(_WIN32)": {
   "expression": "defined(_WIN32)",
   "public_header": true,
-  "true_config_count": 98,
-  "false_config_count": 10385,
+  "true_config_count": 97,
+  "false_config_count": 10386,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-49b52e1253",
@@ -27486,7 +27486,7 @@
    "libxml2-2.10.4-targeted-7a8ea33c4d",
    "libxml2-2.10.4-targeted-a6cfb5667a",
    "libxml2-2.10.4-targeted-ad495647e7",
-   "libxml2-2.10.4-targeted-dd137005d4"
+   "libxml2-2.10.4-targeted-de99dd3775"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -27508,8 +27508,8 @@
  "libxml2:defined(_WIN32) && !defined (__CYGWIN__)": {
   "expression": "defined(_WIN32) && !defined (__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 23,
-  "false_config_count": 4606,
+  "true_config_count": 21,
+  "false_config_count": 4608,
   "true_config_samples": [
    "libxml2-2.9.10-targeted-49b52e1253",
    "libxml2-2.9.10-targeted-4c7b991db4",
@@ -27540,17 +27540,17 @@
  "libxml2:defined(_WIN32) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))": {
   "expression": "defined(_WIN32) && !defined(LIBXML_THREAD_ALLOC_ENABLED) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))",
   "public_header": false,
-  "true_config_count": 23,
-  "false_config_count": 1451,
+  "true_config_count": 25,
+  "false_config_count": 1449,
   "true_config_samples": [
+   "libxml2-2.12.6-targeted-305570c203",
    "libxml2-2.12.6-targeted-30d301b9a9",
    "libxml2-2.12.6-targeted-49b52e1253",
    "libxml2-2.12.6-targeted-4c7b991db4",
    "libxml2-2.12.6-targeted-57bda023ac",
    "libxml2-2.12.6-targeted-7a8ea33c4d",
    "libxml2-2.12.6-targeted-ad495647e7",
-   "libxml2-2.12.6-targeted-c28dcc5dad",
-   "libxml2-2.12.6-targeted-dd137005d4"
+   "libxml2-2.12.6-targeted-c28dcc5dad"
   ],
   "false_config_samples": [
    "libxml2-2.12.6-all-absent-defined",
@@ -27572,17 +27572,17 @@
  "libxml2:defined(_WIN32) && !defined(__CYGWIN__)": {
   "expression": "defined(_WIN32) && !defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 61,
-  "false_config_count": 11369,
+  "true_config_count": 53,
+  "false_config_count": 11377,
   "true_config_samples": [
-   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-57bda023ac",
    "libxml2-2.7.8-targeted-7a8ea33c4d",
    "libxml2-2.7.8-targeted-94215fde4f",
    "libxml2-2.7.8-targeted-942eb5209e",
    "libxml2-2.7.8-targeted-a34e3407ec",
-   "libxml2-2.7.8-targeted-a6cfb5667a"
+   "libxml2-2.7.8-targeted-a6cfb5667a",
+   "libxml2-2.7.8-targeted-ad495647e7"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
@@ -27604,17 +27604,17 @@
  "libxml2:defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)": {
   "expression": "defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)",
   "public_header": false,
-  "true_config_count": 12,
-  "false_config_count": 2237,
+  "true_config_count": 10,
+  "false_config_count": 2239,
   "true_config_samples": [
    "libxml2-2.8.0-targeted-33f73a00e1",
-   "libxml2-2.8.0-targeted-35310ffecf",
    "libxml2-2.8.0-targeted-4c7b991db4",
    "libxml2-2.8.0-targeted-57bda023ac",
    "libxml2-2.8.0-targeted-7a8ea33c4d",
    "libxml2-2.8.0-targeted-94215fde4f",
    "libxml2-2.8.0-targeted-a34e3407ec",
-   "libxml2-2.8.0-targeted-a6cfb5667a"
+   "libxml2-2.8.0-targeted-a6cfb5667a",
+   "libxml2-2.8.0-targeted-ad495647e7"
   ],
   "false_config_samples": [
    "libxml2-2.8.0-all-absent-defined",
@@ -27636,8 +27636,8 @@
  "libxml2:defined(_WIN32) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))": {
   "expression": "defined(_WIN32) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))",
   "public_header": false,
-  "true_config_count": 32,
-  "false_config_count": 3637,
+  "true_config_count": 30,
+  "false_config_count": 3639,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-49b52e1253",
@@ -27646,7 +27646,7 @@
    "libxml2-2.10.4-targeted-7a8ea33c4d",
    "libxml2-2.10.4-targeted-a6cfb5667a",
    "libxml2-2.10.4-targeted-ad495647e7",
-   "libxml2-2.10.4-targeted-dd137005d4"
+   "libxml2-2.10.4-targeted-de99dd3775"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -27794,17 +27794,17 @@
  "libxml2:defined(_WIN32) || defined (__DJGPP__) && !defined (__CYGWIN__)": {
   "expression": "defined(_WIN32) || defined (__DJGPP__) && !defined (__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 79,
-  "false_config_count": 11351,
+  "true_config_count": 71,
+  "false_config_count": 11359,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-18a6a6ad27",
    "libxml2-2.7.8-targeted-34236f0d9a",
-   "libxml2-2.7.8-targeted-35310ffecf",
    "libxml2-2.7.8-targeted-4c7b991db4",
    "libxml2-2.7.8-targeted-57bda023ac",
    "libxml2-2.7.8-targeted-7a8ea33c4d",
-   "libxml2-2.7.8-targeted-94215fde4f"
+   "libxml2-2.7.8-targeted-94215fde4f",
+   "libxml2-2.7.8-targeted-942eb5209e"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -27826,8 +27826,8 @@
  "libxml2:defined(_WIN32) || defined(__CYGWIN__)": {
   "expression": "defined(_WIN32) || defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 89,
-  "false_config_count": 5767,
+  "true_config_count": 85,
+  "false_config_count": 5771,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-42c0cae739",
@@ -27858,17 +27858,17 @@
  "libxml2:defined(_WIN32_WCE)": {
   "expression": "defined(_WIN32_WCE)",
   "public_header": true,
-  "true_config_count": 43,
-  "false_config_count": 13356,
+  "true_config_count": 37,
+  "false_config_count": 13362,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-0e2054069d",
    "libxml2-2.10.4-targeted-57e84ea48c",
-   "libxml2-2.10.4-targeted-924b1a0b31",
    "libxml2-2.10.4-targeted-95a8f6b257",
    "libxml2-2.11.5-all-absent-defined",
    "libxml2-2.11.5-targeted-0e2054069d",
-   "libxml2-2.11.5-targeted-57e84ea48c"
+   "libxml2-2.11.5-targeted-57e84ea48c",
+   "libxml2-2.11.5-targeted-95a8f6b257"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -27986,8 +27986,8 @@
  "libxml2:defined(__BORLANDC__)": {
   "expression": "defined(__BORLANDC__)",
   "public_header": false,
-  "true_config_count": 52,
-  "false_config_count": 13347,
+  "true_config_count": 44,
+  "false_config_count": 13355,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-46696c7afc",
@@ -28018,8 +28018,8 @@
  "libxml2:defined(__BORLANDC__) && !defined(__cplusplus)": {
   "expression": "defined(__BORLANDC__) && !defined(__cplusplus)",
   "public_header": true,
-  "true_config_count": 50,
-  "false_config_count": 14587,
+  "true_config_count": 42,
+  "false_config_count": 14595,
   "true_config_samples": [
    "libxml2-2.10.4-targeted-46696c7afc",
    "libxml2-2.10.4-targeted-6748114970",
@@ -28050,8 +28050,8 @@
  "libxml2:defined(__BORLANDC__) || (defined(_MSC_VER) && (_MSC_VER == 1200))": {
   "expression": "defined(__BORLANDC__) || (defined(_MSC_VER) && (_MSC_VER == 1200))",
   "public_header": false,
-  "true_config_count": 63,
-  "false_config_count": 14905,
+  "true_config_count": 55,
+  "false_config_count": 14913,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-46696c7afc",
@@ -28082,17 +28082,17 @@
  "libxml2:defined(__CYGWIN__)": {
   "expression": "defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 25,
-  "false_config_count": 13374,
+  "true_config_count": 23,
+  "false_config_count": 13376,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-42c0cae739",
    "libxml2-2.10.4-targeted-e1ac8f7761",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-305570c203",
    "libxml2-2.11.5-targeted-42c0cae739",
    "libxml2-2.11.5-targeted-e1ac8f7761",
-   "libxml2-2.12.6-all-absent-defined"
+   "libxml2-2.12.6-all-absent-defined",
+   "libxml2-2.12.6-targeted-42c0cae739"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -28146,8 +28146,8 @@
  "libxml2:defined(__GNUC__)": {
   "expression": "defined(__GNUC__)",
   "public_header": false,
-  "true_config_count": 13355,
-  "false_config_count": 44,
+  "true_config_count": 13356,
+  "false_config_count": 43,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -28178,8 +28178,8 @@
  "libxml2:defined(__GNUC__) && ((__GNUC__ == 3 && __GNUC_MINOR__ >= 4) || (__GNUC__ > 3))": {
   "expression": "defined(__GNUC__) && ((__GNUC__ == 3 && __GNUC_MINOR__ >= 4) || (__GNUC__ > 3))",
   "public_header": false,
-  "true_config_count": 10418,
-  "false_config_count": 65,
+  "true_config_count": 10419,
+  "false_config_count": 64,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -28393,17 +28393,17 @@
  "libxml2:defined(__MINGW32__)": {
   "expression": "defined(__MINGW32__)",
   "public_header": true,
-  "true_config_count": 26,
-  "false_config_count": 11404,
+  "true_config_count": 25,
+  "false_config_count": 11405,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
-   "libxml2-2.7.8-targeted-8d96850142",
    "libxml2-2.7.8-targeted-942eb5209e",
    "libxml2-2.7.8-targeted-c6dbac99fa",
    "libxml2-2.7.8-targeted-ebc75e4ab0",
    "libxml2-2.7.8-targeted-f910c521f8",
    "libxml2-2.8.0-all-absent-defined",
-   "libxml2-2.8.0-targeted-4fedf08a22"
+   "libxml2-2.8.0-targeted-4fedf08a22",
+   "libxml2-2.8.0-targeted-942eb5209e"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -28425,8 +28425,8 @@
  "libxml2:defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER >= 1600)": {
   "expression": "defined(__MINGW32__) || (defined(_MSC_VER) && _MSC_VER >= 1600)",
   "public_header": true,
-  "true_config_count": 45,
-  "false_config_count": 3162,
+  "true_config_count": 46,
+  "false_config_count": 3161,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-targeted-29d5ddc3ca",
@@ -28457,17 +28457,17 @@
  "libxml2:defined(__MINGW32__) || defined(_WIN32_WCE)": {
   "expression": "defined(__MINGW32__) || defined(_WIN32_WCE)",
   "public_header": true,
-  "true_config_count": 32,
-  "false_config_count": 6769,
+  "true_config_count": 30,
+  "false_config_count": 6771,
   "true_config_samples": [
    "libxml2-2.7.8-all-absent-defined",
    "libxml2-2.7.8-targeted-0e2054069d",
    "libxml2-2.7.8-targeted-187ea34918",
    "libxml2-2.7.8-targeted-57e84ea48c",
-   "libxml2-2.7.8-targeted-8d96850142",
-   "libxml2-2.7.8-targeted-924b1a0b31",
    "libxml2-2.7.8-targeted-942eb5209e",
-   "libxml2-2.7.8-targeted-c6dbac99fa"
+   "libxml2-2.7.8-targeted-95a8f6b257",
+   "libxml2-2.7.8-targeted-c6dbac99fa",
+   "libxml2-2.7.8-targeted-ebc75e4ab0"
   ],
   "false_config_samples": [
    "libxml2-2.7.8-all-defined-undef",
@@ -29001,17 +29001,17 @@
  "libxml2:defined(__cplusplus)": {
   "expression": "defined(__cplusplus)",
   "public_header": false,
-  "true_config_count": 40,
-  "false_config_count": 13359,
+  "true_config_count": 24,
+  "false_config_count": 13375,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
-   "libxml2-2.10.4-targeted-1d09f9fc37",
    "libxml2-2.10.4-targeted-33581326da",
-   "libxml2-2.10.4-targeted-6b2cfa3b2f",
    "libxml2-2.10.4-targeted-e3bd4d950f",
    "libxml2-2.11.5-all-absent-defined",
-   "libxml2-2.11.5-targeted-1d09f9fc37",
-   "libxml2-2.11.5-targeted-33581326da"
+   "libxml2-2.11.5-targeted-33581326da",
+   "libxml2-2.11.5-targeted-e3bd4d950f",
+   "libxml2-2.12.6-all-absent-defined",
+   "libxml2-2.12.6-targeted-33581326da"
   ],
   "false_config_samples": [
    "libxml2-2.10.4-all-defined-undef",
@@ -29093,8 +29093,8 @@
  "libxml2:defined(__linux__)": {
   "expression": "defined(__linux__)",
   "public_header": false,
-  "true_config_count": 13370,
-  "false_config_count": 29,
+  "true_config_count": 13373,
+  "false_config_count": 26,
   "true_config_samples": [
    "libxml2-2.10.4-all-absent-defined",
    "libxml2-2.10.4-oracle",
@@ -29109,11 +29109,11 @@
    "libxml2-2.10.4-all-defined-undef",
    "libxml2-2.10.4-targeted-27a581c577",
    "libxml2-2.10.4-targeted-91116b7be8",
-   "libxml2-2.10.4-targeted-d59221bcf2",
    "libxml2-2.11.5-all-defined-undef",
    "libxml2-2.11.5-targeted-27a581c577",
    "libxml2-2.11.5-targeted-91116b7be8",
-   "libxml2-2.12.6-all-defined-undef"
+   "libxml2-2.12.6-all-defined-undef",
+   "libxml2-2.12.6-targeted-27a581c577"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -79925,8 +79925,8 @@
  "libxslt:!(defined(TRIO_COMPILER_SUPPORTS_C89) || defined(__cplusplus))": {
   "expression": "!(defined(TRIO_COMPILER_SUPPORTS_C89) || defined(__cplusplus))",
   "public_header": true,
-  "true_config_count": 1108,
-  "false_config_count": 20,
+  "true_config_count": 1113,
+  "false_config_count": 15,
   "true_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
    "libxslt-1.1.26-oracle",
@@ -79941,11 +79941,11 @@
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-1d09f9fc37",
    "libxslt-1.1.26-targeted-33581326da",
-   "libxslt-1.1.26-targeted-6b2cfa3b2f",
    "libxslt-1.1.32-all-absent-defined",
    "libxslt-1.1.32-targeted-1d09f9fc37",
    "libxslt-1.1.32-targeted-33581326da",
-   "libxslt-1.1.32-targeted-6b2cfa3b2f"
+   "libxslt-1.1.35-all-absent-defined",
+   "libxslt-1.1.35-targeted-1d09f9fc37"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -80359,8 +80359,8 @@
  "libxslt:!defined(_MSC_VER)": {
   "expression": "!defined(_MSC_VER)",
   "public_header": false,
-  "true_config_count": 1092,
-  "false_config_count": 36,
+  "true_config_count": 1072,
+  "false_config_count": 56,
   "true_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
    "libxslt-1.1.26-oracle",
@@ -80376,10 +80376,10 @@
    "libxslt-1.1.26-targeted-28ad75eebb",
    "libxslt-1.1.26-targeted-4b134f15d1",
    "libxslt-1.1.26-targeted-4c7b991db4",
+   "libxslt-1.1.26-targeted-5f77a59b02",
    "libxslt-1.1.26-targeted-669b21eebf",
    "libxslt-1.1.26-targeted-69cde5d030",
-   "libxslt-1.1.32-all-absent-defined",
-   "libxslt-1.1.32-targeted-08ab6c27d2"
+   "libxslt-1.1.26-targeted-8d96850142"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -80608,17 +80608,17 @@
  "libxslt:(defined (__CYGWIN__) || defined _MSC_VER) && !defined IN_LIBEXSLT && !defined LIBEXSLT_STATIC": {
   "expression": "(defined (__CYGWIN__) || defined _MSC_VER) && !defined IN_LIBEXSLT && !defined LIBEXSLT_STATIC",
   "public_header": true,
-  "true_config_count": 55,
-  "false_config_count": 1073,
+  "true_config_count": 65,
+  "false_config_count": 1063,
   "true_config_samples": [
    "libxslt-1.1.26-targeted-18a6a6ad27",
    "libxslt-1.1.26-targeted-28ad75eebb",
    "libxslt-1.1.26-targeted-3e7b28e3c1",
    "libxslt-1.1.26-targeted-4b134f15d1",
    "libxslt-1.1.26-targeted-4c7b991db4",
+   "libxslt-1.1.26-targeted-5f77a59b02",
    "libxslt-1.1.26-targeted-669b21eebf",
-   "libxslt-1.1.26-targeted-69cde5d030",
-   "libxslt-1.1.26-targeted-bd133e3925"
+   "libxslt-1.1.26-targeted-69cde5d030"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
@@ -80640,17 +80640,17 @@
  "libxslt:(defined (__CYGWIN__) || defined _MSC_VER) && !defined IN_LIBXSLT && !defined LIBXSLT_STATIC": {
   "expression": "(defined (__CYGWIN__) || defined _MSC_VER) && !defined IN_LIBXSLT && !defined LIBXSLT_STATIC",
   "public_header": true,
-  "true_config_count": 55,
-  "false_config_count": 1073,
+  "true_config_count": 65,
+  "false_config_count": 1063,
   "true_config_samples": [
    "libxslt-1.1.26-targeted-18a6a6ad27",
    "libxslt-1.1.26-targeted-28ad75eebb",
    "libxslt-1.1.26-targeted-3e7b28e3c1",
    "libxslt-1.1.26-targeted-4b134f15d1",
    "libxslt-1.1.26-targeted-4c7b991db4",
+   "libxslt-1.1.26-targeted-5f77a59b02",
    "libxslt-1.1.26-targeted-669b21eebf",
-   "libxslt-1.1.26-targeted-69cde5d030",
-   "libxslt-1.1.26-targeted-bd133e3925"
+   "libxslt-1.1.26-targeted-69cde5d030"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
@@ -80672,8 +80672,8 @@
  "libxslt:(defined(_MSC_VER) || defined(__MINGW32__)) && !defined(vsnprintf)": {
   "expression": "(defined(_MSC_VER) || defined(__MINGW32__)) && !defined(vsnprintf)",
   "public_header": false,
-  "true_config_count": 18,
-  "false_config_count": 431,
+  "true_config_count": 22,
+  "false_config_count": 427,
   "true_config_samples": [
    "libxslt-1.1.26-targeted-28ad75eebb",
    "libxslt-1.1.26-targeted-4b134f15d1",
@@ -81320,8 +81320,8 @@
  "libxslt:HAVE_GMTIME_R": {
   "expression": "HAVE_GMTIME_R",
   "public_header": true,
-  "true_config_count": 1110,
-  "false_config_count": 18,
+  "true_config_count": 1111,
+  "false_config_count": 17,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-oracle",
@@ -81334,13 +81334,13 @@
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
-   "libxslt-1.1.26-targeted-d581709a04",
    "libxslt-1.1.26-targeted-f3bd5306e0",
    "libxslt-1.1.26-values-extreme-lo",
    "libxslt-1.1.32-all-defined-undef",
    "libxslt-1.1.32-targeted-f3bd5306e0",
    "libxslt-1.1.32-values-extreme-lo",
-   "libxslt-1.1.35-all-defined-undef"
+   "libxslt-1.1.35-all-defined-undef",
+   "libxslt-1.1.35-targeted-f3bd5306e0"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -82046,8 +82046,8 @@
  "libxslt:HAVE_TIME_H": {
   "expression": "HAVE_TIME_H",
   "public_header": true,
-  "true_config_count": 668,
-  "false_config_count": 14,
+  "true_config_count": 667,
+  "false_config_count": 15,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-oracle",
@@ -82061,12 +82061,12 @@
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
    "libxslt-1.1.26-targeted-5348a59018",
+   "libxslt-1.1.26-targeted-d581709a04",
    "libxslt-1.1.26-targeted-e3c5d412df",
    "libxslt-1.1.26-values-extreme-lo",
    "libxslt-1.1.32-all-defined-undef",
    "libxslt-1.1.32-targeted-5348a59018",
-   "libxslt-1.1.32-targeted-d581709a04",
-   "libxslt-1.1.32-targeted-e3c5d412df"
+   "libxslt-1.1.32-targeted-d581709a04"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -82774,8 +82774,8 @@
  "libxslt:LIBXML_VERSION < 21300": {
   "expression": "LIBXML_VERSION < 21300",
   "public_header": true,
-  "true_config_count": 225,
-  "false_config_count": 2,
+  "true_config_count": 224,
+  "false_config_count": 3,
   "true_config_samples": [
    "libxslt-1.1.42-all-absent-defined",
    "libxslt-1.1.42-all-defined-undef",
@@ -82787,6 +82787,7 @@
    "libxslt-1.1.42-targeted-08ab6c27d2"
   ],
   "false_config_samples": [
+   "libxslt-1.1.42-targeted-73435065b4",
    "libxslt-1.1.42-targeted-d7ba612a18",
    "libxslt-1.1.42-targeted-e0874f1195"
   ],
@@ -82800,15 +82801,17 @@
  "libxslt:LIBXML_VERSION >= 20603": {
   "expression": "LIBXML_VERSION >= 20603",
   "public_header": true,
-  "true_config_count": 6,
-  "false_config_count": 1122,
+  "true_config_count": 9,
+  "false_config_count": 1119,
   "true_config_samples": [
    "libxslt-1.1.26-targeted-d7ba612a18",
    "libxslt-1.1.32-targeted-d7ba612a18",
+   "libxslt-1.1.35-targeted-73435065b4",
    "libxslt-1.1.35-targeted-d7ba612a18",
+   "libxslt-1.1.38-targeted-73435065b4",
    "libxslt-1.1.38-targeted-d7ba612a18",
-   "libxslt-1.1.42-targeted-d7ba612a18",
-   "libxslt-1.1.42-targeted-e0874f1195"
+   "libxslt-1.1.42-targeted-73435065b4",
+   "libxslt-1.1.42-targeted-d7ba612a18"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
@@ -86017,8 +86020,8 @@
  "libxslt:defined _MSC_VER || defined __MINGW32__": {
   "expression": "defined _MSC_VER || defined __MINGW32__",
   "public_header": true,
-  "true_config_count": 30,
-  "false_config_count": 652,
+  "true_config_count": 36,
+  "false_config_count": 646,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-28ad75eebb",
@@ -86421,8 +86424,8 @@
  "libxslt:defined(HAVE_TIME_H)": {
   "expression": "defined(HAVE_TIME_H)",
   "public_header": false,
-  "true_config_count": 671,
-  "false_config_count": 11,
+  "true_config_count": 670,
+  "false_config_count": 12,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-oracle",
@@ -86436,12 +86439,12 @@
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
    "libxslt-1.1.26-targeted-5348a59018",
+   "libxslt-1.1.26-targeted-d581709a04",
    "libxslt-1.1.26-targeted-e3c5d412df",
    "libxslt-1.1.32-all-defined-undef",
    "libxslt-1.1.32-targeted-5348a59018",
    "libxslt-1.1.32-targeted-d581709a04",
-   "libxslt-1.1.32-targeted-e3c5d412df",
-   "libxslt-1.1.35-all-defined-undef"
+   "libxslt-1.1.32-targeted-e3c5d412df"
   ],
   "config_kinds_exercised": [
    "lattice",
@@ -86785,17 +86788,17 @@
  "libxslt:defined(TRIO_COMPILER_MSVC)": {
   "expression": "defined(TRIO_COMPILER_MSVC)",
   "public_header": true,
-  "true_config_count": 10,
-  "false_config_count": 1118,
+  "true_config_count": 15,
+  "false_config_count": 1113,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-094635eb88",
+   "libxslt-1.1.26-targeted-dd137005d4",
    "libxslt-1.1.32-all-absent-defined",
    "libxslt-1.1.32-targeted-094635eb88",
+   "libxslt-1.1.32-targeted-dd137005d4",
    "libxslt-1.1.35-all-absent-defined",
-   "libxslt-1.1.35-targeted-094635eb88",
-   "libxslt-1.1.38-all-absent-defined",
-   "libxslt-1.1.38-targeted-094635eb88"
+   "libxslt-1.1.35-targeted-094635eb88"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -86881,17 +86884,17 @@
  "libxslt:defined(TRIO_COMPILER_SUPPORTS_C99)": {
   "expression": "defined(TRIO_COMPILER_SUPPORTS_C99)",
   "public_header": true,
-  "true_config_count": 10,
-  "false_config_count": 1118,
+  "true_config_count": 15,
+  "false_config_count": 1113,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
+   "libxslt-1.1.26-targeted-6b2cfa3b2f",
    "libxslt-1.1.26-targeted-abc1ec5d85",
    "libxslt-1.1.32-all-absent-defined",
+   "libxslt-1.1.32-targeted-6b2cfa3b2f",
    "libxslt-1.1.32-targeted-abc1ec5d85",
    "libxslt-1.1.35-all-absent-defined",
-   "libxslt-1.1.35-targeted-abc1ec5d85",
-   "libxslt-1.1.38-all-absent-defined",
-   "libxslt-1.1.38-targeted-abc1ec5d85"
+   "libxslt-1.1.35-targeted-6b2cfa3b2f"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -86913,17 +86916,17 @@
  "libxslt:defined(TRIO_COMPILER_SUPPORTS_C99) || defined(__cplusplus)": {
   "expression": "defined(TRIO_COMPILER_SUPPORTS_C99) || defined(__cplusplus)",
   "public_header": true,
-  "true_config_count": 25,
-  "false_config_count": 1103,
+  "true_config_count": 20,
+  "false_config_count": 1108,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
-   "libxslt-1.1.26-targeted-1d09f9fc37",
    "libxslt-1.1.26-targeted-33581326da",
    "libxslt-1.1.26-targeted-6b2cfa3b2f",
    "libxslt-1.1.26-targeted-abc1ec5d85",
    "libxslt-1.1.32-all-absent-defined",
-   "libxslt-1.1.32-targeted-1d09f9fc37",
-   "libxslt-1.1.32-targeted-33581326da"
+   "libxslt-1.1.32-targeted-33581326da",
+   "libxslt-1.1.32-targeted-6b2cfa3b2f",
+   "libxslt-1.1.32-targeted-abc1ec5d85"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -87187,8 +87190,8 @@
  "libxslt:defined(WIN32) || defined (__CYGWIN__)": {
   "expression": "defined(WIN32) || defined (__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 11,
-  "false_config_count": 214,
+  "true_config_count": 9,
+  "false_config_count": 216,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-18a6a6ad27",
@@ -87197,7 +87200,7 @@
    "libxslt-1.1.26-targeted-621251a990",
    "libxslt-1.1.26-targeted-86425557bb",
    "libxslt-1.1.26-targeted-9866c96adc",
-   "libxslt-1.1.26-targeted-bd133e3925"
+   "libxslt-1.1.26-targeted-e1ac8f7761"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -87278,17 +87281,17 @@
  "libxslt:defined(_AIX)": {
   "expression": "defined(_AIX)",
   "public_header": true,
-  "true_config_count": 20,
-  "false_config_count": 1108,
+  "true_config_count": 15,
+  "false_config_count": 1113,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-0c18ab62a8",
    "libxslt-1.1.26-targeted-3492e85f54",
-   "libxslt-1.1.26-targeted-3fc8c3ed73",
    "libxslt-1.1.32-all-absent-defined",
    "libxslt-1.1.32-targeted-0c18ab62a8",
    "libxslt-1.1.32-targeted-3492e85f54",
-   "libxslt-1.1.32-targeted-3fc8c3ed73"
+   "libxslt-1.1.35-all-absent-defined",
+   "libxslt-1.1.35-targeted-0c18ab62a8"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -87339,17 +87342,17 @@
  "libxslt:defined(_MSC_VER)": {
   "expression": "defined(_MSC_VER)",
   "public_header": true,
-  "true_config_count": 36,
-  "false_config_count": 1092,
+  "true_config_count": 56,
+  "false_config_count": 1072,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-28ad75eebb",
    "libxslt-1.1.26-targeted-4b134f15d1",
    "libxslt-1.1.26-targeted-4c7b991db4",
+   "libxslt-1.1.26-targeted-5f77a59b02",
    "libxslt-1.1.26-targeted-669b21eebf",
    "libxslt-1.1.26-targeted-69cde5d030",
-   "libxslt-1.1.32-all-absent-defined",
-   "libxslt-1.1.32-targeted-08ab6c27d2"
+   "libxslt-1.1.26-targeted-8d96850142"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -87371,17 +87374,17 @@
  "libxslt:defined(_MSC_VER) && _MSC_VER < 1900": {
   "expression": "defined(_MSC_VER) && _MSC_VER < 1900",
   "public_header": true,
-  "true_config_count": 24,
-  "false_config_count": 879,
+  "true_config_count": 39,
+  "false_config_count": 864,
   "true_config_samples": [
    "libxslt-1.1.32-all-absent-defined",
    "libxslt-1.1.32-targeted-08ab6c27d2",
    "libxslt-1.1.32-targeted-28ad75eebb",
    "libxslt-1.1.32-targeted-4b134f15d1",
    "libxslt-1.1.32-targeted-4c7b991db4",
+   "libxslt-1.1.32-targeted-5f77a59b02",
    "libxslt-1.1.32-targeted-69cde5d030",
-   "libxslt-1.1.35-all-absent-defined",
-   "libxslt-1.1.35-targeted-08ab6c27d2"
+   "libxslt-1.1.32-targeted-8d96850142"
   ],
   "false_config_samples": [
    "libxslt-1.1.32-all-defined-undef",
@@ -87457,8 +87460,8 @@
  "libxslt:defined(_MSC_VER) || defined(__MINGW32__)": {
   "expression": "defined(_MSC_VER) || defined(__MINGW32__)",
   "public_header": true,
-  "true_config_count": 49,
-  "false_config_count": 1079,
+  "true_config_count": 59,
+  "false_config_count": 1069,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-28ad75eebb",
@@ -87489,8 +87492,8 @@
  "libxslt:defined(_WIN32)": {
   "expression": "defined(_WIN32)",
   "public_header": true,
-  "true_config_count": 42,
-  "false_config_count": 1086,
+  "true_config_count": 37,
+  "false_config_count": 1091,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-18a6a6ad27",
@@ -87499,7 +87502,7 @@
    "libxslt-1.1.26-targeted-7a8ea33c4d",
    "libxslt-1.1.26-targeted-942eb5209e",
    "libxslt-1.1.26-targeted-c8bcce584b",
-   "libxslt-1.1.26-targeted-dd137005d4"
+   "libxslt-1.1.32-all-absent-defined"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",
@@ -87521,8 +87524,8 @@
  "libxslt:defined(_WIN32) && !defined (__CYGWIN__) && !defined (__MINGW32__)": {
   "expression": "defined(_WIN32) && !defined (__CYGWIN__) && !defined (__MINGW32__)",
   "public_header": true,
-  "true_config_count": 17,
-  "false_config_count": 440,
+  "true_config_count": 15,
+  "false_config_count": 442,
   "true_config_samples": [
    "libxslt-1.1.32-targeted-048ed185be",
    "libxslt-1.1.32-targeted-40c4a2c244",
@@ -87553,8 +87556,8 @@
  "libxslt:defined(_WIN32) && !defined (__CYGWIN__) && (!__MINGW32__)": {
   "expression": "defined(_WIN32) && !defined (__CYGWIN__) && (!__MINGW32__)",
   "public_header": true,
-  "true_config_count": 9,
-  "false_config_count": 215,
+  "true_config_count": 8,
+  "false_config_count": 216,
   "true_config_samples": [
    "libxslt-1.1.32-targeted-048ed185be",
    "libxslt-1.1.32-targeted-40c4a2c244",
@@ -87585,17 +87588,17 @@
  "libxslt:defined(_WIN32) && !defined (__MINGW32__)": {
   "expression": "defined(_WIN32) && !defined (__MINGW32__)",
   "public_header": true,
-  "true_config_count": 10,
-  "false_config_count": 436,
+  "true_config_count": 8,
+  "false_config_count": 438,
   "true_config_samples": [
    "libxslt-1.1.38-targeted-048ed185be",
    "libxslt-1.1.38-targeted-49b52e1253",
    "libxslt-1.1.38-targeted-7a8ea33c4d",
-   "libxslt-1.1.38-targeted-dd137005d4",
    "libxslt-1.1.38-targeted-f8a26997cd",
    "libxslt-1.1.42-targeted-048ed185be",
    "libxslt-1.1.42-targeted-49b52e1253",
-   "libxslt-1.1.42-targeted-7a8ea33c4d"
+   "libxslt-1.1.42-targeted-7a8ea33c4d",
+   "libxslt-1.1.42-targeted-f8a26997cd"
   ],
   "false_config_samples": [
    "libxslt-1.1.38-all-absent-defined",
@@ -87617,8 +87620,8 @@
  "libxslt:defined(_WIN32) && !defined(__CYGINW__)": {
   "expression": "defined(_WIN32) && !defined(__CYGINW__)",
   "public_header": false,
-  "true_config_count": 30,
-  "false_config_count": 873,
+  "true_config_count": 26,
+  "false_config_count": 877,
   "true_config_samples": [
    "libxslt-1.1.32-targeted-048ed185be",
    "libxslt-1.1.32-targeted-18a6a6ad27",
@@ -87649,8 +87652,8 @@
  "libxslt:defined(_WIN32) && !defined(__CYGWIN__)": {
   "expression": "defined(_WIN32) && !defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 19,
-  "false_config_count": 438,
+  "true_config_count": 17,
+  "false_config_count": 440,
   "true_config_samples": [
    "libxslt-1.1.32-targeted-048ed185be",
    "libxslt-1.1.32-targeted-40c4a2c244",
@@ -87799,8 +87802,8 @@
  "libxslt:defined(_WIN32) || defined (__CYGWIN__)": {
   "expression": "defined(_WIN32) || defined (__CYGWIN__)",
   "public_header": false,
-  "true_config_count": 52,
-  "false_config_count": 851,
+  "true_config_count": 40,
+  "false_config_count": 863,
   "true_config_samples": [
    "libxslt-1.1.32-all-absent-defined",
    "libxslt-1.1.32-targeted-048ed185be",
@@ -87831,8 +87834,8 @@
  "libxslt:defined(_WIN32) || defined(__CYGWIN__)": {
   "expression": "defined(_WIN32) || defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 22,
-  "false_config_count": 424,
+  "true_config_count": 16,
+  "false_config_count": 430,
   "true_config_samples": [
    "libxslt-1.1.38-all-absent-defined",
    "libxslt-1.1.38-targeted-048ed185be",
@@ -87840,8 +87843,8 @@
    "libxslt-1.1.38-targeted-42c0cae739",
    "libxslt-1.1.38-targeted-49b52e1253",
    "libxslt-1.1.38-targeted-7a8ea33c4d",
-   "libxslt-1.1.38-targeted-bd133e3925",
-   "libxslt-1.1.38-targeted-dd137005d4"
+   "libxslt-1.1.38-targeted-e1ac8f7761",
+   "libxslt-1.1.38-targeted-f8a26997cd"
   ],
   "false_config_samples": [
    "libxslt-1.1.38-all-defined-undef",
@@ -87959,17 +87962,17 @@
  "libxslt:defined(__CYGWIN__)": {
   "expression": "defined(__CYGWIN__)",
   "public_header": true,
-  "true_config_count": 29,
-  "false_config_count": 1099,
+  "true_config_count": 19,
+  "false_config_count": 1109,
   "true_config_samples": [
    "libxslt-1.1.26-all-absent-defined",
    "libxslt-1.1.26-targeted-18a6a6ad27",
    "libxslt-1.1.26-targeted-3e7b28e3c1",
-   "libxslt-1.1.26-targeted-bd133e3925",
    "libxslt-1.1.26-targeted-e1ac8f7761",
-   "libxslt-1.1.26-targeted-e702927899",
    "libxslt-1.1.32-all-absent-defined",
-   "libxslt-1.1.32-targeted-18a6a6ad27"
+   "libxslt-1.1.32-targeted-18a6a6ad27",
+   "libxslt-1.1.32-targeted-3eedfb143e",
+   "libxslt-1.1.32-targeted-e1ac8f7761"
   ],
   "false_config_samples": [
    "libxslt-1.1.26-all-defined-undef",

@@ -39,6 +39,7 @@ AGGRESSIVE = {
     "EXTRACT_STATIC": "YES",
     "EXTRACT_LOCAL_CLASSES": "YES",
     "EXTRACT_LOCAL_METHODS": "YES",
+    "JAVADOC_AUTOBRIEF": "YES",
     "HIDE_UNDOC_MEMBERS": "NO",
     "HIDE_UNDOC_CLASSES": "NO",
     "ENABLE_PREPROCESSING": "YES",
@@ -160,7 +161,9 @@ def gen(project, version, profile="public"):
     cfg["INPUT"] = inputs
     cfg["INCLUDE_PATH"] = prefix_inc
     # era-appropriate preprocessor surface: the built oracle's feature macros
-    cfg["PREDEFINED"] = "LIBXML_STATIC"
+    # plus the tree.h circular-dependency workaround define (R-000005: without
+    # XML_TREE_INTERNALS, tree.h hides all tree declarations)
+    cfg["PREDEFINED"] = "LIBXML_STATIC XML_TREE_INTERNALS"
 
     doxyfile = os.path.join(work, f"Doxyfile-{profile}")
     with open(doxyfile, "w") as f:

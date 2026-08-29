@@ -4,9 +4,9 @@
  "version": "1.1.32",
  "profile": "public",
  "doxygen_version": "1.18.0",
- "config_hash": "3c658d04e70c042ba986b387a5f8a83c742707ad8de3c1c8ac9a29617562850a",
+ "config_hash": "855d46a012322d3eb136e914a4bb779b4152fd5809b1c884159092a7b7ba60d1",
  "source_tree_hash": "770f78d0f1da3ceb88d13f7c1ec2f5bb350a2f69b2a0d7578df55bae6a510662",
- "raw_xml_hash": "9c215e1b436ad7857f23608b4476b3d8dc84eb4e8cdc21c63e2de2120d1edb0c",
+ "raw_xml_hash": "95fca17370115aeeb235aba1baee370f589db35f4b799c55f61dfa336f8e4a00",
  "counts": {
   "define": 73,
   "enum": 7,
@@ -20,7 +20,7 @@
    "kind": "define",
    "name": "EXSLT_COMMON_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/common\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "24"
   },
@@ -28,7 +28,7 @@
    "kind": "define",
    "name": "EXSLT_CRYPTO_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/crypto\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "30"
   },
@@ -36,7 +36,7 @@
    "kind": "define",
    "name": "EXSLT_DATE_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/dates-and-times\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "60"
   },
@@ -44,7 +44,7 @@
    "kind": "define",
    "name": "EXSLT_DYNAMIC_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/dynamic\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "66"
   },
@@ -52,7 +52,7 @@
    "kind": "define",
    "name": "EXSLT_FUNCTIONS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/functions\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "48"
   },
@@ -60,7 +60,7 @@
    "kind": "define",
    "name": "EXSLT_MATH_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/math\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "36"
   },
@@ -68,7 +68,7 @@
    "kind": "define",
    "name": "EXSLT_SETS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/sets\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "42"
   },
@@ -76,7 +76,7 @@
    "kind": "define",
    "name": "EXSLT_STRINGS_NAMESPACE",
    "value": "((const xmlChar *) \"http://exslt.org/strings\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "54"
   },
@@ -84,7 +84,7 @@
    "kind": "define",
    "name": "SAXON_NAMESPACE",
    "value": "((const xmlChar *) \"http://icl.com/saxon\")",
-   "documented": false,
+   "documented": true,
    "header": "exslt.h",
    "line": "73"
   },
@@ -92,7 +92,7 @@
    "kind": "define",
    "name": "ATTRIBUTE_UNUSED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltconfig.h",
    "line": "66"
   },
@@ -100,7 +100,7 @@
    "kind": "define",
    "name": "LIBEXSLT_DOTTED_VERSION",
    "value": "\"1.1.32\"",
-   "documented": false,
+   "documented": true,
    "header": "exsltconfig.h",
    "line": "21"
   },
@@ -108,7 +108,7 @@
    "kind": "define",
    "name": "LIBEXSLT_VERSION",
    "value": "820",
-   "documented": false,
+   "documented": true,
    "header": "exsltconfig.h",
    "line": "28"
   },
@@ -116,7 +116,7 @@
    "kind": "define",
    "name": "LIBEXSLT_VERSION_EXTRA",
    "value": "\"\"",
-   "documented": false,
+   "documented": true,
    "header": "exsltconfig.h",
    "line": "42"
   },
@@ -124,7 +124,7 @@
    "kind": "define",
    "name": "LIBEXSLT_VERSION_STRING",
    "value": "\"820\"",
-   "documented": false,
+   "documented": true,
    "header": "exsltconfig.h",
    "line": "35"
   },
@@ -132,7 +132,7 @@
    "kind": "define",
    "name": "EXSLTCALL",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "41"
   },
@@ -140,7 +140,7 @@
    "kind": "define",
    "name": "EXSLTPUBFUN",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "29"
   },
@@ -148,7 +148,7 @@
    "kind": "define",
    "name": "EXSLTPUBVAR",
    "value": "extern",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "35"
   },
@@ -156,7 +156,7 @@
    "kind": "define",
    "name": "LIBEXSLT_PUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "exsltexports.h",
    "line": "135"
   },
@@ -164,7 +164,7 @@
    "kind": "define",
    "name": "XSLT_LIBXSLT_NAMESPACE",
    "value": "((xmlChar *) \"http://xmlsoft.org/XSLT/namespace\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "27"
   },
@@ -172,7 +172,7 @@
    "kind": "define",
    "name": "XSLT_SAXON_NAMESPACE",
    "value": "((xmlChar *) \"http://icl.com/saxon\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "34"
   },
@@ -180,7 +180,7 @@
    "kind": "define",
    "name": "XSLT_XALAN_NAMESPACE",
    "value": "((xmlChar *)    \\\n\"org.apache.xalan.xslt.extensions.Redirect\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "48"
   },
@@ -188,7 +188,7 @@
    "kind": "define",
    "name": "XSLT_XT_NAMESPACE",
    "value": "((xmlChar *) \"http://www.jclark.com/xt\")",
-   "documented": false,
+   "documented": true,
    "header": "extra.h",
    "line": "41"
   },
@@ -196,7 +196,7 @@
    "kind": "define",
    "name": "XSLT_REGISTER_FUNCTION_LOOKUP",
    "value": "xmlXPathRegisterFuncLookup((ctxt)->xpathCtxt,       \\\n(xmlXPathFuncLookupFunc)",
-   "documented": false,
+   "documented": true,
    "header": "functions.h",
    "line": "27"
   },
@@ -204,7 +204,7 @@
    "kind": "define",
    "name": "XSLT_GET_IMPORT_INT",
    "value": "{           \\",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "40"
   },
@@ -212,7 +212,7 @@
    "kind": "define",
    "name": "XSLT_GET_IMPORT_PTR",
    "value": "{           \\",
-   "documented": false,
+   "documented": true,
    "header": "imports.h",
    "line": "27"
   },
@@ -220,7 +220,7 @@
    "kind": "define",
    "name": "NODE_IS_KEYED",
    "value": "(1 >> 15)",
-   "documented": false,
+   "documented": true,
    "header": "keys.h",
    "line": "26"
   },
@@ -228,7 +228,7 @@
    "kind": "define",
    "name": "UNDEFINED_DEFAULT_NS",
    "value": "(const xmlChar *) -1L",
-   "documented": false,
+   "documented": true,
    "header": "namespaces.h",
    "line": "30"
   },
@@ -236,7 +236,7 @@
    "kind": "define",
    "name": "XSLT_REGISTER_VARIABLE_LOOKUP",
    "value": "xmlXPathRegisterVariableLookup((ctxt)->xpathCtxt,       \\",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "30"
   },
@@ -244,7 +244,7 @@
    "kind": "define",
    "name": "XSLT_RVT_FUNC_RESULT",
    "value": "((void *)3)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "63"
   },
@@ -252,7 +252,7 @@
    "kind": "define",
    "name": "XSLT_RVT_GLOBAL",
    "value": "((void *)4)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "70"
   },
@@ -260,7 +260,7 @@
    "kind": "define",
    "name": "XSLT_RVT_LOCAL",
    "value": "((void *)1)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "46"
   },
@@ -268,7 +268,7 @@
    "kind": "define",
    "name": "XSLT_RVT_VARIABLE",
    "value": "((void *)2)",
-   "documented": false,
+   "documented": true,
    "header": "variables.h",
    "line": "54"
   },
@@ -276,7 +276,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_URL",
    "value": "\"http://xmlsoft.org/XSLT/\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "39"
   },
@@ -284,7 +284,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_VENDOR",
    "value": "\"libxslt\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "32"
   },
@@ -292,7 +292,7 @@
    "kind": "define",
    "name": "XSLT_DEFAULT_VERSION",
    "value": "\"1.0\"",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "25"
   },
@@ -300,7 +300,7 @@
    "kind": "define",
    "name": "XSLT_NAMESPACE",
    "value": "((const xmlChar *)\"http://www.w3.org/1999/XSL/Transform\")",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "46"
   },
@@ -308,7 +308,7 @@
    "kind": "define",
    "name": "XSLT_PARSE_OPTIONS",
    "value": "XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_DTDATTR | XML_PARSE_NOCDATA",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "54"
   },
@@ -316,7 +316,7 @@
    "kind": "define",
    "name": "CHECK_STOPPED",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1800"
   },
@@ -324,7 +324,7 @@
    "kind": "define",
    "name": "CHECK_STOPPED0",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1816"
   },
@@ -332,7 +332,7 @@
    "kind": "define",
    "name": "CHECK_STOPPEDE",
    "value": "if (ctxt->state ==",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1808"
   },
@@ -340,7 +340,7 @@
    "kind": "define",
    "name": "XML_CAST_FPTR",
    "value": "fptr",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "1838"
   },
@@ -348,7 +348,7 @@
    "kind": "define",
    "name": "XSLT_FAST_IF",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "74"
   },
@@ -356,7 +356,7 @@
    "kind": "define",
    "name": "XSLT_IS_RES_TREE_FRAG",
    "value": "((n != NULL) && ((n)->type == XML_DOCUMENT_NODE) && \\\n ((n)->name != NULL) && ((n)->name[0] == ' '))",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "56"
   },
@@ -364,7 +364,7 @@
    "kind": "define",
    "name": "XSLT_IS_TEXT_NODE",
    "value": "((n != NULL) && \\\n(((n)->type == XML_TEXT_NODE) || \\\n ((n)->type == XML_CDATA_SECTION_NODE)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "38"
   },
@@ -372,7 +372,7 @@
    "kind": "define",
    "name": "XSLT_MARK_RES_TREE_FRAG",
    "value": "(n)->name = (char *) xmlStrdup(BAD_CAST \" fake node libxslt\");",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "48"
   },
@@ -380,7 +380,7 @@
    "kind": "define",
    "name": "XSLT_MAX_SORT",
    "value": "15",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "217"
   },
@@ -388,7 +388,7 @@
    "kind": "define",
    "name": "XSLT_PAT_NO_PRIORITY",
    "value": "-12345789",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "224"
   },
@@ -396,7 +396,7 @@
    "kind": "define",
    "name": "XSLT_REFACTORED_KEYCOMP",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "66"
   },
@@ -404,7 +404,7 @@
    "kind": "define",
    "name": "XSLT_REFACTORED_VARS",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "89"
   },
@@ -412,7 +412,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA",
    "value": "(ctxt)->extras[(nr)].val.typ",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "265"
   },
@@ -420,7 +420,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA_FREE",
    "value": "(ctxt)->extras[(nr)].deallocate",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "257"
   },
@@ -428,7 +428,7 @@
    "kind": "define",
    "name": "XSLT_RUNTIME_EXTRA_LST",
    "value": "(ctxt)->extras[(nr)].info",
-   "documented": false,
+   "documented": true,
    "header": "xsltInternals.h",
    "line": "249"
   },
@@ -436,7 +436,7 @@
    "kind": "define",
    "name": "ATTRIBUTE_UNUSED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "139"
   },
@@ -444,7 +444,7 @@
    "kind": "define",
    "name": "LIBXSLT_ATTR_FORMAT",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "150"
   },
@@ -452,7 +452,7 @@
    "kind": "define",
    "name": "LIBXSLT_DOTTED_VERSION",
    "value": "\"1.1.32\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "23"
   },
@@ -460,7 +460,7 @@
    "kind": "define",
    "name": "LIBXSLT_PUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "162"
   },
@@ -468,7 +468,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION",
    "value": "10132",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "30"
   },
@@ -476,7 +476,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION_EXTRA",
    "value": "\"\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "44"
   },
@@ -484,7 +484,7 @@
    "kind": "define",
    "name": "LIBXSLT_VERSION_STRING",
    "value": "\"10132\"",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "37"
   },
@@ -492,7 +492,7 @@
    "kind": "define",
    "name": "WITH_DEBUGGER",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "109"
   },
@@ -500,7 +500,7 @@
    "kind": "define",
    "name": "WITH_XSLT_DEBUG",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltconfig.h",
    "line": "54"
   },
@@ -508,7 +508,7 @@
    "kind": "define",
    "name": "LIBXSLT_PUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "137"
   },
@@ -516,7 +516,7 @@
    "kind": "define",
    "name": "XSLTCALL",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "43"
   },
@@ -524,7 +524,7 @@
    "kind": "define",
    "name": "XSLTPUBFUN",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "31"
   },
@@ -532,7 +532,7 @@
    "kind": "define",
    "name": "XSLTPUBVAR",
    "value": "extern",
-   "documented": false,
+   "documented": true,
    "header": "xsltexports.h",
    "line": "37"
   },
@@ -548,7 +548,7 @@
    "kind": "define",
    "name": "IS_XSLT_ELEM",
    "value": "(((n) != NULL) && ((n)->type == XML_ELEMENT_NODE) &&                \\\n ((n)->ns != NULL) && (xmlStrEqual((n)->ns->href,",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "54"
   },
@@ -556,7 +556,7 @@
    "kind": "define",
    "name": "IS_XSLT_NAME",
    "value": "(xmlStrEqual((n)->name, (const xmlChar *) (val)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "63"
   },
@@ -564,7 +564,7 @@
    "kind": "define",
    "name": "IS_XSLT_REAL_NODE",
    "value": "(((n) != NULL) &&                           \\\n (((n)->type == XML_ELEMENT_NODE) ||                \\\n  ((n)->type == XML_TEXT_NODE) ||                   \\\n  ((n)->type == XML_CDATA_SECTION_NODE) ||              \\\n  ((n)->type == XML_ATTRIBUTE_NODE) ||              \\\n  ((n)->type == XML_DOCUMENT_NODE) ||               \\\n  ((n)->type == XML_HTML_DOCUMENT_NODE) ||              \\\n  ((n)->type == XML_COMMENT_NODE) ||                \\\n  ((n)->type == XML_PI_NODE)))",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "71"
   },
@@ -572,7 +572,7 @@
    "kind": "define",
    "name": "XSLT_STRANGE",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "44"
   },
@@ -580,7 +580,7 @@
    "kind": "define",
    "name": "XSLT_TIMESTAMP_TICS_PER_SEC",
    "value": "100000l",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "269"
   },
@@ -588,7 +588,7 @@
    "kind": "define",
    "name": "XSLT_TODO",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "34"
   },
@@ -596,7 +596,7 @@
    "kind": "define",
    "name": "XSLT_TRACE",
    "value": "if (ctxt->traceCode && (*(ctxt->traceCode) & code)) \\\n    call",
-   "documented": false,
+   "documented": true,
    "header": "xsltutils.h",
    "line": "128"
   },
@@ -1085,7 +1085,7 @@
    "definition": "void xsltInitGlobals",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "34"
   },
@@ -1206,7 +1206,7 @@
    "definition": "void xsltRegisterTestModule",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "extensions.h",
    "line": "252"
   },
@@ -2053,7 +2053,7 @@
    "definition": "void xsltApplyStripSpaces",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "57"
   },
@@ -2262,7 +2262,7 @@
    "definition": "xsltTransformContextPtr xsltNewTransformContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "36"
   },
@@ -2350,7 +2350,7 @@
    "definition": "void xsltSetXIncludeDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "transform.h",
    "line": "28"
   },
@@ -3493,7 +3493,7 @@
    "kind": "typedef",
    "name": "xsltSecurityPrefs",
    "type": "struct _xsltSecurityPrefs",
-   "documented": false,
+   "documented": true,
    "header": "security.h",
    "line": "29"
   },
@@ -4011,7 +4011,7 @@
    "kind": "variable",
    "name": "xsltEngineVersion",
    "type": "const char *",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "76"
   },
@@ -4019,7 +4019,7 @@
    "kind": "variable",
    "name": "xsltLibxmlVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "90"
   },
@@ -4027,7 +4027,7 @@
    "kind": "variable",
    "name": "xsltLibxsltVersion",
    "type": "const int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "83"
   },
@@ -4035,7 +4035,7 @@
    "kind": "variable",
    "name": "xsltMaxDepth",
    "type": "int",
-   "documented": false,
+   "documented": true,
    "header": "xslt.h",
    "line": "62"
   },
@@ -6203,5 +6203,5 @@
    "line": "141"
   }
  ],
- "inventory_hash": "30060c1e7886cca9a61f792af0c2868c48223a395f1427e7ea905b7983ad3523"
+ "inventory_hash": "5e0ce7362e84888c2678f131fed88494d44044d47cd28e917b6ac79d789d9502"
 }

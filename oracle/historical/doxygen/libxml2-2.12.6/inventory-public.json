@@ -4,23 +4,23 @@
  "version": "2.12.6",
  "profile": "public",
  "doxygen_version": "1.18.0",
- "config_hash": "82fab3c4b3faa5ce5e4e87488b9ddabd0c914b80219d447a5d7960f3191d9b5d",
+ "config_hash": "245287b15b6904bb19b3736e9009b1da38afef6d64654b8c45f1cb5245314e31",
  "source_tree_hash": "bb823dec1b684fcb68883ac1cedfa6b382159e9cdd8963b203e8c5c60ddc1f11",
- "raw_xml_hash": "305d6f7c01edb3063d69d2c3ab67491ca20a529472ff957b94cce627ed09d683",
+ "raw_xml_hash": "8130545eb916fa52b585fd920c35761e49ab6a6f73c4868916a4e0ee3665edb8",
  "counts": {
-  "define": 254,
-  "enum": 36,
-  "function": 1310,
-  "typedef": 242,
-  "variable": 565,
-  "total": 2407
+  "define": 267,
+  "enum": 44,
+  "function": 1479,
+  "typedef": 290,
+  "variable": 705,
+  "total": 2785
  },
  "entities": [
   {
    "kind": "define",
    "name": "XML_GLOBALS_HTML",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "85"
   },
@@ -36,7 +36,7 @@
    "kind": "define",
    "name": "htmlDefaultSubelement",
    "value": "elt->defaultsubelt",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "310"
   },
@@ -44,7 +44,7 @@
    "kind": "define",
    "name": "htmlElementAllowedHereDesc",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "321"
   },
@@ -52,47 +52,47 @@
    "kind": "define",
    "name": "htmlRequiredAttrs",
    "value": "(elt)->attrs_req",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "329"
   },
   {
    "kind": "define",
    "name": "HTML_COMMENT_NODE",
-   "value": "XML_COMMENT_NODE",
-   "documented": false,
+   "value": "",
+   "documented": true,
    "header": "HTMLtree.h",
    "line": "46"
   },
   {
    "kind": "define",
    "name": "HTML_ENTITY_REF_NODE",
-   "value": "XML_ENTITY_REF_NODE",
-   "documented": false,
+   "value": "",
+   "documented": true,
    "header": "HTMLtree.h",
    "line": "39"
   },
   {
    "kind": "define",
    "name": "HTML_PI_NODE",
-   "value": "XML_PI_NODE",
-   "documented": false,
+   "value": "",
+   "documented": true,
    "header": "HTMLtree.h",
    "line": "60"
   },
   {
    "kind": "define",
    "name": "HTML_PRESERVE_NODE",
-   "value": "XML_CDATA_SECTION_NODE",
-   "documented": false,
+   "value": "",
+   "documented": true,
    "header": "HTMLtree.h",
    "line": "53"
   },
   {
    "kind": "define",
    "name": "HTML_TEXT_NODE",
-   "value": "XML_TEXT_NODE",
-   "documented": false,
+   "value": "",
+   "documented": true,
    "header": "HTMLtree.h",
    "line": "32"
   },
@@ -100,7 +100,7 @@
    "kind": "define",
    "name": "XML_CATALOGS_NAMESPACE",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "catalog.h",
    "line": "37"
   },
@@ -108,7 +108,7 @@
    "kind": "define",
    "name": "XML_CATALOG_PI",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "catalog.h",
    "line": "44"
   },
@@ -116,7 +116,7 @@
    "kind": "define",
    "name": "xmlIsBaseCharQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "76"
   },
@@ -124,7 +124,7 @@
    "kind": "define",
    "name": "xmlIsBaseChar_ch",
    "value": "(((0x41 <= (c)) && ((c) <= 0x5a)) || \\\n((0x61 <= (c)) && ((c) <= 0x7a)) || \\\n((0xc0 <= (c)) && ((c) <= 0xd6)) || \\\n((0xd8 <= (c)) && ((c) <= 0xf6)) || \\\n (0xf8 <= (c)))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "64"
   },
@@ -132,7 +132,7 @@
    "kind": "define",
    "name": "xmlIsBlankQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "98"
   },
@@ -140,7 +140,7 @@
    "kind": "define",
    "name": "xmlIsBlank_ch",
    "value": "(((c) == 0x20) || \\\n((0x9 <= (c)) && ((c) <= 0xa)) || \\\n((c) == 0xd))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "88"
   },
@@ -148,7 +148,7 @@
    "kind": "define",
    "name": "xmlIsCharQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "118"
   },
@@ -156,7 +156,7 @@
    "kind": "define",
    "name": "xmlIsChar_ch",
    "value": "(((0x9 <= (c)) && ((c) <= 0xa)) || \\\n((c) == 0xd) || \\\n (0x20 <= (c)))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "108"
   },
@@ -164,7 +164,7 @@
    "kind": "define",
    "name": "xmlIsCombiningQ",
    "value": "(((c) < 0x100) ? \\\n0 : \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "132"
   },
@@ -172,7 +172,7 @@
    "kind": "define",
    "name": "xmlIsDigitQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "152"
   },
@@ -180,7 +180,7 @@
    "kind": "define",
    "name": "xmlIsDigit_ch",
    "value": "(((0x30 <= (c)) && ((c) <= 0x39)))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "144"
   },
@@ -188,7 +188,7 @@
    "kind": "define",
    "name": "xmlIsExtenderQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "172"
   },
@@ -196,7 +196,7 @@
    "kind": "define",
    "name": "xmlIsExtender_ch",
    "value": "(((c) == 0xb7))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "164"
   },
@@ -204,7 +204,7 @@
    "kind": "define",
    "name": "xmlIsIdeographicQ",
    "value": "(((c) < 0x100) ? \\\n 0 :\\\n(((0x4e00 <= (c)) && ((c) <= 0x9fa5)) || \\\n ((c) == 0x3007) || \\\n ((0x3021 <= (c)) && ((c) <= 0x3029))))",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "184"
   },
@@ -212,7 +212,7 @@
    "kind": "define",
    "name": "xmlIsPubidCharQ",
    "value": "(((c) < 0x100) ? \\",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "207"
   },
@@ -220,7 +220,7 @@
    "kind": "define",
    "name": "xmlIsPubidChar_ch",
    "value": "(",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "199"
   },
@@ -236,7 +236,7 @@
    "kind": "define",
    "name": "XML_CAST_FPTR",
    "value": "fptr",
-   "documented": false,
+   "documented": true,
    "header": "hash.h",
    "line": "48"
   },
@@ -244,7 +244,7 @@
    "kind": "define",
    "name": "XML_COMPLETE_ATTRS",
    "value": "4",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "152"
   },
@@ -252,7 +252,7 @@
    "kind": "define",
    "name": "XML_DEFAULT_VERSION",
    "value": "\"1.0\"",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "39"
   },
@@ -260,7 +260,7 @@
    "kind": "define",
    "name": "XML_DETECT_IDS",
    "value": "2",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "143"
   },
@@ -276,7 +276,7 @@
    "kind": "define",
    "name": "XML_GLOBALS_PARSER_CORE",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "852"
   },
@@ -308,7 +308,7 @@
    "kind": "define",
    "name": "XML_SAX2_MAGIC",
    "value": "0xDEEDBEAF",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "687"
   },
@@ -316,7 +316,7 @@
    "kind": "define",
    "name": "XML_SKIP_IDS",
    "value": "8",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "160"
   },
@@ -332,7 +332,7 @@
    "kind": "define",
    "name": "INPUT_CHUNK",
    "value": "250",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "97"
   },
@@ -340,7 +340,7 @@
    "kind": "define",
    "name": "IS_ASCII_DIGIT",
    "value": "((0x30 <= (c)) && ((c) <= 0x39))",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "268"
   },
@@ -348,7 +348,7 @@
    "kind": "define",
    "name": "IS_ASCII_LETTER",
    "value": "(((0x41 <= (c)) && ((c) <= 0x5a)) || \\\n((0x61 <= (c)) && ((c) <= 0x7a)))",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "258"
   },
@@ -356,7 +356,7 @@
    "kind": "define",
    "name": "IS_BASECHAR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "161"
   },
@@ -364,7 +364,7 @@
    "kind": "define",
    "name": "IS_BLANK",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "143"
   },
@@ -372,7 +372,7 @@
    "kind": "define",
    "name": "IS_BLANK_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "151"
   },
@@ -380,7 +380,7 @@
    "kind": "define",
    "name": "IS_BYTE_CHAR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "113"
   },
@@ -388,7 +388,7 @@
    "kind": "define",
    "name": "IS_CHAR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "125"
   },
@@ -396,7 +396,7 @@
    "kind": "define",
    "name": "IS_CHAR_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "133"
   },
@@ -404,7 +404,7 @@
    "kind": "define",
    "name": "IS_COMBINING",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "189"
   },
@@ -412,7 +412,7 @@
    "kind": "define",
    "name": "IS_COMBINING_CH",
    "value": "0",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "197"
   },
@@ -420,7 +420,7 @@
    "kind": "define",
    "name": "IS_DIGIT",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "171"
   },
@@ -428,7 +428,7 @@
    "kind": "define",
    "name": "IS_DIGIT_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "179"
   },
@@ -436,7 +436,7 @@
    "kind": "define",
    "name": "IS_EXTENDER",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "210"
   },
@@ -444,7 +444,7 @@
    "kind": "define",
    "name": "IS_EXTENDER_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "218"
   },
@@ -452,7 +452,7 @@
    "kind": "define",
    "name": "IS_IDEOGRAPHIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "229"
   },
@@ -460,7 +460,7 @@
    "kind": "define",
    "name": "IS_LETTER",
    "value": "(",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "240"
   },
@@ -468,7 +468,7 @@
    "kind": "define",
    "name": "IS_LETTER_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "249"
   },
@@ -476,7 +476,7 @@
    "kind": "define",
    "name": "IS_PUBIDCHAR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "279"
   },
@@ -484,7 +484,7 @@
    "kind": "define",
    "name": "IS_PUBIDCHAR_CH",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "287"
   },
@@ -492,7 +492,7 @@
    "kind": "define",
    "name": "XML_MAX_DICTIONARY_LIMIT",
    "value": "10000000",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "71"
   },
@@ -500,7 +500,7 @@
    "kind": "define",
    "name": "XML_MAX_HUGE_LENGTH",
    "value": "1000000000",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "49"
   },
@@ -508,7 +508,7 @@
    "kind": "define",
    "name": "XML_MAX_LOOKUP_LIMIT",
    "value": "10000000",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "81"
   },
@@ -516,7 +516,7 @@
    "kind": "define",
    "name": "XML_MAX_NAMELEN",
    "value": "100",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "89"
   },
@@ -524,7 +524,7 @@
    "kind": "define",
    "name": "XML_MAX_NAME_LENGTH",
    "value": "50000",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "61"
   },
@@ -532,7 +532,7 @@
    "kind": "define",
    "name": "XML_MAX_TEXT_LENGTH",
    "value": "10000000",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "42"
   },
@@ -540,7 +540,7 @@
    "kind": "define",
    "name": "XML_SUBSTITUTE_BOTH",
    "value": "3",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "533"
   },
@@ -548,7 +548,7 @@
    "kind": "define",
    "name": "XML_SUBSTITUTE_NONE",
    "value": "0",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "515"
   },
@@ -556,7 +556,7 @@
    "kind": "define",
    "name": "XML_SUBSTITUTE_PEREF",
    "value": "2",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "527"
   },
@@ -564,7 +564,7 @@
    "kind": "define",
    "name": "XML_SUBSTITUTE_REF",
    "value": "1",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "521"
   },
@@ -572,7 +572,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANYATTR_LAX",
    "value": "2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "169"
   },
@@ -580,7 +580,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANYATTR_SKIP",
    "value": "1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "162"
   },
@@ -588,7 +588,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANYATTR_STRICT",
    "value": "3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "176"
   },
@@ -596,7 +596,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANY_LAX",
    "value": "2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "189"
   },
@@ -604,7 +604,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANY_SKIP",
    "value": "1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "182"
   },
@@ -612,7 +612,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ANY_STRICT",
    "value": "3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "196"
   },
@@ -620,7 +620,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTRGROUP_GLOBAL",
    "value": "1 << 1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "333"
   },
@@ -628,7 +628,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTRGROUP_HAS_REFS",
    "value": "1 << 4",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "352"
   },
@@ -636,7 +636,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTRGROUP_MARKED",
    "value": "1 << 2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "339"
   },
@@ -644,7 +644,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTRGROUP_REDEFINED",
    "value": "1 << 3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "346"
   },
@@ -652,7 +652,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTRGROUP_WILDCARD_BUILDED",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "327"
   },
@@ -660,7 +660,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_FIXED",
    "value": "1 << 9",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "240"
   },
@@ -668,7 +668,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_GLOBAL",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "221"
   },
@@ -676,7 +676,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_INTERNAL_RESOLVED",
    "value": "1 << 8",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "234"
   },
@@ -684,7 +684,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_NSDEFAULT",
    "value": "1 << 7",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "227"
   },
@@ -692,7 +692,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_USE_OPTIONAL",
    "value": "2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "215"
   },
@@ -700,7 +700,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_USE_PROHIBITED",
    "value": "0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "203"
   },
@@ -708,7 +708,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ATTR_USE_REQUIRED",
    "value": "1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "209"
   },
@@ -716,7 +716,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_BLOCK_DEFAULT_EXTENSION",
    "value": "1 << 6",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "899"
   },
@@ -724,7 +724,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_BLOCK_DEFAULT_RESTRICTION",
    "value": "1 << 7",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "905"
   },
@@ -732,7 +732,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_BLOCK_DEFAULT_SUBSTITUTION",
    "value": "1 << 8",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "911"
   },
@@ -740,7 +740,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_ABSTRACT",
    "value": "1 << 4",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "674"
   },
@@ -748,7 +748,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_BLOCK_ABSENT",
    "value": "1 << 10",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "713"
   },
@@ -756,7 +756,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_BLOCK_EXTENSION",
    "value": "1 << 11",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "719"
   },
@@ -764,7 +764,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_BLOCK_RESTRICTION",
    "value": "1 << 12",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "725"
   },
@@ -772,7 +772,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_BLOCK_SUBSTITUTION",
    "value": "1 << 13",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "731"
   },
@@ -780,7 +780,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_CIRCULAR",
    "value": "1 << 9",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "707"
   },
@@ -788,7 +788,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_DEFAULT",
    "value": "1 << 2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "662"
   },
@@ -796,7 +796,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_FINAL_ABSENT",
    "value": "1 << 14",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "737"
   },
@@ -804,7 +804,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_FINAL_EXTENSION",
    "value": "1 << 15",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "743"
   },
@@ -812,7 +812,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_FINAL_RESTRICTION",
    "value": "1 << 16",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "749"
   },
@@ -820,7 +820,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_FIXED",
    "value": "1 << 3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "668"
   },
@@ -828,7 +828,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_GLOBAL",
    "value": "1 << 1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "656"
   },
@@ -836,7 +836,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_INTERNAL_CHECKED",
    "value": "1 << 18",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "762"
   },
@@ -844,7 +844,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_INTERNAL_RESOLVED",
    "value": "1 << 8",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "701"
   },
@@ -852,7 +852,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_NILLABLE",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "650"
   },
@@ -860,7 +860,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_NSDEFAULT",
    "value": "1 << 7",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "694"
   },
@@ -868,7 +868,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_REF",
    "value": "1 << 6",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "687"
   },
@@ -876,7 +876,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_SUBST_GROUP_HEAD",
    "value": "1 << 17",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "755"
   },
@@ -884,7 +884,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_ELEM_TOPLEVEL",
    "value": "1 << 5",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "681"
   },
@@ -924,7 +924,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_FINAL_DEFAULT_EXTENSION",
    "value": "1 << 2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "875"
   },
@@ -932,7 +932,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_FINAL_DEFAULT_LIST",
    "value": "1 << 4",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "887"
   },
@@ -940,7 +940,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_FINAL_DEFAULT_RESTRICTION",
    "value": "1 << 3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "881"
   },
@@ -948,7 +948,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_FINAL_DEFAULT_UNION",
    "value": "1 << 5",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "893"
   },
@@ -956,7 +956,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_INCLUDING_CONVERT_NS",
    "value": "1 << 9",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "918"
   },
@@ -964,7 +964,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_QUALIF_ATTR",
    "value": "1 << 1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "869"
   },
@@ -972,7 +972,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_QUALIF_ELEM",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "862"
   },
@@ -980,7 +980,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_ABSTRACT",
    "value": "1 << 20",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "528"
   },
@@ -988,7 +988,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_BLOCK_DEFAULT",
    "value": "1 << 17",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "510"
   },
@@ -996,7 +996,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_BLOCK_EXTENSION",
    "value": "1 << 18",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "516"
   },
@@ -1004,7 +1004,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_BLOCK_RESTRICTION",
    "value": "1 << 19",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "522"
   },
@@ -1012,7 +1012,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_BUILTIN_PRIMITIVE",
    "value": "1 << 14",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "497"
   },
@@ -1020,7 +1020,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_DERIVATION_METHOD_EXTENSION",
    "value": "1 << 1",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "415"
   },
@@ -1028,7 +1028,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_DERIVATION_METHOD_RESTRICTION",
    "value": "1 << 2",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "421"
   },
@@ -1036,7 +1036,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FACETSNEEDVALUE",
    "value": "1 << 21",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "534"
   },
@@ -1044,7 +1044,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FINAL_DEFAULT",
    "value": "1 << 13",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "491"
   },
@@ -1052,7 +1052,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FINAL_EXTENSION",
    "value": "1 << 9",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "467"
   },
@@ -1060,7 +1060,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FINAL_LIST",
    "value": "1 << 11",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "479"
   },
@@ -1068,7 +1068,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FINAL_RESTRICTION",
    "value": "1 << 10",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "473"
   },
@@ -1076,7 +1076,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FINAL_UNION",
    "value": "1 << 12",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "485"
   },
@@ -1084,7 +1084,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_FIXUP_1",
    "value": "1 << 29",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "583"
   },
@@ -1092,7 +1092,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_GLOBAL",
    "value": "1 << 3",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "427"
   },
@@ -1100,7 +1100,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_HAS_FACETS",
    "value": "1 << 27",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "570"
   },
@@ -1108,7 +1108,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_INTERNAL_INVALID",
    "value": "1 << 23",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "546"
   },
@@ -1116,7 +1116,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_INTERNAL_RESOLVED",
    "value": "1 << 22",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "540"
   },
@@ -1124,7 +1124,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_MARKED",
    "value": "1 << 16",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "503"
   },
@@ -1132,7 +1132,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_MIXED",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "409"
   },
@@ -1140,7 +1140,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_NORMVALUENEEDED",
    "value": "1 << 28",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "576"
   },
@@ -1148,7 +1148,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_OWNED_ATTR_WILDCARD",
    "value": "1 << 4",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "434"
   },
@@ -1156,7 +1156,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_REDEFINED",
    "value": "1 << 30",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "590"
   },
@@ -1164,7 +1164,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_VARIETY_ABSENT",
    "value": "1 << 5",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "443"
   },
@@ -1172,7 +1172,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_VARIETY_ATOMIC",
    "value": "1 << 8",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "461"
   },
@@ -1180,7 +1180,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_VARIETY_LIST",
    "value": "1 << 6",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "449"
   },
@@ -1188,7 +1188,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_VARIETY_UNION",
    "value": "1 << 7",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "455"
   },
@@ -1196,7 +1196,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_WHITESPACE_COLLAPSE",
    "value": "1 << 26",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "564"
   },
@@ -1204,7 +1204,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_WHITESPACE_PRESERVE",
    "value": "1 << 24",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "552"
   },
@@ -1212,7 +1212,7 @@
    "kind": "define",
    "name": "XML_SCHEMAS_TYPE_WHITESPACE_REPLACE",
    "value": "1 << 25",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "558"
   },
@@ -1220,9 +1220,113 @@
    "kind": "define",
    "name": "XML_SCHEMAS_WILDCARD_COMPLETE",
    "value": "1 << 0",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "289"
+  },
+  {
+   "kind": "define",
+   "name": "BASE_BUFFER_SIZE",
+   "value": "4096",
+   "documented": true,
+   "header": "tree.h",
+   "line": "67"
+  },
+  {
+   "kind": "define",
+   "name": "LIBXML2_NEW_BUFFER",
+   "value": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "143"
+  },
+  {
+   "kind": "define",
+   "name": "XML_DOCB_DOCUMENT_NODE",
+   "value": "21",
+   "documented": true,
+   "header": "tree.h",
+   "line": "196"
+  },
+  {
+   "kind": "define",
+   "name": "XML_GET_CONTENT",
+   "value": "((n)->type ==",
+   "documented": true,
+   "header": "tree.h",
+   "line": "520"
+  },
+  {
+   "kind": "define",
+   "name": "XML_GET_LINE",
+   "value": "(",
+   "documented": true,
+   "header": "tree.h",
+   "line": "528"
+  },
+  {
+   "kind": "define",
+   "name": "XML_GLOBALS_TREE",
+   "value": "",
+   "documented": true,
+   "header": "tree.h",
+   "line": "676"
+  },
+  {
+   "kind": "define",
+   "name": "XML_LOCAL_NAMESPACE",
+   "value": "",
+   "documented": true,
+   "header": "tree.h",
+   "line": "379"
+  },
+  {
+   "kind": "define",
+   "name": "XML_OP",
+   "value": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "683"
+  },
+  {
+   "kind": "define",
+   "name": "XML_XML_ID",
+   "value": "(const",
+   "documented": true,
+   "header": "tree.h",
+   "line": "159"
+  },
+  {
+   "kind": "define",
+   "name": "XML_XML_NAMESPACE",
+   "value": "(const",
+   "documented": true,
+   "header": "tree.h",
+   "line": "151"
+  },
+  {
+   "kind": "define",
+   "name": "__XML_TREE_H__",
+   "value": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "22"
+  },
+  {
+   "kind": "define",
+   "name": "xmlChildrenNode",
+   "value": "children",
+   "documented": true,
+   "header": "tree.h",
+   "line": "658"
+  },
+  {
+   "kind": "define",
+   "name": "xmlRootNode",
+   "value": "children",
+   "documented": true,
+   "header": "tree.h",
+   "line": "668"
   },
   {
    "kind": "define",
@@ -1236,7 +1340,7 @@
    "kind": "define",
    "name": "XINCLUDE_FALLBACK",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "48"
   },
@@ -1244,7 +1348,7 @@
    "kind": "define",
    "name": "XINCLUDE_HREF",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "54"
   },
@@ -1252,7 +1356,7 @@
    "kind": "define",
    "name": "XINCLUDE_NODE",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "42"
   },
@@ -1260,7 +1364,7 @@
    "kind": "define",
    "name": "XINCLUDE_NS",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "30"
   },
@@ -1268,7 +1372,7 @@
    "kind": "define",
    "name": "XINCLUDE_OLD_NS",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "36"
   },
@@ -1276,7 +1380,7 @@
    "kind": "define",
    "name": "XINCLUDE_PARSE",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "60"
   },
@@ -1284,7 +1388,7 @@
    "kind": "define",
    "name": "XINCLUDE_PARSE_ENCODING",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "78"
   },
@@ -1292,7 +1396,7 @@
    "kind": "define",
    "name": "XINCLUDE_PARSE_TEXT",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "72"
   },
@@ -1300,7 +1404,7 @@
    "kind": "define",
    "name": "XINCLUDE_PARSE_XML",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "66"
   },
@@ -1308,7 +1412,7 @@
    "kind": "define",
    "name": "XINCLUDE_PARSE_XPOINTER",
    "value": "(const",
-   "documented": false,
+   "documented": true,
    "header": "xinclude.h",
    "line": "84"
   },
@@ -1316,7 +1420,7 @@
    "kind": "define",
    "name": "XML_GLOBALS_IO",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlIO.h",
    "line": "177"
   },
@@ -1340,7 +1444,7 @@
    "kind": "define",
    "name": "XML_GLOBALS_ERROR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlerror.h",
    "line": "862"
   },
@@ -1364,7 +1468,7 @@
    "kind": "define",
    "name": "XMLCALL",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlexports.h",
    "line": "41"
   },
@@ -1380,7 +1484,7 @@
    "kind": "define",
    "name": "XMLPUBFUN",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlexports.h",
    "line": "30"
   },
@@ -1388,7 +1492,7 @@
    "kind": "define",
    "name": "XMLPUBLIC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlexports.h",
    "line": "21"
   },
@@ -1396,7 +1500,7 @@
    "kind": "define",
    "name": "XMLPUBVAR",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlexports.h",
    "line": "37"
   },
@@ -1404,7 +1508,7 @@
    "kind": "define",
    "name": "XML_GLOBALS_ALLOC",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlmemory.h",
    "line": "91"
   },
@@ -1412,7 +1516,7 @@
    "kind": "define",
    "name": "BAD_CAST",
    "value": "(",
-   "documented": false,
+   "documented": true,
    "header": "xmlstring.h",
    "line": "35"
   },
@@ -1444,7 +1548,7 @@
    "kind": "define",
    "name": "LIBXML_AUTOMATA_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "346"
   },
@@ -1452,7 +1556,7 @@
    "kind": "define",
    "name": "LIBXML_C14N_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "220"
   },
@@ -1460,7 +1564,7 @@
    "kind": "define",
    "name": "LIBXML_CATALOG_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "229"
   },
@@ -1468,7 +1572,7 @@
    "kind": "define",
    "name": "LIBXML_DEBUG_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "301"
   },
@@ -1476,7 +1580,7 @@
    "kind": "define",
    "name": "LIBXML_DOTTED_VERSION",
    "value": "\"2.12.6\"",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "32"
   },
@@ -1484,7 +1588,7 @@
    "kind": "define",
    "name": "LIBXML_HTML_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "202"
   },
@@ -1492,7 +1596,7 @@
    "kind": "define",
    "name": "LIBXML_ICONV_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "274"
   },
@@ -1500,7 +1604,7 @@
    "kind": "define",
    "name": "LIBXML_ISO8859X_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "292"
   },
@@ -1508,7 +1612,7 @@
    "kind": "define",
    "name": "LIBXML_LZMA_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "408"
   },
@@ -1516,7 +1620,7 @@
    "kind": "define",
    "name": "LIBXML_MODULES_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "384"
   },
@@ -1524,7 +1628,7 @@
    "kind": "define",
    "name": "LIBXML_MODULE_EXTENSION",
    "value": "\".so\"",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "390"
   },
@@ -1532,7 +1636,7 @@
    "kind": "define",
    "name": "LIBXML_OUTPUT_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "121"
   },
@@ -1540,7 +1644,7 @@
    "kind": "define",
    "name": "LIBXML_PATTERN_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "148"
   },
@@ -1548,7 +1652,7 @@
    "kind": "define",
    "name": "LIBXML_PUSH_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "130"
   },
@@ -1556,7 +1660,7 @@
    "kind": "define",
    "name": "LIBXML_READER_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "139"
   },
@@ -1564,7 +1668,7 @@
    "kind": "define",
    "name": "LIBXML_REGEXP_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "337"
   },
@@ -1572,7 +1676,7 @@
    "kind": "define",
    "name": "LIBXML_SAX1_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "166"
   },
@@ -1580,7 +1684,7 @@
    "kind": "define",
    "name": "LIBXML_SCHEMAS_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "366"
   },
@@ -1588,7 +1692,7 @@
    "kind": "define",
    "name": "LIBXML_SCHEMATRON_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "375"
   },
@@ -1596,7 +1700,7 @@
    "kind": "define",
    "name": "LIBXML_TEST_VERSION",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "61"
   },
@@ -1604,7 +1708,7 @@
    "kind": "define",
    "name": "LIBXML_TREE_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "112"
   },
@@ -1612,7 +1716,7 @@
    "kind": "define",
    "name": "LIBXML_UNICODE_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "328"
   },
@@ -1620,7 +1724,7 @@
    "kind": "define",
    "name": "LIBXML_VALID_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "193"
   },
@@ -1628,7 +1732,7 @@
    "kind": "define",
    "name": "LIBXML_VERSION",
    "value": "21206",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "39"
   },
@@ -1636,7 +1740,7 @@
    "kind": "define",
    "name": "LIBXML_VERSION_EXTRA",
    "value": "\"\"",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "53"
   },
@@ -1644,7 +1748,7 @@
    "kind": "define",
    "name": "LIBXML_VERSION_STRING",
    "value": "\"21206\"",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "46"
   },
@@ -1652,7 +1756,7 @@
    "kind": "define",
    "name": "LIBXML_WRITER_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "157"
   },
@@ -1660,7 +1764,7 @@
    "kind": "define",
    "name": "LIBXML_XINCLUDE_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "265"
   },
@@ -1668,7 +1772,7 @@
    "kind": "define",
    "name": "LIBXML_XPATH_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "238"
   },
@@ -1676,7 +1780,7 @@
    "kind": "define",
    "name": "LIBXML_XPTR_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "247"
   },
@@ -1684,7 +1788,7 @@
    "kind": "define",
    "name": "LIBXML_ZLIB_ENABLED",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "399"
   },
@@ -1692,7 +1796,7 @@
    "kind": "define",
    "name": "WITHOUT_TRIO",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlversion.h",
    "line": "77"
   },
@@ -1740,7 +1844,7 @@
    "kind": "define",
    "name": "xmlTextWriterWriteDocType",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlwriter.h",
    "line": "337"
   },
@@ -1748,7 +1852,7 @@
    "kind": "define",
    "name": "xmlTextWriterWriteProcessingInstruction",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xmlwriter.h",
    "line": "275"
   },
@@ -1756,7 +1860,7 @@
    "kind": "define",
    "name": "XML_XPATH_CHECKNS",
    "value": "(1<<0)",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "275"
   },
@@ -1764,7 +1868,7 @@
    "kind": "define",
    "name": "XML_XPATH_NOVAR",
    "value": "(1<<1)",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "281"
   },
@@ -1780,7 +1884,7 @@
    "kind": "define",
    "name": "XPATH_POINT",
    "value": "5",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "118"
   },
@@ -1796,7 +1900,7 @@
    "kind": "define",
    "name": "xmlXPathNodeSetGetLength",
    "value": "((ns) ? (ns)->nodeNr : 0)",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "429"
   },
@@ -1804,7 +1908,7 @@
    "kind": "define",
    "name": "xmlXPathNodeSetIsEmpty",
    "value": "(((ns) == NULL) || ((ns)->nodeNr == 0) || ((ns)->nodeTab == NULL))",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "453"
   },
@@ -1812,7 +1916,7 @@
    "kind": "define",
    "name": "xmlXPathNodeSetItem",
    "value": "((((ns) != NULL) &&             \\\n  ((index) >= 0) && ((index) < (ns)->nodeNr)) ? \\\n (ns)->nodeTab[(index)]             \\\n : NULL)",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "440"
   },
@@ -1820,7 +1924,7 @@
    "kind": "define",
    "name": "CAST_TO_BOOLEAN",
    "value": "if ((ctxt->value != NULL) && (ctxt->value->type !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "327"
   },
@@ -1828,7 +1932,7 @@
    "kind": "define",
    "name": "CAST_TO_NUMBER",
    "value": "if ((ctxt->value != NULL) && (ctxt->value->type !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "318"
   },
@@ -1836,7 +1940,7 @@
    "kind": "define",
    "name": "CAST_TO_STRING",
    "value": "if ((ctxt->value != NULL) && (ctxt->value->type !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "309"
   },
@@ -1844,7 +1948,7 @@
    "kind": "define",
    "name": "CHECK_ARITY",
    "value": "if (ctxt == NULL) return;                       \\\nif (nargs != (x))                           \\",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "297"
   },
@@ -1852,7 +1956,7 @@
    "kind": "define",
    "name": "CHECK_ERROR",
    "value": "if (ctxt->error !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "240"
   },
@@ -1860,7 +1964,7 @@
    "kind": "define",
    "name": "CHECK_ERROR0",
    "value": "if (ctxt->error !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "248"
   },
@@ -1868,7 +1972,7 @@
    "kind": "define",
    "name": "CHECK_TYPE",
    "value": "if ((ctxt->value == NULL) || (ctxt->value->type != typeval))    \\",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "276"
   },
@@ -1876,7 +1980,7 @@
    "kind": "define",
    "name": "CHECK_TYPE0",
    "value": "if ((ctxt->value == NULL) || (ctxt->value->type != typeval))    \\",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "287"
   },
@@ -1884,7 +1988,7 @@
    "kind": "define",
    "name": "XP_ERROR",
    "value": "{",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "257"
   },
@@ -1892,7 +1996,7 @@
    "kind": "define",
    "name": "XP_ERROR0",
    "value": "{",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "266"
   },
@@ -1900,7 +2004,7 @@
    "kind": "define",
    "name": "xmlXPathCheckError",
    "value": "((ctxt)->error !=",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "82"
   },
@@ -1908,7 +2012,7 @@
    "kind": "define",
    "name": "xmlXPathEmptyNodeSet",
    "value": "{ while ((ns)->nodeNr > 0) (ns)->nodeTab[--(ns)->nodeNr] = NULL; }",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "232"
   },
@@ -1916,7 +2020,7 @@
    "kind": "define",
    "name": "xmlXPathGetContextNode",
    "value": "((ctxt)->context->node)",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "102"
   },
@@ -1924,7 +2028,7 @@
    "kind": "define",
    "name": "xmlXPathGetDocument",
    "value": "((ctxt)->context->doc)",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "92"
   },
@@ -1932,7 +2036,7 @@
    "kind": "define",
    "name": "xmlXPathGetError",
    "value": "((ctxt)->error)",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "72"
   },
@@ -1940,7 +2044,7 @@
    "kind": "define",
    "name": "xmlXPathReturnBoolean",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "122"
   },
@@ -1948,7 +2052,7 @@
    "kind": "define",
    "name": "xmlXPathReturnEmptyNodeSet",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "186"
   },
@@ -1956,7 +2060,7 @@
    "kind": "define",
    "name": "xmlXPathReturnEmptyString",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "167"
   },
@@ -1964,7 +2068,7 @@
    "kind": "define",
    "name": "xmlXPathReturnExternal",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "196"
   },
@@ -1972,7 +2076,7 @@
    "kind": "define",
    "name": "xmlXPathReturnFalse",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "139"
   },
@@ -1980,7 +2084,7 @@
    "kind": "define",
    "name": "xmlXPathReturnNodeSet",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "177"
   },
@@ -1988,7 +2092,7 @@
    "kind": "define",
    "name": "xmlXPathReturnNumber",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "148"
   },
@@ -1996,7 +2100,7 @@
    "kind": "define",
    "name": "xmlXPathReturnString",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "158"
   },
@@ -2004,7 +2108,7 @@
    "kind": "define",
    "name": "xmlXPathReturnTrue",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "131"
   },
@@ -2012,7 +2116,7 @@
    "kind": "define",
    "name": "xmlXPathSetArityError",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "52"
   },
@@ -2020,7 +2124,7 @@
    "kind": "define",
    "name": "xmlXPathSetError",
    "value": "{",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "42"
   },
@@ -2028,7 +2132,7 @@
    "kind": "define",
    "name": "xmlXPathSetTypeError",
    "value": "",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "61"
   },
@@ -2036,7 +2140,7 @@
    "kind": "define",
    "name": "xmlXPathStackIsExternal",
    "value": "((ctxt->value != NULL) && (ctxt->value->type ==",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "223"
   },
@@ -2044,7 +2148,7 @@
    "kind": "define",
    "name": "xmlXPathStackIsNodeSet",
    "value": "(((ctxt)->value != NULL)                        \\\n && (((ctxt)->value->type ==",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "208"
   },
@@ -2183,6 +2287,62 @@
   },
   {
    "kind": "enum",
+   "name": "xmlAttributeDefault",
+   "documented": false,
+   "header": "tree.h",
+   "line": "238"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlAttributeType",
+   "documented": false,
+   "header": "tree.h",
+   "line": "219"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlBufferAllocationScheme",
+   "documented": true,
+   "header": "tree.h",
+   "line": "85"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlDocProperties",
+   "documented": true,
+   "header": "tree.h",
+   "line": "537"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlElementContentOccur",
+   "documented": false,
+   "header": "tree.h",
+   "line": "303"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlElementContentType",
+   "documented": false,
+   "header": "tree.h",
+   "line": "291"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlElementType",
+   "documented": false,
+   "header": "tree.h",
+   "line": "170"
+  },
+  {
+   "kind": "enum",
+   "name": "xmlElementTypeVal",
+   "documented": false,
+   "header": "tree.h",
+   "line": "335"
+  },
+  {
+   "kind": "enum",
    "name": "xlinkActuate",
    "documented": false,
    "header": "xlink.h",
@@ -2219,7 +2379,7 @@
   {
    "kind": "enum",
    "name": "xmlParserErrors",
-   "documented": false,
+   "documented": true,
    "header": "xmlerror.h",
    "line": "99"
   },
@@ -2268,7 +2428,7 @@
   {
    "kind": "enum",
    "name": "xmlSchemaValidError",
-   "documented": false,
+   "documented": true,
    "header": "xmlschemas.h",
    "line": "31"
   },
@@ -2289,7 +2449,7 @@
   {
    "kind": "enum",
    "name": "xmlXPathError",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "48"
   },
@@ -2362,7 +2522,7 @@
    "definition": "htmlParserCtxtPtr htmlCreatePushParserCtxt",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "184"
   },
@@ -2527,7 +2687,7 @@
    "definition": "void htmlInitAutoClose",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "HTMLparser.h",
    "line": "105"
   },
@@ -3792,7 +3952,7 @@
    "definition": "int xmlCharInRange",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "chvalid.h",
    "line": "55"
   },
@@ -5552,7 +5712,7 @@
    "definition": "void xmlInitParser",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "parser.h",
    "line": "918"
   },
@@ -6278,7 +6438,7 @@
    "definition": "xmlParserCtxtPtr xmlCreateFileParserCtxt",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "305"
   },
@@ -6377,7 +6537,7 @@
    "definition": "xmlParserInputPtr xmlNewStringInputStream",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "332"
   },
@@ -6707,7 +6867,7 @@
    "definition": "const xmlChar * xmlParseName",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "364"
   },
@@ -6938,7 +7098,7 @@
    "definition": "xmlChar * xmlSplitQName",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "355"
   },
@@ -7736,6 +7896,1865 @@
   },
   {
    "kind": "function",
+   "name": "xmlAddChild",
+   "args": "(xmlNodePtr parent, xmlNodePtr cur)",
+   "definition": "xmlNodePtr xmlAddChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "979"
+  },
+  {
+   "kind": "function",
+   "name": "xmlAddChildList",
+   "args": "(xmlNodePtr parent, xmlNodePtr cur)",
+   "definition": "xmlNodePtr xmlAddChildList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "982"
+  },
+  {
+   "kind": "function",
+   "name": "xmlAddNextSibling",
+   "args": "(xmlNodePtr cur, xmlNodePtr elem)",
+   "definition": "xmlNodePtr xmlAddNextSibling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "999"
+  },
+  {
+   "kind": "function",
+   "name": "xmlAddPrevSibling",
+   "args": "(xmlNodePtr cur, xmlNodePtr elem)",
+   "definition": "xmlNodePtr xmlAddPrevSibling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "992"
+  },
+  {
+   "kind": "function",
+   "name": "xmlAddSibling",
+   "args": "(xmlNodePtr cur, xmlNodePtr elem)",
+   "definition": "xmlNodePtr xmlAddSibling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "996"
+  },
+  {
+   "kind": "function",
+   "name": "xmlAttrSerializeTxtContent",
+   "args": "(xmlBufferPtr buf, xmlDocPtr doc, xmlAttrPtr attr, const xmlChar *string)",
+   "definition": "void xmlAttrSerializeTxtContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1172"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufContent",
+   "args": "(const xmlBuf *buf)",
+   "definition": "xmlChar * xmlBufContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "131"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufEnd",
+   "args": "(xmlBufPtr buf)",
+   "definition": "xmlChar * xmlBufEnd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "132"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufGetNodeContent",
+   "args": "(xmlBufPtr buf, const xmlNode *cur)",
+   "definition": "int xmlBufGetNodeContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1119"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufNodeDump",
+   "args": "(xmlBufPtr buf, xmlDocPtr doc, xmlNodePtr cur, int level, int format)",
+   "definition": "size_t xmlBufNodeDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1230"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufShrink",
+   "args": "(xmlBufPtr buf, size_t len)",
+   "definition": "size_t xmlBufShrink",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "134"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufUse",
+   "args": "(const xmlBufPtr buf)",
+   "definition": "size_t xmlBufUse",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "133"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferAdd",
+   "args": "(xmlBufferPtr buf, const xmlChar *str, int len)",
+   "definition": "int xmlBufferAdd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "753"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferAddHead",
+   "args": "(xmlBufferPtr buf, const xmlChar *str, int len)",
+   "definition": "int xmlBufferAddHead",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "757"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferCCat",
+   "args": "(xmlBufferPtr buf, const char *str)",
+   "definition": "int xmlBufferCCat",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "764"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferCat",
+   "args": "(xmlBufferPtr buf, const xmlChar *str)",
+   "definition": "int xmlBufferCat",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "761"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferContent",
+   "args": "(const xmlBuffer *buf)",
+   "definition": "const xmlChar * xmlBufferContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "775"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferCreate",
+   "args": "(void)",
+   "definition": "xmlBufferPtr xmlBufferCreate",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "738"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferCreateSize",
+   "args": "(size_t size)",
+   "definition": "xmlBufferPtr xmlBufferCreateSize",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "740"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferCreateStatic",
+   "args": "(void *mem, size_t size)",
+   "definition": "xmlBufferPtr xmlBufferCreateStatic",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "742"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferDetach",
+   "args": "(xmlBufferPtr buf)",
+   "definition": "xmlChar * xmlBufferDetach",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "777"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferDump",
+   "args": "(FILE *file, xmlBufferPtr buf)",
+   "definition": "int xmlBufferDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "750"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferEmpty",
+   "args": "(xmlBufferPtr buf)",
+   "definition": "void xmlBufferEmpty",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "773"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferFree",
+   "args": "(xmlBufferPtr buf)",
+   "definition": "void xmlBufferFree",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "748"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferGrow",
+   "args": "(xmlBufferPtr buf, unsigned int len)",
+   "definition": "int xmlBufferGrow",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "770"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferLength",
+   "args": "(const xmlBuffer *buf)",
+   "definition": "int xmlBufferLength",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "782"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferResize",
+   "args": "(xmlBufferPtr buf, unsigned int size)",
+   "definition": "int xmlBufferResize",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "745"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferSetAllocationScheme",
+   "args": "(xmlBufferPtr buf, xmlBufferAllocationScheme scheme)",
+   "definition": "void xmlBufferSetAllocationScheme",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "779"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferShrink",
+   "args": "(xmlBufferPtr buf, unsigned int len)",
+   "definition": "int xmlBufferShrink",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "767"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferWriteCHAR",
+   "args": "(xmlBufferPtr buf, const xmlChar *string)",
+   "definition": "void xmlBufferWriteCHAR",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1162"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferWriteChar",
+   "args": "(xmlBufferPtr buf, const char *string)",
+   "definition": "void xmlBufferWriteChar",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1165"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBufferWriteQuotedString",
+   "args": "(xmlBufferPtr buf, const xmlChar *string)",
+   "definition": "void xmlBufferWriteQuotedString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1168"
+  },
+  {
+   "kind": "function",
+   "name": "xmlBuildQName",
+   "args": "(const xmlChar *ncname, const xmlChar *prefix, xmlChar *memory, int len)",
+   "definition": "xmlChar * xmlBuildQName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "717"
+  },
+  {
+   "kind": "function",
+   "name": "xmlChildElementCount",
+   "args": "(xmlNodePtr parent)",
+   "definition": "unsigned long xmlChildElementCount",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1330"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyDoc",
+   "args": "(xmlDocPtr doc, int recursive)",
+   "definition": "xmlDocPtr xmlCopyDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "857"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyDtd",
+   "args": "(xmlDtdPtr dtd)",
+   "definition": "xmlDtdPtr xmlCopyDtd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "853"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyNamespace",
+   "args": "(xmlNsPtr cur)",
+   "definition": "xmlNsPtr xmlCopyNamespace",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1042"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyNamespaceList",
+   "args": "(xmlNsPtr cur)",
+   "definition": "xmlNsPtr xmlCopyNamespaceList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1044"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyNode",
+   "args": "(xmlNodePtr node, int recursive)",
+   "definition": "xmlNodePtr xmlCopyNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "921"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyNodeList",
+   "args": "(xmlNodePtr node)",
+   "definition": "xmlNodePtr xmlCopyNodeList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "931"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyProp",
+   "args": "(xmlNodePtr target, xmlAttrPtr cur)",
+   "definition": "xmlAttrPtr xmlCopyProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "846"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCopyPropList",
+   "args": "(xmlNodePtr target, xmlAttrPtr cur)",
+   "definition": "xmlAttrPtr xmlCopyPropList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "849"
+  },
+  {
+   "kind": "function",
+   "name": "xmlCreateIntSubset",
+   "args": "(xmlDocPtr doc, const xmlChar *name, const xmlChar *ExternalID, const xmlChar *SystemID)",
+   "definition": "xmlDtdPtr xmlCreateIntSubset",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "788"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapAdoptNode",
+   "args": "(xmlDOMWrapCtxtPtr ctxt, xmlDocPtr sourceDoc, xmlNodePtr node, xmlDocPtr destDoc, xmlNodePtr destParent, int options)",
+   "definition": "int xmlDOMWrapAdoptNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1303"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapCloneNode",
+   "args": "(xmlDOMWrapCtxtPtr ctxt, xmlDocPtr sourceDoc, xmlNodePtr node, xmlNodePtr *clonedNode, xmlDocPtr destDoc, xmlNodePtr destParent, int deep, int options)",
+   "definition": "int xmlDOMWrapCloneNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1315"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapFreeCtxt",
+   "args": "(xmlDOMWrapCtxtPtr ctxt)",
+   "definition": "void xmlDOMWrapFreeCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1297"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapNewCtxt",
+   "args": "(void)",
+   "definition": "xmlDOMWrapCtxtPtr xmlDOMWrapNewCtxt",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1295"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapReconcileNamespaces",
+   "args": "(xmlDOMWrapCtxtPtr ctxt, xmlNodePtr elem, int options)",
+   "definition": "int xmlDOMWrapReconcileNamespaces",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1299"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDOMWrapRemoveNode",
+   "args": "(xmlDOMWrapCtxtPtr ctxt, xmlDocPtr doc, xmlNodePtr node, int options)",
+   "definition": "int xmlDOMWrapRemoveNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1310"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDeregisterNodeDefault",
+   "args": "(xmlDeregisterNodeFunc func)",
+   "definition": "xmlDeregisterNodeFunc xmlDeregisterNodeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1344"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocCopyNode",
+   "args": "(xmlNodePtr node, xmlDocPtr doc, int recursive)",
+   "definition": "xmlNodePtr xmlDocCopyNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "924"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocCopyNodeList",
+   "args": "(xmlDocPtr doc, xmlNodePtr node)",
+   "definition": "xmlNodePtr xmlDocCopyNodeList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "928"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocDump",
+   "args": "(FILE *f, xmlDocPtr cur)",
+   "definition": "int xmlDocDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1216"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocDumpFormatMemory",
+   "args": "(xmlDocPtr cur, xmlChar **mem, int *size, int format)",
+   "definition": "void xmlDocDumpFormatMemory",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1192"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocDumpFormatMemoryEnc",
+   "args": "(xmlDocPtr out_doc, xmlChar **doc_txt_ptr, int *doc_txt_len, const char *txt_encoding, int format)",
+   "definition": "void xmlDocDumpFormatMemoryEnc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1206"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocDumpMemory",
+   "args": "(xmlDocPtr cur, xmlChar **mem, int *size)",
+   "definition": "void xmlDocDumpMemory",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1197"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocDumpMemoryEnc",
+   "args": "(xmlDocPtr out_doc, xmlChar **doc_txt_ptr, int *doc_txt_len, const char *txt_encoding)",
+   "definition": "void xmlDocDumpMemoryEnc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1201"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocFormatDump",
+   "args": "(FILE *f, xmlDocPtr cur, int format)",
+   "definition": "int xmlDocFormatDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1212"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocGetRootElement",
+   "args": "(const xmlDoc *doc)",
+   "definition": "xmlNodePtr xmlDocGetRootElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "957"
+  },
+  {
+   "kind": "function",
+   "name": "xmlDocSetRootElement",
+   "args": "(xmlDocPtr doc, xmlNodePtr root)",
+   "definition": "xmlNodePtr xmlDocSetRootElement",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "970"
+  },
+  {
+   "kind": "function",
+   "name": "xmlElemDump",
+   "args": "(FILE *f, xmlDocPtr doc, xmlNodePtr cur)",
+   "definition": "void xmlElemDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1219"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFirstElementChild",
+   "args": "(xmlNodePtr parent)",
+   "definition": "xmlNodePtr xmlFirstElementChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1334"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeDoc",
+   "args": "(xmlDocPtr cur)",
+   "definition": "void xmlFreeDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "819"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeDtd",
+   "args": "(xmlDtdPtr cur)",
+   "definition": "void xmlFreeDtd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "800"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeNode",
+   "args": "(xmlNodePtr cur)",
+   "definition": "void xmlFreeNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1013"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeNodeList",
+   "args": "(xmlNodePtr cur)",
+   "definition": "void xmlFreeNodeList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1011"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeNs",
+   "args": "(xmlNsPtr cur)",
+   "definition": "void xmlFreeNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "813"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeNsList",
+   "args": "(xmlNsPtr cur)",
+   "definition": "void xmlFreeNsList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "815"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreeProp",
+   "args": "(xmlAttrPtr cur)",
+   "definition": "void xmlFreeProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "844"
+  },
+  {
+   "kind": "function",
+   "name": "xmlFreePropList",
+   "args": "(xmlAttrPtr cur)",
+   "definition": "void xmlFreePropList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "842"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetBufferAllocationScheme",
+   "args": "(void)",
+   "definition": "xmlBufferAllocationScheme xmlGetBufferAllocationScheme",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "735"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetCompressMode",
+   "args": "(void)",
+   "definition": "int xmlGetCompressMode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1287"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetDocCompressMode",
+   "args": "(const xmlDoc *doc)",
+   "definition": "int xmlGetDocCompressMode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1282"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetIntSubset",
+   "args": "(const xmlDoc *doc)",
+   "definition": "xmlDtdPtr xmlGetIntSubset",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "798"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetLastChild",
+   "args": "(const xmlNode *parent)",
+   "definition": "xmlNodePtr xmlGetLastChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "959"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetLineNo",
+   "args": "(const xmlNode *node)",
+   "definition": "long xmlGetLineNo",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "951"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetNoNsProp",
+   "args": "(const xmlNode *node, const xmlChar *name)",
+   "definition": "xmlChar * xmlGetNoNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1063"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetNodePath",
+   "args": "(const xmlNode *node)",
+   "definition": "xmlChar * xmlGetNodePath",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "954"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetNsList",
+   "args": "(const xmlDoc *doc, const xmlNode *node)",
+   "definition": "xmlNsPtr * xmlGetNsList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1034"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetNsProp",
+   "args": "(const xmlNode *node, const xmlChar *name, const xmlChar *nameSpace)",
+   "definition": "xmlChar * xmlGetNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1076"
+  },
+  {
+   "kind": "function",
+   "name": "xmlGetProp",
+   "args": "(const xmlNode *node, const xmlChar *name)",
+   "definition": "xmlChar * xmlGetProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1066"
+  },
+  {
+   "kind": "function",
+   "name": "xmlHasNsProp",
+   "args": "(const xmlNode *node, const xmlChar *name, const xmlChar *nameSpace)",
+   "definition": "xmlAttrPtr xmlHasNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1072"
+  },
+  {
+   "kind": "function",
+   "name": "xmlHasProp",
+   "args": "(const xmlNode *node, const xmlChar *name)",
+   "definition": "xmlAttrPtr xmlHasProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1069"
+  },
+  {
+   "kind": "function",
+   "name": "xmlIsBlankNode",
+   "args": "(const xmlNode *node)",
+   "definition": "int xmlIsBlankNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "963"
+  },
+  {
+   "kind": "function",
+   "name": "xmlIsXHTML",
+   "args": "(const xmlChar *systemID, const xmlChar *publicID)",
+   "definition": "int xmlIsXHTML",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1275"
+  },
+  {
+   "kind": "function",
+   "name": "xmlLastElementChild",
+   "args": "(xmlNodePtr parent)",
+   "definition": "xmlNodePtr xmlLastElementChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1336"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewCDataBlock",
+   "args": "(xmlDocPtr doc, const xmlChar *content, int len)",
+   "definition": "xmlNodePtr xmlNewCDataBlock",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "911"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewCharRef",
+   "args": "(xmlDocPtr doc, const xmlChar *name)",
+   "definition": "xmlNodePtr xmlNewCharRef",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "915"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewChild",
+   "args": "(xmlNodePtr parent, xmlNsPtr ns, const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "881"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewComment",
+   "args": "(const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewComment",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "909"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDoc",
+   "args": "(const xmlChar *version)",
+   "definition": "xmlDocPtr xmlNewDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "817"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocComment",
+   "args": "(xmlDocPtr doc, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocComment",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "906"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocFragment",
+   "args": "(xmlDocPtr doc)",
+   "definition": "xmlNodePtr xmlNewDocFragment",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "944"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocNode",
+   "args": "(xmlDocPtr doc, xmlNsPtr ns, const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "864"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocNodeEatName",
+   "args": "(xmlDocPtr doc, xmlNsPtr ns, xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocNodeEatName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "869"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocPI",
+   "args": "(xmlDocPtr doc, const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocPI",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "892"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocProp",
+   "args": "(xmlDocPtr doc, const xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlNewDocProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "821"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocRawNode",
+   "args": "(xmlDocPtr doc, xmlNsPtr ns, const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocRawNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "939"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocText",
+   "args": "(const xmlDoc *doc, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewDocText",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "887"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDocTextLen",
+   "args": "(xmlDocPtr doc, const xmlChar *content, int len)",
+   "definition": "xmlNodePtr xmlNewDocTextLen",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "899"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewDtd",
+   "args": "(xmlDocPtr doc, const xmlChar *name, const xmlChar *ExternalID, const xmlChar *SystemID)",
+   "definition": "xmlDtdPtr xmlNewDtd",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "793"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewNode",
+   "args": "(xmlNsPtr ns, const xmlChar *name)",
+   "definition": "xmlNodePtr xmlNewNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "874"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewNodeEatName",
+   "args": "(xmlNsPtr ns, xmlChar *name)",
+   "definition": "xmlNodePtr xmlNewNodeEatName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "877"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewNs",
+   "args": "(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix)",
+   "definition": "xmlNsPtr xmlNewNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "809"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewNsProp",
+   "args": "(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlNewNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "832"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewNsPropEatName",
+   "args": "(xmlNodePtr node, xmlNsPtr ns, xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlNewNsPropEatName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "837"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewPI",
+   "args": "(const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewPI",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "896"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewProp",
+   "args": "(xmlNodePtr node, const xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlNewProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "827"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewReference",
+   "args": "(const xmlDoc *doc, const xmlChar *name)",
+   "definition": "xmlNodePtr xmlNewReference",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "918"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewText",
+   "args": "(const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewText",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "890"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewTextChild",
+   "args": "(xmlNodePtr parent, xmlNsPtr ns, const xmlChar *name, const xmlChar *content)",
+   "definition": "xmlNodePtr xmlNewTextChild",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "934"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNewTextLen",
+   "args": "(const xmlChar *content, int len)",
+   "definition": "xmlNodePtr xmlNewTextLen",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "903"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNextElementSibling",
+   "args": "(xmlNodePtr node)",
+   "definition": "xmlNodePtr xmlNextElementSibling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1332"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeAddContent",
+   "args": "(xmlNodePtr cur, const xmlChar *content)",
+   "definition": "void xmlNodeAddContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1106"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeAddContentLen",
+   "args": "(xmlNodePtr cur, const xmlChar *content, int len)",
+   "definition": "void xmlNodeAddContentLen",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1109"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeBufGetContent",
+   "args": "(xmlBufferPtr buffer, const xmlNode *cur)",
+   "definition": "int xmlNodeBufGetContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1116"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeDump",
+   "args": "(xmlBufferPtr buf, xmlDocPtr doc, xmlNodePtr cur, int level, int format)",
+   "definition": "int xmlNodeDump",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1236"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeDumpOutput",
+   "args": "(xmlOutputBufferPtr buf, xmlDocPtr doc, xmlNodePtr cur, int level, int format, const char *encoding)",
+   "definition": "void xmlNodeDumpOutput",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1252"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeGetBase",
+   "args": "(const xmlDoc *doc, const xmlNode *cur)",
+   "definition": "xmlChar * xmlNodeGetBase",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1135"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeGetContent",
+   "args": "(const xmlNode *cur)",
+   "definition": "xmlChar * xmlNodeGetContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1113"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeGetLang",
+   "args": "(const xmlNode *cur)",
+   "definition": "xmlChar * xmlNodeGetLang",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1123"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeGetSpacePreserve",
+   "args": "(const xmlNode *cur)",
+   "definition": "int xmlNodeGetSpacePreserve",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1125"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeIsText",
+   "args": "(const xmlNode *node)",
+   "definition": "int xmlNodeIsText",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "961"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeListGetRawString",
+   "args": "(const xmlDoc *doc, const xmlNode *list, int inLine)",
+   "definition": "xmlChar * xmlNodeListGetRawString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1092"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeListGetString",
+   "args": "(xmlDocPtr doc, const xmlNode *list, int inLine)",
+   "definition": "xmlChar * xmlNodeListGetString",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1087"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetBase",
+   "args": "(xmlNodePtr cur, const xmlChar *uri)",
+   "definition": "void xmlNodeSetBase",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1139"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetContent",
+   "args": "(xmlNodePtr cur, const xmlChar *content)",
+   "definition": "void xmlNodeSetContent",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1097"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetContentLen",
+   "args": "(xmlNodePtr cur, const xmlChar *content, int len)",
+   "definition": "void xmlNodeSetContentLen",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1101"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetLang",
+   "args": "(xmlNodePtr cur, const xmlChar *lang)",
+   "definition": "void xmlNodeSetLang",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1128"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetName",
+   "args": "(xmlNodePtr cur, const xmlChar *name)",
+   "definition": "void xmlNodeSetName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "975"
+  },
+  {
+   "kind": "function",
+   "name": "xmlNodeSetSpacePreserve",
+   "args": "(xmlNodePtr cur, int val)",
+   "definition": "void xmlNodeSetSpacePreserve",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1131"
+  },
+  {
+   "kind": "function",
+   "name": "xmlPreviousElementSibling",
+   "args": "(xmlNodePtr node)",
+   "definition": "xmlNodePtr xmlPreviousElementSibling",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1338"
+  },
+  {
+   "kind": "function",
+   "name": "xmlReconciliateNs",
+   "args": "(xmlDocPtr doc, xmlNodePtr tree)",
+   "definition": "int xmlReconciliateNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1183"
+  },
+  {
+   "kind": "function",
+   "name": "xmlRegisterNodeDefault",
+   "args": "(xmlRegisterNodeFunc func)",
+   "definition": "xmlRegisterNodeFunc xmlRegisterNodeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1342"
+  },
+  {
+   "kind": "function",
+   "name": "xmlRemoveProp",
+   "args": "(xmlAttrPtr cur)",
+   "definition": "int xmlRemoveProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1147"
+  },
+  {
+   "kind": "function",
+   "name": "xmlReplaceNode",
+   "args": "(xmlNodePtr old, xmlNodePtr cur)",
+   "definition": "xmlNodePtr xmlReplaceNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "986"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFile",
+   "args": "(const char *filename, xmlDocPtr cur)",
+   "definition": "int xmlSaveFile",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1223"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFileEnc",
+   "args": "(const char *filename, xmlDocPtr cur, const char *encoding)",
+   "definition": "int xmlSaveFileEnc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1266"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFileTo",
+   "args": "(xmlOutputBufferPtr buf, xmlDocPtr cur, const char *encoding)",
+   "definition": "int xmlSaveFileTo",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1243"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFormatFile",
+   "args": "(const char *filename, xmlDocPtr cur, int format)",
+   "definition": "int xmlSaveFormatFile",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1226"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFormatFileEnc",
+   "args": "(const char *filename, xmlDocPtr cur, const char *encoding, int format)",
+   "definition": "int xmlSaveFormatFileEnc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1260"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSaveFormatFileTo",
+   "args": "(xmlOutputBufferPtr buf, xmlDocPtr cur, const char *encoding, int format)",
+   "definition": "int xmlSaveFormatFileTo",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1247"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSearchNs",
+   "args": "(xmlDocPtr doc, xmlNodePtr node, const xmlChar *nameSpace)",
+   "definition": "xmlNsPtr xmlSearchNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1024"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSearchNsByHref",
+   "args": "(xmlDocPtr doc, xmlNodePtr node, const xmlChar *href)",
+   "definition": "xmlNsPtr xmlSearchNsByHref",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1028"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetBufferAllocationScheme",
+   "args": "(xmlBufferAllocationScheme scheme)",
+   "definition": "void xmlSetBufferAllocationScheme",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "733"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetCompressMode",
+   "args": "(int mode)",
+   "definition": "void xmlSetCompressMode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1289"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetDocCompressMode",
+   "args": "(xmlDocPtr doc, int mode)",
+   "definition": "void xmlSetDocCompressMode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1284"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetListDoc",
+   "args": "(xmlNodePtr list, xmlDocPtr doc)",
+   "definition": "void xmlSetListDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1018"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetNs",
+   "args": "(xmlNodePtr node, xmlNsPtr ns)",
+   "definition": "void xmlSetNs",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1039"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetNsProp",
+   "args": "(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlSetNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1056"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetProp",
+   "args": "(xmlNodePtr node, const xmlChar *name, const xmlChar *value)",
+   "definition": "xmlAttrPtr xmlSetProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1052"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSetTreeDoc",
+   "args": "(xmlNodePtr tree, xmlDocPtr doc)",
+   "definition": "void xmlSetTreeDoc",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1015"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSplitQName2",
+   "args": "(const xmlChar *name, xmlChar **prefix)",
+   "definition": "xmlChar * xmlSplitQName2",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "722"
+  },
+  {
+   "kind": "function",
+   "name": "xmlSplitQName3",
+   "args": "(const xmlChar *name, int *len)",
+   "definition": "const xmlChar * xmlSplitQName3",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "725"
+  },
+  {
+   "kind": "function",
+   "name": "xmlStringGetNodeList",
+   "args": "(const xmlDoc *doc, const xmlChar *value)",
+   "definition": "xmlNodePtr xmlStringGetNodeList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1080"
+  },
+  {
+   "kind": "function",
+   "name": "xmlStringLenGetNodeList",
+   "args": "(const xmlDoc *doc, const xmlChar *value, int len)",
+   "definition": "xmlNodePtr xmlStringLenGetNodeList",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1083"
+  },
+  {
+   "kind": "function",
+   "name": "xmlTextConcat",
+   "args": "(xmlNodePtr node, const xmlChar *content, int len)",
+   "definition": "int xmlTextConcat",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1007"
+  },
+  {
+   "kind": "function",
+   "name": "xmlTextMerge",
+   "args": "(xmlNodePtr first, xmlNodePtr second)",
+   "definition": "xmlNodePtr xmlTextMerge",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1004"
+  },
+  {
+   "kind": "function",
+   "name": "xmlThrDefBufferAllocScheme",
+   "args": "(xmlBufferAllocationScheme v)",
+   "definition": "xmlBufferAllocationScheme xmlThrDefBufferAllocScheme",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1351"
+  },
+  {
+   "kind": "function",
+   "name": "xmlThrDefDefaultBufferSize",
+   "args": "(int v)",
+   "definition": "int xmlThrDefDefaultBufferSize",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1353"
+  },
+  {
+   "kind": "function",
+   "name": "xmlThrDefDeregisterNodeDefault",
+   "args": "(xmlDeregisterNodeFunc func)",
+   "definition": "xmlDeregisterNodeFunc xmlThrDefDeregisterNodeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1348"
+  },
+  {
+   "kind": "function",
+   "name": "xmlThrDefRegisterNodeDefault",
+   "args": "(xmlRegisterNodeFunc func)",
+   "definition": "xmlRegisterNodeFunc xmlThrDefRegisterNodeDefault",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1346"
+  },
+  {
+   "kind": "function",
+   "name": "xmlUnlinkNode",
+   "args": "(xmlNodePtr cur)",
+   "definition": "void xmlUnlinkNode",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1002"
+  },
+  {
+   "kind": "function",
+   "name": "xmlUnsetNsProp",
+   "args": "(xmlNodePtr node, xmlNsPtr ns, const xmlChar *name)",
+   "definition": "int xmlUnsetNsProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1150"
+  },
+  {
+   "kind": "function",
+   "name": "xmlUnsetProp",
+   "args": "(xmlNodePtr node, const xmlChar *name)",
+   "definition": "int xmlUnsetProp",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "1154"
+  },
+  {
+   "kind": "function",
+   "name": "xmlValidateNCName",
+   "args": "(const xmlChar *value, int space)",
+   "definition": "int xmlValidateNCName",
+   "static": false,
+   "prot": "public",
+   "documented": true,
+   "header": "tree.h",
+   "line": "701"
+  },
+  {
+   "kind": "function",
+   "name": "xmlValidateNMToken",
+   "args": "(const xmlChar *value, int space)",
+   "definition": "int xmlValidateNMToken",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "712"
+  },
+  {
+   "kind": "function",
+   "name": "xmlValidateName",
+   "args": "(const xmlChar *value, int space)",
+   "definition": "int xmlValidateName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "709"
+  },
+  {
+   "kind": "function",
+   "name": "xmlValidateQName",
+   "args": "(const xmlChar *value, int space)",
+   "definition": "int xmlValidateQName",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "tree.h",
+   "line": "706"
+  },
+  {
+   "kind": "function",
    "name": "xmlBuildRelativeURI",
    "args": "(const xmlChar *URI, const xmlChar *base)",
    "definition": "xmlChar * xmlBuildRelativeURI",
@@ -8335,7 +10354,7 @@
    "definition": "xmlValidCtxtPtr xmlNewValidCtxt",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "valid.h",
    "line": "302"
   },
@@ -8907,7 +10926,7 @@
    "definition": "void xmlCleanupInputCallbacks",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xmlIO.h",
    "line": "199"
   },
@@ -8940,7 +10959,7 @@
    "definition": "int xmlFileMatch",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xmlIO.h",
    "line": "357"
   },
@@ -9193,7 +11212,7 @@
    "definition": "xmlParserInputBufferCreateFilenameFunc xmlParserInputBufferCreateFilenameDefault",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xmlIO.h",
    "line": "405"
   },
@@ -9710,7 +11729,7 @@
    "definition": "void xmlSetGenericErrorFunc",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xmlerror.h",
    "line": "887"
   },
@@ -15045,7 +17064,7 @@
    "definition": "int xmlXPathCastNumberToBoolean",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "474"
   },
@@ -15133,7 +17152,7 @@
    "definition": "xmlXPathCompExprPtr xmlXPathCompile",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "548"
   },
@@ -15342,7 +17361,7 @@
    "definition": "xmlXPathContextPtr xmlXPathNewContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "515"
   },
@@ -15386,7 +17405,7 @@
    "definition": "long xmlXPathOrderDocElems",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "527"
   },
@@ -15859,7 +17878,7 @@
    "definition": "xmlXPathParserContextPtr xmlXPathNewParserContext",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "476"
   },
@@ -16090,7 +18109,7 @@
    "definition": "int xmlXPathNodeSetContains",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "376"
   },
@@ -16112,7 +18131,7 @@
    "definition": "void xmlXPathNodeSetFreeNs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "626"
   },
@@ -16365,7 +18384,7 @@
    "definition": "int xmlXPathRegisterNs",
    "static": false,
    "prot": "public",
-   "documented": false,
+   "documented": true,
    "header": "xpathInternals.h",
    "line": "426"
   },
@@ -16713,7 +18732,7 @@
   {
    "kind": "typedef",
    "name": "htmlDocPtr",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "34"
@@ -16753,7 +18772,7 @@
   {
    "kind": "typedef",
    "name": "htmlNodePtr",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "35"
@@ -16761,7 +18780,7 @@
   {
    "kind": "typedef",
    "name": "htmlParserCtxt",
-   "type": "xmlParserCtxt",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "27"
@@ -16769,7 +18788,7 @@
   {
    "kind": "typedef",
    "name": "htmlParserCtxtPtr",
-   "type": "xmlParserCtxtPtr",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "28"
@@ -16777,7 +18796,7 @@
   {
    "kind": "typedef",
    "name": "htmlParserInput",
-   "type": "xmlParserInput",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "32"
@@ -16785,7 +18804,7 @@
   {
    "kind": "typedef",
    "name": "htmlParserInputPtr",
-   "type": "xmlParserInputPtr",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "33"
@@ -16801,7 +18820,7 @@
   {
    "kind": "typedef",
    "name": "htmlSAXHandler",
-   "type": "xmlSAXHandler",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "30"
@@ -16809,7 +18828,7 @@
   {
    "kind": "typedef",
    "name": "htmlSAXHandlerPtr",
-   "type": "xmlSAXHandlerPtr",
+   "type": "",
    "documented": false,
    "header": "HTMLparser.h",
    "line": "31"
@@ -16818,7 +18837,7 @@
    "kind": "typedef",
    "name": "xmlC14NIsVisibleCallback",
    "type": "int(*)",
-   "documented": false,
+   "documented": true,
    "header": "c14n.h",
    "line": "107"
   },
@@ -17209,7 +19228,7 @@
   {
    "kind": "typedef",
    "name": "getEntitySAXFunc",
-   "type": "xmlEntityPtr(*)",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "404"
@@ -17217,7 +19236,7 @@
   {
    "kind": "typedef",
    "name": "getParameterEntitySAXFunc",
-   "type": "xmlEntityPtr(*)",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "415"
@@ -17289,7 +19308,7 @@
   {
    "kind": "typedef",
    "name": "resolveEntitySAXFunc",
-   "type": "xmlParserInputPtr(*)",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "366"
@@ -17353,7 +19372,7 @@
   {
    "kind": "typedef",
    "name": "xmlExternalEntityLoader",
-   "type": "xmlParserInputPtr(*)",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "837"
@@ -17474,7 +19493,7 @@
    "kind": "typedef",
    "name": "xmlRelaxNGParserCtxt",
    "type": "struct _xmlRelaxNGParserCtxt",
-   "documented": false,
+   "documented": true,
    "header": "relaxng.h",
    "line": "55"
   },
@@ -17530,7 +19549,7 @@
    "kind": "typedef",
    "name": "xmlSchemaAnnot",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "149"
   },
@@ -17554,7 +19573,7 @@
    "kind": "typedef",
    "name": "xmlSchemaAttributeGroup",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "360"
   },
@@ -17642,7 +19661,7 @@
    "kind": "typedef",
    "name": "xmlSchemaNotation",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "840"
   },
@@ -17714,7 +19733,7 @@
    "kind": "typedef",
    "name": "xmlSchemaWildcardNs",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "schemasInternals.h",
    "line": "295"
   },
@@ -17738,7 +19757,7 @@
    "kind": "typedef",
    "name": "xmlSchematron",
    "type": "struct _xmlSchematron",
-   "documented": false,
+   "documented": true,
    "header": "schematron.h",
    "line": "38"
   },
@@ -17746,7 +19765,7 @@
    "kind": "typedef",
    "name": "xmlSchematronParserCtxt",
    "type": "struct _xmlSchematronParserCtxt",
-   "documented": false,
+   "documented": true,
    "header": "schematron.h",
    "line": "64"
   },
@@ -17802,7 +19821,7 @@
    "kind": "typedef",
    "name": "xmlMutex",
    "type": "struct _xmlMutex",
-   "documented": false,
+   "documented": true,
    "header": "threads.h",
    "line": "23"
   },
@@ -17832,9 +19851,393 @@
   },
   {
    "kind": "typedef",
-   "name": "xmlURI",
+   "name": "xmlAttr",
    "type": "struct",
    "documented": false,
+   "header": "tree.h",
+   "line": "437"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlAttrPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "438"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlAttribute",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "264"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlAttributePtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "265"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlBuf",
+   "type": "struct _xmlBuf",
+   "documented": false,
+   "header": "tree.h",
+   "line": "116"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlBufPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "125"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlBuffer",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "100"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlBufferPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "101"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDOMWrapAcquireNsFunction",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "607"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDOMWrapCtxt",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "593"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDOMWrapCtxtPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "594"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDeregisterNodeFunc",
+   "type": "void(*)",
+   "documented": false,
+   "header": "tree.h",
+   "line": "649"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDoc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "554"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDocPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "555"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDtd",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "409"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlDtdPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "410"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlElement",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "349"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlElementContent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "317"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlElementContentPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "318"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlElementPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "350"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlEntity",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "59"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlEntityPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "60"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlEnumeration",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "251"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlEnumerationPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "252"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlID",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "460"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlIDPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "461"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNode",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "492"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNodePtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "493"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNotation",
+   "type": "struct",
+   "documented": true,
+   "header": "tree.h",
+   "line": "205"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNotationPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "206"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNs",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "392"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNsPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "393"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlNsType",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "380"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlOutputBuffer",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "42"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlOutputBufferPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "43"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserCtxt",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "49"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserCtxtPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "50"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserInput",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "46"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserInputBuffer",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "39"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserInputBufferPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "40"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlParserInputPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "47"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlRef",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "477"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlRefPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "478"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlRegisterNodeFunc",
+   "type": "void(*)",
+   "documented": false,
+   "header": "tree.h",
+   "line": "641"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSAXHandler",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "55"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSAXHandlerPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "56"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSAXLocator",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "52"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlSAXLocatorPtr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "53"
+  },
+  {
+   "kind": "typedef",
+   "name": "xmlURI",
+   "type": "struct",
+   "documented": true,
    "header": "uri.h",
    "line": "32"
   },
@@ -18010,7 +20413,7 @@
    "kind": "typedef",
    "name": "xlinkHRef",
    "type": "",
-   "documented": false,
+   "documented": true,
    "header": "xlink.h",
    "line": "32"
   },
@@ -18018,7 +20421,7 @@
    "kind": "typedef",
    "name": "xlinkHandler",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "xlink.h",
    "line": "150"
   },
@@ -18097,7 +20500,7 @@
   {
    "kind": "typedef",
    "name": "xmlOutputBufferCreateFilenameFunc",
-   "type": "xmlOutputBufferPtr(*)",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "142"
@@ -18137,7 +20540,7 @@
   {
    "kind": "typedef",
    "name": "xmlParserInputBufferCreateFilenameFunc",
-   "type": "xmlParserInputBufferPtr(*)",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "128"
@@ -18346,7 +20749,7 @@
    "kind": "typedef",
    "name": "xmlSchema",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "xmlschemas.h",
    "line": "87"
   },
@@ -18354,7 +20757,7 @@
    "kind": "typedef",
    "name": "xmlSchemaParserCtxt",
    "type": "struct _xmlSchemaParserCtxt",
-   "documented": false,
+   "documented": true,
    "header": "xmlschemas.h",
    "line": "115"
   },
@@ -18578,7 +20981,7 @@
    "kind": "typedef",
    "name": "xmlXPathObject",
    "type": "struct",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "124"
   },
@@ -18938,7 +21341,7 @@
   {
    "kind": "variable",
    "name": "doc",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "debugXML.h",
    "line": "115",
@@ -18974,7 +21377,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "debugXML.h",
    "line": "116",
@@ -19082,7 +21485,7 @@
   {
    "kind": "variable",
    "name": "children",
-   "type": "struct _xmlNode *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "44",
@@ -19100,7 +21503,7 @@
   {
    "kind": "variable",
    "name": "doc",
-   "type": "struct _xmlDoc *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "49",
@@ -19136,7 +21539,7 @@
   {
    "kind": "variable",
    "name": "last",
-   "type": "struct _xmlNode *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "45",
@@ -19163,7 +21566,7 @@
   {
    "kind": "variable",
    "name": "next",
-   "type": "struct _xmlNode *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "47",
@@ -19199,7 +21602,7 @@
   {
    "kind": "variable",
    "name": "parent",
-   "type": "struct _xmlDtd *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "46",
@@ -19208,7 +21611,7 @@
   {
    "kind": "variable",
    "name": "prev",
-   "type": "struct _xmlNode *",
+   "type": "struct",
    "documented": false,
    "header": "entities.h",
    "line": "48",
@@ -19217,7 +21620,7 @@
   {
    "kind": "variable",
    "name": "type",
-   "type": "xmlElementType",
+   "type": "",
    "documented": false,
    "header": "entities.h",
    "line": "42",
@@ -19508,7 +21911,7 @@
   {
    "kind": "variable",
    "name": "entity",
-   "type": "xmlParserInputPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "258",
@@ -19553,7 +21956,7 @@
   {
    "kind": "variable",
    "name": "freeAttrs",
-   "type": "xmlAttrPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "303",
@@ -19571,7 +21974,7 @@
   {
    "kind": "variable",
    "name": "freeElems",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "301",
@@ -19625,7 +22028,7 @@
   {
    "kind": "variable",
    "name": "input",
-   "type": "xmlParserInputPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "207",
@@ -19652,7 +22055,7 @@
   {
    "kind": "variable",
    "name": "inputTab",
-   "type": "xmlParserInputPtr *",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "210",
@@ -19742,7 +22145,7 @@
   {
    "kind": "variable",
    "name": "myDoc",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "195",
@@ -19823,7 +22226,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "213",
@@ -19886,7 +22289,7 @@
   {
    "kind": "variable",
    "name": "nodeTab",
-   "type": "xmlNodePtr *",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "216",
@@ -20219,7 +22622,7 @@
   {
    "kind": "variable",
    "name": "buf",
-   "type": "xmlParserInputBufferPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "62",
@@ -20282,7 +22685,7 @@
   {
    "kind": "variable",
    "name": "entity",
-   "type": "xmlEntityPtr",
+   "type": "",
    "documented": false,
    "header": "parser.h",
    "line": "79",
@@ -20399,7 +22802,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "const struct _xmlNode *",
+   "type": "const struct",
    "documented": false,
    "header": "parser.h",
    "line": "93",
@@ -21012,7 +23415,7 @@
    "kind": "variable",
    "name": "xmlParserMaxDepth",
    "type": "externunsigned int",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "32"
   },
@@ -21028,7 +23431,7 @@
    "kind": "variable",
    "name": "xmlStringText",
    "type": "externconst",
-   "documented": false,
+   "documented": true,
    "header": "parserInternals.h",
    "line": "292"
   },
@@ -21097,7 +23500,7 @@
   {
    "kind": "variable",
    "name": "doc",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "929",
@@ -21232,7 +23635,7 @@
   {
    "kind": "variable",
    "name": "content",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "153",
@@ -21322,7 +23725,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "264",
@@ -21493,7 +23896,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "372",
@@ -21700,7 +24103,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "776",
@@ -21844,7 +24247,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "830",
@@ -22150,7 +24553,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "613",
@@ -22312,7 +24715,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "schemasInternals.h",
    "line": "312",
@@ -22362,6 +24765,1262 @@
    "header": "schemasInternals.h",
    "line": "299",
    "struct": "_xmlSchemaWildcardNs"
+  },
+  {
+   "kind": "variable",
+   "name": "xmlBufferAllocScheme",
+   "type": "externxmlBufferAllocationScheme",
+   "documented": false,
+   "header": "tree.h",
+   "line": "684"
+  },
+  {
+   "kind": "variable",
+   "name": "xmlDefaultBufferSize",
+   "type": "externint",
+   "documented": false,
+   "header": "tree.h",
+   "line": "684"
+  },
+  {
+   "kind": "variable",
+   "name": "xmlDeregisterNodeDefaultValue",
+   "type": "externxmlDeregisterNodeFunc",
+   "documented": false,
+   "header": "tree.h",
+   "line": "684"
+  },
+  {
+   "kind": "variable",
+   "name": "xmlRegisterNodeDefaultValue",
+   "type": "externxmlRegisterNodeFunc",
+   "documented": false,
+   "header": "tree.h",
+   "line": "684"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "440",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "atype",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "450",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "443",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "448",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "444",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "442",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "446",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "ns",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "449",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "445",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "447",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "psvi",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "451",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "441",
+   "struct": "_xmlAttr"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "267",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "atype",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "278",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "270",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "def",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "279",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "defaultValue",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "280",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "275",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "elem",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "283",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "271",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "269",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "273",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "nexth",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "277",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "272",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "prefix",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "282",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "274",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "tree",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "281",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "268",
+   "struct": "_xmlAttribute"
+  },
+  {
+   "kind": "variable",
+   "name": "alloc",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "106",
+   "struct": "_xmlBuffer"
+  },
+  {
+   "kind": "variable",
+   "name": "content",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "103",
+   "struct": "_xmlBuffer"
+  },
+  {
+   "kind": "variable",
+   "name": "contentIO",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "107",
+   "struct": "_xmlBuffer"
+  },
+  {
+   "kind": "variable",
+   "name": "size",
+   "type": "unsigned int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "105",
+   "struct": "_xmlBuffer"
+  },
+  {
+   "kind": "variable",
+   "name": "use",
+   "type": "unsigned int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "104",
+   "struct": "_xmlBuffer"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "618",
+   "struct": "_xmlDOMWrapCtxt"
+  },
+  {
+   "kind": "variable",
+   "name": "getNsForNodeFunc",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "632",
+   "struct": "_xmlDOMWrapCtxt"
+  },
+  {
+   "kind": "variable",
+   "name": "namespaceMap",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "627",
+   "struct": "_xmlDOMWrapCtxt"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "623",
+   "struct": "_xmlDOMWrapCtxt"
+  },
+  {
+   "kind": "variable",
+   "name": "URL",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "582",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "557",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "charset",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "583",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "560",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "compression",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "568",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "dict",
+   "type": "struct _xmlDict *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "584",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "565",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "encoding",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "579",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "extSubset",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "576",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "ids",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "580",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "intSubset",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "575",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "561",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "char *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "559",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "563",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "oldNs",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "577",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "562",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "parseFlags",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "586",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "564",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "properties",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "588",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "psvi",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "585",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "refs",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "581",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "standalone",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "569",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "558",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "version",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "578",
+   "struct": "_xmlDoc"
+  },
+  {
+   "kind": "variable",
+   "name": "ExternalID",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "427",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "SystemID",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "428",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "412",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "attributes",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "425",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "415",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "420",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "elements",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "424",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "entities",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "426",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "416",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "414",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "418",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "notations",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "423",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "417",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "pentities",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "429",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "419",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "413",
+   "struct": "_xmlDtd"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "352",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "attributes",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "364",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "355",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "contModel",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "367",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "content",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "363",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "360",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "etype",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "362",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "356",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "354",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "358",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "357",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "prefix",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "365",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "359",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "353",
+   "struct": "_xmlElement"
+  },
+  {
+   "kind": "variable",
+   "name": "c1",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "323",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "c2",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "324",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "322",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "ocur",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "321",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "325",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "prefix",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "326",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "320",
+   "struct": "_xmlElementContent"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "255",
+   "struct": "_xmlEnumeration"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "254",
+   "struct": "_xmlEnumeration"
+  },
+  {
+   "kind": "variable",
+   "name": "attr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "465",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "468",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "lineno",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "467",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "466",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "463",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "value",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "464",
+   "struct": "_xmlID"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "495",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "children",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "498",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "content",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "507",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "doc",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "503",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "extra",
+   "type": "unsigned short",
+   "documented": false,
+   "header": "tree.h",
+   "line": "512",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "last",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "499",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "line",
+   "type": "unsigned short",
+   "documented": false,
+   "header": "tree.h",
+   "line": "511",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "497",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "501",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "ns",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "506",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "nsDef",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "509",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "parent",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "500",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "prev",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "502",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "properties",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "508",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "psvi",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "510",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "496",
+   "struct": "_xmlNode"
+  },
+  {
+   "kind": "variable",
+   "name": "PublicID",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "209",
+   "struct": "_xmlNotation"
+  },
+  {
+   "kind": "variable",
+   "name": "SystemID",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "210",
+   "struct": "_xmlNotation"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "208",
+   "struct": "_xmlNotation"
+  },
+  {
+   "kind": "variable",
+   "name": "_private",
+   "type": "void *",
+   "documented": false,
+   "header": "tree.h",
+   "line": "399",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "context",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "400",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "href",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "397",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "395",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "prefix",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "398",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "type",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "396",
+   "struct": "_xmlNs"
+  },
+  {
+   "kind": "variable",
+   "name": "attr",
+   "type": "",
+   "documented": false,
+   "header": "tree.h",
+   "line": "482",
+   "struct": "_xmlRef"
+  },
+  {
+   "kind": "variable",
+   "name": "lineno",
+   "type": "int",
+   "documented": false,
+   "header": "tree.h",
+   "line": "484",
+   "struct": "_xmlRef"
+  },
+  {
+   "kind": "variable",
+   "name": "name",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "483",
+   "struct": "_xmlRef"
+  },
+  {
+   "kind": "variable",
+   "name": "next",
+   "type": "struct",
+   "documented": false,
+   "header": "tree.h",
+   "line": "480",
+   "struct": "_xmlRef"
+  },
+  {
+   "kind": "variable",
+   "name": "value",
+   "type": "const",
+   "documented": false,
+   "header": "tree.h",
+   "line": "481",
+   "struct": "_xmlRef"
   },
   {
    "kind": "variable",
@@ -22474,7 +26133,7 @@
   {
    "kind": "variable",
    "name": "doc",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "valid.h",
    "line": "81",
@@ -22501,7 +26160,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "valid.h",
    "line": "75",
@@ -22528,7 +26187,7 @@
   {
    "kind": "variable",
    "name": "nodeTab",
-   "type": "xmlNodePtr *",
+   "type": "",
    "documented": false,
    "header": "valid.h",
    "line": "78",
@@ -22652,7 +26311,7 @@
   {
    "kind": "variable",
    "name": "buffer",
-   "type": "xmlBufPtr",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "169",
@@ -22679,7 +26338,7 @@
   {
    "kind": "variable",
    "name": "conv",
-   "type": "xmlBufPtr",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "170",
@@ -22724,7 +26383,7 @@
   {
    "kind": "variable",
    "name": "buffer",
-   "type": "xmlBufPtr",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "153",
@@ -22778,7 +26437,7 @@
   {
    "kind": "variable",
    "name": "raw",
-   "type": "xmlBufPtr",
+   "type": "",
    "documented": false,
    "header": "xmlIO.h",
    "line": "154",
@@ -22971,7 +26630,7 @@
    "kind": "variable",
    "name": "xmlMalloc",
    "type": "externxmlMallocFunc",
-   "documented": false,
+   "documented": true,
    "header": "xmlmemory.h",
    "line": "93"
   },
@@ -23003,7 +26662,7 @@
    "kind": "variable",
    "name": "xmlXPathNAN",
    "type": "externdouble",
-   "documented": false,
+   "documented": true,
    "header": "xpath.h",
    "line": "416"
   },
@@ -23044,7 +26703,7 @@
   {
    "kind": "variable",
    "name": "nodeTab",
-   "type": "xmlNodePtr *",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "86",
@@ -23098,7 +26757,7 @@
   {
    "kind": "variable",
    "name": "debugNode",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "358",
@@ -23125,7 +26784,7 @@
   {
    "kind": "variable",
    "name": "doc",
-   "type": "xmlDocPtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "301",
@@ -23206,7 +26865,7 @@
   {
    "kind": "variable",
    "name": "here",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "331",
@@ -23260,7 +26919,7 @@
   {
    "kind": "variable",
    "name": "namespaces",
-   "type": "xmlNsPtr *",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "321",
@@ -23305,7 +26964,7 @@
   {
    "kind": "variable",
    "name": "node",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "302",
@@ -23350,7 +27009,7 @@
   {
    "kind": "variable",
    "name": "origin",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "332",
@@ -23368,7 +27027,7 @@
   {
    "kind": "variable",
    "name": "tmpNsList",
-   "type": "xmlNsPtr *",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "351",
@@ -23548,7 +27207,7 @@
   {
    "kind": "variable",
    "name": "ancestor",
-   "type": "xmlNodePtr",
+   "type": "",
    "documented": false,
    "header": "xpath.h",
    "line": "401",
@@ -23690,5 +27349,5 @@
    "struct": "_xmlXPathVariable"
   }
  ],
- "inventory_hash": "c1382156a2649abd8c78ebc55a48fb7b596946c2ef64c0fcfc15f0e4484e10d7"
+ "inventory_hash": "d54d7ed9566294c72487348116f399be0833ba0956c6c5ddf5c73864369ca0d0"
 }
