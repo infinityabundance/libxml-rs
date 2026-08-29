@@ -1022,7 +1022,7 @@ pub unsafe fn validate_element(
         let elem_decl_ref = &*(elem_decl as *mut _xmlElement);
 
         // ── Content model validation ──────────────────────────────────────
-        let elem_type = elem_decl_ref.type_ as u32;
+        let elem_type = elem_decl_ref.etype as u32;
 
         if elem_type == XML_ELEMENT_TYPE_EMPTY as u32 {
             // Element must have no children (except text nodes)
@@ -1554,7 +1554,7 @@ pub unsafe fn validate_content(
             return 1;
         }
 
-        let elem_type = elem_decl_ref.type_ as u32;
+        let elem_type = elem_decl_ref.etype as u32;
         if elem_type == XML_ELEMENT_TYPE_EMPTY as u32 {
             // Check no element children
             let mut child = n.children;
@@ -1639,7 +1639,7 @@ pub unsafe fn is_mixed_element(doc: *mut _xmlDoc, name: *const xmlChar) -> c_int
         }
 
         let elem_decl_ref = &*(elem_decl as *mut _xmlElement);
-        ((elem_decl_ref.type_ as u32) == XML_ELEMENT_TYPE_MIXED as u32) as c_int
+        ((elem_decl_ref.etype as u32) == XML_ELEMENT_TYPE_MIXED as u32) as c_int
     }
 }
 
@@ -1678,7 +1678,7 @@ pub unsafe fn is_empty_element(doc: *mut _xmlDoc, name: *const xmlChar) -> c_int
         }
 
         let elem_decl_ref = &*(elem_decl as *mut _xmlElement);
-        ((elem_decl_ref.type_ as u32) == XML_ELEMENT_TYPE_EMPTY as u32) as c_int
+        ((elem_decl_ref.etype as u32) == XML_ELEMENT_TYPE_EMPTY as u32) as c_int
     }
 }
 

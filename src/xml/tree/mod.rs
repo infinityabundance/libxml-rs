@@ -2883,7 +2883,7 @@ unsafe fn dump_element_decl(buf: *mut _xmlBuffer, elem: *mut _xmlElement) {
         io::buf_cat(buf, e.name);
     }
     io::buf_ccat(buf, b' ');
-    match e.type_ {
+    match e.etype {
         t if t == XML_ELEMENT_TYPE_EMPTY as c_int => {
             io::buf_add(buf, b"EMPTY" as *const u8, 5);
         }

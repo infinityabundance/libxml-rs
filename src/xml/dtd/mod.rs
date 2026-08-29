@@ -642,11 +642,17 @@ pub unsafe fn add_element_decl(
 
         (*elem).name = string::xml_strdup(name);
         (*elem).type_ = type_;
+        (*elem).etype = type_; // xmlElementTypeVal mirrors xmlElementType here
         (*elem).content = content; // Takes ownership of the content model
         (*elem).attributes = ptr::null_mut();
         (*elem).prefix = ptr::null_mut();
+        (*elem).children = ptr::null_mut();
+        (*elem).last = ptr::null_mut();
+        (*elem).parent = dtd;
         (*elem).next = ptr::null_mut();
-        (*elem)._private = 0;
+        (*elem).prev = ptr::null_mut();
+        (*elem).doc = ptr::null_mut();
+        (*elem).cont_model = ptr::null_mut();
 
         // Add to hash table
         let ret = hash::hash_add_entry(
@@ -715,9 +721,12 @@ pub unsafe fn copy_element(elem: *mut _xmlElement) -> *mut _xmlElement {
 
         (*copy).name = string::xml_strdup(e.name);
         (*copy).type_ = e.type_;
+        (*copy).etype = e.etype;
         (*copy).content = copy_content_model(e.content);
         (*copy).prefix = string::xml_strdup(e.prefix);
         (*copy)._private = e._private;
+        (*copy).parent = e.parent;
+        (*copy).doc = e.doc;
 
         // Copy attribute declarations (linked list)
         if !e.attributes.is_null() {
@@ -790,6 +799,14 @@ pub unsafe fn free_element(elem: *mut _xmlElement) {
         // Free content model
         if !(*elem).content.is_null() {
             free_content_model((*elem).content);
+        }
+
+        // Free the compiled content-model regexp (xmlValidBuildContentModel)
+        // UPSTREAM-PARITY: xmlFreeElement releases contModel via xmlRegFreeRegexp.
+        if !(*elem).cont_model.is_null() {
+            crate::xml::regex::xmlRegFreeRegexp(
+                (*elem).cont_model as *mut crate::xml::regex::XmlRegexp,
+            );
         }
 
         // UPSTREAM-PARITY: The attributes linked list on the element
@@ -1595,7 +1612,7 @@ mod tests {
             let elem =
                 add_element_decl(dtd, name, XML_ELEMENT_TYPE_EMPTY as c_int, ptr::null_mut());
             assert!(!elem.is_null());
-            assert_eq!((*elem).type_, XML_ELEMENT_TYPE_EMPTY as c_int);
+            assert_eq!((*elem).etype, XML_ELEMENT_TYPE_EMPTY as c_int);
 
             let found = get_element_decl(dtd, name);
             assert_eq!(found, elem);

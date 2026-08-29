@@ -124,15 +124,30 @@ pub struct _xmlElementContent {
 // Source: tree.h lines 447-474
 
 /// Element declaration from DTD.
+///
+/// # ABI
+///
+/// Layout mirrors upstream `struct _xmlElement` (libxml2 2.15.x tree.h): the
+/// declaration is node-shaped (children/last/parent/next/prev/doc) even though
+/// it is stored in the DTD's element hash table. `cont_model` is the compiled
+/// content-model regexp built by `xmlValidBuildContentModel` and is opaque
+/// here (`xmlRegexp *` upstream).
 #[repr(C)]
 pub struct _xmlElement {
+    pub _private: *mut c_void,            // application data
+    pub type_: c_int,                     // xmlElementType (XML_ELEMENT_DECL)
     pub name: *const xmlChar,             // Element name
-    pub type_: c_int,                     // xmlElementTypeVal
+    pub children: *mut _xmlNode,          // NULL
+    pub last: *mut _xmlNode,              // NULL
+    pub parent: *mut _xmlDtd,             // -> DTD
+    pub next: *mut _xmlNode,              // next sibling (NULL for decls)
+    pub prev: *mut _xmlNode,              // previous sibling (NULL for decls)
+    pub doc: *mut _xmlDoc,                // containing document
+    pub etype: c_int,                     // xmlElementTypeVal
     pub content: *mut _xmlElementContent, // Content model
-    pub attributes: *mut _xmlAttribute,   // Linked list of attribute declarations
+    pub attributes: *mut _xmlAttribute,   // List of declared attributes
     pub prefix: *const xmlChar,           // Namespace prefix
-    pub next: *mut _xmlElement,           // Next in hash chain
-    pub _private: c_int,                  // Application data
+    pub cont_model: *mut c_void,          // validating regexp (xmlRegexp *)
 }
 
 // ── xmlNs ───────────────────────────────────────────────────────────────
@@ -618,6 +633,31 @@ pub struct _xmlValidCtxt {
     pub vstateTab: *mut c_void,                  // Array of validation states
     pub am: *mut c_void,                         // Automata
     pub state: *mut c_void,                      // Automata state
+}
+
+// ── xmlID / xmlRef (valid.h ID/IDREF table entries) ────────────────────
+//
+// Source: tree.h `struct _xmlID` / `struct _xmlRef` (opaque upstream).
+
+/// An XML ID instance (ID table entry).
+#[repr(C)]
+pub struct _xmlID {
+    pub next: *mut _xmlID,    // next ID
+    pub value: *mut xmlChar,  // The ID name
+    pub attr: *mut _xmlAttr,  // The attribute holding it
+    pub name: *const xmlChar, // The attribute if attr is not available
+    pub lineno: c_int,        // The line number if attr is not available
+    pub doc: *mut _xmlDoc,    // The document holding the ID
+}
+
+/// An XML IDREF instance (ref table entry).
+#[repr(C)]
+pub struct _xmlRef {
+    pub next: *mut _xmlRef,    // next Ref
+    pub value: *const xmlChar, // The Ref name
+    pub attr: *mut _xmlAttr,   // The attribute holding it
+    pub name: *const xmlChar,  // The attribute if attr is not available
+    pub lineno: c_int,         // The line number if attr is not available
 }
 
 // ── xmlParserNodeInfo ───────────────────────────────────────────────────
