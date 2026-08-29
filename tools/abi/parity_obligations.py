@@ -49,21 +49,81 @@ PREFIXES = {"libxml2": ("xml", "html", "__xml"), "libxslt": ("xslt", "exslt")}
 SYMBOL_COURT_INDEX = os.path.join(ATLAS, "SYMBOL_COURT_INDEX.json")
 
 STATUS_MODEL = {
-    "schema": "parity-obligations-status-model-1",
+    "schema": "parity-obligations-status-model-2",
     "export_status": ["MISSING", "EXPORTED"],
     "implementation_status": ["STUB", "INTENTIONAL_NOOP", "IMPLEMENTED", "UNKNOWN", "NOT_APPLICABLE"],
-    "abi_status": ["UNVERIFIED", "PASS", "FAIL"],
-    "semantic_status": ["UNVERIFIED", "PARTIAL", "PASS", "FAIL"],
-    "ownership_status": ["NOT_APPLICABLE", "UNVERIFIED", "PASS"],
-    "historical_status": ["CURRENT_ONLY", "PARTIAL", "VERIFIED"],
-    "overall": ["MISSING", "STUB", "INTENTIONAL_NOOP",
-                "IMPLEMENTED_UNVERIFIED", "PARITY_VERIFIED",
-                "DATA_EXPORTED", "DATA_MISSING"],
-    "parity_verified_definition": (
+    "abi_status": ["UNVERIFIED", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
+    "semantic_status": ["UNVERIFIED", "PARTIAL", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
+    "ownership_status": ["NOT_APPLICABLE", "UNVERIFIED", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
+    "historical_status": ["CURRENT_ONLY", "PARTIAL", "VERIFIED", "EVIDENCE_CONFLICT"],
+    # Verification ladder: an entry climbs it only through courts.
+    "overall": ["MISSING", "STUB", "INTENTIONAL_NOOP", "IMPLEMENTED_UNVERIFIED",
+                "CURRENT_PARITY_VERIFIED", "HISTORICAL_PARITY_VERIFIED",
+                "CUSTODIAN_VERIFIED", "DATA_MISSING", "DATA_EXPORTED_UNVERIFIED",
+                "DATA_PARITY_VERIFIED"],
+    "current_parity_verified_definition": (
         "EXPORTED + IMPLEMENTED + abi_status PASS + semantic_status PASS "
-        "+ ownership_status in (NOT_APPLICABLE, PASS) — each supported by a "
+        "+ ownership_status in (NOT_APPLICABLE, PASS), each supported by a "
         "passing court recorded in courts[]"),
+    "historical_parity_verified_definition": (
+        "CURRENT_PARITY_VERIFIED + historical_status VERIFIED (surface and "
+        "behavior verified across every historically applicable epoch)"),
+    "custodian_verified_definition": (
+        "HISTORICAL_PARITY_VERIFIED across every historically applicable "
+        "API/ABI/semantic epoch — not necessarily every version redundantly"),
 }
+# The six per-symbol status dimensions tracked per obligation.
+STATUS_DIMENSIONS = ["export_status", "implementation_status", "abi_status",
+                     "semantic_status", "ownership_status", "historical_status"]
+
+# Per-dimension merge rule for multiple courts (see load_symbol_courts).
+# "UNVERIFIED" absorbs any real verdict; PASS+PASS stays PASS; a conflict
+# between PASS and FAIL (or FAIL and FAIL) is EVIDENCE_CONFLICT, which fails
+# the court rather than hiding the contradiction.
+DIM_MERGE = {
+    ("UNVERIFIED", "PASS"): "PASS",
+    ("PASS", "PASS"): "PASS",
+    ("PASS", "FAIL"): "EVIDENCE_CONFLICT",
+    ("FAIL", "PASS"): "EVIDENCE_CONFLICT",
+    ("FAIL", "FAIL"): "EVIDENCE_CONFLICT",
+    ("UNVERIFIED", "FAIL"): "FAIL",
+    ("FAIL", "UNVERIFIED"): "FAIL",
+    ("PASS", "UNVERIFIED"): "PASS",
+    ("UNVERIFIED", "PARTIAL"): "PARTIAL",
+    ("PARTIAL", "PARTIAL"): "PARTIAL",
+    ("PARTIAL", "PASS"): "PARTIAL",
+    ("PASS", "PARTIAL"): "PARTIAL",
+    ("PARTIAL", "FAIL"): "EVIDENCE_CONFLICT",
+    ("FAIL", "PARTIAL"): "EVIDENCE_CONFLICT",
+    ("UNVERIFIED", "VERIFIED"): "VERIFIED",
+    ("VERIFIED", "VERIFIED"): "VERIFIED",
+    ("VERIFIED", "PARTIAL"): "PARTIAL",
+    ("PARTIAL", "VERIFIED"): "PARTIAL",
+    ("VERIFIED", "FAIL"): "EVIDENCE_CONFLICT",
+    ("FAIL", "VERIFIED"): "EVIDENCE_CONFLICT",
+    ("UNVERIFIED", "CURRENT_ONLY"): "CURRENT_ONLY",
+    ("CURRENT_ONLY", "CURRENT_ONLY"): "CURRENT_ONLY",
+    ("CURRENT_ONLY", "VERIFIED"): "VERIFIED",
+    ("VERIFIED", "CURRENT_ONLY"): "VERIFIED",
+    ("CURRENT_ONLY", "PARTIAL"): "PARTIAL",
+    ("PARTIAL", "CURRENT_ONLY"): "PARTIAL",
+}
+
+
+def merge_dim(left, right):
+    """Merge two per-dimension court verdicts; EVIDENCE_CONFLICT when the
+    courts contradict each other."""
+    if left == right:
+        return left
+    if left == "UNVERIFIED":
+        return right
+    if right == "UNVERIFIED":
+        return left
+    if left == "NOT_APPLICABLE":
+        return right
+    if right == "NOT_APPLICABLE":
+        return left
+    return DIM_MERGE.get((left, right), "EVIDENCE_CONFLICT")
 
 
 def dso_symbols(path, prefixes):
@@ -172,24 +232,54 @@ def load_symbol_courts():
       { "schema": "symbol-court-index-1",
         "courts": { "<court-id>": { "symbols": { "<proj>:<sym>": {
              "abi": "PASS", "semantic": "PASS", "ownership": "PASS" } } } } }
-    Populated as per-symbol courts land; the parity ledger consumes it so
-    verification flows from courts, never from hand-edited flags.
+
+    Aggregation is PER DIMENSION, never last-write-wins: multiple courts may
+    verify different dimensions of the same symbol. Contradictory verdicts on
+    the same dimension (PASS vs FAIL) produce EVIDENCE_CONFLICT, which fails
+    the ledger court rather than hiding the contradiction.
+
+    Returns { "<proj>:<sym>": { "abi": {"status": ..., "courts": [...]},
+                                  ... } } plus a list of conflicts.
     """
     if not os.path.exists(SYMBOL_COURT_INDEX):
-        return {}
+        return {}, []
     d = json.load(open(SYMBOL_COURT_INDEX))
     out = {}
-    for cid, cdata in (d.get("courts") or {}).items():
-        for key, verdicts in (cdata.get("symbols") or {}).items():
-            out[key] = verdicts
-    return out
+    conflicts = []
+    for cid, cdata in sorted((d.get("courts") or {}).items()):
+        for key, verdicts in sorted((cdata.get("symbols") or {}).items()):
+            entry = out.setdefault(key, {})
+            for dim in STATUS_DIMENSIONS:
+                if dim == "export_status" or dim == "implementation_status":
+                    continue  # these come from the DSO/source scan, not courts
+                v = verdicts.get(dim)
+                if v is None:
+                    continue
+                cur = entry.get(dim)
+                if cur is None:
+                    entry[dim] = {"status": v, "courts": [cid]}
+                    continue
+                merged = merge_dim(cur["status"], v)
+                if merged == "EVIDENCE_CONFLICT":
+                    conflicts.append((key, dim, cur["status"], v, cid))
+                entry[dim] = {"status": merged, "courts": cur["courts"] + [cid]}
+    return out, conflicts
 
 
 def derive_overall(entry):
     if entry["export_status"] == "MISSING":
         return "DATA_MISSING" if entry["kind"] == "DATA" else "MISSING"
     if entry["kind"] == "DATA":
-        return "DATA_EXPORTED"
+        # Exported data is behavioral state (parser defaults, error handler
+        # pointers, allocator hooks, loader function pointers, ...): presence
+        # is not parity. DATA_PARITY_VERIFIED requires a passing data court
+        # (kind/size/initial value/mutability/address stability/C<->Rust
+        # visibility) recorded in the symbol-court index.
+        if (entry["abi_status"] == "PASS"
+                and entry["semantic_status"] == "PASS"
+                and entry["ownership_status"] in ("NOT_APPLICABLE", "PASS")):
+            return "DATA_PARITY_VERIFIED"
+        return "DATA_EXPORTED_UNVERIFIED"
     if entry["implementation_status"] == "STUB":
         return "STUB"
     if entry["implementation_status"] == "INTENTIONAL_NOOP":
@@ -199,25 +289,38 @@ def derive_overall(entry):
     if (entry["abi_status"] == "PASS"
             and entry["semantic_status"] == "PASS"
             and entry["ownership_status"] in ("NOT_APPLICABLE", "PASS")):
-        return "PARITY_VERIFIED"
+        if entry["historical_status"] == "VERIFIED":
+            return "CUSTODIAN_VERIFIED"
+        if entry["historical_status"] in ("PARTIAL",):
+            return "HISTORICAL_PARITY_VERIFIED"
+        return "CURRENT_PARITY_VERIFIED"
     return "IMPLEMENTED_UNVERIFIED"
 
 
 def main():
     hay = "\n".join(open(p, encoding="utf-8", errors="replace").read()
                     for p in rust_sources())
-    symbol_courts = load_symbol_courts()
-    ledger = {"schema": "parity-obligations-2",
+    symbol_courts, court_conflicts = load_symbol_courts()
+    if court_conflicts:
+        raise SystemExit(
+            "SYMBOL-COURT EVIDENCE CONFLICT in atlas/SYMBOL_COURT_INDEX.json:\n  "
+            + "\n  ".join(f"{k} [{dim}]: {a} vs {b} from {cid}"
+                          for k, dim, a, b, cid in court_conflicts))
+    ledger = {"schema": "parity-obligations-3",
               "generated": __import__("datetime").datetime.now(
                   __import__("datetime").timezone.utc)
               .strftime("%Y-%m-%dT%H:%M:%SZ"),
               "status_model": STATUS_MODEL,
               "symbol_court_index": os.path.relpath(SYMBOL_COURT_INDEX, ROOT),
               "verification_policy": (
-                  "PARITY_VERIFIED is earned only when a per-symbol court "
-                  "exists and passes (abi + semantic + ownership). "
-                  "IMPLEMENTED_UNVERIFIED means the export exists with real "
-                  "logic but has not yet been verified by a court."),
+                  "CURRENT_PARITY_VERIFIED is earned only when per-symbol "
+                  "courts exist and pass (abi + semantic + ownership); "
+                  "HISTORICAL_PARITY_VERIFIED adds historical_status VERIFIED; "
+                  "CUSTODIAN_VERIFIED means verified across every historically "
+                  "applicable epoch. IMPLEMENTED_UNVERIFIED means the export "
+                  "exists with real logic but has not yet been verified by a "
+                  "court. Court verdicts merge PER DIMENSION with provenance; "
+                  "contradictory verdicts fail the ledger as EVIDENCE_CONFLICT."),
               "projects": {}}
     for project, path in ORACLE_DSOS.items():
         if not os.path.exists(path):
@@ -249,16 +352,24 @@ def main():
             sem = "UNVERIFIED"
             own = "NOT_APPLICABLE" if data else "UNVERIFIED"
             hist = "CURRENT_ONLY"
-            # per-symbol court verdicts, if any exist
+            # per-symbol court verdicts (per-dimension, with provenance)
             cver = symbol_courts.get(f"{project}:{sym}")
             if cver:
-                abi = cver.get("abi", "UNVERIFIED")
-                sem = cver.get("semantic", "UNVERIFIED")
-                own = cver.get("ownership", own)
-                for cid, cdata in json.load(
-                        open(SYMBOL_COURT_INDEX)).get("courts", {}).items():
-                    if f"{project}:{sym}" in cdata.get("symbols", {}):
-                        courts.append(cid)
+                for dim, key in (("abi", "abi_status"),
+                                 ("semantic", "semantic_status"),
+                                 ("ownership", "ownership_status"),
+                                 ("historical", "historical_status")):
+                    if dim in cver:
+                        v = cver[dim]
+                        if key == "ownership_status":
+                            own = v["status"]
+                        elif key == "historical_status":
+                            hist = v["status"]
+                        elif key == "abi_status":
+                            abi = v["status"]
+                        elif key == "semantic_status":
+                            sem = v["status"]
+                        courts.extend(cid for cid in v["courts"] if cid not in courts)
             entry = {
                 "entity_id": f"{project}:{sym}",
                 "oracle_symbol": sym,
@@ -277,13 +388,11 @@ def main():
             entry["overall"] = derive_overall(entry)
             entries.append(entry)
         counts = {k: 0 for k in STATUS_MODEL["overall"]}
-        dim = {k: {s: 0 for s in v} for k, v in STATUS_MODEL.items()
-               if k != "overall" and k != "schema"}
+        dim = {k: {s: 0 for s in STATUS_MODEL[k]}
+               for k in STATUS_DIMENSIONS}
         for e in entries:
             counts[e["overall"]] += 1
-            for dname in ("export_status", "implementation_status",
-                          "abi_status", "semantic_status",
-                          "ownership_status", "historical_status"):
+            for dname in STATUS_DIMENSIONS:
                 dim[dname][e[dname]] += 1
         ledger["projects"][project] = {
             "oracle_dso": path,
@@ -298,7 +407,9 @@ def main():
         print(f"{project}: funcs={ledger['projects'][project]['oracle_functions']} "
               f"data={ledger['projects'][project]['oracle_data']}")
         for k in ("MISSING", "STUB", "INTENTIONAL_NOOP", "IMPLEMENTED_UNVERIFIED",
-                  "PARITY_VERIFIED", "DATA_EXPORTED", "DATA_MISSING"):
+                  "CURRENT_PARITY_VERIFIED", "HISTORICAL_PARITY_VERIFIED",
+                  "CUSTODIAN_VERIFIED", "DATA_EXPORTED_UNVERIFIED", "DATA_PARITY_VERIFIED",
+                  "DATA_MISSING"):
             if counts[k]:
                 print(f"    {k}: {counts[k]}")
     out = os.path.join(ATLAS, "PARITY_OBLIGATIONS.json")

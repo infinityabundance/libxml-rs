@@ -1,8 +1,8 @@
 {
- "schema": "parity-obligations-2",
- "generated": "2026-08-29T19:21:15Z",
+ "schema": "parity-obligations-3",
+ "generated": "2026-08-29T19:36:28Z",
  "status_model": {
-  "schema": "parity-obligations-status-model-1",
+  "schema": "parity-obligations-status-model-2",
   "export_status": [
    "MISSING",
    "EXPORTED"
@@ -17,37 +17,47 @@
   "abi_status": [
    "UNVERIFIED",
    "PASS",
-   "FAIL"
+   "FAIL",
+   "EVIDENCE_CONFLICT"
   ],
   "semantic_status": [
    "UNVERIFIED",
    "PARTIAL",
    "PASS",
-   "FAIL"
+   "FAIL",
+   "EVIDENCE_CONFLICT"
   ],
   "ownership_status": [
    "NOT_APPLICABLE",
    "UNVERIFIED",
-   "PASS"
+   "PASS",
+   "FAIL",
+   "EVIDENCE_CONFLICT"
   ],
   "historical_status": [
    "CURRENT_ONLY",
    "PARTIAL",
-   "VERIFIED"
+   "VERIFIED",
+   "EVIDENCE_CONFLICT"
   ],
   "overall": [
    "MISSING",
    "STUB",
    "INTENTIONAL_NOOP",
    "IMPLEMENTED_UNVERIFIED",
-   "PARITY_VERIFIED",
-   "DATA_EXPORTED",
-   "DATA_MISSING"
+   "CURRENT_PARITY_VERIFIED",
+   "HISTORICAL_PARITY_VERIFIED",
+   "CUSTODIAN_VERIFIED",
+   "DATA_MISSING",
+   "DATA_EXPORTED_UNVERIFIED",
+   "DATA_PARITY_VERIFIED"
   ],
-  "parity_verified_definition": "EXPORTED + IMPLEMENTED + abi_status PASS + semantic_status PASS + ownership_status in (NOT_APPLICABLE, PASS) — each supported by a passing court recorded in courts[]"
+  "current_parity_verified_definition": "EXPORTED + IMPLEMENTED + abi_status PASS + semantic_status PASS + ownership_status in (NOT_APPLICABLE, PASS), each supported by a passing court recorded in courts[]",
+  "historical_parity_verified_definition": "CURRENT_PARITY_VERIFIED + historical_status VERIFIED (surface and behavior verified across every historically applicable epoch)",
+  "custodian_verified_definition": "HISTORICAL_PARITY_VERIFIED across every historically applicable API/ABI/semantic epoch — not necessarily every version redundantly"
  },
  "symbol_court_index": "atlas/SYMBOL_COURT_INDEX.json",
- "verification_policy": "PARITY_VERIFIED is earned only when a per-symbol court exists and passes (abi + semantic + ownership). IMPLEMENTED_UNVERIFIED means the export exists with real logic but has not yet been verified by a court.",
+ "verification_policy": "CURRENT_PARITY_VERIFIED is earned only when per-symbol courts exist and pass (abi + semantic + ownership); HISTORICAL_PARITY_VERIFIED adds historical_status VERIFIED; CUSTODIAN_VERIFIED means verified across every historically applicable epoch. IMPLEMENTED_UNVERIFIED means the export exists with real logic but has not yet been verified by a court. Court verdicts merge PER DIMENSION with provenance; contradictory verdicts fail the ledger as EVIDENCE_CONFLICT.",
  "projects": {
   "libxml2": {
    "oracle_dso": "/usr/lib/libxml2.so.2",
@@ -60,9 +70,12 @@
     "STUB": 0,
     "INTENTIONAL_NOOP": 14,
     "IMPLEMENTED_UNVERIFIED": 706,
-    "PARITY_VERIFIED": 0,
-    "DATA_EXPORTED": 34,
-    "DATA_MISSING": 11
+    "CURRENT_PARITY_VERIFIED": 0,
+    "HISTORICAL_PARITY_VERIFIED": 0,
+    "CUSTODIAN_VERIFIED": 0,
+    "DATA_MISSING": 11,
+    "DATA_EXPORTED_UNVERIFIED": 34,
+    "DATA_PARITY_VERIFIED": 0
    },
    "dimensions": {
     "export_status": {
@@ -79,67 +92,28 @@
     "abi_status": {
      "UNVERIFIED": 1646,
      "PASS": 0,
-     "FAIL": 0
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "semantic_status": {
      "UNVERIFIED": 1646,
      "PARTIAL": 0,
      "PASS": 0,
-     "FAIL": 0
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "ownership_status": {
      "NOT_APPLICABLE": 45,
      "UNVERIFIED": 1601,
-     "PASS": 0
+     "PASS": 0,
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "historical_status": {
      "CURRENT_ONLY": 1646,
      "PARTIAL": 0,
-     "VERIFIED": 0
-    },
-    "parity_verified_definition": {
-     "E": 0,
-     "X": 0,
-     "P": 0,
-     "O": 0,
-     "R": 0,
-     "T": 0,
-     "D": 0,
-     " ": 0,
-     "+": 0,
-     "I": 0,
-     "M": 0,
-     "L": 0,
-     "N": 0,
-     "a": 0,
-     "b": 0,
-     "i": 0,
-     "_": 0,
-     "s": 0,
-     "t": 0,
-     "u": 0,
-     "A": 0,
-     "S": 0,
-     "e": 0,
-     "m": 0,
-     "n": 0,
-     "c": 0,
-     "o": 0,
-     "w": 0,
-     "r": 0,
-     "h": 0,
-     "p": 0,
-     "(": 0,
-     "C": 0,
-     "B": 0,
-     ",": 0,
-     ")": 0,
-     "—": 0,
-     "d": 0,
-     "y": 0,
-     "g": 0,
-     "[": 0,
-     "]": 0
+     "VERIFIED": 0,
+     "EVIDENCE_CONFLICT": 0
     }
    },
    "obligations": [
@@ -2401,7 +2375,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlBufferCCat",
@@ -4633,7 +4607,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlDefaultSAXHandler",
@@ -4731,7 +4705,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlDetectCharEncoding",
@@ -4955,7 +4929,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlDocCopyNode",
@@ -5435,7 +5409,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlFreeAttributeTable",
@@ -5995,7 +5969,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlGenericErrorContext",
@@ -6011,7 +5985,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlGetBufferAllocationScheme",
@@ -6555,7 +6529,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlHandleEntity",
@@ -7259,7 +7233,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlInitCharEncodingHandlers",
@@ -7829,7 +7803,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlLastElementChild",
@@ -7893,7 +7867,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlLinkGetData",
@@ -8373,7 +8347,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlLoadExternalEntity",
@@ -8485,7 +8459,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlMallocAtomic",
@@ -8501,7 +8475,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlMallocAtomicLoc",
@@ -8713,7 +8687,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlMemStrdupLoc",
@@ -10889,7 +10863,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferCreateIO",
@@ -12073,7 +12047,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlParserError",
@@ -12249,7 +12223,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlParserInputBufferCreateIO",
@@ -12409,7 +12383,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlParserPrintFileContext",
@@ -12489,7 +12463,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlParserWarning",
@@ -12681,7 +12655,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlPopInput",
@@ -13097,7 +13071,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlReallocLoc",
@@ -13465,7 +13439,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlRegisterOutputCallbacks",
@@ -14825,7 +14799,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveSetAttrEscape",
@@ -16985,7 +16959,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlStringCurrentChar",
@@ -17081,7 +17055,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlStringTextNoenc",
@@ -17097,7 +17071,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlStrlen",
@@ -17241,7 +17215,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlStructuredErrorContext",
@@ -17257,7 +17231,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSubstituteEntitiesDefault",
@@ -17289,7 +17263,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSwitchEncoding",
@@ -20057,7 +20031,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlUCSIsAegeanNumbers",
@@ -24729,7 +24703,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNINF",
@@ -24745,7 +24719,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNamespaceURIFunction",
@@ -25481,7 +25455,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathParseNCName",
@@ -26520,9 +26494,12 @@
     "STUB": 0,
     "INTENTIONAL_NOOP": 0,
     "IMPLEMENTED_UNVERIFIED": 31,
-    "PARITY_VERIFIED": 0,
-    "DATA_EXPORTED": 11,
-    "DATA_MISSING": 0
+    "CURRENT_PARITY_VERIFIED": 0,
+    "HISTORICAL_PARITY_VERIFIED": 0,
+    "CUSTODIAN_VERIFIED": 0,
+    "DATA_MISSING": 0,
+    "DATA_EXPORTED_UNVERIFIED": 11,
+    "DATA_PARITY_VERIFIED": 0
    },
    "dimensions": {
     "export_status": {
@@ -26539,67 +26516,28 @@
     "abi_status": {
      "UNVERIFIED": 243,
      "PASS": 0,
-     "FAIL": 0
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "semantic_status": {
      "UNVERIFIED": 243,
      "PARTIAL": 0,
      "PASS": 0,
-     "FAIL": 0
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "ownership_status": {
      "NOT_APPLICABLE": 11,
      "UNVERIFIED": 232,
-     "PASS": 0
+     "PASS": 0,
+     "FAIL": 0,
+     "EVIDENCE_CONFLICT": 0
     },
     "historical_status": {
      "CURRENT_ONLY": 243,
      "PARTIAL": 0,
-     "VERIFIED": 0
-    },
-    "parity_verified_definition": {
-     "E": 0,
-     "X": 0,
-     "P": 0,
-     "O": 0,
-     "R": 0,
-     "T": 0,
-     "D": 0,
-     " ": 0,
-     "+": 0,
-     "I": 0,
-     "M": 0,
-     "L": 0,
-     "N": 0,
-     "a": 0,
-     "b": 0,
-     "i": 0,
-     "_": 0,
-     "s": 0,
-     "t": 0,
-     "u": 0,
-     "A": 0,
-     "S": 0,
-     "e": 0,
-     "m": 0,
-     "n": 0,
-     "c": 0,
-     "o": 0,
-     "w": 0,
-     "r": 0,
-     "h": 0,
-     "p": 0,
-     "(": 0,
-     "C": 0,
-     "B": 0,
-     ",": 0,
-     ")": 0,
-     "—": 0,
-     "d": 0,
-     "y": 0,
-     "g": 0,
-     "[": 0,
-     "]": 0
+     "VERIFIED": 0,
+     "EVIDENCE_CONFLICT": 0
     }
    },
    "obligations": [
@@ -27337,7 +27275,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltDocumentComp",
@@ -27449,7 +27387,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltEvalAVT",
@@ -27641,7 +27579,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltExtModuleElementLookup",
@@ -28233,7 +28171,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltGenericDebugContext",
@@ -28249,7 +28187,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltGenericError",
@@ -28265,7 +28203,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltGenericErrorContext",
@@ -28281,7 +28219,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltGetCNsProp",
@@ -28729,7 +28667,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltLibxsltVersion",
@@ -28745,7 +28683,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltLoadDocument",
@@ -28857,7 +28795,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltMaxVars",
@@ -28873,7 +28811,7 @@
      "stub_reason": null,
      "courts": [],
      "residuals": [],
-     "overall": "DATA_EXPORTED"
+     "overall": "DATA_EXPORTED_UNVERIFIED"
     },
     {
      "entity_id": "libxslt:xsltMessage",

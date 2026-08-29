@@ -14,6 +14,7 @@
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
+#include <libxml/list.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,11 @@ extern "C" {
 
 typedef struct _xmlValidCtxt xmlValidCtxt;
 typedef xmlValidCtxt *xmlValidCtxtPtr;
+
+typedef struct _xmlHashTable xmlIDTable;
+typedef xmlIDTable *xmlIDTablePtr;
+typedef struct _xmlHashTable xmlRefTable;
+typedef xmlRefTable *xmlRefTablePtr;
 
 /**
  * xmlValidityErrorFunc:
@@ -93,19 +99,21 @@ XMLPUBFUN int
                                            xmlDocPtr doc,
                                            const xmlChar *value);
 XMLPUBFUN int
-                xmlValidateNmtoken        (const xmlChar *value);
-XMLPUBFUN int
-                xmlValidateNmtokens       (const xmlChar *value);
-XMLPUBFUN int
-                xmlValidateName           (const xmlChar *value);
-XMLPUBFUN int
                 xmlValidateNameValue      (const xmlChar *value);
 XMLPUBFUN int
                 xmlValidateNamesValue     (const xmlChar *value);
 XMLPUBFUN int
+                xmlValidateNmtokenValue   (const xmlChar *value);
+XMLPUBFUN int
+                xmlValidateNmtokensValue  (const xmlChar *value);
+XMLPUBFUN int
                 xmlValidateNotationDecl   (xmlValidCtxtPtr ctxt,
                                            xmlDocPtr doc,
-                                           xmlNodePtr cur);
+                                           xmlNotationPtr nota);
+XMLPUBFUN int
+                xmlValidateElementDecl    (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           xmlElementPtr elem);
 XMLPUBFUN int
                 xmlValidateOneAttribute   (xmlValidCtxtPtr ctxt,
                                            xmlDocPtr doc,
@@ -117,8 +125,90 @@ XMLPUBFUN int
                                            xmlDocPtr doc,
                                            xmlNodePtr elem);
 XMLPUBFUN int
+                xmlValidateOneNamespace   (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           xmlNodePtr elem,
+                                           const xmlChar *prefix,
+                                           xmlNsPtr ns,
+                                           const xmlChar *value);
+XMLPUBFUN int
                 xmlValidateRoot           (xmlValidCtxtPtr ctxt,
                                            xmlDocPtr doc);
+XMLPUBFUN int
+                xmlValidBuildContentModel (xmlValidCtxtPtr ctxt,
+                                           xmlElementPtr elem);
+XMLPUBFUN int
+                xmlValidatePushElement    (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           xmlNodePtr elem,
+                                           const xmlChar *qname);
+XMLPUBFUN int
+                xmlValidatePushCData      (xmlValidCtxtPtr ctxt,
+                                           const xmlChar *data,
+                                           int len);
+XMLPUBFUN int
+                xmlValidatePopElement     (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           xmlNodePtr elem,
+                                           const xmlChar *qname);
+
+/* ID / IDREF tables */
+XMLPUBFUN xmlID *
+                xmlAddID                  (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           const xmlChar *value,
+                                           xmlAttrPtr attr);
+XMLPUBFUN int
+                xmlAddIDSafe              (xmlAttrPtr attr,
+                                           const xmlChar *value);
+XMLPUBFUN int
+                xmlRemoveID               (xmlDocPtr doc,
+                                           xmlAttrPtr attr);
+XMLPUBFUN xmlAttr *
+                xmlGetID                  (xmlDocPtr doc,
+                                           const xmlChar *ID);
+XMLPUBFUN void
+                xmlFreeIDTable            (xmlIDTablePtr table);
+XMLPUBFUN xmlRef *
+                xmlAddRef                 (xmlValidCtxtPtr ctxt,
+                                           xmlDocPtr doc,
+                                           const xmlChar *value,
+                                           xmlAttrPtr attr);
+XMLPUBFUN int
+                xmlRemoveRef              (xmlDocPtr doc,
+                                           xmlAttrPtr attr);
+XMLPUBFUN void
+                xmlFreeRefTable           (xmlRefTablePtr table);
+XMLPUBFUN xmlList *
+                xmlGetRefs                (xmlDocPtr doc,
+                                           const xmlChar *ID);
+XMLPUBFUN int
+                xmlIsID                   (xmlDocPtr doc,
+                                           xmlNodePtr elem,
+                                           xmlAttrPtr attr);
+XMLPUBFUN int
+                xmlIsRef                  (xmlDocPtr doc,
+                                           xmlNodePtr elem,
+                                           xmlAttrPtr attr);
+XMLPUBFUN xmlElement *
+                xmlGetDtdElementDesc      (xmlDtdPtr dtd,
+                                           const xmlChar *name);
+XMLPUBFUN xmlAttribute *
+                xmlGetDtdAttrDesc         (xmlDtdPtr dtd,
+                                           const xmlChar *elem,
+                                           const xmlChar *name);
+XMLPUBFUN xmlElement *
+                xmlGetDtdQElementDesc     (xmlDtdPtr dtd,
+                                           const xmlChar *name,
+                                           const xmlChar *prefix);
+XMLPUBFUN xmlAttribute *
+                xmlGetDtdQAttrDesc        (xmlDtdPtr dtd,
+                                           const xmlChar *elem,
+                                           const xmlChar *name,
+                                           const xmlChar *prefix);
+XMLPUBFUN xmlNotation *
+                xmlGetDtdNotationDesc     (xmlDtdPtr dtd,
+                                           const xmlChar *name);
 
 #ifdef __cplusplus
 }

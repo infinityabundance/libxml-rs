@@ -1195,6 +1195,35 @@
      "status": "OPEN"
     }
    ]
+  },
+  {
+   "id": "R-000139",
+   "status": "FIXED",
+   "phase": "11.1-I",
+   "title": "Rust _xmlElement ABI mirror diverged from public C layout (56 vs 104 bytes)",
+   "surface": "Rust #[repr(C)] mirror of struct _xmlElement",
+   "component": [
+    "src/abi/structs.rs",
+    "src/xml/dtd/mod.rs",
+    "src/xml/validation/mod.rs",
+    "src/xml/tree/mod.rs"
+   ],
+   "discovery_date": "2026-08-29",
+   "root_cause": "The ABI evidence system proved upstream-C-header ↔ candidate-C-header parity but never proved implementation-representation parity: the C ABI court compiles probes against C headers only and does not inspect the Rust #[repr(C)] mirrors. The Rust _xmlElement had 7 fields (56 bytes) while the candidate header and upstream tree.h define 14 fields (104 bytes). Every element declaration allocated via xmlMalloc(sizeof(_xmlElement)) was therefore 48 bytes too small; a C consumer reading elem->content at its real offset would read beyond the allocation.",
+   "fix": "Rewrote the Rust mirror with the exact upstream layout (_private, type, name, children, last, parent, next, prev, doc, etype, content, attributes, prefix, contModel); reworked add_element_decl/copy_element/free_element for the new field set (etype now carries EMPTY/ANY/MIXED/ELEMENT; type_ is XML_ELEMENT_DECL); switched all readers from type_ to etype; free_element now releases contModel via the validation content-model NFA free. Also added opaque xmlID/xmlRef mirror structs. Committed as 4090561b.",
+   "evidence": [
+    "src/abi/structs.rs",
+    "src/abi/exports_xml2.rs"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-29",
+     "event": "discovered during 11.1-I validation-cluster work: Rust mirror field count (7) vs candidate C header (14) mismatch while the C-header ABI court was green; fixed and committed 4090561b",
+     "status": "FIXED"
+    }
+   ],
+   "lesson": "The C-header ABI court is blind to the Rust implementation representation. A permanent three-way court (upstream C header ↔ candidate C header ↔ Rust repr(C)) is now required so this class of defect is caught by construction."
   }
  ]
 }

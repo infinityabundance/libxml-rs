@@ -1,5 +1,5 @@
 {
- "schema": "abi-parity-ledger-2",
+ "schema": "abi-parity-ledger-3",
  "projects": {
   "libxml2": {
    "version": "2.15.3",
@@ -13,10 +13,39 @@
     "probe_compiler": "gcc -std=c11",
     "note": "Current ABI seal derived from current-system Doxygen public inventory (libxml2-system / libxslt-system) × current-system headers (/usr/include) × current-system DSO. Historical ABI epochs are sealed separately from historical inventories (atlas/HISTORICAL_SURFACE_EPOCHS.json)"
    },
+   "probe_accounting": {
+    "oracle": {
+     "discovered": 658,
+     "measurable": 658,
+     "classified_unmeasurable": 0,
+     "silently_omitted": 0,
+     "skip_classifications": {
+      "OPAQUE_FORWARD_DECL": [],
+      "NOT_LAYOUT_OBSERVABLE": [],
+      "CONFIGURATION_ABSENT": [],
+      "TOOLING_LIMITATION": [],
+      "CANDIDATE_GAP": []
+     }
+    },
+    "candidate": {
+     "discovered": 658,
+     "measurable": 658,
+     "classified_unmeasurable": 0,
+     "silently_omitted": 0,
+     "skip_classifications": {
+      "OPAQUE_FORWARD_DECL": [],
+      "NOT_LAYOUT_OBSERVABLE": [],
+      "CONFIGURATION_ABSENT": [],
+      "TOOLING_LIMITATION": [],
+      "CANDIDATE_GAP": []
+     }
+    },
+    "note": "discovered = measurement lines generated; measurable = entities actually measured; classified_unmeasurable = entities dropped during compile retries with an explicit classification; silently_omitted MUST be 0 — the ledger fails otherwise (fail-open prohibited)"
+   },
    "structs_probed": 43,
    "enums_probed": 41,
-   "oracle_entities": 654,
-   "candidate_entities": 654,
+   "oracle_entities": 658,
+   "candidate_entities": 658,
    "mismatch_count": 0,
    "mismatches": [],
    "candidate_header_gap_entities": [],
@@ -34,6 +63,35 @@
     "probe_compiler": "gcc -std=c11",
     "note": "Current ABI seal derived from current-system Doxygen public inventory (libxml2-system / libxslt-system) × current-system headers (/usr/include) × current-system DSO. Historical ABI epochs are sealed separately from historical inventories (atlas/HISTORICAL_SURFACE_EPOCHS.json)"
    },
+   "probe_accounting": {
+    "oracle": {
+     "discovered": 279,
+     "measurable": 279,
+     "classified_unmeasurable": 0,
+     "silently_omitted": 0,
+     "skip_classifications": {
+      "OPAQUE_FORWARD_DECL": [],
+      "NOT_LAYOUT_OBSERVABLE": [],
+      "CONFIGURATION_ABSENT": [],
+      "TOOLING_LIMITATION": [],
+      "CANDIDATE_GAP": []
+     }
+    },
+    "candidate": {
+     "discovered": 279,
+     "measurable": 279,
+     "classified_unmeasurable": 0,
+     "silently_omitted": 0,
+     "skip_classifications": {
+      "OPAQUE_FORWARD_DECL": [],
+      "NOT_LAYOUT_OBSERVABLE": [],
+      "CONFIGURATION_ABSENT": [],
+      "TOOLING_LIMITATION": [],
+      "CANDIDATE_GAP": []
+     }
+    },
+    "note": "discovered = measurement lines generated; measurable = entities actually measured; classified_unmeasurable = entities dropped during compile retries with an explicit classification; silently_omitted MUST be 0 — the ledger fails otherwise (fail-open prohibited)"
+   },
    "structs_probed": 14,
    "enums_probed": 7,
    "oracle_entities": 279,
@@ -42,6 +100,21 @@
    "mismatches": [],
    "candidate_header_gap_entities": [],
    "verdict": "PASS"
+  }
+ },
+ "_gap_accounting": {
+  "libxml2": {
+   "discovered": 0,
+   "measurable": 0,
+   "classified_unmeasurable": 0,
+   "silently_omitted": 0,
+   "skip_classifications": {
+    "OPAQUE_FORWARD_DECL": [],
+    "NOT_LAYOUT_OBSERVABLE": [],
+    "CONFIGURATION_ABSENT": [],
+    "TOOLING_LIMITATION": [],
+    "CANDIDATE_GAP": []
+   }
   }
  }
 }

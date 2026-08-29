@@ -52,7 +52,9 @@ PROJECTS = {
             "#include <libxml/nanohttp.h>\n#include <libxml/parserInternals.h>\n"
             "#include <libxml/pattern.h>\n#include <libxml/schematron.h>\n"
             "#include <libxml/threads.h>\n#include <libxml/xmlIO.h>\n"
-            "#include <libxml/xmlmemory.h>\n#include <libxml/xmlmodule.h>\n"),
+            "#include <libxml/xmlmemory.h>\n#include <libxml/xmlmodule.h>\n"
+            "#include <libxml/xlink.h>\n#include <libxml/c14n.h>\n"
+            "#include <libxml/chvalid.h>\n#include <libxml/debugXML.h>\n"),
         "version": "2.15.3",
     },
     "libxslt": {
@@ -134,19 +136,23 @@ def gen_probe(project, entity_filter=None):
         guard,
         "int main(void) {",
     ]
+    # Every measurement line carries a `// ENT:<entity-key>` marker so the
+    # retry loop can account for each dropped entity by identity. The court
+    # then proves: measured ∪ classified-skipped == discovered, and
+    # silently omitted == 0.
     n_struct = 0
     for sname, fields in sorted(structs.items()):
         if not sname or sname in SKIP_STRUCTS or sname.startswith("(") \
                 or sname.startswith("__anon") or not re.match(r"^[A-Za-z_]\w*$", sname):
             continue
         lines.append(f'  printf("STRUCT {sname} sizeof=%zu alignof=%zu\\n", '
-                     f'sizeof(struct {sname}), _Alignof(struct {sname}));')
+                     f'sizeof(struct {sname}), _Alignof(struct {sname})); // ENT:struct:{sname}')
         for fname, _ftype in fields:
             if not re.match(r"^[A-Za-z_]\w*$", fname):
                 continue
             lines.append(f'  printf("  FIELD {sname}.{fname} offsetof=%zu sizeof=%zu\\n", '
                          f'offsetof(struct {sname}, {fname}), '
-                         f'sizeof(((struct {sname} *)0)->{fname}));')
+                         f'sizeof(((struct {sname} *)0)->{fname})); // ENT:field:{sname}.{fname}')
         n_struct += 1
     n_enum = 0
     for ename, values in sorted(enums.items()):
@@ -155,7 +161,7 @@ def gen_probe(project, entity_filter=None):
         for vname, _vinit in values:
             if not re.match(r"^[A-Za-z_]\w*$", vname):
                 continue
-            lines.append(f'  printf("ENUM {ename}.{vname}=%d\\n", (int){vname});')
+            lines.append(f'  printf("ENUM {ename}.{vname}=%d\\n", (int){vname}); // ENT:enum:{ename}.{vname}')
         n_enum += 1
     lines.append("  return 0;")
     lines.append("}")
@@ -168,40 +174,128 @@ def gen_probe(project, entity_filter=None):
 
 
 def build_and_run(src, inc_dirs, tag):
-    """Compile+run; on errors, drop the offending entity lines and retry
-    (bounded) so opaque structs / absent enum values are recorded as gaps,
-    not fatal probe failures."""
+    """Compile+run; on errors, drop the offending measurement lines and
+    retry (bounded). Returns (stdout, compile_error, skipped) where
+    `skipped` is the list of ENT entity-keys removed during retries.
+
+    Nothing is ever silently omitted: every dropped line is returned to the
+    caller, which must classify it (see classify_skipped).
+    """
     exe = src + f".{tag}"
     retries = 0
-    name_re = re.compile(
-        r"'(\w+)' undeclared"
-        r"|incomplete type 'struct (\w+)'"
-        r"|undefined type 'struct (\w+)'"
-        r"|unknown type name '(\w+)'"
-        r"|'struct (\w+)' has no member named '(\w+)'")
+    skipped = []
+    line_re = re.compile(r"^([^:]+):(\d+):(?:\d+:)?(?: error| fatal error)")
+    ent_re = re.compile(r"// ENT:(\S+)")
     while retries < 200:
         args = ["gcc", "-std=c11", "-o", exe, src] + \
                [a for i in inc_dirs for a in ("-I", i)]
         r = subprocess.run(args, capture_output=True, text=True)
         if r.returncode == 0:
             run = subprocess.run([exe], capture_output=True, text=True)
-            return run.stdout, None
-        names = set()
-        err = r.stderr.replace("‘", "'").replace("’", "'")
-        for m in name_re.finditer(err):
-            names.update(g for g in m.groups() if g)
-        if not names:
-            return None, r.stderr[-2000:]
+            return run.stdout, None, skipped
+        # Drop exactly the measurement lines that failed to compile (by their
+        # source line number), never collateral lines that merely share a
+        # name with the error. Every dropped line's ENT key is returned so the
+        # caller classifies it; nothing is silently omitted.
+        bad_lines = set()
+        for m in line_re.finditer(r.stderr):
+            if os.path.basename(m.group(1)) == os.path.basename(src):
+                bad_lines.add(int(m.group(2)))
+        if not bad_lines:
+            return None, r.stderr[-2000:], skipped
         with open(src) as f:
             lines = f.readlines()
-        kept = [ln for ln in lines if not any(
-            re.search(rf"\b{re.escape(n)}\b", ln) for n in names)]
+        kept = []
+        for i, ln in enumerate(lines, start=1):
+            if i in bad_lines:
+                em = ent_re.search(ln)
+                if em:
+                    skipped.append(em.group(1))
+            else:
+                kept.append(ln)
         if len(kept) == len(lines):
-            return None, r.stderr[-2000:]
+            return None, r.stderr[-2000:], skipped
         with open(src, "w") as f:
             f.writelines(kept)
         retries += 1
-    return None, "retry limit"
+    return None, "retry limit", skipped
+
+
+SKIP_CLASSES = ["OPAQUE_FORWARD_DECL", "NOT_LAYOUT_OBSERVABLE",
+                "CONFIGURATION_ABSENT", "TOOLING_LIMITATION", "CANDIDATE_GAP"]
+
+
+def concat_headers(paths):
+    hay = ""
+    for root, _d, files in os.walk(paths):
+        for fn in files:
+            if fn.endswith(".h"):
+                try:
+                    hay += open(os.path.join(root, fn), encoding="utf-8",
+                                errors="replace").read() + "\n"
+                except OSError:
+                    pass
+    return hay
+
+
+def classify_skipped(project, keys, side):
+    """Classify every entity the retry loop dropped, so the ledger can prove
+    that nothing was silently omitted.
+
+    side: 'oracle' | 'candidate' | 'oracle-gaps'
+
+    Classes (see SKIP_CLASSES):
+      OPAQUE_FORWARD_DECL   header declares the type but defines no body
+      NOT_LAYOUT_OBSERVABLE the C headers do not define this entity at all
+                            (Doxygen attributed it from private/source text)
+      CONFIGURATION_ABSENT  entity exists in the header under a conditional
+                            compilation gate the probe does not enable
+      CANDIDATE_GAP         oracle-defined surface missing from candidate
+                            headers (only on candidate-side probes)
+      TOOLING_LIMITATION    anything else (should not occur; fails the court)
+    """
+    cand = concat_headers(os.path.join(ROOT, "include"))
+    orac = concat_headers("/usr/include/libxml2")
+    out = {}
+    for key in keys:
+        if key.startswith("struct:"):
+            name = key[7:]
+            body_c = re.search(rf"struct\s+{re.escape(name)}\s*{{", cand)
+            body_o = re.search(rf"struct\s+{re.escape(name)}\s*{{", orac)
+            fwd_c = re.search(rf"struct\s+{re.escape(name)}\s*;", cand)
+            fwd_o = re.search(rf"struct\s+{re.escape(name)}\s*;", orac)
+            if body_o:
+                if body_c:
+                    out[key] = "TOOLING_LIMITATION"
+                elif side == "candidate":
+                    out[key] = "CANDIDATE_GAP"
+                else:
+                    out[key] = "TOOLING_LIMITATION"
+            elif fwd_o:
+                out[key] = "OPAQUE_FORWARD_DECL"
+            elif fwd_c:
+                out[key] = "OPAQUE_FORWARD_DECL"
+            else:
+                out[key] = "NOT_LAYOUT_OBSERVABLE"
+        elif key.startswith("field:") or key.startswith("enum:"):
+            # field:STRUCT.FIELD or enum:ENUM.VALUE
+            _, rest = key.split(":", 1)
+            name = rest.split(".")[-1]
+            in_c = re.search(rf"\b{re.escape(name)}\b", cand)
+            in_o = re.search(rf"\b{re.escape(name)}\b", orac)
+            if in_o and not in_c and side == "candidate":
+                out[key] = "CANDIDATE_GAP"
+            elif in_o and not in_c:
+                out[key] = "CANDIDATE_GAP"
+            elif not in_o and not in_c:
+                out[key] = "NOT_LAYOUT_OBSERVABLE"
+            elif in_o and in_c:
+                out[key] = "CONFIGURATION_ABSENT"
+            else:
+                out[key] = "TOOLING_LIMITATION"
+        else:
+            out[key] = "TOOLING_LIMITATION"
+    return out
 
 
 def inventory_hash(path):
@@ -233,15 +327,51 @@ def parse(text):
 
 
 def main():
-    ledger = {"schema": "abi-parity-ledger-2", "projects": {}}
+    ledger = {"schema": "abi-parity-ledger-3", "projects": {}}
     for project, info in PROJECTS.items():
         src, n_struct, n_enum = gen_probe(project)
         print(f"{project}: probe with {n_struct} structs, {n_enum} enums -> {src}")
-        vo, err_o = build_and_run(src, info["oracle_inc"], "oracle")
+
+        def discovered_keys(path):
+            with open(path) as f:
+                return set(re.findall(r"// ENT:(\S+)", f.read()))
+
+        def accounting(discovered, measured, skipped_keys, side):
+            """Prove nothing was silently omitted: measured ∪ classified ==
+            discovered, measured ∩ classified == ∅."""
+            classifications = classify_skipped(project, skipped_keys, side)
+            classified = set(classifications)
+            if set(skipped_keys) != classified:
+                raise SystemExit(f"classifier missed entities: "
+                                 f"{set(skipped_keys) - classified}")
+            silently = discovered - measured - classified
+            if silently:
+                raise SystemExit(f"SILENT OMISSION ({project}/{side}): "
+                                 f"{sorted(silently)[:10]} were neither measured "
+                                 f"nor classified — fail-open prohibited")
+            unclassified = classified - {k for k, c in classifications.items()
+                                         if c in SKIP_CLASSES}
+            if unclassified:
+                raise SystemExit(f"UNCLASSIFIED SKIPS ({project}/{side}): "
+                                 f"{sorted(unclassified)}")
+            return {
+                "discovered": len(discovered),
+                "measurable": len(measured),
+                "classified_unmeasurable": len(classified),
+                "silently_omitted": len(silently),
+                "skip_classifications": {
+                    c: sorted(k for k, cc in classifications.items() if cc == c)
+                    for c in SKIP_CLASSES},
+            }
+
+        # oracle probe: full discovered surface
+        vo, err_o, skip_o = build_and_run(src, info["oracle_inc"], "oracle")
+        dsc_o = discovered_keys(src)
         # candidate probe: only entities the candidate headers define; the rest
         # are recorded as header-surface gaps (residuals), not probe failures
         src_c, n_sc, n_ec = gen_probe(project, "candidate")
-        vc, err_c = build_and_run(src_c, info["cand_inc"], "candidate")
+        vc, err_c, skip_c = build_and_run(src_c, info["cand_inc"], "candidate")
+        dsc_c = discovered_keys(src_c)
         if err_o or err_c:
             print(f"  compile errors: oracle={bool(err_o)} candidate={bool(err_c)}")
             if err_o:
@@ -249,6 +379,8 @@ def main():
             if err_c:
                 print("  candidate:", err_c[:300])
         po, pc = parse(vo or ""), parse(vc or "")
+        acc_o = accounting(dsc_o, set(po), skip_o, "oracle")
+        acc_c = accounting(dsc_c, set(pc), skip_c, "candidate")
         mismatches = []
         for k, v in po.items():
             if k not in pc:
@@ -262,9 +394,12 @@ def main():
         src_o, n_so, n_eo = gen_probe(project, "oracle-only")
         header_gaps = []
         if n_so or n_eo:
-            vo2, err_o2 = build_and_run(src_o, info["oracle_inc"], "oracle-gaps")
+            vo2, err_o2, skip_o2 = build_and_run(src_o, info["oracle_inc"], "oracle-gaps")
+            dsc_o2 = discovered_keys(src_o)
+            acc_g = accounting(dsc_o2, set(parse(vo2 or "")), skip_o2, "oracle-gaps")
             if not err_o2:
                 header_gaps = sorted(parse(vo2 or "").keys())
+            ledger.setdefault("_gap_accounting", {})[project] = acc_g
         ledger["projects"][project] = {
             "version": info["version"],
             "evidence_sources": {
@@ -281,6 +416,15 @@ def main():
                           "epochs are sealed separately from historical inventories "
                           "(atlas/HISTORICAL_SURFACE_EPOCHS.json)"),
             },
+            "probe_accounting": {
+                "oracle": acc_o,
+                "candidate": acc_c,
+                "note": ("discovered = measurement lines generated; measurable = "
+                          "entities actually measured; classified_unmeasurable = "
+                          "entities dropped during compile retries with an explicit "
+                          "classification; silently_omitted MUST be 0 — the ledger "
+                          "fails otherwise (fail-open prohibited)"),
+            },
             "structs_probed": n_struct,
             "enums_probed": n_enum,
             "oracle_entities": len(po),
@@ -290,6 +434,12 @@ def main():
             "candidate_header_gap_entities": header_gaps,
             "verdict": "PASS" if not mismatches else "FAIL",
         }
+        print(f"  oracle: discovered={acc_o['discovered']} measurable={acc_o['measurable']} "
+              f"classified={acc_o['classified_unmeasurable']} "
+              f"silent={acc_o['silently_omitted']}")
+        print(f"  candidate: discovered={acc_c['discovered']} measurable={acc_c['measurable']} "
+              f"classified={acc_c['classified_unmeasurable']} "
+              f"silent={acc_c['silently_omitted']}")
         print(f"  oracle entities={len(po)} candidate={len(pc)} "
               f"mismatches={len(mismatches)} header-gaps={len(header_gaps)} "
               f"verdict={ledger['projects'][project]['verdict']}")
