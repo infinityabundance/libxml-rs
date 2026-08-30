@@ -1460,8 +1460,12 @@ pub unsafe fn schematron_validate_doc_schema(
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronNewParserCtxt(url: *const c_char) -> *mut c_void {
     if url.is_null() {
-        let ctxt = allocator::xmlMallocZero(std::mem::size_of::<SchematronSchema>() as usize);
-        return ctxt;
+        // UPSTREAM-PARITY: a NULL URL yields an empty parser context that
+        // later accepts xmlSchematronParse. The context must be a real
+        // constructed SchematronSchema (Box) — zeroed raw memory would be
+        // re-interpreted as a Rust struct with Vec/HashMap fields and
+        // cloned/dropped later (UB).
+        return Box::into_raw(Box::new(SchematronSchema::new())) as *mut c_void;
     }
 
     let url_str = unsafe {
@@ -1490,8 +1494,7 @@ pub unsafe extern "C" fn xmlSchematronNewParserCtxt(url: *const c_char) -> *mut 
     }
 
     // Return empty context for later parsing
-    let ctxt = allocator::xmlMallocZero(std::mem::size_of::<SchematronSchema>() as usize);
-    ctxt
+    Box::into_raw(Box::new(SchematronSchema::new())) as *mut c_void
 }
 
 /// Create a new Schematron parser context from a memory buffer.

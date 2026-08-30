@@ -1,0 +1,2910 @@
+{
+ "schema": "subsystem-census-1",
+ "generator": "tools/evidence/subsystem_census.py",
+ "phase": "11.1-O",
+ "projects": {
+  "libxml2": "2.15.3",
+  "libxslt": "1.1.45",
+  "libexslt": "1.1.45 (oracle libexslt.so.0)"
+ },
+ "exslt_oracle_symbols": [
+  "exsltCommonRegister",
+  "exsltDateRegister",
+  "exsltDateXpathCtxtRegister",
+  "exsltDynRegister",
+  "exsltFuncRegister",
+  "exsltLibexsltVersion",
+  "exsltLibraryVersion",
+  "exsltLibxmlVersion",
+  "exsltLibxsltVersion",
+  "exsltMathRegister",
+  "exsltMathXpathCtxtRegister",
+  "exsltRegisterAll",
+  "exsltSaxonRegister",
+  "exsltSetsRegister",
+  "exsltSetsXpathCtxtRegister",
+  "exsltStrRegister",
+  "exsltStrXpathCtxtRegister"
+ ],
+ "verdict_totals": {
+  "IMPLEMENTED_UNVERIFIED": 44,
+  "PARTIAL": 41
+ },
+ "uncategorized_oracle_functions": [],
+ "subsystems": {
+  "strings": {
+   "id": "strings",
+   "title": "Strings",
+   "project": "libxml2",
+   "plan": "strings",
+   "headers": [
+    "xmlstring.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlstring.c"
+   ],
+   "oracle_dso_functions": 30,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 30,
+   "missing_symbols": [],
+   "obligations_total": 30,
+   "obligations": {
+    "IMPLEMENTED": 30
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "memory": {
+   "id": "memory",
+   "title": "Memory allocation",
+   "project": "libxml2",
+   "plan": "memory",
+   "headers": [
+    "xmlmemory.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlmemory.c"
+   ],
+   "oracle_dso_functions": 21,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 5,
+   "candidate_functions": 21,
+   "missing_symbols": [],
+   "obligations_total": 21,
+   "obligations": {
+    "INTENTIONAL_NOOP": 2,
+    "IMPLEMENTED": 19
+   },
+   "obligation_gap": 5,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "dictionaries": {
+   "id": "dictionaries",
+   "title": "Dictionaries",
+   "project": "libxml2",
+   "plan": "dictionaries",
+   "headers": [
+    "dict.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "dict.c"
+   ],
+   "oracle_dso_functions": 13,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 13,
+   "missing_symbols": [],
+   "obligations_total": 13,
+   "obligations": {
+    "STUB": 1,
+    "IMPLEMENTED": 11,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "xmlDictCleanup"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "hashes": {
+   "id": "hashes",
+   "title": "Hash tables",
+   "project": "libxml2",
+   "plan": "hashes",
+   "headers": [
+    "hash.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "hash.c"
+   ],
+   "oracle_dso_functions": 29,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 29,
+   "missing_symbols": [],
+   "obligations_total": 29,
+   "obligations": {
+    "IMPLEMENTED": 29
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "lists": {
+   "id": "lists",
+   "title": "Linked lists",
+   "project": "libxml2",
+   "plan": "lists",
+   "headers": [
+    "list.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "list.c"
+   ],
+   "oracle_dso_functions": 26,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 26,
+   "missing_symbols": [],
+   "obligations_total": 26,
+   "obligations": {
+    "IMPLEMENTED": 26
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "buffers": {
+   "id": "buffers",
+   "title": "Buffers",
+   "project": "libxml2",
+   "plan": "buffers",
+   "headers": [],
+   "prefix": "xmlBuffer",
+   "sources": [
+    "buffer.c"
+   ],
+   "oracle_dso_functions": 20,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 20,
+   "missing_symbols": [],
+   "obligations_total": 20,
+   "obligations": {
+    "IMPLEMENTED": 20
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 4,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "SAVE-001",
+    "WRITER-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": "buffer.h was removed in libxml2 2.12; the xmlBuffer API survives deprecated in tree.h and remains exported."
+  },
+  "tree": {
+   "id": "tree",
+   "title": "Tree construction and navigation",
+   "project": "libxml2",
+   "plan": "tree",
+   "headers": [
+    "tree.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "tree.c"
+   ],
+   "oracle_dso_functions": 157,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 157,
+   "missing_symbols": [],
+   "obligations_total": 157,
+   "obligations": {
+    "IMPLEMENTED": 157
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 13,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "DATA-GLOBALS-001",
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "SAVE-001",
+    "WRITER-001",
+    "XPATH-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "namespaces": {
+   "id": "namespaces",
+   "title": "Namespaces",
+   "project": "libxml2",
+   "plan": "namespaces",
+   "headers": [
+    "tree.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "tree.c",
+    "parser.c"
+   ],
+   "oracle_dso_functions": 172,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 172,
+   "missing_symbols": [],
+   "obligations_total": 172,
+   "obligations": {
+    "IMPLEMENTED": 172
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 13,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "DATA-GLOBALS-001",
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "SAVE-001",
+    "WRITER-001",
+    "XPATH-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "entities": {
+   "id": "entities",
+   "title": "Entities",
+   "project": "libxml2",
+   "plan": "entities",
+   "headers": [
+    "entities.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "entities.c"
+   ],
+   "oracle_dso_functions": 19,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 19,
+   "missing_symbols": [],
+   "obligations_total": 19,
+   "obligations": {
+    "IMPLEMENTED": 19
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "dtd": {
+   "id": "dtd",
+   "title": "DTD (declarations and subsets)",
+   "project": "libxml2",
+   "plan": "DTD",
+   "headers": [
+    "tree.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "valid.c",
+    "tree.c"
+   ],
+   "oracle_dso_functions": 186,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 186,
+   "missing_symbols": [],
+   "obligations_total": 186,
+   "obligations": {
+    "IMPLEMENTED": 186
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 13,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "DATA-GLOBALS-001",
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "SAVE-001",
+    "WRITER-001",
+    "XPATH-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "validity": {
+   "id": "validity",
+   "title": "Validity (DTD validation)",
+   "project": "libxml2",
+   "plan": "validity",
+   "headers": [
+    "valid.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "valid.c"
+   ],
+   "oracle_dso_functions": 71,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 71,
+   "missing_symbols": [],
+   "obligations_total": 71,
+   "obligations": {
+    "IMPLEMENTED": 70,
+    "STUB": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "xmlSprintfElementContent"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xml-parser": {
+   "id": "xml-parser",
+   "title": "XML parser",
+   "project": "libxml2",
+   "plan": "XML parser; pull/document parser",
+   "headers": [
+    "parser.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "parser.c",
+    "parserInternals.c"
+   ],
+   "oracle_dso_functions": 109,
+   "oracle_dso_globals": 3,
+   "header_only_functions": 0,
+   "candidate_functions": 77,
+   "missing_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
+   "obligations_total": 77,
+   "obligations": {
+    "IMPLEMENTED": 71,
+    "INTENTIONAL_NOOP": 2,
+    "NOT_APPLICABLE": 3,
+    "STUB": 1
+   },
+   "obligation_gap": 35,
+   "semantic_verified": 3,
+   "stub_symbols": [
+    "xmlParserInputRead"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "XPATH-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "parser-internals": {
+   "id": "parser-internals",
+   "title": "Parser internals (output-affecting)",
+   "project": "libxml2",
+   "plan": "parser internals that affect output",
+   "headers": [
+    "parserInternals.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "parserInternals.c"
+   ],
+   "oracle_dso_functions": 75,
+   "oracle_dso_globals": 3,
+   "header_only_functions": 0,
+   "candidate_functions": 76,
+   "missing_symbols": [
+    "xmlCtxtPopInput",
+    "xmlCtxtPushInput"
+   ],
+   "obligations_total": 76,
+   "obligations": {
+    "IMPLEMENTED": 73,
+    "NOT_APPLICABLE": 3
+   },
+   "obligation_gap": 2,
+   "semantic_verified": 1,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "DATA-GLOBALS-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "push-parser": {
+   "id": "push-parser",
+   "title": "Push parser and parser contexts",
+   "project": "libxml2",
+   "plan": "push parser",
+   "headers": [
+    "parser.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "parser.c",
+    "parserInternals.c"
+   ],
+   "oracle_dso_functions": 130,
+   "oracle_dso_globals": 3,
+   "header_only_functions": 0,
+   "candidate_functions": 98,
+   "missing_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
+   "obligations_total": 98,
+   "obligations": {
+    "IMPLEMENTED": 92,
+    "INTENTIONAL_NOOP": 2,
+    "NOT_APPLICABLE": 3,
+    "STUB": 1
+   },
+   "obligation_gap": 35,
+   "semantic_verified": 3,
+   "stub_symbols": [
+    "xmlParserInputRead"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "XPATH-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "sax1": {
+   "id": "sax1",
+   "title": "SAX1",
+   "project": "libxml2",
+   "plan": "SAX1",
+   "headers": [],
+   "prefix": "xmlSAX",
+   "sources": [
+    "SAX.c",
+    "parser.c"
+   ],
+   "oracle_dso_functions": 43,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 43,
+   "missing_symbols": [],
+   "obligations_total": 43,
+   "obligations": {
+    "IMPLEMENTED": 43
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": "SAX.h hosts the SAX1 handler struct; the SAX1 parse entry points are declared in parser.h. Membership is prefix-based."
+  },
+  "sax2": {
+   "id": "sax2",
+   "title": "SAX2",
+   "project": "libxml2",
+   "plan": "SAX2",
+   "headers": [
+    "SAX2.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "SAX2.c"
+   ],
+   "oracle_dso_functions": 36,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 36,
+   "missing_symbols": [],
+   "obligations_total": 36,
+   "obligations": {
+    "STUB": 1,
+    "INTENTIONAL_NOOP": 1,
+    "IMPLEMENTED": 34
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "htmlDefaultSAXHandlerInit"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "html-parser": {
+   "id": "html-parser",
+   "title": "HTML parser",
+   "project": "libxml2",
+   "plan": "HTML behavior actually targeted by upstream",
+   "headers": [
+    "HTMLparser.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "HTMLparser.c"
+   ],
+   "oracle_dso_functions": 45,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 44,
+   "missing_symbols": [
+    "htmlCtxtSetOptions",
+    "htmlUTF8ToHtml"
+   ],
+   "obligations_total": 44,
+   "obligations": {
+    "IMPLEMENTED": 40,
+    "NOT_APPLICABLE": 1,
+    "STUB": 3
+   },
+   "obligation_gap": 2,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "htmlElementAllowedHere",
+    "htmlInitAutoClose",
+    "htmlParseCharRef"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "html-tree": {
+   "id": "html-tree",
+   "title": "HTML tree and serialization",
+   "project": "libxml2",
+   "plan": "HTML behavior",
+   "headers": [
+    "HTMLtree.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "HTMLtree.c"
+   ],
+   "oracle_dso_functions": 18,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 18,
+   "missing_symbols": [],
+   "obligations_total": 18,
+   "obligations": {
+    "IMPLEMENTED": 18
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "io": {
+   "id": "io",
+   "title": "I/O (input/output buffers)",
+   "project": "libxml2",
+   "plan": "I/O",
+   "headers": [
+    "xmlIO.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlIO.c"
+   ],
+   "oracle_dso_functions": 50,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 50,
+   "missing_symbols": [],
+   "obligations_total": 50,
+   "obligations": {
+    "IMPLEMENTED": 49,
+    "STUB": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 7,
+   "stub_symbols": [
+    "xmlFileMatch"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "SAVE-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "resource-loading": {
+   "id": "resource-loading",
+   "title": "Resource loading (entity loaders, nano FTP/HTTP)",
+   "project": "libxml2",
+   "plan": "resource loading",
+   "headers": [
+    "nanoftp.h",
+    "nanohttp.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlIO.c",
+    "nanoftp.c",
+    "nanohttp.c"
+   ],
+   "oracle_dso_functions": 25,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 25,
+   "missing_symbols": [],
+   "obligations_total": 25,
+   "obligations": {
+    "IMPLEMENTED": 25
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "uri": {
+   "id": "uri",
+   "title": "URI handling",
+   "project": "libxml2",
+   "plan": "URI",
+   "headers": [
+    "uri.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "uri.c"
+   ],
+   "oracle_dso_functions": 18,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 18,
+   "missing_symbols": [],
+   "obligations_total": 18,
+   "obligations": {
+    "IMPLEMENTED": 18
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "catalogs": {
+   "id": "catalogs",
+   "title": "Catalogs",
+   "project": "libxml2",
+   "plan": "catalogs",
+   "headers": [
+    "catalog.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "catalog.c"
+   ],
+   "oracle_dso_functions": 37,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 37,
+   "missing_symbols": [],
+   "obligations_total": 36,
+   "obligations": {
+    "IMPLEMENTED": 36
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 14,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "CATALOG-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "encoding": {
+   "id": "encoding",
+   "title": "Encoding (charsets, entities decoding)",
+   "project": "libxml2",
+   "plan": "encoding",
+   "headers": [
+    "encoding.h",
+    "chvalid.h",
+    "xmlunicode.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "encoding.c",
+    "chvalid.c",
+    "xmlunicode.c",
+    "xmlchars.c"
+   ],
+   "oracle_dso_functions": 32,
+   "oracle_dso_globals": 7,
+   "header_only_functions": 0,
+   "candidate_functions": 37,
+   "missing_symbols": [
+    "xmlIsolat1ToUTF8",
+    "xmlUTF8ToIsolat1"
+   ],
+   "obligations_total": 35,
+   "obligations": {
+    "IMPLEMENTED": 28,
+    "NOT_APPLICABLE": 7
+   },
+   "obligation_gap": 4,
+   "semantic_verified": 4,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "ENCODING-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "serialization": {
+   "id": "serialization",
+   "title": "Serialization (node/doc dump)",
+   "project": "libxml2",
+   "plan": "serialization",
+   "headers": [
+    "xmlsave.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlsave.c",
+    "tree.c",
+    "xmlIO.c"
+   ],
+   "oracle_dso_functions": 28,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 28,
+   "missing_symbols": [],
+   "obligations_total": 27,
+   "obligations": {
+    "IMPLEMENTED": 27
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "SAVE-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "debug-xml": {
+   "id": "debug-xml",
+   "title": "Debug XML (shell/dump)",
+   "project": "libxml2",
+   "plan": "debug XML",
+   "headers": [
+    "debugXML.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "debugXML.c"
+   ],
+   "oracle_dso_functions": 11,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 11,
+   "missing_symbols": [],
+   "obligations_total": 11,
+   "obligations": {
+    "IMPLEMENTED": 11
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xpath": {
+   "id": "xpath",
+   "title": "XPath",
+   "project": "libxml2",
+   "plan": "XPath",
+   "headers": [
+    "xpath.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xpath.c"
+   ],
+   "oracle_dso_functions": 41,
+   "oracle_dso_globals": 3,
+   "header_only_functions": 0,
+   "candidate_functions": 44,
+   "missing_symbols": [],
+   "obligations_total": 44,
+   "obligations": {
+    "IMPLEMENTED": 40,
+    "STUB": 1,
+    "NOT_APPLICABLE": 3
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 18,
+   "stub_symbols": [
+    "xmlXPathInit"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "GLOBALS-THREADING-001",
+    "XPATH-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xpath-internals": {
+   "id": "xpath-internals",
+   "title": "XPath internals (visible via API behavior)",
+   "project": "libxml2",
+   "plan": "XPath internals visible through API behavior",
+   "headers": [
+    "xpathInternals.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xpath.c"
+   ],
+   "oracle_dso_functions": 117,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 117,
+   "missing_symbols": [],
+   "obligations_total": 115,
+   "obligations": {
+    "IMPLEMENTED": 113,
+    "STUB": 2
+   },
+   "obligation_gap": 2,
+   "semantic_verified": 85,
+   "stub_symbols": [
+    "xmlXPathNodeSetFreeNs",
+    "xmlXPathRegisterAllFunctions"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "XPATH-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xpointer": {
+   "id": "xpointer",
+   "title": "XPointer",
+   "project": "libxml2",
+   "plan": "XPointer",
+   "headers": [
+    "xpointer.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xpointer.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 2,
+   "missing_symbols": [],
+   "obligations_total": 2,
+   "obligations": {
+    "IMPLEMENTED": 2
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xinclude": {
+   "id": "xinclude",
+   "title": "XInclude",
+   "project": "libxml2",
+   "plan": "XInclude",
+   "headers": [
+    "xinclude.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xinclude.c"
+   ],
+   "oracle_dso_functions": 13,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 12,
+   "missing_symbols": [
+    "xmlXIncludeSetResourceLoader"
+   ],
+   "obligations_total": 12,
+   "obligations": {
+    "IMPLEMENTED": 12
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xlink": {
+   "id": "xlink",
+   "title": "XLink",
+   "project": "libxml2",
+   "plan": "(XLink supporting surface)",
+   "headers": [],
+   "prefix": "xlink",
+   "sources": [
+    "xlink.c"
+   ],
+   "oracle_dso_functions": 5,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "xlinkGetDefaultDetect",
+    "xlinkGetDefaultHandler",
+    "xlinkIsLink",
+    "xlinkSetDefaultDetect",
+    "xlinkSetDefaultHandler"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 5,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": "xlink.h functions are exported but undocumented (absent from the Doxygen public inventory)."
+  },
+  "xsd": {
+   "id": "xsd",
+   "title": "XML Schema (validators)",
+   "project": "libxml2",
+   "plan": "XML Schema",
+   "headers": [
+    "xmlschemas.h",
+    "schemasInternals.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlschemas.c"
+   ],
+   "oracle_dso_functions": 30,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 29,
+   "missing_symbols": [
+    "xmlSchemaSetResourceLoader"
+   ],
+   "obligations_total": 29,
+   "obligations": {
+    "IMPLEMENTED": 28,
+    "STUB": 1
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "xmlSchemaFreeWildcard"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xsd-datatypes": {
+   "id": "xsd-datatypes",
+   "title": "XML Schema datatypes",
+   "project": "libxml2",
+   "plan": "XML Schema datatypes",
+   "headers": [
+    "xmlschemastypes.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlschemastypes.c"
+   ],
+   "oracle_dso_functions": 34,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 34,
+   "missing_symbols": [],
+   "obligations_total": 34,
+   "obligations": {
+    "IMPLEMENTED": 33,
+    "STUB": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "xmlSchemaCleanupTypes"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "relaxng": {
+   "id": "relaxng",
+   "title": "RELAX NG",
+   "project": "libxml2",
+   "plan": "RELAX NG",
+   "headers": [
+    "relaxng.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "relaxng.c"
+   ],
+   "oracle_dso_functions": 27,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 24,
+   "missing_symbols": [
+    "xmlRelaxNGSetResourceLoader",
+    "xmlRelaxNGValidCtxtClearErrors",
+    "xmlRelaxParserSetIncLImit"
+   ],
+   "obligations_total": 24,
+   "obligations": {
+    "STUB": 2,
+    "IMPLEMENTED": 22
+   },
+   "obligation_gap": 3,
+   "semantic_verified": 0,
+   "stub_symbols": [
+    "xmlRelaxNGCleanupTypes",
+    "xmlRelaxNGInitTypes"
+   ],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "schematron": {
+   "id": "schematron",
+   "title": "Schematron",
+   "project": "libxml2",
+   "plan": "Schematron",
+   "headers": [
+    "schematron.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "schematron.c"
+   ],
+   "oracle_dso_functions": 10,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 10,
+   "missing_symbols": [],
+   "obligations_total": 10,
+   "obligations": {
+    "IMPLEMENTED": 10
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "regex": {
+   "id": "regex",
+   "title": "Regex",
+   "project": "libxml2",
+   "plan": "regex",
+   "headers": [
+    "xmlregexp.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlregexp.c"
+   ],
+   "oracle_dso_functions": 11,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 11,
+   "missing_symbols": [],
+   "obligations_total": 11,
+   "obligations": {
+    "IMPLEMENTED": 11
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "automata": {
+   "id": "automata",
+   "title": "Automata",
+   "project": "libxml2",
+   "plan": "automata",
+   "headers": [
+    "xmlautomata.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlautomata.c"
+   ],
+   "oracle_dso_functions": 19,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 19,
+   "missing_symbols": [],
+   "obligations_total": 19,
+   "obligations": {
+    "IMPLEMENTED": 17,
+    "INTENTIONAL_NOOP": 2
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "c14n": {
+   "id": "c14n",
+   "title": "C14N (canonicalization)",
+   "project": "libxml2",
+   "plan": "C14N; Exclusive C14N",
+   "headers": [
+    "c14n.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "c14n.c"
+   ],
+   "oracle_dso_functions": 4,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 4,
+   "missing_symbols": [],
+   "obligations_total": 4,
+   "obligations": {
+    "IMPLEMENTED": 4
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "reader": {
+   "id": "reader",
+   "title": "XML Reader",
+   "project": "libxml2",
+   "plan": "XML Reader",
+   "headers": [
+    "xmlreader.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlreader.c"
+   ],
+   "oracle_dso_functions": 89,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 88,
+   "missing_symbols": [
+    "xmlTextReaderSetResourceLoader"
+   ],
+   "obligations_total": 88,
+   "obligations": {
+    "IMPLEMENTED": 88
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 31,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "READER-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "writer": {
+   "id": "writer",
+   "title": "XML Writer",
+   "project": "libxml2",
+   "plan": "XML Writer",
+   "headers": [
+    "xmlwriter.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlwriter.c"
+   ],
+   "oracle_dso_functions": 81,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 81,
+   "missing_symbols": [],
+   "obligations_total": 81,
+   "obligations": {
+    "IMPLEMENTED": 68,
+    "UNKNOWN": 13
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 33,
+   "stub_symbols": [],
+   "unknown_symbols": [
+    "xmlTextWriterWriteFormatAttribute",
+    "xmlTextWriterWriteFormatAttributeNS",
+    "xmlTextWriterWriteFormatCDATA",
+    "xmlTextWriterWriteFormatComment",
+    "xmlTextWriterWriteFormatDTD",
+    "xmlTextWriterWriteFormatDTDAttlist",
+    "xmlTextWriterWriteFormatDTDElement",
+    "xmlTextWriterWriteFormatDTDInternalEntity",
+    "xmlTextWriterWriteFormatElement",
+    "xmlTextWriterWriteFormatElementNS",
+    "xmlTextWriterWriteFormatPI",
+    "xmlTextWriterWriteFormatRaw",
+    "xmlTextWriterWriteFormatString"
+   ],
+   "courts": [
+    "WRITER-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "globals": {
+   "id": "globals",
+   "title": "Globals (defaults, error context)",
+   "project": "libxml2",
+   "plan": "globals",
+   "headers": [],
+   "prefix": "",
+   "sources": [
+    "globals.c",
+    "parserInternals.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 2,
+   "missing_symbols": [],
+   "obligations_total": 2,
+   "obligations": {
+    "INTENTIONAL_NOOP": 2
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": "The default-value accessors are declared across several headers (globals.h, parserInternals.h, tree.h); membership is by explicit name."
+  },
+  "threads": {
+   "id": "threads",
+   "title": "Threads",
+   "project": "libxml2",
+   "plan": "threads",
+   "headers": [
+    "threads.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "threads.c"
+   ],
+   "oracle_dso_functions": 13,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 13,
+   "missing_symbols": [],
+   "obligations_total": 13,
+   "obligations": {
+    "INTENTIONAL_NOOP": 1,
+    "IMPLEMENTED": 12
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 1,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "GLOBALS-THREADING-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "errors": {
+   "id": "errors",
+   "title": "Errors (structured/generic)",
+   "project": "libxml2",
+   "plan": "errors",
+   "headers": [
+    "xmlerror.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "error.c"
+   ],
+   "oracle_dso_functions": 22,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 22,
+   "missing_symbols": [],
+   "obligations_total": 22,
+   "obligations": {
+    "IMPLEMENTED": 22
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 1,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "GLOBALS-THREADING-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "pattern": {
+   "id": "pattern",
+   "title": "Pattern APIs (xmlPattern)",
+   "project": "libxml2",
+   "plan": "pattern APIs",
+   "headers": [
+    "pattern.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "pattern.c"
+   ],
+   "oracle_dso_functions": 16,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 16,
+   "missing_symbols": [],
+   "obligations_total": 16,
+   "obligations": {
+    "IMPLEMENTED": 16
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "modules": {
+   "id": "modules",
+   "title": "Modules/plugins",
+   "project": "libxml2",
+   "plan": "modules/plugins if present in applicable eras",
+   "headers": [
+    "xmlmodule.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlmodule.c"
+   ],
+   "oracle_dso_functions": 4,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 4,
+   "missing_symbols": [],
+   "obligations_total": 4,
+   "obligations": {
+    "IMPLEMENTED": 4
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "legacy": {
+   "id": "legacy",
+   "title": "Legacy/deprecated interfaces",
+   "project": "libxml2",
+   "plan": "legacy/deprecated interfaces",
+   "headers": [
+    "tree.h",
+    "parser.h",
+    "parserInternals.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "parser.c",
+    "parserInternals.c",
+    "entities.c",
+    "tree.c"
+   ],
+   "oracle_dso_functions": 377,
+   "oracle_dso_globals": 6,
+   "header_only_functions": 0,
+   "candidate_functions": 346,
+   "missing_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtPopInput",
+    "xmlCtxtPushInput",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
+   "obligations_total": 346,
+   "obligations": {
+    "IMPLEMENTED": 337,
+    "INTENTIONAL_NOOP": 2,
+    "NOT_APPLICABLE": 6,
+    "STUB": 1
+   },
+   "obligation_gap": 37,
+   "semantic_verified": 18,
+   "stub_symbols": [
+    "xmlParserInputRead"
+   ],
+   "unknown_symbols": [],
+   "courts": [
+    "DATA-GLOBALS-001",
+    "ENCODING-001",
+    "GLOBALS-THREADING-001",
+    "READER-001",
+    "SAVE-001",
+    "WRITER-001",
+    "XPATH-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": "Legacy 1.x/2.0-era entry points. The DOCB parser family (xmlDocb*, xmlParseDocTypeDecl-era DOCB paths) was removed from libxml2 in 2.12 and is historical surface only; it is tracked by the historical epoch atlases."
+  },
+  "feature-version": {
+   "id": "feature-version",
+   "title": "Feature/version APIs",
+   "project": "libxml2",
+   "plan": "feature/version APIs",
+   "headers": [
+    "xmlversion.h",
+    "xmlexports.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xmlversion.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 3,
+   "missing_symbols": [],
+   "obligations_total": 3,
+   "obligations": {
+    "IMPLEMENTED": 2,
+    "NOT_APPLICABLE": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-lifecycle": {
+   "id": "xslt-lifecycle",
+   "title": "Stylesheet lifecycle",
+   "project": "libxslt",
+   "plan": "stylesheet lifecycle",
+   "headers": [
+    "xslt.h",
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c",
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 40,
+   "oracle_dso_globals": 9,
+   "header_only_functions": 5,
+   "candidate_functions": 48,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 48,
+   "obligations": {
+    "IMPLEMENTED": 39,
+    "NOT_APPLICABLE": 8,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 11,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-compilation": {
+   "id": "xslt-compilation",
+   "title": "Compilation (preproc)",
+   "project": "libxslt",
+   "plan": "compilation",
+   "headers": [
+    "preproc.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "preproc.c"
+   ],
+   "oracle_dso_functions": 3,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 4,
+   "missing_symbols": [],
+   "obligations_total": 4,
+   "obligations": {
+    "IMPLEMENTED": 3,
+    "NOT_APPLICABLE": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-imports": {
+   "id": "xslt-imports",
+   "title": "Imports",
+   "project": "libxslt",
+   "plan": "imports",
+   "headers": [
+    "imports.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "imports.c"
+   ],
+   "oracle_dso_functions": 6,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 6,
+   "missing_symbols": [],
+   "obligations_total": 6,
+   "obligations": {
+    "IMPLEMENTED": 6
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-includes": {
+   "id": "xslt-includes",
+   "title": "Includes (document())",
+   "project": "libxslt",
+   "plan": "includes",
+   "headers": [
+    "xsltutils.h",
+    "transform.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c"
+   ],
+   "oracle_dso_functions": 69,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 6,
+   "candidate_functions": 73,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 73,
+   "obligations": {
+    "IMPLEMENTED": 68,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 7,
+   "semantic_verified": 9,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-templates": {
+   "id": "xslt-templates",
+   "title": "Templates",
+   "project": "libxslt",
+   "plan": "templates",
+   "headers": [
+    "templates.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "templates.c"
+   ],
+   "oracle_dso_functions": 11,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 11,
+   "missing_symbols": [],
+   "obligations_total": 11,
+   "obligations": {
+    "IMPLEMENTED": 11
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-patterns": {
+   "id": "xslt-patterns",
+   "title": "Patterns",
+   "project": "libxslt",
+   "plan": "patterns",
+   "headers": [
+    "pattern.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "pattern.c"
+   ],
+   "oracle_dso_functions": 9,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 9,
+   "missing_symbols": [],
+   "obligations_total": 9,
+   "obligations": {
+    "IMPLEMENTED": 9
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-priorities": {
+   "id": "xslt-priorities",
+   "title": "Priorities (template matching)",
+   "project": "libxslt",
+   "plan": "priorities",
+   "headers": [
+    "xsltutils.h",
+    "templates.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "templates.c",
+    "xslt.c"
+   ],
+   "oracle_dso_functions": 46,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 50,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 50,
+   "obligations": {
+    "IMPLEMENTED": 45,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-variables": {
+   "id": "xslt-variables",
+   "title": "Variables",
+   "project": "libxslt",
+   "plan": "variables",
+   "headers": [
+    "variables.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "variables.c"
+   ],
+   "oracle_dso_functions": 14,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 14,
+   "missing_symbols": [],
+   "obligations_total": 14,
+   "obligations": {
+    "IMPLEMENTED": 14
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-parameters": {
+   "id": "xslt-parameters",
+   "title": "Parameters",
+   "project": "libxslt",
+   "plan": "parameters",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "variables.c",
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 35,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 39,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 39,
+   "obligations": {
+    "IMPLEMENTED": 34,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-rvt": {
+   "id": "xslt-rvt",
+   "title": "Result tree fragments (RVTs)",
+   "project": "libxslt",
+   "plan": "RVTs",
+   "headers": [
+    "xsltutils.h",
+    "variables.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "variables.c",
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 51,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 55,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 55,
+   "obligations": {
+    "IMPLEMENTED": 50,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-keys": {
+   "id": "xslt-keys",
+   "title": "Keys",
+   "project": "libxslt",
+   "plan": "keys",
+   "headers": [
+    "keys.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "keys.c"
+   ],
+   "oracle_dso_functions": 5,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 5,
+   "missing_symbols": [],
+   "obligations_total": 5,
+   "obligations": {
+    "IMPLEMENTED": 5
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-sorting": {
+   "id": "xslt-sorting",
+   "title": "Sorting",
+   "project": "libxslt",
+   "plan": "sorting",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c",
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 34,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 38,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 38,
+   "obligations": {
+    "IMPLEMENTED": 33,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-numbering": {
+   "id": "xslt-numbering",
+   "title": "Numbering",
+   "project": "libxslt",
+   "plan": "numbering",
+   "headers": [
+    "numbersInternals.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "numbers.c"
+   ],
+   "oracle_dso_functions": 4,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 4,
+   "missing_symbols": [],
+   "obligations_total": 4,
+   "obligations": {
+    "IMPLEMENTED": 4
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 1,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": "numbersInternals.h has no Clang-AST function records; membership is by explicit name."
+  },
+  "xslt-whitespace": {
+   "id": "xslt-whitespace",
+   "title": "Whitespace (strip/preserve)",
+   "project": "libxslt",
+   "plan": "whitespace",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c"
+   ],
+   "oracle_dso_functions": 34,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 38,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 38,
+   "obligations": {
+    "IMPLEMENTED": 33,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-namespace-alias": {
+   "id": "xslt-namespace-alias",
+   "title": "Namespace alias",
+   "project": "libxslt",
+   "plan": "namespace alias",
+   "headers": [
+    "namespaces.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "namespaces.c"
+   ],
+   "oracle_dso_functions": 9,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 9,
+   "missing_symbols": [],
+   "obligations_total": 9,
+   "obligations": {
+    "IMPLEMENTED": 9
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": "namespaces.h has no Clang-AST function records; membership is by explicit name."
+  },
+  "xslt-attribute-sets": {
+   "id": "xslt-attribute-sets",
+   "title": "Attribute sets",
+   "project": "libxslt",
+   "plan": "attribute sets",
+   "headers": [
+    "attributes.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "attributes.c"
+   ],
+   "oracle_dso_functions": 4,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 5,
+   "missing_symbols": [],
+   "obligations_total": 5,
+   "obligations": {
+    "IMPLEMENTED": 4,
+    "NOT_APPLICABLE": 1
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-decimal-formats": {
+   "id": "xslt-decimal-formats",
+   "title": "Decimal formats",
+   "project": "libxslt",
+   "plan": "decimal formats",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 35,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 39,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 39,
+   "obligations": {
+    "IMPLEMENTED": 34,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 7,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-documents": {
+   "id": "xslt-documents",
+   "title": "Documents",
+   "project": "libxslt",
+   "plan": "documents",
+   "headers": [
+    "documents.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "documents.c"
+   ],
+   "oracle_dso_functions": 8,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 9,
+   "missing_symbols": [],
+   "obligations_total": 9,
+   "obligations": {
+    "NOT_APPLICABLE": 1,
+    "IMPLEMENTED": 8
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-transform-ctxt": {
+   "id": "xslt-transform-ctxt",
+   "title": "Transformation contexts",
+   "project": "libxslt",
+   "plan": "transformation contexts",
+   "headers": [
+    "xslt.h",
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "transform.c",
+    "xslt.c"
+   ],
+   "oracle_dso_functions": 43,
+   "oracle_dso_globals": 9,
+   "header_only_functions": 5,
+   "candidate_functions": 51,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 51,
+   "obligations": {
+    "IMPLEMENTED": 42,
+    "NOT_APPLICABLE": 8,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 11,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-transform-exec": {
+   "id": "xslt-transform-exec",
+   "title": "Transform execution",
+   "project": "libxslt",
+   "plan": "transform execution",
+   "headers": [
+    "transform.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "transform.c"
+   ],
+   "oracle_dso_functions": 33,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 1,
+   "candidate_functions": 33,
+   "missing_symbols": [],
+   "obligations_total": 33,
+   "obligations": {
+    "IMPLEMENTED": 33
+   },
+   "obligation_gap": 1,
+   "semantic_verified": 3,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-extension-functions": {
+   "id": "xslt-extension-functions",
+   "title": "Extension functions",
+   "project": "libxslt",
+   "plan": "extension functions",
+   "headers": [
+    "functions.h",
+    "extensions.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "functions.c",
+    "extensions.c"
+   ],
+   "oracle_dso_functions": 44,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 44,
+   "missing_symbols": [],
+   "obligations_total": 44,
+   "obligations": {
+    "IMPLEMENTED": 44
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 5,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-extension-elements": {
+   "id": "xslt-extension-elements",
+   "title": "Extension elements",
+   "project": "libxslt",
+   "plan": "extension elements",
+   "headers": [
+    "extensions.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "extensions.c"
+   ],
+   "oracle_dso_functions": 34,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 34,
+   "missing_symbols": [],
+   "obligations_total": 34,
+   "obligations": {
+    "IMPLEMENTED": 34
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 5,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-security": {
+   "id": "xslt-security",
+   "title": "Security preferences",
+   "project": "libxslt",
+   "plan": "security preferences",
+   "headers": [
+    "security.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "security.c"
+   ],
+   "oracle_dso_functions": 11,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 11,
+   "missing_symbols": [],
+   "obligations_total": 11,
+   "obligations": {
+    "IMPLEMENTED": 9,
+    "INTENTIONAL_NOOP": 2
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 2,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-output": {
+   "id": "xslt-output",
+   "title": "Output/serialization",
+   "project": "libxslt",
+   "plan": "output/serialization",
+   "headers": [
+    "xsltutils.h",
+    "transform.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xsltutils.c",
+    "transform.c"
+   ],
+   "oracle_dso_functions": 66,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 6,
+   "candidate_functions": 70,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 70,
+   "obligations": {
+    "IMPLEMENTED": 65,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 7,
+   "semantic_verified": 9,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-profiling": {
+   "id": "xslt-profiling",
+   "title": "Profiling",
+   "project": "libxslt",
+   "plan": "profiling",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 34,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 38,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 38,
+   "obligations": {
+    "IMPLEMENTED": 33,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-errors": {
+   "id": "xslt-errors",
+   "title": "Errors",
+   "project": "libxslt",
+   "plan": "errors",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xsltutils.c",
+    "transform.c"
+   ],
+   "oracle_dso_functions": 33,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 37,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 37,
+   "obligations": {
+    "IMPLEMENTED": 32,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-global-state": {
+   "id": "xslt-global-state",
+   "title": "Global state",
+   "project": "libxslt",
+   "plan": "global state",
+   "headers": [
+    "xsltutils.h",
+    "xslt.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c",
+    "extensions.c",
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 44,
+   "oracle_dso_globals": 9,
+   "header_only_functions": 5,
+   "candidate_functions": 52,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 52,
+   "obligations": {
+    "IMPLEMENTED": 43,
+    "NOT_APPLICABLE": 8,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 10,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-loader-hooks": {
+   "id": "xslt-loader-hooks",
+   "title": "Loader hooks (document loader)",
+   "project": "libxslt",
+   "plan": "loader hooks",
+   "headers": [
+    "documents.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "documents.c"
+   ],
+   "oracle_dso_functions": 8,
+   "oracle_dso_globals": 1,
+   "header_only_functions": 0,
+   "candidate_functions": 9,
+   "missing_symbols": [],
+   "obligations_total": 9,
+   "obligations": {
+    "NOT_APPLICABLE": 1,
+    "IMPLEMENTED": 8
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-debugger": {
+   "id": "xslt-debugger",
+   "title": "Debugger hooks",
+   "project": "libxslt",
+   "plan": "debugger hooks where applicable",
+   "headers": [
+    "xsltutils.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xsltutils.c"
+   ],
+   "oracle_dso_functions": 33,
+   "oracle_dso_globals": 5,
+   "header_only_functions": 5,
+   "candidate_functions": 37,
+   "missing_symbols": [
+    "xslDebugStatus"
+   ],
+   "obligations_total": 37,
+   "obligations": {
+    "IMPLEMENTED": 32,
+    "NOT_APPLICABLE": 4,
+    "INTENTIONAL_NOOP": 1
+   },
+   "obligation_gap": 6,
+   "semantic_verified": 6,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "xslt-extra": {
+   "id": "xslt-extra",
+   "title": "Extra/nonstandard extensions",
+   "project": "libxslt",
+   "plan": "extra/nonstandard extensions",
+   "headers": [
+    "extra.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "extra.c"
+   ],
+   "oracle_dso_functions": 4,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 4,
+   "missing_symbols": [],
+   "obligations_total": 4,
+   "obligations": {
+    "IMPLEMENTED": 4
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "xslt-exports": {
+   "id": "xslt-exports",
+   "title": "Exported internals relied upon by consumers",
+   "project": "libxslt",
+   "plan": "all exported internals historically relied upon by consumers",
+   "headers": [
+    "xsltInternals.h",
+    "xsltconfig.h",
+    "xsltlocale.h"
+   ],
+   "prefix": "",
+   "sources": [
+    "xslt.c",
+    "xsltutils.c",
+    "transform.c"
+   ],
+   "oracle_dso_functions": 38,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 38,
+   "missing_symbols": [],
+   "obligations_total": 38,
+   "obligations": {
+    "IMPLEMENTED": 35,
+    "INTENTIONAL_NOOP": 3
+   },
+   "obligation_gap": 0,
+   "semantic_verified": 12,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [
+    "XSLT-001"
+   ],
+   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "note": ""
+  },
+  "exslt-common": {
+   "id": "exslt-common",
+   "title": "EXSLT common",
+   "project": "libexslt",
+   "plan": "common",
+   "headers": [],
+   "prefix": "exsltCommon",
+   "sources": [
+    "common.c"
+   ],
+   "oracle_dso_functions": 1,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltCommonRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 1,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-math": {
+   "id": "exslt-math",
+   "title": "EXSLT math",
+   "project": "libexslt",
+   "plan": "math",
+   "headers": [],
+   "prefix": "exsltMath",
+   "sources": [
+    "math.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltMathRegister",
+    "exsltMathXpathCtxtRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 2,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-sets": {
+   "id": "exslt-sets",
+   "title": "EXSLT sets",
+   "project": "libexslt",
+   "plan": "sets",
+   "headers": [],
+   "prefix": "exsltSets",
+   "sources": [
+    "sets.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltSetsRegister",
+    "exsltSetsXpathCtxtRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 2,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-strings": {
+   "id": "exslt-strings",
+   "title": "EXSLT strings",
+   "project": "libexslt",
+   "plan": "strings",
+   "headers": [],
+   "prefix": "exsltStr",
+   "sources": [
+    "strings.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltStrRegister",
+    "exsltStrXpathCtxtRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 2,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-dynamic": {
+   "id": "exslt-dynamic",
+   "title": "EXSLT dynamic",
+   "project": "libexslt",
+   "plan": "dynamic",
+   "headers": [],
+   "prefix": "exsltDyn",
+   "sources": [
+    "dynamic.c"
+   ],
+   "oracle_dso_functions": 1,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltDynRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 1,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-dates": {
+   "id": "exslt-dates",
+   "title": "EXSLT dates",
+   "project": "libexslt",
+   "plan": "dates",
+   "headers": [],
+   "prefix": "exsltDate",
+   "sources": [
+    "date.c"
+   ],
+   "oracle_dso_functions": 2,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltDateRegister",
+    "exsltDateXpathCtxtRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 2,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-functions": {
+   "id": "exslt-functions",
+   "title": "EXSLT functions",
+   "project": "libexslt",
+   "plan": "functions",
+   "headers": [],
+   "prefix": "exsltFunc",
+   "sources": [
+    "functions.c"
+   ],
+   "oracle_dso_functions": 1,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 0,
+   "missing_symbols": [
+    "exsltFuncRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 1,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  },
+  "exslt-registry": {
+   "id": "exslt-registry",
+   "title": "EXSLT registration surface",
+   "project": "libexslt",
+   "plan": "all historically shipped modules and registrations",
+   "headers": [],
+   "prefix": "exslt",
+   "sources": [
+    "exslt.c"
+   ],
+   "oracle_dso_functions": 13,
+   "oracle_dso_globals": 0,
+   "header_only_functions": 0,
+   "candidate_functions": 1,
+   "missing_symbols": [
+    "exsltCommonRegister",
+    "exsltDateRegister",
+    "exsltDateXpathCtxtRegister",
+    "exsltDynRegister",
+    "exsltFuncRegister",
+    "exsltMathRegister",
+    "exsltMathXpathCtxtRegister",
+    "exsltSaxonRegister",
+    "exsltSetsRegister",
+    "exsltSetsXpathCtxtRegister",
+    "exsltStrRegister",
+    "exsltStrXpathCtxtRegister"
+   ],
+   "obligations_total": 0,
+   "obligations": {},
+   "obligation_gap": 13,
+   "semantic_verified": 0,
+   "stub_symbols": [],
+   "unknown_symbols": [],
+   "courts": [],
+   "verdict": "PARTIAL",
+   "note": ""
+  }
+ }
+}

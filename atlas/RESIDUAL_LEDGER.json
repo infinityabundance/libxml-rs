@@ -16,7 +16,8 @@
   "11.1-K",
   "11.1-L",
   "11.1-M",
-  "11.1-N"
+  "11.1-N",
+  "11.1-O"
  ],
  "ledger": [
   {
@@ -1982,6 +1983,44 @@
     }
    ],
    "lesson": "The DOM tree is ABI-visible: node types, parent/next/prev/last linkage, doc-pointer propagation, shared entity-ref/entity content, lazy DTD tables and (name,prefix,elem) attribute keys, zero-initialized atype, ID/IDREF tables, xmlGetLineNo's long return and -1 walk, and even warning diagnostics with exact carets all surface in a structural fingerprint and must match the oracle byte-for-byte. Ownership rules for declaration nodes (hash tables own them; child lists are views) are load-bearing for free-path memory safety."
+  },
+  {
+   "id": "R-000165",
+   "status": "OPEN",
+   "phase": "11.1-O",
+   "title": "65 oracle-DSO exports absent from the candidate (xmlCtxtGet*/Set* parser accessors, xmlNewInputFrom* input constructors, xlink surface, per-module EXSLT registration functions, resource-loader setters, html/encoding/relaxng/xsd/reader/xinclude gaps, xslDebugStatus)",
+   "surface": "Parser context accessors (xmlCtxtGetCatalogs/xmlCtxtSetDict/xmlCtxtIsHtml/xmlCtxtParseContent/xmlCtxtPushInput/xmlCtxtValidateDocument family), input-stream constructors (xmlNewInputFromFd/IO/Memory/String/Url), xlink (xlinkGetDefaultDetect/xlinkIsLink family), EXSLT (exsltCommonRegister/exsltMathRegister/... per-module registration), resource loaders (xmlSchemaSetResourceLoader/xmlRelaxNGSetResourceLoader/xmlTextReaderSetResourceLoader/xmlXIncludeSetResourceLoader/xmlCtxtSetResourceLoader), htmlCtxtSetOptions/htmlUTF8ToHtml, xmlIsolat1ToUTF8/xmlUTF8ToIsolat1, xmlRelaxNGValidCtxtClearErrors/xmlRelaxParserSetIncLImit, xslDebugStatus",
+   "component": [
+    "src/abi/exports_xml2.rs",
+    "src/abi/exports_parserint.rs",
+    "src/abi/exports_parser.rs",
+    "src/abi/exports_tree.rs",
+    "src/abi/exports_misc.rs",
+    "src/abi/exports_nano.rs",
+    "src/abi/exports_html.rs",
+    "src/abi/exports_relaxng.rs",
+    "src/abi/exports_schema.rs",
+    "src/abi/exports_xinclude.rs",
+    "src/abi/exports_xslt.rs",
+    "src/abi/exports_xslt_ext.rs",
+    "src/abi/exports_string.rs",
+    "src/abi/exports_buffer.rs",
+    "tools/evidence/subsystem_census.py",
+    "atlas/SUBSYSTEM_CENSUS.json"
+   ],
+   "discovery_date": "2026-08-30",
+   "oracle_versions": "libxml2 2.15.3 / libxslt 1.1.45 / libexslt (system DSOs, nm -D --defined-only)",
+   "root_cause": "The 11.1-O complete subsystem census (tools/evidence/subsystem_census.py; 45 libxml2 + 24 libxslt + 8 EXSLT subsystems, membership from Doxygen inventory + Clang AST atlas + symbol patterns, oracle baseline = system DSO exports) found 65 oracle-DSO-exported symbols with no candidate definition. The PARITY_OBLIGATIONS ledger reported MISSING: 0 because the obligations generator's oracle symbol set omitted these families (parser-context accessors, the xlink module, per-module EXSLT registrations, resource-loader setters and several small helpers), so the export-completeness claim was not actually proven for them.",
+   "observable_residual": "A C consumer dlopen/dlsym'ing or linking against the candidate for xmlCtxtGetDict, xmlNewInputFromMemory, xlinkIsLink, exsltMathRegister, xmlSchemaSetResourceLoader, xmlUTF8ToIsolat1, xslDebugStatus, etc. fails with an undefined symbol. dlsym returns NULL for each of the 65 names in atlas/SUBSYSTEM_CENSUS.json missing_symbols.",
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-30",
+     "event": "discovered by the 11.1-O subsystem census; recorded OPEN with the full 65-symbol list in atlas/SUBSYSTEM_CENSUS.json (missing_symbols per subsystem); closure scheduled for the 11.1-X residual closure loop with a DSO-LOADER family court",
+     "status": "OPEN"
+    }
+   ],
+   "lesson": "Export-completeness must be measured against the oracle DSO's actual dynamic symbol table (including versioned symbols and undocumented families such as xlink), not only against a curated obligations list. A subsystem census with three independent membership sources and an explicit uncategorized bucket turns 'API complete' claims into auditable numbers."
   }
  ]
 }

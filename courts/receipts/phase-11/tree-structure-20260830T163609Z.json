@@ -1,7 +1,7 @@
 {
  "court": "TREE-001",
  "phase": "11.1-N",
- "timestamp": "2026-08-30T16:18:51Z",
+ "timestamp": "2026-08-30T16:36:09Z",
  "probe": "courts/suites/data-abi/tree-structure-probe.c",
  "oracle": {
   "dso": "/usr/lib/libxml2.so.16",
