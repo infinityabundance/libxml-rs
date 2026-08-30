@@ -2,7 +2,7 @@
 name = "libxml-rs"
 version = "0.1.0-alpha.15"
 edition = "2021"
-description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure (xmlXPath*, xmlTextReader*, xmlTextWriter*, catalogs, serialization, data globals, chvalid, encoding, the full libxslt surface) — parity ledger at 0 missing for both libxml2 and libxslt. 1135 tests passing.
+description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure (xmlXPath*, xmlTextReader*, xmlTextWriter*, catalogs, serialization, data globals, chvalid, encoding, the full libxslt surface) — parity ledger at 0 missing for both libxml2 and libxslt. 1135 tests passing."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"
