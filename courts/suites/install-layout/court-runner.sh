@@ -111,6 +111,13 @@ chain "compat:top-level-libxml2.so" "${ARTIFACT}/libxml2.so"  "liblibxml_rs.so"
 chain "compat:top-level-libxslt.so" "${ARTIFACT}/libxslt.so"  "liblibxml_rs.so"
 chain "compat:top-level-libexslt.so" "${ARTIFACT}/libexslt.so" "liblibxml_rs.so"
 
+# top-level SONAME compat links: the DSO carries SONAME libxml2.so.16, so
+# consumers NEED that name; LD_LIBRARY_PATH=<artifact> must resolve it and the
+# libxslt/libexslt SONAMEs through these links (11.1-T contamination guard).
+chain "compat:top-level-libxml2.so.16" "${ARTIFACT}/libxml2.so.16"  "liblibxml_rs.so"
+chain "compat:top-level-libxslt.so.1"  "${ARTIFACT}/libxslt.so.1"   "liblibxml_rs.so"
+chain "compat:top-level-libexslt.so.0" "${ARTIFACT}/libexslt.so.0"  "liblibxml_rs.so"
+
 # ── 2. static library names ───────────────────────────────────────────────── #
 
 chain "static:libxml2.a" "${LIBDIR}/libxml2.a" "liblibxml_rs.a"
@@ -245,7 +252,7 @@ done
 
 for legacy in \
     "${ARTIFACT}/libxml2.so.2" "${ARTIFACT}/libxml2.so.2.12.0" \
-    "${ARTIFACT}/libxml2.so.2.15.3" "${ARTIFACT}/libxslt.so.1" \
+    "${ARTIFACT}/libxml2.so.2.15.3" \
     "${ARTIFACT}/libxslt.so.1.1.39" "${ARTIFACT}/libxslt.so.1.1.47" \
     "${ARTIFACT}/libexslt.so.0.1.1.47" \
     "${LIBDIR}/libxml2.so.2" "${LIBDIR}/libxslt.so.1.1.47" \

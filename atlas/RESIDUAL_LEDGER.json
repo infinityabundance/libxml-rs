@@ -19,7 +19,8 @@
   "11.1-N",
   "11.1-O",
   "11.1-P",
-  "11.1-S"
+  "11.1-S",
+  "11.1-T"
  ],
  "ledger": [
   {
@@ -2083,6 +2084,11 @@
     {
      "date": "2026-08-30",
      "event": "discovered by the 11.1-S build/version-reporting audit; the header-compile court keeps xslt.h's upstream-correct XSLTPUBVAR declaration while the build-pkgconfig court deliberately avoids the divergent API (see courts/suites/build-pkgconfig/test-libxslt.c note). Closure scheduled for 11.1-X: export the value as a data symbol (const int, matching upstream R type) and drop/rename the function-form export.",
+     "status": "OPEN"
+    },
+    {
+     "date": "2026-08-30",
+     "event": "11.1-T DSO-LOADER court confirms the divergence at the dynamic-loader level: dlsym(xsltLibxsltVersion) resolves to a function symbol (T) while the oracle exports it as read-only data (R). The court's symbol-type parity check excludes this one symbol by design and defers to this residual. Also fixed in 11.1-T: the DSO now carries the upstream SONAME libxml2.so.16 (consumers record NEEDED=libxml2.so.16 like oracle-linked binaries), and top-level versioned symlinks make LD_LIBRARY_PATH=<artifact> resolve all three SONAMEs to the candidate (a missing libdir in the path previously let the loader silently fall back to the system libxml2 — contamination, now guarded by the court's dladdr identity check).",
      "status": "OPEN"
     }
    ],

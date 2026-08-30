@@ -807,6 +807,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Root cause:** 11.1-S version-reporting audit: upstream libxslt exposes xsltLibxsltVersion as a const int data symbol (XSLTPUBVAR const int xsltLibxsltVersion; symbol type R in nm). The candidate exports a #[no_mangle] function of the same name (symbol type T). A consumer reading the value per the header contract links against a function symbol and reads code bytes as an int. xsltLibxsltVersionString has no upstream counterpart at all.
 - **Observable residual:** nm -D --defined-only /usr/lib/libxslt.so.1 shows 'R xsltLibxsltVersion' while the candidate shows 'T xsltLibxsltVersion'. A C consumer declaring extern const int xsltLibxsltVersion (upstream header) gets a garbage value at runtime.
 - **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-30; OPEN 2026-08-30
 
 ## Classification Legend
 

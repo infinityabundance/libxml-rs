@@ -117,6 +117,16 @@ fn main() {
     // Install the C header tree into include/
     install_headers(&artifact_dir);
 
+    // The cdylib carries the upstream libxml2 SONAME (libxml2.so.16) so that
+    // consumers record the same NEEDED entry as binaries linked against the
+    // oracle (readelf -d /usr/lib/libxml2.so.16.1.3 -> SONAME libxml2.so.16).
+    // The lib/libxml2.so.16 symlink chain resolves it at runtime. The single
+    // combined DSO therefore satisfies libxml2/libxslt/libexslt consumers
+    // through one upstream-standard runtime name (documented divergence:
+    // upstream ships three DSOs; the candidate ships one with the libxml2
+    // SONAME).
+    println!("cargo:rustc-cdylib-link-arg=-Wl,-soname,libxml2.so.16");
+
     // Print cargo instructions
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Cargo.toml");
@@ -311,17 +321,27 @@ fn generate_symlinks(artifact_dir: &Path) {
     create_symlink("libxslt.so", "lib/libxslt.so", artifact_dir);
     create_symlink("libexslt.so", "lib/libexslt.so", artifact_dir);
 
+    // Top-level VERSIONED compat links: the DSO carries the upstream SONAME
+    // libxml2.so.16, so a consumer NEEDs that name at runtime. The canonical
+    // chains live in lib/; these top-level links let `LD_LIBRARY_PATH=<artifact>`
+    // resolve the versioned names too (without them the loader would silently
+    // fall back to a system libxml2 — contamination, caught by the 11.1-T
+    // DSO-LOADER court).
+    create_symlink("libxml2.so.16", "lib/libxml2.so.16", artifact_dir);
+    create_symlink("libxslt.so.1", "lib/libxslt.so.1", artifact_dir);
+    create_symlink("libexslt.so.0", "lib/libexslt.so.0", artifact_dir);
+
     // ── Legacy cleanup: names created by earlier build script versions that
     // are no longer part of the contract. Remove the top-level chains and the
     // old wrong-version names so audits see exactly the current contract.
+    // (libxslt.so.1 / libexslt.so.0 / libxml2.so.16 top-level links are the
+    // current SONAME compat links, created above — not legacy.)
     for legacy in [
         "libxml2.so.2",
         "libxml2.so.2.12.0",
         "libxml2.so.2.15.3",
-        "libxslt.so.1",
         "libxslt.so.1.1.39",
         "libxslt.so.1.1.47",
-        "libexslt.so.0",
         "libexslt.so.0.1.1.47",
         "libexslt.so.0.8.25",
         "libxml2.a",
