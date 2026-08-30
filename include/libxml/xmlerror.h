@@ -832,6 +832,13 @@ XMLPUBFUN xmlErrorPtr xmlGetLastError(void);
 XMLPUBFUN int xmlCopyError(const xmlError *from, xmlError *to);
 XMLPUBFUN void xmlResetError(xmlError *err);
 XMLPUBFUN void xmlResetLastError(void);
+XMLPUBFUN const xmlError *xmlCtxtGetLastError(void *ctx);
+XMLPUBFUN void xmlCtxtResetLastError(void *ctx);
+XMLPUBFUN void xmlFormatError(const xmlError *err, xmlGenericErrorFunc channel, void *data);
+XMLPUBFUN void xmlParserError(void *ctx, const char *msg, ...);
+XMLPUBFUN void xmlParserWarning(void *ctx, const char *msg, ...);
+XMLPUBFUN void xmlParserValidityError(void *ctx, const char *msg, ...);
+XMLPUBFUN void xmlParserValidityWarning(void *ctx, const char *msg, ...);
 
 
 

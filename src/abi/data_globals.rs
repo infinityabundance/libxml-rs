@@ -224,17 +224,19 @@ unsafe extern "C" {
     fn vfprintf(stream: *mut c_void, format: *const c_char, ap: *mut VaListTag) -> c_int;
 }
 
-/// The `stderr` FILE* (the libc crate exposes no `stderr` value) — upstream
-/// `xmlGenericErrorDefaultFunc` defaults the error context to stderr.
+/// The `stderr` FILE* — glibc exports the `stderr` data object, an
+/// 8-byte pointer variable whose value is `&_IO_2_1_stderr_`. Upstream
+/// `xmlGenericErrorDefaultFunc` defaults the error context to `stderr`;
+/// using the real stdio object (unbuffered, fd-2 relative) keeps writes
+/// byte-exact and honors fd-2 redirection, unlike a private `fdopen(2)`
+/// FILE* which is fully buffered and lands at exit on whatever fd 2 then
+/// points to.
 #[cfg(target_arch = "x86_64")]
 unsafe fn stderr_file() -> *mut c_void {
-    static mut STDERR_FILE: *mut c_void = core::ptr::null_mut();
-    unsafe {
-        if STDERR_FILE.is_null() {
-            STDERR_FILE = libc::fdopen(2, b"w\0".as_ptr() as *const c_char) as *mut c_void;
-        }
-        STDERR_FILE
+    extern "C" {
+        static stderr: *mut c_void;
     }
+    unsafe { stderr }
 }
 
 /// Variadic receiver for the `xmlGenericErrorDefaultFunc` shim (upstream

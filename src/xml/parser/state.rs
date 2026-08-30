@@ -162,12 +162,41 @@ impl XmlParser {
             (*self.ctxt).instate = XML_PARSER_MISC;
         }
 
-        // Parse prolog (XML declaration, DTD, misc)
-        if self.parse_prolog().is_err() {
-            if !self.is_recovery() {
-                self.sax_end_document();
-                return -1;
+        // UPSTREAM-PARITY (xmlParseDocument): an empty input is reported as
+        // "Document is empty" before anything else.
+        if self.tokenizer.is_input_empty() {
+            self.raise_error_now(
+                XML_FROM_PARSER,
+                XML_ERR_DOCUMENT_EMPTY,
+                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "Document is empty\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+            );
+            self.sax_end_document();
+            return -1;
+        }
+
+        // Parse prolog (XML declaration, DTD, misc). Returns whether a root
+        // element start tag was seen (pushed back for parse_content); on
+        // failure the relevant error ("Document is empty", "Start tag
+        // expected", doc-level invalid element name) was already raised.
+        let root_seen = match self.parse_prolog() {
+            Ok(v) => v,
+            Err(()) => {
+                if !self.is_recovery() {
+                    self.sax_end_document();
+                    return -1;
+                }
+                false
             }
+        };
+
+        if !root_seen {
+            self.sax_end_document();
+            return -1;
         }
 
         // Parse content (root element)
@@ -207,6 +236,12 @@ impl XmlParser {
         }
 
         self.sax_end_document();
+
+        // UPSTREAM-PARITY (xmlParseDocument): a not-well-formed document is
+        // a parse failure; the caller frees the partial tree.
+        if unsafe { (*self.ctxt).wellFormed } == 0 {
+            return -1;
+        }
         0
     }
 
@@ -244,14 +279,53 @@ impl XmlParser {
     // Prolog parsing
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Parse the prolog: XML declaration, DTD, and misc (comments, PIs, whitespace).
-    fn parse_prolog(&mut self) -> Result<(), ()> {
+    /// Parse the prolog: XML declaration, DTD, and misc (comments, PIs,
+    /// whitespace).
+    ///
+    /// Returns `Ok(true)` when the prolog ended at a root-element start tag
+    /// (pushed back for `parse_content`), `Ok(false)` when it ended at EOF
+    /// or non-'<' content (the caller raises "Start tag expected" —
+    /// upstream `xmlParseDocument`), and `Err(())` on a fatal prolog error.
+    fn parse_prolog(&mut self) -> Result<bool, ()> {
         loop {
-            let token = self.tokenizer.next_token();
+            let (token, start) = self.tokenizer.next_token_with_start();
+            // Document-level CDATA (and its tokenizer error) is reported as
+            // "StartTag: invalid element name" — drop the recorded
+            // CDATA-termination error first.
+            if let XmlToken::Cdata { start_pos, .. } = &token {
+                self.tokenizer.take_errors();
+                self.raise_error_at(
+                    XML_FROM_PARSER,
+                    XML_ERR_NAME_REQUIRED,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "StartTag: invalid element name\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    *start_pos + 1,
+                );
+                return Err(());
+            }
+            self.raise_pending_errors();
             match token {
                 XmlToken::Eof => {
-                    // Empty document or end of prolog
-                    return Ok(());
+                    // Empty document or end of prolog without a root:
+                    // upstream "Start tag expected, '<' not found" (only
+                    // while wellFormed).
+                    if unsafe { (*self.ctxt).wellFormed } != 0 {
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_DOCUMENT_EMPTY,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Start tag expected, '<' not found\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                        );
+                    }
+                    return Err(());
                 }
                 XmlToken::XmlDecl {
                     version,
@@ -272,32 +346,72 @@ impl XmlParser {
                 XmlToken::Comment(data) => {
                     self.sax_comment(&data);
                 }
-                XmlToken::ProcessingInstruction { target, data } => {
+                XmlToken::ProcessingInstruction { target, data, .. } => {
                     self.sax_pi(&target, &data);
                 }
                 XmlToken::Characters(data) => {
-                    // Whitespace-only in prolog is allowed; non-whitespace is an error
+                    // Upstream misc stops at the first non-blank character;
+                    // whitespace-only runs are skipped.
                     if data.iter().any(|&b| !b.is_ascii_whitespace()) {
-                        self.set_error(
-                            XML_ERR_DOCUMENT_START,
-                            "Non-whitespace characters in prolog",
-                        );
-                        if !self.is_recovery() {
-                            return Err(());
+                        if unsafe { (*self.ctxt).wellFormed } != 0 {
+                            self.raise_error_at(
+                                XML_FROM_PARSER,
+                                XML_ERR_DOCUMENT_EMPTY,
+                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                "Start tag expected, '<' not found\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                start,
+                            );
                         }
+                        return Err(());
                     }
                 }
                 XmlToken::StartTag { .. } => {
-                    // Start of root element — prolog is complete
+                    // Start of root element — prolog is complete.
                     self.push_token_back(&token);
-                    return Ok(());
+                    return Ok(true);
                 }
-                _ => {
-                    // Unexpected token in prolog
-                    self.set_error(XML_ERR_DOCUMENT_START, "Unexpected token in prolog");
-                    if !self.is_recovery() {
-                        return Err(());
+                XmlToken::EndTag { start_pos, .. } => {
+                    // UPSTREAM-PARITY: an end tag at document level fails the
+                    // element-name parse → "StartTag: invalid element name"
+                    // at the position right after '<'.
+                    self.raise_error_at(
+                        XML_FROM_PARSER,
+                        XML_ERR_NAME_REQUIRED,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        "StartTag: invalid element name\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        start_pos + 1,
+                    );
+                    return Err(());
+                }
+                XmlToken::Reference(_) => {
+                    // A reference at document level: upstream treats it as
+                    // char data via xmlParseContent → "Start tag expected".
+                    if unsafe { (*self.ctxt).wellFormed } != 0 {
+                        self.raise_error_at(
+                            XML_FROM_PARSER,
+                            XML_ERR_DOCUMENT_EMPTY,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Start tag expected, '<' not found\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            start,
+                        );
                     }
+                    return Err(());
+                }
+                XmlToken::Cdata { .. } => {
+                    // Handled above (document-level invalid element name).
+                    unreachable!()
                 }
             }
         }
@@ -915,86 +1029,92 @@ impl XmlParser {
     // Content parsing
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Parse element content.
-    ///
-    /// Loops until EOF or an end tag is found. Dispatches SAX events for
-    /// character data, comments, PIs, CDATA sections, and nested elements.
-    ///
-    /// Returns `Ok(())` even if EOF is reached, as long as at least one
-    /// element was parsed. This handles self-closing root elements like
-    /// `<root/>` where EOF after the element is valid.
+    /// Parse the root element (upstream `xmlParseDocument` element branch):
+    /// the root start tag was pushed back by the prolog. After the root,
+    /// trailing misc (comments/PIs/whitespace) is consumed and any
+    /// remaining input raises "Extra content at the end of the document"
+    /// (upstream `xmlParserCheckEOF` with XML_ERR_DOCUMENT_END).
     fn parse_content(&mut self) -> Result<(), ()> {
-        let mut has_content = false;
+        let token = self.tokenizer.next_token_raw();
+        self.raise_pending_errors();
+        match token {
+            XmlToken::StartTag {
+                name,
+                attributes,
+                empty,
+                unterminated,
+            } => {
+                if unterminated {
+                    // Errors (incl. "Couldn't find end of Start Tag") were
+                    // already raised; upstream's element parse failed.
+                    return Err(());
+                }
+                self.parse_element(name, attributes, empty)?;
+
+                // UPSTREAM-PARITY: trailing misc, then xmlParserCheckEOF.
+                self.parse_misc_after_root()?;
+                if !self.tokenizer.input().current_ref().remaining().is_empty() {
+                    self.raise_error_now(
+                        XML_FROM_PARSER,
+                        XML_ERR_DOCUMENT_END,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        "Extra content at the end of the document\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                    );
+                    return Err(());
+                }
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+
+    /// Consume trailing misc after the root element (upstream
+    /// `xmlParseMisc`): blanks, PIs, comments. Anything else (including a
+    /// second root or stray text) raises "Extra content at the end of the
+    /// document" at the token start (upstream `xmlParserCheckEOF`).
+    fn parse_misc_after_root(&mut self) -> Result<(), ()> {
         loop {
-            let token = self.tokenizer.next_token_raw();
+            let (token, start) = self.tokenizer.next_token_with_start();
+            self.raise_pending_errors();
             match token {
-                XmlToken::Eof => {
-                    // EOF at start of content (no root element) is an error.
-                    // EOF after content (root element was parsed) is fine.
-                    if !has_content {
-                        self.set_error(XML_ERR_DOCUMENT_END, "Unexpected EOF in content");
-                        return if self.is_recovery() { Ok(()) } else { Err(()) };
-                    }
-                    return Ok(());
-                }
-                XmlToken::StartTag {
-                    name,
-                    attributes,
-                    empty,
-                } => {
-                    has_content = true;
-                    self.parse_element(name, attributes, empty)?;
-                }
-                XmlToken::EndTag(name) => {
-                    // End tag without matching start — push back so caller can handle it
-                    self.push_token_back(&XmlToken::EndTag(name));
-                    return Ok(());
-                }
-                XmlToken::Characters(data) => {
-                    if !data.is_empty() {
-                        if has_content {
-                            // After the root element: whitespace is allowed but
-                            // discarded (upstream libxml2 does not create a node
-                            // for it); non-whitespace is extra content.
-                            if data.iter().any(|&b| !b.is_ascii_whitespace()) {
-                                self.set_error(
-                                    XML_ERR_DOCUMENT_END,
-                                    "Extra content at the end of the document",
-                                );
-                                if !self.is_recovery() {
-                                    return Err(());
-                                }
-                            }
-                        } else {
-                            self.sax_characters(&data);
-                        }
-                    }
-                }
-                XmlToken::Comment(data) => {
-                    self.sax_comment(&data);
-                }
-                XmlToken::ProcessingInstruction { target, data } => {
+                XmlToken::Eof => return Ok(()),
+                XmlToken::Comment(data) => self.sax_comment(&data),
+                XmlToken::ProcessingInstruction { target, data, .. } => {
                     self.sax_pi(&target, &data);
                 }
-                XmlToken::Cdata(data) => {
-                    self.sax_cdata(&data);
-                }
-                XmlToken::Reference(data) => {
-                    self.parse_reference(&data)?;
-                }
-                XmlToken::XmlDecl { .. } => {
-                    // XML declaration in content is an error
-                    self.set_error(XML_ERR_MISPLACED_XML_PI, "XML declaration in content");
-                    if !self.is_recovery() {
+                XmlToken::Characters(data) => {
+                    if data.iter().any(|&b| !b.is_ascii_whitespace()) {
+                        self.raise_error_at(
+                            XML_FROM_PARSER,
+                            XML_ERR_DOCUMENT_END,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Extra content at the end of the document\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            start,
+                        );
                         return Err(());
                     }
                 }
-                XmlToken::DocType(_) => {
-                    // DOCTYPE in content is an error
-                    self.set_error(XML_ERR_DOCTYPE_NOT_FINISHED, "DOCTYPE in content");
-                    if !self.is_recovery() {
-                        return Err(());
-                    }
+                _ => {
+                    self.raise_error_at(
+                        XML_FROM_PARSER,
+                        XML_ERR_DOCUMENT_END,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        "Extra content at the end of the document\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        start,
+                    );
+                    return Err(());
                 }
             }
         }
@@ -1072,18 +1192,29 @@ impl XmlParser {
         if !empty {
             loop {
                 let next = self.tokenizer.next_token_raw();
+                self.raise_pending_errors();
                 match next {
-                    XmlToken::EndTag(end_name) => {
+                    XmlToken::EndTag { name: end_name, .. } => {
                         // Check for matching end tag
                         if end_name != name {
-                            self.set_error(
+                            // UPSTREAM-PARITY (xmlParseElementEnd):
+                            // XML_ERR_TAG_NAME_MISMATCH (76), FATAL,
+                            // str1 = open name, str2 = close name,
+                            // int1 = open line.
+                            self.raise_error_now(
+                                XML_FROM_PARSER,
                                 XML_ERR_TAG_NAME_MISMATCH,
-                                &format!(
-                                    "Opening and ending tag mismatch: {} line {} and {}",
+                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                format!(
+                                    "Opening and ending tag mismatch: {} line {} and {}\n",
                                     String::from_utf8_lossy(&name),
                                     open_line,
                                     String::from_utf8_lossy(&end_name)
                                 ),
+                                Some(name.clone()),
+                                Some(end_name.clone()),
+                                None,
+                                open_line as c_int,
                             );
                             if !self.is_recovery() {
                                 self.pop_name();
@@ -1099,7 +1230,15 @@ impl XmlParser {
                         name: child_name,
                         attributes: child_attrs,
                         empty: child_empty,
+                        unterminated,
                     } => {
+                        if unterminated {
+                            // Errors were already raised; the child element
+                            // failed to parse (upstream xmlParseElementStart
+                            // returned -1).
+                            self.pop_name();
+                            return Err(());
+                        }
                         self.parse_element(child_name, child_attrs, child_empty)?;
                     }
                     XmlToken::Characters(data) => {
@@ -1110,25 +1249,51 @@ impl XmlParser {
                     XmlToken::Comment(data) => {
                         self.sax_comment(&data);
                     }
-                    XmlToken::ProcessingInstruction { target, data } => {
+                    XmlToken::ProcessingInstruction { target, data, .. } => {
                         self.sax_pi(&target, &data);
                     }
-                    XmlToken::Cdata(data) => {
+                    XmlToken::Cdata {
+                        data, unterminated, ..
+                    } => {
+                        if unterminated {
+                            // "Premature end of data in CDATA section" was
+                            // already recorded; the CDATA content is dropped.
+                            self.pop_name();
+                            return Err(());
+                        }
                         self.sax_cdata(&data);
                     }
                     XmlToken::Reference(data) => {
                         self.parse_reference(&data)?;
                     }
                     XmlToken::Eof => {
-                        // UPSTREAM-PARITY: in recovery mode an unclosed
-                        // element at EOF is closed silently; without recovery
-                        // it is a hard error.
-                        if !self.is_recovery() {
-                            self.set_error(XML_ERR_DOCUMENT_END, "Unclosed element tag");
-                            self.pop_name();
-                            return Err(());
+                        // UPSTREAM-PARITY (xmlParseElement /
+                        // xmlParseContentInternal): EOF inside an open
+                        // element raises "Premature end of data in tag %s
+                        // line %d" (77) — but only while wellFormed (a prior
+                        // fatal error already reported the real cause). In
+                        // recovery mode the element is closed silently.
+                        if self.is_recovery() {
+                            break;
                         }
-                        break;
+                        if unsafe { (*self.ctxt).wellFormed } != 0 {
+                            self.raise_error_now(
+                                XML_FROM_PARSER,
+                                XML_ERR_TAG_NOT_FINISHED,
+                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                format!(
+                                    "Premature end of data in tag {} line {}\n",
+                                    String::from_utf8_lossy(&name),
+                                    open_line
+                                ),
+                                Some(name.clone()),
+                                None,
+                                None,
+                                open_line as c_int,
+                            );
+                        }
+                        self.pop_name();
+                        return Err(());
                     }
                     _ => {
                         // Ignore unexpected tokens in recovery mode
@@ -1264,79 +1429,78 @@ impl XmlParser {
     }
 
     /// Parse a reference (entity or character).
+    ///
+    /// The tokenizer has already recorded structural errors (no name,
+    /// missing ';', invalid charref digits/values) with upstream positions;
+    /// this function performs the substitution semantics and raises the
+    /// undeclared-entity error (upstream `xmlParseReference`).
     fn parse_reference(&mut self, data: &[u8]) -> Result<(), ()> {
-        // data includes the '&' and ';' delimiters, e.g. "&amp;", "&#60;", "&#x3C;"
-        if data.len() < 3 {
-            self.set_error(XML_ERR_ENTITYREF_NO_NAME, "Empty entity reference");
-            return if self.is_recovery() { Ok(()) } else { Err(()) };
+        if data.len() < 2 {
+            // Bare "&" with no name — the tokenizer raised
+            // "xmlParseEntityRef: no name".
+            return Err(());
         }
 
-        let inner = &data[1..data.len() - 1]; // Strip '&' and ';'
+        let inner = &data[1..]; // includes ';' when the reference is well-formed
 
-        if inner.is_empty() {
-            self.set_error(XML_ERR_ENTITYREF_NO_NAME, "Empty entity reference");
-            return if self.is_recovery() { Ok(()) } else { Err(()) };
-        }
-
-        // Character reference
+        // Character reference: &#N; / &#xH;
         if inner.starts_with(b"#") {
-            let num_part = &inner[1..];
-            let codepoint = if num_part.starts_with(b"x") || num_part.starts_with(b"X") {
-                // Hex character reference: &#xAB;
-                u32::from_str_radix(&String::from_utf8_lossy(&num_part[1..]), 16).map_err(|_| {
-                    self.set_error(
-                        XML_ERR_INVALID_HEX_CHARREF,
-                        "Invalid hex character reference",
-                    );
-                })?
+            let body = &inner[1..];
+            let (num, radix) =
+                if let Some(h) = body.strip_prefix(b"x").or_else(|| body.strip_prefix(b"X")) {
+                    (h, 16)
+                } else {
+                    (body, 10)
+                };
+            // Strip a trailing ';' (present only for well-formed refs).
+            let digits = if num.ends_with(b";") {
+                &num[..num.len() - 1]
             } else {
-                // Decimal character reference: &#123;
-                u32::from_str_radix(&String::from_utf8_lossy(num_part), 10).map_err(|_| {
-                    self.set_error(
-                        XML_ERR_INVALID_DEC_CHARREF,
-                        "Invalid decimal character reference",
-                    );
-                })?
+                num
             };
+            let parsed = u32::from_str_radix(&String::from_utf8_lossy(digits), radix).ok();
+            match parsed {
+                Some(cp) if is_valid_xml_char(cp) => {
+                    // UPSTREAM-PARITY: a valid charref dispatches as char
+                    // data; the tokenizer already validated the value.
+                    if let Some(ch) = char::from_u32(cp) {
+                        let mut utf8_buf = [0u8; 4];
+                        let encoded = ch.encode_utf8(&mut utf8_buf);
+                        self.sax_characters(encoded.as_bytes());
+                    }
+                    Ok(())
+                }
+                _ => {
+                    // Structural/value errors were already recorded by the
+                    // tokenizer; upstream returns without substituting.
+                    Err(())
+                }
+            }
+        } else {
+            // Entity reference: &name;
+            if !inner.ends_with(b";") {
+                // "EntityRef: expecting ';'" was already recorded.
+                return Err(());
+            }
+            let name = &inner[..inner.len() - 1];
 
-            // Validate the codepoint
-            if !is_valid_xml_char(codepoint) {
-                self.set_error(XML_ERR_INVALID_CHAR, "Invalid XML character reference");
-                return if self.is_recovery() { Ok(()) } else { Err(()) };
+            // Predefined XML entities are substituted unconditionally.
+            let replacement = match name {
+                b"amp" => Some(b"&" as &[u8]),
+                b"lt" => Some(b"<" as &[u8]),
+                b"gt" => Some(b">" as &[u8]),
+                b"quot" => Some(b"\"" as &[u8]),
+                b"apos" => Some(b"'" as &[u8]),
+                _ => None,
+            };
+            if let Some(replacement) = replacement {
+                self.sax_characters(replacement);
+                return Ok(());
             }
 
-            // Convert codepoint to UTF-8 and dispatch as character data
-            if let Some(ch) = char::from_u32(codepoint) {
-                let mut utf8_buf = [0u8; 4];
-                let encoded = ch.encode_utf8(&mut utf8_buf);
-                self.sax_characters(encoded.as_bytes());
-            }
-
-            return Ok(());
-        }
-
-        // Entity reference: &name;
-        // Check for predefined XML entities
-        let replacement = match inner {
-            b"amp" => Some(b"&" as &[u8]),
-            b"lt" => Some(b"<" as &[u8]),
-            b"gt" => Some(b">" as &[u8]),
-            b"quot" => Some(b"\"" as &[u8]),
-            b"apos" => Some(b"'" as &[u8]),
-            _ => None,
-        };
-
-        if let Some(replacement) = replacement {
-            // UPSTREAM-PARITY: predefined entities are substituted into the
-            // text stream; no ENTITY_REF node is created.
-            self.sax_characters(replacement);
-        } else if (self.options & XML_PARSE_NOENT) != 0 {
-            // Entity substitution requested: resolve the entity and re-parse
-            // its content (upstream xmlParseReference pushes the entity
-            // content as a new input, which handles nested references and
-            // markup inside entity values).
+            // Resolve the declared entity through the SAX getEntity handler.
             let entity = if !self.is_sax_disabled() {
-                let name_cstr = Self::vec_to_cstr_null(inner);
+                let name_cstr = Self::vec_to_cstr_null(name);
                 unsafe {
                     let sax = &*(*self.ctxt).sax;
                     let ctx = (*self.ctxt).userData;
@@ -1347,31 +1511,43 @@ impl XmlParser {
             };
 
             if entity.is_null() {
-                // Undeclared entity
-                self.set_warning(&format!(
-                    "Undeclared entity: {}",
-                    String::from_utf8_lossy(inner)
-                ));
-            } else if !unsafe { (*entity).content }.is_null() {
-                // Re-parse the entity content from a pushed input.
-                let content = unsafe { (*entity).content };
-                let len = unsafe { libc::strlen(content as *const c_char) };
-                let bytes = unsafe { core::slice::from_raw_parts(content, len) };
-                let buf = InputBuffer::from_memory(bytes, None);
-                self.tokenizer.push_input(buf);
-            } else {
-                // External entity with no in-memory content: load it through
-                // the registered loader (upstream xmlParseReference ->
-                // xmlLoadExternalEntity) and re-parse the returned content
-                // as a pushed input.
-                let loaded = unsafe {
-                    let sys = (*entity).SystemID as *const c_char;
-                    let ext = (*entity).ExternalID as *const c_char;
-                    crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
-                };
-                if loaded.is_null() {
-                    self.set_error(XML_ERR_UNDECLARED_ENTITY, "Failed to load external entity");
+                // UPSTREAM-PARITY (xmlParseReference): an undeclared entity
+                // in a document without external subset/PE refs is fatal:
+                // "Entity '%s' not defined\n" (26), str1 = name, at the
+                // current position (after the ';').
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_UNDECLARED_ENTITY,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    format!("Entity '{}' not defined\n", String::from_utf8_lossy(name)),
+                    Some(name.to_vec()),
+                    None,
+                    None,
+                    0,
+                );
+                return Err(());
+            }
+
+            if (self.options & XML_PARSE_NOENT) != 0 {
+                if !unsafe { (*entity).content }.is_null() {
+                    // Re-parse the entity content from a pushed input.
+                    let content = unsafe { (*entity).content };
+                    let len = unsafe { libc::strlen(content as *const c_char) };
+                    let bytes = unsafe { core::slice::from_raw_parts(content, len) };
+                    let buf = InputBuffer::from_memory(bytes, None);
+                    self.tokenizer.push_input(buf);
                 } else {
+                    // External entity with no in-memory content: load it
+                    // through the registered loader and re-parse.
+                    let loaded = unsafe {
+                        let sys = (*entity).SystemID as *const c_char;
+                        let ext = (*entity).ExternalID as *const c_char;
+                        crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
+                    };
+                    if loaded.is_null() {
+                        self.set_error(XML_ERR_UNDECLARED_ENTITY, "Failed to load external entity");
+                        return Err(());
+                    }
                     unsafe {
                         let base = (*loaded).base;
                         let end = (*loaded).end;
@@ -1383,29 +1559,26 @@ impl XmlParser {
                         };
                         let buf = InputBuffer::from_memory(bytes, None);
                         self.tokenizer.push_input(buf);
-                        // The bytes were copied into the tokenizer's
-                        // InputBuffer; free the C input shell and its buffer
-                        // (the content pointer itself is owned by the loader).
                         if !(*loaded).buf.is_null() {
                             crate::xml::parser::helpers::free_parser_input_buffer((*loaded).buf);
                         }
                         crate::abi::exports_xml2::xmlFreeInputStream(loaded);
                     }
                 }
-            }
-        } else {
-            // Not substituting: dispatch the reference event for the application to handle
-            if !self.is_sax_disabled() {
-                let name_cstr = Self::vec_to_cstr_null(inner);
-                unsafe {
-                    let sax = &*(*self.ctxt).sax;
-                    let ctx = (*self.ctxt).userData;
-                    SaxDispatcher::reference(sax, ctx, name_cstr);
+            } else {
+                // Not substituting: dispatch the reference event.
+                if !self.is_sax_disabled() {
+                    let name_cstr = Self::vec_to_cstr_null(name);
+                    unsafe {
+                        let sax = &*(*self.ctxt).sax;
+                        let ctx = (*self.ctxt).userData;
+                        SaxDispatcher::reference(sax, ctx, name_cstr);
+                    }
                 }
             }
-        }
 
-        Ok(())
+            Ok(())
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1423,7 +1596,7 @@ impl XmlParser {
                 XmlToken::Comment(data) => {
                     self.sax_comment(&data);
                 }
-                XmlToken::ProcessingInstruction { target, data } => {
+                XmlToken::ProcessingInstruction { target, data, .. } => {
                     self.sax_pi(&target, &data);
                 }
                 XmlToken::Characters(data) => {
@@ -1770,79 +1943,171 @@ impl XmlParser {
     // Error handling
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// Set an error on the parser context.
+    /// Set an error on the parser context (legacy wrapper: ERROR level at
+    /// the current position).
     fn set_error(&mut self, code: c_int, msg: &str) {
-        unsafe {
-            (*self.ctxt).errNo = code;
-            (*self.ctxt).wellFormed = 0;
-            (*self.ctxt).nbErrors = (*self.ctxt).nbErrors.wrapping_add(1);
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            code,
+            xmlErrorLevel::XML_ERR_ERROR as c_int,
+            format!("{}\n", msg),
+            None,
+            None,
+            None,
+            0,
+        );
+    }
 
-            // UPSTREAM-PARITY (error.c `xmlCtxtVErr` / parserInternals.c):
-            // unless XML_PARSE_NOERROR is set, the error is delivered
-            // through the configured channel — a custom SAX error slot
-            // receives the message directly, otherwise the error is raised
-            // and streamed through the generic handler (`xmlFormatError`
-            // fragment sequence). The source window is built from the
-            // tokenizer position, mirroring the legacy `file:line: parser
-            // error : msg` + caret stderr report.
-            if (*self.ctxt).options & XML_PARSE_NOERROR == 0 {
-                let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
-                let window = self.build_error_window();
-                let delivery = self.error_delivery();
-                let (line, _col, _pos) = self.tokenizer.current_pos();
-                let fname = self
-                    .tokenizer
-                    .input()
-                    .current_ref()
-                    .filename()
-                    .map(|f| std::ffi::CString::new(f).unwrap_or_default());
-                let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+    /// Set a warning on the parser context.
+    fn set_warning(&mut self, msg: &str) {
+        self.raise_error_now(
+            XML_FROM_PARSER,
+            0,
+            xmlErrorLevel::XML_ERR_WARNING as c_int,
+            format!("{}\n", msg),
+            None,
+            None,
+            None,
+            0,
+        );
+    }
+
+    /// Raise a parser error with upstream's full routing (11.1-M):
+    /// context bookkeeping (errNo / wellFormed / nbErrors / nbWarnings),
+    /// then — unless XML_PARSE_NOERROR — delivery through the structured
+    /// handler or the selected generic channel.
+    ///
+    /// `line`/`col` are 1-based (col is a byte column, upstream
+    /// `input->col`); `window` is the source line + 0-based caret column;
+    /// `enc_bytes` feeds the `XML_ERR_INVALID_ENCODING` "Bytes:" fragment.
+    #[allow(clippy::too_many_arguments)]
+    fn raise_parser_error(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+        line: c_int,
+        col: c_int,
+        window: Option<(Vec<u8>, usize)>,
+        enc_bytes: Option<[u8; 4]>,
+    ) {
+        unsafe {
+            // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr): warnings only
+            // bump nbWarnings; other levels update errNo, nbErrors, and —
+            // for fatal errors only — clear wellFormed.
+            if level == xmlErrorLevel::XML_ERR_WARNING as c_int {
+                (*self.ctxt).nbWarnings = (*self.ctxt).nbWarnings.wrapping_add(1);
+            } else {
+                (*self.ctxt).errNo = code;
+                if level == xmlErrorLevel::XML_ERR_FATAL as c_int {
+                    (*self.ctxt).wellFormed = 0;
+                }
+                (*self.ctxt).nbErrors = (*self.ctxt).nbErrors.wrapping_add(1);
+            }
+        }
+
+        if unsafe { (*self.ctxt).options } & XML_PARSE_NOERROR == 0 {
+            let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
+            let s1 = str1.and_then(|s| std::ffi::CString::new(s).ok());
+            let s2 = str2.and_then(|s| std::ffi::CString::new(s).ok());
+            let s3 = str3.and_then(|s| std::ffi::CString::new(s).ok());
+            let fname = self
+                .tokenizer
+                .input()
+                .current_ref()
+                .filename()
+                .map(|f| std::ffi::CString::new(f).unwrap_or_default());
+            let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+            let s1_ptr = s1.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+            let s2_ptr = s2.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+            let s3_ptr = s3.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+            let window_ref = window.as_ref().map(|(w, caret)| (w.as_slice(), *caret));
+            let delivery = self.error_delivery();
+            unsafe {
                 crate::xml::errors::raise_error_streamed(
                     self.ctxt as *mut c_void,
-                    XML_FROM_PARSER,
+                    domain,
                     code,
-                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    level,
                     file_ptr,
-                    line as c_int,
+                    line,
+                    col,
+                    s1_ptr,
+                    s2_ptr,
+                    s3_ptr,
+                    int1,
                     msg_cstr.as_ptr(),
-                    window.as_ref().map(|(w, c)| (w.as_slice(), *c)),
+                    window_ref,
+                    enc_bytes,
                     delivery,
                 );
             }
         }
     }
 
-    /// Set a warning on the parser context.
-    fn set_warning(&mut self, msg: &str) {
-        unsafe {
-            (*self.ctxt).nbWarnings = (*self.ctxt).nbWarnings.wrapping_add(1);
-
-            // UPSTREAM-PARITY: warnings are suppressed by XML_PARSE_NOWARNING.
-            if (*self.ctxt).options & XML_PARSE_NOWARNING == 0 {
-                let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
-                let window = self.build_error_window();
-                let delivery = self.warning_delivery();
-                let (line, _col, _pos) = self.tokenizer.current_pos();
-                let fname = self
-                    .tokenizer
-                    .input()
-                    .current_ref()
-                    .filename()
-                    .map(|f| std::ffi::CString::new(f).unwrap_or_default());
-                let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
-                crate::xml::errors::raise_error_streamed(
-                    self.ctxt as *mut c_void,
-                    XML_FROM_PARSER,
-                    0,
-                    xmlErrorLevel::XML_ERR_WARNING as c_int,
-                    file_ptr,
-                    line as c_int,
-                    msg_cstr.as_ptr(),
-                    window.as_ref().map(|(w, c)| (w.as_slice(), *c)),
-                    delivery,
-                );
-            }
+    /// Raise all errors recorded by the tokenizer during the last scan (in
+    /// order — upstream raises them at their detection points).
+    fn raise_pending_errors(&mut self) {
+        let errors = self.tokenizer.take_errors();
+        for e in errors {
+            self.raise_parser_error(
+                e.domain,
+                e.code,
+                e.level,
+                e.msg,
+                e.str1,
+                e.str2,
+                e.str3,
+                e.int1,
+                e.line,
+                e.col,
+                e.window,
+                e.enc_bytes,
+            );
         }
+    }
+
+    /// Raise an error at the tokenizer's current position.
+    fn raise_error_now(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+    ) {
+        let (line, col, window) = self.tokenizer.capture_error_pos();
+        self.raise_parser_error(
+            domain, code, level, msg, str1, str2, str3, int1, line, col, window, None,
+        );
+    }
+
+    /// Raise an error attributed to a specific byte position (e.g. the
+    /// start of a token).
+    fn raise_error_at(
+        &mut self,
+        domain: c_int,
+        code: c_int,
+        level: c_int,
+        msg: String,
+        str1: Option<Vec<u8>>,
+        str2: Option<Vec<u8>>,
+        str3: Option<Vec<u8>>,
+        int1: c_int,
+        byte_pos: usize,
+    ) {
+        self.tokenizer.record_error_at(
+            domain, code, level, msg, str1, str2, str3, int1, byte_pos, None,
+        );
+        self.raise_pending_errors();
     }
 
     /// Select the generic delivery for a parser error: a custom SAX `error`
@@ -1858,42 +2123,6 @@ impl XmlParser {
                 Some(cb) => GenericDelivery::Custom(cb, (*self.ctxt).userData),
             }
         }
-    }
-
-    /// Select the generic delivery for a parser warning (see
-    /// `error_delivery`; the `warning` SAX slot).
-    fn warning_delivery(&self) -> crate::xml::errors::GenericDelivery {
-        use crate::xml::errors::GenericDelivery;
-        unsafe {
-            let sax = &*(*self.ctxt).sax;
-            match sax.warning {
-                None => GenericDelivery::None,
-                Some(cb) if is_legacy_warning_handler(cb) => GenericDelivery::Stream,
-                Some(cb) => GenericDelivery::Custom(cb, (*self.ctxt).userData),
-            }
-        }
-    }
-
-    /// Build the source window (current input line) and 0-based caret column
-    /// for the generic error report — the legacy `xmlParserPrintFileContext`
-    /// equivalent.
-    fn build_error_window(&mut self) -> Option<(Vec<u8>, usize)> {
-        let consumed = self.tokenizer.input().current_ref().consumed().to_vec();
-        let remaining = self.tokenizer.input().current_ref().remaining().to_vec();
-        let line_start = consumed
-            .iter()
-            .rposition(|&b| b == b'\n')
-            .map(|i| i + 1)
-            .unwrap_or(0);
-        let line_end = remaining
-            .iter()
-            .position(|&b| b == b'\n')
-            .unwrap_or(remaining.len());
-        let mut line_bytes = Vec::with_capacity(consumed.len() - line_start + line_end);
-        line_bytes.extend_from_slice(&consumed[line_start..]);
-        line_bytes.extend_from_slice(&remaining[..line_end]);
-        let (_line, col, _pos) = self.tokenizer.current_pos();
-        Some((line_bytes, col.saturating_sub(1) as usize))
     }
 
     // ─────────────────────────────────────────────────────────────────────────

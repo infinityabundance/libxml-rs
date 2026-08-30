@@ -328,14 +328,46 @@ pub fn set_last_error(err: _xmlError) {
     // ownership of `err` itself.
     unsafe { crate::abi::data_globals::sync_xml_last_error(&err) };
     LAST_ERROR.with(|last| {
-        *last.borrow_mut() = Some(err);
+        let mut last = last.borrow_mut();
+        // Free the previous slot's owned strings (upstream xmlResetError).
+        if let Some(prev) = last.as_ref() {
+            free_error_strings(prev);
+        }
+        *last = Some(err);
     });
+}
+
+/// Free the owned string fields of a stored error (upstream xmlResetError:
+/// message/file/str1/str2/str3 are xmlMalloc'd copies).
+fn free_error_strings(err: &_xmlError) {
+    use crate::abi::allocator::xmlFreeImpl;
+    unsafe {
+        if !err.message.is_null() {
+            xmlFreeImpl(err.message as *mut core::ffi::c_void);
+        }
+        if !err.file.is_null() {
+            xmlFreeImpl(err.file as *mut core::ffi::c_void);
+        }
+        if !err.str1.is_null() {
+            xmlFreeImpl(err.str1 as *mut core::ffi::c_void);
+        }
+        if !err.str2.is_null() {
+            xmlFreeImpl(err.str2 as *mut core::ffi::c_void);
+        }
+        if !err.str3.is_null() {
+            xmlFreeImpl(err.str3 as *mut core::ffi::c_void);
+        }
+    }
 }
 
 /// Reset the last error for this thread.
 pub fn reset_last_error() {
     LAST_ERROR.with(|last| {
-        *last.borrow_mut() = None;
+        let mut last = last.borrow_mut();
+        if let Some(prev) = last.as_ref() {
+            free_error_strings(prev);
+        }
+        *last = None;
     });
     // SAFETY: frees the mirror's owned strings and zeroes the global.
     unsafe { crate::abi::data_globals::reset_xml_last_error() };

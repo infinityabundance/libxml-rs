@@ -20,10 +20,12 @@ mod debug_test {
                 name,
                 attributes,
                 empty,
+                unterminated,
             } => {
                 assert_eq!(name.as_slice(), b"root");
                 assert!(attributes.is_empty());
                 assert!(*empty);
+                assert!(!*unterminated);
             }
             other => panic!("Expected StartTag, got {:?}", other),
         }
@@ -49,7 +51,7 @@ mod debug_test {
         }
 
         let token = tok.next_token_raw();
-        assert!(matches!(token, XmlToken::EndTag(_)));
+        assert!(matches!(token, XmlToken::EndTag { .. }));
     }
 
     #[test]
@@ -68,10 +70,12 @@ mod debug_test {
                 name,
                 attributes,
                 empty,
+                unterminated,
             } => {
                 assert_eq!(name.as_slice(), b"root");
                 assert_eq!(attributes.len(), 1);
                 assert!(*empty);
+                assert!(!*unterminated);
             }
             other => panic!("Expected StartTag, got {:?}", other),
         }

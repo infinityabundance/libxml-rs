@@ -486,6 +486,29 @@ impl InputBuffer {
         self.peek_char_inner()
     }
 
+    /// Peek the raw next byte without decoding (None at EOF). Used to
+    /// detect invalid UTF-8 for upstream-compatible encoding errors.
+    pub fn peek_raw(&self) -> Option<u8> {
+        if self.pos >= self.data.len() {
+            None
+        } else {
+            Some(self.data[self.pos])
+        }
+    }
+
+    /// Skip `n` raw bytes without decoding (used to step past invalid
+    /// UTF-8 bytes; those are never line breaks, so each skipped byte
+    /// advances the column by 1 like upstream `NEXTL(1)`).
+    pub fn skip_raw_bytes(&mut self, n: usize) {
+        for _ in 0..n {
+            if self.pos >= self.data.len() {
+                break;
+            }
+            self.pos += 1;
+            self.col += 1;
+        }
+    }
+
     /// Internal peek implementation.
     fn peek_char_inner(&self) -> Option<char> {
         if self.pos >= self.data.len() {
@@ -898,6 +921,18 @@ impl InputStack {
     pub fn peek_char(&mut self) -> Option<char> {
         self.pop_exhausted();
         self.inputs[self.current].peek_char()
+    }
+
+    /// Peek the raw next byte of the current input without decoding.
+    pub fn peek_raw(&mut self) -> Option<u8> {
+        self.pop_exhausted();
+        self.inputs[self.current].peek_raw()
+    }
+
+    /// Skip `n` raw bytes of the current input (invalid UTF-8 handling).
+    pub fn skip_raw_bytes(&mut self, n: usize) {
+        self.pop_exhausted();
+        self.inputs[self.current].skip_raw_bytes(n);
     }
 
     /// Pop any exhausted pushed inputs so that the current input always has

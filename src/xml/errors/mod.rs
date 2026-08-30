@@ -365,19 +365,42 @@ pub unsafe fn raise_error(
     // Format the error message
     let formatted_msg = format_error_message(domain, code, msg, str1, str2, str3);
 
+    // UPSTREAM-PARITY (xmlVSetError): string fields are owned copies so the
+    // stored error survives transient callers.
+    let file_copy = if file.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(file) as *mut c_char
+    };
+    let str1_copy = if str1.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str1) as *mut c_char
+    };
+    let str2_copy = if str2.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str2) as *mut c_char
+    };
+    let str3_copy = if str3.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str3) as *mut c_char
+    };
+
     // Store the last error
     let err = _xmlError {
         domain,
         code,
         message: formatted_msg,
         level,
-        file: file as *mut c_char,
+        file: file_copy,
         line,
-        str1: str1 as *mut c_char,
-        str2: str2 as *mut c_char,
-        str3: str3 as *mut c_char,
+        str1: str1_copy,
+        str2: str2_copy,
+        str3: str3_copy,
         int1,
-        int2,
+        int2: 0,
         ctxt,
         node: ptr::null_mut(),
     };
@@ -539,6 +562,7 @@ unsafe fn format_error_streamed(
     file: *const c_char,
     line: c_int,
     source_window: Option<(&[u8], usize)>,
+    enc_bytes: Option<[u8; 4]>,
 ) {
     // SAFETY: reads the exported C globals (upstream reads the same).
     let Some(handler) = globals::get_generic_error_func() else {
@@ -628,6 +652,20 @@ unsafe fn format_error_streamed(
         ch_call1(handler, data, fmt.as_ptr() as *const c_char, msg as usize);
     }
 
+    // 4b. Invalid-encoding byte dump (upstream xmlFormatError: the first 4
+    // bytes at the error position, only for XML_ERR_INVALID_ENCODING).
+    if code == XML_ERR_INVALID_ENCODING {
+        if let Some(bytes) = enc_bytes {
+            ch_call0(handler, data, b"Bytes:\0".as_ptr() as *const c_char);
+            for b in bytes {
+                // " 0x%02X"
+                let hex = format!(" 0x{:02X}\0", b);
+                ch_call0(handler, data, hex.as_ptr() as *const c_char);
+            }
+            ch_call0(handler, data, b"\n\0".as_ptr() as *const c_char);
+        }
+    }
+
     // 5. Source window + caret (xmlParserPrintFileContextInternal).
     if let Some((window, caret)) = source_window {
         let mut win = window.to_vec();
@@ -671,12 +709,21 @@ pub enum GenericDelivery {
 /// handler **or** the selected generic channel — never both.
 ///
 /// `file`/`line`/`source_window` feed the generic fragment stream (the
-/// structured handler receives the complete `xmlError` instead).
+/// structured handler receives the complete `xmlError` instead). `col` is
+/// the 1-based byte column (upstream `input->col` → `err->int2`); `str1`..
+/// `str3`/`int1` are the upstream extra fields; `enc_bytes` feeds the
+/// `XML_ERR_INVALID_ENCODING` "Bytes:" fragment.
+///
+/// # UPSTREAM-PARITY (ownership)
+///
+/// Like upstream `xmlVSetError`, every string field of the stored error is
+/// owned (`xmlStrdup`): `file`/`str1`/`str2`/`str3` are heap copies, so the
+/// caller may pass transient C strings.
 ///
 /// # SAFETY
 ///
 /// - `ctxt` may be NULL.
-/// - `msg` and `file` must be valid C strings or NULL.
+/// - `msg`, `file`, `str1`, `str2`, `str3` must be valid C strings or NULL.
 /// - `source_window` bytes must be valid for the duration of the call.
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn raise_error_streamed(
@@ -686,25 +733,58 @@ pub unsafe fn raise_error_streamed(
     level: c_int,
     file: *const c_char,
     line: c_int,
+    col: c_int,
+    str1: *const c_char,
+    str2: *const c_char,
+    str3: *const c_char,
+    int1: c_int,
     msg: *const c_char,
     source_window: Option<(&[u8], usize)>,
+    enc_bytes: Option<[u8; 4]>,
     delivery: GenericDelivery,
 ) {
+    // UPSTREAM-PARITY (xmlVRaiseError): warnings are suppressed when the
+    // global xmlGetWarningsDefaultValue is zero.
+    if level == xmlErrorLevel::XML_ERR_WARNING as c_int
+        && unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue } == 0
+    {
+        return;
+    }
+
     // Format the error message (same as raise_error).
-    let formatted_msg =
-        format_error_message(domain, code, msg, ptr::null(), ptr::null(), ptr::null());
+    let formatted_msg = format_error_message(domain, code, msg, str1, str2, str3);
+    let file_copy = if file.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(file) as *mut c_char
+    };
+    let str1_copy = if str1.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str1) as *mut c_char
+    };
+    let str2_copy = if str2.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str2) as *mut c_char
+    };
+    let str3_copy = if str3.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::allocator::xmlMemStrdupImpl(str3) as *mut c_char
+    };
     let err = _xmlError {
         domain,
         code,
         message: formatted_msg,
         level,
-        file: file as *mut c_char,
+        file: file_copy,
         line,
-        str1: ptr::null_mut(),
-        str2: ptr::null_mut(),
-        str3: ptr::null_mut(),
-        int1: 0,
-        int2: 0,
+        str1: str1_copy,
+        str2: str2_copy,
+        str3: str3_copy,
+        int1,
+        int2: col,
         ctxt,
         node: ptr::null_mut(),
     };
@@ -739,6 +819,7 @@ pub unsafe fn raise_error_streamed(
                         file,
                         line,
                         source_window,
+                        enc_bytes,
                     )
                 };
             }

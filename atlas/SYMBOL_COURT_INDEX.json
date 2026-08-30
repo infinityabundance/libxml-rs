@@ -1862,6 +1862,67 @@
      "historical_status": "CURRENT_ONLY"
     }
    }
+  },
+  "ERROR-001": {
+   "probe": "courts/suites/data-abi/error-family-probe.c",
+   "runner": "tools/abi/error_family_probe.py",
+   "oracle": "/usr/lib/libxml2.so.16",
+   "symbols": {
+    "libxml2:xmlReadMemory": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetStructuredErrorFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetGenericErrorFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetLastError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlResetLastError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCtxtGetLastError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCtxtResetLastError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlFormatError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGenericErrorDefaultFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    }
+   }
   }
  }
 }

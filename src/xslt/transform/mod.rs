@@ -2944,11 +2944,7 @@ mod tests {
         unsafe {
             crate::exslt::register_all();
             let xsl = b"<?xml version=\"1.0\"?>\
-            <xsl:stylesheet version=\"1.0\"\
-                xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\
-                xmlns:exsl=\"http://exslt.org/common\"\
-                xmlns:math=\"http://exslt.org/math\"\
-                extension-element-prefixes=\"exsl math\">\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:exsl=\"http://exslt.org/common\" xmlns:math=\"http://exslt.org/math\" extension-element-prefixes=\"exsl math\">\
               <xsl:variable name=\"rtf\"><nums><n>3</n><n>7</n><n>1</n><n>9</n></nums></xsl:variable>\
               <xsl:template match=\"/\">\
                 <out>\

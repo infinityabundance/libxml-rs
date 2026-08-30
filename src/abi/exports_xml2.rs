@@ -2702,8 +2702,10 @@ pub unsafe extern "C" fn xmlReadMemory(
     encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
-    // SAFETY: buffer must be a valid pointer with at least `size` readable bytes.
-    if buffer.is_null() || size <= 0 {
+    // SAFETY: buffer must be a valid pointer with at least `size` readable
+    // bytes. An empty input (size 0) is still parsed — upstream reports
+    // "Document is empty".
+    if buffer.is_null() || size < 0 {
         return ptr::null_mut();
     }
     let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
