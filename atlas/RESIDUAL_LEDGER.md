@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**14 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160, R-000165, R-000166, R-000167
+**15 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160, R-000165, R-000166, R-000167, R-000168
 
 ## Phase 0 Residuals
 
@@ -808,6 +808,18 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Observable residual:** nm -D --defined-only /usr/lib/libxslt.so.1 shows 'R xsltLibxsltVersion' while the candidate shows 'T xsltLibxsltVersion'. A C consumer declaring extern const int xsltLibxsltVersion (upstream header) gets a garbage value at runtime.
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-30; OPEN 2026-08-30
+
+## Phase 11.1-U Residuals
+
+### R-000168: Platform surface: runtime execution unexecuted outside Linux x86-64 (Windows DLL ABI, macOS dylib naming, BSD/POSIX variants, 32-bit/arm64/musl runtime, big-endian) (OPEN)
+
+- **Status:** OPEN
+- **Component:** atlas/PLATFORM_SURFACE_ATLAS.json, atlas/PLATFORM_SURFACE_ATLAS.md, tools/evidence/platform_surface_atlas.py, src/xml/errors/mod.rs, src/abi/exports_schema.rs, src/abi/exports_xslt_functions.rs, src/abi/exports_xslt_util.rs, src/abi/exports_shell.rs, src/exslt/dates/mod.rs
+- **Surface:** Platform-conditioned API/ABI families: threads (HAVE_POSIX_THREADS/HAVE_WIN32_THREADS/USE_TLS), file IO (_WIN32/HAVE_DECL_MMAP/HAVE_DECL_GLOB), module loading (HAVE_DLOPEN/_WIN32/HAVE_SHLLOAD), encoding iconv (__APPLE__), libxslt locale (XSLT_LOCALE_POSIX/WINAPI/NONE), export macros (XMLCALL/XMLPUBFUN/XMLPUBVAR dllexport), config detection (HAVE_*/SIZEOF_*), word-size/endian behavior.
+- **Oracle versions:** libxml2 2.15.0 source (oracle/historical/src), libxslt 1.1.45 (archaeology), config.h/xmlversion.h captures
+- **Root cause:** The reference system executes only Linux x86-64. 11.1-U classified every upstream platform-conditional family from source archaeology and generated cross-compile expectations for the available targets. Cross-compilation exposed and fixed real portability defects: x86_64-only cfg gates on the streamed generic-error channel (now a portable fallback on other ABIs), c_ulong-vs-u64 width bugs in xmlSchemaValidateFacetWhtsp and generate-id(), c_long calibration arithmetic, c_char(u8-on-aarch64) buffer typing in the xmlShell debugger, LC_ALL_MASK missing on musl, and i32 time_t on 32-bit (y2038 — inherent to 32-bit time_t).
+- **Observable residual:** On Windows/macOS/BSD/big-endian and for 32-bit/arm64/musl RUNTIME execution there is no executed evidence; the atlas documents each obligation explicitly (OBLIG-PLATFORM-*) so the surface cannot silently disappear.
+- **Classification:** PLATFORM_OBLIGATION
 
 ## Classification Legend
 

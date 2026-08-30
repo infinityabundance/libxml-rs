@@ -725,8 +725,84 @@ pub enum GenericDelivery {
 /// - `ctxt` may be NULL.
 /// - `msg`, `file`, `str1`, `str2`, `str3` must be valid C strings or NULL.
 /// - `source_window` bytes must be valid for the duration of the call.
-#[cfg(target_arch = "x86_64")]
 pub unsafe fn raise_error_streamed(
+    ctxt: *mut c_void,
+    domain: c_int,
+    code: c_int,
+    level: c_int,
+    file: *const c_char,
+    line: c_int,
+    col: c_int,
+    str1: *const c_char,
+    str2: *const c_char,
+    str3: *const c_char,
+    int1: c_int,
+    msg: *const c_char,
+    source_window: Option<(&[u8], usize)>,
+    enc_bytes: Option<[u8; 4]>,
+    delivery: GenericDelivery,
+) {
+    // The streamed generic-error channel below uses an x86_64 SysV va_list
+    // trampoline (ch_call0/1/2 — register-based). Other ABIs (i686 cdecl,
+    // ARM/aarch64 AAPCS, ...) fall back to the plain raise path; full
+    // streamed-fragment parity there is an unexecuted platform obligation
+    // (atlas/PLATFORM_SURFACE_ATLAS.md, OBLIG-WORDSIZE-32 / compiler-ABI).
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        raise_error(
+            ctxt,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            ptr::null_mut(),
+            ptr::null_mut(),
+            domain,
+            code,
+            level,
+            file,
+            line,
+            str1,
+            str2,
+            str3,
+            int1,
+            col,
+            msg,
+        );
+        return;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        // UPSTREAM-PARITY (xmlVRaiseError): warnings are suppressed when the
+        // global xmlGetWarningsDefaultValue is zero.
+        if level == xmlErrorLevel::XML_ERR_WARNING as c_int
+            && unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue } == 0
+        {
+            return;
+        }
+
+        raise_error_streamed_x86_64(
+            ctxt,
+            domain,
+            code,
+            level,
+            file,
+            line,
+            col,
+            str1,
+            str2,
+            str3,
+            int1,
+            msg,
+            source_window,
+            enc_bytes,
+            delivery,
+        );
+    }
+}
+
+/// x86-64 streamed raise (SysV va_list channel). See `raise_error_streamed`.
+#[cfg(target_arch = "x86_64")]
+unsafe fn raise_error_streamed_x86_64(
     ctxt: *mut c_void,
     domain: c_int,
     code: c_int,

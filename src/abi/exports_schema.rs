@@ -27,7 +27,12 @@
 //!   cannot provide (`xmlSchemaSAXPlug`, `xmlSchemaValidateStream` without a
 //!   readable input buffer) are simplified and documented inline.
 
-#![allow(missing_docs, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(missing_debug_implementations)]
@@ -45,8 +50,8 @@ use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlVal
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
 use crate::xml::schemas::{
-    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind,
-    XsdSchema, XsdValidCtxt,
+    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind, XsdSchema,
+    XsdValidCtxt,
 };
 use crate::xml::schematron::schematron_parse;
 
@@ -85,10 +90,10 @@ pub type xmlSchemaValidityLocatorFunc =
 /// (NMTOKENS, IDREFS, ENTITIES) are chained through `next`.
 #[repr(C)]
 struct XsdVal {
-    val_type: c_int,      // xmlSchemaValType
-    value: *mut xmlChar,  // canonical/lexical value
-    ns: *mut xmlChar,     // namespace URI for QName/NOTATION
-    next: *mut XsdVal,    // next item for list values
+    val_type: c_int,     // xmlSchemaValType
+    value: *mut xmlChar, // canonical/lexical value
+    ns: *mut xmlChar,    // namespace URI for QName/NOTATION
+    next: *mut XsdVal,   // next item for list values
 }
 
 /// An `xmlSchemaFacet` — a facet declaration.
@@ -102,9 +107,9 @@ struct XsdFacet {
 /// A built-in `xmlSchemaType` descriptor (static, registry-owned).
 #[repr(C)]
 struct XsdType {
-    val_type: c_int,       // xmlSchemaValType
+    val_type: c_int,         // xmlSchemaValType
     item_type: *mut XsdType, // item type for the built-in list types
-    name: *const c_char,   // static type name ("string", "int", ...)
+    name: *const c_char,     // static type name ("string", "int", ...)
 }
 
 /// State kept for a parser context (side registry).
@@ -151,8 +156,7 @@ static VALID_STATES: Lazy<Mutex<HashMap<usize, ValidState>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 static SCHEMATRON_VALID_STATES: Lazy<Mutex<HashMap<usize, SchematronValidState>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
-static TYPE_REGISTRY: Lazy<Mutex<HashMap<c_int, usize>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static TYPE_REGISTRY: Lazy<Mutex<HashMap<c_int, usize>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Constants (upstream values)
@@ -498,7 +502,11 @@ fn canonical_decimal(s: &str) -> String {
         None => (s, ""),
     };
     let int_trimmed = int_part.trim_start_matches('0');
-    let int_trimmed = if int_trimmed.is_empty() { "0" } else { int_trimmed };
+    let int_trimmed = if int_trimmed.is_empty() {
+        "0"
+    } else {
+        int_trimmed
+    };
     let frac_trimmed = frac_part.trim_end_matches('0');
     let mut out = String::new();
     if neg && !(int_trimmed == "0" && frac_trimmed.is_empty()) {
@@ -608,7 +616,9 @@ fn builtin_type(val_type: c_int) -> *mut XsdType {
     } else {
         ptr::null_mut()
     };
-    let name = type_name(val_type).map(|b| b.as_ptr() as *const c_char).unwrap_or(ptr::null());
+    let name = type_name(val_type)
+        .map(|b| b.as_ptr() as *const c_char)
+        .unwrap_or(ptr::null());
     let t = Box::into_raw(Box::new(XsdType {
         val_type,
         item_type: item,
@@ -646,7 +656,9 @@ unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) {
         return;
     }
     for msg in errors {
-        let Ok(cmsg) = CString::new(msg.as_str()) else { continue };
+        let Ok(cmsg) = CString::new(msg.as_str()) else {
+            continue;
+        };
         if let Some(err) = state.err {
             // SAFETY: The caller supplied this callback in xmlSchemaSetValidErrors.
             unsafe { err(state.ctx as *mut c_void, cmsg.as_ptr()) };
@@ -764,7 +776,7 @@ unsafe fn node_to_string(node: *mut _xmlNode) -> Option<String> {
 /// - `ctxt` must be a valid `XsdValidCtxt` pointer.
 unsafe fn reset_valid_ctxt(ctxt: *mut xmlSchemaValidCtxt) {
     // SAFETY: ctxt is the internal XsdValidCtxt box.
-    let vc = unsafe { &mut * (ctxt as *mut XsdValidCtxt) };
+    let vc = unsafe { &mut *(ctxt as *mut XsdValidCtxt) };
     vc.errors.clear();
     vc.nb_errors = 0;
 }
@@ -798,10 +810,7 @@ unsafe fn validate_doc_string(ctxt: *mut xmlSchemaValidCtxt, xml: &str) -> c_int
     if doc.is_null() {
         // Mirror upstream xmlSchemaValidateFile: report and bail out with -1.
         unsafe {
-            dispatch_valid_errors(
-                ctxt as usize,
-                &["Document is not well-formed".to_string()],
-            );
+            dispatch_valid_errors(ctxt as usize, &["Document is not well-formed".to_string()]);
         }
         return -1;
     }
@@ -812,7 +821,7 @@ unsafe fn validate_doc_string(ctxt: *mut xmlSchemaValidCtxt, xml: &str) -> c_int
     if ret != 0 {
         // SAFETY: ctxt is the internal XsdValidCtxt whose errors were filled
         // by xmlSchemaValidateDoc on failure.
-        let errors = unsafe { (* (ctxt as *mut XsdValidCtxt)).errors.clone() };
+        let errors = unsafe { (*(ctxt as *mut XsdValidCtxt)).errors.clone() };
         unsafe { dispatch_valid_errors(ctxt as usize, &errors) };
     }
     ret
@@ -935,7 +944,7 @@ pub unsafe extern "C" fn xmlSchemaGetBuiltInListSimpleTypeItemType(
         return ptr::null_mut();
     }
     // SAFETY: type_ is one of our descriptor pointers.
-    unsafe { (* (type_ as *mut XsdType)).item_type as *mut xmlSchemaType }
+    unsafe { (*(type_ as *mut XsdType)).item_type as *mut xmlSchemaType }
 }
 
 /// Whether `facetType` is a valid facet for the built-in type `type_`.
@@ -967,26 +976,40 @@ pub unsafe extern "C" fn xmlSchemaIsBuiltInTypeFacet(
         return 0;
     }
     // SAFETY: type_ is one of our descriptor pointers.
-    let val_type = unsafe { (* (type_ as *mut XsdType)).val_type };
+    let val_type = unsafe { (*(type_ as *mut XsdType)).val_type };
     let length_facets = matches!(
         facetType,
-        FACET_LENGTH | FACET_MINLENGTH | FACET_MAXLENGTH | FACET_PATTERN | FACET_ENUMERATION
+        FACET_LENGTH
+            | FACET_MINLENGTH
+            | FACET_MAXLENGTH
+            | FACET_PATTERN
+            | FACET_ENUMERATION
             | FACET_WHITESPACE
     );
     let numeric_facets = matches!(
         facetType,
-        FACET_MININCLUSIVE | FACET_MINEXCLUSIVE | FACET_MAXINCLUSIVE | FACET_MAXEXCLUSIVE
-            | FACET_TOTALDIGITS | FACET_FRACTIONDIGITS | FACET_PATTERN | FACET_ENUMERATION
+        FACET_MININCLUSIVE
+            | FACET_MINEXCLUSIVE
+            | FACET_MAXINCLUSIVE
+            | FACET_MAXEXCLUSIVE
+            | FACET_TOTALDIGITS
+            | FACET_FRACTIONDIGITS
+            | FACET_PATTERN
+            | FACET_ENUMERATION
             | FACET_WHITESPACE
     );
-    let universal = matches!(facetType, FACET_PATTERN | FACET_ENUMERATION | FACET_WHITESPACE);
+    let universal = matches!(
+        facetType,
+        FACET_PATTERN | FACET_ENUMERATION | FACET_WHITESPACE
+    );
     if is_numeric_type(val_type) {
         if numeric_facets {
             1
         } else {
             0
         }
-    } else if matches!(val_type, VAL_STRING | VAL_NORMSTRING | VAL_TOKEN) || is_list_type(val_type) {
+    } else if matches!(val_type, VAL_STRING | VAL_NORMSTRING | VAL_TOKEN) || is_list_type(val_type)
+    {
         if length_facets {
             1
         } else {
@@ -1105,7 +1128,9 @@ pub unsafe extern "C" fn xmlSchemaNewNOTATIONValue(
     ns: *const xmlChar,
 ) -> *mut xmlSchemaVal {
     // SAFETY: Delegates to new_val with the same contract.
-    unsafe { new_val(VAL_NOTATION, name as *const c_char, ns as *const c_char) as *mut xmlSchemaVal }
+    unsafe {
+        new_val(VAL_NOTATION, name as *const c_char, ns as *const c_char) as *mut xmlSchemaVal
+    }
 }
 
 /// Create a QName value.
@@ -1125,7 +1150,13 @@ pub unsafe extern "C" fn xmlSchemaNewQNameValue(
     localName: *const xmlChar,
 ) -> *mut xmlSchemaVal {
     // SAFETY: Delegates to new_val with the same contract.
-    unsafe { new_val(VAL_QNAME, localName as *const c_char, namespaceName as *const c_char) as *mut xmlSchemaVal }
+    unsafe {
+        new_val(
+            VAL_QNAME,
+            localName as *const c_char,
+            namespaceName as *const c_char,
+        ) as *mut xmlSchemaVal
+    }
 }
 
 /// Deep-copy a value (including list chains).
@@ -1207,7 +1238,7 @@ pub unsafe extern "C" fn xmlSchemaGetValType(val: *mut xmlSchemaVal) -> c_int {
         return VAL_UNKNOWN;
     }
     // SAFETY: val is one of our XsdVal nodes.
-    unsafe { (* (val as *mut XsdVal)).val_type }
+    unsafe { (*(val as *mut XsdVal)).val_type }
 }
 
 /// Return the next item of a list value.
@@ -1227,7 +1258,7 @@ pub unsafe extern "C" fn xmlSchemaValueGetNext(cur: *mut xmlSchemaVal) -> *mut x
         return ptr::null_mut();
     }
     // SAFETY: cur is one of our XsdVal nodes.
-    unsafe { (* (cur as *mut XsdVal)).next as *mut xmlSchemaVal }
+    unsafe { (*(cur as *mut XsdVal)).next as *mut xmlSchemaVal }
 }
 
 /// Return the string representation of a value.
@@ -1250,7 +1281,7 @@ pub unsafe extern "C" fn xmlSchemaValueGetAsString(val: *mut xmlSchemaVal) -> *c
         return ptr::null_mut();
     }
     // SAFETY: val is one of our XsdVal nodes; value is a valid C string or NULL.
-    unsafe { (* (val as *mut XsdVal)).value as *const xmlChar }
+    unsafe { (*(val as *mut XsdVal)).value as *const xmlChar }
 }
 
 /// Return a boolean value as 1/0; -1 if the value is not boolean.
@@ -1270,7 +1301,7 @@ pub unsafe extern "C" fn xmlSchemaValueGetAsBoolean(val: *mut xmlSchemaVal) -> c
         return -1;
     }
     // SAFETY: val is one of our XsdVal nodes.
-    let v = unsafe { &* (val as *mut XsdVal) };
+    let v = unsafe { &*(val as *mut XsdVal) };
     if v.val_type != VAL_BOOLEAN {
         return -1;
     }
@@ -1370,7 +1401,7 @@ pub unsafe extern "C" fn xmlSchemaGetCanonValueWhtsp(
         return -1;
     }
     // SAFETY: val is one of our XsdVal nodes.
-    let v = unsafe { &* (val as *mut XsdVal) };
+    let v = unsafe { &*(val as *mut XsdVal) };
     // List values canonicalize to their items joined by single spaces.
     if v.next.is_null() && !is_list_type(v.val_type) {
         let s = unsafe { cstr_to_str(v.value as *const c_char) }.unwrap_or_default();
@@ -1407,7 +1438,9 @@ pub unsafe extern "C" fn xmlSchemaGetCanonValueWhtsp(
             },
             _ => norm,
         };
-        let Ok(c) = CString::new(canon) else { return -1 };
+        let Ok(c) = CString::new(canon) else {
+            return -1;
+        };
         // SAFETY: dup_cstr copies into xmlMalloc'd memory; caller frees.
         let out = unsafe { dup_cstr(c.as_ptr()) } as *const xmlChar;
         if out.is_null() {
@@ -1426,7 +1459,9 @@ pub unsafe extern "C" fn xmlSchemaGetCanonValueWhtsp(
             parts.push(apply_ws(&s, ws));
             cur = unsafe { (*cur).next };
         }
-        let Ok(c) = CString::new(parts.join(" ")) else { return -1 };
+        let Ok(c) = CString::new(parts.join(" ")) else {
+            return -1;
+        };
         // SAFETY: dup_cstr copies into xmlMalloc'd memory; caller frees.
         let out = unsafe { dup_cstr(c.as_ptr()) } as *const xmlChar;
         if out.is_null() {
@@ -1507,7 +1542,7 @@ pub unsafe extern "C" fn xmlSchemaGetFacetValueAsULong(facet: *mut xmlSchemaFace
         return 0;
     }
     // SAFETY: facet is one of our XsdFacet boxes; value is a C string or NULL.
-    let s = unsafe { cstr_to_str((* (facet as *mut XsdFacet)).value as *const c_char) }
+    let s = unsafe { cstr_to_str((*(facet as *mut XsdFacet)).value as *const c_char) }
         .unwrap_or_default();
     s.trim().parse::<u64>().unwrap_or(0) as c_ulong
 }
@@ -1542,7 +1577,7 @@ pub unsafe extern "C" fn xmlSchemaCheckFacet(
         return -1;
     }
     // SAFETY: facet is one of our XsdFacet boxes.
-    let facet_type = unsafe { (* (facet as *mut XsdFacet)).facet_type };
+    let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
     if facet_type < FACET_MININCLUSIVE || facet_type > FACET_MINLENGTH {
         unsafe {
             dispatch_parser_error(ctxt as usize, "Invalid facet type");
@@ -1593,20 +1628,20 @@ pub unsafe extern "C" fn xmlSchemaValidateFacet(
         return -1;
     }
     // SAFETY: facet is one of our boxes.
-    let facet_type = unsafe { (* (facet as *mut XsdFacet)).facet_type };
+    let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
     let Some(facet_kind) = facet_type_to_kind(facet_type) else {
         return -1;
     };
     // SAFETY: facet value is a C string or NULL.
-    let facet_value = unsafe { cstr_to_str((* (facet as *mut XsdFacet)).value as *const c_char) }
+    let facet_value = unsafe { cstr_to_str((*(facet as *mut XsdFacet)).value as *const c_char) }
         .unwrap_or_default();
     // Determine the base kind: from `base`, falling back to `val`, then string.
     let base_type = if !base.is_null() {
         // SAFETY: base is one of our descriptors.
-        unsafe { (* (base as *mut XsdType)).val_type }
+        unsafe { (*(base as *mut XsdType)).val_type }
     } else if !val.is_null() {
         // SAFETY: val is one of our nodes.
-        unsafe { (* (val as *mut XsdVal)).val_type }
+        unsafe { (*(val as *mut XsdVal)).val_type }
     } else {
         VAL_STRING
     };
@@ -1654,18 +1689,18 @@ pub unsafe extern "C" fn xmlSchemaValidateFacetWhtsp(
         return -1;
     }
     // SAFETY: facet is one of our boxes.
-    let facet_type = unsafe { (* (facet as *mut XsdFacet)).facet_type };
+    let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
     let Some(facet_kind) = facet_type_to_kind(facet_type) else {
         return -1;
     };
     // SAFETY: facet value is a C string or NULL.
-    let facet_value = unsafe { cstr_to_str((* (facet as *mut XsdFacet)).value as *const c_char) }
+    let facet_value = unsafe { cstr_to_str((*(facet as *mut XsdFacet)).value as *const c_char) }
         .unwrap_or_default();
     let kind = if val.is_null() {
         val_type_to_kind(valType)
     } else {
         // SAFETY: val is one of our nodes.
-        val_type_to_kind(unsafe { (* (val as *mut XsdVal)).val_type })
+        val_type_to_kind(unsafe { (*(val as *mut XsdVal)).val_type })
     };
     let Some(kind) = kind else {
         return -1;
@@ -1707,10 +1742,10 @@ pub unsafe extern "C" fn xmlSchemaValidateLengthFacet(
 ) -> c_int {
     let val_type = if !type_.is_null() {
         // SAFETY: type_ is one of our descriptors.
-        unsafe { (* (type_ as *mut XsdType)).val_type }
+        unsafe { (*(type_ as *mut XsdType)).val_type }
     } else if !val.is_null() {
         // SAFETY: val is one of our nodes.
-        unsafe { (* (val as *mut XsdVal)).val_type }
+        unsafe { (*(val as *mut XsdVal)).val_type }
     } else {
         VAL_STRING
     };
@@ -1750,14 +1785,14 @@ pub unsafe extern "C" fn xmlSchemaValidateLengthFacetWhtsp(
         return -1;
     }
     // SAFETY: facet is one of our boxes.
-    let facet_type = unsafe { (* (facet as *mut XsdFacet)).facet_type };
+    let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
     let facet_ulong = xmlSchemaGetFacetValueAsULong(facet);
-    let len: u64 = if is_list_type(valType) {
+    let len: c_ulong = if is_list_type(valType) {
         if val.is_null() {
             0
         } else {
             // Count items in the chain.
-            let mut count: u64 = 0;
+            let mut count: c_ulong = 0;
             let mut cur = val as *mut XsdVal;
             while !cur.is_null() {
                 count += 1;
@@ -1770,7 +1805,7 @@ pub unsafe extern "C" fn xmlSchemaValidateLengthFacetWhtsp(
         // SAFETY: value is a caller-guaranteed C string or NULL.
         let raw = unsafe { cstr_to_str(value as *const c_char) }.unwrap_or_default();
         let norm = apply_ws(&raw, ws);
-        norm.chars().count() as u64
+        norm.chars().count() as c_ulong
     };
     if !length.is_null() {
         // SAFETY: caller-guaranteed writable.
@@ -1821,7 +1856,7 @@ pub unsafe extern "C" fn xmlSchemaValidateListSimpleTypeFacet(
         return -1;
     }
     // SAFETY: facet is one of our boxes.
-    let facet_type = unsafe { (* (facet as *mut XsdFacet)).facet_type };
+    let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
     let facet_ulong = xmlSchemaGetFacetValueAsULong(facet);
     if !expectedLen.is_null() {
         // SAFETY: caller-guaranteed writable.
@@ -1899,7 +1934,7 @@ pub unsafe extern "C" fn xmlSchemaValPredefTypeNode(
         return -1;
     }
     // SAFETY: type_ is one of our descriptors.
-    let val_type = unsafe { (* (type_ as *mut XsdType)).val_type };
+    let val_type = unsafe { (*(type_ as *mut XsdType)).val_type };
     let Some(kind) = val_type_to_kind(val_type) else {
         return -1;
     };
@@ -1945,7 +1980,7 @@ pub unsafe extern "C" fn xmlSchemaValPredefTypeNodeNoNorm(
         return -1;
     }
     // SAFETY: type_ is one of our descriptors.
-    let val_type = unsafe { (* (type_ as *mut XsdType)).val_type };
+    let val_type = unsafe { (*(type_ as *mut XsdType)).val_type };
     let Some(kind) = val_type_to_kind(val_type) else {
         return -1;
     };
@@ -2018,10 +2053,10 @@ pub unsafe extern "C" fn xmlSchemaCompareValuesWhtsp(
     // SAFETY: x/y are our nodes.
     let (xt, xv, yt, yv) = unsafe {
         (
-            (* (x as *mut XsdVal)).val_type,
-            cstr_to_str((* (x as *mut XsdVal)).value as *const c_char).unwrap_or_default(),
-            (* (y as *mut XsdVal)).val_type,
-            cstr_to_str((* (y as *mut XsdVal)).value as *const c_char).unwrap_or_default(),
+            (*(x as *mut XsdVal)).val_type,
+            cstr_to_str((*(x as *mut XsdVal)).value as *const c_char).unwrap_or_default(),
+            (*(y as *mut XsdVal)).val_type,
+            cstr_to_str((*(y as *mut XsdVal)).value as *const c_char).unwrap_or_default(),
         )
     };
     let xs = apply_ws(&xv, xws);
@@ -2158,9 +2193,7 @@ pub unsafe extern "C" fn xmlSchemaNewDocParserCtxt(doc: *mut _xmlDoc) -> *mut xm
         return ptr::null_mut();
     };
     match xsd_parse(&xml) {
-        Ok(schema) => {
-            Box::into_raw(Box::new(schema)) as *mut xmlSchemaParserCtxt
-        }
+        Ok(schema) => Box::into_raw(Box::new(schema)) as *mut xmlSchemaParserCtxt,
         Err(_) => ptr::null_mut(),
     }
 }
@@ -2405,7 +2438,11 @@ pub unsafe extern "C" fn xmlSchemaSetValidOptions(
     if options & !VAL_OPTIONS_MASK != 0 {
         return -1;
     }
-    VALID_STATES.lock().entry(ctxt as usize).or_default().options = options;
+    VALID_STATES
+        .lock()
+        .entry(ctxt as usize)
+        .or_default()
+        .options = options;
     0
 }
 
@@ -2475,7 +2512,11 @@ pub unsafe extern "C" fn xmlSchemaValidateSetFilename(
     if vctxt.is_null() {
         return;
     }
-    VALID_STATES.lock().entry(vctxt as usize).or_default().filename = filename as usize;
+    VALID_STATES
+        .lock()
+        .entry(vctxt as usize)
+        .or_default()
+        .filename = filename as usize;
 }
 
 /// Set a validity locator callback.
@@ -2529,7 +2570,7 @@ pub unsafe extern "C" fn xmlSchemaIsValid(ctxt: *mut xmlSchemaValidCtxt) -> c_in
     }
     // SAFETY: ctxt is the internal XsdValidCtxt whose nb_errors the internal
     // xmlSchemaValidateDoc updates.
-    let nb = unsafe { (* (ctxt as *mut XsdValidCtxt)).nb_errors };
+    let nb = unsafe { (*(ctxt as *mut XsdValidCtxt)).nb_errors };
     if nb == 0 {
         1
     } else {
@@ -2570,15 +2611,10 @@ pub unsafe extern "C" fn xmlSchemaValidateFile(
     // engine only records errors on failure.
     unsafe { reset_valid_ctxt(ctxt) };
     // SAFETY: xmlReadFile requires a valid C string; options is forwarded.
-    let doc = unsafe {
-        crate::abi::exports_xml2::xmlReadFile(filename, ptr::null(), options)
-    };
+    let doc = unsafe { crate::abi::exports_xml2::xmlReadFile(filename, ptr::null(), options) };
     if doc.is_null() {
         unsafe {
-            dispatch_valid_errors(
-                ctxt as usize,
-                &["Failed to parse document".to_string()],
-            );
+            dispatch_valid_errors(ctxt as usize, &["Failed to parse document".to_string()]);
         }
         return -1;
     }
@@ -2589,7 +2625,7 @@ pub unsafe extern "C" fn xmlSchemaValidateFile(
     if ret != 0 {
         // SAFETY: ctxt is the internal XsdValidCtxt whose errors were filled
         // by xmlSchemaValidateDoc on failure.
-        let errors = unsafe { (* (ctxt as *mut XsdValidCtxt)).errors.clone() };
+        let errors = unsafe { (*(ctxt as *mut XsdValidCtxt)).errors.clone() };
         unsafe { dispatch_valid_errors(ctxt as usize, &errors) };
     }
     ret
@@ -2624,7 +2660,7 @@ pub unsafe extern "C" fn xmlSchemaValidateOneElement(
     // engine only records errors on failure.
     unsafe { reset_valid_ctxt(ctxt) };
     // SAFETY: ctxt is the internal XsdValidCtxt.
-    let valid_ctxt = unsafe { &mut * (ctxt as *mut XsdValidCtxt) };
+    let valid_ctxt = unsafe { &mut *(ctxt as *mut XsdValidCtxt) };
     let Some(schema) = valid_ctxt.schema.clone() else {
         return -1;
     };
@@ -2733,7 +2769,13 @@ pub unsafe extern "C" fn xmlSchemaSAXPlug(
         return ptr::null_mut();
     }
     // SAFETY: sax/user_data are caller-guaranteed writable when non-NULL.
-    let original_sax = unsafe { if sax.is_null() { ptr::null_mut() } else { *sax } };
+    let original_sax = unsafe {
+        if sax.is_null() {
+            ptr::null_mut()
+        } else {
+            *sax
+        }
+    };
     let original_ud = unsafe {
         if user_data.is_null() {
             ptr::null_mut()
@@ -2797,7 +2839,7 @@ pub unsafe extern "C" fn xmlSchemaDump(output: *mut c_void, schema: *mut xmlSche
         return;
     }
     // SAFETY: schema is the internal boxed XsdSchema.
-    let s = unsafe { &* (schema as *const XsdSchema) };
+    let s = unsafe { &*(schema as *const XsdSchema) };
     let mut out = String::new();
     out.push_str("Schema dump\n");
     if let Some(ref tns) = s.target_namespace {
@@ -2890,9 +2932,7 @@ pub unsafe extern "C" fn xmlSchematronNewDocParserCtxt(
         return ptr::null_mut();
     };
     match schematron_parse(&xml) {
-        Ok(schema) => {
-            Box::into_raw(Box::new(schema)) as *mut xmlSchematronParserCtxt
-        }
+        Ok(schema) => Box::into_raw(Box::new(schema)) as *mut xmlSchematronParserCtxt,
         Err(_) => ptr::null_mut(),
     }
 }

@@ -1688,7 +1688,7 @@ pub unsafe extern "C" fn xmlShell(
                 }
             }
         } else if cmd == b"pwd\0" {
-            let mut dir = [0i8; 500];
+            let mut dir = [0 as c_char; 500];
             unsafe {
                 if xmlShellPwd(ctxt, dir.as_mut_ptr(), (*ctxt).node, ptr::null_mut()) == 0 {
                     let mut line = Vec::new();
@@ -1801,7 +1801,7 @@ pub unsafe extern "C" fn xmlShell(
                 }
             }
         } else if cmd == b"whereis\0" {
-            let mut dir = [0i8; 500];
+            let mut dir = [0 as c_char; 500];
             unsafe {
                 if arg.is_empty() {
                     if xmlShellPwd(ctxt, dir.as_mut_ptr(), (*ctxt).node, ptr::null_mut()) == 0 {

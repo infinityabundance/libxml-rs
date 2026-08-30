@@ -39,7 +39,7 @@
 
 use core::ffi::c_void;
 use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_ushort};
+use std::os::raw::{c_char, c_int, c_ulong, c_ushort};
 use std::ptr;
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
@@ -1931,7 +1931,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
     let mut cur: *mut _xmlNode = ptr::null_mut();
     let mut obj: *mut _xmlXPathObject = ptr::null_mut();
     let mut ns_prefix: *const xmlChar = ptr::null();
-    let mut id: u64;
+    let mut id: c_ulong;
     let mut ns_prefix_size: usize = 0;
 
     let tctxt = transform_context_from_parser(ctxt);
@@ -2018,7 +2018,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
     }
 
     if (get_source_node_flags(cur) & XSLT_SOURCE_NODE_HAS_ID) != 0 {
-        id = *psvi_ptr as u64;
+        id = *psvi_ptr as c_ulong;
     } else {
         if (*cur).type_ == XML_TEXT_NODE as c_int && (*cur).line == u16::MAX {
             // Text nodes store big line numbers in psvi.
@@ -2031,7 +2031,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
             return;
         }
 
-        if !tctxt.is_null() && (*tctxt).currentId == u64::MAX {
+        if !tctxt.is_null() && (*tctxt).currentId == c_ulong::MAX {
             xslt_error(tctxt, b"generate-id(): id overflow\n\0");
             (*pc).error = XPATH_MEMORY_ERROR as c_int;
             // goto out

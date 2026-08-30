@@ -26,6 +26,14 @@ use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::*;
 use crate::abi::types::*;
 
+// LC_ALL_MASK: the libc crate does not export it for musl targets; the mask
+// is every category bit below LC_ALL (upstream xsltlocale.c builds the same
+// mask from the individual categories on non-glibc systems).
+#[cfg(target_env = "musl")]
+const LC_ALL_MASK: c_int = (1 << libc::LC_ALL) - 1;
+#[cfg(not(target_env = "musl"))]
+use libc::LC_ALL_MASK;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Security (security.c)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -340,7 +348,7 @@ pub unsafe extern "C" fn xsltTransformErrorV(
     if msg.is_null() {
         return 0;
     }
-    let mut buf = [0i8; 4096];
+    let mut buf = [0 as c_char; 4096];
     let n = unsafe { vsnprintf(buf.as_mut_ptr(), buf.len(), msg, ap) };
     let n = n.clamp(0, buf.len() as c_int - 1) as usize;
     buf[n] = 0;
@@ -444,7 +452,7 @@ pub unsafe extern "C" fn xsltTimestamp() -> c_long {
 pub unsafe extern "C" fn xsltCalibrateAdjust(delta: c_long) {
     // Upstream stores a process-lifetime calibration offset; the candidate
     // applies it to the monotonic clock read.
-    CALIBRATION_OFFSET.fetch_add(delta, core::sync::atomic::Ordering::Relaxed);
+    CALIBRATION_OFFSET.fetch_add(delta as i64, core::sync::atomic::Ordering::Relaxed);
 }
 
 static CALIBRATION_OFFSET: core::sync::atomic::AtomicI64 = core::sync::atomic::AtomicI64::new(0);
@@ -499,11 +507,7 @@ pub unsafe extern "C" fn xsltNewLocale(
         }
         name.extend_from_slice(b".UTF-8");
         name.push(0);
-        let locale = libc::newlocale(
-            libc::LC_ALL_MASK,
-            name.as_ptr() as *const c_char,
-            ptr::null_mut(),
-        );
+        let locale = libc::newlocale(LC_ALL_MASK, name.as_ptr() as *const c_char, ptr::null_mut());
         if !locale.is_null() {
             return locale as *mut c_void;
         }
@@ -513,11 +517,7 @@ pub unsafe extern "C" fn xsltNewLocale(
     // Try the language without a territory (e.g. "eo.UTF-8").
     name.extend_from_slice(b".UTF-8");
     name.push(0);
-    let locale = libc::newlocale(
-        libc::LC_ALL_MASK,
-        name.as_ptr() as *const c_char,
-        ptr::null_mut(),
-    );
+    let locale = libc::newlocale(LC_ALL_MASK, name.as_ptr() as *const c_char, ptr::null_mut());
     if !locale.is_null() {
         return locale as *mut c_void;
     }
@@ -547,11 +547,8 @@ pub unsafe extern "C" fn xsltNewLocale(
             rn.extend_from_slice(region);
             rn.extend_from_slice(b".UTF-8");
             rn.push(0);
-            let locale = libc::newlocale(
-                libc::LC_ALL_MASK,
-                rn.as_ptr() as *const c_char,
-                ptr::null_mut(),
-            );
+            let locale =
+                libc::newlocale(LC_ALL_MASK, rn.as_ptr() as *const c_char, ptr::null_mut());
             if !locale.is_null() {
                 return locale as *mut c_void;
             }

@@ -257,7 +257,7 @@ fn now() -> DateTime {
         .unwrap_or(0);
     // Convert to local time via libc.
     let mut tm: libc::tm = unsafe { std::mem::zeroed() };
-    let t: libc::time_t = secs;
+    let t: libc::time_t = secs as libc::time_t;
     unsafe {
         libc::localtime_r(&t, &mut tm);
     }
