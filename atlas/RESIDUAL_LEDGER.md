@@ -480,7 +480,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Fix:** All 11 remaining data symbols are now exported and court-verified byte-identical against the oracle DSO. (1) Added _xmlSAXHandlerV1, xmlChSRange/xmlChLRange/xmlChRangeGroup mirrors to structs.rs (measured by the RUST-MIRROR-ABI court, 0 mismatches). (2) Created tools/archaeology/gen_chvalid_tables.py — a deterministic generator extracting the char-class tables verbatim from upstream codegen/ranges.inc (sha256 bound) into src/xml/unicode_tables.rs (xmlIsPubidChar_tab[256] + the six xmlIs*Group range tables, counts verified against the declared values). (3) Created src/xml/chvalid.rs implementing xmlCharInRange, xmlIs{BaseChar,Blank,Char,Combining,Digit,Extender,Ideographic,PubidChar}, xmlIsLetter and xmlIsBlankNode with the exact upstream Q-macro semantics. (4) Exported xmlDefaultSAXHandler/htmlDefaultSAXHandler (xmlSAXHandlerV1) and xmlDefaultSAXLocator as #[no_mangle] consts reproducing the upstream globals.c initializer lists exactly — the differential court caught an initializer error (htmlDefaultSAXHandler reference/externalSubset slots) before sealing. (5) Added the xmlParserError/Warning/ValidityError/ValidityWarning legacy SAX handlers (non-variadic documented divergence) referenced by the handler structs. (6) xmlLastError: deep-copy mirror of the thread-local error state (sync on raise, free on reset, upstream xmlResetError semantics). (7) New DATA-GLOBALS-001 court (tools/abi/data_globals_probe.py + committed C probe) compiles the probe against the system libxml2 and the candidate DSO and requires byte-identical output: pubid table hex, every range group entry, SAX handler slot patterns, xmlLastError zero state, FNV-1a hashes of the nine xmlIs* functions over the full BMP + supplementary samples, xmlIsBlankNode behavior. Verdict PASS (oracle sha256 e7575963… == candidate). PARITY_OBLIGATIONS.json regenerated: DATA MISSING 11 → 0 (both projects).
 - **Evidence:** ['courts/receipts/phase-11/data-globals-20260829T203735Z.json', 'courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json', 'atlas/PARITY_OBLIGATIONS.json (DATA MISSING = 0)']
 - **Classification:** UNRESOLVED
-- **History:** OPEN 2026-08-29; FIXED 2026-08-29
+- **History:** OPEN 2026-08-29; FIXED 2026-08-29; FIXED 2026-08-30
 
 ### R-000136: Missing oracle functions: 881 libxml2 + 201 libxslt exports (was 1158 at discovery) (OPEN)
 
@@ -706,6 +706,31 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Phase 11 triangulation:** Classification-only residual: the ledger labels them INTENTIONAL_NOOP so the closure count is honest.
 - **Evidence:** ['archaeology/libxslt-git/libxslt/security.c', 'archaeology/libxslt-git/libxslt/variables.c', 'archaeology/libxslt-git/libxslt/xslt.c', 'archaeology/libxslt-git/libxslt/xsltlocale.c']
 - **Classification:** INTENTIONAL_SAFE_DIVERGENCE
+
+## Phase 11.1-J Residuals
+
+### R-000131: Legacy allocator API surface: location tracking, xmlMemSize, debug dumps are simplified (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-J)
+- **Component:** src/abi/allocator.rs, include/libxml/xmlmemory.h
+- **Surface:** xmlmemory.h API
+- **Root cause:** The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.
+- **Fix:** 11.1-J allocator instrumentation: the default allocator now maintains the upstream-style per-block registry (ptr -> size/file/line). xmlMemSize returns the recorded size, the *Loc variants record the allocation site, xmlMemDisplayLast and xmlMemShow dump per-block listings (ordered by address; xmlMemShow's upstream most-recent ordering is not reproduced — documented divergence), and xmlMemUsed/MEM_BLOCKS are exact (realloc adjusts by the old size). xmlMemSetup custom allocators still bypass the registry (counters only), matching upstream's debug-allocator-only contract.
+- **Evidence:** ['src/abi/allocator.rs']
+- **Classification:** CANDIDATE_BUG
+
+## Phase 11.1-K Residuals
+
+### R-000161: Error routing parity: generic handler must stream xmlFormatError fragments (6 calls per raise), and xmlGenericError/xsltGenericError default to variadic stderr printers (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-K)
+- **Component:** src/xml/errors/mod.rs, src/xml/globals/mod.rs, src/abi/data_globals.rs, src/abi/exports_xslt_util.rs, src/xml/parser/state.rs, src/xml/sax/dispatch.rs, src/abi/exports_xml2.rs, src/xml/parser/helpers.rs, src/xml/reader/mod.rs
+- **Surface:** xmlRaiseError routing, xmlSetGenericErrorFunc, xmlGenericError/xmlGenericErrorContext/xsltGenericError/xsltGenericErrorContext defaults (xmlerror.c/xsltutils.c)
+- **Oracle versions:** libxml2 2.15.3 + 2.13.9, libxslt 1.1.45 (system DSOs)
+- **Root cause:** Upstream xmlVRaiseError (error.c 2.15) routes each raise through ONE channel: a structured handler, else the SAX channel (custom slot receives `channel(data, msg)` once), else the legacy default which streams the xmlFormatError fragments (file/line, domain, level, message, source window, caret) as 6 separate variadic calls through xmlGenericError. The candidate's parser emitted one generic call plus an unconditional direct stderr write, so a counting handler observed err-count 1 vs the oracle's 6, and stderr was written even when a handler was installed. Additionally xmlGenericError/xsltGenericError defaulted to NULL, but upstream defaults them to the variadic stderr printers xmlGenericErrorDefaultFunc/xsltGenericErrorDefaultFunc (which also self-default the context to stderr).
+- **Fix:** (1) Implemented xmlGenericErrorDefaultFunc/xsltGenericErrorDefaultFunc as x86_64 SysV inline-asm va_list shims (same pattern as xsltTransformError) forwarding to vfprintf receivers that default the context to stderr; the exported data globals now default to them and xmlSetGenericErrorFunc/xsltSetGenericErrorFunc reset to them on NULL (upstream semantics). (2) Added ch_call0/1/2 asm trampolines and format_error_streamed replicating the xmlFormatError fragment sequence byte-for-byte (verified: counting handler sees the same 6 format strings as the oracle). (3) Parser set_error/set_warning now route through raise_error_streamed with the upstream channel selection (structured XOR custom-SAX XOR fragment stream); the unconditional stderr write was removed (stderr output now flows through the default handler only). (4) xmlSAX2InitDefaultSAXHandler stores xmlParserError/xmlParserWarning in the error/warning slots like upstream SAX2.c. (5) xmlReadMemory/xmlReaderForMemory propagate the URL into the input filename (was empty, producing `:1:` prefixes instead of `e.xml:1:`). Also fixed the 5 wrong exported default values discovered by the defaults dump: xmlLineNumbersDefaultValue 0->1, xmlIndentTreeOutput 0->1, xmlTreeIndentString NULL->"  ", xmlBufferAllocScheme 0->1 (XML_BUFFER_ALLOC_EXACT), xmlParserVersion "21503"->"21503-GITv2.15.3".
+- **Evidence:** ['courts/suites/data-abi/globals-threading-probe.c', 'tools/abi/globals_threading_probe.py', 'courts/receipts/phase-11/globals-threading-*.json', 'target/scratch/globals_dump.c (DEFAULTS-IDENTICAL vs oracle)', 'cargo test --lib 1135 pass', 'ASan full-suite clean']
+- **Classification:** CANDIDATE_BUG
 
 ## Classification Legend
 

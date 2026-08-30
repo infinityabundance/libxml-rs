@@ -256,6 +256,18 @@ XMLPUBFUN void htmlCleanupParser(void);
 
 
 
+
+
+/* Deprecated default SAX v1 handler (globals.c 2.15.3). */
+XMLPUBVAR const xmlSAXHandlerV1 htmlDefaultSAXHandler;
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef struct _htmlElemDesc htmlElemDesc;
 typedef htmlElemDesc *htmlElemDescPtr;
@@ -314,10 +326,6 @@ struct _htmlEntityDesc {
 };
 
 /* [11.1-G] end: extracted definitions */
-
-/* Deprecated default SAX v1 handler (globals.c 2.15.3). */
-XMLPUBVAR const xmlSAXHandlerV1 htmlDefaultSAXHandler;
-
 #ifdef __cplusplus
 }
 #endif

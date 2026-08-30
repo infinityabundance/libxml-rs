@@ -439,11 +439,315 @@ unsafe fn emit_legacy_message(level: &str, msg: *const c_char) {
     }
 }
 
-/// Default SAX v1 error handler — `void xmlParserError(void *ctx, const char *msg, ...)`.
+// ═══════════════════════════════════════════════════════════════════════════════
+// Generic-channel fragment streaming (upstream error.c `xmlFormatError`)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream streams each error through the generic channel as a sequence of
+// variadic calls (e.g. `channel(data, "%s:%d: ", file, line)` followed by the
+// domain, level, message and source-context fragments). Custom handlers and the
+// built-in default (an x86_64 SysV va_list shim, see data_globals.rs) both
+// observe the same per-fragment calls. Stable Rust cannot express a variadic
+// call, so each fragment goes through a tiny x86_64 trampoline that places the
+// fixed arguments in the ABI registers and does an indirect call.
+
+/// `channel(data, fmt)` — no variadic arguments.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn ch_call0(handler: xmlGenericErrorFunc, data: *mut c_void, fmt: *const c_char) {
+    // SAFETY: `handler` is a C-compatible generic error callback; per the
+    // SysV ABI the callee sees (data, fmt) with no additional registers
+    // consumed (rdx/rcx zeroed so a va_list-reading callee finds nothing).
+    // The compiler guarantees 16-byte stack alignment at the asm block, so
+    // the `call` is correctly aligned.
+    unsafe {
+        core::arch::asm!(
+            "xor edx, edx",
+            "xor ecx, ecx",
+            "call {h}",
+            h = in(reg) handler as usize,
+            in("rdi") data,
+            in("rsi") fmt,
+            out("rdx") _, out("rcx") _,
+            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+        );
+    }
+}
+
+/// `channel(data, fmt, a1)` — one pointer-sized variadic argument.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn ch_call1(handler: xmlGenericErrorFunc, data: *mut c_void, fmt: *const c_char, a1: usize) {
+    // SAFETY: as ch_call0; `a1` lands in the va_list slot after the two
+    // fixed args (rdx).
+    unsafe {
+        core::arch::asm!(
+            "xor ecx, ecx",
+            "call {h}",
+            h = in(reg) handler as usize,
+            in("rdi") data,
+            in("rsi") fmt,
+            in("rdx") a1,
+            out("rcx") _,
+            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+        );
+    }
+}
+
+/// `channel(data, fmt, a1, a2)` — two pointer-sized variadic arguments.
+#[cfg(target_arch = "x86_64")]
+#[inline]
+unsafe fn ch_call2(
+    handler: xmlGenericErrorFunc,
+    data: *mut c_void,
+    fmt: *const c_char,
+    a1: usize,
+    a2: usize,
+) {
+    // SAFETY: as ch_call0; a1/a2 land in the va_list slots (rdx, rcx).
+    unsafe {
+        core::arch::asm!(
+            "call {h}",
+            h = in(reg) handler as usize,
+            in("rdi") data,
+            in("rsi") fmt,
+            in("rdx") a1,
+            in("rcx") a2,
+            lateout("rax") _, lateout("r8") _, lateout("r9") _, lateout("r10") _, lateout("r11") _,
+        );
+    }
+}
+
+/// Emit one raise through the generic channel with upstream's
+/// `xmlFormatError` fragment sequence (error.c 2.15): file/line prefix,
+/// domain, level, message, then the source window and caret line.
 ///
-/// UPSTREAM-PARITY: the candidate exposes the non-variadic ABI
-/// (`fn(ctx, msg)`); variadic formatting is not reproducible on stable Rust
-/// (documented safe divergence — callers pass pre-formatted messages).
+/// `file`/`line` come from the raising site's input; `source_window` is the
+/// current input line text plus the 0-based caret column (upstream
+/// `xmlParserInputGetWindow`).
+///
+/// # SAFETY
+///
+/// - `file` and `message` must be valid C strings or NULL.
+/// - `source_window` bytes must be valid for the duration of the call.
+#[cfg(target_arch = "x86_64")]
+unsafe fn format_error_streamed(
+    domain: c_int,
+    code: c_int,
+    level: c_int,
+    message: *const c_char,
+    file: *const c_char,
+    line: c_int,
+    source_window: Option<(&[u8], usize)>,
+) {
+    // SAFETY: reads the exported C globals (upstream reads the same).
+    let Some(handler) = globals::get_generic_error_func() else {
+        return;
+    };
+    let data = globals::get_generic_error_ctx();
+
+    // 1. File/line prefix (xmlFormatError).
+    if !file.is_null() {
+        ch_call2(
+            handler,
+            data,
+            b"%s:%d: \0".as_ptr() as *const c_char,
+            file as usize,
+            line as usize,
+        );
+    } else if line != 0
+        && (domain == XML_FROM_PARSER
+            || domain == XML_FROM_SCHEMASV
+            || domain == XML_FROM_SCHEMASP
+            || domain == XML_FROM_DTD
+            || domain == XML_FROM_RELAXNGP
+            || domain == XML_FROM_RELAXNGV)
+    {
+        ch_call1(
+            handler,
+            data,
+            b"Entity: line %d: \0".as_ptr() as *const c_char,
+            line as usize,
+        );
+    }
+
+    // 2. Domain fragment (xmlFormatError switch).
+    let dom: &[u8] = match domain {
+        XML_FROM_PARSER => b"parser \0",
+        XML_FROM_NAMESPACE => b"namespace \0",
+        XML_FROM_DTD | XML_FROM_VALID => b"validity \0",
+        XML_FROM_HTML => b"HTML parser \0",
+        XML_FROM_MEMORY => b"memory \0",
+        XML_FROM_OUTPUT => b"output \0",
+        XML_FROM_IO => b"I/O \0",
+        XML_FROM_XINCLUDE => b"XInclude \0",
+        XML_FROM_XPATH => b"XPath \0",
+        XML_FROM_XPOINTER => b"parser \0",
+        XML_FROM_REGEXP => b"regexp \0",
+        XML_FROM_MODULE => b"module \0",
+        XML_FROM_SCHEMASV => b"Schemas validity \0",
+        XML_FROM_SCHEMASP => b"Schemas parser \0",
+        XML_FROM_RELAXNGP => b"Relax-NG parser \0",
+        XML_FROM_RELAXNGV => b"Relax-NG validity \0",
+        XML_FROM_CATALOG => b"Catalog \0",
+        XML_FROM_C14N => b"C14N \0",
+        XML_FROM_XSLT => b"XSLT \0",
+        XML_FROM_I18N => b"encoding \0",
+        XML_FROM_SCHEMATRONV => b"schematron \0",
+        XML_FROM_BUFFER => b"internal buffer \0",
+        XML_FROM_URI => b"URI \0",
+        _ => b"\0",
+    };
+    if !dom.is_empty() && dom[0] != 0 {
+        ch_call0(handler, data, dom.as_ptr() as *const c_char);
+    }
+
+    // 3. Level fragment (xmlFormatError switch).
+    let lvl: &[u8] = if level == XML_ERR_NONE as c_int {
+        b": \0"
+    } else if level == XML_ERR_WARNING as c_int {
+        b"warning : \0"
+    } else if level == XML_ERR_ERROR as c_int || level == XML_ERR_FATAL as c_int {
+        b"error : \0"
+    } else {
+        b"\0"
+    };
+    if !lvl.is_empty() && lvl[0] != 0 {
+        ch_call0(handler, data, lvl.as_ptr() as *const c_char);
+    }
+
+    // 4. Message fragment.
+    if !message.is_null() {
+        let msg = message as *const u8;
+        let mut len = 0usize;
+        while unsafe { *msg.add(len) } != 0 {
+            len += 1;
+        }
+        let ends_nl = len > 0 && unsafe { *msg.add(len - 1) } == b'\n';
+        let fmt: &[u8] = if ends_nl { b"%s\0" } else { b"%s\n\0" };
+        ch_call1(handler, data, fmt.as_ptr() as *const c_char, msg as usize);
+    }
+
+    // 5. Source window + caret (xmlParserPrintFileContextInternal).
+    if let Some((window, caret)) = source_window {
+        let mut win = window.to_vec();
+        win.push(0);
+        ch_call1(
+            handler,
+            data,
+            b"%s\n\0".as_ptr() as *const c_char,
+            win.as_ptr() as usize,
+        );
+        let mut caret_line = Vec::with_capacity(caret + 2);
+        for &b in window.iter().take(caret) {
+            caret_line.push(if b == b'\t' { b'\t' } else { b' ' });
+        }
+        caret_line.push(b'^');
+        caret_line.push(0);
+        ch_call1(
+            handler,
+            data,
+            b"%s\n\0".as_ptr() as *const c_char,
+            caret_line.as_ptr() as usize,
+        );
+    }
+}
+
+/// How a raise delivers to the generic side of the error system (upstream
+/// `xmlVRaiseError` channel selection, error.c 2.15).
+#[derive(Clone, Copy)]
+pub enum GenericDelivery {
+    /// Custom SAX channel: single call `channel(ctx, msg)`.
+    Custom(xmlGenericErrorFunc, *mut c_void),
+    /// Legacy/default channel: stream the `xmlFormatError` fragments through
+    /// the global generic handler.
+    Stream,
+    /// No channel (SAX slot NULL): no generic delivery.
+    None,
+}
+
+/// Raise an error with upstream's full routing (error.c 2.15
+/// `xmlVRaiseError`): update the last error, then deliver to the structured
+/// handler **or** the selected generic channel — never both.
+///
+/// `file`/`line`/`source_window` feed the generic fragment stream (the
+/// structured handler receives the complete `xmlError` instead).
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL.
+/// - `msg` and `file` must be valid C strings or NULL.
+/// - `source_window` bytes must be valid for the duration of the call.
+#[cfg(target_arch = "x86_64")]
+pub unsafe fn raise_error_streamed(
+    ctxt: *mut c_void,
+    domain: c_int,
+    code: c_int,
+    level: c_int,
+    file: *const c_char,
+    line: c_int,
+    msg: *const c_char,
+    source_window: Option<(&[u8], usize)>,
+    delivery: GenericDelivery,
+) {
+    // Format the error message (same as raise_error).
+    let formatted_msg =
+        format_error_message(domain, code, msg, ptr::null(), ptr::null(), ptr::null());
+    let err = _xmlError {
+        domain,
+        code,
+        message: formatted_msg,
+        level,
+        file: file as *mut c_char,
+        line,
+        str1: ptr::null_mut(),
+        str2: ptr::null_mut(),
+        str3: ptr::null_mut(),
+        int1: 0,
+        int2: 0,
+        ctxt,
+        node: ptr::null_mut(),
+    };
+
+    globals::set_last_error(err);
+
+    // Structured handler wins (upstream `else if` chain).
+    if let Some(handler) = globals::get_structured_error_func() {
+        let ctx = globals::get_structured_error_ctx();
+        let err_ref = globals::get_last_error();
+        if !err_ref.is_null() {
+            handler(ctx, err_ref as *const _xmlError);
+        }
+        return;
+    }
+
+    match delivery {
+        GenericDelivery::Custom(channel, ctx) => {
+            if !msg.is_null() {
+                // SAFETY: the caller provided a valid C callback.
+                unsafe { channel(ctx, msg) };
+            }
+        }
+        GenericDelivery::Stream => {
+            if globals::get_generic_error_func().is_some() {
+                unsafe {
+                    format_error_streamed(
+                        domain,
+                        code,
+                        level,
+                        formatted_msg,
+                        file,
+                        line,
+                        source_window,
+                    )
+                };
+            }
+        }
+        GenericDelivery::None => {}
+    }
+}
+
+/// Default SAX v1 error handler — `void xmlParserError(void *ctx, const char *msg, ...)`.
 ///
 /// # SAFETY
 ///

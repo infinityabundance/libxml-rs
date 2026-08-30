@@ -370,6 +370,14 @@ XMLPUBFUN void xmlXPathDebugDumpObject(FILE *output, xmlXPathObjectPtr cur,
 XMLPUBFUN void xmlXPathDebugDumpCompExpr(FILE *output,
                                         xmlXPathCompExprPtr comp, int depth);
 
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef struct _xmlXPathAxis xmlXPathAxis;
 typedef xmlXPathAxis *xmlXPathAxisPtr;

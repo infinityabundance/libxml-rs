@@ -187,6 +187,39 @@ pub(crate) unsafe fn input_from_memory(buffer: *const c_char, size: c_int) -> In
     InputBuffer::from_memory(slice, None)
 }
 
+/// Create an `InputBuffer` from memory with a source URI recorded as the
+/// input's filename (upstream `xmlCtxtReadMemory` sets `input->filename` from
+/// the URL, which feeds the `file:line:` error prefix). Non-UTF-8 URIs are
+/// dropped (documented divergence — the candidate's input layer stores
+/// filenames as UTF-8).
+///
+/// # Safety
+///
+/// - `buffer` must be valid for reads of at least `size` bytes, or NULL.
+/// - `uri` must be a valid NUL-terminated C string, or NULL.
+pub(crate) unsafe fn input_from_memory_named(
+    buffer: *const c_char,
+    size: c_int,
+    uri: *const c_char,
+) -> InputBuffer {
+    let slice = if size > 0 && !buffer.is_null() {
+        // SAFETY: Caller guarantees `buffer` points to at least `size` readable bytes.
+        unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) }
+    } else {
+        &[]
+    };
+    let uri_str = if !uri.is_null() {
+        // SAFETY: Caller guarantees `uri` is a valid C string.
+        unsafe { std::ffi::CStr::from_ptr(uri) }
+            .to_str()
+            .ok()
+            .map(|s| s.to_string())
+    } else {
+        None
+    };
+    InputBuffer::from_memory(slice, uri_str.as_deref())
+}
+
 /// Create an `InputBuffer` from a file path.
 ///
 /// Returns `Ok(InputBuffer)` on success, or `Err(())` if the file cannot be

@@ -11,7 +11,9 @@
   "11",
   "11.1-G",
   "11.1-H",
-  "11.1-I"
+  "11.1-I",
+  "11.1-J",
+  "11.1-K"
  ],
  "ledger": [
   {
@@ -1158,6 +1160,11 @@
      "date": "2026-08-29",
      "event": "closed: 11 data symbols exported with upstream layout and initial values; DATA-GLOBALS-001 differential court byte-identical vs the oracle DSO; obligations regenerated (DATA MISSING = 0)",
      "status": "FIXED"
+    },
+    {
+     "date": "2026-08-30",
+     "event": "follow-up (11.1-K): the remaining NULL-default divergence for xsltGenericError/xmlGenericError was closed with the variadic asm shims (R-000161); xsltDocDefaultLoader remains NULL (loader path documented separately)",
+     "status": "FIXED"
     }
    ],
    "lesson": "Data-global parity needs value-level differential evidence, not just symbol presence: the DATA-GLOBALS-001 court compares the actual table bytes, handler slot patterns and function results against the oracle DSO. Symbol kind/size are covered by nm/readelf plus the three-way mirror court; initial values are covered by the differential probe. Function-pointer initializers must be transcribed from the upstream initializer lists exactly \u2014 a wrong NULL/non-NULL slot was caught only by the differential court."
@@ -1804,6 +1811,45 @@
     "archaeology/libxslt-git/libxslt/xsltlocale.c"
    ],
    "classification": "INTENTIONAL_SAFE_DIVERGENCE"
+  },
+  {
+   "id": "R-000161",
+   "status": "FIXED",
+   "phase": "11.1-K",
+   "title": "Error routing parity: generic handler must stream xmlFormatError fragments (6 calls per raise), and xmlGenericError/xsltGenericError default to variadic stderr printers",
+   "surface": "xmlRaiseError routing, xmlSetGenericErrorFunc, xmlGenericError/xmlGenericErrorContext/xsltGenericError/xsltGenericErrorContext defaults (xmlerror.c/xsltutils.c)",
+   "component": [
+    "src/xml/errors/mod.rs",
+    "src/xml/globals/mod.rs",
+    "src/abi/data_globals.rs",
+    "src/abi/exports_xslt_util.rs",
+    "src/xml/parser/state.rs",
+    "src/xml/sax/dispatch.rs",
+    "src/abi/exports_xml2.rs",
+    "src/xml/parser/helpers.rs",
+    "src/xml/reader/mod.rs"
+   ],
+   "discovery_date": "2026-08-30",
+   "oracle_versions": "libxml2 2.15.3 + 2.13.9, libxslt 1.1.45 (system DSOs)",
+   "root_cause": "Upstream xmlVRaiseError (error.c 2.15) routes each raise through ONE channel: a structured handler, else the SAX channel (custom slot receives `channel(data, msg)` once), else the legacy default which streams the xmlFormatError fragments (file/line, domain, level, message, source window, caret) as 6 separate variadic calls through xmlGenericError. The candidate's parser emitted one generic call plus an unconditional direct stderr write, so a counting handler observed err-count 1 vs the oracle's 6, and stderr was written even when a handler was installed. Additionally xmlGenericError/xsltGenericError defaulted to NULL, but upstream defaults them to the variadic stderr printers xmlGenericErrorDefaultFunc/xsltGenericErrorDefaultFunc (which also self-default the context to stderr).",
+   "fix": "(1) Implemented xmlGenericErrorDefaultFunc/xsltGenericErrorDefaultFunc as x86_64 SysV inline-asm va_list shims (same pattern as xsltTransformError) forwarding to vfprintf receivers that default the context to stderr; the exported data globals now default to them and xmlSetGenericErrorFunc/xsltSetGenericErrorFunc reset to them on NULL (upstream semantics). (2) Added ch_call0/1/2 asm trampolines and format_error_streamed replicating the xmlFormatError fragment sequence byte-for-byte (verified: counting handler sees the same 6 format strings as the oracle). (3) Parser set_error/set_warning now route through raise_error_streamed with the upstream channel selection (structured XOR custom-SAX XOR fragment stream); the unconditional stderr write was removed (stderr output now flows through the default handler only). (4) xmlSAX2InitDefaultSAXHandler stores xmlParserError/xmlParserWarning in the error/warning slots like upstream SAX2.c. (5) xmlReadMemory/xmlReaderForMemory propagate the URL into the input filename (was empty, producing `:1:` prefixes instead of `e.xml:1:`). Also fixed the 5 wrong exported default values discovered by the defaults dump: xmlLineNumbersDefaultValue 0->1, xmlIndentTreeOutput 0->1, xmlTreeIndentString NULL->\"  \", xmlBufferAllocScheme 0->1 (XML_BUFFER_ALLOC_EXACT), xmlParserVersion \"21503\"->\"21503-GITv2.15.3\".",
+   "evidence": [
+    "courts/suites/data-abi/globals-threading-probe.c",
+    "tools/abi/globals_threading_probe.py",
+    "courts/receipts/phase-11/globals-threading-*.json",
+    "target/scratch/globals_dump.c (DEFAULTS-IDENTICAL vs oracle)",
+    "cargo test --lib 1135 pass",
+    "ASan full-suite clean"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-30",
+     "event": "discovered by the 11.1-K globals-threading probe: err-count 6 vs 1 and defaults dump divergences (genericerr NULL, linenums 0, indentstr NULL, version 21503, bufalloc 0); fixed with the variadic shims + fragment streaming + default corrections; sealed by GLOBALS-THREADING-001 PASS (byte-identical probe) and DEFAULTS-IDENTICAL dump",
+     "status": "FIXED"
+    }
+   ],
+   "lesson": "The generic error channel is a streaming interface: handlers observe per-fragment variadic calls, not one message. Counting-based courts catch the call-count divergence; a defaults dump catches wrong initial values; both were needed here. Stable Rust cannot define variadic extern fn bodies, but an asm va_list shim forwards faithfully (pattern reused from xsltTransformError)."
   }
  ]
 }

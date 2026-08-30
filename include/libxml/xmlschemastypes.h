@@ -249,6 +249,14 @@ extern "C" {
 
 
 
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef enum{
     XML_SCHEMA_WHITESPACE_UNKNOWN = 0,

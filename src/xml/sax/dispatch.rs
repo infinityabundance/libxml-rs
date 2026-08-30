@@ -712,9 +712,14 @@ pub unsafe fn xmlSAX2InitDefaultSAXHandler(sax: *mut _xmlSAXHandler) {
         h.ignorableWhitespace = Some(dflt::ignorableWhitespace as ignorableWhitespaceSAXFunc);
         h.processingInstruction = Some(dflt::processingInstruction as processingInstructionSAXFunc);
         h.comment = Some(dflt::comment as commentSAXFunc);
-        h.warning = Some(dflt::warning as warningSAXFunc);
-        h.error = Some(dflt::error as errorSAXFunc);
-        h.fatalError = Some(dflt::fatalError as fatalErrorSAXFunc);
+        // UPSTREAM-PARITY (SAX2.c xmlSAX2InitDefaultSAXHandler): the legacy
+        // xmlParserError/xmlParserWarning handlers occupy the error/warning
+        // slots. The parser's raise path (state.rs set_error) recognises them
+        // as legacy and streams the xmlFormatError fragments through the
+        // generic channel instead of invoking them directly.
+        h.warning = Some(crate::xml::errors::xmlParserWarning as warningSAXFunc);
+        h.error = Some(crate::xml::errors::xmlParserError as errorSAXFunc);
+        h.fatalError = Some(crate::xml::errors::xmlParserError as errorSAXFunc);
         h.getParameterEntity = Some(dflt::getParameterEntity as getParameterEntitySAXFunc);
         h.cdataBlock = Some(dflt::cdataBlock as cdataBlockSAXFunc);
         h.externalSubset = Some(dflt::externalSubset as externalSubsetSAXFunc);

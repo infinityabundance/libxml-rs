@@ -19,8 +19,7 @@
 //! not thread-safe.
 
 use core::ffi::c_void;
-use std::os::raw::c_char;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int, c_uint};
 
 use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
 use crate::abi::types::xmlChar;
@@ -45,9 +44,10 @@ pub static mut xmlLoadExtDtdDefaultValue: c_int = 0;
 #[no_mangle]
 pub static mut xmlPedanticParserDefaultValue: c_int = 0;
 
-/// `int xmlLineNumbersDefaultValue` (default 0)
+/// `int xmlLineNumbersDefaultValue` (default 1 — upstream globals.c
+/// `xmlLineNumbersDefaultValueThrDef = 1`)
 #[no_mangle]
-pub static mut xmlLineNumbersDefaultValue: c_int = 0;
+pub static mut xmlLineNumbersDefaultValue: c_int = 1;
 
 /// `int xmlKeepBlanksDefaultValue` (default 1)
 #[no_mangle]
@@ -61,13 +61,18 @@ pub static mut xmlSubstituteEntitiesDefaultValue: c_int = 0;
 #[no_mangle]
 pub static mut xmlParserDebugEntities: c_int = 0;
 
-/// `int xmlIndentTreeOutput` (default 0)
+/// `int xmlIndentTreeOutput` (default 1 — upstream globals.c
+/// `xmlIndentTreeOutputThrDef = 1`)
 #[no_mangle]
-pub static mut xmlIndentTreeOutput: c_int = 0;
+pub static mut xmlIndentTreeOutput: c_int = 1;
 
-/// `const xmlChar *xmlTreeIndentString` (default NULL)
+/// `const xmlChar *xmlTreeIndentString` (default "  " — upstream globals.c
+/// `xmlTreeIndentStringThrDef = "  "`)
 #[no_mangle]
-pub static mut xmlTreeIndentString: *const xmlChar = core::ptr::null();
+pub static mut xmlTreeIndentString: *const xmlChar = {
+    static S: [u8; 3] = *b"  \0";
+    S.as_ptr()
+};
 
 /// `int xmlSaveNoEmptyTags` (default 0)
 #[no_mangle]
@@ -85,7 +90,9 @@ pub static mut xmlDeregisterNodeDefaultValue: Option<
     unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
 > = None;
 
-/// `const char *xmlParserVersion` (default "21503" — upstream LIBXML_VERSION_STRING)
+/// `const char *xmlParserVersion` — matched to the system oracle build
+/// (libxml2 2.15.3 GIT build: LIBXML_VERSION_STRING "21503" plus the
+/// upstream version extra "-GITv2.15.3").
 ///
 /// SAFETY: the pointed-to string is a static, immutable, null-terminated
 /// literal; `static mut` is used because C raw pointers are not `Sync`.
@@ -93,8 +100,8 @@ pub static mut xmlDeregisterNodeDefaultValue: Option<
 /// (upstream treats it as a constant).
 #[no_mangle]
 pub static mut xmlParserVersion: *const c_char = {
-    const S: &[u8] = b"21503\0";
-    S.as_ptr() as *const c_char
+    static V: [u8; 17] = *b"21503-GITv2.15.3\0";
+    V.as_ptr() as *const c_char
 };
 
 /// `int xmlParserMaxDepth` (default 256)
@@ -109,15 +116,25 @@ pub static mut xmlParserMaxDepth: c_int = 256;
 #[no_mangle]
 pub static mut xmlDefaultBufferSize: c_int = 4096;
 
-/// `xmlBufferAllocationScheme xmlBufferAllocScheme` (default XML_BUFFER_ALLOC_EXACT = 0)
+/// `xmlBufferAllocationScheme xmlBufferAllocScheme` (default XML_BUFFER_ALLOC_EXACT = 1;
+/// upstream globals.c `xmlBufferAllocSchemeThrDef = XML_BUFFER_ALLOC_EXACT`)
 #[no_mangle]
-pub static mut xmlBufferAllocScheme: c_int = 0;
+pub static mut xmlBufferAllocScheme: c_int = 1;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Error callback globals (upstream xmlerror.h)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// `xmlGenericErrorFunc xmlGenericError` — the generic error callback.
+///
+/// Upstream defaults to `xmlGenericErrorDefaultFunc` (a variadic stderr
+/// printer, error.c); the candidate's shim below reproduces it, so a
+/// freshly-initialized library routes errors to stderr exactly like upstream.
+#[cfg(target_arch = "x86_64")]
+#[no_mangle]
+pub static mut xmlGenericError: Option<xmlGenericErrorFunc> = Some(XML_GENERIC_ERROR_DEFAULT);
+
+#[cfg(not(target_arch = "x86_64"))]
 #[no_mangle]
 pub static mut xmlGenericError: Option<xmlGenericErrorFunc> = None;
 
@@ -132,6 +149,207 @@ pub static mut xmlStructuredError: Option<xmlStructuredErrorFunc> = None;
 /// `void *xmlStructuredErrorContext` — context for the structured callback.
 #[no_mangle]
 pub static mut xmlStructuredErrorContext: *mut c_void = core::ptr::null_mut();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Variadic default error handlers (upstream error.c / xsltutils.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream `xmlGenericErrorDefaultFunc(void *ctx, const char *msg, ...)`
+// prints the formatted message to `xmlGenericErrorContext` (stderr when
+// NULL). Stable Rust cannot define a variadic extern fn body, so the ABI
+// entry is an x86_64 SysV inline-asm shim that materialises the caller's
+// register/stack arguments into a `va_list` and forwards to a non-variadic
+// receiver — the same pattern as `xsltTransformError`
+// (exports_xslt_util.rs) and the writer's `vfmt_shim!`. Neither default
+// function is a dynamic export upstream (both are internal); the exported
+// data globals merely point at them.
+
+/// System V AMD64 `__va_list_tag` (24 bytes) — same layout as the writer's
+/// shims and `exports_xslt_util.rs`.
+#[cfg(target_arch = "x86_64")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct VaListTag {
+    gp_offset: c_uint,
+    fp_offset: c_uint,
+    overflow_arg_area: *mut c_void,
+    reg_save_area: *mut c_void,
+}
+
+#[cfg(target_arch = "x86_64")]
+unsafe extern "C" {
+    fn vfprintf(stream: *mut c_void, format: *const c_char, ap: *mut VaListTag) -> c_int;
+}
+
+/// The `stderr` FILE* (the libc crate exposes no `stderr` value) — upstream
+/// `xmlGenericErrorDefaultFunc` defaults the error context to stderr.
+#[cfg(target_arch = "x86_64")]
+unsafe fn stderr_file() -> *mut c_void {
+    static mut STDERR_FILE: *mut c_void = core::ptr::null_mut();
+    unsafe {
+        if STDERR_FILE.is_null() {
+            STDERR_FILE = libc::fdopen(2, b"w\0".as_ptr() as *const c_char) as *mut c_void;
+        }
+        STDERR_FILE
+    }
+}
+
+/// Variadic receiver for the `xmlGenericErrorDefaultFunc` shim (upstream
+/// error.c semantics: default the context to stderr, then `vfprintf`).
+#[cfg(target_arch = "x86_64")]
+#[no_mangle]
+pub unsafe extern "C" fn xmlGenericErrorDefaultFuncV(
+    _ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    unsafe {
+        if crate::abi::data_globals::xmlGenericErrorContext.is_null() {
+            crate::abi::data_globals::xmlGenericErrorContext = stderr_file();
+        }
+        let stream = crate::abi::data_globals::xmlGenericErrorContext;
+        if msg.is_null() || stream.is_null() {
+            return 0;
+        }
+        vfprintf(stream, msg, ap)
+    }
+}
+
+/// `xmlGenericErrorDefaultFunc(void *ctx, const char *msg, ...)` — the
+/// upstream default generic error handler. Not exported dynamically (matches
+/// upstream, where the symbol is internal).
+///
+/// 2 fixed args (ctx=rdi, msg=rsi) → `gp_offset` 16; the va_list pointer is
+/// passed as the 3rd arg (rdx) of the receiver.
+#[cfg(target_arch = "x86_64")]
+pub unsafe extern "C" fn xmlGenericErrorDefaultFunc() -> c_int {
+    unsafe {
+        core::arch::asm!(
+            "sub rsp, 240",
+            "mov [rsp+0], rdi",
+            "mov [rsp+8], rsi",
+            "mov [rsp+16], rdx",
+            "mov [rsp+24], rcx",
+            "mov [rsp+32], r8",
+            "mov [rsp+40], r9",
+            "movaps [rsp+48], xmm0",
+            "movaps [rsp+64], xmm1",
+            "movaps [rsp+80], xmm2",
+            "movaps [rsp+96], xmm3",
+            "movaps [rsp+112], xmm4",
+            "movaps [rsp+128], xmm5",
+            "movaps [rsp+144], xmm6",
+            "movaps [rsp+160], xmm7",
+            "mov dword ptr [rsp+176], 16",
+            "mov dword ptr [rsp+180], 48",
+            "lea rax, [rsp+256]",
+            "mov [rsp+184], rax",
+            "lea rax, [rsp]",
+            "mov [rsp+192], rax",
+            "lea rdx, [rsp+176]",
+            "call xmlGenericErrorDefaultFuncV",
+            "add rsp, 240",
+            "add rsp, 8",
+            "ret",
+            options(noreturn),
+        );
+    }
+}
+
+/// Default value of the exported `xmlGenericError` data global.
+#[cfg(target_arch = "x86_64")]
+const XML_GENERIC_ERROR_DEFAULT: xmlGenericErrorFunc = unsafe {
+    // SAFETY: the shim and the function-pointer type have identical ABI
+    // (a code pointer); the declared arity is a Rust-side fiction required
+    // to store a variadic entry in the non-variadic pointer type.
+    core::mem::transmute::<
+        unsafe extern "C" fn() -> c_int,
+        unsafe extern "C" fn(*mut c_void, *const c_char),
+    >(xmlGenericErrorDefaultFunc)
+};
+
+/// Variadic receiver for the `xsltGenericErrorDefaultFunc` shim (upstream
+/// xsltutils.c semantics: default the context to stderr, then `vfprintf`).
+#[cfg(target_arch = "x86_64")]
+#[no_mangle]
+pub unsafe extern "C" fn xsltGenericErrorDefaultFuncV(
+    _ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    unsafe {
+        if crate::abi::data_globals::xsltGenericErrorContext.is_null() {
+            crate::abi::data_globals::xsltGenericErrorContext = stderr_file();
+        }
+        let stream = crate::abi::data_globals::xsltGenericErrorContext;
+        if msg.is_null() || stream.is_null() {
+            return 0;
+        }
+        vfprintf(stream, msg, ap)
+    }
+}
+
+/// `xsltGenericErrorDefaultFunc(void *ctx, const char *msg, ...)` — the
+/// upstream default XSLT error handler (xsltutils.c).
+#[cfg(target_arch = "x86_64")]
+pub unsafe extern "C" fn xsltGenericErrorDefaultFunc() -> c_int {
+    unsafe {
+        core::arch::asm!(
+            "sub rsp, 240",
+            "mov [rsp+0], rdi",
+            "mov [rsp+8], rsi",
+            "mov [rsp+16], rdx",
+            "mov [rsp+24], rcx",
+            "mov [rsp+32], r8",
+            "mov [rsp+40], r9",
+            "movaps [rsp+48], xmm0",
+            "movaps [rsp+64], xmm1",
+            "movaps [rsp+80], xmm2",
+            "movaps [rsp+96], xmm3",
+            "movaps [rsp+112], xmm4",
+            "movaps [rsp+128], xmm5",
+            "movaps [rsp+144], xmm6",
+            "movaps [rsp+160], xmm7",
+            "mov dword ptr [rsp+176], 16",
+            "mov dword ptr [rsp+180], 48",
+            "lea rax, [rsp+256]",
+            "mov [rsp+184], rax",
+            "lea rax, [rsp]",
+            "mov [rsp+192], rax",
+            "lea rdx, [rsp+176]",
+            "call xsltGenericErrorDefaultFuncV",
+            "add rsp, 240",
+            "add rsp, 8",
+            "ret",
+            options(noreturn),
+        );
+    }
+}
+
+/// Default value of the exported `xsltGenericError` data global.
+#[cfg(target_arch = "x86_64")]
+const XSLT_GENERIC_ERROR_DEFAULT: xmlGenericErrorFunc = unsafe {
+    // SAFETY: as above — ABI-identical code pointer.
+    core::mem::transmute::<
+        unsafe extern "C" fn() -> c_int,
+        unsafe extern "C" fn(*mut c_void, *const c_char),
+    >(xsltGenericErrorDefaultFunc)
+};
+
+/// The built-in default generic error handler (upstream
+/// `xmlGenericErrorDefaultFunc`), for use when a caller resets the handler
+/// with NULL. Only available on x86_64 (the variadic shim is SysV-specific);
+/// on other targets there is no default (resets leave the handler unset).
+pub fn default_generic_error_func() -> Option<xmlGenericErrorFunc> {
+    #[cfg(target_arch = "x86_64")]
+    {
+        Some(XML_GENERIC_ERROR_DEFAULT)
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        None
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Static strings (upstream xmlstring.h / tree.c)
@@ -178,11 +396,14 @@ pub static xmlXPathNINF: f64 = f64::NEG_INFINITY;
 pub static xsltLibxmlVersion: c_int = 21503;
 
 /// `xmlGenericErrorFunc xsltGenericError` — the libxslt error callback.
-/// Upstream defaults to `xsltGenericErrorDefaultFunc` (a variadic stderr
-/// printer); the candidate defaults to NULL and the XSLT error paths fall
-/// back to the generic error handler — documented safe divergence
-/// (residual R-000135), since stable Rust cannot define variadic extern
-/// functions.
+/// Upstream defaults to `xsltGenericErrorDefaultFunc` (xsltutils.c, a variadic
+/// stderr printer); the candidate's shim below reproduces it (R-000135
+/// divergence now closed).
+#[cfg(target_arch = "x86_64")]
+#[no_mangle]
+pub static mut xsltGenericError: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC_ERROR_DEFAULT);
+
+#[cfg(not(target_arch = "x86_64"))]
 #[no_mangle]
 pub static mut xsltGenericError: Option<xmlGenericErrorFunc> = None;
 

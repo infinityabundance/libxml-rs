@@ -1584,6 +1584,133 @@
      "historical_status": "CURRENT_ONLY"
     }
    }
+  },
+  "GLOBALS-THREADING-001": {
+   "probe": "courts/suites/data-abi/globals-threading-probe.c",
+   "runner": "tools/abi/globals_threading_probe.py",
+   "oracle": "/usr/lib/libxml2.so.16",
+   "symbols": {
+    "libxml2:xmlInitParser": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCleanupParser": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlInitThreads": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetThreadId": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlIsMainThread": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlDoValidityCheckingDefaultValue": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlKeepBlanksDefaultValue": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlLoadExtDtdDefaultValue": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlIndentTreeOutput": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSubstituteEntitiesDefaultValue": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGenericError": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGenericErrorContext": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetGenericErrorFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlReadMemory": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlFreeDoc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathNewContext": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathEvalExpression": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathCastToString": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathFreeObject": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathFreeContext": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    }
+   }
   }
  }
 }

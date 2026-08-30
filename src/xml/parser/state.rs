@@ -30,6 +30,22 @@ const XML_PARSER_PROLOG: c_int = 2;
 const XML_PARSER_CONTENT: c_int = 3;
 const XML_PARSER_CDATA_SECTION: c_int = 4;
 const XML_PARSER_ENTITY_REF: c_int = 5;
+
+/// Whether a SAX `error` slot holds one of the candidate's legacy default
+/// handlers (upstream error.c treats these as "do not invoke directly —
+/// format via `xmlFormatError`" in `xmlVRaiseError`).
+fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
+    let ptr = cb as usize;
+    ptr == crate::xml::errors::xmlParserError as errorSAXFunc as usize
+        || ptr == crate::xml::sax::default::default_sax_handler::error as errorSAXFunc as usize
+}
+
+/// Whether a SAX `warning` slot holds the candidate's legacy default handler.
+fn is_legacy_warning_handler(cb: warningSAXFunc) -> bool {
+    let ptr = cb as usize;
+    ptr == crate::xml::errors::xmlParserWarning as warningSAXFunc as usize
+        || ptr == crate::xml::sax::default::default_sax_handler::warning as warningSAXFunc as usize
+}
 const XML_PARSER_ENTITY_VALUE: c_int = 6;
 const XML_PARSER_ATTRIBUTE_VALUE: c_int = 7;
 const XML_PARSER_DTD: c_int = 8;
@@ -1732,78 +1748,38 @@ impl XmlParser {
             (*self.ctxt).wellFormed = 0;
             (*self.ctxt).nbErrors = (*self.ctxt).nbErrors.wrapping_add(1);
 
-            // UPSTREAM-PARITY: parser errors are reported to stderr in the
-            // libxml2 format (`file:line: parser error : message` followed by
-            // the source line and a caret) unless XML_PARSE_NOERROR is set.
+            // UPSTREAM-PARITY (error.c `xmlCtxtVErr` / parserInternals.c):
+            // unless XML_PARSE_NOERROR is set, the error is delivered
+            // through the configured channel — a custom SAX error slot
+            // receives the message directly, otherwise the error is raised
+            // and streamed through the generic handler (`xmlFormatError`
+            // fragment sequence). The source window is built from the
+            // tokenizer position, mirroring the legacy `file:line: parser
+            // error : msg` + caret stderr report.
             if (*self.ctxt).options & XML_PARSE_NOERROR == 0 {
-                let (line, col, _pos) = self.tokenizer.current_pos();
+                let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
+                let window = self.build_error_window();
+                let delivery = self.error_delivery();
+                let (line, _col, _pos) = self.tokenizer.current_pos();
                 let fname = self
                     .tokenizer
                     .input()
                     .current_ref()
                     .filename()
-                    .unwrap_or("")
-                    .to_string();
-                let consumed = self.tokenizer.input().current_ref().consumed().to_vec();
-                let remaining = self.tokenizer.input().current_ref().remaining().to_vec();
-                let line_start = consumed
-                    .iter()
-                    .rposition(|&b| b == b'\n')
-                    .map(|i| i + 1)
-                    .unwrap_or(0);
-                let line_end = remaining
-                    .iter()
-                    .position(|&b| b == b'\n')
-                    .unwrap_or(remaining.len());
-                let mut line_bytes = Vec::with_capacity(consumed.len() - line_start + line_end);
-                line_bytes.extend_from_slice(&consumed[line_start..]);
-                line_bytes.extend_from_slice(&remaining[..line_end]);
-
-                let mut out: Vec<u8> = Vec::with_capacity(64 + line_bytes.len());
-                out.extend_from_slice(fname.as_bytes());
-                out.push(b':');
-                out.extend_from_slice(line.to_string().as_bytes());
-                out.extend_from_slice(b": parser error : ");
-                out.extend_from_slice(msg.as_bytes());
-                out.push(b'\n');
-                out.extend_from_slice(&line_bytes);
-                out.push(b'\n');
-                let caret = col.saturating_sub(1);
-                out.extend(std::iter::repeat(b' ').take(caret));
-                out.push(b'^');
-                out.push(b'\n');
-                libc::write(2, out.as_ptr() as *const c_void, out.len());
+                    .map(|f| std::ffi::CString::new(f).unwrap_or_default());
+                let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+                crate::xml::errors::raise_error_streamed(
+                    self.ctxt as *mut c_void,
+                    XML_FROM_PARSER,
+                    code,
+                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    file_ptr,
+                    line as c_int,
+                    msg_cstr.as_ptr(),
+                    window.as_ref().map(|(w, c)| (w.as_slice(), *c)),
+                    delivery,
+                );
             }
-
-            // Build a C string for the error message
-            let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
-
-            // Dispatch SAX error callback
-            if !self.is_sax_disabled() {
-                let sax = &*(*self.ctxt).sax;
-                let ctx = (*self.ctxt).userData;
-                SaxDispatcher::error(sax, ctx, msg_cstr.as_ptr());
-            }
-
-            // Also raise a structured error via the global error system
-            crate::xml::errors::raise_error(
-                self.ctxt as *mut c_void,
-                ptr::null_mut(),
-                ptr::null_mut(),
-                ptr::null_mut(),
-                ptr::null_mut(),
-                XML_FROM_PARSER,
-                code,
-                xmlErrorLevel::XML_ERR_ERROR as c_int,
-                ptr::null(),
-                0,
-                ptr::null(),
-                ptr::null(),
-                ptr::null(),
-                0,
-                0,
-                msg_cstr.as_ptr(),
-            );
         }
     }
 
@@ -1812,33 +1788,83 @@ impl XmlParser {
         unsafe {
             (*self.ctxt).nbWarnings = (*self.ctxt).nbWarnings.wrapping_add(1);
 
-            let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
-
-            if !self.is_sax_disabled() {
-                let sax = &*(*self.ctxt).sax;
-                let ctx = (*self.ctxt).userData;
-                SaxDispatcher::warning(sax, ctx, msg_cstr.as_ptr());
+            // UPSTREAM-PARITY: warnings are suppressed by XML_PARSE_NOWARNING.
+            if (*self.ctxt).options & XML_PARSE_NOWARNING == 0 {
+                let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
+                let window = self.build_error_window();
+                let delivery = self.warning_delivery();
+                let (line, _col, _pos) = self.tokenizer.current_pos();
+                let fname = self
+                    .tokenizer
+                    .input()
+                    .current_ref()
+                    .filename()
+                    .map(|f| std::ffi::CString::new(f).unwrap_or_default());
+                let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+                crate::xml::errors::raise_error_streamed(
+                    self.ctxt as *mut c_void,
+                    XML_FROM_PARSER,
+                    0,
+                    xmlErrorLevel::XML_ERR_WARNING as c_int,
+                    file_ptr,
+                    line as c_int,
+                    msg_cstr.as_ptr(),
+                    window.as_ref().map(|(w, c)| (w.as_slice(), *c)),
+                    delivery,
+                );
             }
-
-            crate::xml::errors::raise_error(
-                self.ctxt as *mut c_void,
-                ptr::null_mut(),
-                ptr::null_mut(),
-                ptr::null_mut(),
-                ptr::null_mut(),
-                XML_FROM_PARSER,
-                0,
-                xmlErrorLevel::XML_ERR_WARNING as c_int,
-                ptr::null(),
-                0,
-                ptr::null(),
-                ptr::null(),
-                ptr::null(),
-                0,
-                0,
-                msg_cstr.as_ptr(),
-            );
         }
+    }
+
+    /// Select the generic delivery for a parser error: a custom SAX `error`
+    /// slot is called directly (upstream `channel(data, msg)` path), while
+    /// the default/legacy handlers route through the fragment stream.
+    fn error_delivery(&self) -> crate::xml::errors::GenericDelivery {
+        use crate::xml::errors::GenericDelivery;
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            match sax.error {
+                None => GenericDelivery::None,
+                Some(cb) if is_legacy_error_handler(cb) => GenericDelivery::Stream,
+                Some(cb) => GenericDelivery::Custom(cb, (*self.ctxt).userData),
+            }
+        }
+    }
+
+    /// Select the generic delivery for a parser warning (see
+    /// `error_delivery`; the `warning` SAX slot).
+    fn warning_delivery(&self) -> crate::xml::errors::GenericDelivery {
+        use crate::xml::errors::GenericDelivery;
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            match sax.warning {
+                None => GenericDelivery::None,
+                Some(cb) if is_legacy_warning_handler(cb) => GenericDelivery::Stream,
+                Some(cb) => GenericDelivery::Custom(cb, (*self.ctxt).userData),
+            }
+        }
+    }
+
+    /// Build the source window (current input line) and 0-based caret column
+    /// for the generic error report — the legacy `xmlParserPrintFileContext`
+    /// equivalent.
+    fn build_error_window(&mut self) -> Option<(Vec<u8>, usize)> {
+        let consumed = self.tokenizer.input().current_ref().consumed().to_vec();
+        let remaining = self.tokenizer.input().current_ref().remaining().to_vec();
+        let line_start = consumed
+            .iter()
+            .rposition(|&b| b == b'\n')
+            .map(|i| i + 1)
+            .unwrap_or(0);
+        let line_end = remaining
+            .iter()
+            .position(|&b| b == b'\n')
+            .unwrap_or(remaining.len());
+        let mut line_bytes = Vec::with_capacity(consumed.len() - line_start + line_end);
+        line_bytes.extend_from_slice(&consumed[line_start..]);
+        line_bytes.extend_from_slice(&remaining[..line_end]);
+        let (_line, col, _pos) = self.tokenizer.current_pos();
+        Some((line_bytes, col.saturating_sub(1) as usize))
     }
 
     // ─────────────────────────────────────────────────────────────────────────

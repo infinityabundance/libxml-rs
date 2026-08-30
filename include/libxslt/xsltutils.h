@@ -80,6 +80,10 @@ XMLPUBFUN int xsltGetUTF8Char(const unsigned char *utf, int *len);
 
 
 
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef enum{
 	XSLT_TRACE_ALL =		-1,
@@ -115,9 +119,6 @@ typedef enum{
     XSLT_DEBUG_RUN_RESTART,
     XSLT_DEBUG_QUIT
 } xsltDebugStatusCodes;
-
-XMLPUBFUN xsltDebugTraceCodes xsltDebugGetDefaultTrace(void);
-XMLPUBFUN void xsltDebugSetDefaultTrace(xsltDebugTraceCodes val);
 
 /* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus

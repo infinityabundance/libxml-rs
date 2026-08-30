@@ -1033,6 +1033,18 @@ XMLPUBFUN void xmlResetLastError(void);
 
 
 
+
+
+/* The last error raised (xmlerror.h 2.15.3). */
+XMLPUBVAR xmlError xmlLastError;
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef enum{
     XML_FROM_NONE = 0,
@@ -1069,10 +1081,6 @@ typedef enum{
 } xmlErrorDomain;
 
 /* [11.1-G] end: extracted definitions */
-
-/* The last error raised (xmlerror.h 2.15.3). */
-XMLPUBVAR xmlError xmlLastError;
-
 #ifdef __cplusplus
 }
 #endif

@@ -253,6 +253,14 @@ extern "C" {
 
 
 
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef struct _xmlSchema xmlSchema;
 typedef xmlSchema *xmlSchemaPtr;
@@ -262,7 +270,6 @@ typedef xmlSchemaSAXPlugStruct *xmlSchemaSAXPlugPtr;
 typedef struct _xmlSchemaParserCtxt xmlSchemaParserCtxt;
 
 typedef struct _xmlSchemaValidCtxt xmlSchemaValidCtxt;
-typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 typedef enum{
     XML_SCHEMAS_ERR_OK		= 0,
@@ -296,6 +303,8 @@ typedef enum{
 typedef enum{
     XML_SCHEMA_VAL_VC_I_CREATE			= 1<<0
 } xmlSchemaValidOption;
+
+typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 /* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus

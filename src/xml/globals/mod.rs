@@ -241,10 +241,14 @@ pub fn set_get_warnings_default(val: c_int) {
 /// - If non-NULL, the handler may be called at any time with `ctx`.
 pub unsafe fn set_generic_error_func(ctx: *mut c_void, handler: Option<xmlGenericErrorFunc>) {
     // SAFETY: writing the exported C globals xmlGenericErrorContext /
-    // xmlGenericError; matches upstream xmlSetGenericErrorFunc.
+    // xmlGenericError; matches upstream xmlSetGenericErrorFunc (NULL resets
+    // to the built-in default stderr printer, error.c).
     unsafe {
         crate::abi::data_globals::xmlGenericErrorContext = ctx;
-        crate::abi::data_globals::xmlGenericError = handler;
+        crate::abi::data_globals::xmlGenericError = match handler {
+            Some(h) => Some(h),
+            None => crate::abi::data_globals::default_generic_error_func(),
+        };
     }
 }
 
@@ -463,7 +467,8 @@ mod tests {
     fn test_parser_defaults_initial_values() {
         assert_eq!(get_validity_checking_default(), 0);
         assert_eq!(get_do_warnings_default(), 1);
-        assert_eq!(get_indent_tree_output(), 0);
+        // UPSTREAM-PARITY (globals.c 2.15): xmlIndentTreeOutputThrDef = 1.
+        assert_eq!(get_indent_tree_output(), 1);
         assert_eq!(get_keep_blanks_default(), 1);
         assert_eq!(get_load_ext_dtd_default(), 0);
         assert_eq!(get_pedantic_parser_default(), 0);
@@ -509,8 +514,11 @@ mod tests {
     }
 
     #[test]
-    fn test_error_callbacks_default_null() {
-        assert!(get_generic_error_func().is_none());
+    fn test_error_callbacks_default_handlers() {
+        // UPSTREAM-PARITY (error.c): xmlGenericError defaults to the built-in
+        // stderr printer (never NULL); xmlStructuredError defaults to NULL.
+        #[cfg(target_arch = "x86_64")]
+        assert!(get_generic_error_func().is_some());
         assert!(get_structured_error_func().is_none());
     }
 
@@ -525,8 +533,12 @@ mod tests {
             assert!(get_generic_error_func().is_some());
             assert_eq!(get_generic_error_ctx(), dummy_ctx);
 
+            // UPSTREAM-PARITY (xmlSetGenericErrorFunc): NULL resets to the
+            // built-in default printer, it does not unset the handler.
             set_generic_error_func(ptr::null_mut(), None);
-            assert!(get_generic_error_func().is_none());
+            #[cfg(target_arch = "x86_64")]
+            assert!(get_generic_error_func().is_some());
+            assert_eq!(get_generic_error_ctx(), ptr::null_mut());
         }
     }
 

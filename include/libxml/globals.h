@@ -18,6 +18,28 @@ extern "C" {
 XMLPUBFUN void xmlInitGlobals(void);
 XMLPUBFUN void xmlCleanupGlobals(void);
 
+/* Exported data globals (upstream globals.h XMLPUBVAR declarations). */
+XMLPUBVAR int xmlDoValidityCheckingDefaultValue;
+XMLPUBVAR int xmlGetWarningsDefaultValue;
+XMLPUBVAR int xmlLoadExtDtdDefaultValue;
+XMLPUBVAR int xmlPedanticParserDefaultValue;
+XMLPUBVAR int xmlKeepBlanksDefaultValue;
+XMLPUBVAR int xmlLineNumbersDefaultValue;
+XMLPUBVAR int xmlSubstituteEntitiesDefaultValue;
+XMLPUBVAR int xmlParserDebugEntities;
+XMLPUBVAR int xmlIndentTreeOutput;
+XMLPUBVAR int xmlTreeIndentNumber;
+XMLPUBVAR const char *xmlTreeIndentString;
+XMLPUBVAR const char *xmlParserVersion;
+XMLPUBVAR int xmlSaveNoEmptyTags;
+XMLPUBVAR xmlGenericErrorFunc xmlGenericError;
+XMLPUBVAR void *xmlGenericErrorContext;
+XMLPUBVAR xmlStructuredErrorFunc xmlStructuredError;
+XMLPUBVAR void *xmlStructuredErrorContext;
+XMLPUBVAR xmlBufferAllocationScheme xmlBufferAllocScheme;
+XMLPUBVAR int xmlDefaultBufferSize;
+XMLPUBVAR int xmlParserMaxDepth;
+
 #ifdef __cplusplus
 }
 #endif

@@ -254,11 +254,13 @@ pub unsafe extern "C" fn xsltSetGenericErrorFunc(
     ctx: *mut c_void,
     handler: Option<unsafe extern "C" fn(*mut c_void, *const c_char)>,
 ) {
-    // Upstream xslt.c xsltSetGenericErrorFunc sets the exported globals.
+    // Upstream xsltutils.c xsltSetGenericErrorFunc: NULL resets to the
+    // built-in default stderr printer (xsltGenericErrorDefaultFunc).
     crate::abi::data_globals::xsltGenericErrorContext = ctx;
-    if handler.is_some() {
-        crate::abi::data_globals::xsltGenericError = handler;
-    }
+    crate::abi::data_globals::xsltGenericError = match handler {
+        Some(h) => Some(h),
+        None => crate::abi::data_globals::default_generic_error_func(),
+    };
 }
 
 /// `xsltTransformError` (xsltutils.c, variadic): report an XSLT error.

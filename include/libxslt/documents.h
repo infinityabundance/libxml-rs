@@ -55,6 +55,10 @@ extern "C" {
 
 
 
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef enum{
     XSLT_LOAD_START = 0,	/* loading for a top stylesheet */

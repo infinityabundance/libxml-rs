@@ -733,6 +733,14 @@ XMLPUBFUN int xmlIsBlankNode(const xmlNode *node);
 
 
 
+
+
+
+
+
+
+
+
 /* [11.1-G] begin: extracted verbatim from upstream oracle header */
 typedef struct _xmlDOMWrapCtxt xmlDOMWrapCtxt;
 typedef xmlDOMWrapCtxt *xmlDOMWrapCtxtPtr;

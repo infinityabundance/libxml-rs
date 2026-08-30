@@ -605,9 +605,22 @@ XMLPUBFUN int xmlOutputBufferWriteString(xmlOutputBufferPtr out, const char *str
 
 
 
-/* [11.1-G] begin: extracted verbatim from upstream oracle header */
+
+
+/* Deprecated default handlers (globals.c 2.15.3). */
 typedef struct _xmlSAXHandlerV1 xmlSAXHandlerV1;
 typedef xmlSAXHandlerV1 *xmlSAXHandlerV1Ptr;
+XMLPUBVAR const xmlSAXHandlerV1 xmlDefaultSAXHandler;
+XMLPUBVAR const xmlSAXLocator xmlDefaultSAXLocator;
+
+
+
+
+
+
+
+
+/* [11.1-G] begin: extracted verbatim from upstream oracle header */
 /**
  * SAX handler, version 1.
  *
@@ -722,11 +735,6 @@ struct _xmlSAXHandlerV1 {
 };
 
 /* [11.1-G] end: extracted definitions */
-
-/* Deprecated default handlers (globals.c 2.15.3). */
-XMLPUBVAR const xmlSAXHandlerV1 xmlDefaultSAXHandler;
-XMLPUBVAR const xmlSAXLocator xmlDefaultSAXLocator;
-
 #ifdef __cplusplus
 }
 #endif

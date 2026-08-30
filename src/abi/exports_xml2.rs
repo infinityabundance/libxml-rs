@@ -2710,7 +2710,9 @@ pub unsafe extern "C" fn xmlReadMemory(
     if ctxt.is_null() {
         return ptr::null_mut();
     }
-    let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
+    // UPSTREAM-PARITY: the URL becomes the input's filename (feeds the
+    // `file:line:` error prefix and doc->URL).
+    let input = crate::xml::parser::helpers::input_from_memory_named(buffer, size, URL);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     (*ctxt).options = options;
     if crate::xml::parser::helpers::parse_document(ctxt) != 0 {

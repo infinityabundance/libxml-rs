@@ -39,7 +39,7 @@ use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::parser::helpers::{
     create_parser_ctxt, free_parser_ctxt, input_from_file, input_from_io, input_from_memory,
-    parse_document, setup_parser_input,
+    input_from_memory_named, parse_document, setup_parser_input,
 };
 use crate::xml::parser::input::InputBuffer;
 use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes, xmlstr_to_string};
@@ -1852,7 +1852,8 @@ pub unsafe extern "C" fn xmlReaderForMemory(
     }
 
     // SAFETY: input_from_memory copies the data; buffer and size are valid.
-    let input = unsafe { input_from_memory(buffer, size) };
+    // UPSTREAM-PARITY: the URL is recorded as the input's filename.
+    let input = unsafe { input_from_memory_named(buffer, size, URL) };
 
     // SAFETY: ctxt and input are valid.
     unsafe { setup_parser_input(ctxt, input) };
