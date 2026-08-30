@@ -453,6 +453,7 @@ pub const XML_ERR_INVALID_URI: c_int = 91;
 pub const XML_ERR_URI_FRAGMENT: c_int = 92;
 pub const XML_WAR_CATALOG_PI: c_int = 93;
 pub const XML_ERR_NO_DTD: c_int = 94;
+pub const XML_ERR_RESOURCE_LIMIT: c_int = 114;
 pub const XML_ERR_CONDSEC_INVALID_KEYWORD: c_int = 95;
 pub const XML_ERR_VERSION_MISSING: c_int = 96;
 pub const XML_ERR_ARGUMENT: c_int = 115;

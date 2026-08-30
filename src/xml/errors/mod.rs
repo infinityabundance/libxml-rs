@@ -407,17 +407,15 @@ pub unsafe fn raise_error(
 
     globals::set_last_error(err);
 
-    // Call the structured error handler if set
+    // UPSTREAM-PARITY (xmlCtxtVErr): the structured handler wins; the
+    // generic channel is only used when no structured handler is set.
     if let Some(handler) = globals::get_structured_error_func() {
         let ctx = globals::get_structured_error_ctx();
         let err_ref = globals::get_last_error();
         if !err_ref.is_null() {
             handler(ctx, err_ref as *const _xmlError);
         }
-    }
-
-    // Call the generic error handler if set (for warnings/errors)
-    if let Some(handler) = globals::get_generic_error_func() {
+    } else if let Some(handler) = globals::get_generic_error_func() {
         if level != 0 {
             let ctx = globals::get_generic_error_ctx();
             if !formatted_msg.is_null() {

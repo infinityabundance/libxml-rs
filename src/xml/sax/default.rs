@@ -601,6 +601,46 @@ pub(crate) mod default_sax_handler {
 
             // Push the node onto the element stack.
             c.node = node;
+            // UPSTREAM-PARITY (parser.c nodePush): hard depth cap —
+            // "Excessive depth in document" with XML_ERR_RESOURCE_LIMIT,
+            // lifted to 2048 by XML_PARSE_HUGE (2.15 default 256).
+            let max_depth = if (c.options & crate::abi::types::XML_PARSE_HUGE) != 0 {
+                2048
+            } else {
+                256
+            };
+            if c.nodeNr >= max_depth {
+                let msg = std::ffi::CString::new(format!(
+                    "Excessive depth in document: {}, use XML_PARSE_HUGE option\n",
+                    c.nodeNr
+                ))
+                .unwrap_or_default();
+                c.errNo = crate::abi::types::XML_ERR_RESOURCE_LIMIT;
+                c.wellFormed = 0;
+                c.nbErrors = c.nbErrors.wrapping_add(1);
+                // UPSTREAM-PARITY (xmlCtxtVErr): RESOURCE_LIMIT is a
+                // catastrophic error — disableSAX = 2 really stops the parser.
+                c.disableSAX = 2;
+                crate::xml::errors::raise_error(
+                    ctxt as *mut c_void,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_RESOURCE_LIMIT,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    ptr::null(),
+                    0,
+                    ptr::null(),
+                    ptr::null(),
+                    ptr::null(),
+                    0,
+                    0,
+                    msg.as_ptr(),
+                );
+                return;
+            }
             // Extend nodeTab if needed.
             if c.nodeNr >= c.nodeMax {
                 let new_max = if c.nodeMax == 0 { 8 } else { c.nodeMax * 2 };

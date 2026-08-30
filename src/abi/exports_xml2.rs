@@ -2761,8 +2761,15 @@ pub unsafe extern "C" fn xmlLoadCatalogs(catalogs: *const c_char) {
 ///
 /// - `catalogs` must be a valid NUL-terminated string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlLoadCatalog(catalogs: *const c_char) -> *mut c_void {
-    crate::xml::catalog::load_catalog(catalogs)
+pub unsafe extern "C" fn xmlLoadCatalog(catalogs: *const c_char) -> c_int {
+    // UPSTREAM-PARITY (catalog.c xmlLoadCatalog): returns 0 on success,
+    // 1 on error (unlike xmlCatalogLoad which returns the catalog handle).
+    let handle = crate::xml::catalog::load_catalog(catalogs);
+    if handle.is_null() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Read an XML document from a file descriptor.

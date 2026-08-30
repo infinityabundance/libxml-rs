@@ -19,7 +19,7 @@ use crate::xml::parser::input::{InputBuffer, InputStack};
 use crate::xml::parser::tokenizer::{XmlToken, XmlTokenizer};
 use crate::xml::sax::dispatch::SaxDispatcher;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_char, c_int, c_ulong, c_void};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Parser constants (parser states)
@@ -234,6 +234,12 @@ impl XmlParser {
                 self.sax_end_document();
                 return -1;
             }
+        }
+
+        // UPSTREAM-PARITY: a catastrophic stop ends the parse here.
+        if unsafe { (*self.ctxt).disableSAX } == 2 {
+            self.sax_end_document();
+            return -1;
         }
 
         // Parse epilog (misc after root)
@@ -1085,6 +1091,12 @@ impl XmlParser {
                 }
                 self.parse_element(name, attributes, attr_end, empty)?;
 
+                // UPSTREAM-PARITY: a catastrophic stop (disableSAX == 2)
+                // ends the parse without the trailing checks.
+                if unsafe { (*self.ctxt).disableSAX } == 2 {
+                    return Ok(());
+                }
+
                 // UPSTREAM-PARITY: trailing misc, then xmlParserCheckEOF.
                 self.parse_misc_after_root()?;
                 if !self.tokenizer.input().current_ref().remaining().is_empty() {
@@ -1273,6 +1285,12 @@ impl XmlParser {
         // If not an empty element, parse content until matching end tag
         if !empty {
             loop {
+                // UPSTREAM-PARITY: catastrophic errors (RESOURCE_LIMIT /
+                // ENTITY_LOOP) set disableSAX = 2, which really stops the
+                // parser.
+                if unsafe { (*self.ctxt).disableSAX } == 2 {
+                    break;
+                }
                 let next = self.tokenizer.next_token_raw();
                 self.raise_pending_errors();
                 match next {
@@ -1640,6 +1658,18 @@ impl XmlParser {
                 // parsed into ent->children on first reference regardless of
                 // the substitution mode.
                 self.parse_entity_content(entity)?;
+                // UPSTREAM-PARITY (xmlParseReference): "We also check for
+                // amplification if entities aren't substituted. They might be
+                // expanded later." — unconditional, no XML_PARSE_HUGE bypass.
+                // consumed = the document position after the reference.
+                let (_, _, dpos) = self.tokenizer.current_pos();
+                if self.parser_entity_check(
+                    unsafe { (*entity).expandedSize },
+                    ptr::null_mut(),
+                    dpos as c_ulong,
+                ) {
+                    return Err(());
+                }
                 if !unsafe { (*entity).content }.is_null() {
                     // Re-parse the entity content from a pushed input.
                     let content = unsafe { (*entity).content };
@@ -1656,8 +1686,11 @@ impl XmlParser {
                         crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
                     };
                     if loaded.is_null() {
-                        self.set_error(XML_ERR_UNDECLARED_ENTITY, "Failed to load external entity");
-                        return Err(());
+                        // UPSTREAM-PARITY (xmlCtxtParseEntity): an external
+                        // entity that cannot be loaded (e.g. XML_PARSE_NONET
+                        // refusing an http URL) fails silently — the reference
+                        // simply expands to nothing.
+                        return Ok(());
                     }
                     unsafe {
                         let base = (*loaded).base;
@@ -1681,6 +1714,16 @@ impl XmlParser {
                 // parsed into ent->children on the first reference
                 // (xmlCtxtParseEntity), before the reference event fires.
                 self.parse_entity_content(entity)?;
+                // UPSTREAM-PARITY (xmlParseReference): unconditional
+                // amplification check (also when not substituting).
+                let (_, _, dpos2) = self.tokenizer.current_pos();
+                if self.parser_entity_check(
+                    unsafe { (*entity).expandedSize },
+                    ptr::null_mut(),
+                    dpos2 as c_ulong,
+                ) {
+                    return Err(());
+                }
                 // Not substituting: dispatch the reference event.
                 if !self.is_sax_disabled() {
                     let name_cstr = Self::vec_to_cstr_null(name);
@@ -1713,8 +1756,19 @@ impl XmlParser {
                 return Ok(());
             }
             if ((*ent).flags & XML_ENT_EXPANDING) != 0 {
-                // Entity loop — upstream raises XML_ERR_ENTITY_LOOP here.
-                return Ok(());
+                // UPSTREAM-PARITY (parser.c xmlCtxtParseEntity): a reference
+                // to an entity that is already being expanded is a loop.
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_ENTITY_LOOP,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Entity loop detected\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                );
+                return Err(());
             }
             if (*ent).content.is_null() {
                 (*ent).flags |= XML_ENT_PARSED;
@@ -1724,6 +1778,10 @@ impl XmlParser {
             let content = (*ent).content;
             let len = libc::strlen(content as *const c_char);
             let bytes = core::slice::from_raw_parts(content, len);
+            // Recursive-sum accumulator (upstream xmlCheckEntityInAttValue):
+            // starts at the raw content length and adds each nested general
+            // entity's expanded size plus the fixed cost.
+            let mut expansion_sum: c_ulong = len as c_ulong;
 
             (*ent).flags |= XML_ENT_EXPANDING;
 
@@ -1806,6 +1864,24 @@ impl XmlParser {
                                 };
                                 if !ent2.is_null() {
                                     self.parse_entity_content(ent2)?;
+                                    // UPSTREAM-PARITY (parser.c xmlParseReference):
+                                    // every general-entity reference is subject to
+                                    // the amplification check; the accumulation
+                                    // target is the scanning entity's slot and
+                                    // consumed is the position after the reference.
+                                    let after = i + semi_rel + 2;
+                                    if self.parser_entity_check(
+                                        unsafe { (*ent2).expandedSize },
+                                        &mut (*ent).expandedSize,
+                                        after as c_ulong,
+                                    ) {
+                                        return Err(());
+                                    }
+                                    // Recursive-sum contribution (upstream
+                                    // xmlCheckEntityInAttValue accumulation).
+                                    expansion_sum = expansion_sum
+                                        .saturating_add(unsafe { (*ent2).expandedSize })
+                                        .saturating_add(20);
                                     flush_text!();
                                     let node =
                                         crate::abi::allocator::xmlMallocZero(core::mem::size_of::<
@@ -1847,6 +1923,12 @@ impl XmlParser {
 
             (*ent).flags &= !XML_ENT_EXPANDING;
             (*ent).flags |= XML_ENT_PARSED;
+
+            // UPSTREAM-PARITY (parser.c): the entity's expanded size is the
+            // recursive sum of its content plus every nested general-entity
+            // reference's expanded size plus the fixed cost — the value
+            // xmlParserEntityCheck compares against the amplification bound.
+            (*ent).expandedSize = expansion_sum;
 
             (*ent).children = head;
             (*ent).last = last;
@@ -2288,6 +2370,27 @@ impl XmlParser {
         enc_bytes: Option<[u8; 4]>,
     ) {
         unsafe {
+            // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr): catastrophic
+            // errors — XML_ERR_RESOURCE_LIMIT and XML_ERR_ENTITY_LOOP (plus
+            // the xmlIsCatastrophicError family) — set disableSAX = 2, which
+            // really stops the parser. Other errors are suppressed once 100
+            // have been reported and the document is already not well-formed;
+            // a fatal error (non-recovery) disables further SAX dispatch.
+            if code == XML_ERR_RESOURCE_LIMIT || code == XML_ERR_ENTITY_LOOP {
+                (*self.ctxt).disableSAX = 2;
+            } else {
+                // Report at least one fatal error.
+                if (*self.ctxt).nbErrors >= 100
+                    && (level < xmlErrorLevel::XML_ERR_FATAL as c_int
+                        || (*self.ctxt).wellFormed == 0)
+                {
+                    return;
+                }
+                if level == xmlErrorLevel::XML_ERR_FATAL as c_int && !self.is_recovery() {
+                    (*self.ctxt).disableSAX = 1;
+                }
+            }
+
             // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr): warnings only
             // bump nbWarnings; other levels update errNo, nbErrors, and —
             // for fatal errors only — clear wellFormed.
@@ -2361,6 +2464,72 @@ impl XmlParser {
                 e.enc_bytes,
             );
         }
+    }
+
+    /// UPSTREAM-PARITY (parser.c xmlParserEntityCheck): the entity-expansion
+    /// amplification guard. Every general-entity reference adds the referenced
+    /// entity's expanded size plus XML_ENT_FIXED_COST to an accumulation slot
+    /// and, once that exceeds XML_PARSER_ALLOWED_EXPANSION while the ratio to
+    /// the consumed input exceeds the amplification factor (default
+    /// XML_MAX_AMPLIFICATION_DEFAULT, or `xmlCtxtSetMaxAmplification`'s
+    /// value), raises a fatal XML_ERR_RESOURCE_LIMIT — with no XML_PARSE_HUGE
+    /// bypass (the guard is unconditional, matching 2.15).
+    ///
+    /// `slot` is the accumulation target: for references nested inside an
+    /// entity content scan it is the scanning entity's `expandedSize`
+    /// (upstream: the current input's entity); for top-level document
+    /// references it is NULL and `ctxt->sizeentcopy` is used. `consumed` is
+    /// the current stream position after the reference (upstream
+    /// `input->consumed + (cur - base)`).
+    ///
+    /// Returns `true` when the error was raised (caller must abort).
+    fn parser_entity_check(
+        &mut self,
+        extra: c_ulong,
+        slot: *mut c_ulong,
+        consumed: c_ulong,
+    ) -> bool {
+        const XML_PARSER_ALLOWED_EXPANSION: c_ulong = 1_000_000;
+        const XML_ENT_FIXED_COST: c_ulong = 20;
+        const XML_MAX_AMPLIFICATION_DEFAULT: c_ulong = 5;
+
+        unsafe {
+            let mut consumed = consumed.saturating_add((*self.ctxt).sizeentities);
+            let target = if slot.is_null() {
+                (*self.ctxt).sizeentcopy = (*self.ctxt)
+                    .sizeentcopy
+                    .saturating_add(extra)
+                    .saturating_add(XML_ENT_FIXED_COST);
+                (*self.ctxt).sizeentcopy
+            } else {
+                *slot = (*slot)
+                    .saturating_add(extra)
+                    .saturating_add(XML_ENT_FIXED_COST);
+                *slot
+            };
+            let max_ampl = if (*self.ctxt).maxAmpl == 0 {
+                XML_MAX_AMPLIFICATION_DEFAULT
+            } else {
+                (*self.ctxt).maxAmpl as c_ulong
+            };
+            if target > XML_PARSER_ALLOWED_EXPANSION
+                && (target >= c_ulong::MAX || target / max_ampl > consumed)
+            {
+                self.raise_error_now(
+                    XML_FROM_PARSER,
+                    XML_ERR_RESOURCE_LIMIT,
+                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Maximum entity amplification factor exceeded, see ".to_string()
+                        + "xmlCtxtSetMaxAmplification.\n",
+                    None,
+                    None,
+                    None,
+                    0,
+                );
+                return true;
+            }
+        }
+        false
     }
 
     /// Raise an error at the tokenizer's current position.

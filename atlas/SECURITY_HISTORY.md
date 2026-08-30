@@ -122,3 +122,105 @@ recorded as `SAFETY_DIVERGENCE` (see `docs/SECURITY.md`).
 - libxslt security history (e.g. CVE-2015-7995) is not yet characterized.
 - The 2.9.0 default-limits break (§ SEC-0001) and the CVE-2014-3660 entity
   regression (§ SEC-0006) are the two highest-priority custody items.
+
+---
+
+## 5. 11.1-V — Security-relevant compatibility verification (2026-08-30)
+
+The candidate's security-sensitive surface was audited and courted against
+the system oracle (libxml2 2.15.3 / libxslt 1.1.45). The SECURITY-LIMITS
+court (tools/abi/security_limits_probe.py,
+courts/suites/data-abi/security-limits-probe.c) compiles one deterministic
+C probe twice (oracle + candidate) and requires byte-identical stdout.
+Beyond the court's 10 cases, a full amplification-threshold sweep (entity
+chains L4..L9 × 10, amplification factors 5..4e9) matches the oracle on
+every boundary.
+
+### 5.1 Verified protections (byte-identical with the 2.15.3 oracle)
+
+- **Entity amplification guard** (SEC-0006 / CVE-2014-3660 lineage):
+  `xmlParserEntityCheck` semantics — recursive-sum `ent->expandedSize`,
+  per-reference accumulation (parent-entity slot / `ctxt->sizeentcopy`),
+  `XML_PARSER_ALLOWED_EXPANSION` = 1,000,000, default amplification 5
+  (`XML_MAX_AMPLIFICATION_DEFAULT`), `xmlCtxtSetMaxAmplification`,
+  fatal `XML_ERR_RESOURCE_LIMIT` (114), no `XML_PARSE_HUGE` bypass.
+  Implemented in `src/xml/parser/state.rs::parser_entity_check`.
+- **Entity loop detection** (SEC-0004 / CVE-2013-2877 lineage):
+  `XML_ENT_EXPANDING` re-entry raises fatal `XML_ERR_ENTITY_LOOP` (89).
+- **Parser depth limit**: element nesting capped at 256 (2048 with
+  `XML_PARSE_HUGE`) — "Excessive depth in document" with
+  `XML_ERR_RESOURCE_LIMIT`, raised from the default SAX handler
+  (`src/xml/sax/default.rs`), catastrophic stop (`disableSAX = 2`) exactly
+  like upstream `xmlCtxtVErr`.
+- **Catastrophic-error stop + 100-error suppression**: `disableSAX = 2`
+  for RESOURCE_LIMIT/ENTITY_LOOP; non-catastrophic errors suppressed after
+  100 when the document is already not well-formed (`XML_MAX_ERRORS`),
+  matching `xmlCtxtVErr`.
+- **NONET / XXE**: `xmlCheckHTTPInput` refuses http URLs under
+  `XML_PARSE_NONET`; unloadable external entities fail silently (upstream
+  `xmlCtxtParseEntity`), not as undeclared-entity errors.
+- **Catalog load return**: `xmlLoadCatalog` returns int 0/1 (success/error)
+  per upstream catalog.c (the candidate previously returned the handle
+  semantics of `xmlCatalogLoad`).
+
+### 5.2 Safe-divergence records
+
+```text
+── record SD-001 ────────────────────────────────────────────────────────
+historical oracle behavior: pre-2.9.0 libxml2 expanded entity chains with
+  no amplification bound; billion-laughs documents expanded fully
+  (SEC-0001/SEC-0006; CVE-2014-3660).
+security impact: exponential CPU and memory consumption (DoS).
+safe divergence: the candidate implements the modern 2.15.3 semantics —
+  the amplification guard (factor 5 default, 1M expansion bound,
+  xmlCtxtSetMaxAmplification) rejects such documents with
+  XML_ERR_RESOURCE_LIMIT; in addition the candidate's entity model parses
+  each entity's content once and caches it, so exponential re-expansion is
+  structurally impossible even before the guard fires.
+externally observable difference: none vs the 2.15.3 oracle — identical
+  rejection thresholds across the whole amplification sweep.
+reason divergence is mandatory: emulating the vulnerable behavior would
+  reintroduce CVE-2014-3660.
+──────────────────────────────────────────────────────────────────────────
+
+── record SD-002 ────────────────────────────────────────────────────────
+historical oracle behavior: pre-2.9.0 libxml2 had no default parser depth
+  or size limits (SEC-0001).
+security impact: DoS via deeply nested documents / oversized constructs.
+safe divergence: the candidate implements the 2.15.3 limits — element
+  depth 256 (2048 with XML_PARSE_HUGE) with XML_ERR_RESOURCE_LIMIT;
+  XML_MAX_TEXT_LENGTH 10,000,000; XML_MAX_NAME_LENGTH 50,000.
+externally observable difference: none vs the 2.15.3 oracle (deep-nesting
+  rejected at 256, accepted at 2048 under HUGE).
+reason divergence is mandatory: matching the modern hardened oracle.
+──────────────────────────────────────────────────────────────────────────
+
+── record SD-003 ────────────────────────────────────────────────────────
+historical oracle behavior: recursive entity declarations (<!ENTITY a
+  "&a;">) could loop (SEC-0004; CVE-2013-2877).
+security impact: parser hang / stack exhaustion.
+safe divergence: XML_ENT_EXPANDING re-entry raises fatal
+  XML_ERR_ENTITY_LOOP (89), byte-identical with the 2.15.3 oracle.
+externally observable difference: none.
+reason divergence is mandatory: loop emulation is unsafe.
+──────────────────────────────────────────────────────────────────────────
+
+── record SD-004 ────────────────────────────────────────────────────────
+historical oracle behavior: external entity URLs were fetched over the
+  network regardless of context (XXE).
+security impact: SSRF / file disclosure (classic XXE).
+safe divergence: XML_PARSE_NONET is honored (xmlCheckHTTPInput); unloadable
+  external entities fail silently — both matching the 2.15.3 oracle.
+externally observable difference: none vs the oracle (nonet-entity and
+  ext-entity cases byte-identical).
+reason divergence is mandatory: XXE emulation is unsafe.
+──────────────────────────────────────────────────────────────────────────
+```
+
+### 5.3 Fidelity notes (non-safety deviations kept in custody)
+
+- `xmlStringDecodeEntities`/`xmlStringLenDecodeEntities`
+  (`src/abi/exports_string.rs::expand_entity_into`) is a documented
+  simplified port: the depth-20 / XML_ENT_EXPANDING guards exist but
+  errors are silent (the API path is not exercised by the SECURITY-LIMITS
+  court; the main parser path carries the full semantics above).
