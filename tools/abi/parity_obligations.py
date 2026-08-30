@@ -222,6 +222,14 @@ DOCUMENTED_NOOPS = {
     "xmlCleanupPredefinedEntities": "R-000138",
     "xmlDefaultSAXHandlerInit": "R-000138",
     "xmlCheckThreadLocalStorage": "R-000138",
+    # libxslt exports whose upstream 1.1.45 bodies are literally trivial
+    # (constant returns / no-ops) — the candidate matches them exactly
+    "xsltSecurityAllow": "R-000160",
+    "xsltSecurityForbid": "R-000160",
+    "xsltGetDebuggerStatus": "R-000160",
+    "xsltFreeLocales": "R-000160",
+    "xsltFreeAVTList": "R-000160",
+    "xsltExtensionInstructionResultRegister": "R-000160",
 }
 
 

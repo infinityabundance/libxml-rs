@@ -267,12 +267,68 @@ pub unsafe fn xsltInitKeys(ctxt: *mut _xsltTransformContext, style: *mut _xsltSt
     0
 }
 
+/// Create a key table with the given name/URI (used by the keys ABI family
+/// and by `xsltInitKeys`). The `keys` slot is a candidate-internal array.
+///
+/// # SAFETY
+///
+/// - `name` must be NUL-terminated; `nameURI` may be NULL.
+pub(crate) unsafe fn xsltNewKeyTable(
+    name: *const xmlChar,
+    nameURI: *const xmlChar,
+) -> *mut _xsltKeyTable {
+    let table = libc::calloc(1, core::mem::size_of::<_xsltKeyTable>()) as *mut _xsltKeyTable;
+    if table.is_null() {
+        return ptr::null_mut();
+    }
+    let name_len = libc::strlen(name as *const libc::c_char);
+    let cname = libc::malloc(name_len + 1) as *mut xmlChar;
+    if !cname.is_null() {
+        libc::memcpy(
+            cname as *mut libc::c_void,
+            name as *const libc::c_void,
+            name_len,
+        );
+        *cname.add(name_len) = 0;
+    }
+    let uri_len = if nameURI.is_null() {
+        0
+    } else {
+        libc::strlen(nameURI as *const libc::c_char)
+    };
+    let curi = libc::malloc(uri_len + 1) as *mut xmlChar;
+    if !curi.is_null() {
+        if uri_len > 0 {
+            libc::memcpy(
+                curi as *mut libc::c_void,
+                nameURI as *const libc::c_void,
+                uri_len,
+            );
+        }
+        *curi.add(uri_len) = 0;
+    }
+    (*table).name = cname;
+    (*table).nameURI = curi;
+    let data = libc::calloc(1, core::mem::size_of::<_xsltKeyTableData>()) as *mut _xsltKeyTableData;
+    if data.is_null() {
+        libc::free(cname as *mut libc::c_void);
+        libc::free(curi as *mut libc::c_void);
+        libc::free(table as *mut libc::c_void);
+        return ptr::null_mut();
+    }
+    (*data).nb = 0;
+    (*data).max = 0;
+    (*data).table = ptr::null_mut();
+    (*table).keys = data as *mut c_void;
+    table
+}
+
 /// Build the key table for a document by walking the tree.
 ///
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn build_key_table(
+pub(crate) unsafe fn build_key_table(
     ctxt: *mut _xsltTransformContext,
     doc: *mut _xmlDoc,
     node: *mut _xmlNode,

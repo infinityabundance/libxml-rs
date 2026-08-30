@@ -95,7 +95,7 @@ unsafe fn doc_URL(doc: *mut _xmlDoc) -> *const xmlChar {
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn compile_top_level(style: *mut _xsltStylesheet, root: *mut _xmlNode, depth: c_int) {
+pub(crate) unsafe fn compile_top_level(style: *mut _xsltStylesheet, root: *mut _xmlNode, depth: c_int) {
     // Process imports first (they must precede other elements).
     let mut child = (*root).children;
     while !child.is_null() {
@@ -548,7 +548,7 @@ unsafe fn compile_simplified(style: *mut _xsltStylesheet, root: *mut _xmlNode) {
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn add_template_to_style(style: *mut _xsltStylesheet, templ: *mut _xsltTemplate) {
+pub(crate) unsafe fn add_template_to_style(style: *mut _xsltStylesheet, templ: *mut _xsltTemplate) {
     if style.is_null() || templ.is_null() {
         return;
     }
@@ -561,7 +561,7 @@ unsafe fn add_template_to_style(style: *mut _xsltStylesheet, templ: *mut _xsltTe
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
+pub(crate) unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
     let templ = libc::calloc(1, core::mem::size_of::<_xsltTemplate>()) as *mut _xsltTemplate;
     if templ.is_null() {
         return;
@@ -613,7 +613,7 @@ unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, dep
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn compile_variable(
+pub(crate) unsafe fn compile_variable(
     style: *mut _xsltStylesheet,
     inst: *mut _xmlNode,
     depth: c_int,
@@ -650,7 +650,7 @@ unsafe fn compile_variable(
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
+pub(crate) unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
     let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
     let match_str = get_prop(inst, b"match\0".as_ptr() as *const xmlChar);
     let use_str = get_prop(inst, b"use\0".as_ptr() as *const xmlChar);
@@ -686,7 +686,7 @@ unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
+pub(crate) unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
     let fmt =
         libc::calloc(1, core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
     if fmt.is_null() {

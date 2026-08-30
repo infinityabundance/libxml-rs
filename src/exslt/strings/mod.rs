@@ -274,7 +274,11 @@ mod tests {
         let mut c = ctx();
         let r = tokenize_fn(&mut c, &[XPathValue::String("a b\tc".to_string())]).unwrap();
         let ns = r.as_node_set();
-        let values: Vec<String> = ns.iter().map(|n| node_string_value(n)).collect();
+        let mut values: Vec<String> = ns.iter().map(|n| node_string_value(n)).collect();
+        // The tokens are standalone text nodes; a node-set's iteration order is
+        // document order, which for parentless nodes falls back to pointer
+        // comparison. Compare as a set to stay deterministic.
+        values.sort();
         assert_eq!(values, vec!["a", "b", "c"]);
         for n in ns.iter() {
             unsafe { crate::xml::tree::free_node(n) };
@@ -339,12 +343,21 @@ mod tests {
 
     #[test]
     fn test_concat() {
+        // Nodes must share a document for a deterministic document-order
+        // comparison (standalone nodes fall back to pointer comparison).
+        let doc = unsafe {
+            crate::xml::tree::new_doc(b"1.0\0".as_ptr() as *const crate::abi::types::xmlChar)
+        };
         let a = unsafe {
             crate::xml::tree::new_text(b"x\0".as_ptr() as *const crate::abi::types::xmlChar)
         };
         let b = unsafe {
             crate::xml::tree::new_text(b"y\0".as_ptr() as *const crate::abi::types::xmlChar)
         };
+        unsafe {
+            crate::xml::tree::add_child(doc as *mut crate::abi::structs::_xmlNode, a);
+            crate::xml::tree::add_child(doc as *mut crate::abi::structs::_xmlNode, b);
+        }
         let mut ns = NodeSet::new();
         ns.push(a);
         ns.push(b);
@@ -356,8 +369,7 @@ mod tests {
         .unwrap();
         assert_eq!(r.as_string(), "x,y");
         unsafe {
-            crate::xml::tree::free_node(a);
-            crate::xml::tree::free_node(b);
+            crate::xml::tree::free_doc(doc);
         }
     }
 

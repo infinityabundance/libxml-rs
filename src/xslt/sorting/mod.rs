@@ -185,7 +185,7 @@ unsafe fn sort_string_value(node: *mut _xmlNode) -> *mut xmlChar {
 /// - `ctxt` must be a valid `_xsltTransformContext`.
 /// - `node` must be a valid node.
 /// - `sort` must be a valid `_xsltSort`.
-unsafe fn xsltEvalSortKey(
+pub(crate) unsafe fn xsltEvalSortKey(
     ctxt: *mut _xsltTransformContext,
     node: *mut _xmlNode,
     sort: *mut _xsltSort,

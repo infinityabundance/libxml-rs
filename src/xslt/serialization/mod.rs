@@ -127,7 +127,7 @@ unsafe fn cstr_eq_ignore_case(s: *const xmlChar, lit: &[u8]) -> bool {
 ///
 /// - `result` must be a valid document.
 /// - `style` must be a valid stylesheet.
-unsafe fn save_result_to_vec(
+pub(crate) unsafe fn save_result_to_vec(
     result: *mut _xmlDoc,
     style: *mut _xsltStylesheet,
 ) -> Result<Vec<u8>, c_int> {

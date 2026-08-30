@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**8 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000131, R-000136, R-000138
+**12 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000131, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160
 
 ## Phase 0 Residuals
 
@@ -280,6 +280,30 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Regression courts:** test_xslt_html_method_meta_charset, CLI-XSLTPROC-0011.
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-29 (differential oracle discovery); FIXED 2026-08-29
+
+### R-000158: xsltproc corpus ct.xsl: call-template with a node-set with-param value hangs the transform engine (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xslt/transform/mod.rs
+- **Surface:** xsl:call-template / xsl:with-param (transform engine, src/xslt/transform)
+- **Oracle versions:** libxslt 1.1.45 (system xsltproc)
+- **Root cause:** Pre-existing Phase 9 engine defect (transform/mod.rs unchanged since commit 9b8a2233; this session only added visibility modifiers and ABI exports, neither of which the CLI calls). Passing a node-set expression (//book[1]/title) as a with-param value to a named template drives the engine into an unbounded loop. The in-crate unit test test_xslt_call_template_with_params passes because it uses string params only.
+- **Observable residual:** xsltproc ct.xsl doc.xml on the candidate never terminates (system oracle completes in ms).
+- **Phase 11 triangulation:** The CLI-XSLTPROC corpus was scaffolded in Phase 9 but never diff-verified in-repo: every receipt is UNKNOWN because the Docker oracle was never built; this hang is one of the corpus gaps.
+- **Evidence:** ['courts/corpus/cli/xslt/ct.xsl']
+- **Classification:** CANDIDATE_BUG
+
+### R-000159: xsltproc corpus pred.xsl: //book[position() <= 2] matches one extra node (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xslt/transform/mod.rs, src/xml/xpath
+- **Surface:** XPath position() inside xsl:for-each predicates (transform engine)
+- **Oracle versions:** libxslt 1.1.45 (system xsltproc)
+- **Root cause:** Pre-existing Phase 9 engine defect: the candidate produces <b pos="3"> for //book[position() <= 2], i.e. position() evaluates against a different context size than the selected node-set. Same provenance as R-000158 (corpus never diff-verified; engine unchanged this session).
+- **Observable residual:** One extra node in the for-each result versus the system oracle.
+- **Phase 11 triangulation:** Corpus gap: no CLI-XSLTPROC receipt ever recorded PASS.
+- **Evidence:** ['courts/corpus/cli/xslt/pred.xsl']
+- **Classification:** CANDIDATE_BUG
 
 ## Phase 10 Residuals
 
@@ -667,6 +691,31 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Fix:** All three signatures now match upstream exactly; WriteDTDInternalEntity/WriteDTDExternalEntity/WriteDTDExternalEntityContents implement the dispatch targets; the full upstream xmlwriter.h was written (the stub was replaced), exposing every writer declaration to the header court. Sealed by WRITER-001 and the 571/571 header court.
 - **Evidence:** ['src/xml/writer/mod.rs', 'include/libxml/xmlwriter.h', 'courts/receipts/phase-11/writer-family-*.json']
 - **Classification:** CANDIDATE_BUG
+
+### R-000157: xmlLookupCharEncodingHandler / xmlOpenCharEncodingHandler report XML_ERR_UNSUPPORTED_ENCODING for iconv/ICU-only encodings (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xml/encoding/mod.rs, src/abi/exports_xml2.rs
+- **Surface:** xmlLookupCharEncodingHandler, xmlGetCharEncodingHandler, xmlOpenCharEncodingHandler, xmlCreateCharEncodingHandler (encoding.h)
+- **Oracle versions:** libxml2 2.15.3 (system)
+- **Root cause:** Upstream serves UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252 via iconv/ICU plus static 8-bit tables; the crate ships no iconv/ICU backend, so those encodings report XML_ERR_UNSUPPORTED_ENCODING (32) where the oracle returns a converter. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths are byte-identical (ENCODING-001).
+- **Observable residual:** A C consumer requesting an iconv-only encoding gets XML_ERR_UNSUPPORTED_ENCODING instead of a handler; conversion through those encodings is unavailable in the candidate.
+- **Phase 11 triangulation:** No upstream epoch provides these converters without iconv/ICU; adding an iconv backend is a future work item, not a parity defect.
+- **Regression courts:** ENCODING-001.
+- **Evidence:** ['courts/suites/data-abi/encoding-family-probe.c', 'courts/receipts/phase-11/encoding-family-*.json']
+- **Classification:** INTENTIONAL_SAFE_DIVERGENCE
+
+### R-000160: libxslt exports with literally-trivial upstream 1.1.45 bodies classified as intentional no-ops (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/abi/exports_xslt_util.rs, src/abi/exports_xslt_vars.rs, src/abi/exports_xslt_avt.rs
+- **Surface:** xsltSecurityAllow, xsltSecurityForbid, xsltGetDebuggerStatus, xsltFreeLocales, xsltFreeAVTList, xsltExtensionInstructionResultRegister (libxslt.so.1)
+- **Oracle versions:** libxslt 1.1.45 (system)
+- **Root cause:** The upstream 1.1.45 bodies are literally `return(1)` (xsltSecurityAllow), `return(0)` (xsltSecurityForbid, xsltGetDebuggerStatus, xsltExtensionInstructionResultRegister) or empty (xsltFreeLocales, and xsltFreeAVTList in the candidate because AVTs are stored as raw strings). The ledger's static stub heuristic flags constant-return/empty bodies; these are exact upstream semantics, not placeholders.
+- **Observable residual:** None — the candidate matches the oracle byte-for-byte on these entry points.
+- **Phase 11 triangulation:** Classification-only residual: the ledger labels them INTENTIONAL_NOOP so the closure count is honest.
+- **Evidence:** ['archaeology/libxslt-git/libxslt/security.c', 'archaeology/libxslt-git/libxslt/variables.c', 'archaeology/libxslt-git/libxslt/xslt.c', 'archaeology/libxslt-git/libxslt/xsltlocale.c']
+- **Classification:** INTENTIONAL_SAFE_DIVERGENCE
 
 ## Classification Legend
 

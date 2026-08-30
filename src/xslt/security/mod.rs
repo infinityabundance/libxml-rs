@@ -74,11 +74,11 @@ pub type xsltSecurityCheck = unsafe extern "C" fn(*mut c_void, *mut c_void, *con
 /// Rust representation is opaque to C consumers, so the layout is internal.
 #[repr(C)]
 pub struct XsltSecurityPrefs {
-    readFile: Option<xsltSecurityCheck>,
-    createFile: Option<xsltSecurityCheck>,
-    createDir: Option<xsltSecurityCheck>,
-    readNet: Option<xsltSecurityCheck>,
-    writeNet: Option<xsltSecurityCheck>,
+    pub(crate) readFile: Option<xsltSecurityCheck>,
+    pub(crate) createFile: Option<xsltSecurityCheck>,
+    pub(crate) createDir: Option<xsltSecurityCheck>,
+    pub(crate) readNet: Option<xsltSecurityCheck>,
+    pub(crate) writeNet: Option<xsltSecurityCheck>,
 }
 
 /// Wrapper around `*mut c_void` that implements `Send` so it can be stored

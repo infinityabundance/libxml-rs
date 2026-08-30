@@ -12,7 +12,7 @@ Scope note: the probe covers the native converter set (UTF-8, UTF-16LE/BE,
 UTF-16, ISO-8859-1, US-ASCII) plus every error path. Encodings that upstream
 serves through iconv/ICU (UCS-4*, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16,
 ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) and the HTML static handler are
-documented candidate divergences (no iconv backend; residual R-000139) and are
+documented candidate divergences (no iconv backend; residual R-000157) and are
 deliberately excluded.
 
 Usage:

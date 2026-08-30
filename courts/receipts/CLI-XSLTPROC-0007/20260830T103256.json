@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "39feb2eed561b4c30546ff53b50bd65fe6934376",
+  "candidate_commit_time": 1788057208,
+  "case_id": "CLI-XSLTPROC-0007",
+  "observations": {
+    "candidate": {
+      "exit_status": 4,
+      "stderr": "warning: failed to load external entity \"num.xsl\"\ncannot parse num.xsl\n",
+      "stderr_hash": "d76e89d3f3404eb8c5c2cea1bf0b4aef115b3cbd6c6a7667435a74bd0f58208f",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-30T10:32:56.311667+00:00",
+  "verdict": "UNKNOWN"
+}
