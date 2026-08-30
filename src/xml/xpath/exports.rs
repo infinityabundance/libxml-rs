@@ -21,7 +21,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_double, c_int, c_long};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::structs::{
     _xmlDoc, _xmlNode, _xmlNodeSet, _xmlNs, _xmlXPathContext, _xmlXPathObject,
 };
@@ -40,7 +40,7 @@ fn number_to_xmlstring(val: c_double) -> *mut xmlChar {
 /// cannot be used on it directly.
 fn dup_rust_string(s: &str) -> *mut xmlChar {
     let bytes = s.as_bytes();
-    let buf = unsafe { xmlMalloc(bytes.len() + 1) } as *mut xmlChar;
+    let buf = unsafe { xmlMallocImpl(bytes.len() + 1) } as *mut xmlChar;
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -90,21 +90,21 @@ pub unsafe extern "C" fn xmlXPathNewValueTree(val: *mut _xmlNode) -> *mut _xmlXP
     (*obj).type_ = xmlXPathObjectType::XPATH_XSLT_TREE as c_int;
     let ns = xmlMallocZero(size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
     if ns.is_null() {
-        xmlFree(obj as *mut c_void);
+        xmlFreeImpl(obj as *mut c_void);
         return ptr::null_mut();
     }
     (*ns).nodeNr = 0;
     (*ns).nodeMax = 1;
-    let tab = xmlMalloc(size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
+    let tab = xmlMallocImpl(size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
     if tab.is_null() {
-        xmlFree(ns as *mut c_void);
-        xmlFree(obj as *mut c_void);
+        xmlFreeImpl(ns as *mut c_void);
+        xmlFreeImpl(obj as *mut c_void);
         return ptr::null_mut();
     }
     if val.is_null() {
         (*ns).nodeNr = 0;
         (*ns).nodeMax = 0;
-        xmlFree(tab as *mut c_void);
+        xmlFreeImpl(tab as *mut c_void);
         (*ns).nodeTab = ptr::null_mut();
     } else {
         ptr::write(tab, val);
@@ -136,16 +136,16 @@ pub unsafe extern "C" fn xmlXPathNewNodeSetList(val: *mut _xmlNodeSet) -> *mut _
     let nr = src.nodeNr;
     let ns = xmlMallocZero(size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
     if ns.is_null() {
-        xmlFree(obj as *mut c_void);
+        xmlFreeImpl(obj as *mut c_void);
         return ptr::null_mut();
     }
     (*ns).nodeNr = nr;
     (*ns).nodeMax = nr;
     if nr > 0 && !src.nodeTab.is_null() {
-        let tab = xmlMalloc((nr as usize) * size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
+        let tab = xmlMallocImpl((nr as usize) * size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
         if tab.is_null() {
-            xmlFree(ns as *mut c_void);
-            xmlFree(obj as *mut c_void);
+            xmlFreeImpl(ns as *mut c_void);
+            xmlFreeImpl(obj as *mut c_void);
             return ptr::null_mut();
         }
         ptr::copy_nonoverlapping(src.nodeTab, tab, nr as usize);
@@ -168,7 +168,7 @@ pub unsafe extern "C" fn xmlXPathWrapString(val: *mut xmlChar) -> *mut _xmlXPath
     let obj = xmlMallocZero(size_of::<_xmlXPathObject>()) as *mut _xmlXPathObject;
     if obj.is_null() {
         if !val.is_null() {
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn xmlXPathWrapNodeSet(val: *mut _xmlNodeSet) -> *mut _xml
     let obj = xmlMallocZero(size_of::<_xmlXPathObject>()) as *mut _xmlXPathObject;
     if obj.is_null() {
         if !val.is_null() {
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -241,12 +241,12 @@ pub unsafe extern "C" fn xmlXPathFreeNodeSetList(obj: *mut _xmlXPathObject) {
         let ns = (*obj).nodesetval as *mut _xmlNodeSet;
         if !ns.is_null() {
             if !(*ns).nodeTab.is_null() {
-                xmlFree((*ns).nodeTab as *mut c_void);
+                xmlFreeImpl((*ns).nodeTab as *mut c_void);
             }
-            xmlFree(ns as *mut c_void);
+            xmlFreeImpl(ns as *mut c_void);
         }
     }
-    xmlFree(obj as *mut c_void);
+    xmlFreeImpl(obj as *mut c_void);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -587,7 +587,7 @@ unsafe fn node_set_grow(ns: *mut _xmlNodeSet) {
             return;
         }
         let new_max = if max <= 0 { 8 } else { max * 2 };
-        let new_tab = crate::abi::allocator::xmlRealloc(
+        let new_tab = crate::abi::allocator::xmlReallocImpl(
             (*ns).nodeTab as *mut c_void,
             (new_max as usize) * size_of::<*mut _xmlNode>(),
         ) as *mut *mut _xmlNode;
@@ -1266,7 +1266,7 @@ unsafe fn cast_top_to_string(pc: *mut XmlXPathParserContext) {
             let v = crate::abi::exports_xml2::object_to_xpathvalue_pub(val);
             let s = v.as_string();
             if !(*val).stringval.is_null() {
-                xmlFree((*val).stringval as *mut c_void);
+                xmlFreeImpl((*val).stringval as *mut c_void);
             }
             (*val).stringval = dup_rust_string(&s);
             (*val).type_ = xmlXPathObjectType::XPATH_STRING as c_int;
@@ -2399,7 +2399,7 @@ pub unsafe extern "C" fn xmlXPathNextNamespace(
         }
         if cur.is_null() {
             if !(*ctx).tmpNsList.is_null() {
-                xmlFree((*ctx).tmpNsList as *mut c_void);
+                xmlFreeImpl((*ctx).tmpNsList as *mut c_void);
             }
             (*ctx).tmpNsNr = 0;
             (*ctx).tmpNsList = crate::xml::tree::get_ns_list((*ctx).doc, cnode);
@@ -2415,7 +2415,7 @@ pub unsafe extern "C" fn xmlXPathNextNamespace(
             return (*(*ctx).tmpNsList.add((*ctx).tmpNsNr as usize)) as *mut _xmlNode;
         }
         if !(*ctx).tmpNsList.is_null() {
-            xmlFree((*ctx).tmpNsList as *mut c_void);
+            xmlFreeImpl((*ctx).tmpNsList as *mut c_void);
         }
         (*ctx).tmpNsList = ptr::null_mut();
         ptr::null_mut()
@@ -2586,7 +2586,7 @@ pub unsafe extern "C" fn xmlXPathLangFunction(ctxt: *mut c_void, _nargs: c_int) 
             ret = 1;
         }
         if !found.is_null() {
-            xmlFree(found as *mut c_void);
+            xmlFreeImpl(found as *mut c_void);
         }
     }
     crate::abi::exports_xml2::xmlXPathFreeObject(val);
@@ -2821,7 +2821,7 @@ unsafe fn get_elements_by_ids(doc: *mut _xmlDoc, ids: *const xmlChar) -> *mut _x
                 break;
             }
             let attr = get_id(doc, id_c);
-            xmlFree(id_c as *mut c_void);
+            xmlFreeImpl(id_c as *mut c_void);
             if !attr.is_null() {
                 let t = (*attr).type_;
                 let elem = if t == ET::XML_ATTRIBUTE_NODE as c_int {
@@ -2869,7 +2869,7 @@ pub unsafe extern "C" fn xmlXPathIdFunction(ctxt: *mut c_void, _nargs: c_int) {
                 let sv = node_string_value(n);
                 let c = dup_rust_string(&sv);
                 let sub = get_elements_by_ids(doc, c);
-                xmlFree(c as *mut c_void);
+                xmlFreeImpl(c as *mut c_void);
                 if !sub.is_null() {
                     let sub_internal = node_set_to_internal(sub);
                     for m in sub_internal.iter() {
@@ -2890,7 +2890,7 @@ pub unsafe extern "C" fn xmlXPathIdFunction(ctxt: *mut c_void, _nargs: c_int) {
             let s = v.as_string();
             let c = dup_rust_string(&s);
             let ret = get_elements_by_ids(doc, c);
-            xmlFree(c as *mut c_void);
+            xmlFreeImpl(c as *mut c_void);
             if ret.is_null() {
                 value_push(
                     pc,
@@ -3524,7 +3524,7 @@ pub unsafe extern "C" fn xmlXPathNormalizeFunction(ctxt: *mut c_void, nargs: c_i
     unsafe {
         let val = (*pc).value;
         if !(*val).stringval.is_null() {
-            xmlFree((*val).stringval as *mut c_void);
+            xmlFreeImpl((*val).stringval as *mut c_void);
         }
         (*val).stringval = dup_rust_string(&out);
     }

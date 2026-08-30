@@ -34,7 +34,7 @@ use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_uint};
 use std::slice;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::structs::{_xmlDoc, _xmlEntity, _xmlNode, _xmlParserCtxt};
 use crate::abi::types::xmlChar;
 use crate::abi::types::xmlElementType::*;
@@ -689,7 +689,7 @@ unsafe fn expand_entity_into(
                 if !ent.is_null() && (*ent).etype == XML_INTERNAL_PREDEFINED_ENTITY as c_int {
                     if (*ent).content.is_null() {
                         /* upstream: fatal "predefined entity has no content" */
-                        xmlFree(name as *mut c_void);
+                        xmlFreeImpl(name as *mut c_void);
                         chunk = str;
                         break 'scan;
                     }
@@ -707,7 +707,7 @@ unsafe fn expand_entity_into(
                 }
                 /* ent == NULL (undeclared): the reference is dropped */
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             str = str.add(1); /* skip ';' */
             chunk = str;
         }
@@ -730,7 +730,7 @@ unsafe fn expand_entity_into(
 unsafe fn expand_entities_in_att_value(doc: *mut _xmlDoc, str: *const xmlChar) -> *mut xmlChar {
     let mut out: Vec<u8> = Vec::new();
     expand_entity_into(doc, &mut out, str, 0, ptr::null_mut());
-    let p = xmlMalloc(out.len() + 1) as *mut xmlChar;
+    let p = xmlMallocImpl(out.len() + 1) as *mut xmlChar;
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -878,7 +878,7 @@ unsafe fn new_entity_ref(doc: *const _xmlDoc, name: *const xmlChar) -> *mut _xml
     }
     let name_copy = xml_strdup(name);
     if name_copy.is_null() {
-        xmlFree(node as *mut c_void);
+        xmlFreeImpl(node as *mut c_void);
         return ptr::null_mut();
     }
     unsafe {
@@ -1055,7 +1055,7 @@ unsafe fn node_parse_att_value(
                             let node = new_doc_text(doc, buf.as_ptr() as *const xmlChar);
                             buf.pop();
                             if node.is_null() {
-                                xmlFree(name as *mut c_void);
+                                xmlFreeImpl(name as *mut c_void);
                                 free_node_list(head);
                                 return -1;
                             }
@@ -1085,7 +1085,7 @@ unsafe fn node_parse_att_value(
                             );
                             (*ent).flags &= !XML_ENT_EXPANDING;
                             if res < 0 {
-                                xmlFree(name as *mut c_void);
+                                xmlFreeImpl(name as *mut c_void);
                                 free_node_list(head);
                                 return -1;
                             }
@@ -1095,7 +1095,7 @@ unsafe fn node_parse_att_value(
                         /* create a new REFERENCE_REF node */
                         let node = new_entity_ref(doc, name);
                         if node.is_null() {
-                            xmlFree(name as *mut c_void);
+                            xmlFreeImpl(name as *mut c_void);
                             free_node_list(head);
                             return -1;
                         }
@@ -1113,7 +1113,7 @@ unsafe fn node_parse_att_value(
                         }
                         last = node;
                     }
-                    xmlFree(name as *mut c_void);
+                    xmlFreeImpl(name as *mut c_void);
                 }
                 unsafe {
                     cur = cur.add(1);
@@ -1281,7 +1281,7 @@ pub unsafe extern "C" fn xmlUTF8Strndup(utf: *const xmlChar, len: c_int) -> *mut
         return ptr::null_mut();
     }
     let i = unsafe { utf8_strsize(utf, len) };
-    let ret = unsafe { xmlMalloc(i as usize + 1) as *mut xmlChar };
+    let ret = unsafe { xmlMallocImpl(i as usize + 1) as *mut xmlChar };
     if ret.is_null() {
         return ptr::null_mut();
     }

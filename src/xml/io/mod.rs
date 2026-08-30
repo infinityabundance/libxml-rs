@@ -19,7 +19,7 @@ use std::ptr;
 
 use libc;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlReallocImpl};
 use crate::abi::callbacks::{
     xmlInputCloseCallback, xmlInputReadCallback, xmlOutputCloseCallback, xmlOutputWriteCallback,
 };
@@ -68,14 +68,14 @@ pub(crate) fn buf_create(size: c_int) -> *mut _xmlBuffer {
     // Ensure minimum size
     let buf_size = buf_size.max(MIN_BUFFER_SIZE);
 
-    let buf = unsafe { xmlMalloc(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
+    let buf = unsafe { xmlMallocImpl(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
 
-    let content = unsafe { xmlMalloc(buf_size as usize) as *mut xmlChar };
+    let content = unsafe { xmlMallocImpl(buf_size as usize) as *mut xmlChar };
     if content.is_null() {
-        unsafe { xmlFree(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -125,7 +125,7 @@ pub(crate) fn buf_create_static(str: *const xmlChar, size: c_int) -> *mut _xmlBu
         size as c_uint
     };
 
-    let buf = unsafe { xmlMalloc(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
+    let buf = unsafe { xmlMallocImpl(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -170,11 +170,11 @@ pub(crate) fn buf_free(buf: *mut _xmlBuffer) {
                 content
             };
             if !base.is_null() {
-                xmlFree(base as *mut c_void);
+                xmlFreeImpl(base as *mut c_void);
             }
         }
 
-        xmlFree(buf as *mut c_void);
+        xmlFreeImpl(buf as *mut c_void);
     }
 }
 
@@ -243,7 +243,7 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
         };
 
         let new_content =
-            unsafe { xmlRealloc(b.content as *mut c_void, new_size as usize) as *mut xmlChar };
+            unsafe { xmlReallocImpl(b.content as *mut c_void, new_size as usize) as *mut xmlChar };
         if new_content.is_null() {
             return -1;
         }
@@ -330,7 +330,7 @@ pub(crate) fn buf_add_head(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int
         if needed > b.size {
             let new_size = needed.saturating_mul(2).max(MIN_BUFFER_SIZE);
             let new_content =
-                xmlRealloc(b.content as *mut c_void, new_size as usize) as *mut xmlChar;
+                xmlReallocImpl(b.content as *mut c_void, new_size as usize) as *mut xmlChar;
             if new_content.is_null() {
                 return -1;
             }
@@ -362,7 +362,7 @@ pub(crate) fn buf_grow(buf: *mut _xmlBuffer, size: c_uint) -> c_int {
     }
 
     let new_content =
-        unsafe { xmlRealloc(b.content as *mut c_void, size as usize) as *mut xmlChar };
+        unsafe { xmlReallocImpl(b.content as *mut c_void, size as usize) as *mut xmlChar };
     if new_content.is_null() {
         return -1;
     }
@@ -390,14 +390,14 @@ pub(crate) fn xml_buf_create(size: c_int) -> *mut _xmlBuf {
     };
     let buf_size = buf_size.max(MIN_BUFFER_SIZE);
 
-    let buf = unsafe { xmlMalloc(size_of::<_xmlBuf>()) as *mut _xmlBuf };
+    let buf = unsafe { xmlMallocImpl(size_of::<_xmlBuf>()) as *mut _xmlBuf };
     if buf.is_null() {
         return ptr::null_mut();
     }
 
-    let content = unsafe { xmlMalloc(buf_size as usize) as *mut xmlChar };
+    let content = unsafe { xmlMallocImpl(buf_size as usize) as *mut xmlChar };
     if content.is_null() {
-        unsafe { xmlFree(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -433,9 +433,9 @@ pub(crate) fn xml_buf_free(buf: *mut _xmlBuf) {
 
     unsafe {
         if !(*buf).content.is_null() {
-            xmlFree((*buf).content as *mut c_void);
+            xmlFreeImpl((*buf).content as *mut c_void);
         }
-        xmlFree(buf as *mut c_void);
+        xmlFreeImpl(buf as *mut c_void);
     }
 }
 
@@ -470,7 +470,7 @@ pub(crate) fn xml_buf_add(buf: *mut _xmlBuf, str: *const xmlChar, len: c_int) ->
     if needed > b.size {
         let new_size = needed.saturating_mul(2).max(MIN_BUFFER_SIZE);
         let new_content =
-            unsafe { xmlRealloc(b.content as *mut c_void, new_size as usize) as *mut xmlChar };
+            unsafe { xmlReallocImpl(b.content as *mut c_void, new_size as usize) as *mut xmlChar };
         if new_content.is_null() {
             return -1;
         }
@@ -521,7 +521,7 @@ pub(crate) fn xml_buf_grow(buf: *mut _xmlBuf, size: c_uint) -> c_int {
     }
 
     let new_content =
-        unsafe { xmlRealloc(b.content as *mut c_void, size as usize) as *mut xmlChar };
+        unsafe { xmlReallocImpl(b.content as *mut c_void, size as usize) as *mut xmlChar };
     if new_content.is_null() {
         return -1;
     }
@@ -621,7 +621,7 @@ fn find_handler_for_encoding(enc: c_int) -> *mut _xmlCharEncodingHandler {
 /// The caller is responsible for setting the specific fields.
 fn allocate_input_buffer() -> *mut _xmlParserInputBuffer {
     let buf =
-        unsafe { xmlMalloc(size_of::<_xmlParserInputBuffer>()) as *mut _xmlParserInputBuffer };
+        unsafe { xmlMallocImpl(size_of::<_xmlParserInputBuffer>()) as *mut _xmlParserInputBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -667,7 +667,7 @@ pub(crate) fn input_buffer_create_mem(
     // Create the raw buffer containing the input data
     let raw_buf = buf_create(size);
     if raw_buf.is_null() {
-        unsafe { xmlFree(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -682,7 +682,7 @@ pub(crate) fn input_buffer_create_mem(
         let out_buf = buf_create((size as c_uint).saturating_mul(3).max(MIN_BUFFER_SIZE) as c_int);
         if out_buf.is_null() {
             buf_free(raw_buf);
-            unsafe { xmlFree(buf as *mut c_void) };
+            unsafe { xmlFreeImpl(buf as *mut c_void) };
             return ptr::null_mut();
         }
 
@@ -691,7 +691,7 @@ pub(crate) fn input_buffer_create_mem(
         if written < 0 {
             buf_free(raw_buf);
             buf_free(out_buf);
-            unsafe { xmlFree(buf as *mut c_void) };
+            unsafe { xmlFreeImpl(buf as *mut c_void) };
             return ptr::null_mut();
         }
 
@@ -855,7 +855,7 @@ pub(crate) fn input_buffer_create_io(
     // Create the raw buffer (used for reading from callback)
     let raw_buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
     if raw_buf.is_null() {
-        unsafe { xmlFree(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -872,7 +872,7 @@ pub(crate) fn input_buffer_create_io(
         let out_buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
         if out_buf.is_null() {
             buf_free(raw_buf);
-            unsafe { xmlFree(buf as *mut c_void) };
+            unsafe { xmlFreeImpl(buf as *mut c_void) };
             return ptr::null_mut();
         }
         unsafe {
@@ -932,7 +932,7 @@ pub(crate) fn input_buffer_free(buf: *mut _xmlParserInputBuffer) {
         // Note: the encoder is owned by the encoding module, not by us.
         // We do NOT free it here.
 
-        xmlFree(buf as *mut c_void);
+        xmlFreeImpl(buf as *mut c_void);
     }
 }
 
@@ -1165,7 +1165,7 @@ unsafe extern "C" fn buffer_write_callback(
 ///
 /// Allocates the struct and initializes all fields to zero/NULL.
 fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
-    let buf = unsafe { xmlMalloc(size_of::<_xmlOutputBuffer>()) as *mut _xmlOutputBuffer };
+    let buf = unsafe { xmlMallocImpl(size_of::<_xmlOutputBuffer>()) as *mut _xmlOutputBuffer };
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -1234,7 +1234,7 @@ pub(crate) fn output_buffer_create_filename(
     if buf.is_null() {
         unsafe {
             libc::close(fd);
-            xmlFree(obuf as *mut c_void);
+            xmlFreeImpl(obuf as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1244,7 +1244,7 @@ pub(crate) fn output_buffer_create_filename(
         unsafe {
             libc::close(fd);
             buf_free(buf);
-            xmlFree(obuf as *mut c_void);
+            xmlFreeImpl(obuf as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1279,7 +1279,7 @@ pub(crate) fn output_buffer_create_fd(
 
     let buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
     if buf.is_null() {
-        unsafe { xmlFree(obuf as *mut c_void) };
+        unsafe { xmlFreeImpl(obuf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -1287,7 +1287,7 @@ pub(crate) fn output_buffer_create_fd(
     if conv_buf.is_null() {
         unsafe {
             buf_free(buf);
-            xmlFree(obuf as *mut c_void);
+            xmlFreeImpl(obuf as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1320,7 +1320,7 @@ pub(crate) fn output_buffer_create_io(
 
     let buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
     if buf.is_null() {
-        unsafe { xmlFree(obuf as *mut c_void) };
+        unsafe { xmlFreeImpl(obuf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -1328,7 +1328,7 @@ pub(crate) fn output_buffer_create_io(
     if conv_buf.is_null() {
         unsafe {
             buf_free(buf);
-            xmlFree(obuf as *mut c_void);
+            xmlFreeImpl(obuf as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1366,7 +1366,7 @@ pub(crate) fn output_buffer_create_buffer(
     // Internal buffer for buffering writes before flush
     let internal_buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
     if internal_buf.is_null() {
-        unsafe { xmlFree(obuf as *mut c_void) };
+        unsafe { xmlFreeImpl(obuf as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -1375,7 +1375,7 @@ pub(crate) fn output_buffer_create_buffer(
     if conv_buf.is_null() {
         unsafe {
             buf_free(internal_buf);
-            xmlFree(obuf as *mut c_void);
+            xmlFreeImpl(obuf as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1516,7 +1516,7 @@ pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
 
     // Note: encoder is owned by the caller/encoding module, not by us
 
-    unsafe { xmlFree(out as *mut c_void) };
+    unsafe { xmlFreeImpl(out as *mut c_void) };
 
     flush_ret
 }
@@ -1638,7 +1638,7 @@ pub(crate) fn output_buffer_create(
     }
     let buf = buf_create(-1);
     if buf.is_null() {
-        unsafe { xmlFree(obuf as *mut c_void) };
+        unsafe { xmlFreeImpl(obuf as *mut c_void) };
         return ptr::null_mut();
     }
     unsafe {
@@ -1932,7 +1932,7 @@ pub(crate) fn read_file_to_memory(filename: *const c_char, size: *mut c_int) -> 
     }
 
     // Allocate via xmlMalloc and copy
-    let result = unsafe { xmlMalloc(data.len()) as *mut c_char };
+    let result = unsafe { xmlMallocImpl(data.len()) as *mut c_char };
     if result.is_null() {
         return ptr::null_mut();
     }
@@ -2022,7 +2022,7 @@ pub(crate) fn get_cwd() -> *mut c_char {
     let mut size: usize = 1024;
 
     loop {
-        let buf = unsafe { xmlMalloc(size) as *mut c_char };
+        let buf = unsafe { xmlMallocImpl(size) as *mut c_char };
         if buf.is_null() {
             return ptr::null_mut();
         }
@@ -2032,7 +2032,7 @@ pub(crate) fn get_cwd() -> *mut c_char {
             return buf;
         }
 
-        unsafe { xmlFree(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
 
         // Check if the error was ERANGE (buffer too small)
         let err = std::io::Error::last_os_error();
@@ -2555,7 +2555,7 @@ mod tests {
             assert_eq!(slice, b"Hello File I/O!");
         }
 
-        unsafe { xmlFree(read_data as *mut c_void) };
+        unsafe { xmlFreeImpl(read_data as *mut c_void) };
 
         // Clean up
         std::fs::remove_file("/tmp/libxml_rs_test_io_file.txt").ok();
@@ -2583,7 +2583,7 @@ mod tests {
         unsafe {
             let s = CStr::from_ptr(cwd);
             assert!(!s.to_bytes().is_empty());
-            xmlFree(cwd as *mut c_void);
+            xmlFreeImpl(cwd as *mut c_void);
         }
     }
 

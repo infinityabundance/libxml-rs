@@ -72,7 +72,7 @@ unsafe fn cstr_bytes<'a>(p: *const c_char) -> &'a [u8] {
 /// 1-byte NUL string (never NULL), matching `xmlStrdup("")`.
 unsafe fn dup_c_str(bytes: &[u8]) -> *mut xmlChar {
     let len = bytes.len();
-    let p = unsafe { allocator::xmlMalloc(len + 1) as *mut u8 };
+    let p = unsafe { allocator::xmlMallocImpl(len + 1) as *mut u8 };
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -847,7 +847,7 @@ pub unsafe extern "C" fn xmlBuildRelativeURISafe(
         }
         if ret != 0 {
             if !val.is_null() {
-                allocator::xmlFree(val as *mut c_void);
+                allocator::xmlFreeImpl(val as *mut c_void);
             }
             val = ptr::null_mut();
         }
@@ -985,7 +985,7 @@ pub unsafe extern "C" fn xmlPrintURI(stream: *mut c_void, uri: *mut c_void) {
     let len = unsafe { libc::strlen(out as *const c_char) };
     unsafe {
         fwrite(out as *const c_void, 1, len, stream);
-        allocator::xmlFree(out as *mut c_void);
+        allocator::xmlFreeImpl(out as *mut c_void);
     }
 }
 
@@ -1031,7 +1031,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
         }
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
         result.push(b':');
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     }
 
     // Note: the C struct's `authority` and `opaque` fields are never set by
@@ -1048,7 +1048,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
         result.extend_from_slice(b"//");
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
         result.push(b'@');
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     }
 
     // Server (host part only; the port is emitted separately below).
@@ -1061,7 +1061,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
             result.extend_from_slice(b"//");
         }
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     }
 
     // Port.
@@ -1077,7 +1077,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
             return ptr::null_mut();
         }
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     }
 
     // Query. (The internal parser does not track query_raw, so the escaped
@@ -1089,7 +1089,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
         }
         result.push(b'?');
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     } else if bytes.ends_with(b"?") {
         // The internal parser drops an empty query; upstream keeps the "?".
         result.push(b'?');
@@ -1103,7 +1103,7 @@ pub unsafe extern "C" fn xmlURIEscape(str: *const c_char) -> *mut xmlChar {
         }
         result.push(b'#');
         result.extend_from_slice(unsafe { cstr_bytes(esc as *const c_char) });
-        unsafe { allocator::xmlFree(esc as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(esc as *mut c_void) };
     }
 
     unsafe { dup_c_str(&result) }

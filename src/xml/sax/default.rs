@@ -85,7 +85,7 @@ pub(crate) mod default_sax_handler {
             if content_is_inline(node) {
                 // The current content lives inside the node struct; promote
                 // it to a heap buffer before appending.
-                let merged = allocator::xmlMalloc(total + 1) as *mut xmlChar;
+                let merged = allocator::xmlMallocImpl(total + 1) as *mut xmlChar;
                 if merged.is_null() {
                     return;
                 }
@@ -94,7 +94,7 @@ pub(crate) mod default_sax_handler {
                 *merged.add(total) = 0;
                 (*node).content = merged;
             } else {
-                let new = allocator::xmlRealloc((*node).content as *mut c_void, total + 1)
+                let new = allocator::xmlReallocImpl((*node).content as *mut c_void, total + 1)
                     as *mut xmlChar;
                 if new.is_null() {
                     return;
@@ -154,17 +154,20 @@ pub(crate) mod default_sax_handler {
                 let node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
                 if !node.is_null() {
                     (*node).type_ = XML_TEXT_NODE as c_int;
-                    (*node).name = allocator::xmlMemStrdup(b"text\0".as_ptr() as *const c_char)
+                    (*node).name = allocator::xmlMemStrdupImpl(b"text\0".as_ptr() as *const c_char)
                         as *mut xmlChar;
                     let inline = std::ptr::addr_of_mut!((*node).properties) as *mut xmlChar;
                     ptr::copy_nonoverlapping(ch, inline, len as usize);
                     *inline.add(len as usize) = 0;
                     (*node).content = inline;
+                    // UPSTREAM-PARITY (tree.c): registration hook fires
+                    // after the node is fully initialised.
+                    crate::abi::data_globals::register_node_hook(node);
                 }
                 node
             } else {
                 // Create a null-terminated copy of the character data.
-                let content = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+                let content = allocator::xmlMallocImpl((len + 1) as usize) as *mut xmlChar;
                 if content.is_null() {
                     return ptr::null_mut();
                 }
@@ -172,7 +175,7 @@ pub(crate) mod default_sax_handler {
                 *content.add(len as usize) = 0;
 
                 let text = tree::new_text(content as *const xmlChar);
-                allocator::xmlFree(content as *mut c_void);
+                allocator::xmlFreeImpl(content as *mut c_void);
                 text
             }
         }
@@ -363,7 +366,7 @@ pub(crate) mod default_sax_handler {
                 // Propagate version from context to document.
                 if !c.version.is_null() {
                     if (*c.myDoc).version.is_null() {
-                        let dup = allocator::xmlMemStrdup(c.version as *const c_char);
+                        let dup = allocator::xmlMemStrdupImpl(c.version as *const c_char);
                         (*c.myDoc).version = dup as *mut xmlChar;
                     }
                 }
@@ -371,7 +374,7 @@ pub(crate) mod default_sax_handler {
                 // Propagate encoding from context to document.
                 if !c.encoding.is_null() {
                     if (*c.myDoc).encoding.is_null() {
-                        let dup = allocator::xmlMemStrdup(c.encoding as *const c_char);
+                        let dup = allocator::xmlMemStrdupImpl(c.encoding as *const c_char);
                         (*c.myDoc).encoding = dup as *mut xmlChar;
                     }
                 }
@@ -527,8 +530,8 @@ pub(crate) mod default_sax_handler {
             if c.nodeNr >= c.nodeMax {
                 let new_max = if c.nodeMax == 0 { 8 } else { c.nodeMax * 2 };
                 let new_size = (new_max as usize) * size_of::<*mut _xmlNode>();
-                let new_tab =
-                    allocator::xmlRealloc(c.nodeTab as *mut c_void, new_size) as *mut *mut _xmlNode;
+                let new_tab = allocator::xmlReallocImpl(c.nodeTab as *mut c_void, new_size)
+                    as *mut *mut _xmlNode;
                 if !new_tab.is_null() {
                     c.nodeTab = new_tab;
                     c.nodeMax = new_max;

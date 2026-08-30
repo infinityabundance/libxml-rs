@@ -49,7 +49,7 @@ use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::xml::xinclude;
 use crate::xml::xpath::ast::CompiledExpr;
-use crate::xml::xpath::context::XPathContext;
+use crate::xml::xpath::context::{BoxedXPathFunction, XPathContext};
 use crate::xml::xpath::types::{NodeSet, XPathValue};
 use crate::xml::xpointer;
 
@@ -615,7 +615,7 @@ pub unsafe extern "C" fn xmlStrdup(cur: *const xmlChar) -> *mut xmlChar {
     }
     let len = unsafe { xmlStrlen(cur) };
     let size = len + 1;
-    let new_ptr = unsafe { xmlMalloc(size as usize) };
+    let new_ptr = unsafe { xmlMallocImpl(size as usize) };
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -642,7 +642,7 @@ pub unsafe extern "C" fn xmlStrndup(cur: *const xmlChar, len: c_int) -> *mut xml
         return ptr::null_mut();
     }
     let size = len as usize + 1;
-    let new_ptr = unsafe { xmlMalloc(size) };
+    let new_ptr = unsafe { xmlMallocImpl(size) };
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -993,7 +993,7 @@ pub unsafe extern "C" fn xmlStrcat(cur: *mut xmlChar, add: *const xmlChar) -> *m
     let cur_len = unsafe { xmlStrlen(cur) } as usize;
     let add_len = unsafe { xmlStrlen(add) } as usize;
     let new_size = cur_len + add_len + 1;
-    let new_ptr = unsafe { xmlRealloc(cur as *mut c_void, new_size) };
+    let new_ptr = unsafe { xmlReallocImpl(cur as *mut c_void, new_size) };
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -1030,7 +1030,7 @@ pub unsafe extern "C" fn xmlStrncat(
     }
     let cur_len = unsafe { xmlStrlen(cur) } as usize;
     let new_size = cur_len + len + 1;
-    let new_ptr = unsafe { xmlRealloc(cur as *mut c_void, new_size) };
+    let new_ptr = unsafe { xmlReallocImpl(cur as *mut c_void, new_size) };
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -2328,7 +2328,7 @@ pub unsafe extern "C" fn xmlEncodeSpecialChars(
         // Worst case: every byte becomes a 6-byte entity (&#13; is 5; &quot;
         // is 6).
         let cap = len * 6 + 1;
-        let out = crate::abi::allocator::xmlMalloc(cap) as *mut xmlChar;
+        let out = crate::abi::allocator::xmlMallocImpl(cap) as *mut xmlChar;
         if out.is_null() {
             return ptr::null_mut();
         }
@@ -4810,9 +4810,9 @@ pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
     unsafe {
         let h = handler as *mut crate::abi::structs::_xmlCharEncodingHandler;
         if !(*h).name.is_null() {
-            crate::abi::allocator::xmlFree((*h).name as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl((*h).name as *mut c_void);
         }
-        crate::abi::allocator::xmlFree(handler);
+        crate::abi::allocator::xmlFreeImpl(handler);
     }
     0
 }
@@ -5297,7 +5297,7 @@ unsafe fn xpath_to_object(val: XPathValue) -> *mut _xmlXPathObject {
             (*obj).type_ = xmlXPathObjectType::XPATH_STRING as c_int;
             let bytes = s.as_bytes();
             let len = bytes.len();
-            let buf = xmlMalloc(len + 1) as *mut xmlChar;
+            let buf = xmlMallocImpl(len + 1) as *mut xmlChar;
             if !buf.is_null() {
                 ptr::copy_nonoverlapping(bytes.as_ptr(), buf, len);
                 *buf.add(len) = 0; // null terminator
@@ -5435,15 +5435,96 @@ pub(crate) fn xpath_cfunc_cleanup(extra: *mut c_void) {
     C_FUNCTIONS.lock().retain(|(k, _), _| k.0 != extra);
 }
 
-/// Rust-side wrapper that is registered in the internal XPathContext when a
-/// C extension function is registered. It looks up the C function pointer and
-/// attempts to call it, but the calling-convention mismatch means this is a
-/// stub that returns an error for now.
-fn c_func_stub(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
-    Err(
-        "C extension function cannot be called from Rust evaluator without a parser-context bridge"
-            .to_string(),
-    )
+/// Build the Rust-side closure that bridges a C-registered XPath function
+/// into the Rust evaluator (see `c_func_call_bridge`). Returns a
+/// `BoxedXPathFunction` so the closure is coerced with the higher-ranked
+/// signature the evaluator requires.
+fn c_func_bridge_closure(c_ctxt: SendSyncPtr, qualified: String) -> BoxedXPathFunction {
+    Box::new(move |_ctx: &mut XPathContext, args: &[XPathValue]| {
+        let cc = c_ctxt;
+        unsafe { c_func_call_bridge(cc.0 as *mut _xmlXPathContext, &qualified, args) }
+    })
+}
+
+/// Call a C-ABI `xmlXPathFunction` through a synthesized
+/// `xmlXPathParserContext`: push the evaluated arguments as XPath objects,
+/// invoke the function, pop and convert the result — the upstream
+/// `xmlXPathCompOpEval` function-call sequence (xpath.c).
+///
+/// # SAFETY
+///
+/// - `fnptr` must be a valid C callback (or None).
+/// - `c_ctxt` must be the live C XPath context the callback belongs to.
+pub(crate) unsafe fn call_c_xpath_function(
+    fnptr: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
+    c_ctxt: *mut _xmlXPathContext,
+    args: &[XPathValue],
+) -> Result<XPathValue, String> {
+    let func = match fnptr {
+        Some(f) => f,
+        None => return Err("XPath: missing C function pointer".to_string()),
+    };
+    let pc = crate::xml::xpath::parser_context::new_parser_context(ptr::null(), c_ctxt);
+    if pc.is_null() {
+        return Err("XPath: parser-context allocation failure".to_string());
+    }
+    let mut push_ok = true;
+    for v in args {
+        let obj = xpath_to_object(v.clone());
+        if obj.is_null() || crate::xml::xpath::parser_context::value_push(pc, obj).is_null() {
+            push_ok = false;
+            break;
+        }
+    }
+    let result = if push_ok {
+        // SAFETY: `func` is a valid C callback; the arguments are on the
+        // parser-context value stack exactly as upstream would leave them.
+        unsafe { func(pc as *mut c_void, args.len() as c_int) };
+        let ret = crate::xml::xpath::parser_context::value_pop(pc);
+        if ret.is_null() {
+            Err("XPath: C function returned no value".to_string())
+        } else {
+            let v = object_to_xpathvalue(ret);
+            // The popped object is heap-allocated; free it after converting.
+            unsafe { xmlXPathFreeObject(ret) };
+            Ok(v)
+        }
+    } else {
+        Err("XPath: failed to push arguments to C function".to_string())
+    };
+    // Free any objects the C function left on the stack, then the context.
+    unsafe {
+        loop {
+            let leftover = crate::xml::xpath::parser_context::value_pop(pc);
+            if leftover.is_null() {
+                break;
+            }
+            xmlXPathFreeObject(leftover);
+        }
+        crate::xml::xpath::parser_context::free_parser_context(pc);
+    }
+    result
+}
+
+/// Rust-side wrapper registered in the internal XPathContext when a C
+/// extension function is registered (`xmlXPathRegisterFunc[NS]`). This is the
+/// parser-context bridge: it synthesises the upstream `xmlXPathParserContext`
+/// (value stack + context pointer), pushes the evaluated arguments as XPath
+/// objects, invokes the C function, then pops and converts the result — the
+/// upstream `xmlXPathCompOpEval` function-call sequence (xpath.c).
+unsafe fn c_func_call_bridge(
+    c_ctxt: *mut _xmlXPathContext,
+    qualified: &str,
+    args: &[XPathValue],
+) -> Result<XPathValue, String> {
+    if c_ctxt.is_null() {
+        return Err("XPath: null context in C function bridge".to_string());
+    }
+    let func = xpath_cfunc_lookup((*c_ctxt).extra, qualified);
+    if func.is_none() {
+        return Err(format!("XPath: unknown C function '{}'", qualified));
+    }
+    unsafe { call_c_xpath_function(func, c_ctxt, args) }
 }
 
 // ── Public API ─────────────────────────────────────────────────────────
@@ -5510,7 +5591,7 @@ pub unsafe extern "C" fn xmlXPathFreeContext(ctxt: *mut _xmlXPathContext) {
         (*ctxt).nsHash = ptr::null_mut();
     }
     // Free the C ABI context struct.
-    xmlFree(ctxt as *mut c_void);
+    xmlFreeImpl(ctxt as *mut c_void);
 }
 
 /// Evaluate an XPath expression.
@@ -5588,7 +5669,7 @@ pub unsafe extern "C" fn xmlXPathFreeObject(obj: *mut _xmlXPathObject) {
     // Free string storage.
     if typ == xmlXPathObjectType::XPATH_STRING as c_int {
         if !(*obj).stringval.is_null() {
-            xmlFree((*obj).stringval as *mut c_void);
+            xmlFreeImpl((*obj).stringval as *mut c_void);
             (*obj).stringval = ptr::null_mut();
         }
     }
@@ -5597,13 +5678,13 @@ pub unsafe extern "C" fn xmlXPathFreeObject(obj: *mut _xmlXPathObject) {
         let ns = (*obj).nodesetval as *mut _xmlNodeSet;
         if !ns.is_null() {
             if !(*ns).nodeTab.is_null() {
-                xmlFree((*ns).nodeTab as *mut c_void);
+                xmlFreeImpl((*ns).nodeTab as *mut c_void);
             }
-            xmlFree(ns as *mut c_void);
+            xmlFreeImpl(ns as *mut c_void);
         }
         (*obj).nodesetval = ptr::null_mut();
     }
-    xmlFree(obj as *mut c_void);
+    xmlFreeImpl(obj as *mut c_void);
 }
 
 /// Copy an XPath object (deep copy).
@@ -5634,17 +5715,17 @@ pub unsafe extern "C" fn xmlXPathObjectCopy(val: *mut _xmlXPathObject) -> *mut _
             let nr = (*src_ns).nodeNr;
             let ns = xmlMallocZero(size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
             if ns.is_null() {
-                xmlFree(obj as *mut c_void);
+                xmlFreeImpl(obj as *mut c_void);
                 return ptr::null_mut();
             }
             (*ns).nodeNr = nr;
             (*ns).nodeMax = nr;
             if nr > 0 && !(*src_ns).nodeTab.is_null() {
-                let tab = xmlMalloc((nr as usize) * core::mem::size_of::<*mut _xmlNode>())
+                let tab = xmlMallocImpl((nr as usize) * core::mem::size_of::<*mut _xmlNode>())
                     as *mut *mut _xmlNode;
                 if tab.is_null() {
-                    xmlFree(ns as *mut c_void);
-                    xmlFree(obj as *mut c_void);
+                    xmlFreeImpl(ns as *mut c_void);
+                    xmlFreeImpl(obj as *mut c_void);
                     return ptr::null_mut();
                 }
                 ptr::copy_nonoverlapping((*src_ns).nodeTab, tab, nr as usize);
@@ -5662,7 +5743,7 @@ pub unsafe extern "C" fn xmlXPathObjectCopy(val: *mut _xmlXPathObject) -> *mut _
         let src = (*val).stringval;
         if !src.is_null() {
             let len = libc::strlen(src as *const libc::c_char);
-            let buf = xmlMalloc(len + 1) as *mut xmlChar;
+            let buf = xmlMallocImpl(len + 1) as *mut xmlChar;
             if !buf.is_null() {
                 ptr::copy_nonoverlapping(src, buf, len);
                 *buf.add(len) = 0;
@@ -5719,13 +5800,13 @@ pub unsafe extern "C" fn xmlXPathCastToString(val: *mut _xmlXPathObject) -> *mut
                 if !content.is_null() {
                     let len = libc::strlen(content as *const libc::c_char);
                     result.extend_from_slice(core::slice::from_raw_parts(content, len));
-                    xmlFree(content as *mut c_void);
+                    xmlFreeImpl(content as *mut c_void);
                 }
             }
         }
     }
     // Allocate the C string.
-    let buf = xmlMalloc(result.len() + 1) as *mut xmlChar;
+    let buf = xmlMallocImpl(result.len() + 1) as *mut xmlChar;
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -5970,9 +6051,9 @@ pub unsafe extern "C" fn xmlXPathNodeSetCreate(val: *mut _xmlNode) -> *mut _xmlN
     if val.is_null() {
         return ns;
     }
-    let tab = xmlMalloc(core::mem::size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
+    let tab = xmlMallocImpl(core::mem::size_of::<*mut _xmlNode>()) as *mut *mut _xmlNode;
     if tab.is_null() {
-        xmlFree(ns as *mut c_void);
+        xmlFreeImpl(ns as *mut c_void);
         return ptr::null_mut();
     }
     *tab = val;
@@ -5999,12 +6080,12 @@ pub unsafe extern "C" fn xmlXPathFreeNodeSet(ns: *mut _xmlNodeSet) {
         return;
     }
     if !(*ns).nodeTab.is_null() {
-        xmlFree((*ns).nodeTab as *mut c_void);
+        xmlFreeImpl((*ns).nodeTab as *mut c_void);
         (*ns).nodeTab = ptr::null_mut();
     }
     (*ns).nodeNr = 0;
     (*ns).nodeMax = 0;
-    xmlFree(ns as *mut c_void);
+    xmlFreeImpl(ns as *mut c_void);
 }
 
 /// Compile an XPath expression.
@@ -6145,8 +6226,11 @@ pub unsafe extern "C" fn xmlXPathRegisterFunc(
         // Store the C function pointer in the side table.
         let key = (SendSyncPtr((*ctxt).extra), name_str.to_string());
         C_FUNCTIONS.lock().insert(key, func);
-        // Register a Rust stub so the evaluator knows the function exists.
-        internal.register_function(name_str, c_func_stub);
+        // Register a Rust closure that bridges to the C function through a
+        // synthesized xmlXPathParserContext (upstream function-call ABI).
+        let c_ctxt = SendSyncPtr(ctxt as *mut c_void);
+        let name_owned = name_str.to_string();
+        internal.register_function(name_str, c_func_bridge_closure(c_ctxt, name_owned));
     }
     0
 }
@@ -6199,7 +6283,9 @@ pub unsafe extern "C" fn xmlXPathRegisterFuncNS(
     if let Some(func) = f {
         let key = (SendSyncPtr((*ctxt).extra), qualified.clone());
         C_FUNCTIONS.lock().insert(key, func);
-        internal.register_function(&qualified, c_func_stub);
+        let c_ctxt = SendSyncPtr(ctxt as *mut c_void);
+        let qualified_owned = qualified.clone();
+        internal.register_function(&qualified, c_func_bridge_closure(c_ctxt, qualified_owned));
     }
     0
 }
@@ -6491,7 +6577,7 @@ pub unsafe extern "C" fn xmlCatalogDump(output: *mut c_void, _catal: *mut c_void
             size as usize,
             output as *mut libc::FILE,
         );
-        xmlFree(mem as *mut c_void);
+        xmlFreeImpl(mem as *mut c_void);
     }
     crate::xml::tree::free_doc(doc);
 }
@@ -6525,7 +6611,7 @@ pub unsafe extern "C" fn xmlCatalogSave(filename: *const c_char) -> c_int {
             ret = if written == size as usize { 0 } else { -1 };
             libc::fclose(fp);
         }
-        xmlFree(mem as *mut c_void);
+        xmlFreeImpl(mem as *mut c_void);
     }
     crate::xml::tree::free_doc(doc);
     ret

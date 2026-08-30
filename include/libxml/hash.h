@@ -18,10 +18,11 @@ extern "C" {
 typedef struct _xmlHashTable xmlHashTable;
 typedef xmlHashTable *xmlHashTablePtr;
 
-typedef void (*xmlHashDeallocator)(void *payload, xmlChar *name);
-typedef void *(*xmlHashCopier)(void *payload, xmlChar *name);
-typedef void (*xmlHashScanner)(void *payload, void *data, xmlChar *name);
-typedef void (*xmlHashScannerFull)(void *payload, void *data, xmlChar *name, xmlChar *name2, xmlChar *name3);
+typedef void (*xmlHashDeallocator)(void *payload, const xmlChar *name);
+typedef void *(*xmlHashCopier)(void *payload, const xmlChar *name);
+typedef void (*xmlHashScanner)(void *payload, void *data, const xmlChar *name);
+typedef void (*xmlHashScannerFull)(void *payload, void *data, const xmlChar *name,
+				  const xmlChar *name2, const xmlChar *name3);
 
 XMLPUBFUN xmlHashTablePtr xmlHashCreate(int size);
 XMLPUBFUN xmlHashTablePtr xmlHashCreateDict(int size, xmlDictPtr dict);

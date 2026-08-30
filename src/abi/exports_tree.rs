@@ -48,7 +48,7 @@ use core::ptr;
 use std::os::raw::{c_char, c_int};
 use std::sync::atomic::{AtomicI32, Ordering};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::constants::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
@@ -166,7 +166,7 @@ unsafe fn copy_char_multibyte(mut out: *mut xmlChar, val: c_int) -> c_int {
 
 /// Copy a byte vector into a NUL-terminated xmlMalloc'd string.
 unsafe fn vec_to_c_string(v: &[u8]) -> *mut xmlChar {
-    let buf = unsafe { xmlMalloc(v.len() + 1) } as *mut xmlChar;
+    let buf = unsafe { xmlMallocImpl(v.len() + 1) } as *mut xmlChar;
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -182,7 +182,7 @@ unsafe fn text_set_content(text: *mut _xmlNode, content: *mut xmlChar) {
     if !(*text).content.is_null() {
         let inline_addr = core::ptr::addr_of_mut!((*text).properties) as *const c_void;
         if (*text).content as *const c_void != inline_addr {
-            unsafe { xmlFree((*text).content as *mut c_void) };
+            unsafe { xmlFreeImpl((*text).content as *mut c_void) };
         }
     }
     (*text).content = content;
@@ -245,7 +245,7 @@ unsafe fn new_doc_text_len(
 unsafe fn new_entity_ref(doc: *mut _xmlDoc, name: *mut xmlChar) -> *mut _xmlNode {
     let cur = unsafe { xmlMallocZero(size_of::<_xmlNode>()) } as *mut _xmlNode;
     if cur.is_null() {
-        unsafe { xmlFree(name as *mut c_void) };
+        unsafe { xmlFreeImpl(name as *mut c_void) };
         return ptr::null_mut();
     }
     (*cur).type_ = XML_ENTITY_REF_NODE as c_int;
@@ -415,14 +415,14 @@ unsafe fn node_parse_att_value(
                             if !buf.is_empty() {
                                 let node = unsafe { new_doc_text(doc, ptr::null()) };
                                 if node.is_null() {
-                                    unsafe { xmlFree(val as *mut c_void) };
+                                    unsafe { xmlFreeImpl(val as *mut c_void) };
                                     failed = true;
                                     break;
                                 }
                                 (*node).content = unsafe { vec_to_c_string(&buf) };
                                 if (*node).content.is_null() {
                                     unsafe { tree::free_node(node) };
-                                    unsafe { xmlFree(val as *mut c_void) };
+                                    unsafe { xmlFreeImpl(val as *mut c_void) };
                                     failed = true;
                                     break;
                                 }
@@ -446,7 +446,7 @@ unsafe fn node_parse_att_value(
                             unsafe { list_append(&mut head, &mut last, node) };
                         }
                         if !val.is_null() {
-                            unsafe { xmlFree(val as *mut c_void) };
+                            unsafe { xmlFreeImpl(val as *mut c_void) };
                         }
                     }
                     cur = cur.add(1);
@@ -575,9 +575,9 @@ unsafe fn free_prop_impl(cur: *mut _xmlAttr) {
         unsafe { tree::free_node_list((*cur).children) };
     }
     if !(*cur).name.is_null() {
-        unsafe { xmlFree((*cur).name as *mut c_void) };
+        unsafe { xmlFreeImpl((*cur).name as *mut c_void) };
     }
-    unsafe { xmlFree(cur as *mut c_void) };
+    unsafe { xmlFreeImpl(cur as *mut c_void) };
 }
 
 /// Upstream `xmlFreeNs`.
@@ -586,12 +586,12 @@ unsafe fn free_ns_impl(cur: *mut _xmlNs) {
         return;
     }
     if !(*cur).href.is_null() {
-        unsafe { xmlFree((*cur).href as *mut c_void) };
+        unsafe { xmlFreeImpl((*cur).href as *mut c_void) };
     }
     if !(*cur).prefix.is_null() {
-        unsafe { xmlFree((*cur).prefix as *mut c_void) };
+        unsafe { xmlFreeImpl((*cur).prefix as *mut c_void) };
     }
-    unsafe { xmlFree(cur as *mut c_void) };
+    unsafe { xmlFreeImpl(cur as *mut c_void) };
 }
 
 /// Upstream `xmlGetPropNodeInternal` (ns-name variant).
@@ -718,14 +718,14 @@ unsafe fn new_prop_internal(
     let doc: *mut _xmlDoc;
     if !node.is_null() && (*node).type_ != XML_ELEMENT_NODE as c_int {
         if eatname == 1 {
-            unsafe { xmlFree(name as *mut c_void) };
+            unsafe { xmlFreeImpl(name as *mut c_void) };
         }
         return ptr::null_mut();
     }
     let cur = unsafe { xmlMallocZero(size_of::<_xmlAttr>()) } as *mut _xmlAttr;
     if cur.is_null() {
         if eatname == 1 {
-            unsafe { xmlFree(name as *mut c_void) };
+            unsafe { xmlFreeImpl(name as *mut c_void) };
         }
         return ptr::null_mut();
     }
@@ -1098,7 +1098,7 @@ unsafe fn new_elem(
     if !content.is_null() {
         if unsafe { node_parse_att_value(doc, cur, content, usize::MAX) } < 0 {
             // Don't free name on error.
-            unsafe { xmlFree(cur as *mut c_void) };
+            unsafe { xmlFreeImpl(cur as *mut c_void) };
             return ptr::null_mut();
         }
     }
@@ -1121,7 +1121,7 @@ unsafe fn new_doc_node(
     }
     let cur = unsafe { new_elem(doc, ns, copy, content) };
     if cur.is_null() {
-        unsafe { xmlFree(copy as *mut c_void) };
+        unsafe { xmlFreeImpl(copy as *mut c_void) };
         return ptr::null_mut();
     }
     cur
@@ -1139,7 +1139,7 @@ unsafe fn new_doc_node_eat_name(
     }
     let cur = unsafe { new_elem(doc, ns, name, content) };
     if cur.is_null() {
-        unsafe { xmlFree(name as *mut c_void) };
+        unsafe { xmlFreeImpl(name as *mut c_void) };
         return ptr::null_mut();
     }
     cur
@@ -1228,16 +1228,16 @@ unsafe fn ns_map_free(nsmap: *mut NsMap) {
     let mut cur = (*nsmap).pool;
     while !cur.is_null() {
         let next = (*cur).next;
-        unsafe { xmlFree(cur as *mut c_void) };
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         cur = next;
     }
     cur = (*nsmap).first;
     while !cur.is_null() {
         let next = (*cur).next;
-        unsafe { xmlFree(cur as *mut c_void) };
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         cur = next;
     }
-    unsafe { xmlFree(nsmap as *mut c_void) };
+    unsafe { xmlFreeImpl(nsmap as *mut c_void) };
 }
 
 /// Upstream `xmlDOMWrapNsMapAddItem`.
@@ -1396,7 +1396,7 @@ unsafe fn ns_norm_add_ns_map_item2(
     if *number >= *size {
         let new_size = if *size <= 0 { 6 } else { (*size) * 2 };
         let tmp = unsafe {
-            xmlRealloc(
+            xmlReallocImpl(
                 *list as *mut c_void,
                 (new_size as usize) * 2 * size_of::<*mut _xmlNs>(),
             )
@@ -2033,7 +2033,7 @@ pub unsafe extern "C" fn xmlNewDocProp(
     (*cur).type_ = XML_ATTRIBUTE_NODE as c_int;
     (*cur).name = unsafe { dup_str(name) };
     if (*cur).name.is_null() {
-        unsafe { xmlFree(cur as *mut c_void) };
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         return ptr::null_mut();
     }
     (*cur).doc = doc;
@@ -2487,7 +2487,7 @@ pub unsafe extern "C" fn xmlNodeGetSpacePreserve(cur: *const _xmlNode) -> c_int 
                     b"preserve\0".as_ptr() as *const xmlChar,
                 ) != 0
             } {
-                unsafe { xmlFree(space as *mut c_void) };
+                unsafe { xmlFreeImpl(space as *mut c_void) };
                 return 1;
             }
             if unsafe {
@@ -2496,10 +2496,10 @@ pub unsafe extern "C" fn xmlNodeGetSpacePreserve(cur: *const _xmlNode) -> c_int 
                     b"default\0".as_ptr() as *const xmlChar,
                 ) != 0
             } {
-                unsafe { xmlFree(space as *mut c_void) };
+                unsafe { xmlFreeImpl(space as *mut c_void) };
                 return 0;
             }
-            unsafe { xmlFree(space as *mut c_void) };
+            unsafe { xmlFreeImpl(space as *mut c_void) };
         }
         c = (*c).parent;
     }
@@ -2536,7 +2536,7 @@ pub unsafe extern "C" fn xmlNodeSetName(cur: *mut _xmlNode, name: *const xmlChar
     let old = (*cur).name;
     (*cur).name = copy;
     if !old.is_null() {
-        unsafe { xmlFree(old as *mut c_void) };
+        unsafe { xmlFreeImpl(old as *mut c_void) };
     }
 }
 
@@ -2562,7 +2562,7 @@ pub unsafe extern "C" fn xmlNodeSetBase(cur: *mut _xmlNode, uri: *const xmlChar)
         t if t == XML_DOCUMENT_NODE as u32 || t == XML_HTML_DOCUMENT_NODE as u32 => {
             let doc = cur as *mut _xmlDoc;
             if !(*doc).URL.is_null() {
-                unsafe { xmlFree((*doc).URL as *mut c_void) };
+                unsafe { xmlFreeImpl((*doc).URL as *mut c_void) };
             }
             if uri.is_null() {
                 (*doc).URL = ptr::null_mut();
@@ -2586,10 +2586,10 @@ pub unsafe extern "C" fn xmlNodeSetBase(cur: *mut _xmlNode, uri: *const xmlChar)
     }
     let attr = unsafe { set_ns_prop_impl(cur, ns, b"base\0".as_ptr() as *const xmlChar, fixed) };
     if attr.is_null() {
-        unsafe { xmlFree(fixed as *mut c_void) };
+        unsafe { xmlFreeImpl(fixed as *mut c_void) };
         return -1;
     }
-    unsafe { xmlFree(fixed as *mut c_void) };
+    unsafe { xmlFreeImpl(fixed as *mut c_void) };
     0
 }
 
@@ -2663,7 +2663,7 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
                 break;
             }
             if !ret.is_null() {
-                unsafe { xmlFree(ret as *mut c_void) };
+                unsafe { xmlFreeImpl(ret as *mut c_void) };
             }
             ret = unsafe { dup_str((*ent).URI) };
             if ret.is_null() {
@@ -2690,8 +2690,8 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
                             &mut newbase,
                         )
                     };
-                    unsafe { xmlFree(ret as *mut c_void) };
-                    unsafe { xmlFree(base as *mut c_void) };
+                    unsafe { xmlFreeImpl(ret as *mut c_void) };
+                    unsafe { xmlFreeImpl(base as *mut c_void) };
                     if res != 0 {
                         return res;
                     }
@@ -2747,7 +2747,7 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
                     &mut newbase,
                 )
             };
-            unsafe { xmlFree(ret as *mut c_void) };
+            unsafe { xmlFreeImpl(ret as *mut c_void) };
             if res != 0 {
                 return res;
             }
@@ -3072,13 +3072,13 @@ pub unsafe extern "C" fn xmlGetNsListSafe(
                     if nbns >= maxns {
                         let new_size = if maxns <= 0 { 10 } else { maxns * 2 };
                         let tmp = unsafe {
-                            xmlRealloc(
+                            xmlReallocImpl(
                                 namespaces as *mut c_void,
                                 ((new_size + 1) as usize) * size_of::<*mut _xmlNs>(),
                             )
                         } as *mut *mut _xmlNs;
                         if tmp.is_null() {
-                            unsafe { xmlFree(namespaces as *mut c_void) };
+                            unsafe { xmlFreeImpl(namespaces as *mut c_void) };
                             return -1;
                         }
                         namespaces = tmp;
@@ -3328,7 +3328,7 @@ pub unsafe extern "C" fn xmlDOMWrapFreeCtxt(ctxt: *mut _xmlDOMWrapCtxt) {
     if !(*ctxt).namespaceMap.is_null() {
         unsafe { ns_map_free((*ctxt).namespaceMap as *mut NsMap) };
     }
-    unsafe { xmlFree(ctxt as *mut c_void) };
+    unsafe { xmlFreeImpl(ctxt as *mut c_void) };
 }
 
 /// Unlinks the given node from its owner, substituting ns-references to
@@ -3521,7 +3521,7 @@ pub unsafe extern "C" fn xmlDOMWrapRemoveNode(
     }
 
     if !list.is_null() {
-        unsafe { xmlFree(list as *mut c_void) };
+        unsafe { xmlFreeImpl(list as *mut c_void) };
     }
     ret
 }
@@ -3763,7 +3763,7 @@ pub unsafe extern "C" fn xmlDOMWrapReconcileNamespaces(
             i += 1;
             j += 2;
         }
-        unsafe { xmlFree(list_redund as *mut c_void) };
+        unsafe { xmlFreeImpl(list_redund as *mut c_void) };
     }
     if !ns_map.is_null() {
         unsafe { ns_map_free(ns_map) };
@@ -4750,7 +4750,7 @@ pub unsafe extern "C" fn xmlCreateEnumeration(name: *const xmlChar) -> *mut _xml
     if !name.is_null() {
         (*ret).name = unsafe { dup_str(name) };
         if (*ret).name.is_null() {
-            unsafe { xmlFree(ret as *mut c_void) };
+            unsafe { xmlFreeImpl(ret as *mut c_void) };
             return ptr::null_mut();
         }
     }
@@ -4774,9 +4774,9 @@ pub unsafe extern "C" fn xmlFreeEnumeration(cur: *mut _xmlEnumeration) {
     while !c.is_null() {
         let next = (*c).next;
         if !(*c).name.is_null() {
-            unsafe { xmlFree((*c).name as *mut c_void) };
+            unsafe { xmlFreeImpl((*c).name as *mut c_void) };
         }
-        unsafe { xmlFree(c as *mut c_void) };
+        unsafe { xmlFreeImpl(c as *mut c_void) };
         c = next;
     }
 }
@@ -4798,14 +4798,14 @@ unsafe fn free_elem_content_internal(cur: *mut _xmlElementContent) {
             depth += 1;
         }
         if !(*cur).name.is_null() {
-            unsafe { xmlFree((*cur).name as *mut c_void) };
+            unsafe { xmlFreeImpl((*cur).name as *mut c_void) };
         }
         if !(*cur).prefix.is_null() {
-            unsafe { xmlFree((*cur).prefix as *mut c_void) };
+            unsafe { xmlFreeImpl((*cur).prefix as *mut c_void) };
         }
         let parent = (*cur).parent;
         if depth == 0 || parent.is_null() {
-            unsafe { xmlFree(cur as *mut c_void) };
+            unsafe { xmlFreeImpl(cur as *mut c_void) };
             break;
         }
         if cur == (*parent).c1 {
@@ -4813,7 +4813,7 @@ unsafe fn free_elem_content_internal(cur: *mut _xmlElementContent) {
         } else {
             (*parent).c2 = ptr::null_mut();
         }
-        unsafe { xmlFree(cur as *mut c_void) };
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         if !(*parent).c2.is_null() {
             cur = (*parent).c2;
         } else {

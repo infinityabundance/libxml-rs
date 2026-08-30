@@ -549,7 +549,7 @@ impl XmlParser {
                 ptr::null_mut()
             };
             let _ = elem;
-            crate::abi::allocator::xmlFree(name_cstr as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
         }
     }
 
@@ -734,7 +734,14 @@ impl XmlParser {
             // External: SYSTEM "uri" / PUBLIC "pub" "uri".
             if tail.starts_with(b"SYSTEM") || tail.starts_with(b"PUBLIC") {
                 let after_kw = trim_ascii(&tail[6..]);
-                let (pub_id, sys_id) = split_two_quoted(after_kw);
+                // UPSTREAM-PARITY (xmlParseEntityDecl): for a SYSTEM-only
+                // declaration the first literal is the SystemID; for PUBLIC
+                // the first is the public ID and the second the SystemID.
+                let (pub_id, sys_id) = if tail.starts_with(b"PUBLIC") {
+                    split_two_quoted(after_kw)
+                } else {
+                    (None, read_quoted(after_kw))
+                };
                 let external_type = if is_param {
                     XML_EXTERNAL_PARAMETER_ENTITY as c_int
                 } else {
@@ -763,10 +770,10 @@ impl XmlParser {
                     ptr::null(),
                 );
                 if !pub_c.is_null() {
-                    crate::abi::allocator::xmlFree(pub_c as *mut c_void);
+                    crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
                 }
                 if !sys_c.is_null() {
-                    crate::abi::allocator::xmlFree(sys_c as *mut c_void);
+                    crate::abi::allocator::xmlFreeImpl(sys_c as *mut c_void);
                 }
             } else {
                 // Internal: quoted value.
@@ -783,10 +790,10 @@ impl XmlParser {
                     v,
                 );
                 if !v.is_null() {
-                    crate::abi::allocator::xmlFree(v as *mut c_void);
+                    crate::abi::allocator::xmlFreeImpl(v as *mut c_void);
                 }
             }
-            crate::abi::allocator::xmlFree(name_cstr as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
         }
     }
 
@@ -806,7 +813,7 @@ impl XmlParser {
         unsafe {
             let elem_decl = crate::xml::dtd::get_element_decl(dtd, elem_cstr);
             if elem_decl.is_null() {
-                crate::abi::allocator::xmlFree(elem_cstr as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
                 return;
             }
             while !rest.is_empty() {
@@ -834,11 +841,11 @@ impl XmlParser {
                     dtd, elem_decl, attr_cstr, atype, def, dv, tree,
                 );
                 if !dv.is_null() {
-                    crate::abi::allocator::xmlFree(dv as *mut c_void);
+                    crate::abi::allocator::xmlFreeImpl(dv as *mut c_void);
                 }
-                crate::abi::allocator::xmlFree(attr_cstr as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(attr_cstr as *mut c_void);
             }
-            crate::abi::allocator::xmlFree(elem_cstr as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
         }
     }
 
@@ -865,12 +872,12 @@ impl XmlParser {
                 .unwrap_or(ptr::null());
             crate::xml::dtd::add_notation_decl(dtd, name_cstr, pub_c, sys_c);
             if !pub_c.is_null() {
-                crate::abi::allocator::xmlFree(pub_c as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
             }
             if !sys_c.is_null() {
-                crate::abi::allocator::xmlFree(sys_c as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(sys_c as *mut c_void);
             }
-            crate::abi::allocator::xmlFree(name_cstr as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
         }
     }
 
@@ -1232,7 +1239,7 @@ impl XmlParser {
                                                     .to_vec()
                                                 });
                                                 unsafe {
-                                                    crate::abi::allocator::xmlFree(
+                                                    crate::abi::allocator::xmlFreeImpl(
                                                         content as *mut core::ffi::c_void,
                                                     )
                                                 };
@@ -1353,14 +1360,36 @@ impl XmlParser {
                 let buf = InputBuffer::from_memory(bytes, None);
                 self.tokenizer.push_input(buf);
             } else {
-                // External entity with no in-memory content: report the
-                // reference and leave it unresolved.
-                if !self.is_sax_disabled() {
-                    let name_cstr = Self::vec_to_cstr_null(inner);
+                // External entity with no in-memory content: load it through
+                // the registered loader (upstream xmlParseReference ->
+                // xmlLoadExternalEntity) and re-parse the returned content
+                // as a pushed input.
+                let loaded = unsafe {
+                    let sys = (*entity).SystemID as *const c_char;
+                    let ext = (*entity).ExternalID as *const c_char;
+                    crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
+                };
+                if loaded.is_null() {
+                    self.set_error(XML_ERR_UNDECLARED_ENTITY, "Failed to load external entity");
+                } else {
                     unsafe {
-                        let sax = &*(*self.ctxt).sax;
-                        let ctx = (*self.ctxt).userData;
-                        SaxDispatcher::reference(sax, ctx, name_cstr);
+                        let base = (*loaded).base;
+                        let end = (*loaded).end;
+                        let len = end.offset_from(base).max(0) as usize;
+                        let bytes = if base.is_null() || len == 0 {
+                            &[][..]
+                        } else {
+                            core::slice::from_raw_parts(base, len)
+                        };
+                        let buf = InputBuffer::from_memory(bytes, None);
+                        self.tokenizer.push_input(buf);
+                        // The bytes were copied into the tokenizer's
+                        // InputBuffer; free the C input shell and its buffer
+                        // (the content pointer itself is owned by the loader).
+                        if !(*loaded).buf.is_null() {
+                            crate::xml::parser::helpers::free_parser_input_buffer((*loaded).buf);
+                        }
+                        crate::abi::exports_xml2::xmlFreeInputStream(loaded);
                     }
                 }
             }
@@ -2206,7 +2235,7 @@ fn parse_enumeration(s: &[u8]) -> (*mut crate::abi::structs::_xmlEnumeration, us
         unsafe {
             let tmp = vec_to_cstr_null_helper(name);
             (*node).name = crate::xml::string::xml_strdup(tmp as *const u8);
-            crate::abi::allocator::xmlFree(tmp as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(tmp as *mut c_void);
         }
         if head.is_null() {
             head = node;

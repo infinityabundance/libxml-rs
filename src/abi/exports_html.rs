@@ -54,7 +54,7 @@ use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_uint};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
@@ -2460,7 +2460,7 @@ unsafe fn html_ctxt_set_input(ctxt: *mut HtmlOpaqueCtxt, buffer: *const c_char, 
         return;
     }
     let len = size as usize;
-    let nb = xmlMalloc(len) as *mut u8;
+    let nb = xmlMallocImpl(len) as *mut u8;
     if nb.is_null() {
         return;
     }
@@ -2568,7 +2568,7 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
         } else {
             // Upstream always creates a push input; allocate an (empty)
             // buffer so htmlParseChunk sees a valid input.
-            let nb = xmlMalloc(1) as *mut u8;
+            let nb = xmlMallocImpl(1) as *mut u8;
             if !nb.is_null() {
                 (*ctxt).input = nb;
                 (*ctxt).input_len = 0;
@@ -2594,7 +2594,7 @@ pub unsafe extern "C" fn htmlCtxtReset(ctxt: *mut c_void) {
     let c = ctxt as *mut HtmlOpaqueCtxt;
     unsafe {
         if !(*c).input.is_null() {
-            xmlFree((*c).input as *mut c_void);
+            xmlFreeImpl((*c).input as *mut c_void);
         }
         (*c).input = ptr::null_mut();
         (*c).input_len = 0;
@@ -2684,7 +2684,7 @@ pub unsafe extern "C" fn htmlParseChunk(
 
     if size > 0 {
         let new_len = unsafe { (*c).input_len }.wrapping_add(size as usize);
-        let nb = unsafe { xmlRealloc((*c).input as *mut c_void, new_len) } as *mut u8;
+        let nb = unsafe { xmlReallocImpl((*c).input as *mut c_void, new_len) } as *mut u8;
         if nb.is_null() {
             return XML_ERR_NO_MEMORY;
         }
@@ -2701,7 +2701,7 @@ pub unsafe extern "C" fn htmlParseChunk(
         unsafe {
             (*c).doc = doc;
             // The accumulated input is no longer needed.
-            xmlFree((*c).input as *mut c_void);
+            xmlFreeImpl((*c).input as *mut c_void);
             (*c).input = ptr::null_mut();
             (*c).input_len = 0;
         }
@@ -3463,7 +3463,7 @@ unsafe fn html_update_meta_encoding(
     let e = end.min(bytes.len()).min(size);
     let s = start.min(e);
     let total = size - (e - s) + enc.len();
-    let new_val = xmlMalloc(total + 1) as *mut xmlChar;
+    let new_val = xmlMallocImpl(total + 1) as *mut xmlChar;
     if new_val.is_null() {
         return ptr::null_mut();
     }
@@ -3558,7 +3558,7 @@ pub unsafe extern "C" fn htmlSetMetaEncoding(doc: *mut _xmlDoc, encoding: *const
                     return -1;
                 }
                 let ret = unsafe { html_set_attr_content(attr, new_val) };
-                unsafe { xmlFree(new_val as *mut c_void) };
+                unsafe { xmlFreeImpl(new_val as *mut c_void) };
                 if ret < 0 {
                     return -1;
                 }

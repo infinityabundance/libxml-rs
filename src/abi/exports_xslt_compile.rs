@@ -49,7 +49,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::exports_hash::xmlDictReference;
 use crate::abi::exports_string::xmlStrstr;
 use crate::abi::exports_tree::xmlNodeGetBase;
@@ -286,7 +286,7 @@ unsafe fn dup_str(s: *const xmlChar) -> *mut xmlChar {
         return ptr::null_mut();
     }
     let len = libc::strlen(s as *const libc::c_char);
-    let copy = xmlMalloc(len + 1) as *mut xmlChar;
+    let copy = xmlMallocImpl(len + 1) as *mut xmlChar;
     if copy.is_null() {
         return ptr::null_mut();
     }
@@ -367,7 +367,7 @@ unsafe fn xslt_new_decimal_format(
     nsUri: *const xmlChar,
     name: *mut xmlChar,
 ) -> *mut _xsltDecimalFormat {
-    let self_ = xmlMalloc(core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
+    let self_ = xmlMallocImpl(core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
     if !self_.is_null() {
         ptr::write_bytes(
             self_ as *mut u8,
@@ -393,7 +393,7 @@ unsafe fn xslt_new_decimal_format(
 
 /// `xsltNewStylesheetInternal` (xslt.c).
 unsafe fn xslt_new_stylesheet_internal(parent: *mut _xsltStylesheet) -> *mut _xsltStylesheet {
-    let ret = xmlMalloc(core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
+    let ret = xmlMallocImpl(core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
     if ret.is_null() {
         report_error(
             ptr::null_mut(),
@@ -777,13 +777,13 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
     if uriRef.is_null() {
         report_error(style, cur, b"xsl:import : missing href attribute\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -795,26 +795,26 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
         report_error(style, cur, cbytes(uriRef as *const u8));
         report_error(style, cur, b"\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
 
     if xslt_check_cycle(style, cur, uri) < 0 {
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -834,13 +834,13 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
                 report_error(ptr::null_mut(), ptr::null_mut(), b" denied\n");
             }
             if !uriRef.is_null() {
-                xmlFree(uriRef as *mut c_void);
+                xmlFreeImpl(uriRef as *mut c_void);
             }
             if !base.is_null() {
-                xmlFree(base as *mut c_void);
+                xmlFreeImpl(base as *mut c_void);
             }
             if !uri.is_null() {
-                xmlFree(uri as *mut c_void);
+                xmlFreeImpl(uri as *mut c_void);
             }
             return ret;
         }
@@ -858,13 +858,13 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
         report_error(style, cur, cbytes(uri as *const u8));
         report_error(style, cur, b"\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -882,13 +882,13 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
     }
 
     if !uriRef.is_null() {
-        xmlFree(uriRef as *mut c_void);
+        xmlFreeImpl(uriRef as *mut c_void);
     }
     if !base.is_null() {
-        xmlFree(base as *mut c_void);
+        xmlFreeImpl(base as *mut c_void);
     }
     if !uri.is_null() {
-        xmlFree(uri as *mut c_void);
+        xmlFreeImpl(uri as *mut c_void);
     }
 
     ret
@@ -941,13 +941,13 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
     if uriRef.is_null() {
         report_error(style, cur, b"xsl:include : missing href attribute\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -959,26 +959,26 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
         report_error(style, cur, cbytes(uriRef as *const u8));
         report_error(style, cur, b"\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
 
     if xslt_check_cycle(style, cur, uri) < 0 {
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -989,13 +989,13 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
         report_error(style, cur, cbytes(uri as *const u8));
         report_error(style, cur, b"\n");
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
@@ -1020,26 +1020,26 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
     if result.is_null() {
         ret = -1;
         if !uriRef.is_null() {
-            xmlFree(uriRef as *mut c_void);
+            xmlFreeImpl(uriRef as *mut c_void);
         }
         if !base.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
         if !uri.is_null() {
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
         }
         return ret;
     }
     ret = 0;
 
     if !uriRef.is_null() {
-        xmlFree(uriRef as *mut c_void);
+        xmlFreeImpl(uriRef as *mut c_void);
     }
     if !base.is_null() {
-        xmlFree(base as *mut c_void);
+        xmlFreeImpl(base as *mut c_void);
     }
     if !uri.is_null() {
-        xmlFree(uri as *mut c_void);
+        xmlFreeImpl(uri as *mut c_void);
     }
     return ret;
 }
@@ -1102,7 +1102,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     let mut prop = xmlGetNsProp(cur, b"version\0".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).version.is_null() {
-            xmlFree((*style).version as *mut c_void);
+            xmlFreeImpl((*style).version as *mut c_void);
         }
         (*style).version = prop;
         prop = ptr::null_mut();
@@ -1112,7 +1112,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     prop = xmlGetNsProp(cur, b"encoding\0".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).encoding.is_null() {
-            xmlFree((*style).encoding as *mut c_void);
+            xmlFreeImpl((*style).encoding as *mut c_void);
         }
         (*style).encoding = prop;
         prop = ptr::null_mut();
@@ -1122,11 +1122,11 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     prop = xmlGetNsProp(cur, b"method\0".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).method.is_null() {
-            xmlFree((*style).method as *mut c_void);
+            xmlFreeImpl((*style).method as *mut c_void);
         }
         (*style).method = ptr::null_mut();
         if !(*style).methodURI.is_null() {
-            xmlFree((*style).methodURI as *mut c_void);
+            xmlFreeImpl((*style).methodURI as *mut c_void);
         }
         (*style).methodURI = ptr::null_mut();
 
@@ -1149,7 +1149,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                 if !style.is_null() {
                     (*style).warnings += 1;
                 }
-                xmlFree(method as *mut c_void);
+                xmlFreeImpl(method as *mut c_void);
             }
         } else {
             (*style).method = method;
@@ -1166,7 +1166,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     );
     if !prop.is_null() {
         if !(*style).doctypeSystem.is_null() {
-            xmlFree((*style).doctypeSystem as *mut c_void);
+            xmlFreeImpl((*style).doctypeSystem as *mut c_void);
         }
         (*style).doctypeSystem = prop;
         prop = ptr::null_mut();
@@ -1180,7 +1180,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     );
     if !prop.is_null() {
         if !(*style).doctypePublic.is_null() {
-            xmlFree((*style).doctypePublic as *mut c_void);
+            xmlFreeImpl((*style).doctypePublic as *mut c_void);
         }
         (*style).doctypePublic = prop;
         prop = ptr::null_mut();
@@ -1197,7 +1197,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
             report_error(style, cur, b"invalid value for standalone\n");
             (*style).errors += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 
     // indent
@@ -1211,7 +1211,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
             report_error(style, cur, b"invalid value for indent\n");
             (*style).errors += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 
     // omit-xml-declaration
@@ -1229,7 +1229,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
             report_error(style, cur, b"invalid value for omit-xml-declaration\n");
             (*style).errors += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 
     // cdata-section-elements
@@ -1243,7 +1243,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
             (*style).cdataSection = crate::xml::hash::hash_create(10) as *mut c_void;
         }
         if (*style).cdataSection.is_null() {
-            xmlFree(elements as *mut c_void);
+            xmlFreeImpl(elements as *mut c_void);
             return;
         }
 
@@ -1260,7 +1260,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                 end = end.add(1);
             }
             let len = end.offset_from(element) as usize;
-            let token = xmlMalloc(len + 1) as *mut xmlChar;
+            let token = xmlMallocImpl(len + 1) as *mut xmlChar;
             if !token.is_null() {
                 core::ptr::copy_nonoverlapping(element, token, len);
                 *token.add(len) = 0;
@@ -1270,7 +1270,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                         cur,
                         b"Attribute 'cdata-section-elements': The value is not a valid QName.\n",
                     );
-                    xmlFree(token as *mut c_void);
+                    xmlFreeImpl(token as *mut c_void);
                     (*style).errors += 1;
                 } else {
                     let mut qname = token;
@@ -1298,20 +1298,20 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                             uri,
                             b"cdata\0".as_ptr() as *const c_void as *mut c_void,
                         );
-                        xmlFree(qname as *mut c_void);
+                        xmlFreeImpl(qname as *mut c_void);
                     }
                 }
             }
             element = end;
         }
-        xmlFree(elements as *mut c_void);
+        xmlFreeImpl(elements as *mut c_void);
     }
 
     // media-type
     prop = xmlGetNsProp(cur, b"media-type\0".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).mediaType.is_null() {
-            xmlFree((*style).mediaType as *mut c_void);
+            xmlFreeImpl((*style).mediaType as *mut c_void);
         }
         (*style).mediaType = prop;
         prop = ptr::null_mut();
@@ -1357,7 +1357,7 @@ pub unsafe extern "C" fn xsltParseStylesheetAttributeSet(
     let value = xmlGetNsProp(cur, b"name\0".as_ptr() as *const xmlChar, ptr::null());
     if value.is_null() || *value == 0 {
         if !value.is_null() {
-            xmlFree(value as *mut c_void);
+            xmlFreeImpl(value as *mut c_void);
         }
         return;
     }
@@ -1368,10 +1368,10 @@ pub unsafe extern "C" fn xsltParseStylesheetAttributeSet(
             b"xsl:attribute-set : The name is not a valid QName.\n",
         );
         (*style).errors += 1;
-        xmlFree(value as *mut c_void);
+        xmlFreeImpl(value as *mut c_void);
         return;
     }
-    xmlFree(value as *mut c_void);
+    xmlFreeImpl(value as *mut c_void);
 
     crate::xslt::attributes::xsltCompileAttrSet(style, cur);
 }
@@ -1428,7 +1428,7 @@ pub unsafe extern "C" fn xsltParseGlobalVariable(style: *mut _xsltStylesheet, cu
         }
         tmp = (*tmp).next;
     }
-    xmlFree(name as *mut c_void);
+    xmlFreeImpl(name as *mut c_void);
 
     // Parse the content (a sequence constructor).
     if !(*cur).children.is_null() {
@@ -1468,7 +1468,7 @@ pub unsafe extern "C" fn xsltParseGlobalParam(style: *mut _xsltStylesheet, cur: 
         report_error(style, cur, b"xsl:param : missing name attribute\n");
         return;
     }
-    xmlFree(name as *mut c_void);
+    xmlFreeImpl(name as *mut c_void);
 
     // Parse the content (a sequence constructor).
     if !(*cur).children.is_null() {
@@ -1744,12 +1744,12 @@ unsafe fn xslt_free_style_pre_comp(comp: *mut c_void) {
     if comp.is_null() {
         return;
     }
-    xmlFree(comp);
+    xmlFreeImpl(comp);
 }
 
 /// `xsltFreeElemPreComp` (extensions.c).
 unsafe extern "C" fn xslt_free_elem_pre_comp(comp: *mut c_void) {
-    xmlFree(comp);
+    xmlFreeImpl(comp);
 }
 
 /// `xsltNewStylePreComp` (preproc.c) for the non-refactored engine: build
@@ -1769,7 +1769,7 @@ unsafe fn xslt_new_style_pre_comp(
     if style.is_null() {
         return ptr::null_mut();
     }
-    let cur = xmlMalloc(core::mem::size_of::<_xsltStylePreComp>()) as *mut _xsltStylePreComp;
+    let cur = xmlMallocImpl(core::mem::size_of::<_xsltStylePreComp>()) as *mut _xsltStylePreComp;
     if cur.is_null() {
         report_error(
             style,
@@ -1901,7 +1901,7 @@ unsafe fn xslt_new_elem_pre_comp(
     inst: *mut _xmlNode,
     function: Option<xsltTransformFunction>,
 ) -> *mut _xsltElemPreComp {
-    let cur = xmlMalloc(core::mem::size_of::<_xsltElemPreComp>()) as *mut _xsltElemPreComp;
+    let cur = xmlMallocImpl(core::mem::size_of::<_xsltElemPreComp>()) as *mut _xsltElemPreComp;
     if cur.is_null() {
         report_error(
             style,
@@ -2354,7 +2354,7 @@ pub unsafe extern "C" fn xsltNormalizeCompSteps(
 /// ```c
 /// xsltDocumentPtr
 /// xsltNewStyleDocument(xsltStylesheetPtr style, xmlDocPtr doc) {
-///     cur = xmlMalloc(sizeof(xsltDocument));
+///     cur = xmlMallocImpl(sizeof(xsltDocument));
 ///     if (cur == NULL) { ... return(NULL); }
 ///     memset(cur, 0, sizeof(xsltDocument));
 ///     cur->doc = doc;
@@ -2378,7 +2378,7 @@ pub unsafe extern "C" fn xsltNewStyleDocument(
     style: *mut _xsltStylesheet,
     doc: *mut _xmlDoc,
 ) -> *mut _xsltDocument {
-    let cur = xmlMalloc(core::mem::size_of::<_xsltDocument>()) as *mut _xsltDocument;
+    let cur = xmlMallocImpl(core::mem::size_of::<_xsltDocument>()) as *mut _xsltDocument;
     if cur.is_null() {
         report_error(
             style,
@@ -2488,7 +2488,7 @@ pub unsafe extern "C" fn xsltLoadStyleDocument(
 ///         doc = cur; cur = cur->next;
 ///         xsltFreeDocumentKeys(doc);
 ///         if (!doc->main) xmlFreeDoc(doc->doc);
-///         xmlFree(doc);
+///         xmlFreeImpl(doc);
 ///     }
 /// }
 /// ```
@@ -2517,7 +2517,7 @@ pub unsafe extern "C" fn xsltFreeStyleDocuments(style: *mut _xsltStylesheet) {
         if (*doc).main == 0 && !(*doc).doc.is_null() {
             crate::xml::tree::free_doc((*doc).doc);
         }
-        xmlFree(doc as *mut c_void);
+        xmlFreeImpl(doc as *mut c_void);
     }
 }
 

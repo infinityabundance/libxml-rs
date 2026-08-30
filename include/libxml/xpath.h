@@ -204,8 +204,9 @@ XMLPUBFUN int xmlXPathNodeSetAdd(xmlNodeSetPtr cur, xmlNodePtr val);
 XMLPUBFUN int xmlXPathNodeSetAddUnique(xmlNodeSetPtr cur, xmlNodePtr val);
 XMLPUBFUN int xmlXPathNodeSetAddNs(xmlNodeSetPtr cur, xmlNodePtr node,
                                   xmlNsPtr ns);
-XMLPUBFUN int xmlXPathNodeSetDel(xmlNodeSetPtr cur, xmlNodePtr val);
-XMLPUBFUN int xmlXPathNodeSetRemove(xmlNodeSetPtr cur, int val);
+/* xmlXPathNodeSetDel/xmlXPathNodeSetRemove are declared (as void) in
+ * xpathInternals.h — the upstream location; removing the int prototypes here
+ * (they are xpathInternals, not public xpath.h, declarations). */
 XMLPUBFUN void xmlXPathNodeSetSort(xmlNodeSetPtr set);
 XMLPUBFUN xmlNodeSetPtr xmlXPathNodeSetMerge(xmlNodeSetPtr val1,
                                             xmlNodeSetPtr val2);
@@ -235,9 +236,9 @@ XMLPUBFUN xmlNodeSetPtr xmlXPathNodeTrailingSorted(xmlNodeSetPtr nodes,
 XMLPUBFUN void xmlXPathNodeSetFreeNs(xmlNsPtr ns);
 XMLPUBFUN long xmlXPathOrderDocElems(xmlDocPtr doc);
 
-XMLPUBFUN xmlXPathObjectPtr xmlXPathValuePush(xmlXPathParserContextPtr ctxt,
-                                             xmlXPathObjectPtr value);
-XMLPUBFUN xmlXPathObjectPtr xmlXPathValuePop(xmlXPathParserContextPtr ctxt);
+/* xmlXPathValuePush / xmlXPathValuePop (and the Pop / Return helper
+ * families) are xpathInternals.h declarations upstream — the canonical
+ * (and corrected) prototypes live there. */
 XMLPUBFUN int xmlXPathPopBoolean(xmlXPathParserContextPtr ctxt);
 XMLPUBFUN void *xmlXPathPopExternal(xmlXPathParserContextPtr ctxt);
 XMLPUBFUN xmlNodeSetPtr xmlXPathPopNodeSet(xmlXPathParserContextPtr ctxt);

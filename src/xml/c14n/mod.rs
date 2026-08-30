@@ -1552,7 +1552,7 @@ pub unsafe extern "C" fn xmlC14NDocSaveTo(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use crate::xml::io;
     use crate::xml::tree;
     use core::ptr;
@@ -1606,7 +1606,7 @@ mod tests {
             let slice = core::slice::from_raw_parts(result, len as usize);
             String::from_utf8_lossy(slice).to_string()
         };
-        xmlFree(result as *mut c_void);
+        xmlFreeImpl(result as *mut c_void);
         s
     }
 
@@ -2100,7 +2100,7 @@ mod tests {
                 let slice = core::slice::from_raw_parts(result, len as usize);
                 String::from_utf8_lossy(slice).to_string()
             };
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             assert!(
                 s.contains("<!--"),
@@ -2434,7 +2434,7 @@ mod tests {
                 s
             );
 
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
             tree::free_doc(doc);
         }
     }

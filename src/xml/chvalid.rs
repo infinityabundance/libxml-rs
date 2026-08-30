@@ -364,7 +364,7 @@ mod tests {
             // Null node -> 0.
             assert_eq!(xmlIsBlankNode(core::ptr::null()), 0);
             // Text node with NULL content -> 1.
-            let node = allocator::xmlMalloc(core::mem::size_of::<_xmlNode>()) as *mut _xmlNode;
+            let node = allocator::xmlMallocImpl(core::mem::size_of::<_xmlNode>()) as *mut _xmlNode;
             assert!(!node.is_null());
             core::ptr::write(
                 node,
@@ -386,7 +386,7 @@ mod tests {
             // Non-text node -> 0.
             (*node).type_ = XML_ELEMENT_NODE as c_int;
             assert_eq!(xmlIsBlankNode(node), 0);
-            allocator::xmlFree(node as *mut libc::c_void);
+            allocator::xmlFreeImpl(node as *mut libc::c_void);
         }
     }
 }

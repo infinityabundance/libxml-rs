@@ -286,8 +286,8 @@ typedef xmlParserErrors
                      xmlResourceType type, xmlParserInputFlags flags,
                      xmlParserInput **out);
 
-/* Parser context */
-typedef struct _xmlParserCtxt xmlParserCtxt;
+/* Parser context — forward typedefs live in tree.h (upstream order: tree.h
+ * declares xmlParserCtxt/xmlParserInput so xmlIO.h can use them standalone). */
 typedef xmlParserCtxt *xmlParserCtxtPtr;
 struct _xmlParserCtxt {
     xmlSAXHandlerPtr sax;
@@ -437,14 +437,13 @@ XMLPUBFUN int xmlCtxtUseOptions(xmlParserCtxtPtr ctxt, int options);
 XMLPUBFUN int xmlParseChunk(xmlParserCtxtPtr ctxt, const char *chunk,
                              int size, int terminate);
 
-/* Input buffer APIs */
-XMLPUBFUN xmlParserInputBufferPtr xmlParserInputBufferCreateMem(
-    const char *buffer, int size, int enc);
-XMLPUBFUN xmlParserInputBufferPtr xmlParserInputBufferCreateFilename(
-    const char *URI, int enc);
-XMLPUBFUN xmlParserInputBufferPtr xmlParserInputBufferCreateIO(
-    xmlInputReadCallback ioread, xmlInputCloseCallback ioclose,
-    void *ioctx, int enc);
+XMLPUBFUN void xmlFreeParserCtxt(xmlParserCtxtPtr ctxt);
+XMLPUBFUN int xmlCtxtUseOptions(xmlParserCtxtPtr ctxt, int options);
+XMLPUBFUN int xmlParseChunk(xmlParserCtxtPtr ctxt, const char *chunk,
+                             int size, int terminate);
+
+/* Input buffer APIs — the xmlIO.h declarations (oracle-verbatim) are the
+ * canonical ones; xmlParserInputBufferCreate* live in xmlIO.h upstream. */
 XMLPUBFUN void xmlFreeParserInputBuffer(xmlParserInputBufferPtr buf);
 XMLPUBFUN xmlParserInputPtr xmlNewInputFromFile(xmlParserCtxtPtr ctxt,
                                                  const char *filename);
@@ -735,6 +734,24 @@ struct _xmlSAXHandlerV1 {
 };
 
 /* [11.1-G] end: extracted definitions */
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* [11.1-L] begin: entity-loader declarations extracted verbatim from the
+ * oracle libxml2 2.15.3 parser.h (exported by the candidate DSO). */
+typedef xmlParserInput *(*xmlExternalEntityLoader) (const char *URL,
+					 const char *publicId,
+					 xmlParserCtxt *context);
+XMLPUBFUN void
+		xmlSetExternalEntityLoader(xmlExternalEntityLoader f);
+XMLPUBFUN xmlExternalEntityLoader
+		xmlGetExternalEntityLoader(void);
+/* [11.1-L] end: extracted declarations */
+#ifdef __cplusplus
+}
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -13,7 +13,8 @@
   "11.1-H",
   "11.1-I",
   "11.1-J",
-  "11.1-K"
+  "11.1-K",
+  "11.1-L"
  ],
  "ledger": [
   {
@@ -1850,6 +1851,49 @@
     }
    ],
    "lesson": "The generic error channel is a streaming interface: handlers observe per-fragment variadic calls, not one message. Counting-based courts catch the call-count divergence; a defaults dump catches wrong initial values; both were needed here. Stable Rust cannot define variadic extern fn bodies, but an asm va_list shim forwards faithfully (pattern reused from xsltTransformError)."
+  },
+  {
+   "id": "R-000162",
+   "status": "FIXED",
+   "phase": "11.1-L",
+   "title": "Callback surface: C XPath functions were stubbed, external entity loader never consulted, node register/deregister hooks never fired, xmlListAppend/walk diverged, allocator entry points exported as functions instead of data",
+   "surface": "xmlXPathRegisterFunc[NS], xmlSetExternalEntityLoader/xmlLoadExternalEntity, xmlRegisterNodeDefault/xmlDeregisterNodeDefault, xmlListAppend/xmlListWalk/xmlListReverseWalk, allocator globals, callback header declarations",
+   "component": [
+    "src/abi/exports_xml2.rs",
+    "src/xml/xpath/context.rs",
+    "src/xml/parser/state.rs",
+    "src/xml/tree/mod.rs",
+    "src/xml/list/mod.rs",
+    "src/xml/sax/default.rs",
+    "src/abi/data_globals.rs",
+    "src/xslt/transform/mod.rs",
+    "include/libxml/*",
+    "include/libxslt/xsltutils.h",
+    "courts/suites/data-abi/callback-family-probe.c",
+    "tools/abi/callback_family_probe.py"
+   ],
+   "discovery_date": "2026-08-30",
+   "oracle_versions": "libxml2 2.15.3, libxslt 1.1.45 (system)",
+   "root_cause": "The 11.1-L callback audit found five real ABI/behavior gaps. (1) xmlXPathRegisterFunc[NS] stored the C function pointer but registered a Rust stub that always errored ('C extension function cannot be called ... not yet supported') — registered XPath functions never ran. (2) The parser's NOENT entity-substitution path left external entities unresolved: xmlLoadExternalEntity (which does consult the registered loader) was never called, so custom entity loaders never fired. (3) xmlRegisterNodeDefault/xmlDeregisterNodeDefault stored the hooks but no node creation/free path invoked them (upstream gates them on the xmlRegisterCallbacks flag). (4) xmlListAppend did a plain push_back (upstream inserts sorted when a comparator is set) and xmlListWalk/xmlListReverseWalk had the stop-return INVERTED (stopped on non-zero; upstream stops on 0). (5) The callback surface was invisible in the headers: xpathInternals.h declared nothing (and the initial extraction captured only first lines of multi-line #define macros, leaving xmlXPathReturn* EMPTY), xmlIO.h lacked the match/open typedefs, parser.h lacked the entity-loader declarations, tree.h lacked the node-registration callbacks, hash.h/list.h/xmlerror.h had non-const or wrong callback typedefs, parserInternals.h had no parser.h include, and libxslt/xsltutils.h lacked xsltDebugSetDefaultTrace/xsltDebugGetDefaultTrace. Separately, the 5 allocator entry points (xmlMalloc/xmlMallocAtomic/xmlRealloc/xmlFree/xmlMemStrdup) were exported as FUNCTIONS while upstream exports them as DATA function-pointer variables (xmlmemory.h XMLPUBVAR) — the documented allocator-override mechanism (xmlMalloc = custom) could not link.",
+   "fix": "(1) Built the parser-context bridge: xmlXPathRegisterFunc[NS] now registers a Rust closure that synthesizes the upstream xmlXPathParserContext (value stack + context pointer), pushes the evaluated args as XPath objects, invokes the C function, and pops/converts the result (call_c_xpath_function); the XSLT engine registers a namespaced function_lookup fallback that resolves prefix:local against the stylesheet namespaces and dispatches to xsltFindExtFunction through the same bridge. (2) The NOENT external-entity path now calls xmlLoadExternalEntity and pushes the loaded content as a new input; the DTD SYSTEM-only declaration no longer misstores the URI as the public ID. (3) Added the xmlRegisterCallbacks gate + register_node_hook/deregister_node_hook, invoked from new_doc/new_node/new_text/new_comment/new_pi + the parser's compact-text path and free_doc/free_node. (4) xmlListAppend does the upstream sorted insert; both walks honor the 0-stops return. (5) Closed the callback header surface: full oracle-verbatim xpathInternals.h declarations incl. correctly-extracted multi-line macros + valuePush/valuePop aliases, xmlIO.h callback typedefs + declarations, parser.h entity loader, tree.h node-registration callbacks, hash/list/xmlerror const-correct typedefs, parserInternals.h parser.h include, xsltutils.h debug-trace declarations; fixed xmlSAXHandlerV1 typedef ordering (parser.h) and removed the duplicate xmlSchemaPtr plus wrong xmlXPathValuePush/xmlXPathNodeSetDel int prototypes. The allocator entry points are now DATA function-pointer globals initialized to the impls (xmlMallocImpl etc.), matching the oracle ABI; ~950 internal call sites updated mechanically.",
+   "evidence": [
+    "courts/suites/data-abi/callback-family-probe.c",
+    "tools/abi/callback_family_probe.py",
+    "courts/receipts/phase-11/callback-family-*.json (CALLBACK-001 byte-identical)",
+    "cargo test --lib 1135 pass",
+    "ASan full-suite clean",
+    "header court 571/571",
+    "10/10 data-ABI family courts byte-identical"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-30",
+     "event": "discovered by the 11.1-L CALLBACK-001 differential probe (registered XPath functions failed, loader never consulted, node hooks silent, list walk/append diverged, allocator symbol kind mismatch); fixed with the parser-context bridge, loader push, node hooks, sorted list insert + walk stop-return, data allocator globals, and the callback header closure; sealed by CALLBACK-001 PASS (byte-identical) + 10/10 family courts + ASan",
+     "status": "FIXED"
+    }
+   ],
+   "lesson": "Callback parity is only testable by actually registering callbacks through the public C API and observing invocation: counting probes catch silent no-ops (stubbed XPath functions, unconsulted loaders, unarmed node hooks) that symbol-presence checks miss. Symbol KIND is ABI: the allocator hooks are data function-pointer variables upstream, not functions. Header closure needs the full declaration surface (including multi-line macro bodies) for callbacks to be usable."
   }
  ]
 }

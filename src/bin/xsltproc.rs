@@ -396,7 +396,7 @@ unsafe fn crate_dump_doc(doc: *mut _xmlDoc) {
     let s = libxml_rs::xml::tree::dump_doc(doc);
     if !s.is_null() {
         libc::printf(b"%s\0".as_ptr() as *const c_char, s as *const c_char);
-        libxml_rs::abi::allocator::xmlFree(s as *mut c_void);
+        libxml_rs::abi::allocator::xmlFreeImpl(s as *mut c_void);
     }
 }
 

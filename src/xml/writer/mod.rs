@@ -343,7 +343,7 @@ pub unsafe extern "C" fn xmlFreeTextWriter(writer: *mut XmlTextWriter) {
         ptr::drop_in_place(&mut (*writer).elem_stack);
     }
     // Free the struct itself
-    unsafe { allocator::xmlFree(writer as *mut c_void) };
+    unsafe { allocator::xmlFreeImpl(writer as *mut c_void) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

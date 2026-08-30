@@ -37,7 +37,7 @@
 //! xmlAutomataStatePtr xmlAutomataNewCounter(xmlAutomataPtr am, int min, int max);
 //! ```
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::xml::regex::{
     xmlRegExecPushString, xmlRegFreeExecCtxt, xmlRegFreeRegexp, xmlRegNewExecCtxt,
     xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp,
@@ -106,7 +106,7 @@ unsafe impl Sync for XmlAutomataState {}
 /// UPSTREAM-PARITY: `xmlNewAutomata()`
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewAutomata() -> XmlAutomataPtr {
-    let am = xmlMalloc(core::mem::size_of::<XmlAutomata>()) as XmlAutomataPtr;
+    let am = xmlMallocImpl(core::mem::size_of::<XmlAutomata>()) as XmlAutomataPtr;
     if am.is_null() {
         return ptr::null_mut();
     }
@@ -132,14 +132,14 @@ pub unsafe extern "C" fn xmlFreeAutomata(am: XmlAutomataPtr) {
         for &state in &(*am).states {
             if !state.is_null() {
                 core::ptr::drop_in_place(&mut (*state).transitions);
-                xmlFree(state as *mut core::ffi::c_void);
+                xmlFreeImpl(state as *mut core::ffi::c_void);
             }
         }
         // Drop the states Vec
         core::ptr::drop_in_place(&mut (*am).states);
         // Drop the compiled regexp if any
         let _ = (*am).regexp.take();
-        xmlFree(am as *mut core::ffi::c_void);
+        xmlFreeImpl(am as *mut core::ffi::c_void);
     }
 }
 
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn xmlAutomataNewState(am: XmlAutomataPtr) -> XmlAutomataS
     if am.is_null() {
         return ptr::null_mut();
     }
-    let state = xmlMalloc(core::mem::size_of::<XmlAutomataState>()) as XmlAutomataStatePtr;
+    let state = xmlMallocImpl(core::mem::size_of::<XmlAutomataState>()) as XmlAutomataStatePtr;
     if state.is_null() {
         return ptr::null_mut();
     }

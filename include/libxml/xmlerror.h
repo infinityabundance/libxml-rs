@@ -823,7 +823,7 @@ struct _xmlError {
 
 /* Callback types */
 typedef void (*xmlGenericErrorFunc)(void *ctx, const char *msg, ...);
-typedef void (*xmlStructuredErrorFunc)(void *ctx, xmlErrorPtr error);
+typedef void (*xmlStructuredErrorFunc)(void *ctx, const xmlError *error);
 
 /* Functions */
 XMLPUBFUN void xmlSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handler);

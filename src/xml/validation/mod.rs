@@ -118,7 +118,7 @@ pub unsafe fn free_valid_ctxt(ctxt: *mut _xmlValidCtxt) {
 
         // Free node stack
         if !c.nodeTab.is_null() {
-            allocator::xmlFree(c.nodeTab as *mut c_void);
+            allocator::xmlFreeImpl(c.nodeTab as *mut c_void);
         }
 
         // Free automata
@@ -132,7 +132,7 @@ pub unsafe fn free_valid_ctxt(ctxt: *mut _xmlValidCtxt) {
             // State free — currently a no-op.
         }
 
-        allocator::xmlFree(ctxt as *mut c_void);
+        allocator::xmlFreeImpl(ctxt as *mut c_void);
     }
 }
 
@@ -206,7 +206,7 @@ unsafe fn vctxt_push_node(ctxt: *mut _xmlValidCtxt, node: *mut _xmlNode) -> c_in
 
         if c.nodeNr >= c.nodeMax {
             let new_max = if c.nodeMax == 0 { 4 } else { c.nodeMax * 2 };
-            let new_tab = allocator::xmlRealloc(
+            let new_tab = allocator::xmlReallocImpl(
                 c.nodeTab as *mut c_void,
                 (new_max as usize) * size_of::<*mut _xmlNode>(),
             ) as *mut *mut _xmlNode;
@@ -796,7 +796,7 @@ pub unsafe fn validate_id_refs(
         }
         let result = unsafe { validate_id_ref(ctxt, doc, node, token_ptr) };
         unsafe {
-            allocator::xmlFree(token_ptr as *mut c_void);
+            allocator::xmlFreeImpl(token_ptr as *mut c_void);
         }
         if result == 0 {
             valid = 0;
@@ -2274,16 +2274,16 @@ unsafe fn free_id(id: *mut _xmlID) {
     }
     unsafe {
         if !(*id).value.is_null() {
-            allocator::xmlFree((*id).value as *mut c_void);
+            allocator::xmlFreeImpl((*id).value as *mut c_void);
         }
         if !(*id).name.is_null() {
-            allocator::xmlFree((*id).name as *mut c_void);
+            allocator::xmlFreeImpl((*id).name as *mut c_void);
         }
         if !(*id).attr.is_null() {
             (*(*id).attr).id = ptr::null_mut();
             (*(*id).attr).atype = 0;
         }
-        allocator::xmlFree(id as *mut c_void);
+        allocator::xmlFreeImpl(id as *mut c_void);
     }
 }
 
@@ -2420,12 +2420,12 @@ unsafe fn free_ref(r: *mut _xmlRef) {
     }
     unsafe {
         if !(*r).value.is_null() {
-            allocator::xmlFree((*r).value as *mut c_void);
+            allocator::xmlFreeImpl((*r).value as *mut c_void);
         }
         if !(*r).name.is_null() {
-            allocator::xmlFree((*r).name as *mut c_void);
+            allocator::xmlFreeImpl((*r).name as *mut c_void);
         }
-        allocator::xmlFree(r as *mut c_void);
+        allocator::xmlFreeImpl(r as *mut c_void);
     }
 }
 
@@ -2748,7 +2748,7 @@ pub unsafe fn is_id(doc: *mut _xmlDoc, elem: *mut _xmlNode, attr: *mut _xmlAttr)
                 attr_decl = get_dtd_qattr_desc((*doc).extSubset, fullname, (*attr).name, aprefix);
             }
             if owned {
-                allocator::xmlFree(fullname as *mut c_void);
+                allocator::xmlFreeImpl(fullname as *mut c_void);
             }
             if !attr_decl.is_null() && (*attr_decl).atype == XML_ATTRIBUTE_ID as c_int {
                 return 1;
@@ -2820,14 +2820,14 @@ pub unsafe fn get_dtd_element_desc(dtd: *mut _xmlDtd, name: *const xmlChar) -> *
         let local = split_qname4(name, &mut prefix);
         if local.is_null() {
             if !prefix.is_null() {
-                allocator::xmlFree(prefix as *mut c_void);
+                allocator::xmlFreeImpl(prefix as *mut c_void);
             }
             return ptr::null_mut();
         }
         let cur =
             hash::hash_lookup2(elements as *mut hash::HashTable, local, prefix) as *mut _xmlElement;
         if !prefix.is_null() {
-            allocator::xmlFree(prefix as *mut c_void);
+            allocator::xmlFreeImpl(prefix as *mut c_void);
         }
         cur
     }
@@ -2857,14 +2857,14 @@ pub unsafe fn get_dtd_attr_desc(
         let local = split_qname4(name, &mut prefix);
         if local.is_null() {
             if !prefix.is_null() {
-                allocator::xmlFree(prefix as *mut c_void);
+                allocator::xmlFreeImpl(prefix as *mut c_void);
             }
             return ptr::null_mut();
         }
         let cur = hash::hash_lookup3(attrs as *mut hash::HashTable, local, prefix, elem)
             as *mut _xmlAttribute;
         if !prefix.is_null() {
-            allocator::xmlFree(prefix as *mut c_void);
+            allocator::xmlFreeImpl(prefix as *mut c_void);
         }
         cur
     }
@@ -3004,7 +3004,7 @@ pub unsafe fn validate_element_decl(
                     as *const c_char,
             );
             if !prefix.is_null() {
-                allocator::xmlFree(prefix as *mut c_void);
+                allocator::xmlFreeImpl(prefix as *mut c_void);
             }
             return 0;
         }
@@ -3029,7 +3029,7 @@ pub unsafe fn validate_element_decl(
             }
         }
         if !prefix.is_null() {
-            allocator::xmlFree(prefix as *mut c_void);
+            allocator::xmlFreeImpl(prefix as *mut c_void);
         }
         ret
     }
@@ -3097,7 +3097,7 @@ pub unsafe fn validate_one_attribute(
                 attr_decl = get_dtd_qattr_desc((*doc).extSubset, fullname, (*attr).name, aprefix);
             }
             if fullname != (*elem).name as *mut xmlChar {
-                allocator::xmlFree(fullname as *mut c_void);
+                allocator::xmlFreeImpl(fullname as *mut c_void);
             }
         }
         if attr_decl.is_null() {
@@ -3365,7 +3365,7 @@ pub unsafe fn validate_one_namespace(
                 }
             }
             if fullname != (*elem).name as *mut xmlChar {
-                allocator::xmlFree(fullname as *mut c_void);
+                allocator::xmlFreeImpl(fullname as *mut c_void);
             }
         }
         if attr_decl.is_null() {
@@ -3588,7 +3588,7 @@ pub unsafe fn validate_one_element(
                                     ret = 0;
                                 }
                                 if own {
-                                    allocator::xmlFree(fullname as *mut c_void);
+                                    allocator::xmlFreeImpl(fullname as *mut c_void);
                                 }
                             }
                             child = (*child).next;
@@ -3622,7 +3622,7 @@ pub unsafe fn validate_one_element(
                     }
                     let result = dtd::valid_content_model((*elem_decl).content, &names);
                     for n in owned {
-                        allocator::xmlFree(n as *mut c_void);
+                        allocator::xmlFreeImpl(n as *mut c_void);
                     }
                     if result != dtd::ContentModelResult::Valid {
                         let msg = format!(
@@ -3995,7 +3995,7 @@ pub unsafe fn free_content_model_nfa(nfa: *mut ContentModelNfa) {
     }
     unsafe {
         ptr::drop_in_place(nfa);
-        allocator::xmlFree(nfa as *mut c_void);
+        allocator::xmlFreeImpl(nfa as *mut c_void);
     }
 }
 
@@ -4019,7 +4019,7 @@ unsafe fn eps_closure(nfa: &ContentModelNfa, states: &[u32]) -> Vec<u32> {
 /// Create an exec context over a compiled content model. Returns NULL on OOM.
 unsafe fn new_content_exec(nfa: *mut ContentModelNfa) -> *mut ContentModelExec {
     unsafe {
-        let exec = allocator::xmlMalloc(size_of::<ContentModelExec>()) as *mut ContentModelExec;
+        let exec = allocator::xmlMallocImpl(size_of::<ContentModelExec>()) as *mut ContentModelExec;
         if exec.is_null() {
             return ptr::null_mut();
         }
@@ -4037,7 +4037,7 @@ unsafe fn free_content_exec(exec: *mut ContentModelExec) {
     }
     unsafe {
         ptr::drop_in_place(&mut (*exec).current);
-        allocator::xmlFree(exec as *mut c_void);
+        allocator::xmlFreeImpl(exec as *mut c_void);
     }
 }
 
@@ -4095,7 +4095,7 @@ unsafe fn vstate_vpush(
             } else {
                 (*ctxt).vstateMax * 2
             };
-            let new_tab = allocator::xmlRealloc(
+            let new_tab = allocator::xmlReallocImpl(
                 (*ctxt).vstateTab as *mut c_void,
                 (new_max as usize) * size_of::<ValidState>(),
             ) as *mut ValidState;
@@ -4428,7 +4428,7 @@ mod tests {
     /// Create a null-terminated xmlChar* from a Rust string.
     unsafe fn c_str(s: &str) -> *const xmlChar {
         let bytes = s.as_bytes();
-        let ptr = allocator::xmlMalloc(bytes.len() + 1) as *mut xmlChar;
+        let ptr = allocator::xmlMallocImpl(bytes.len() + 1) as *mut xmlChar;
         assert!(!ptr.is_null());
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len());
         *ptr.add(bytes.len()) = 0;
@@ -4502,7 +4502,7 @@ mod tests {
             for t in &tests {
                 let s = c_str(t);
                 assert_eq!(validate_name(s), 1, "Expected '{}' to be a valid Name", t);
-                allocator::xmlFree(s as *mut c_void);
+                allocator::xmlFreeImpl(s as *mut c_void);
             }
         }
     }
@@ -4514,7 +4514,7 @@ mod tests {
             for t in &tests {
                 let s = c_str(t);
                 assert_eq!(validate_name(s), 0, "Expected '{}' to be invalid", t);
-                allocator::xmlFree(s as *mut c_void);
+                allocator::xmlFreeImpl(s as *mut c_void);
             }
         }
     }
@@ -4524,7 +4524,7 @@ mod tests {
         unsafe {
             let s = c_str("foo bar baz");
             assert_eq!(validate_names(s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -4533,7 +4533,7 @@ mod tests {
         unsafe {
             let s = c_str("foo 123bar baz");
             assert_eq!(validate_names(s), 0);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -4558,7 +4558,7 @@ mod tests {
                     "Expected '{}' to be a valid NMTOKEN",
                     t
                 );
-                allocator::xmlFree(s as *mut c_void);
+                allocator::xmlFreeImpl(s as *mut c_void);
             }
         }
     }
@@ -4568,7 +4568,7 @@ mod tests {
         unsafe {
             let s = c_str("foo bar");
             assert_eq!(validate_nmtoken(s), 0);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -4577,7 +4577,7 @@ mod tests {
         unsafe {
             let s = c_str("foo 123bar -baz");
             assert_eq!(validate_nmtokens(s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -4588,7 +4588,7 @@ mod tests {
         unsafe {
             let s = c_str("anything goes here!@#$%^&*()");
             assert_eq!(validate_attribute_value(XML_ATTRIBUTE_CDATA as c_int, s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
 
             // Empty CDATA is valid
             let empty = b"\0" as *const u8 as *const xmlChar;
@@ -4607,14 +4607,14 @@ mod tests {
                 validate_attribute_value(XML_ATTRIBUTE_ID as c_int, valid),
                 1
             );
-            allocator::xmlFree(valid as *mut c_void);
+            allocator::xmlFreeImpl(valid as *mut c_void);
 
             let invalid = c_str("123id");
             assert_eq!(
                 validate_attribute_value(XML_ATTRIBUTE_ID as c_int, invalid),
                 0
             );
-            allocator::xmlFree(invalid as *mut c_void);
+            allocator::xmlFreeImpl(invalid as *mut c_void);
         }
     }
 
@@ -4626,7 +4626,7 @@ mod tests {
                 validate_attribute_value(XML_ATTRIBUTE_IDREF as c_int, valid),
                 1
             );
-            allocator::xmlFree(valid as *mut c_void);
+            allocator::xmlFreeImpl(valid as *mut c_void);
         }
     }
 
@@ -4638,14 +4638,14 @@ mod tests {
                 validate_attribute_value(XML_ATTRIBUTE_IDREFS as c_int, valid),
                 1
             );
-            allocator::xmlFree(valid as *mut c_void);
+            allocator::xmlFreeImpl(valid as *mut c_void);
 
             let invalid = c_str("id1 123id");
             assert_eq!(
                 validate_attribute_value(XML_ATTRIBUTE_IDREFS as c_int, invalid),
                 0
             );
-            allocator::xmlFree(invalid as *mut c_void);
+            allocator::xmlFreeImpl(invalid as *mut c_void);
         }
     }
 
@@ -4657,7 +4657,7 @@ mod tests {
                 validate_attribute_value(XML_ATTRIBUTE_ENTITY as c_int, valid),
                 1
             );
-            allocator::xmlFree(valid as *mut c_void);
+            allocator::xmlFreeImpl(valid as *mut c_void);
         }
     }
 
@@ -4669,14 +4669,14 @@ mod tests {
                 validate_attribute_value(XML_ATTRIBUTE_NMTOKEN as c_int, valid),
                 1
             );
-            allocator::xmlFree(valid as *mut c_void);
+            allocator::xmlFreeImpl(valid as *mut c_void);
 
             let invalid = c_str("foo bar");
             assert_eq!(
                 validate_attribute_value(XML_ATTRIBUTE_NMTOKEN as c_int, invalid),
                 0
             );
-            allocator::xmlFree(invalid as *mut c_void);
+            allocator::xmlFreeImpl(invalid as *mut c_void);
         }
     }
 
@@ -4725,10 +4725,10 @@ mod tests {
             assert_eq!(validate_enumeration(ctxt, value, e1), 1);
             assert_eq!((*ctxt).valid, 1);
 
-            allocator::xmlFree(value as *mut c_void);
-            allocator::xmlFree(red as *mut c_void);
-            allocator::xmlFree(green as *mut c_void);
-            allocator::xmlFree(blue as *mut c_void);
+            allocator::xmlFreeImpl(value as *mut c_void);
+            allocator::xmlFreeImpl(red as *mut c_void);
+            allocator::xmlFreeImpl(green as *mut c_void);
+            allocator::xmlFreeImpl(blue as *mut c_void);
             free_valid_ctxt(ctxt);
         }
     }
@@ -4746,7 +4746,7 @@ mod tests {
             let value = c_str("yellow");
             assert_eq!(validate_enumeration(ctxt, value, e1), 0);
 
-            allocator::xmlFree(value as *mut c_void);
+            allocator::xmlFreeImpl(value as *mut c_void);
             free_valid_ctxt(ctxt);
         }
     }
@@ -4783,7 +4783,7 @@ mod tests {
             assert_eq!(validate_notation_use(ctxt, doc, notation_name), 0);
 
             free_valid_ctxt(ctxt);
-            allocator::xmlFree(notation_name as *mut c_void);
+            allocator::xmlFreeImpl(notation_name as *mut c_void);
             tree::free_doc(doc);
         }
     }
@@ -5114,7 +5114,7 @@ mod tests {
             let other = c_str("other");
             assert_eq!(is_mixed_element(doc, other), 0);
 
-            allocator::xmlFree(other as *mut c_void);
+            allocator::xmlFreeImpl(other as *mut c_void);
             tree::free_doc(doc);
         }
     }
@@ -5131,7 +5131,7 @@ mod tests {
             let other = c_str("other");
             assert_eq!(is_empty_element(doc, other), 0);
 
-            allocator::xmlFree(other as *mut c_void);
+            allocator::xmlFreeImpl(other as *mut c_void);
             tree::free_doc(doc);
         }
     }
@@ -5145,7 +5145,7 @@ mod tests {
             let name = c_str("foo");
             assert_eq!(is_mixed_element(doc, name), 0);
 
-            allocator::xmlFree(name as *mut c_void);
+            allocator::xmlFreeImpl(name as *mut c_void);
             tree::free_doc(doc);
         }
     }
@@ -5159,7 +5159,7 @@ mod tests {
             let name = c_str("foo");
             assert_eq!(is_empty_element(doc, name), 0);
 
-            allocator::xmlFree(name as *mut c_void);
+            allocator::xmlFreeImpl(name as *mut c_void);
             tree::free_doc(doc);
         }
     }
@@ -5282,7 +5282,7 @@ mod tests {
             // Test some Unicode name characters
             let name = c_str("\u{C0}lph\u{E0}");
             assert_eq!(validate_name(name), 1);
-            allocator::xmlFree(name as *mut c_void);
+            allocator::xmlFreeImpl(name as *mut c_void);
         }
     }
 
@@ -5291,7 +5291,7 @@ mod tests {
         unsafe {
             let s = c_str("singleName");
             assert_eq!(validate_names(s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -5300,7 +5300,7 @@ mod tests {
         unsafe {
             let s = c_str("123abc");
             assert_eq!(validate_nmtokens(s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 
@@ -5309,12 +5309,12 @@ mod tests {
         unsafe {
             let s = c_str("foo\tbar"); // tab separated
             assert_eq!(validate_nmtokens(s), 1); // tab is whitespace
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
 
             // An NMTOKEN with invalid characters should fail
             let s2 = c_str("foo@bar");
             assert_eq!(validate_nmtokens(s2), 0);
-            allocator::xmlFree(s2 as *mut c_void);
+            allocator::xmlFreeImpl(s2 as *mut c_void);
         }
     }
 
@@ -5344,7 +5344,7 @@ mod tests {
             // default return of 1 (valid.c xmlValidateAttributeValueInternal).
             let s = c_str("test");
             assert_eq!(validate_attribute_value(999, s), 1);
-            allocator::xmlFree(s as *mut c_void);
+            allocator::xmlFreeImpl(s as *mut c_void);
         }
     }
 

@@ -3956,7 +3956,7 @@ mod tests {
         assert!(!ctxt.is_null());
         // Clean up
         unsafe {
-            allocator::xmlFree(ctxt);
+            allocator::xmlFreeImpl(ctxt);
         }
     }
 

@@ -15,7 +15,7 @@
 //! `preserveSpaces`) of `_xsltStripSpace` entries holding element names
 //! (QName patterns) and import depths.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -53,7 +53,7 @@ pub unsafe fn xsltAddStripSpace(
     let len = libc::strlen(name as *const libc::c_char);
     let copy = libc::malloc(len + 1) as *mut xmlChar;
     if copy.is_null() {
-        xmlFree(entry as *mut libc::c_void);
+        xmlFreeImpl(entry as *mut libc::c_void);
         return -1;
     }
     libc::memcpy(copy as *mut libc::c_void, name as *const libc::c_void, len);
@@ -85,7 +85,7 @@ pub unsafe fn xsltFreeStripSpaceEntry(entry: *mut _xsltStripSpace) {
     if !(*entry).name.is_null() {
         libc::free((*entry).name as *mut libc::c_void);
     }
-    xmlFree(entry as *mut libc::c_void);
+    xmlFreeImpl(entry as *mut libc::c_void);
 }
 
 /// Free all strip/preserve-space rules in a stylesheet.

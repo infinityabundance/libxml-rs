@@ -22,7 +22,7 @@ use core::fmt;
 use core::ptr;
 use std::os::raw::c_int;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::types::xmlChar;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1451,7 +1451,7 @@ unsafe fn xml_strdup(s: *const xmlChar) -> *mut xmlChar {
         return ptr::null_mut();
     }
     let len = xml_strlen(s);
-    let new_ptr = xmlMalloc((len + 1) * core::mem::size_of::<xmlChar>()) as *mut xmlChar;
+    let new_ptr = xmlMallocImpl((len + 1) * core::mem::size_of::<xmlChar>()) as *mut xmlChar;
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
@@ -1486,10 +1486,10 @@ pub unsafe extern "C" fn xmlRegexpCompile(pattern: *const xmlChar) -> *mut XmlRe
     let nfa = compile_pattern(pattern_bytes);
     let pattern_copy = xml_strdup(pattern);
 
-    let compiled = xmlMalloc(core::mem::size_of::<XmlRegexp>()) as *mut XmlRegexp;
+    let compiled = xmlMallocImpl(core::mem::size_of::<XmlRegexp>()) as *mut XmlRegexp;
     if compiled.is_null() {
         if !pattern_copy.is_null() {
-            xmlFree(pattern_copy as *mut c_void);
+            xmlFreeImpl(pattern_copy as *mut c_void);
         }
         return ptr::null_mut();
     }
@@ -1682,11 +1682,11 @@ pub unsafe extern "C" fn xmlRegFreeRegexp(regexp: *mut XmlRegexp) {
     }
     unsafe {
         if !(*regexp).pattern.is_null() {
-            xmlFree((*regexp).pattern as *mut c_void);
+            xmlFreeImpl((*regexp).pattern as *mut c_void);
         }
         // Drop the NFA box
         let _ = (*regexp).nfa.take();
-        xmlFree(regexp as *mut c_void);
+        xmlFreeImpl(regexp as *mut c_void);
     }
 }
 
@@ -1729,7 +1729,7 @@ pub unsafe extern "C" fn xmlRegNewExecCtxt(
         return ptr::null_mut();
     }
 
-    let ctxt = xmlMalloc(core::mem::size_of::<RegExecCtxt>()) as *mut RegExecCtxt;
+    let ctxt = xmlMallocImpl(core::mem::size_of::<RegExecCtxt>()) as *mut RegExecCtxt;
     if ctxt.is_null() {
         return ptr::null_mut();
     }
@@ -1847,7 +1847,7 @@ pub unsafe extern "C" fn xmlRegFreeExecCtxt(ctxt: *mut RegExecCtxt) {
         // SAFETY: The Vec inside RegExecCtxt was allocated by Rust's allocator
         // and must be dropped before freeing the struct memory via libc::free.
         core::ptr::drop_in_place(&mut (*ctxt).current_states);
-        xmlFree(ctxt as *mut c_void);
+        xmlFreeImpl(ctxt as *mut c_void);
     }
 }
 
@@ -1862,11 +1862,11 @@ mod tests {
 
     /// Helper: create a null-terminated xmlChar* from a byte slice using xmlMalloc.
     ///
-    /// This ensures the returned pointer uses the same allocator as xmlFree,
+    /// This ensures the returned pointer uses the same allocator as xmlFreeImpl,
     /// preventing allocator mismatch crashes.
     fn to_xml_str(s: &[u8]) -> *mut xmlChar {
         let len = s.len();
-        let ptr = unsafe { xmlMalloc((len + 1) * core::mem::size_of::<xmlChar>()) } as *mut xmlChar;
+        let ptr = unsafe { xmlMallocImpl((len + 1) * core::mem::size_of::<xmlChar>()) } as *mut xmlChar;
         if ptr.is_null() {
             return ptr::null_mut();
         }

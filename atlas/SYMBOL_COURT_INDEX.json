@@ -1711,6 +1711,157 @@
      "historical_status": "CURRENT_ONLY"
     }
    }
+  },
+  "CALLBACK-001": {
+   "probe": "courts/suites/data-abi/callback-family-probe.c",
+   "runner": "tools/abi/callback_family_probe.py",
+   "oracle": "/usr/lib/libxml2.so.16",
+   "symbols": {
+    "libxml2:xmlReadMemory": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetStructuredErrorFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetGenericErrorFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathRegisterFunc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlXPathRegisterFuncNS": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetExternalEntityLoader": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetExternalEntityLoader": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlLoadExternalEntity": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlHashCreate": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlHashScan": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlHashScanFull": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlHashFree": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlListCreate": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlListAppend": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlListWalk": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlListDelete": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlRegisterInputCallbacks": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlReadIO": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlRegisterNodeDefault": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlDeregisterNodeDefault": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxslt:xsltRegisterExtFunction": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxslt:xsltRegisterExtElement": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxslt:xsltNewSecurityPrefs": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxslt:xsltSetSecurityPrefs": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    }
+   }
   }
  }
 }

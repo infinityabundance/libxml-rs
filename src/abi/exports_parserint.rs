@@ -45,7 +45,7 @@ use core::ptr;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::callbacks::_xmlSAXLocator;
 use crate::abi::data_globals::{
     xmlGenericError, xmlGenericErrorContext, xmlParserInputBufferCreateFilenameValue,
@@ -595,7 +595,7 @@ unsafe fn pi_err_memory(ctxt: *mut _xmlParserCtxt) {
 /// Duplicate `len` bytes into a null-terminated xmlChar buffer.
 unsafe fn pi_strndup_bytes(start: *const xmlChar, len: usize) -> *mut xmlChar {
     unsafe {
-        let buf = xmlMalloc(len + 1) as *mut xmlChar;
+        let buf = xmlMallocImpl(len + 1) as *mut xmlChar;
         if buf.is_null() {
             return ptr::null_mut();
         }
@@ -711,7 +711,7 @@ unsafe fn pi_name_push(ctxt: *mut _xmlParserCtxt, name: *const xmlChar) -> c_int
         let c = &mut *ctxt;
         if c.nameNr >= c.nameMax {
             let new_max = if c.nameMax == 0 { 10 } else { c.nameMax * 2 };
-            let new_tab = xmlRealloc(
+            let new_tab = xmlReallocImpl(
                 c.nameTab as *mut c_void,
                 (new_max as usize) * size_of::<*const xmlChar>(),
             ) as *mut *const xmlChar;
@@ -744,7 +744,7 @@ unsafe fn pi_name_pop(ctxt: *mut _xmlParserCtxt) {
             c.name = *c.nameTab.add((c.nameNr - 1) as usize);
         }
         if !old.is_null() {
-            xmlFree(old as *mut c_void);
+            xmlFreeImpl(old as *mut c_void);
         }
     }
 }
@@ -755,7 +755,7 @@ unsafe fn pi_space_push(ctxt: *mut _xmlParserCtxt, val: c_int) -> c_int {
         let c = &mut *ctxt;
         if c.spaceNr >= c.spaceMax {
             let new_max = if c.spaceMax == 0 { 10 } else { c.spaceMax * 2 };
-            let new_tab = xmlRealloc(
+            let new_tab = xmlReallocImpl(
                 c.spaceTab as *mut c_void,
                 (new_max as usize) * size_of::<c_int>(),
             ) as *mut c_int;
@@ -794,7 +794,7 @@ unsafe fn pi_node_push(ctxt: *mut _xmlParserCtxt, node: *mut _xmlNode) -> c_int 
         let c = &mut *ctxt;
         if c.nodeNr >= c.nodeMax {
             let new_max = if c.nodeMax == 0 { 10 } else { c.nodeMax * 2 };
-            let new_tab = xmlRealloc(
+            let new_tab = xmlReallocImpl(
                 c.nodeTab as *mut c_void,
                 (new_max as usize) * size_of::<*mut _xmlNode>(),
             ) as *mut *mut _xmlNode;
@@ -836,7 +836,7 @@ unsafe fn pi_input_push(ctxt: *mut _xmlParserCtxt, input: *mut _xmlParserInput) 
         let c = &mut *ctxt;
         if c.inputNr >= c.inputMax {
             let new_max = if c.inputMax == 0 { 4 } else { c.inputMax * 2 };
-            let new_tab = xmlRealloc(
+            let new_tab = xmlReallocImpl(
                 c.inputTab as *mut c_void,
                 (new_max as usize) * size_of::<*mut _xmlParserInput>(),
             ) as *mut *mut _xmlParserInput;
@@ -884,9 +884,9 @@ unsafe fn pi_pop_pe(ctxt: *mut _xmlParserCtxt) {
         }
         let base = (*input).base;
         if !base.is_null() && !(*input).entity.is_null() {
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
-        xmlFree(input as *mut c_void);
+        xmlFreeImpl(input as *mut c_void);
     }
 }
 
@@ -1028,7 +1028,7 @@ unsafe fn pi_sax_chars(ctxt: *mut _xmlParserCtxt, bytes: &[u8], ignorable: bool)
         } else {
             SaxDispatcher::characters(&*c.sax, c.userData, buf, bytes.len() as c_int);
         }
-        xmlFree(buf as *mut c_void);
+        xmlFreeImpl(buf as *mut c_void);
     }
 }
 
@@ -1048,7 +1048,7 @@ unsafe fn pi_sax_comment(ctxt: *mut _xmlParserCtxt, bytes: &[u8]) {
             SaxDispatcher::comment(&*c.sax, c.userData, buf);
         }
         if !buf.is_null() {
-            xmlFree(buf as *mut c_void);
+            xmlFreeImpl(buf as *mut c_void);
         }
     }
 }
@@ -1069,7 +1069,7 @@ unsafe fn pi_sax_pi(ctxt: *mut _xmlParserCtxt, target: *const xmlChar, data: &[u
             SaxDispatcher::processing_instruction(&*c.sax, c.userData, target, buf);
         }
         if !buf.is_null() {
-            xmlFree(buf as *mut c_void);
+            xmlFreeImpl(buf as *mut c_void);
         }
     }
 }
@@ -1275,7 +1275,7 @@ unsafe fn pi_parse_name_and_compare(ctxt: *mut _xmlParserCtxt, other: *const xml
         }
         let ret = pi_parse_name(ctxt);
         if !ret.is_null() && crate::abi::exports_xml2::xmlStrcmp(ret, other) == 0 {
-            xmlFree(ret as *mut c_void);
+            xmlFreeImpl(ret as *mut c_void);
             return 1 as *const xmlChar;
         }
         ret
@@ -1366,7 +1366,7 @@ unsafe fn pi_parse_entity_ref(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEntity {
             return ptr::null_mut();
         }
         let ent = pi_lookup_general_entity(ctxt, name);
-        xmlFree(name as *mut c_void);
+        xmlFreeImpl(name as *mut c_void);
         ent
     }
 }
@@ -1385,7 +1385,7 @@ unsafe fn pi_parse_entity_ref_name(ctxt: *mut _xmlParserCtxt) -> *const xmlChar 
         }
         if pi_raw(ctxt) != b';' {
             pi_fatal_err(ctxt, XML_ERR_ENTITYREF_SEMICOL_MISSING);
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return ptr::null();
         }
         pi_next1(ctxt);
@@ -1517,7 +1517,7 @@ unsafe fn pi_parse_att_value(ctxt: *mut _xmlParserCtxt) -> *mut xmlChar {
                         out.extend_from_slice(core::slice::from_raw_parts(name, l));
                         out.push(b';');
                     }
-                    xmlFree(name as *mut c_void);
+                    xmlFreeImpl(name as *mut c_void);
                 }
             } else {
                 if c == b'<' {
@@ -1704,7 +1704,7 @@ unsafe fn pi_parse_pi(ctxt: *mut _xmlParserCtxt) {
                 if pi_raw(ctxt) == b'?' && pi_nxt(ctxt, 1) == b'>' {
                     pi_skip(ctxt, 2);
                     pi_sax_pi(ctxt, target, &[]);
-                    xmlFree(target as *mut c_void);
+                    xmlFreeImpl(target as *mut c_void);
                     return;
                 }
                 if pi_skip_blanks(ctxt) == 0 {
@@ -1725,7 +1725,7 @@ unsafe fn pi_parse_pi(ctxt: *mut _xmlParserCtxt) {
                     pi_skip(ctxt, 2);
                     pi_sax_pi(ctxt, target, &buf);
                 }
-                xmlFree(target as *mut c_void);
+                xmlFreeImpl(target as *mut c_void);
             } else {
                 pi_fatal_err(ctxt, XML_ERR_PI_NOT_STARTED);
             }
@@ -1872,7 +1872,7 @@ unsafe fn pi_parse_cd_sect(ctxt: *mut _xmlParserCtxt) {
                 } else {
                     SaxDispatcher::characters(sax, c.userData, buf_p, buf.len() as c_int);
                 }
-                xmlFree(buf_p as *mut c_void);
+                xmlFreeImpl(buf_p as *mut c_void);
             }
         }
     }
@@ -1912,11 +1912,11 @@ unsafe fn pi_parse_reference(ctxt: *mut _xmlParserCtxt) {
             {
                 SaxDispatcher::reference(&*c.sax, c.userData, name);
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return;
         }
         if (*ctxt).wellFormed == 0 {
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return;
         }
 
@@ -1929,7 +1929,7 @@ unsafe fn pi_parse_reference(ctxt: *mut _xmlParserCtxt) {
                 let bytes = core::slice::from_raw_parts(val, l);
                 pi_sax_chars(ctxt, bytes, false);
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return;
         }
 
@@ -1946,7 +1946,7 @@ unsafe fn pi_parse_reference(ctxt: *mut _xmlParserCtxt) {
             let bytes = core::slice::from_raw_parts(val, l);
             pi_sax_chars(ctxt, bytes, false);
         }
-        xmlFree(name as *mut c_void);
+        xmlFreeImpl(name as *mut c_void);
     }
 }
 
@@ -1965,7 +1965,7 @@ unsafe fn pi_parse_pe_reference(ctxt: *mut _xmlParserCtxt) {
         }
         if pi_raw(ctxt) != b';' {
             pi_fatal_err(ctxt, XML_ERR_PEREF_SEMICOL_MISSING);
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return;
         }
         pi_next1(ctxt);
@@ -1973,7 +1973,7 @@ unsafe fn pi_parse_pe_reference(ctxt: *mut _xmlParserCtxt) {
         let ent = pi_lookup_parameter_entity(ctxt, name);
         if ent.is_null() {
             pi_fatal_err(ctxt, XML_ERR_UNDECLARED_ENTITY);
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
             return;
         }
         (*ctxt).hasPErefs = 1;
@@ -1983,7 +1983,7 @@ unsafe fn pi_parse_pe_reference(ctxt: *mut _xmlParserCtxt) {
             let clen = crate::abi::exports_xml2::xmlStrlen(content) as usize;
             // The spec requires one leading and one trailing space.
             let total = clen + 3;
-            let buf = xmlMalloc(total) as *mut xmlChar;
+            let buf = xmlMallocImpl(total) as *mut xmlChar;
             if !buf.is_null() {
                 *buf = b' ';
                 ptr::copy_nonoverlapping(content, buf.add(1), clen);
@@ -1999,11 +1999,11 @@ unsafe fn pi_parse_pe_reference(ctxt: *mut _xmlParserCtxt) {
                     (*input).entity = ent;
                     pi_input_push(ctxt, input);
                 } else {
-                    xmlFree(buf as *mut c_void);
+                    xmlFreeImpl(buf as *mut c_void);
                 }
             }
         }
-        xmlFree(name as *mut c_void);
+        xmlFreeImpl(name as *mut c_void);
     }
 }
 
@@ -2027,7 +2027,7 @@ unsafe fn pi_parse_notation_decl(ctxt: *mut _xmlParserCtxt) {
             }
             if pi_skip_blanks(ctxt) == 0 {
                 pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
-                xmlFree(name as *mut c_void);
+                xmlFreeImpl(name as *mut c_void);
                 return;
             }
             let mut pubid: *mut xmlChar = ptr::null_mut();
@@ -2043,12 +2043,12 @@ unsafe fn pi_parse_notation_decl(ctxt: *mut _xmlParserCtxt) {
                 pi_fatal_err(ctxt, XML_ERR_NOTATION_NOT_FINISHED);
             }
             if !systemid.is_null() {
-                xmlFree(systemid as *mut c_void);
+                xmlFreeImpl(systemid as *mut c_void);
             }
             if !pubid.is_null() {
-                xmlFree(pubid as *mut c_void);
+                xmlFreeImpl(pubid as *mut c_void);
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
         }
     }
 }
@@ -2160,7 +2160,7 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                             );
                         }
                         if !ndata.is_null() {
-                            xmlFree(ndata as *mut c_void);
+                            xmlFreeImpl(ndata as *mut c_void);
                         }
                     } else {
                         let c = &*ctxt;
@@ -2206,18 +2206,18 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
             }
 
             if !value.is_null() {
-                xmlFree(value as *mut c_void);
+                xmlFreeImpl(value as *mut c_void);
             }
             if !uri.is_null() {
-                xmlFree(uri as *mut c_void);
+                xmlFreeImpl(uri as *mut c_void);
             }
             if !literal.is_null() {
-                xmlFree(literal as *mut c_void);
+                xmlFreeImpl(literal as *mut c_void);
             }
             if !orig.is_null() {
-                xmlFree(orig as *mut c_void);
+                xmlFreeImpl(orig as *mut c_void);
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
         }
     }
 }
@@ -2307,7 +2307,7 @@ unsafe fn pi_parse_notation_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnumerat
             // ownership of `name` transfers to the enumeration node
             if cur.is_null() {
                 pi_err_memory(ctxt);
-                xmlFree(name as *mut c_void);
+                xmlFreeImpl(name as *mut c_void);
                 pi_free_enumeration(ret);
                 return ptr::null_mut();
             }
@@ -2353,7 +2353,7 @@ unsafe fn pi_parse_enumeration_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnume
             // ownership of `name` transfers to the enumeration node
             if cur.is_null() {
                 pi_err_memory(ctxt);
-                xmlFree(name as *mut c_void);
+                xmlFreeImpl(name as *mut c_void);
                 pi_free_enumeration(ret);
                 return ptr::null_mut();
             }
@@ -2427,12 +2427,12 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                 }
                 if pi_skip_blanks(ctxt) == 0 {
                     pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
-                    xmlFree(attr_name as *mut c_void);
+                    xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
                 let type_ = pi_parse_attribute_type(ctxt, &mut tree);
                 if type_ <= 0 {
-                    xmlFree(attr_name as *mut c_void);
+                    xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
                 if pi_skip_blanks(ctxt) == 0 {
@@ -2440,31 +2440,31 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     if !tree.is_null() {
                         pi_free_enumeration(tree);
                     }
-                    xmlFree(attr_name as *mut c_void);
+                    xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
                 let mut default_value: *mut xmlChar = ptr::null_mut();
                 let def = pi_parse_default_decl(ctxt, &mut default_value);
                 if def <= 0 {
                     if !default_value.is_null() {
-                        xmlFree(default_value as *mut c_void);
+                        xmlFreeImpl(default_value as *mut c_void);
                     }
                     if !tree.is_null() {
                         pi_free_enumeration(tree);
                     }
-                    xmlFree(attr_name as *mut c_void);
+                    xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
                 if pi_raw(ctxt) != b'>' {
                     if pi_skip_blanks(ctxt) == 0 {
                         pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
                         if !default_value.is_null() {
-                            xmlFree(default_value as *mut c_void);
+                            xmlFreeImpl(default_value as *mut c_void);
                         }
                         if !tree.is_null() {
                             pi_free_enumeration(tree);
                         }
-                        xmlFree(attr_name as *mut c_void);
+                        xmlFreeImpl(attr_name as *mut c_void);
                         break;
                     }
                 }
@@ -2484,14 +2484,14 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     pi_free_enumeration(tree);
                 }
                 if !default_value.is_null() {
-                    xmlFree(default_value as *mut c_void);
+                    xmlFreeImpl(default_value as *mut c_void);
                 }
-                xmlFree(attr_name as *mut c_void);
+                xmlFreeImpl(attr_name as *mut c_void);
             }
             if pi_raw(ctxt) == b'>' {
                 pi_next1(ctxt);
             }
-            xmlFree(elem_name as *mut c_void);
+            xmlFreeImpl(elem_name as *mut c_void);
         }
     }
 }
@@ -2515,9 +2515,9 @@ unsafe fn pi_free_enumeration(cur: *mut _xmlEnumeration) {
         while !cur.is_null() {
             let next = (*cur).next;
             if !(*cur).name.is_null() {
-                xmlFree((*cur).name as *mut c_void);
+                xmlFreeImpl((*cur).name as *mut c_void);
             }
-            xmlFree(cur as *mut c_void);
+            xmlFreeImpl(cur as *mut c_void);
             cur = next;
         }
     }
@@ -2563,7 +2563,7 @@ unsafe fn pi_parse_element_mixed_content_decl(ctxt: *mut _xmlParserCtxt, _open_i
                     (*cur).c2 = n;
                     (*n).parent = cur;
                     let c1 = create_content_model(elem, XML_ELEMENT_CONTENT_ELEMENT as c_int);
-                    xmlFree(elem as *mut c_void);
+                    xmlFreeImpl(elem as *mut c_void);
                     (*n).c1 = c1;
                     if !c1.is_null() {
                         (*c1).parent = n;
@@ -2582,7 +2582,7 @@ unsafe fn pi_parse_element_mixed_content_decl(ctxt: *mut _xmlParserCtxt, _open_i
             if pi_raw(ctxt) == b')' && pi_nxt(ctxt, 1) == b'*' {
                 if !elem.is_null() {
                     let c2 = create_content_model(elem, XML_ELEMENT_CONTENT_ELEMENT as c_int);
-                    xmlFree(elem as *mut c_void);
+                    xmlFreeImpl(elem as *mut c_void);
                     if !cur.is_null() {
                         (*cur).c2 = c2;
                         if !c2.is_null() {
@@ -2596,7 +2596,7 @@ unsafe fn pi_parse_element_mixed_content_decl(ctxt: *mut _xmlParserCtxt, _open_i
                 pi_skip(ctxt, 2);
             } else {
                 if !elem.is_null() {
-                    xmlFree(elem as *mut c_void);
+                    xmlFreeImpl(elem as *mut c_void);
                 }
                 free_content_model(ret);
                 pi_fatal_err(ctxt, XML_ERR_MIXED_NOT_STARTED);
@@ -2641,7 +2641,7 @@ unsafe fn pi_parse_element_children_content_decl_priv(
                 return ptr::null_mut();
             }
             cur = create_content_model(elem, XML_ELEMENT_CONTENT_ELEMENT as c_int);
-            xmlFree(elem as *mut c_void);
+            xmlFreeImpl(elem as *mut c_void);
             if cur.is_null() {
                 pi_err_memory(ctxt);
                 return ptr::null_mut();
@@ -2726,7 +2726,7 @@ unsafe fn pi_parse_element_children_content_decl_priv(
                     return ptr::null_mut();
                 }
                 last = create_content_model(elem, XML_ELEMENT_CONTENT_ELEMENT as c_int);
-                xmlFree(elem as *mut c_void);
+                xmlFreeImpl(elem as *mut c_void);
                 if last.is_null() {
                     pi_err_memory(ctxt);
                     free_content_model(ret);
@@ -2849,12 +2849,12 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
             } else if pi_raw(ctxt) == b'(' {
                 ret = pi_parse_element_content_decl(ctxt, name, &mut content);
                 if ret <= 0 {
-                    xmlFree(name as *mut c_void);
+                    xmlFreeImpl(name as *mut c_void);
                     return -1;
                 }
             } else {
                 pi_fatal_err(ctxt, XML_ERR_ELEMCONTENT_NOT_STARTED);
-                xmlFree(name as *mut c_void);
+                xmlFreeImpl(name as *mut c_void);
                 return -1;
             }
 
@@ -2880,7 +2880,7 @@ unsafe fn pi_parse_element_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
                     free_content_model(content);
                 }
             }
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
         }
         ret
     }
@@ -2945,7 +2945,7 @@ unsafe fn pi_parse_text_decl(ctxt: *mut _xmlParserCtxt) {
         if !input.is_null() {
             (*input).version = version;
         } else if !version.is_null() {
-            xmlFree(version as *mut c_void);
+            xmlFreeImpl(version as *mut c_void);
         }
         pi_parse_encoding_decl(ctxt);
         pi_skip_blanks(ctxt);
@@ -3226,7 +3226,7 @@ unsafe fn pi_parse_encoding_decl(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
             if pi_raw(ctxt) != b'"' {
                 pi_fatal_err(ctxt, XML_ERR_STRING_NOT_CLOSED);
                 if !encoding.is_null() {
-                    xmlFree(encoding as *mut c_void);
+                    xmlFreeImpl(encoding as *mut c_void);
                 }
                 return ptr::null();
             }
@@ -3237,7 +3237,7 @@ unsafe fn pi_parse_encoding_decl(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
             if pi_raw(ctxt) != b'\'' {
                 pi_fatal_err(ctxt, XML_ERR_STRING_NOT_CLOSED);
                 if !encoding.is_null() {
-                    xmlFree(encoding as *mut c_void);
+                    xmlFreeImpl(encoding as *mut c_void);
                 }
                 return ptr::null();
             }
@@ -3250,7 +3250,7 @@ unsafe fn pi_parse_encoding_decl(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
         }
         let c = &mut *ctxt;
         if !c.encoding.is_null() {
-            xmlFree(c.encoding as *mut c_void);
+            xmlFreeImpl(c.encoding as *mut c_void);
         }
         c.encoding = encoding;
         c.encoding as *const xmlChar
@@ -3318,7 +3318,7 @@ unsafe fn pi_parse_xml_decl(ctxt: *mut _xmlParserCtxt) {
             }
             let c = &mut *ctxt;
             if !c.version.is_null() {
-                xmlFree(c.version as *mut c_void);
+                xmlFreeImpl(c.version as *mut c_void);
             }
             c.version = version;
         }
@@ -3512,7 +3512,7 @@ unsafe fn pi_parse_start_tag(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
             if attname.is_null() {
                 failed = true;
                 if !attvalue.is_null() {
-                    xmlFree(attvalue as *mut c_void);
+                    xmlFreeImpl(attvalue as *mut c_void);
                 }
                 break;
             }
@@ -3528,21 +3528,21 @@ unsafe fn pi_parse_start_tag(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
                 }
                 if failed {
                     if !attvalue.is_null() {
-                        xmlFree(attvalue as *mut c_void);
+                        xmlFreeImpl(attvalue as *mut c_void);
                     }
                     break;
                 }
                 // Add the pair to atts.
                 if nbatts + 4 > maxatts as usize {
                     let new_max = if maxatts == 0 { 20 } else { maxatts * 2 };
-                    let n = xmlRealloc(
+                    let n = xmlReallocImpl(
                         atts as *mut c_void,
                         (new_max as usize) * size_of::<*const xmlChar>(),
                     ) as *mut *const xmlChar;
                     if n.is_null() {
                         pi_err_memory(ctxt);
                         failed = true;
-                        xmlFree(attvalue as *mut c_void);
+                        xmlFreeImpl(attvalue as *mut c_void);
                         break;
                     }
                     atts = n;
@@ -3559,7 +3559,7 @@ unsafe fn pi_parse_start_tag(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
                 failed = true;
             }
             if !attvalue.is_null() {
-                xmlFree(attvalue as *mut c_void);
+                xmlFreeImpl(attvalue as *mut c_void);
             }
             if pi_raw(ctxt) == b'>' || (pi_raw(ctxt) == b'/' && pi_nxt(ctxt, 1) == b'>') {
                 break;
@@ -3578,7 +3578,7 @@ unsafe fn pi_parse_start_tag(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
             if !atts.is_null() {
                 let p = *atts.add(i);
                 if !p.is_null() {
-                    xmlFree(p as *mut c_void);
+                    xmlFreeImpl(p as *mut c_void);
                 }
             }
             i += 1;
@@ -3609,7 +3609,7 @@ unsafe fn pi_parse_end_tag(ctxt: *mut _xmlParserCtxt) {
                 pi_fatal_err(ctxt, XML_ERR_TAG_NAME_MISMATCH);
             } else {
                 pi_fatal_err(ctxt, XML_ERR_TAG_NAME_MISMATCH);
-                xmlFree(name as *mut c_void);
+                xmlFreeImpl(name as *mut c_void);
             }
         }
         // SAX: End of Tag.
@@ -3789,7 +3789,7 @@ unsafe fn pi_parse_document(ctxt: *mut _xmlParserCtxt) -> c_int {
         } else {
             let c = &mut *ctxt;
             if !c.version.is_null() {
-                xmlFree(c.version as *mut c_void);
+                xmlFreeImpl(c.version as *mut c_void);
             }
             c.version = crate::abi::exports_xml2::xmlStrdup(b"1.0\0".as_ptr() as *const xmlChar);
             if c.version.is_null() {
@@ -3877,7 +3877,7 @@ unsafe fn pi_parse_ext_parsed_ent(ctxt: *mut _xmlParserCtxt) -> c_int {
         } else {
             let c = &mut *ctxt;
             if !c.version.is_null() {
-                xmlFree(c.version as *mut c_void);
+                xmlFreeImpl(c.version as *mut c_void);
             }
             c.version = crate::abi::exports_xml2::xmlStrdup(b"1.0\0".as_ptr() as *const xmlChar);
         }
@@ -4129,7 +4129,7 @@ pub unsafe extern "C" fn xmlParseNamespace(ctxt: *mut _xmlParserCtxt) -> *const 
                 pi_fatal_err(ctxt, XML_ERR_ATTRIBUTE_WITHOUT_VALUE);
                 return name;
             }
-            xmlFree(value as *mut c_void);
+            xmlFreeImpl(value as *mut c_void);
         }
         name
     }
@@ -5125,9 +5125,9 @@ unsafe fn pi_mem_free(m: *mut PiInputMem) {
             return;
         }
         if !(*m).data.is_null() && (*m).owned {
-            xmlFree((*m).data as *mut c_void);
+            xmlFreeImpl((*m).data as *mut c_void);
         }
-        xmlFree(m as *mut c_void);
+        xmlFreeImpl(m as *mut c_void);
     }
 }
 
@@ -5145,7 +5145,7 @@ unsafe fn pi_mem_grow(m: *mut PiInputMem, extra: usize) -> bool {
         }
         if !(*m).owned {
             // Convert a static buffer into an owned copy.
-            let data = xmlMalloc(new_cap) as *mut u8;
+            let data = xmlMallocImpl(new_cap) as *mut u8;
             if data.is_null() {
                 return false;
             }
@@ -5157,7 +5157,7 @@ unsafe fn pi_mem_grow(m: *mut PiInputMem, extra: usize) -> bool {
             (*m).cap = new_cap;
             return true;
         }
-        let data = xmlRealloc((*m).data as *mut c_void, new_cap) as *mut u8;
+        let data = xmlReallocImpl((*m).data as *mut c_void, new_cap) as *mut u8;
         if data.is_null() {
             return false;
         }

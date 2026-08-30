@@ -263,13 +263,13 @@ pub unsafe fn free_dtd(dtd: *mut _xmlDtd) {
 
         // Free strings
         if !d.name.is_null() {
-            allocator::xmlFree(d.name as *mut c_void);
+            allocator::xmlFreeImpl(d.name as *mut c_void);
         }
         if !d.ExternalID.is_null() {
-            allocator::xmlFree(d.ExternalID as *mut c_void);
+            allocator::xmlFreeImpl(d.ExternalID as *mut c_void);
         }
         if !d.SystemID.is_null() {
-            allocator::xmlFree(d.SystemID as *mut c_void);
+            allocator::xmlFreeImpl(d.SystemID as *mut c_void);
         }
 
         // Free children (tree nodes)
@@ -280,7 +280,7 @@ pub unsafe fn free_dtd(dtd: *mut _xmlDtd) {
             // DTD children are freed by the caller or tree module.
         }
 
-        allocator::xmlFree(dtd as *mut c_void);
+        allocator::xmlFreeImpl(dtd as *mut c_void);
     }
 }
 
@@ -452,15 +452,15 @@ pub unsafe fn free_notation(notation: *mut _xmlNotation) {
     unsafe {
         let n = &*notation;
         if !n.name.is_null() {
-            allocator::xmlFree(n.name as *mut c_void);
+            allocator::xmlFreeImpl(n.name as *mut c_void);
         }
         if !n.PublicID.is_null() {
-            allocator::xmlFree(n.PublicID as *mut c_void);
+            allocator::xmlFreeImpl(n.PublicID as *mut c_void);
         }
         if !n.SystemID.is_null() {
-            allocator::xmlFree(n.SystemID as *mut c_void);
+            allocator::xmlFreeImpl(n.SystemID as *mut c_void);
         }
-        allocator::xmlFree(notation as *mut c_void);
+        allocator::xmlFreeImpl(notation as *mut c_void);
     }
 }
 
@@ -534,13 +534,13 @@ pub unsafe fn free_content_model(cur: *mut _xmlElementContent) {
 
         // Free name and prefix
         if !c.name.is_null() {
-            allocator::xmlFree(c.name as *mut c_void);
+            allocator::xmlFreeImpl(c.name as *mut c_void);
         }
         if !c.prefix.is_null() {
-            allocator::xmlFree(c.prefix as *mut c_void);
+            allocator::xmlFreeImpl(c.prefix as *mut c_void);
         }
 
-        allocator::xmlFree(cur as *mut c_void);
+        allocator::xmlFreeImpl(cur as *mut c_void);
     }
 }
 
@@ -746,7 +746,7 @@ pub unsafe fn copy_element(elem: *mut _xmlElement) -> *mut _xmlElement {
                         free_attribute(to_free);
                         to_free = next;
                     }
-                    allocator::xmlFree(copy as *mut c_void);
+                    allocator::xmlFreeImpl(copy as *mut c_void);
                     return ptr::null_mut();
                 }
 
@@ -788,12 +788,12 @@ pub unsafe fn free_element(elem: *mut _xmlElement) {
     unsafe {
         // Free name
         if !(*elem).name.is_null() {
-            allocator::xmlFree((*elem).name as *mut c_void);
+            allocator::xmlFreeImpl((*elem).name as *mut c_void);
         }
 
         // Free prefix
         if !(*elem).prefix.is_null() {
-            allocator::xmlFree((*elem).prefix as *mut c_void);
+            allocator::xmlFreeImpl((*elem).prefix as *mut c_void);
         }
 
         // Free content model
@@ -816,7 +816,7 @@ pub unsafe fn free_element(elem: *mut _xmlElement) {
         // Therefore, we do NOT free the attributes list here.
         (*elem).attributes = ptr::null_mut();
 
-        allocator::xmlFree(elem as *mut c_void);
+        allocator::xmlFreeImpl(elem as *mut c_void);
     }
 }
 
@@ -839,9 +839,9 @@ unsafe fn free_enumeration(tree: *mut _xmlEnumeration) {
         while !cur.is_null() {
             let next = (*cur).next;
             if !(*cur).name.is_null() {
-                allocator::xmlFree((*cur).name as *mut c_void);
+                allocator::xmlFreeImpl((*cur).name as *mut c_void);
             }
-            allocator::xmlFree(cur as *mut c_void);
+            allocator::xmlFreeImpl(cur as *mut c_void);
             cur = next;
         }
     }
@@ -871,9 +871,9 @@ unsafe fn copy_enumeration(tree: *mut _xmlEnumeration) -> *mut _xmlEnumeration {
                 while !to_free.is_null() {
                     let next = (*to_free).next;
                     if !(*to_free).name.is_null() {
-                        allocator::xmlFree((*to_free).name as *mut c_void);
+                        allocator::xmlFreeImpl((*to_free).name as *mut c_void);
                     }
-                    allocator::xmlFree(to_free as *mut c_void);
+                    allocator::xmlFreeImpl(to_free as *mut c_void);
                     to_free = next;
                 }
                 return ptr::null_mut();
@@ -972,15 +972,15 @@ pub unsafe fn add_attribute_decl(
         if ret != 0 {
             // Failed to add
             if !(*attr).defaultValue.is_null() {
-                allocator::xmlFree((*attr).defaultValue as *mut c_void);
+                allocator::xmlFreeImpl((*attr).defaultValue as *mut c_void);
             }
             if !(*attr).name.is_null() {
-                allocator::xmlFree((*attr).name as *mut c_void);
+                allocator::xmlFreeImpl((*attr).name as *mut c_void);
             }
             if !(*attr).elem.is_null() {
-                allocator::xmlFree((*attr).elem as *mut c_void);
+                allocator::xmlFreeImpl((*attr).elem as *mut c_void);
             }
-            allocator::xmlFree(attr as *mut c_void);
+            allocator::xmlFreeImpl(attr as *mut c_void);
             // Don't free tree - caller still owns it on failure
             return ptr::null_mut();
         }
@@ -1097,22 +1097,22 @@ pub unsafe fn free_attribute(attr: *mut _xmlAttribute) {
         let a = &*attr;
 
         if !a.name.is_null() {
-            allocator::xmlFree(a.name as *mut c_void);
+            allocator::xmlFreeImpl(a.name as *mut c_void);
         }
         if !a.defaultValue.is_null() {
-            allocator::xmlFree(a.defaultValue as *mut c_void);
+            allocator::xmlFreeImpl(a.defaultValue as *mut c_void);
         }
         if !a.prefix.is_null() {
-            allocator::xmlFree(a.prefix as *mut c_void);
+            allocator::xmlFreeImpl(a.prefix as *mut c_void);
         }
         if !a.elem.is_null() {
-            allocator::xmlFree(a.elem as *mut c_void);
+            allocator::xmlFreeImpl(a.elem as *mut c_void);
         }
         if !a.tree.is_null() {
             free_enumeration(a.tree);
         }
 
-        allocator::xmlFree(attr as *mut c_void);
+        allocator::xmlFreeImpl(attr as *mut c_void);
     }
 }
 
@@ -1371,7 +1371,7 @@ unsafe fn valid_content_model_or(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use crate::abi::structs::*;
     use core::ffi::c_void;
     use core::ptr;
@@ -1381,7 +1381,7 @@ mod tests {
     unsafe fn c_str(s: &[u8]) -> *const xmlChar {
         // Create a null-terminated xmlChar string
         let len = s.len();
-        let buf = allocator::xmlMalloc(len + 1) as *mut xmlChar;
+        let buf = allocator::xmlMallocImpl(len + 1) as *mut xmlChar;
         assert!(!buf.is_null());
         ptr::copy_nonoverlapping(s.as_ptr(), buf, len);
         *buf.add(len) = 0;
@@ -1417,7 +1417,7 @@ mod tests {
 
             // Cleanup
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1443,7 +1443,7 @@ mod tests {
             assert_eq!((*doc).intSubset, dtd);
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1479,7 +1479,7 @@ mod tests {
             assert!(not_found.is_null());
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1511,7 +1511,7 @@ mod tests {
 
             free_notation(copy);
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1621,7 +1621,7 @@ mod tests {
             assert!(not_found.is_null());
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1639,7 +1639,7 @@ mod tests {
             assert_eq!((*e2).type_, XML_ELEMENT_TYPE_EMPTY as c_int); // Still empty
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1676,7 +1676,7 @@ mod tests {
 
             free_element(copy);
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1726,7 +1726,7 @@ mod tests {
             assert!(not_found.is_null());
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1759,7 +1759,7 @@ mod tests {
             assert_eq!(string::xml_strcmp((*attr).defaultValue, default_val), 0);
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1802,7 +1802,7 @@ mod tests {
             assert_eq!((*attr).atype, XML_ATTRIBUTE_ENUMERATION as c_int);
 
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1855,7 +1855,7 @@ mod tests {
 
             free_attribute(copy);
             free_dtd(dtd);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 

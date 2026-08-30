@@ -13,12 +13,13 @@
 extern "C" {
 #endif
 
+typedef struct _xmlLink xmlLink;
 typedef struct _xmlList xmlList;
 typedef xmlList *xmlListPtr;
 
-typedef void (*xmlListDeallocator)(void *data);
-typedef int (*xmlListDataCompare)(const void *data1, const void *data2);
-typedef int (*xmlListWalker)(void *data, void *user_data);
+typedef void (*xmlListDeallocator)(xmlLink *lk);
+typedef int (*xmlListDataCompare)(const void *data0, const void *data1);
+typedef int (*xmlListWalker)(const void *data, void *user);
 
 XMLPUBFUN xmlListPtr xmlListCreate(xmlListDeallocator deallocator,
                                     xmlListDataCompare compare);

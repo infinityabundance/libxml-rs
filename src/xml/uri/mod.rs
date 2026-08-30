@@ -182,7 +182,7 @@ unsafe fn to_c_str(bytes: Option<&[u8]>) -> *mut c_char {
         Some(b) if !b.is_empty() => b,
         _ => return ptr::null_mut(),
     };
-    let p = unsafe { allocator::xmlMalloc(b.len() + 1) as *mut u8 };
+    let p = unsafe { allocator::xmlMallocImpl(b.len() + 1) as *mut u8 };
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -225,7 +225,7 @@ unsafe fn free_c_uri(uri: *mut CXmlUri) {
             u.query_raw,
         ] {
             if !p.is_null() {
-                allocator::xmlFree(p as *mut c_void);
+                allocator::xmlFreeImpl(p as *mut c_void);
             }
         }
         drop(Box::from_raw(uri));
@@ -807,7 +807,7 @@ pub(crate) unsafe fn xmlSaveUri(uri: *mut c_void) -> *mut xmlChar {
     }
     // Allocate with xmlMalloc and copy
     let len = result.len();
-    let ptr = unsafe { allocator::xmlMalloc(len + 1) as *mut u8 };
+    let ptr = unsafe { allocator::xmlMallocImpl(len + 1) as *mut u8 };
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -974,7 +974,7 @@ pub(crate) unsafe fn xmlURIEscapeStr(str: *const xmlChar, list: *const xmlChar) 
     }
 
     let len = result.len();
-    let ptr = unsafe { allocator::xmlMalloc(len + 1) as *mut u8 };
+    let ptr = unsafe { allocator::xmlMallocImpl(len + 1) as *mut u8 };
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -1025,7 +1025,7 @@ pub(crate) unsafe fn xmlURIUnescapeString(
     }
 
     let out_len = decoded.len();
-    let ptr = unsafe { allocator::xmlMalloc(out_len + 1) as *mut u8 };
+    let ptr = unsafe { allocator::xmlMallocImpl(out_len + 1) as *mut u8 };
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -1514,7 +1514,7 @@ mod tests {
             assert!(!saved.is_null());
             let saved_str = std::ffi::CStr::from_ptr(saved as *const c_char);
             assert_eq!(saved_str.to_bytes(), b"http://example.com:8080/path?q=1#f");
-            allocator::xmlFree(saved as *mut core::ffi::c_void);
+            allocator::xmlFreeImpl(saved as *mut core::ffi::c_void);
             xmlFreeURI(uri);
         }
     }
@@ -1527,7 +1527,7 @@ mod tests {
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result as *const c_char);
             assert_eq!(result_str.to_bytes(), b"hello%20world");
-            allocator::xmlFree(result as *mut core::ffi::c_void);
+            allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
         }
     }
 
@@ -1540,7 +1540,7 @@ mod tests {
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result as *const c_char);
             assert_eq!(result_str.to_bytes(), b"hello world"); // space is in safe list
-            allocator::xmlFree(result as *mut core::ffi::c_void);
+            allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
         }
     }
 
@@ -1552,7 +1552,7 @@ mod tests {
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result);
             assert_eq!(result_str.to_bytes(), b"hello world");
-            allocator::xmlFree(result as *mut core::ffi::c_void);
+            allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
         }
     }
 
@@ -1564,7 +1564,7 @@ mod tests {
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result);
             assert_eq!(result_str.to_bytes(), b"hello world");
-            allocator::xmlFree(result as *mut core::ffi::c_void);
+            allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
         }
     }
 

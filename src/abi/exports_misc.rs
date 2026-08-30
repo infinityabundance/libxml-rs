@@ -695,7 +695,7 @@ unsafe fn dtd_default_attr(
         let ns_list = crate::xml::tree::get_ns_list((*node).doc, node as *mut _xmlNode);
         if ns_list.is_null() {
             if !tmp.is_null() {
-                unsafe { xmlFree(tmp as *mut c_void) };
+                unsafe { xmlFreeImpl(tmp as *mut c_void) };
             }
             return ptr::null_mut();
         }
@@ -725,10 +725,10 @@ unsafe fn dtd_default_attr(
             }
             cur = cur.add(1);
         }
-        unsafe { xmlFree(ns_list as *mut c_void) };
+        unsafe { xmlFreeImpl(ns_list as *mut c_void) };
     }
     if !tmp.is_null() {
-        unsafe { xmlFree(tmp as *mut c_void) };
+        unsafe { xmlFreeImpl(tmp as *mut c_void) };
     }
 
     if !attr_decl.is_null() && !unsafe { (*attr_decl).defaultValue.is_null() } {
@@ -955,7 +955,7 @@ pub unsafe extern "C" fn xmlGetNodePath(node: *const _xmlNode) -> *mut xmlChar {
         }
 
         out.push(0);
-        let ret = xmlMalloc(out.len());
+        let ret = xmlMallocImpl(out.len());
         if ret.is_null() {
             return ptr::null_mut();
         }
@@ -1300,7 +1300,7 @@ pub unsafe extern "C" fn xmlModuleOpen(
     }
     let handle = unsafe { dlopen(filename, RTLD_GLOBAL | RTLD_NOW) };
     if handle.is_null() {
-        unsafe { xmlFree(module as *mut c_void) };
+        unsafe { xmlFreeImpl(module as *mut c_void) };
         return ptr::null_mut();
     }
     unsafe {
@@ -1364,9 +1364,9 @@ pub unsafe extern "C" fn xmlModuleFree(module: *mut _xmlModule) -> c_int {
     }
     unsafe {
         if !(*module).name.is_null() {
-            xmlFree((*module).name as *mut c_void);
+            xmlFreeImpl((*module).name as *mut c_void);
         }
-        xmlFree(module as *mut c_void);
+        xmlFreeImpl(module as *mut c_void);
     }
     0
 }
@@ -1833,7 +1833,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
         let local_name = crate::xml::string::split_qname2(name, &mut prefix);
         if local_name.is_null() {
             if !prefix.is_null() {
-                xmlFree(prefix as *mut c_void);
+                xmlFreeImpl(prefix as *mut c_void);
             }
             v_err_memory(ctxt);
             return ptr::null_mut();
@@ -1853,7 +1853,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
             );
             if elemname.is_null() {
                 if !prefix.is_null() {
-                    xmlFree(prefix as *mut c_void);
+                    xmlFreeImpl(prefix as *mut c_void);
                 }
                 v_err_memory(ctxt);
                 return ptr::null_mut();
@@ -1878,7 +1878,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
                 }
             }
             if elemname as *const xmlChar != (*elem).name {
-                xmlFree(elemname as *mut c_void);
+                xmlFreeImpl(elemname as *mut c_void);
             }
         }
         if attr_decl.is_null() && !(*doc).intSubset.is_null() {
@@ -1903,14 +1903,14 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
 
         if attr_decl.is_null() || (*attr_decl).atype == XML_ATTRIBUTE_CDATA as c_int {
             if !prefix.is_null() {
-                xmlFree(prefix as *mut c_void);
+                xmlFreeImpl(prefix as *mut c_void);
             }
             return ptr::null_mut();
         }
         let ret = crate::abi::exports_xml2::xmlStrdup(value);
         if ret.is_null() {
             if !prefix.is_null() {
-                xmlFree(prefix as *mut c_void);
+                xmlFreeImpl(prefix as *mut c_void);
             }
             v_err_memory(ctxt);
             return ptr::null_mut();
@@ -1931,7 +1931,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
             );
         }
         if !prefix.is_null() {
-            xmlFree(prefix as *mut c_void);
+            xmlFreeImpl(prefix as *mut c_void);
         }
         ret
     }
@@ -2674,7 +2674,7 @@ pub unsafe extern "C" fn xmlNodeBufGetContent(
     }
     let len = unsafe { crate::abi::exports_xml2::xmlStrlen(content) };
     let ret = crate::xml::io::buf_add(buffer, content, len);
-    unsafe { xmlFree(content as *mut c_void) };
+    unsafe { xmlFreeImpl(content as *mut c_void) };
     if ret < 0 {
         -1
     } else {

@@ -107,6 +107,12 @@ typedef enum{
 	XSLT_TRACE_VARIABLES =		1<<16
 } xsltDebugTraceCodes;
 
+/* [11.1-L] begin: debug-trace declarations extracted verbatim from the
+ * oracle libxslt 1.1.45 xsltutils.h (exported by the candidate DSO). */
+XMLPUBFUN void xsltDebugSetDefaultTrace(xsltDebugTraceCodes val);
+XMLPUBFUN xsltDebugTraceCodes xsltDebugGetDefaultTrace(void);
+/* [11.1-L] end: extracted declarations */
+
 typedef enum{
     XSLT_DEBUG_NONE = 0, /* no debugging allowed */
     XSLT_DEBUG_INIT,

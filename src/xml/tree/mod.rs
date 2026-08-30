@@ -64,13 +64,13 @@ unsafe fn dup_xml_str(str: *const xmlChar) -> *mut xmlChar {
     let len = unsafe { crate::abi::exports_xml2::xmlStrlen(str) as usize };
     if len == 0 {
         // Return a pointer to a null byte
-        let buf = unsafe { allocator::xmlMalloc(1) as *mut xmlChar };
+        let buf = unsafe { allocator::xmlMallocImpl(1) as *mut xmlChar };
         if !buf.is_null() {
             unsafe { *buf = 0 };
         }
         return buf;
     }
-    let buf = unsafe { allocator::xmlMalloc(len + 1) as *mut xmlChar };
+    let buf = unsafe { allocator::xmlMallocImpl(len + 1) as *mut xmlChar };
     if !buf.is_null() {
         unsafe {
             ptr::copy_nonoverlapping(str, buf, len + 1);
@@ -152,6 +152,9 @@ pub unsafe fn new_doc(version: *const xmlChar) -> *mut _xmlDoc {
         (*doc).version = dup_xml_str(ver);
     }
 
+    // UPSTREAM-PARITY (tree.c xmlNewDoc): the document node is registered.
+    crate::abi::data_globals::register_node_hook(doc as *mut _xmlNode);
+
     doc
 }
 
@@ -172,6 +175,10 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
     if doc.is_null() {
         return;
     }
+
+    // UPSTREAM-PARITY (tree.c xmlFreeDoc): the deregister hook fires before
+    // the document is torn down.
+    crate::abi::data_globals::deregister_node_hook(doc as *mut _xmlNode);
 
     let d = unsafe { &mut *doc };
 
@@ -197,17 +204,17 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
 
     // Free strings
     if !d.version.is_null() {
-        allocator::xmlFree(d.version as *mut c_void);
+        allocator::xmlFreeImpl(d.version as *mut c_void);
     }
     if !d.encoding.is_null() {
-        allocator::xmlFree(d.encoding as *mut c_void);
+        allocator::xmlFreeImpl(d.encoding as *mut c_void);
     }
     if !d.URL.is_null() {
-        allocator::xmlFree(d.URL as *mut c_void);
+        allocator::xmlFreeImpl(d.URL as *mut c_void);
     }
 
     // Free the document itself
-    allocator::xmlFree(doc as *mut c_void);
+    allocator::xmlFreeImpl(doc as *mut c_void);
 }
 
 /// Copy a document (deep copy by default).
@@ -443,7 +450,7 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
                 if !sub.is_null() {
                     let len = crate::abi::exports_xml2::xmlStrlen(sub);
                     result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
-                    allocator::xmlFree(sub as *mut c_void);
+                    allocator::xmlFreeImpl(sub as *mut c_void);
                 }
             }
         }
@@ -470,7 +477,7 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
                     if !sub.is_null() {
                         let len = crate::abi::exports_xml2::xmlStrlen(sub);
                         result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
-                        allocator::xmlFree(sub as *mut c_void);
+                        allocator::xmlFreeImpl(sub as *mut c_void);
                     }
                 }
                 child = (*child).next;
@@ -478,7 +485,7 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
         }
     }
     // Allocate the C string.
-    let buf = allocator::xmlMalloc(result.len() + 1) as *mut xmlChar;
+    let buf = allocator::xmlMallocImpl(result.len() + 1) as *mut xmlChar;
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -525,6 +532,10 @@ pub unsafe fn new_node(ns: *mut _xmlNs, name: *const xmlChar) -> *mut _xmlNode {
         }
     }
 
+    // UPSTREAM-PARITY (tree.c): the node-registration hook fires after a
+    // node is fully initialised.
+    crate::abi::data_globals::register_node_hook(node);
+
     node
 }
 
@@ -546,6 +557,10 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
     if node.is_null() {
         return;
     }
+
+    // UPSTREAM-PARITY (tree.c xmlFreeNode): the deregister hook fires before
+    // the node is torn down.
+    crate::abi::data_globals::deregister_node_hook(node);
 
     let n = unsafe { &mut *node };
 
@@ -571,7 +586,7 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 
     // Free the name
     if !n.name.is_null() {
-        allocator::xmlFree(n.name as *mut c_void);
+        allocator::xmlFreeImpl(n.name as *mut c_void);
     }
 
     // Free content (for text/CDATA nodes). Compact text content lives inside
@@ -586,12 +601,12 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
         {
             let inline_addr = std::ptr::addr_of_mut!((*node).properties) as *const c_void;
             if n.content as *const c_void != inline_addr {
-                allocator::xmlFree(n.content as *mut c_void);
+                allocator::xmlFreeImpl(n.content as *mut c_void);
             }
         }
     }
 
-    allocator::xmlFree(node as *mut c_void);
+    allocator::xmlFreeImpl(node as *mut c_void);
 }
 
 /// Free a linked list of nodes.
@@ -633,10 +648,10 @@ unsafe fn free_prop_list(prop: *mut _xmlAttr) {
 
         // Free name
         if !unsafe { (*cur).name }.is_null() {
-            allocator::xmlFree(unsafe { (*cur).name } as *mut c_void);
+            allocator::xmlFreeImpl(unsafe { (*cur).name } as *mut c_void);
         }
 
-        allocator::xmlFree(cur as *mut c_void);
+        allocator::xmlFreeImpl(cur as *mut c_void);
         cur = next;
     }
 }
@@ -653,13 +668,13 @@ unsafe fn free_ns_list(ns: *mut _xmlNs) {
 
         // Free href and prefix
         if !unsafe { (*cur).href }.is_null() {
-            allocator::xmlFree(unsafe { (*cur).href } as *mut c_void);
+            allocator::xmlFreeImpl(unsafe { (*cur).href } as *mut c_void);
         }
         if !unsafe { (*cur).prefix }.is_null() {
-            allocator::xmlFree(unsafe { (*cur).prefix } as *mut c_void);
+            allocator::xmlFreeImpl(unsafe { (*cur).prefix } as *mut c_void);
         }
 
-        allocator::xmlFree(cur as *mut c_void);
+        allocator::xmlFreeImpl(cur as *mut c_void);
         cur = next;
     }
 }
@@ -1210,7 +1225,7 @@ pub unsafe fn new_text(content: *const xmlChar) -> *mut _xmlNode {
         (*node).type_ = XML_TEXT_NODE as c_int;
         (*node).name = dup_xml_str(b"text\0" as *const u8 as *const xmlChar);
         (*node).content = if content.is_null() {
-            let empty = allocator::xmlMalloc(1) as *mut xmlChar;
+            let empty = allocator::xmlMallocImpl(1) as *mut xmlChar;
             if !empty.is_null() {
                 *empty = 0;
             }
@@ -1220,6 +1235,10 @@ pub unsafe fn new_text(content: *const xmlChar) -> *mut _xmlNode {
         };
         (*node).line = 0;
     }
+
+    // UPSTREAM-PARITY (tree.c): the node-registration hook fires after a
+    // node is fully initialised.
+    crate::abi::data_globals::register_node_hook(node);
 
     node
 }
@@ -1250,6 +1269,10 @@ pub unsafe fn new_comment(content: *const xmlChar) -> *mut _xmlNode {
         (*node).line = 0;
     }
 
+    // UPSTREAM-PARITY (tree.c): the node-registration hook fires after a
+    // node is fully initialised.
+    crate::abi::data_globals::register_node_hook(node);
+
     node
 }
 
@@ -1279,6 +1302,10 @@ pub unsafe fn new_pi(name: *const xmlChar, content: *const xmlChar) -> *mut _xml
         (*node).content = dup_xml_str(content);
         (*node).line = 0;
     }
+
+    // UPSTREAM-PARITY (tree.c): the node-registration hook fires after a
+    // node is fully initialised.
+    crate::abi::data_globals::register_node_hook(node);
 
     node
 }
@@ -1314,13 +1341,13 @@ pub unsafe fn new_cdata_block(
         (*node).doc = doc;
 
         if !content.is_null() && len > 0 {
-            (*node).content = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+            (*node).content = allocator::xmlMallocImpl((len + 1) as usize) as *mut xmlChar;
             if !(*node).content.is_null() {
                 ptr::copy_nonoverlapping(content, (*node).content, len as usize);
                 *((*node).content.add(len as usize)) = 0;
             }
         } else {
-            let empty = allocator::xmlMalloc(1) as *mut xmlChar;
+            let empty = allocator::xmlMallocImpl(1) as *mut xmlChar;
             if !empty.is_null() {
                 *empty = 0;
             }
@@ -1485,8 +1512,8 @@ pub unsafe fn get_ns_list(doc: *mut _xmlDoc, node: *mut _xmlNode) -> *mut *mut _
     }
 
     // Allocate NULL-terminated array
-    let arr =
-        allocator::xmlMalloc((ns_ptrs.len() + 1) * size_of::<*mut _xmlNs>()) as *mut *mut _xmlNs;
+    let arr = allocator::xmlMallocImpl((ns_ptrs.len() + 1) * size_of::<*mut _xmlNs>())
+        as *mut *mut _xmlNs;
     if arr.is_null() {
         return ptr::null_mut();
     }
@@ -1836,10 +1863,10 @@ pub unsafe fn remove_prop(attr: *mut _xmlAttr) -> c_int {
 
     // Free name
     if !a.name.is_null() {
-        allocator::xmlFree(a.name as *mut c_void);
+        allocator::xmlFreeImpl(a.name as *mut c_void);
     }
 
-    allocator::xmlFree(attr as *mut c_void);
+    allocator::xmlFreeImpl(attr as *mut c_void);
     0
 }
 
@@ -2058,7 +2085,7 @@ pub unsafe fn text_concat(node: *mut _xmlNode, str: *const xmlChar, num: c_int) 
     }
     let cur = unsafe { &mut *node };
     if cur.content.is_null() {
-        let p = unsafe { allocator::xmlMalloc(num as usize + 1) as *mut xmlChar };
+        let p = unsafe { allocator::xmlMallocImpl(num as usize + 1) as *mut xmlChar };
         if p.is_null() {
             return -1;
         }
@@ -2071,7 +2098,7 @@ pub unsafe fn text_concat(node: *mut _xmlNode, str: *const xmlChar, num: c_int) 
     }
     let old_len = unsafe { crate::xml::string::xml_strlen(cur.content) };
     let p = unsafe {
-        allocator::xmlRealloc(cur.content as *mut c_void, old_len + num as usize + 1)
+        allocator::xmlReallocImpl(cur.content as *mut c_void, old_len + num as usize + 1)
             as *mut xmlChar
     };
     if p.is_null() {
@@ -2195,13 +2222,13 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
 
     // Free name
     if !d.name.is_null() {
-        allocator::xmlFree(d.name as *mut c_void);
+        allocator::xmlFreeImpl(d.name as *mut c_void);
     }
     if !d.ExternalID.is_null() {
-        allocator::xmlFree(d.ExternalID as *mut c_void);
+        allocator::xmlFreeImpl(d.ExternalID as *mut c_void);
     }
     if !d.SystemID.is_null() {
-        allocator::xmlFree(d.SystemID as *mut c_void);
+        allocator::xmlFreeImpl(d.SystemID as *mut c_void);
     }
 
     // Free hash tables for declarations
@@ -2259,7 +2286,7 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
         free_node_list(d.children);
     }
 
-    allocator::xmlFree(dtd as *mut c_void);
+    allocator::xmlFreeImpl(dtd as *mut c_void);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3461,7 +3488,7 @@ unsafe fn node_dump_internal(
                     } else {
                         serialize_text(buf, c, xml_strlen(c));
                     }
-                    allocator::xmlFree(c as *mut c_void);
+                    allocator::xmlFreeImpl(c as *mut c_void);
                 }
             }
         }
@@ -3962,7 +3989,7 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
 
     if !content.is_null() && len > 0 {
         // Allocate memory for the result (+1 for null terminator)
-        let result = allocator::xmlMalloc((len + 1) as usize) as *mut xmlChar;
+        let result = allocator::xmlMallocImpl((len + 1) as usize) as *mut xmlChar;
         if !result.is_null() {
             ptr::copy_nonoverlapping(content, result, len as usize);
             *result.add(len as usize) = 0;
@@ -4131,7 +4158,7 @@ mod tests {
 
     fn c_str(s: &str) -> *const xmlChar {
         let bytes = s.as_bytes();
-        let buf = unsafe { allocator::xmlMalloc(bytes.len() + 1) as *mut u8 };
+        let buf = unsafe { allocator::xmlMallocImpl(bytes.len() + 1) as *mut u8 };
         if !buf.is_null() {
             unsafe {
                 ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
@@ -4163,7 +4190,7 @@ mod tests {
             let doc_ver = (*doc).version;
             assert!(!doc_ver.is_null());
             assert!(crate::abi::exports_xml2::xmlStrEqual(doc_ver, ver,) != 0);
-            allocator::xmlFree(ver as *mut c_void);
+            allocator::xmlFreeImpl(ver as *mut c_void);
             free_doc(doc);
         }
     }
@@ -4203,7 +4230,7 @@ mod tests {
                 libc::strlen(content as *const libc::c_char) as usize,
             );
             assert_eq!(s, b"Rust", "descendant text not concatenated");
-            allocator::xmlFree(content as *mut c_void);
+            allocator::xmlFreeImpl(content as *mut c_void);
 
             free_doc(doc);
         }
@@ -4310,7 +4337,7 @@ mod tests {
             let value = get_prop(root, c_str("id"));
             assert!(!value.is_null());
             assert!(crate::abi::exports_xml2::xmlStrEqual(value, c_str("42")) != 0);
-            allocator::xmlFree(value as *mut c_void);
+            allocator::xmlFreeImpl(value as *mut c_void);
 
             free_doc(doc);
         }
@@ -4328,7 +4355,7 @@ mod tests {
 
             let value = get_prop(root, c_str("a"));
             assert!(!value.is_null());
-            allocator::xmlFree(value as *mut c_void);
+            allocator::xmlFreeImpl(value as *mut c_void);
 
             // Remove prop
             let attr = (*root).properties;
@@ -4700,7 +4727,7 @@ mod tests {
             let slice = unsafe { core::slice::from_raw_parts(result, len as usize) };
             assert_eq!(slice, b"<foo>bar</foo>");
 
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
             free_node(node);
         }
     }
@@ -4720,7 +4747,7 @@ mod tests {
             let expected = "<?xml version=\"1.0\"?>\n<root/>\n";
             assert_eq!(slice, expected.as_bytes());
 
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
             free_doc(doc);
         }
     }
@@ -4746,7 +4773,7 @@ mod tests {
             let expected = "<?xml version=\"1.0\"?>\n<root/>\n";
             assert_eq!(slice, expected.as_bytes());
 
-            allocator::xmlFree(mem as *mut c_void);
+            allocator::xmlFreeImpl(mem as *mut c_void);
             free_doc(doc);
         }
     }

@@ -289,7 +289,7 @@ pub unsafe fn dict_lookup(dict: *mut Dict, name: *const xmlChar, len: c_int) -> 
     }
 
     // Add new entry
-    let data_copy = unsafe { allocator::xmlMalloc(s_len + 1) as *mut u8 };
+    let data_copy = unsafe { allocator::xmlMallocImpl(s_len + 1) as *mut u8 };
     if data_copy.is_null() {
         return ptr::null();
     }
@@ -414,7 +414,7 @@ pub unsafe fn dict_free(dict: *mut Dict) {
         // Free all entry data
         for entry in dict_ref.entries.iter() {
             if !entry.data.is_null() && entry.ref_count > 0 {
-                allocator::xmlFree(entry.data as *mut c_void);
+                allocator::xmlFreeImpl(entry.data as *mut c_void);
             }
         }
     }
@@ -503,7 +503,7 @@ mod tests {
     fn xml_str(s: &str) -> *const xmlChar {
         // Create a null-terminated string
         let bytes = s.as_bytes();
-        let buf = unsafe { allocator::xmlMalloc(bytes.len() + 1) } as *mut u8;
+        let buf = unsafe { allocator::xmlMallocImpl(bytes.len() + 1) } as *mut u8;
         unsafe {
             ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());
             *buf.add(bytes.len()) = 0;
@@ -513,7 +513,7 @@ mod tests {
 
     fn free_xml_str(s: *const xmlChar) {
         if !s.is_null() {
-            unsafe { allocator::xmlFree(s as *mut c_void) };
+            unsafe { allocator::xmlFreeImpl(s as *mut c_void) };
         }
     }
 

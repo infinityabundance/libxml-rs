@@ -151,6 +151,8 @@ extern "C" {
 /* Forward declarations */
 struct _xmlParserInputBuffer;
 typedef struct _xmlParserInputBuffer xmlParserInputBuffer;
+typedef struct _xmlParserInput xmlParserInput;
+typedef struct _xmlParserCtxt xmlParserCtxt;
 typedef xmlParserInputBuffer *xmlParserInputBufferPtr;
 
 struct _xmlOutputBuffer;
@@ -886,6 +888,16 @@ struct _xmlRef {
 };
 
 /* [11.1-G] end: extracted definitions */
+
+/* [11.1-L] begin: node-registration callback declarations extracted verbatim
+ * from the oracle libxml2 2.15.3 tree.h (exported by the candidate DSO). */
+typedef void (*xmlRegisterNodeFunc) (xmlNode *node);
+typedef void (*xmlDeregisterNodeFunc) (xmlNode *node);
+XMLPUBFUN xmlRegisterNodeFunc
+	    xmlRegisterNodeDefault	(xmlRegisterNodeFunc func);
+XMLPUBFUN xmlDeregisterNodeFunc
+	    xmlDeregisterNodeDefault	(xmlDeregisterNodeFunc func);
+/* [11.1-L] end: extracted declarations */
 #ifdef __cplusplus
 }
 #endif

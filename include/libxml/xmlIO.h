@@ -21,6 +21,10 @@ typedef int (*xmlInputReadCallback)(void *context, char *buffer, int len);
 typedef int (*xmlInputCloseCallback)(void *context);
 typedef int (*xmlOutputWriteCallback)(void *context, const char *buffer, int len);
 typedef int (*xmlOutputCloseCallback)(void *context);
+typedef int (*xmlInputMatchCallback) (const char *filename);
+typedef void * (*xmlInputOpenCallback) (const char *filename);
+typedef int (*xmlOutputMatchCallback) (const char *filename);
+typedef void * (*xmlOutputOpenCallback) (const char *filename);
 
 typedef xmlParserInputBuffer *
 (*xmlParserInputBufferCreateFilenameFunc)(const char *URI, xmlCharEncoding enc);
@@ -63,3 +67,155 @@ xmlOutputBufferCreateFilenameDefault(xmlOutputBufferCreateFilenameFunc func);
 #endif
 
 #endif /* __XML_IO_H__ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+/* [11.1-L] begin: callback-family declarations extracted verbatim
+ * from the oracle libxml2 2.15.3 header (only symbols exported by
+ * the candidate DSO are declared). */
+XMLPUBFUN xmlParserInputBuffer *
+	xmlAllocParserInputBuffer		(xmlCharEncoding enc);
+
+XMLPUBFUN int
+	xmlCheckFilename		(const char *path);
+
+XMLPUBFUN xmlParserInput *
+	xmlCheckHTTPInput		(xmlParserCtxt *ctxt,
+					 xmlParserInput *ret);
+
+XMLPUBFUN void
+	xmlCleanupInputCallbacks		(void);
+
+XMLPUBFUN void
+	xmlCleanupOutputCallbacks		(void);
+
+XMLPUBFUN int
+	xmlFileClose			(void * context);
+
+XMLPUBFUN int
+	xmlFileMatch			(const char *filename);
+
+XMLPUBFUN void *
+	xmlFileOpen			(const char *filename);
+
+XMLPUBFUN int
+	xmlFileRead			(void * context,
+					 char * buffer,
+					 int len);
+
+XMLPUBFUN void
+	xmlFreeParserInputBuffer		(xmlParserInputBuffer *in);
+
+XMLPUBFUN int
+	xmlIOHTTPClose			(void * context);
+
+XMLPUBFUN int
+	xmlIOHTTPMatch			(const char *filename);
+
+XMLPUBFUN void *
+	xmlIOHTTPOpen			(const char *filename);
+
+XMLPUBFUN void *
+	xmlIOHTTPOpenW			(const char * post_uri,
+					 int   compression );
+
+XMLPUBFUN int
+	xmlIOHTTPRead			(void * context,
+					 char * buffer,
+					 int len);
+
+XMLPUBFUN xmlParserInput *
+	xmlNoNetExternalEntityLoader	(const char *URL,
+					 const char *ID,
+					 xmlParserCtxt *ctxt);
+
+XMLPUBFUN xmlChar *
+	xmlNormalizeWindowsPath		(const xmlChar *path);
+
+XMLPUBFUN char *
+	xmlParserGetDirectory			(const char *filename);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateFd		(int fd,
+	                                         xmlCharEncoding enc);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateFile		(FILE *file,
+                                                 xmlCharEncoding enc);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateFilename	(const char *URI,
+                                                 xmlCharEncoding enc);
+
+XMLPUBFUN xmlParserInputBufferCreateFilenameFunc
+	xmlParserInputBufferCreateFilenameDefault(
+		xmlParserInputBufferCreateFilenameFunc func);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateIO		(xmlInputReadCallback   ioread,
+						 xmlInputCloseCallback  ioclose,
+						 void *ioctx,
+	                                         xmlCharEncoding enc);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateMem		(const char *mem, int size,
+	                                         xmlCharEncoding enc);
+
+XMLPUBFUN xmlParserInputBuffer *
+	xmlParserInputBufferCreateStatic	(const char *mem, int size,
+	                                         xmlCharEncoding enc);
+
+XMLPUBFUN int
+	xmlParserInputBufferGrow		(xmlParserInputBuffer *in,
+						 int len);
+
+XMLPUBFUN int
+	xmlParserInputBufferPush		(xmlParserInputBuffer *in,
+						 int len,
+						 const char *buf);
+
+XMLPUBFUN int
+	xmlParserInputBufferRead		(xmlParserInputBuffer *in,
+						 int len);
+
+XMLPUBFUN int
+	xmlPopInputCallbacks			(void);
+
+XMLPUBFUN int
+	xmlPopOutputCallbacks			(void);
+
+XMLPUBFUN void
+	xmlRegisterDefaultInputCallbacks	(void);
+
+XMLPUBFUN void
+	xmlRegisterDefaultOutputCallbacks(void);
+
+XMLPUBFUN void
+	xmlRegisterHTTPPostCallbacks	(void );
+
+XMLPUBFUN int
+	xmlRegisterInputCallbacks		(xmlInputMatchCallback matchFunc,
+						 xmlInputOpenCallback openFunc,
+						 xmlInputReadCallback readFunc,
+						 xmlInputCloseCallback closeFunc);
+
+XMLPUBFUN int
+	xmlRegisterOutputCallbacks	(xmlOutputMatchCallback matchFunc,
+					 xmlOutputOpenCallback openFunc,
+					 xmlOutputWriteCallback writeFunc,
+					 xmlOutputCloseCallback closeFunc);
+
+XMLPUBFUN xmlOutputBufferCreateFilenameFunc
+	xmlThrDefOutputBufferCreateFilenameDefault(
+		xmlOutputBufferCreateFilenameFunc func);
+
+XMLPUBFUN xmlParserInputBufferCreateFilenameFunc
+	xmlThrDefParserInputBufferCreateFilenameDefault(
+		xmlParserInputBufferCreateFilenameFunc func);
+
+/* [11.1-L] end: extracted declarations */
+#ifdef __cplusplus
+}
+#endif
+

@@ -23,7 +23,7 @@ use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong, c_void};
 
 use parking_lot::Mutex;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero, xmlMemStrdup, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlMemStrdupImpl, xmlReallocImpl};
 use crate::abi::callbacks::{
     xmlGenericErrorFunc, xmlInputCloseCallback, xmlInputReadCallback, xmlOutputCloseCallback,
     xmlOutputWriteCallback, xmlStructuredErrorFunc,
@@ -477,7 +477,7 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
                     helpers::free_parser_input(input);
                 }
             }
-            xmlFree(input_tab as *mut c_void);
+            xmlFreeImpl(input_tab as *mut c_void);
         }
         c.inputTab = ptr::null_mut();
         c.inputMax = 0;
@@ -492,7 +492,7 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
 
         // Node stack (array only; nodes are owned by the doc).
         if !c.nodeTab.is_null() {
-            xmlFree(c.nodeTab as *mut c_void);
+            xmlFreeImpl(c.nodeTab as *mut c_void);
         }
         c.nodeTab = ptr::null_mut();
         c.nodeMax = 0;
@@ -501,7 +501,7 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
 
         // Name stack.
         if !c.nameTab.is_null() {
-            xmlFree(c.nameTab as *mut c_void);
+            xmlFreeImpl(c.nameTab as *mut c_void);
         }
         c.nameTab = ptr::null_mut();
         c.nameMax = 0;
@@ -517,23 +517,23 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
 
         // Strings owned by the context.
         if !c.version.is_null() {
-            xmlFree(c.version as *mut c_void);
+            xmlFreeImpl(c.version as *mut c_void);
             c.version = ptr::null_mut();
         }
         if !c.encoding.is_null() {
-            xmlFree(c.encoding as *mut c_void);
+            xmlFreeImpl(c.encoding as *mut c_void);
             c.encoding = ptr::null_mut();
         }
         if !c.extSubURI.is_null() {
-            xmlFree(c.extSubURI as *mut c_void);
+            xmlFreeImpl(c.extSubURI as *mut c_void);
             c.extSubURI = ptr::null_mut();
         }
         if !c.extSubSystem.is_null() {
-            xmlFree(c.extSubSystem as *mut c_void);
+            xmlFreeImpl(c.extSubSystem as *mut c_void);
             c.extSubSystem = ptr::null_mut();
         }
         if !c.directory.is_null() {
-            xmlFree(c.directory as *mut c_void);
+            xmlFreeImpl(c.directory as *mut c_void);
             c.directory = ptr::null_mut();
         }
 
@@ -845,14 +845,14 @@ pub unsafe extern "C" fn xmlParserGetDirectory(filename: *const c_char) -> *mut 
             }
         }
         match last_sep {
-            Some(0) => xmlMemStrdup(b"/\0".as_ptr() as *const c_char) as *mut c_char,
+            Some(0) => xmlMemStrdupImpl(b"/\0".as_ptr() as *const c_char) as *mut c_char,
             Some(pos) => {
                 let slice = core::slice::from_raw_parts(filename as *const u8, pos);
                 let mut v = slice.to_vec();
                 v.push(0);
-                xmlMemStrdup(v.as_ptr() as *const c_char) as *mut c_char
+                xmlMemStrdupImpl(v.as_ptr() as *const c_char) as *mut c_char
             }
-            None => xmlMemStrdup(b".\0".as_ptr() as *const c_char) as *mut c_char,
+            None => xmlMemStrdupImpl(b".\0".as_ptr() as *const c_char) as *mut c_char,
         }
     }
 }
@@ -1325,7 +1325,7 @@ pub unsafe extern "C" fn xmlAllocParserInputBuffer(enc: c_int) -> *mut _xmlParse
         if b.buffer.is_null() || b.raw.is_null() {
             io::buf_free(b.buffer as *mut _xmlBuffer);
             io::buf_free(b.raw as *mut _xmlBuffer);
-            xmlFree(buf as *mut c_void);
+            xmlFreeImpl(buf as *mut c_void);
             return ptr::null_mut();
         }
         b.compressed = -1;
@@ -1627,7 +1627,7 @@ pub unsafe extern "C" fn xmlPushInput(
         let c = &mut *ctxt;
         if c.inputNr >= c.inputMax {
             let new_max = if c.inputMax == 0 { 5 } else { c.inputMax * 2 };
-            let new_tab = xmlRealloc(
+            let new_tab = xmlReallocImpl(
                 c.inputTab as *mut c_void,
                 (new_max as usize) * core::mem::size_of::<*mut _xmlParserInput>(),
             ) as *mut *mut _xmlParserInput;
@@ -1829,10 +1829,10 @@ pub unsafe extern "C" fn xmlClearNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
     }
     unsafe {
         if !(*seq).block.is_null() {
-            xmlFree((*seq).block as *mut c_void);
+            xmlFreeImpl((*seq).block as *mut c_void);
         }
         if !(*seq).index.is_null() {
-            xmlFree((*seq).index as *mut c_void);
+            xmlFreeImpl((*seq).index as *mut c_void);
         }
         xmlInitNodeInfoSeq(seq);
     }
@@ -1936,7 +1936,7 @@ pub unsafe extern "C" fn xmlParserAddNodeInfo(
         // Grow the block.
         if seq.size + 1 > seq.block_max {
             let new_max = if seq.block_max == 0 { 4 } else { seq.block_max * 2 };
-            let new_block = xmlRealloc(
+            let new_block = xmlReallocImpl(
                 seq.block as *mut c_void,
                 (new_max as usize) * core::mem::size_of::<_xmlParserNodeInfo>(),
             ) as *mut _xmlParserNodeInfo;
@@ -2931,7 +2931,7 @@ pub unsafe extern "C" fn xmlDecodeEntities(
         }
 
         out.push(0);
-        let result = xmlMalloc(out.len()) as *mut xmlChar;
+        let result = xmlMallocImpl(out.len()) as *mut xmlChar;
         if result.is_null() {
             return ptr::null_mut();
         }

@@ -105,10 +105,12 @@ pub unsafe fn list_delete(l: *mut List) {
 
     while !cur.is_null() {
         let next = unsafe { (*cur).next };
+        // UPSTREAM-PARITY (list.c xmlListDeleteInternal): the deallocator
+        // receives the LINK pointer, not the data.
         if let Some(dealloc) = list.deallocator {
-            unsafe { dealloc((*cur).data) };
+            unsafe { dealloc(cur as *mut c_void) };
         }
-        unsafe { allocator::xmlFree(cur as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(cur as *mut c_void) };
         cur = next;
     }
 
@@ -217,7 +219,8 @@ pub unsafe fn list_reverse_walk(l: *mut List, walker: Option<xmlListWalker>, dat
     while !cur.is_null() {
         // SAFETY: cur is a valid node; walker is valid.
         let node_data = unsafe { (*cur).data };
-        if unsafe { walker(node_data, data) } != 0 {
+        // UPSTREAM-PARITY (list.c xmlListReverseWalk): returns 0 to stop.
+        if unsafe { walker(node_data, data) == 0 } {
             return;
         }
         cur = unsafe { (*cur).prev };
@@ -345,7 +348,8 @@ pub unsafe fn list_walk(l: *mut List, walker: Option<xmlListWalker>, data: *mut 
     let mut cur = list.front;
     while !cur.is_null() {
         let node = unsafe { &*cur };
-        if unsafe { walker(node.data, data) != 0 } {
+        // UPSTREAM-PARITY (list.c xmlListWalk): the walker returns 0 to stop.
+        if unsafe { walker(node.data, data) == 0 } {
             break;
         }
         cur = node.next;
@@ -465,7 +469,7 @@ pub unsafe fn list_pop_back(l: *mut List) {
     if let Some(dealloc) = list.deallocator {
         unsafe { dealloc((*node).data) };
     }
-    unsafe { allocator::xmlFree(node as *mut c_void) };
+    unsafe { allocator::xmlFreeImpl(node as *mut c_void) };
 
     list.back = prev;
     if prev.is_null() {
@@ -504,7 +508,7 @@ pub unsafe fn list_pop_front(l: *mut List) {
     if let Some(dealloc) = list.deallocator {
         unsafe { dealloc((*node).data) };
     }
-    unsafe { allocator::xmlFree(node as *mut c_void) };
+    unsafe { allocator::xmlFreeImpl(node as *mut c_void) };
 
     list.front = next;
     if next.is_null() {
@@ -583,7 +587,54 @@ pub unsafe fn list_insert(l: *mut List, data: *mut c_void) -> c_int {
 /// int xmlListAppend(xmlListPtr l, void *data);
 /// ```
 pub unsafe fn list_append(l: *mut List, data: *mut c_void) -> c_int {
-    list_push_back(l, data)
+    // UPSTREAM-PARITY (list.c xmlListAppend): with a comparator the new
+    // element is inserted in sorted order (before the first node whose data
+    // compares greater); without one it is pushed to the back.
+    if l.is_null() {
+        return -1;
+    }
+    let comparator = unsafe { (*l).comparator };
+    match comparator {
+        None => unsafe { list_push_back(l, data) },
+        Some(cmp) => {
+            unsafe {
+                let mut cur = (*l).front;
+                while !cur.is_null() {
+                    if cmp((*cur).data as *const c_void, data as *const c_void) > 0 {
+                        break;
+                    }
+                    cur = (*cur).next;
+                }
+                // Insert before `cur`.
+                let node =
+                    allocator::xmlMallocZero(size_of::<ListNode>() as usize) as *mut ListNode;
+                if node.is_null() {
+                    return -1;
+                }
+                (*node).data = data;
+                (*node).next = cur;
+                if cur.is_null() {
+                    (*node).prev = (*l).back;
+                    if !(*l).back.is_null() {
+                        (*(*l).back).next = node;
+                    }
+                    (*l).back = node;
+                    if (*l).front.is_null() {
+                        (*l).front = node;
+                    }
+                } else {
+                    (*node).prev = (*cur).prev;
+                    if !(*cur).prev.is_null() {
+                        (*(*cur).prev).next = node;
+                    } else {
+                        (*l).front = node;
+                    }
+                    (*cur).prev = node;
+                }
+            }
+            0
+        }
+    }
 }
 
 /// Remove the first matching element.
@@ -630,7 +681,7 @@ pub unsafe fn list_remove_first(l: *mut List, data: *const c_void) -> c_int {
             if let Some(dealloc) = list.deallocator {
                 unsafe { dealloc(node.data) };
             }
-            unsafe { allocator::xmlFree(cur as *mut c_void) };
+            unsafe { allocator::xmlFreeImpl(cur as *mut c_void) };
             list.count = list.count.saturating_sub(1);
             return 0;
         }
@@ -684,7 +735,7 @@ pub unsafe fn list_remove_last(l: *mut List, data: *const c_void) -> c_int {
             if let Some(dealloc) = list.deallocator {
                 unsafe { dealloc(node.data) };
             }
-            unsafe { allocator::xmlFree(cur as *mut c_void) };
+            unsafe { allocator::xmlFreeImpl(cur as *mut c_void) };
             list.count = list.count.saturating_sub(1);
             return 0;
         }
@@ -741,7 +792,7 @@ pub unsafe fn list_remove_all(l: *mut List, data: *const c_void) -> c_int {
             if let Some(dealloc) = list.deallocator {
                 unsafe { dealloc(node.data) };
             }
-            unsafe { allocator::xmlFree(cur as *mut c_void) };
+            unsafe { allocator::xmlFreeImpl(cur as *mut c_void) };
             list.count = list.count.saturating_sub(1);
             removed += 1;
         }
@@ -776,7 +827,7 @@ pub unsafe fn list_clear(l: *mut List) {
         if let Some(dealloc) = list.deallocator {
             unsafe { dealloc((*cur).data) };
         }
-        unsafe { allocator::xmlFree(cur as *mut c_void) };
+        unsafe { allocator::xmlFreeImpl(cur as *mut c_void) };
         cur = next;
     }
 

@@ -26,7 +26,7 @@ use std::os::raw::{c_char, c_int, c_void};
 
 use parking_lot::RwLock;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::*;
 use crate::abi::types::*;
 
@@ -364,30 +364,30 @@ pub unsafe extern "C" fn xsltRegisterExtPrefix(
             && libc::strcmp((*cur).prefix as *const c_char, prefix as *const c_char) == 0
         {
             // Re-registration with a different URI updates the mapping.
-            let new_uri = crate::abi::allocator::xmlMemStrdup(URI as *const c_char) as *mut c_char;
+            let new_uri = crate::abi::allocator::xmlMemStrdupImpl(URI as *const c_char) as *mut c_char;
             if new_uri.is_null() {
                 return -1;
             }
-            xmlFree((*cur).uri as *mut c_void);
+            xmlFreeImpl((*cur).uri as *mut c_void);
             (*cur).uri = new_uri;
             return 0;
         }
         cur = (*cur).next;
     }
-    let entry = xmlMalloc(size_of::<ExtPrefixEntry>()) as *mut ExtPrefixEntry;
+    let entry = xmlMallocImpl(size_of::<ExtPrefixEntry>()) as *mut ExtPrefixEntry;
     if entry.is_null() {
         return -1;
     }
-    let p = crate::abi::allocator::xmlMemStrdup(prefix as *const c_char) as *mut c_char;
-    let u = crate::abi::allocator::xmlMemStrdup(URI as *const c_char) as *mut c_char;
+    let p = crate::abi::allocator::xmlMemStrdupImpl(prefix as *const c_char) as *mut c_char;
+    let u = crate::abi::allocator::xmlMemStrdupImpl(URI as *const c_char) as *mut c_char;
     if p.is_null() || u.is_null() {
         if !p.is_null() {
-            xmlFree(p as *mut c_void);
+            xmlFreeImpl(p as *mut c_void);
         }
         if !u.is_null() {
-            xmlFree(u as *mut c_void);
+            xmlFreeImpl(u as *mut c_void);
         }
-        xmlFree(entry as *mut c_void);
+        xmlFreeImpl(entry as *mut c_void);
         return -1;
     }
     ptr::write(
@@ -617,14 +617,14 @@ pub unsafe extern "C" fn xsltInitCtxtExts(ctxt: *mut _xsltTransformContext) -> c
                         return -1;
                     }
                     // Record (URI -> data) in the context's extInfos list.
-                    let entry = xmlMalloc(size_of::<ExtDataEntry>()) as *mut ExtDataEntry;
+                    let entry = xmlMallocImpl(size_of::<ExtDataEntry>()) as *mut ExtDataEntry;
                     if entry.is_null() {
                         return -1;
                     }
-                    let u = crate::abi::allocator::xmlMemStrdup((*cur).uri as *const c_char)
+                    let u = crate::abi::allocator::xmlMemStrdupImpl((*cur).uri as *const c_char)
                         as *mut c_char;
                     if u.is_null() {
-                        xmlFree(entry as *mut c_void);
+                        xmlFreeImpl(entry as *mut c_void);
                         return -1;
                     }
                     ptr::write(
@@ -690,9 +690,9 @@ pub unsafe extern "C" fn xsltFreeCtxtExts(ctxt: *mut _xsltTransformContext) {
     while !cur.is_null() {
         let next = (*cur).next;
         if !(*cur).uri.is_null() {
-            xmlFree((*cur).uri as *mut c_void);
+            xmlFreeImpl((*cur).uri as *mut c_void);
         }
-        xmlFree(cur as *mut c_void);
+        xmlFreeImpl(cur as *mut c_void);
         cur = next;
     }
 }
@@ -758,13 +758,13 @@ pub unsafe extern "C" fn xsltStyleGetExtData(
         },
         None => ptr::null_mut(),
     };
-    let entry = xmlMalloc(size_of::<ExtDataEntry>()) as *mut ExtDataEntry;
+    let entry = xmlMallocImpl(size_of::<ExtDataEntry>()) as *mut ExtDataEntry;
     if entry.is_null() {
         return ptr::null_mut();
     }
-    let u = crate::abi::allocator::xmlMemStrdup(URI as *const c_char) as *mut c_char;
+    let u = crate::abi::allocator::xmlMemStrdupImpl(URI as *const c_char) as *mut c_char;
     if u.is_null() {
-        xmlFree(entry as *mut c_void);
+        xmlFreeImpl(entry as *mut c_void);
         return ptr::null_mut();
     }
     ptr::write(

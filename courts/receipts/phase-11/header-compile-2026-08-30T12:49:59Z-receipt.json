@@ -1,7 +1,7 @@
 {
   "court": "HEADER-COMPILE",
   "phase": "11.1-H",
-  "timestamp": "2026-08-30T11:44:12Z",
+  "timestamp": "2026-08-30T12:49:59Z",
   "toolchain": {
     "gcc": "gcc (GCC) 16.2.1 20260810"
 ,
@@ -9,7 +9,7 @@
 
   },
   "headers_under_test": 70,
-  "summary": { "passed": 562, "failed": 9 },
+  "summary": { "passed": 571, "failed": 0 },
   "results": [
     {"item":"alone:libxml/c14n.h:gcc:-std=c89","status":"PASS"},
     {"item":"alone:libxml/c14n.h:gcc:-std=c99","status":"PASS"},
@@ -427,14 +427,14 @@
     {"item":"alone:libxslt/imports.h:clang:-std=c99","status":"PASS"},
     {"item":"alone:libxslt/imports.h:clang:-std=c11","status":"PASS"},
     {"item":"alone:libxslt/imports.h:clang:-std=c17","status":"PASS"},
-    {"item":"alone:libxslt/keys.h:gcc:-std=c89","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:gcc:-std=c99","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:gcc:-std=c11","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:gcc:-std=c17","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:clang:-std=c89","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:clang:-std=c99","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:clang:-std=c11","status":"FAIL"},
-    {"item":"alone:libxslt/keys.h:clang:-std=c17","status":"FAIL"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:gcc:-std=c17","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c89","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c99","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c11","status":"PASS"},
+    {"item":"alone:libxslt/keys.h:clang:-std=c17","status":"PASS"},
     {"item":"alone:libxslt/libxslt.h:gcc:-std=c89","status":"PASS"},
     {"item":"alone:libxslt/libxslt.h:gcc:-std=c99","status":"PASS"},
     {"item":"alone:libxslt/libxslt.h:gcc:-std=c11","status":"PASS"},
@@ -581,25 +581,8 @@
     {"item":"all-together:clang:-std=c11","status":"PASS"},
     {"item":"all-together:clang:-std=c17","status":"PASS"},
     {"item":"cxx:clang:-std=c++17","status":"PASS"},
-    {"item":"declared-functions-exported","status":"FAIL"}
+    {"item":"declared-functions-exported","status":"PASS"}
   ],
   "failures": {
-    "declared-functions-exported": "1 missing: libxml/parser.h:xmlParseDoc "
-,
-    "alone:libxslt/keys.h:clang:-std=c89": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name 'xsltStylesheetPtr'    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^ "
-,
-    "alone:libxslt/keys.h:gcc:-std=c89": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name ‘xsltStylesheetPtr’    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^~~~~~~~~~~~~~~~~ "
-,
-    "alone:libxslt/keys.h:clang:-std=c99": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name 'xsltStylesheetPtr'    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^ "
-,
-    "alone:libxslt/keys.h:gcc:-std=c99": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name ‘xsltStylesheetPtr’    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^~~~~~~~~~~~~~~~~ "
-,
-    "alone:libxslt/keys.h:clang:-std=c11": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name 'xsltStylesheetPtr'    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^ "
-,
-    "alone:libxslt/keys.h:clang:-std=c17": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name 'xsltStylesheetPtr'    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^ "
-,
-    "alone:libxslt/keys.h:gcc:-std=c17": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name ‘xsltStylesheetPtr’    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^~~~~~~~~~~~~~~~~ "
-,
-    "alone:libxslt/keys.h:gcc:-std=c11": "In file included from /tmp/hdr-libxslt_keys.h.c:1: /mnt/1tb_kingston/libxml-rs/include/libxslt/keys.h:21:26: error: unknown type name ‘xsltStylesheetPtr’    21 | XMLPUBFUN int xsltAddKey(xsltStylesheetPtr style, const xmlChar *name,       |                          ^~~~~~~~~~~~~~~~~ "
   }
 }

@@ -3,7 +3,7 @@
 //! Provides operations on `xmlChar*` (i.e. `*mut u8`) strings compatible
 //! with upstream libxml2's string handling.
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlReallocImpl};
 use crate::abi::types::xmlChar;
 use core::ffi::c_void;
 use core::ptr;
@@ -47,7 +47,7 @@ pub(crate) unsafe fn xml_strdup(str: *const xmlChar) -> *mut xmlChar {
         return ptr::null_mut();
     }
     let len = xml_strlen(str);
-    let copy = xmlMalloc(len + 1) as *mut xmlChar;
+    let copy = xmlMallocImpl(len + 1) as *mut xmlChar;
     if copy.is_null() {
         return ptr::null_mut();
     }
@@ -66,7 +66,7 @@ pub(crate) unsafe fn c_strdup(str: *const c_char) -> *mut c_char {
         return ptr::null_mut();
     }
     let len = libc::strlen(str);
-    let copy = xmlMalloc(len + 1) as *mut c_char;
+    let copy = xmlMallocImpl(len + 1) as *mut c_char;
     if copy.is_null() {
         return ptr::null_mut();
     }
@@ -81,7 +81,7 @@ pub(crate) unsafe fn c_strdup(str: *const c_char) -> *mut c_char {
 /// The caller must free the returned pointer with `xmlFree`.
 pub(crate) unsafe fn bytes_to_xmlstr(bytes: &[u8]) -> *mut xmlChar {
     let len = bytes.len();
-    let ptr = xmlMalloc(len + 1) as *mut xmlChar;
+    let ptr = xmlMallocImpl(len + 1) as *mut xmlChar;
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -148,7 +148,7 @@ pub(crate) unsafe fn xml_strcmp(str1: *const xmlChar, str2: *const xmlChar) -> i
 pub(crate) unsafe fn xml_strcat(str1: *const xmlChar, str2: *const xmlChar) -> *mut xmlChar {
     let len1 = xml_strlen(str1);
     let len2 = xml_strlen(str2);
-    let result = xmlMalloc(len1 + len2 + 1) as *mut xmlChar;
+    let result = xmlMallocImpl(len1 + len2 + 1) as *mut xmlChar;
     if result.is_null() {
         return ptr::null_mut();
     }
@@ -174,7 +174,7 @@ pub(crate) unsafe fn xml_strndup(str: *const xmlChar, len: usize) -> *mut xmlCha
     if str.is_null() {
         return ptr::null_mut();
     }
-    let p = unsafe { xmlMalloc(len + 1) as *mut xmlChar };
+    let p = unsafe { xmlMallocImpl(len + 1) as *mut xmlChar };
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -224,7 +224,7 @@ pub unsafe fn build_qname(
         let lenn = xml_strlen(ncname);
         let lenp = xml_strlen(prefix);
         let ret = if memory.is_null() || (len as usize) < lenn + lenp + 2 {
-            let p = xmlMalloc(lenn + lenp + 2) as *mut xmlChar;
+            let p = xmlMallocImpl(lenn + lenp + 2) as *mut xmlChar;
             if p.is_null() {
                 return ptr::null_mut();
             }
@@ -278,7 +278,7 @@ pub unsafe fn split_qname2(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *
         *prefix = p;
         let ret = xml_strdup(name.add(len + 1));
         if ret.is_null() {
-            xmlFree(*prefix as *mut c_void);
+            xmlFreeImpl(*prefix as *mut c_void);
             *prefix = ptr::null_mut();
             return ptr::null_mut();
         }
@@ -442,7 +442,7 @@ pub(crate) unsafe fn xml_str_starts_with(str: *const xmlChar, prefix: *const xml
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
 
     #[test]
     fn test_xml_strlen() {
@@ -466,7 +466,7 @@ mod tests {
             assert_eq!(*dup.add(0), b'h');
             assert_eq!(*dup.add(4), b'o');
             assert_eq!(*dup.add(5), 0);
-            xmlFree(dup as *mut c_void);
+            xmlFreeImpl(dup as *mut c_void);
         }
     }
 
@@ -498,7 +498,7 @@ mod tests {
                 assert_eq!(*result.add(i), expected[i]);
                 i += 1;
             }
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -510,7 +510,7 @@ mod tests {
             assert!(!ptr.is_null());
             assert_eq!(xml_strlen(ptr), 5);
             assert_eq!(*ptr.add(5), 0);
-            xmlFree(ptr as *mut c_void);
+            xmlFreeImpl(ptr as *mut c_void);
         }
     }
 

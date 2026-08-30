@@ -19,7 +19,7 @@
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::{_xmlBuf, _xmlBuffer, _xmlDoc, _xmlNode, _xmlNs};
 use crate::abi::types::{xmlChar, xmlElementType, XML_ERR_ARGUMENT, XML_ERR_NO_MEMORY, XML_ERR_OK};
 use crate::xml::io;
@@ -137,7 +137,7 @@ pub unsafe extern "C" fn xmlBufGetNodeContent(buf: *mut _xmlBuf, cur: *const _xm
         return 0;
     }
     io::xml_buf_cat(buf, content);
-    unsafe { xmlFree(content as *mut c_void) };
+    unsafe { xmlFreeImpl(content as *mut c_void) };
     0
 }
 
@@ -519,7 +519,7 @@ pub unsafe extern "C" fn xmlCharStrndup(cur: *const c_char, len: c_int) -> *mut 
     if cur.is_null() || len < 0 {
         return ptr::null_mut();
     }
-    let ret = unsafe { xmlMalloc(len as usize + 1) } as *mut xmlChar;
+    let ret = unsafe { xmlMallocImpl(len as usize + 1) } as *mut xmlChar;
     if ret.is_null() {
         return ptr::null_mut();
     }

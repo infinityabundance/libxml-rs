@@ -20,7 +20,7 @@
 //! 5. Templates are inserted into the stylesheet's ordered list,
 //!    sorted by priority (highest first).
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -322,7 +322,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
             crate::xml::tree::xml_strlen(cur) as usize
         };
         let new_len = cur_len + src_len;
-        let buf = crate::abi::allocator::xmlMalloc(new_len + 1) as *mut xmlChar;
+        let buf = crate::abi::allocator::xmlMallocImpl(new_len + 1) as *mut xmlChar;
         if buf.is_null() {
             return;
         }
@@ -332,7 +332,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
         core::ptr::copy_nonoverlapping(src, buf.add(cur_len), src_len);
         *buf.add(new_len) = 0;
         if !cur.is_null() {
-            crate::abi::allocator::xmlFree(cur as *mut core::ffi::c_void);
+            crate::abi::allocator::xmlFreeImpl(cur as *mut core::ffi::c_void);
         }
         unsafe { (*dst).content = buf };
     }
@@ -344,7 +344,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
         }
         unsafe {
             (*node).type_ = XML_TEXT_NODE as c_int;
-            let name = crate::abi::allocator::xmlMalloc(5) as *mut xmlChar;
+            let name = crate::abi::allocator::xmlMallocImpl(5) as *mut xmlChar;
             if !name.is_null() {
                 core::ptr::copy_nonoverlapping(b"text\0".as_ptr(), name, 5);
                 (*node).name = name;

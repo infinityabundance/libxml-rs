@@ -19,7 +19,7 @@
 //! `patterns` module handle the actual allocation, deallocation, and
 //! matching logic.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 use crate::xml::string::xml_strcmp;
@@ -146,7 +146,7 @@ pub unsafe extern "C" fn xsltFreeTemplate(templ: *mut _xsltTemplate) {
     // structs. We free the array itself but not the individual namespace
     // declarations (they are owned by the document or stylesheet).
     if !(*templ).inheritedNs.is_null() {
-        xmlFree((*templ).inheritedNs as *mut c_void);
+        xmlFreeImpl((*templ).inheritedNs as *mut c_void);
         (*templ).inheritedNs = ptr::null_mut();
         (*templ).inheritedNsNr = 0;
     }
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn xsltFreeTemplate(templ: *mut _xsltTemplate) {
     (*templ).style = ptr::null_mut();
 
     // Free the template struct itself.
-    xmlFree(templ as *mut c_void);
+    xmlFreeImpl(templ as *mut c_void);
 }
 
 /// Free all templates in a stylesheet's template list.

@@ -22,7 +22,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_uint};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::*;
 use crate::abi::types::*;
 
@@ -640,14 +640,14 @@ pub unsafe extern "C" fn xsltStrxfrm(locale: *mut c_void, string: *const xmlChar
             string as *const c_char,
             n + 1,
         );
-        let p = xmlMalloc(n + 1) as *mut xmlChar;
+        let p = xmlMallocImpl(n + 1) as *mut xmlChar;
         if p.is_null() {
             return ptr::null_mut();
         }
         ptr::copy_nonoverlapping(copy.as_ptr(), p, n + 1);
         return p;
     }
-    let p = xmlMalloc(n + 1) as *mut xmlChar;
+    let p = xmlMallocImpl(n + 1) as *mut xmlChar;
     if p.is_null() {
         return ptr::null_mut();
     }

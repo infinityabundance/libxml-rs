@@ -402,7 +402,7 @@ unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
         let cname = cstr_alloc(enc);
         (*doc).encoding = cname as *mut xmlChar;
         if !old.is_null() {
-            libxml_rs::abi::allocator::xmlFree(old as *mut c_void);
+            libxml_rs::abi::allocator::xmlFreeImpl(old as *mut c_void);
         }
     }
     if cli.c14n != 0 {
@@ -429,7 +429,7 @@ unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
             write_stdout(core::slice::from_raw_parts(result, ret as usize));
         }
         if !result.is_null() {
-            libxml_rs::abi::allocator::xmlFree(result as *mut c_void);
+            libxml_rs::abi::allocator::xmlFreeImpl(result as *mut c_void);
         }
         return;
     }
@@ -455,7 +455,7 @@ unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
     }
     if !mem.is_null() {
         write_stdout(core::slice::from_raw_parts(mem, size as usize));
-        libxml_rs::abi::allocator::xmlFree(mem as *mut c_void);
+        libxml_rs::abi::allocator::xmlFreeImpl(mem as *mut c_void);
     }
     let _ = filename;
 }
@@ -822,7 +822,7 @@ unsafe fn eval_xpath_expr(cli: &Cli, expr: &str, doc: *mut _xmlDoc) -> c_int {
             let len = libc::strlen(strv as *const c_char);
             write_stdout(core::slice::from_raw_parts(strv, len));
             write_stdout(&[sep]);
-            libxml_rs::abi::allocator::xmlFree(strv as *mut c_void);
+            libxml_rs::abi::allocator::xmlFreeImpl(strv as *mut c_void);
         }
     }
     xmlXPathFreeObject(obj);

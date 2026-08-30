@@ -31,7 +31,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
 use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode, _xmlParserCtxt, _xmlParserInputBuffer};
 
@@ -605,7 +605,7 @@ impl XmlTextReader {
                     let plen =
                         libc::strlen(unsafe { (*ns).prefix } as *const libc::c_char) as usize;
                     let nlen = libc::strlen(name as *const libc::c_char) as usize;
-                    let p = crate::abi::allocator::xmlMalloc(plen + 1 + nlen + 1) as *mut xmlChar;
+                    let p = crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1) as *mut xmlChar;
                     if !p.is_null() {
                         libc::memcpy(
                             p as *mut libc::c_void,
@@ -765,7 +765,7 @@ impl XmlTextReader {
     fn clear_cached_name(&mut self) {
         if !self.name.is_null() {
             // SAFETY: name was allocated by xmlMalloc (via xml_strdup).
-            unsafe { xmlFree(self.name as *mut c_void) };
+            unsafe { xmlFreeImpl(self.name as *mut c_void) };
             self.name = ptr::null_mut();
         }
     }
@@ -774,7 +774,7 @@ impl XmlTextReader {
     fn clear_cached_value(&mut self) {
         if !self.value.is_null() {
             // SAFETY: value was allocated by xmlMalloc (via xml_strdup).
-            unsafe { xmlFree(self.value as *mut c_void) };
+            unsafe { xmlFreeImpl(self.value as *mut c_void) };
             self.value = ptr::null_mut();
         }
     }
@@ -1029,7 +1029,7 @@ impl XmlTextReader {
                     v.extend_from_slice(b"xmlns:");
                     v.extend_from_slice(core::slice::from_raw_parts(n.prefix, plen));
                     v.push(0);
-                    let p = crate::abi::allocator::xmlMalloc(v.len()) as *mut xmlChar;
+                    let p = crate::abi::allocator::xmlMallocImpl(v.len()) as *mut xmlChar;
                     if !p.is_null() {
                         libc::memcpy(
                             p as *mut libc::c_void,
@@ -1057,7 +1057,7 @@ impl XmlTextReader {
                             as usize;
                         let nlen = libc::strlen(attr.name as *const libc::c_char) as usize;
                         let p =
-                            crate::abi::allocator::xmlMalloc(plen + 1 + nlen + 1) as *mut xmlChar;
+                            crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1) as *mut xmlChar;
                         if !p.is_null() {
                             libc::memcpy(
                                 p as *mut libc::c_void,
@@ -1618,12 +1618,12 @@ impl Drop for XmlTextReader {
         // Free encoding and URL.
         if !self.encoding.is_null() {
             // SAFETY: encoding was allocated by xmlMalloc.
-            unsafe { xmlFree(self.encoding as *mut c_void) };
+            unsafe { xmlFreeImpl(self.encoding as *mut c_void) };
             self.encoding = ptr::null_mut();
         }
         if !self.URL.is_null() {
             // SAFETY: URL was allocated by xmlMalloc.
-            unsafe { xmlFree(self.URL as *mut c_void) };
+            unsafe { xmlFreeImpl(self.URL as *mut c_void) };
             self.URL = ptr::null_mut();
         }
 
@@ -2821,7 +2821,7 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
     // Update URL.
     if !r.URL.is_null() {
         // SAFETY: URL was allocated by xmlMalloc.
-        unsafe { xmlFree(r.URL as *mut c_void) };
+        unsafe { xmlFreeImpl(r.URL as *mut c_void) };
         r.URL = ptr::null_mut();
     }
     if !URL.is_null() {
@@ -2834,7 +2834,7 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
     // Update encoding.
     if !r.encoding.is_null() {
         // SAFETY: encoding was allocated by xmlMalloc.
-        unsafe { xmlFree(r.encoding as *mut c_void) };
+        unsafe { xmlFreeImpl(r.encoding as *mut c_void) };
         r.encoding = ptr::null_mut();
     }
     if !encoding.is_null() {
@@ -3347,7 +3347,7 @@ pub unsafe extern "C" fn xmlTextReaderXmlLang(reader: *mut XmlTextReader) -> *mu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use core::ffi::c_void;
     use std::os::raw::c_char;
 
@@ -3495,7 +3495,7 @@ mod tests {
             let name = xmlTextReaderName(reader);
             assert!(!name.is_null());
             assert_eq!(xmlstr_to_string(name), "root");
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
 
             assert_eq!(xmlTextReaderHasValue(reader), 0);
 
@@ -3507,7 +3507,7 @@ mod tests {
             let val = xmlTextReaderValue(reader);
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_string(val), "hello");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             free_reader(reader);
         }
@@ -3619,12 +3619,12 @@ mod tests {
             let val = xmlTextReaderGetAttribute(reader, b"a\0" as *const u8 as *const xmlChar);
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_bytes(val), b"hello");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             let val = xmlTextReaderGetAttribute(reader, b"b\0" as *const u8 as *const xmlChar);
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_bytes(val), b"world");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             // Non-existent attribute.
             let val = xmlTextReaderGetAttribute(reader, b"c\0" as *const u8 as *const xmlChar);
@@ -3634,12 +3634,12 @@ mod tests {
             let val = xmlTextReaderGetAttributeNo(reader, 0);
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_bytes(val), b"hello");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             let val = xmlTextReaderGetAttributeNo(reader, 1);
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_bytes(val), b"world");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             let val = xmlTextReaderGetAttributeNo(reader, 2);
             assert!(val.is_null());
@@ -3802,7 +3802,7 @@ mod tests {
             let local = xmlTextReaderLocalName(reader);
             assert!(!local.is_null());
             assert_eq!(xmlstr_to_bytes(local), b"root");
-            xmlFree(local as *mut c_void);
+            xmlFreeImpl(local as *mut c_void);
 
             free_reader(reader);
         }
@@ -3840,7 +3840,7 @@ mod tests {
             let uri = xmlTextReaderLookupNamespace(reader, b"ns\0" as *const u8 as *const xmlChar);
             assert!(!uri.is_null());
             assert_eq!(xmlstr_to_bytes(uri), b"http://example.com");
-            xmlFree(uri as *mut c_void);
+            xmlFreeImpl(uri as *mut c_void);
 
             // Lookup default namespace (NULL prefix).
             let uri = xmlTextReaderLookupNamespace(reader, ptr::null());
@@ -4113,7 +4113,7 @@ mod tests {
             );
             assert!(!val.is_null());
             assert_eq!(xmlstr_to_bytes(val), b"1");
-            xmlFree(val as *mut c_void);
+            xmlFreeImpl(val as *mut c_void);
 
             free_reader(reader);
         }

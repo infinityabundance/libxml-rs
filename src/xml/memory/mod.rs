@@ -24,9 +24,9 @@
 //! Complete — all memory functions delegate to the ABI allocator layer.
 
 pub use crate::abi::allocator::{
-    xmlFree, xmlInitMemory, xmlMalloc, xmlMallocAtomic, xmlMallocAtomicZero, xmlMallocZero,
-    xmlMemBlocks, xmlMemDisplay, xmlMemGet, xmlMemSetup, xmlMemShow, xmlMemStrdup, xmlMemUsed,
-    xmlRealloc, xmlReallocZero,
+    xmlFreeImpl, xmlInitMemory, xmlMallocImpl, xmlMallocAtomicImpl, xmlMallocAtomicZero, xmlMallocZero,
+    xmlMemBlocks, xmlMemDisplay, xmlMemGet, xmlMemSetup, xmlMemShow, xmlMemStrdupImpl, xmlMemUsed,
+    xmlReallocImpl, xmlReallocZero,
 };
 
 /// Initialize the memory subsystem.
@@ -53,9 +53,9 @@ mod tests {
     #[test]
     fn test_memory_module_delegates_to_allocator() {
         unsafe {
-            let ptr = xmlMalloc(100);
+            let ptr = xmlMallocImpl(100);
             assert!(!ptr.is_null());
-            xmlFree(ptr);
+            xmlFreeImpl(ptr);
         }
     }
 
@@ -67,7 +67,7 @@ mod tests {
             // Verify zero-initialized
             let bytes = core::slice::from_raw_parts(ptr as *const u8, 64);
             assert!(bytes.iter().all(|&b| b == 0));
-            xmlFree(ptr);
+            xmlFreeImpl(ptr);
         }
     }
 }

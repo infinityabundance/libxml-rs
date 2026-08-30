@@ -327,8 +327,11 @@ pub unsafe extern "C" fn xmlGcMemGet(
 ///
 /// - The returned pointer must be freed with `xmlFree`
 /// - `size` may be 0 (returns a valid non-NULL pointer or NULL)
-#[no_mangle]
-pub unsafe extern "C" fn xmlMalloc(size: usize) -> *mut c_void {
+///
+/// This is the implementation backing the exported `xmlMalloc` data global
+/// (upstream xmlmemory.h: `XMLPUBVAR xmlMallocFunc xmlMalloc;` — a function-
+/// pointer variable, not a function).
+pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
     // SAFETY: We call the stored malloc function pointer.
     // The function pointer must be valid (set by xmlMemSetup or default).
     let alloc = ALLOCATOR.read();
@@ -352,10 +355,10 @@ pub unsafe extern "C" fn xmlMalloc(size: usize) -> *mut c_void {
 ///
 /// Identical to `xmlMalloc` but hints to the GC that the memory does not
 /// contain pointers. In modern libxml2, this is equivalent to `xmlMalloc`.
-#[no_mangle]
-pub unsafe extern "C" fn xmlMallocAtomic(size: usize) -> *mut c_void {
+/// Backing the exported `xmlMallocAtomic` data global.
+pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
     // SAFETY: Same as xmlMalloc.
-    unsafe { xmlMalloc(size) }
+    unsafe { xmlMallocImpl(size) }
 }
 
 /// Reallocate memory.
@@ -375,8 +378,8 @@ pub unsafe extern "C" fn xmlMallocAtomic(size: usize) -> *mut c_void {
 /// - `ptr` must be a valid pointer from `xmlMalloc`, `xmlMallocAtomic`, or `xmlRealloc`,
 ///   or NULL
 /// - The returned pointer must be freed with `xmlFree`
-#[no_mangle]
-pub unsafe extern "C" fn xmlRealloc(ptr: *mut c_void, size: usize) -> *mut c_void {
+/// Backing the exported `xmlRealloc` data global.
+pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c_void {
     // SAFETY: We call the stored realloc function pointer.
     let alloc = ALLOCATOR.read();
     let realloc_func = alloc
@@ -414,8 +417,8 @@ pub unsafe extern "C" fn xmlRealloc(ptr: *mut c_void, size: usize) -> *mut c_voi
 /// - `ptr` must be a valid pointer from `xmlMalloc`/`xmlMallocAtomic`/`xmlRealloc`,
 ///   or NULL
 /// - After this call, `ptr` must not be dereferenced
-#[no_mangle]
-pub unsafe extern "C" fn xmlFree(ptr: *mut c_void) {
+/// Backing the exported `xmlFree` data global.
+pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
     if ptr.is_null() {
         return;
     }
@@ -444,8 +447,8 @@ pub unsafe extern "C" fn xmlFree(ptr: *mut c_void) {
 ///
 /// - `str` must be a valid null-terminated C string or NULL
 /// - The returned pointer must be freed with `xmlFree`
-#[no_mangle]
-pub unsafe extern "C" fn xmlMemStrdup(str: *const c_char) -> *mut c_void {
+/// Backing the exported `xmlMemStrdup` data global.
+pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
     if str.is_null() {
         return ptr::null_mut();
     }
@@ -461,6 +464,35 @@ pub unsafe extern "C" fn xmlMemStrdup(str: *const c_char) -> *mut c_void {
     }
     ptr
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Exported allocator globals (upstream xmlmemory.h)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream exports the allocator entry points as DATA: `XMLPUBVAR
+// xmlMallocFunc xmlMalloc;` etc. — function-pointer variables that downstream
+// code can read AND assign (the documented allocator-override mechanism).
+// The candidate mirrors that ABI; the implementations above back them.
+
+/// `xmlMallocFunc xmlMalloc` — the malloc hook (default: `xmlMallocImpl`).
+#[no_mangle]
+pub static mut xmlMalloc: xmlMallocFunc = xmlMallocImpl;
+
+/// `xmlMallocFunc xmlMallocAtomic` — the atomic-malloc hook.
+#[no_mangle]
+pub static mut xmlMallocAtomic: xmlMallocFunc = xmlMallocAtomicImpl;
+
+/// `xmlReallocFunc xmlRealloc` — the realloc hook.
+#[no_mangle]
+pub static mut xmlRealloc: xmlReallocFunc = xmlReallocImpl;
+
+/// `xmlFreeFunc xmlFree` — the free hook.
+#[no_mangle]
+pub static mut xmlFree: xmlFreeFunc = xmlFreeImpl;
+
+/// `xmlStrdupFunc xmlMemStrdup` — the strdup hook.
+#[no_mangle]
+pub static mut xmlMemStrdup: xmlStrdupFunc = xmlMemStrdupImpl;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Memory Debugging / Statistics
@@ -596,8 +628,8 @@ pub unsafe extern "C" fn xmlMemShow(fp: *mut c_void, nr: c_int) {
 /// Same as `xmlMalloc`. The returned memory is zero-initialized.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocZero(size: usize) -> *mut c_void {
-    // SAFETY: Delegates to xmlMalloc and zeroes the memory.
-    let ptr = unsafe { xmlMalloc(size) };
+    // SAFETY: Delegates to xmlMallocImpl and zeroes the memory.
+    let ptr = unsafe { xmlMallocImpl(size) };
     if !ptr.is_null() {
         unsafe { ptr::write_bytes(ptr, 0, size) };
     }
@@ -611,8 +643,8 @@ pub unsafe extern "C" fn xmlMallocZero(size: usize) -> *mut c_void {
 /// Like `xmlMallocAtomic` followed by zero-initialization.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocAtomicZero(size: usize) -> *mut c_void {
-    // SAFETY: Delegates to xmlMallocAtomic and zeroes the memory.
-    let ptr = unsafe { xmlMallocAtomic(size) };
+    // SAFETY: Delegates to xmlMallocAtomicImpl and zeroes the memory.
+    let ptr = unsafe { xmlMallocAtomicImpl(size) };
     if !ptr.is_null() {
         unsafe { ptr::write_bytes(ptr, 0, size) };
     }
@@ -635,7 +667,7 @@ pub unsafe extern "C" fn xmlReallocZero(
     new_size: usize,
 ) -> *mut c_void {
     // SAFETY: Delegates to xmlRealloc and zeroes the new portion.
-    let new_ptr = unsafe { xmlRealloc(ptr, new_size) };
+    let new_ptr = unsafe { xmlReallocImpl(ptr, new_size) };
     if !new_ptr.is_null() && new_size > old_size {
         unsafe {
             ptr::write_bytes(new_ptr.add(old_size), 0, new_size - old_size);
@@ -696,7 +728,7 @@ pub extern "C" fn xmlCleanupMemory() {
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
     // SAFETY: identical contract to xmlMalloc.
-    unsafe { xmlMalloc(size) }
+    unsafe { xmlMallocImpl(size) }
 }
 
 /// Free memory (legacy name; same contract as `xmlFree`).
@@ -707,7 +739,7 @@ pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
     // SAFETY: identical contract to xmlFree.
-    unsafe { xmlFree(ptr) }
+    unsafe { xmlFreeImpl(ptr) }
 }
 
 /// Reallocate memory (legacy name; same contract as `xmlRealloc`).
@@ -718,7 +750,7 @@ pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_void {
     // SAFETY: identical contract to xmlRealloc.
-    unsafe { xmlRealloc(ptr, size) }
+    unsafe { xmlReallocImpl(ptr, size) }
 }
 
 /// Duplicate a string (legacy name; same contract as `xmlMemStrdup`).
@@ -729,7 +761,7 @@ pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
     // SAFETY: identical contract to xmlMemStrdup.
-    unsafe { xmlMemStrdup(str) }
+    unsafe { xmlMemStrdupImpl(str) }
 }
 
 /// Allocate memory, recording the allocation site (upstream xmlmemory.h).
@@ -747,7 +779,7 @@ pub unsafe extern "C" fn xmlMallocLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let ptr = unsafe { xmlMalloc(size) };
+    let ptr = unsafe { xmlMallocImpl(size) };
     if !ptr.is_null() {
         unsafe { block_record(ptr, size, file, line) };
     }
@@ -784,7 +816,7 @@ pub unsafe extern "C" fn xmlReallocLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let new_ptr = unsafe { xmlRealloc(ptr, size) };
+    let new_ptr = unsafe { xmlReallocImpl(ptr, size) };
     if !new_ptr.is_null() {
         unsafe { block_record(new_ptr, size, file, line) };
     } else if !ptr.is_null() {
@@ -808,7 +840,7 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let ptr = unsafe { xmlMemStrdup(str) };
+    let ptr = unsafe { xmlMemStrdupImpl(str) };
     if !ptr.is_null() {
         let len = unsafe { libc::strlen(str) } + 1;
         unsafe { block_record(ptr, len, file, line) };

@@ -147,7 +147,7 @@ unsafe fn shell_public(id: &str) {
         let len = libc::strlen(res as *const c_char);
         libc::write(1, res as *const c_void, len);
         libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-        libxml_rs::abi::allocator::xmlFree(res as *mut c_void);
+        libxml_rs::abi::allocator::xmlFreeImpl(res as *mut c_void);
     }
     free_cstr(cid);
 }
@@ -162,7 +162,7 @@ unsafe fn shell_system(id: &str) {
         let len = libc::strlen(res as *const c_char);
         libc::write(1, res as *const c_void, len);
         libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-        libxml_rs::abi::allocator::xmlFree(res as *mut c_void);
+        libxml_rs::abi::allocator::xmlFreeImpl(res as *mut c_void);
     }
     free_cstr(cid);
 }
@@ -183,13 +183,13 @@ unsafe fn shell_resolve(pub_id: &str, sys_id: &str) {
         let len = libc::strlen(res2 as *const c_char);
         libc::write(1, res2 as *const c_void, len);
         libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-        libxml_rs::abi::allocator::xmlFree(res2 as *mut c_void);
+        libxml_rs::abi::allocator::xmlFreeImpl(res2 as *mut c_void);
         return;
     }
     let len = libc::strlen(res as *const c_char);
     libc::write(1, res as *const c_void, len);
     libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-    libxml_rs::abi::allocator::xmlFree(res as *mut c_void);
+    libxml_rs::abi::allocator::xmlFreeImpl(res as *mut c_void);
 }
 
 unsafe fn shell_add(args: &[&str]) {
@@ -472,7 +472,7 @@ fn main() {
                         let len = libc::strlen(res as *const c_char);
                         libc::write(1, res as *const c_void, len);
                         libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-                        libxml_rs::abi::allocator::xmlFree(res as *mut c_void);
+                        libxml_rs::abi::allocator::xmlFreeImpl(res as *mut c_void);
                     }
                 } else {
                     let res = xmlCatalogResolveSystem(cid as *const xmlChar);
@@ -486,13 +486,13 @@ fn main() {
                             let len = libc::strlen(res2 as *const c_char);
                             libc::write(1, res2 as *const c_void, len);
                             libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-                            libxml_rs::abi::allocator::xmlFree(res2 as *mut c_void);
+                            libxml_rs::abi::allocator::xmlFreeImpl(res2 as *mut c_void);
                         }
                     } else {
                         let len = libc::strlen(res as *const c_char);
                         libc::write(1, res as *const c_void, len);
                         libc::write(1, b"\n".as_ptr() as *const c_void, 1);
-                        libxml_rs::abi::allocator::xmlFree(res as *mut c_void);
+                        libxml_rs::abi::allocator::xmlFreeImpl(res as *mut c_void);
                     }
                 }
                 free_cstr(cid);

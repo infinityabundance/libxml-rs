@@ -507,7 +507,7 @@ unsafe fn new_text_len(content: *const xmlChar, len: c_int) -> *mut _xmlNode {
             crate::abi::exports_xml2::xmlStrdup(b"text\0" as *const u8 as *const xmlChar);
         if !content.is_null() {
             let copied = if len == 0 {
-                let empty = xmlMalloc(1) as *mut xmlChar;
+                let empty = xmlMallocImpl(1) as *mut xmlChar;
                 if !empty.is_null() {
                     *empty = 0;
                 }
@@ -516,7 +516,7 @@ unsafe fn new_text_len(content: *const xmlChar, len: c_int) -> *mut _xmlNode {
                 crate::abi::exports_xml2::xmlStrndup(content, len)
             };
             if copied.is_null() {
-                xmlFree(node as *mut c_void);
+                xmlFreeImpl(node as *mut c_void);
                 return ptr::null_mut();
             }
             (*node).content = copied;
@@ -704,10 +704,10 @@ pub unsafe extern "C" fn xmlXPtrLocationSetCreate(val: *mut _xmlXPathObject) -> 
         return ptr::null_mut();
     }
     if !val.is_null() {
-        let tab = xmlMalloc((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
+        let tab = xmlMallocImpl((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
             as *mut *mut _xmlXPathObject;
         if tab.is_null() {
-            xmlFree(ret as *mut c_void);
+            xmlFreeImpl(ret as *mut c_void);
             return ptr::null_mut();
         }
         unsafe {
@@ -740,9 +740,9 @@ pub unsafe extern "C" fn xmlXPtrFreeLocationSet(obj: xmlLocationSetPtr) {
             for i in 0..(*obj).locNr as usize {
                 crate::abi::exports_xml2::xmlXPathFreeObject(*tab.add(i));
             }
-            xmlFree(tab as *mut c_void);
+            xmlFreeImpl(tab as *mut c_void);
         }
-        xmlFree(obj as *mut c_void);
+        xmlFreeImpl(obj as *mut c_void);
     }
 }
 
@@ -769,7 +769,7 @@ pub unsafe extern "C" fn xmlXPtrLocationSetAdd(cur: xmlLocationSetPtr, val: *mut
         }
         // Grow locTab if needed.
         if (*cur).locMax == 0 {
-            let tab = xmlMalloc((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
+            let tab = xmlMallocImpl((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
                 as *mut *mut _xmlXPathObject;
             if tab.is_null() {
                 return;
@@ -779,7 +779,7 @@ pub unsafe extern "C" fn xmlXPtrLocationSetAdd(cur: xmlLocationSetPtr, val: *mut
             (*cur).locMax = XML_RANGESET_DEFAULT;
         } else if (*cur).locNr == (*cur).locMax {
             (*cur).locMax *= 2;
-            let temp = xmlRealloc(
+            let temp = xmlReallocImpl(
                 (*cur).locTab as *mut c_void,
                 ((*cur).locMax as usize) * size_of::<*mut _xmlXPathObject>(),
             ) as *mut *mut _xmlXPathObject;

@@ -59,7 +59,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::exports_string::xmlStrstr;
 use crate::abi::exports_tree::{xmlNodeGetBase, xmlNodeSetBase};
 use crate::abi::exports_uri::xmlCanonicPath;
@@ -460,7 +460,7 @@ unsafe fn shell_get_node_path(node: *const _xmlNode) -> *mut xmlChar {
     }
     path.push(0);
 
-    let ret = xmlMalloc(path.len()) as *mut xmlChar;
+    let ret = xmlMallocImpl(path.len()) as *mut xmlChar;
     if ret.is_null() {
         return ptr::null_mut();
     }
@@ -651,7 +651,7 @@ pub unsafe extern "C" fn xmlShellBase(
         unsafe {
             out_cstr((*ctxt).output, base as *const c_char);
             out_bytes((*ctxt).output, b"\n");
-            xmlFree(base as *mut c_void);
+            xmlFreeImpl(base as *mut c_void);
         }
     }
     0
@@ -776,7 +776,7 @@ pub unsafe extern "C" fn xmlShellLoad(
             (*ctxt).loaded = 1;
             xmlXPathFreeContext((*ctxt).pctxt);
             if !(*ctxt).filename.is_null() {
-                xmlFree((*ctxt).filename as *mut c_void);
+                xmlFreeImpl((*ctxt).filename as *mut c_void);
             }
             (*ctxt).doc = doc;
             (*ctxt).node = doc as *mut _xmlNode;
@@ -1007,7 +1007,7 @@ unsafe fn shell_parse_dtd(dtd: *const c_char) -> *mut _xmlDtd {
             let dtd_node =
                 crate::xml::dtd::new_dtd(ptr::null_mut(), name_c, ptr::null_mut(), ptr::null_mut());
             if !name_c.is_null() {
-                xmlFree(name_c as *mut c_void);
+                xmlFreeImpl(name_c as *mut c_void);
             }
             return dtd_node;
         }
@@ -1084,13 +1084,13 @@ unsafe fn shell_parse_dtd(dtd: *const c_char) -> *mut _xmlDtd {
     };
     let dtd_node = crate::xml::dtd::new_dtd(ptr::null_mut(), name_c, ext_c, sys_c);
     if !name_c.is_null() {
-        xmlFree(name_c as *mut c_void);
+        xmlFreeImpl(name_c as *mut c_void);
     }
     if !ext_c.is_null() {
-        xmlFree(ext_c as *mut c_void);
+        xmlFreeImpl(ext_c as *mut c_void);
     }
     if !sys_c.is_null() {
-        xmlFree(sys_c as *mut c_void);
+        xmlFreeImpl(sys_c as *mut c_void);
     }
     dtd_node
 }
@@ -1105,7 +1105,7 @@ fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 
 /// Copy a byte slice into a NUL-terminated xmlMalloc'd xmlChar string.
 unsafe fn bytes_to_xmlstr(bytes: &[u8]) -> *mut xmlChar {
-    let buf = xmlMalloc(bytes.len() + 1) as *mut xmlChar;
+    let buf = xmlMallocImpl(bytes.len() + 1) as *mut xmlChar;
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -1150,7 +1150,7 @@ pub unsafe extern "C" fn xmlShellValidate(
         }
     }
     unsafe {
-        xmlFree(vctxt as *mut c_void);
+        xmlFreeImpl(vctxt as *mut c_void);
     }
     res
 }
@@ -1271,7 +1271,7 @@ pub unsafe extern "C" fn xmlShellPwd(
         *buffer.add(499) = b'0' as c_char;
     }
     unsafe {
-        xmlFree(path as *mut c_void);
+        xmlFreeImpl(path as *mut c_void);
     }
     0
 }
@@ -1313,7 +1313,7 @@ unsafe fn xmlShellRegisterNamespace(ctxt: *mut _xmlShellCtxt, arg: *mut c_char) 
                 );
             }
             unsafe {
-                xmlFree(ns_list_dup as *mut c_void);
+                xmlFreeImpl(ns_list_dup as *mut c_void);
             }
             return -1;
         }
@@ -1345,13 +1345,13 @@ unsafe fn xmlShellRegisterNamespace(ctxt: *mut _xmlShellCtxt, arg: *mut c_char) 
                 out_bytes((*ctxt).output, &msg);
             }
             unsafe {
-                xmlFree(ns_list_dup as *mut c_void);
+                xmlFreeImpl(ns_list_dup as *mut c_void);
             }
             return -1;
         }
     }
     unsafe {
-        xmlFree(ns_list_dup as *mut c_void);
+        xmlFreeImpl(ns_list_dup as *mut c_void);
     }
     0
 }
@@ -1405,7 +1405,7 @@ unsafe fn xmlShellGrep(ctxt: *mut _xmlShellCtxt, arg: *mut c_char, node: *mut _x
                         push_cstr(&mut line, path as *const c_char);
                         line.extend_from_slice(b" : ");
                         out_bytes((*ctxt).output, &line);
-                        xmlFree(path as *mut c_void);
+                        xmlFreeImpl(path as *mut c_void);
                     }
                     xmlShellList(ctxt, ptr::null_mut(), node, ptr::null_mut());
                 }
@@ -1417,7 +1417,7 @@ unsafe fn xmlShellGrep(ctxt: *mut _xmlShellCtxt, arg: *mut c_char, node: *mut _x
                         push_cstr(&mut line, path as *const c_char);
                         line.extend_from_slice(b" : ");
                         out_bytes((*ctxt).output, &line);
-                        xmlFree(path as *mut c_void);
+                        xmlFreeImpl(path as *mut c_void);
                     }
                     xmlShellList(ctxt, ptr::null_mut(), (*node).parent, ptr::null_mut());
                 }
@@ -1577,7 +1577,7 @@ pub unsafe extern "C" fn xmlShell(
     }
     if unsafe { (*ctxt).pctxt }.is_null() {
         unsafe {
-            xmlFree(ctxt as *mut c_void);
+            xmlFreeImpl(ctxt as *mut c_void);
         }
         return;
     }
@@ -1951,9 +1951,9 @@ pub unsafe extern "C" fn xmlShell(
             tree::free_doc((*ctxt).doc);
         }
         if !(*ctxt).filename.is_null() {
-            xmlFree((*ctxt).filename as *mut c_void);
+            xmlFreeImpl((*ctxt).filename as *mut c_void);
         }
-        xmlFree(ctxt as *mut c_void);
+        xmlFreeImpl(ctxt as *mut c_void);
         if !cmdline.is_null() {
             libc::free(cmdline as *mut c_void);
         }

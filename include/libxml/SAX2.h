@@ -11,9 +11,8 @@
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
 
-/* Forward declarations for types defined in parser.h */
-struct _xmlParserInput;
-typedef struct _xmlParserInput xmlParserInput;
+/* Forward declarations for types defined in tree.h (xmlParserInput /
+ * xmlParserCtxt live there, upstream order). */
 typedef xmlParserInput *xmlParserInputPtr;
 
 

@@ -1024,7 +1024,7 @@ pub unsafe extern "C" fn xsltFreeCompMatchList(comp: xsltCompMatchPtr) {
             (*comp).pattern as *mut crate::xslt::patterns::_xsltPattern,
         );
     }
-    crate::abi::allocator::xmlFree(comp as *mut c_void);
+    crate::abi::allocator::xmlFreeImpl(comp as *mut c_void);
 }
 
 /// Test whether a node matches a compiled pattern list.

@@ -10,7 +10,7 @@
 //! `use-attribute-sets` is processed, the sets are looked up by name and
 //! their `xsl:attribute` children are evaluated in the current context.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -68,7 +68,7 @@ pub unsafe fn xsltFreeAttrSet(set: *mut _xsltAttrSet) {
         libc::free((*set).ns as *mut libc::c_void);
     }
     (*set).next = ptr::null_mut();
-    xmlFree(set as *mut libc::c_void);
+    xmlFreeImpl(set as *mut libc::c_void);
 }
 
 /// Free all attribute sets in a stylesheet.

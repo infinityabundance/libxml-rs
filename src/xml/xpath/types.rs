@@ -162,7 +162,7 @@ impl NodeSet {
         let node_max = self.nodes.len();
         let node_tab = if node_max > 0 {
             let ptr =
-                crate::abi::allocator::xmlMalloc(node_max * std::mem::size_of::<*mut _xmlNode>())
+                crate::abi::allocator::xmlMallocImpl(node_max * std::mem::size_of::<*mut _xmlNode>())
                     as *mut *mut _xmlNode;
             if ptr.is_null() {
                 return ptr::null_mut();
@@ -175,12 +175,12 @@ impl NodeSet {
             ptr::null_mut()
         };
 
-        let raw = crate::abi::allocator::xmlMalloc(std::mem::size_of::<
+        let raw = crate::abi::allocator::xmlMallocImpl(std::mem::size_of::<
             crate::abi::structs::_xmlNodeSet,
         >()) as *mut crate::abi::structs::_xmlNodeSet;
         if raw.is_null() {
             if !node_tab.is_null() {
-                crate::abi::allocator::xmlFree(node_tab as *mut _);
+                crate::abi::allocator::xmlFreeImpl(node_tab as *mut _);
             }
             return ptr::null_mut();
         }

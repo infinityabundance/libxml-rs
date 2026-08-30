@@ -19,7 +19,7 @@
 //! expression is evaluated. Each resulting string value maps to the node.
 //! A node can appear under multiple values.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{
     xmlXPathCastToString, xmlXPathEvalExpression, xmlXPathFreeObject, xmlXPathNewNodeSet,
     xmlXPathNodeSetCreate,
@@ -87,7 +87,7 @@ pub unsafe fn xsltFreeKeyDef(key_def: *mut _xsltKeyDef) {
     }
     // name/match/use are dictionary-owned strings (borrowed), do not free.
     (*key_def).next = ptr::null_mut();
-    xmlFree(key_def as *mut libc::c_void);
+    xmlFreeImpl(key_def as *mut libc::c_void);
 }
 
 /// Free key definitions in a stylesheet.
@@ -140,7 +140,7 @@ pub unsafe fn xsltFreeKeyTable(key_table: *mut _xsltKeyTable) {
         libc::free((*key_table).nameURI as *mut libc::c_void);
     }
     (*key_table).next = ptr::null_mut();
-    xmlFree(key_table as *mut libc::c_void);
+    xmlFreeImpl(key_table as *mut libc::c_void);
 }
 
 /// Free all key tables in a transform context.

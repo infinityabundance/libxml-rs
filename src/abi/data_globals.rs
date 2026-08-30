@@ -78,11 +78,54 @@ pub static mut xmlTreeIndentString: *const xmlChar = {
 #[no_mangle]
 pub static mut xmlSaveNoEmptyTags: c_int = 0;
 
-/// `xmlRegisterNodeFunc xmlRegisterNodeDefaultValue` (default NULL)
+/// Upstream `xmlRegisterNodeFunc xmlRegisterNodeDefaultValue` (default NULL)
 #[no_mangle]
 pub static mut xmlRegisterNodeDefaultValue: Option<
     unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
 > = None;
+
+/// Upstream static `xmlRegisterCallbacks` (tree.c): the gate that arms the
+/// node register/deregister hooks once a callback has been registered.
+pub static XML_REGISTER_CALLBACKS: core::sync::atomic::AtomicBool =
+    core::sync::atomic::AtomicBool::new(false);
+
+/// Upstream `xmlRegisterNodeCallback(node)` — invoke the registered node
+/// hook, gated by `xmlRegisterCallbacks` (tree.c).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid, fully-initialised node or NULL.
+pub fn register_node_hook(node: *mut crate::abi::structs::_xmlNode) {
+    if !XML_REGISTER_CALLBACKS.load(core::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    let hook = unsafe { xmlRegisterNodeDefaultValue };
+    if let Some(h) = hook {
+        if !node.is_null() {
+            // SAFETY: the hook is a valid C callback registered by the user.
+            unsafe { h(node) };
+        }
+    }
+}
+
+/// Upstream `xmlDeregisterNodeCallback(node)` — invoke the registered node
+/// deregister hook, gated by `xmlRegisterCallbacks` (tree.c).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid node about to be freed, or NULL.
+pub fn deregister_node_hook(node: *mut crate::abi::structs::_xmlNode) {
+    if !XML_REGISTER_CALLBACKS.load(core::sync::atomic::Ordering::Relaxed) {
+        return;
+    }
+    let hook = unsafe { xmlDeregisterNodeDefaultValue };
+    if let Some(h) = hook {
+        if !node.is_null() {
+            // SAFETY: the hook is a valid C callback registered by the user.
+            unsafe { h(node) };
+        }
+    }
+}
 
 /// `xmlDeregisterNodeFunc xmlDeregisterNodeDefaultValue` (default NULL)
 #[no_mangle]
@@ -727,6 +770,9 @@ pub unsafe extern "C" fn xmlRegisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     unsafe {
+        // UPSTREAM-PARITY (tree.c): registering any callback arms the
+        // xmlRegisterCallbacks gate.
+        XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
         if func.is_some() {
             xmlRegisterNodeDefaultValue = func;
         }
@@ -740,6 +786,9 @@ pub unsafe extern "C" fn xmlDeregisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     unsafe {
+        // UPSTREAM-PARITY (tree.c): registering any callback arms the
+        // xmlRegisterCallbacks gate.
+        XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
         if func.is_some() {
             xmlDeregisterNodeDefaultValue = func;
         }

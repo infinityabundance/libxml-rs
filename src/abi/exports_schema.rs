@@ -40,7 +40,7 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_ulong};
 
-use crate::abi::allocator::{xmlFree, xmlMemStrdup};
+use crate::abi::allocator::{xmlFreeImpl, xmlMemStrdupImpl};
 use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlValidityWarningFunc};
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
@@ -282,7 +282,7 @@ unsafe fn dup_cstr(s: *const c_char) -> *mut c_char {
         return ptr::null_mut();
     }
     // SAFETY: xmlMemStrdup requires a valid C string; caller guarantees it.
-    unsafe { xmlMemStrdup(s) as *mut c_char }
+    unsafe { xmlMemStrdupImpl(s) as *mut c_char }
 }
 
 fn is_whitespace(c: char) -> bool {
@@ -536,10 +536,10 @@ unsafe fn free_val_chain(mut cur: *mut XsdVal) {
         // SAFETY: value/ns were xmlMalloc'd by new_val; cur is a Box we own.
         unsafe {
             if !(*cur).value.is_null() {
-                xmlFree((*cur).value as *mut c_void);
+                xmlFreeImpl((*cur).value as *mut c_void);
             }
             if !(*cur).ns.is_null() {
-                xmlFree((*cur).ns as *mut c_void);
+                xmlFreeImpl((*cur).ns as *mut c_void);
             }
             drop(Box::from_raw(cur));
         }
@@ -721,7 +721,7 @@ unsafe fn doc_to_string(doc: *mut _xmlDoc) -> Option<String> {
     let slice = unsafe { std::slice::from_raw_parts(mem as *const u8, size as usize) };
     let out = String::from_utf8_lossy(slice).to_string();
     // SAFETY: mem was allocated by the dumper; xmlFree is the matching free.
-    unsafe { xmlFree(mem as *mut c_void) };
+    unsafe { xmlFreeImpl(mem as *mut c_void) };
     Some(out)
 }
 
@@ -1483,7 +1483,7 @@ pub unsafe extern "C" fn xmlSchemaFreeFacet(facet: *mut xmlSchemaFacet) {
     let f = unsafe { Box::from_raw(facet as *mut XsdFacet) };
     if !f.value.is_null() {
         // SAFETY: value was xmlMalloc'd by this module.
-        unsafe { xmlFree(f.value as *mut c_void) };
+        unsafe { xmlFreeImpl(f.value as *mut c_void) };
     }
     drop(f);
 }

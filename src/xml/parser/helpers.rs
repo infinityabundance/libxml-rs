@@ -17,7 +17,7 @@ use core::ptr;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_void};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::callbacks::{xmlInputCloseCallback, xmlInputReadCallback};
 use crate::abi::structs::{_xmlParserCtxt, _xmlParserInput, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::xml::parser::input::{InputBuffer, InputStack};
@@ -59,7 +59,7 @@ pub(crate) unsafe fn create_parser_ctxt() -> *mut _xmlParserCtxt {
     if sax.is_null() {
         // Free the context since the SAX allocation failed.
         // SAFETY: ctxt was just allocated above and is non-null.
-        unsafe { xmlFree(ctxt as *mut c_void) };
+        unsafe { xmlFreeImpl(ctxt as *mut c_void) };
         return ptr::null_mut();
     }
 
@@ -111,7 +111,7 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // Free SAX handler.
         let sax = (*ctxt).sax;
         if !sax.is_null() {
-            xmlFree(sax as *mut c_void);
+            xmlFreeImpl(sax as *mut c_void);
         }
 
         // Free all inputs in the input stack.
@@ -124,7 +124,7 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
                     free_parser_input(input);
                 }
             }
-            xmlFree(input_tab as *mut c_void);
+            xmlFreeImpl(input_tab as *mut c_void);
         }
 
         // Free the current input (if not already in inputTab).
@@ -140,13 +140,13 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // Free the node stack (the array itself; nodes are owned by the doc).
         let node_tab = (*ctxt).nodeTab;
         if !node_tab.is_null() {
-            xmlFree(node_tab as *mut c_void);
+            xmlFreeImpl(node_tab as *mut c_void);
         }
 
         // Free the name stack.
         let name_tab = (*ctxt).nameTab;
         if !name_tab.is_null() {
-            xmlFree(name_tab as *mut c_void);
+            xmlFreeImpl(name_tab as *mut c_void);
         }
 
         // Free the stored InputBuffer (leaked in setup_parser_input).
@@ -158,7 +158,7 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         }
 
         // Free the context itself.
-        xmlFree(ctxt as *mut c_void);
+        xmlFreeImpl(ctxt as *mut c_void);
     }
 }
 
@@ -314,7 +314,7 @@ pub(crate) unsafe fn setup_parser_input(ctxt: *mut _xmlParserCtxt, input: InputB
         // Allocate inputTab with initial capacity of 4 pointers.
         let tab_size = 4 * size_of::<*mut _xmlParserInput>();
         // SAFETY: xmlMalloc returns uninitialised memory or NULL.
-        let tab = xmlMalloc(tab_size) as *mut *mut _xmlParserInput;
+        let tab = xmlMallocImpl(tab_size) as *mut *mut _xmlParserInput;
         if tab.is_null() {
             // Allocation failure — leave inputTab null, inputNr 0.
             c.inputTab = ptr::null_mut();
@@ -523,7 +523,7 @@ pub(crate) unsafe fn free_parser_input(input: *mut _xmlParserInput) {
         return;
     }
     // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
-    unsafe { xmlFree(input as *mut c_void) };
+    unsafe { xmlFreeImpl(input as *mut c_void) };
 }
 
 /// Free a C ABI `_xmlParserInputBuffer`.
@@ -540,5 +540,5 @@ pub(crate) unsafe fn free_parser_input_buffer(buf: *mut _xmlParserInputBuffer) {
         return;
     }
     // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
-    unsafe { xmlFree(buf as *mut c_void) };
+    unsafe { xmlFreeImpl(buf as *mut c_void) };
 }

@@ -313,22 +313,22 @@ unsafe fn free_entity_internal(entity: *mut _xmlEntity, free_children: bool) {
         let e = &*entity;
 
         if !e.name.is_null() {
-            allocator::xmlFree(e.name as *mut c_void);
+            allocator::xmlFreeImpl(e.name as *mut c_void);
         }
         if !e.content.is_null() {
-            allocator::xmlFree(e.content as *mut c_void);
+            allocator::xmlFreeImpl(e.content as *mut c_void);
         }
         if !e.orig.is_null() {
-            allocator::xmlFree(e.orig as *mut c_void);
+            allocator::xmlFreeImpl(e.orig as *mut c_void);
         }
         if !e.ExternalID.is_null() {
-            allocator::xmlFree(e.ExternalID as *mut c_void);
+            allocator::xmlFreeImpl(e.ExternalID as *mut c_void);
         }
         if !e.SystemID.is_null() {
-            allocator::xmlFree(e.SystemID as *mut c_void);
+            allocator::xmlFreeImpl(e.SystemID as *mut c_void);
         }
         if !e.URI.is_null() {
-            allocator::xmlFree(e.URI as *mut c_void);
+            allocator::xmlFreeImpl(e.URI as *mut c_void);
         }
 
         // Free children tree nodes if requested
@@ -338,7 +338,7 @@ unsafe fn free_entity_internal(entity: *mut _xmlEntity, free_children: bool) {
             // The tree module's free functions would be called here.
         }
 
-        allocator::xmlFree(entity as *mut c_void);
+        allocator::xmlFreeImpl(entity as *mut c_void);
     }
 }
 
@@ -407,7 +407,7 @@ pub unsafe fn encode_entities_reentrant(_doc: *mut _xmlDoc, input: *const xmlCha
         }
 
         // Allocate output buffer
-        let output = allocator::xmlMalloc(out_len + 1) as *mut xmlChar;
+        let output = allocator::xmlMallocImpl(out_len + 1) as *mut xmlChar;
         if output.is_null() {
             return ptr::null_mut();
         }
@@ -491,7 +491,7 @@ pub unsafe fn string_decode_entities(
         let len = string::xml_strlen(input);
         if len == 0 {
             // Return empty string
-            let empty = allocator::xmlMalloc(1) as *mut xmlChar;
+            let empty = allocator::xmlMallocImpl(1) as *mut xmlChar;
             if !empty.is_null() {
                 *empty = 0;
             }
@@ -500,7 +500,7 @@ pub unsafe fn string_decode_entities(
 
         // Allocate a generous output buffer (input length + expansion)
         let max_out = len * 4 + 1; // Allow for some expansion
-        let output = allocator::xmlMalloc(max_out) as *mut xmlChar;
+        let output = allocator::xmlMallocImpl(max_out) as *mut xmlChar;
         if output.is_null() {
             return ptr::null_mut();
         }
@@ -567,7 +567,7 @@ pub unsafe fn string_decode_entities(
                     let name_len = i - entity_name_start;
                     if name_len > 0 {
                         // Create a null-terminated name
-                        let name_buf = allocator::xmlMalloc(name_len + 1) as *mut xmlChar;
+                        let name_buf = allocator::xmlMallocImpl(name_len + 1) as *mut xmlChar;
                         if !name_buf.is_null() {
                             ptr::copy_nonoverlapping(
                                 input.add(entity_name_start),
@@ -618,7 +618,7 @@ pub unsafe fn string_decode_entities(
                                 }
                             }
 
-                            allocator::xmlFree(name_buf as *mut c_void);
+                            allocator::xmlFreeImpl(name_buf as *mut c_void);
                         }
                     }
                     // Skip past the semicolon
@@ -927,13 +927,13 @@ pub fn check_entity_recursion_depth(depth: c_int) -> c_int {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use core::ffi::c_void;
     use core::ptr;
 
     unsafe fn c_str(s: &[u8]) -> *const xmlChar {
         let len = s.len();
-        let buf = allocator::xmlMalloc(len + 1) as *mut xmlChar;
+        let buf = allocator::xmlMallocImpl(len + 1) as *mut xmlChar;
         assert!(!buf.is_null());
         ptr::copy_nonoverlapping(s.as_ptr(), buf, len);
         *buf.add(len) = 0;
@@ -991,8 +991,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1036,8 +1036,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1091,8 +1091,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1123,8 +1123,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1151,8 +1151,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1184,8 +1184,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1282,7 +1282,7 @@ mod tests {
             let result = encode_entities_reentrant(ptr::null_mut(), input);
             assert!(!result.is_null());
             assert_eq!(string::xml_strcmp(result, input), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1294,7 +1294,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"a &lt; b &gt; c");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1306,7 +1306,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"a &amp; b");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1318,7 +1318,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"&quot;hello&quot; &apos;world&apos;");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1331,7 +1331,7 @@ mod tests {
             let expected =
                 c_str(b"&lt;tag attr=&quot;value&quot;&gt;&amp;&apos;more&apos;&lt;/tag&gt;");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1352,7 +1352,7 @@ mod tests {
             let result = string_decode_entities(ptr::null_mut(), input, 0, 0, 0, 0);
             assert!(!result.is_null());
             assert_eq!(*result, 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1363,7 +1363,7 @@ mod tests {
             let result = string_decode_entities(ptr::null_mut(), input, 0, 0, 0, 0);
             assert!(!result.is_null());
             assert_eq!(string::xml_strcmp(result, input), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1376,7 +1376,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"A");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1389,7 +1389,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"A");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1401,7 +1401,7 @@ mod tests {
             assert!(!result.is_null());
             let expected = c_str(b"Hello World!");
             assert_eq!(string::xml_strcmp(result, expected), 0);
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
         }
     }
 
@@ -1442,7 +1442,7 @@ mod tests {
             let expected = c_str(b"a < b > c & d");
             assert_eq!(string::xml_strcmp(result, expected), 0);
 
-            allocator::xmlFree(result as *mut c_void);
+            allocator::xmlFreeImpl(result as *mut c_void);
 
             hash::hash_free(
                 (*dtd).entities as *mut hash::HashTable,
@@ -1452,8 +1452,8 @@ mod tests {
                 (*dtd).pentities as *mut hash::HashTable,
                 Some(entity_deallocator),
             );
-            allocator::xmlFree(dtd as *mut c_void);
-            allocator::xmlFree(doc as *mut c_void);
+            allocator::xmlFreeImpl(dtd as *mut c_void);
+            allocator::xmlFreeImpl(doc as *mut c_void);
         }
     }
 
@@ -1488,7 +1488,7 @@ mod tests {
             assert!(!retrieved.is_null());
             assert_eq!(string::xml_strcmp(retrieved, content), 0);
 
-            allocator::xmlFree(retrieved as *mut c_void);
+            allocator::xmlFreeImpl(retrieved as *mut c_void);
             free_entity(entity);
         }
     }

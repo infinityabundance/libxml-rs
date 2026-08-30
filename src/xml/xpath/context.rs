@@ -39,6 +39,12 @@ pub type XPathFunction = fn(&mut XPathContext, &[XPathValue]) -> Result<XPathVal
 pub type BoxedXPathFunction =
     Box<dyn Fn(&mut XPathContext, &[XPathValue]) -> Result<XPathValue, String> + Send + Sync>;
 
+/// A namespaced function-lookup fallback: consulted by `lookup_function`
+/// after the exact-name registry misses, so engines (XSLT) can resolve
+/// `prefix:local(...)` calls against their own extension registries.
+pub type FunctionLookupFn =
+    Box<dyn Fn(&XPathContext, &str) -> Option<BoxedXPathFunction> + Send + Sync>;
+
 /// C callback for variable lookup.
 ///
 /// SAFETY: This is called from C ABI boundaries (e.g. when libxml2's XPath
@@ -111,6 +117,10 @@ pub struct XPathContext {
 
     /// Registered extension functions (name → function).
     pub functions: HashMap<String, BoxedXPathFunction>,
+
+    /// Namespaced function-lookup fallback (e.g. the XSLT extension
+    /// function registry), consulted after `functions`.
+    pub function_lookup: Option<FunctionLookupFn>,
 
     /// Last error message, if any.
     pub error: Option<String>,
@@ -201,6 +211,7 @@ impl XPathContext {
             variables: HashMap::new(),
             namespaces: HashMap::new(),
             functions: HashMap::new(),
+            function_lookup: None,
             error: None,
             proximity_position: 1,
             context_list: Vec::new(),
@@ -364,10 +375,19 @@ impl XPathContext {
     /// `func_lookup_func` callback is registered, the callback is invoked.
     ///
     /// Returns `None` if no such function is registered.
-    pub fn lookup_function(&self, name: &str) -> Option<&BoxedXPathFunction> {
+    pub fn lookup_function(&mut self, name: &str) -> Option<&BoxedXPathFunction> {
         // Check local Rust-side functions first.
-        if let Some(func) = self.functions.get(name) {
-            return Some(func);
+        if self.functions.contains_key(name) {
+            return self.functions.get(name);
+        }
+
+        // Namespaced fallback (XSLT extension functions, EXSLT, ...): the
+        // resolved closure is memoised into the registry.
+        if let Some(lookup) = &self.function_lookup {
+            if let Some(func) = lookup(self, name) {
+                self.functions.insert(name.to_string(), func);
+                return self.functions.get(name);
+            }
         }
 
         // Fall back to the C callback if registered.
@@ -808,7 +828,7 @@ mod tests {
 
     #[test]
     fn test_lookup_unknown_function() {
-        let ctx = XPathContext::new(std::ptr::null_mut());
+        let mut ctx = XPathContext::new(std::ptr::null_mut());
         assert!(ctx.lookup_function("nonexistent").is_none());
     }
 

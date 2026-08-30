@@ -170,7 +170,7 @@ pub fn reset_last_error() {
 /// printf-style formatting will be added.
 ///
 /// Returns a C string pointer (allocated with xmlMalloc) that the caller
-/// must free with xmlFree, or NULL on allocation failure.
+/// must free with xmlFreeImpl, or NULL on allocation failure.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -189,7 +189,7 @@ pub fn format_error_message(
     // If a direct message string is provided, use it.
     if !msg.is_null() {
         // SAFETY: Caller guarantees msg is a valid C string.
-        let msg_str = unsafe { crate::abi::allocator::xmlMemStrdup(msg) };
+        let msg_str = unsafe { crate::abi::allocator::xmlMemStrdupImpl(msg) };
         return msg_str as *mut c_char;
     }
 
@@ -298,7 +298,7 @@ pub fn format_error_message(
     }
 
     // Allocate and return
-    let result = unsafe { crate::abi::allocator::xmlMalloc(pos + 1) };
+    let result = unsafe { crate::abi::allocator::xmlMallocImpl(pos + 1) };
     if result.is_null() {
         return ptr::null_mut();
     }
@@ -972,7 +972,7 @@ mod tests {
             assert_eq!(formatted_str.to_bytes(), b"test error");
 
             // Free the allocated message
-            allocator::xmlFree(formatted as *mut c_void);
+            allocator::xmlFreeImpl(formatted as *mut c_void);
 
             // Test with domain and str1
             let str1 = b"foo\0" as *const u8 as *const c_char;
@@ -985,7 +985,7 @@ mod tests {
                 ptr::null(),
             );
             assert!(!formatted2.is_null());
-            allocator::xmlFree(formatted2 as *mut c_void);
+            allocator::xmlFreeImpl(formatted2 as *mut c_void);
         }
     }
 }

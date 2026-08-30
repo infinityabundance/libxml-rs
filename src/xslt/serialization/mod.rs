@@ -30,7 +30,7 @@
 //! UPSTREAM-PARITY: xsltutils.c, xsltSaveResultTo (v1.1.45)
 //! ```
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -181,7 +181,7 @@ pub(crate) unsafe fn save_result_to_vec(
                     b"UTF-8\0".as_ptr() as *const xmlChar
                 };
                 (*result).encoding =
-                    crate::abi::allocator::xmlMemStrdup(enc as *const c_char) as *mut xmlChar;
+                    crate::abi::allocator::xmlMemStrdupImpl(enc as *const c_char) as *mut xmlChar;
             }
             let buf = crate::xml::io::buf_create(-1);
             if buf.is_null() {
@@ -370,7 +370,7 @@ pub unsafe extern "C" fn xsltSaveResultToString(
         Ok(b) => b,
         Err(_) => {
             // Upstream produces an empty string when the save fails.
-            let empty = crate::abi::allocator::xmlMalloc(1) as *mut xmlChar;
+            let empty = crate::abi::allocator::xmlMallocImpl(1) as *mut xmlChar;
             if empty.is_null() {
                 return -1;
             }
@@ -410,7 +410,7 @@ pub unsafe extern "C" fn xsltSaveResultToString(
         bytes
     };
 
-    let out = crate::abi::allocator::xmlMalloc(converted.len() + 1) as *mut xmlChar;
+    let out = crate::abi::allocator::xmlMallocImpl(converted.len() + 1) as *mut xmlChar;
     if out.is_null() {
         return -1;
     }
@@ -453,7 +453,7 @@ pub unsafe extern "C" fn xsltSaveResultToFile(
         len as usize,
         output as *mut libc::FILE,
     );
-    xmlFree(txt as *mut c_void);
+    xmlFreeImpl(txt as *mut c_void);
     written as c_int
 }
 
@@ -529,7 +529,7 @@ pub unsafe extern "C" fn xsltSaveResultToFd(
         }
         written += n as usize;
     }
-    xmlFree(txt as *mut c_void);
+    xmlFreeImpl(txt as *mut c_void);
     written as c_int
 }
 
@@ -573,7 +573,7 @@ mod tests {
             // none), newline after the declaration and after the root child.
             let bytes = core::slice::from_raw_parts(txt, len as usize);
             assert_eq!(bytes, b"<?xml version=\"1.0\"?>\n<root>hello</root>\n");
-            xmlFree(txt as *mut c_void);
+            xmlFreeImpl(txt as *mut c_void);
             crate::xslt::stylesheet::xsltFreeStylesheet(style);
             free_doc(doc);
         }
@@ -594,7 +594,7 @@ mod tests {
             assert_eq!(xsltSaveResultToString(&mut txt, &mut len, doc, style), 0);
             let bytes = core::slice::from_raw_parts(txt, len as usize);
             assert_eq!(bytes, b"<?xml version=\"1.0\"?>\n<root/>");
-            xmlFree(txt as *mut c_void);
+            xmlFreeImpl(txt as *mut c_void);
             crate::xslt::stylesheet::xsltFreeStylesheet(style);
             free_doc(doc);
         }
@@ -617,7 +617,7 @@ mod tests {
             assert_eq!(xsltSaveResultToString(&mut txt, &mut len, doc, style), 0);
             let bytes = core::slice::from_raw_parts(txt, len as usize);
             assert_eq!(bytes, b"a");
-            xmlFree(txt as *mut c_void);
+            xmlFreeImpl(txt as *mut c_void);
             crate::xslt::stylesheet::xsltFreeStylesheet(style);
             free_doc(doc);
         }

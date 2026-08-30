@@ -18,7 +18,7 @@
 //!
 //! XSLT-VARIABLES-*, XSLT-PARAMS-*
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{xmlXPathFreeObject, xmlXPathObjectCopy};
 use crate::abi::structs::*;
 use crate::abi::types::*;
@@ -243,7 +243,7 @@ pub unsafe fn xsltFreeStackElem(var: *mut _xsltStackElem) {
         }
     }
     v.next = ptr::null_mut();
-    xmlFree(var as *mut libc::c_void);
+    xmlFreeImpl(var as *mut libc::c_void);
 }
 
 /// Free all global variables in a transform context.
@@ -485,7 +485,7 @@ unsafe fn register_global_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::{xmlFree, xmlMalloc};
+    use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
     use crate::abi::structs::*;
     use core::ptr;
 
@@ -538,7 +538,7 @@ mod tests {
             assert!(xsltPopVariable(ctxt).is_null());
             xsltFreeStackElem(v1);
             xsltFreeStackElem(v2);
-            xmlFree(ctxt as *mut libc::c_void);
+            xmlFreeImpl(ctxt as *mut libc::c_void);
         }
     }
 
@@ -557,7 +557,7 @@ mod tests {
             assert!(not_found.is_null());
             xsltFreeStackElem(v1);
             xsltFreeStackElem(v2);
-            xmlFree(ctxt as *mut libc::c_void);
+            xmlFreeImpl(ctxt as *mut libc::c_void);
         }
     }
 
@@ -567,7 +567,7 @@ mod tests {
             let ctxt = make_ctxt();
             let found = xsltLookupVariable(ctxt, b"foo\0".as_ptr() as *const xmlChar, ptr::null());
             assert!(found.is_null());
-            xmlFree(ctxt as *mut libc::c_void);
+            xmlFreeImpl(ctxt as *mut libc::c_void);
         }
     }
 
@@ -577,7 +577,7 @@ mod tests {
             let ctxt = make_ctxt();
             assert_eq!(xsltPushVariable(ptr::null_mut(), ptr::null_mut()), -1);
             assert_eq!(xsltPushVariable(ctxt, ptr::null_mut()), -1);
-            xmlFree(ctxt as *mut libc::c_void);
+            xmlFreeImpl(ctxt as *mut libc::c_void);
         }
     }
 }

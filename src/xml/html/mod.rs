@@ -16,7 +16,7 @@ use core::ptr;
 use core::slice;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::constants::XML_DEFAULT_VERSION;
 use crate::abi::structs::*;
 use crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8;
@@ -1535,9 +1535,9 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
                     let val_c = bytes_to_xmlstr(&attr.value);
                     if !name_c.is_null() {
                         tree::set_prop(node, name_c, val_c);
-                        xmlFree(name_c as *mut c_void);
+                        xmlFreeImpl(name_c as *mut c_void);
                         if !val_c.is_null() {
-                            xmlFree(val_c as *mut c_void);
+                            xmlFreeImpl(val_c as *mut c_void);
                         }
                     }
                 }
@@ -1553,9 +1553,9 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
                 let val_c = bytes_to_xmlstr(&attr.value);
                 if !name_c.is_null() {
                     tree::set_prop(node, name_c, val_c);
-                    xmlFree(name_c as *mut c_void);
+                    xmlFreeImpl(name_c as *mut c_void);
                     if !val_c.is_null() {
-                        xmlFree(val_c as *mut c_void);
+                        xmlFreeImpl(val_c as *mut c_void);
                     }
                 }
             }
@@ -1595,9 +1595,9 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
                 let val_c = bytes_to_xmlstr(&attr.value);
                 if !name_c.is_null() {
                     tree::set_prop(node, name_c, val_c);
-                    xmlFree(name_c as *mut c_void);
+                    xmlFreeImpl(name_c as *mut c_void);
                     if !val_c.is_null() {
-                        xmlFree(val_c as *mut c_void);
+                        xmlFreeImpl(val_c as *mut c_void);
                     }
                 }
             }
@@ -1621,9 +1621,9 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             let val_c = bytes_to_xmlstr(&attr.value);
             if !name_c.is_null() {
                 tree::set_prop(node, name_c, val_c);
-                xmlFree(name_c as *mut c_void);
+                xmlFreeImpl(name_c as *mut c_void);
                 if !val_c.is_null() {
-                    xmlFree(val_c as *mut c_void);
+                    xmlFreeImpl(val_c as *mut c_void);
                 }
             }
         }
@@ -1728,7 +1728,7 @@ unsafe fn html_parse_buffer(
         // UPSTREAM-PARITY: HTML documents carry no version (htmlNewDocNoDtD
         // leaves version NULL), so drop the XML default set by new_doc.
         if !(*doc).version.is_null() {
-            crate::abi::allocator::xmlFree((*doc).version as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl((*doc).version as *mut c_void);
         }
         (*doc).version = ptr::null_mut();
         (*doc).properties = XML_DOC_WELLFORMED as c_int;
@@ -1921,9 +1921,9 @@ unsafe fn html_parse_buffer(
                         let val_c = bytes_to_xmlstr(&attr.value);
                         if !name_c.is_null() {
                             tree::set_prop(raw_node, name_c, val_c);
-                            xmlFree(name_c as *mut c_void);
+                            xmlFreeImpl(name_c as *mut c_void);
                             if !val_c.is_null() {
-                                xmlFree(val_c as *mut c_void);
+                                xmlFreeImpl(val_c as *mut c_void);
                             }
                         }
                     }
@@ -2184,12 +2184,12 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut c_void) {
     let ctxt = ctxt as *mut HtmlParserCtxt;
     unsafe {
         if !(*ctxt).filename.is_null() {
-            xmlFree((*ctxt).filename as *mut c_void);
+            xmlFreeImpl((*ctxt).filename as *mut c_void);
         }
         if !(*ctxt).encoding.is_null() {
-            xmlFree((*ctxt).encoding as *mut c_void);
+            xmlFreeImpl((*ctxt).encoding as *mut c_void);
         }
-        xmlFree(ctxt as *mut c_void);
+        xmlFreeImpl(ctxt as *mut c_void);
     }
 }
 
@@ -2686,7 +2686,7 @@ pub(crate) unsafe fn doc_dump(buf: *mut _xmlBuffer, doc: *mut _xmlDoc) -> c_int 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use crate::xml::io;
 
     /// Helper: create a null-terminated xmlChar* from a byte slice.

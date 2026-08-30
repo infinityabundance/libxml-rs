@@ -28,7 +28,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlReallocImpl};
 use crate::abi::callbacks::{
     xmlCharEncConvCtxtDtor, xmlCharEncConvFunc, xmlCharEncConvImpl, xmlCharEncodingInputFunc,
     xmlCharEncodingOutputFunc,
@@ -636,16 +636,16 @@ fn register_handler(
     output_func: Option<xmlCharEncodingOutputFunc>,
 ) {
     let name_raw =
-        unsafe { crate::abi::allocator::xmlMemStrdup(name_bytes.as_ptr() as *const c_char) };
+        unsafe { crate::abi::allocator::xmlMemStrdupImpl(name_bytes.as_ptr() as *const c_char) };
     if name_raw.is_null() {
         return;
     }
 
     let handler =
-        unsafe { xmlMalloc(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
 
     if handler.is_null() {
-        unsafe { xmlFree(name_raw) };
+        unsafe { xmlFreeImpl(name_raw) };
         return;
     }
 
@@ -681,9 +681,9 @@ pub(crate) fn cleanup_encodings() {
         if !ptr.is_null() {
             unsafe {
                 if !(*ptr).name.is_null() {
-                    xmlFree((*ptr).name as *mut c_void);
+                    xmlFreeImpl((*ptr).name as *mut c_void);
                 }
-                xmlFree(ptr as *mut c_void);
+                xmlFreeImpl(ptr as *mut c_void);
             }
         }
     }
@@ -927,7 +927,7 @@ fn append_to_xml_buffer(buf: &mut _xmlBuffer, data: &[u8]) {
         // Grow buffer: double or fit, whichever is larger
         let new_size = (buf.size as usize).saturating_mul(2).max(new_use).max(256);
         let new_content =
-            unsafe { xmlRealloc(buf.content as *mut c_void, new_size) as *mut xmlChar };
+            unsafe { xmlReallocImpl(buf.content as *mut c_void, new_size) as *mut xmlChar };
         if new_content.is_null() {
             return; // Allocation failure — silently skip
         }
@@ -1487,16 +1487,16 @@ pub(crate) fn xmlNewCharEncodingHandler(
         return ptr::null_mut();
     }
 
-    let name_raw = unsafe { crate::abi::allocator::xmlMemStrdup(name) };
+    let name_raw = unsafe { crate::abi::allocator::xmlMemStrdupImpl(name) };
     if name_raw.is_null() {
         return ptr::null_mut();
     }
 
     let handler =
-        unsafe { xmlMalloc(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
 
     if handler.is_null() {
-        unsafe { xmlFree(name_raw) };
+        unsafe { xmlFreeImpl(name_raw) };
         return ptr::null_mut();
     }
 
@@ -1538,9 +1538,9 @@ pub(crate) fn xmlDelEncodingHandler(handler: *mut _xmlCharEncodingHandler) {
 
     unsafe {
         if !(*handler).name.is_null() {
-            xmlFree((*handler).name as *mut c_void);
+            xmlFreeImpl((*handler).name as *mut c_void);
         }
-        xmlFree(handler as *mut c_void);
+        xmlFreeImpl(handler as *mut c_void);
     }
 }
 
@@ -1681,13 +1681,13 @@ pub(crate) fn xmlCreateCharEncodingHandler(
          * Return a copy of the handler with the original name (upstream
          * "Return a copy of the handler with the original name").
          */
-        let copy = xmlMalloc(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler;
+        let copy = xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler;
         if copy.is_null() {
             return crate::abi::types::XML_ERR_NO_MEMORY;
         }
-        let name_copy = crate::abi::allocator::xmlMemStrdup(name) as *mut c_char;
+        let name_copy = crate::abi::allocator::xmlMemStrdupImpl(name) as *mut c_char;
         if name_copy.is_null() {
-            xmlFree(copy as *mut c_void);
+            xmlFreeImpl(copy as *mut c_void);
             return crate::abi::types::XML_ERR_NO_MEMORY;
         }
         ptr::write(
@@ -1785,7 +1785,7 @@ pub(crate) fn xmlCharEncNewCustomHandler(
         return crate::abi::types::XML_ERR_ARGUMENT;
     }
     let handler =
-        unsafe { xmlMalloc(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
     if handler.is_null() {
         unsafe {
             if let Some(d) = ctxtDtor {
@@ -1802,9 +1802,9 @@ pub(crate) fn xmlCharEncNewCustomHandler(
     let name_copy = if name.is_null() {
         ptr::null_mut()
     } else {
-        let nc = unsafe { crate::abi::allocator::xmlMemStrdup(name) } as *mut c_char;
+        let nc = unsafe { crate::abi::allocator::xmlMemStrdupImpl(name) } as *mut c_char;
         if nc.is_null() {
-            unsafe { xmlFree(handler as *mut c_void) };
+            unsafe { xmlFreeImpl(handler as *mut c_void) };
             unsafe {
                 if let Some(d) = ctxtDtor {
                     if !inputCtxt.is_null() {
@@ -2298,12 +2298,12 @@ mod tests {
     #[test]
     fn test_add_encoding_handler() {
         let handler = unsafe {
-            xmlMalloc(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler
+            xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler
         };
         assert!(!handler.is_null());
 
         let name =
-            unsafe { crate::abi::allocator::xmlMemStrdup(b"TEST-ENC\0".as_ptr() as *const c_char) };
+            unsafe { crate::abi::allocator::xmlMemStrdupImpl(b"TEST-ENC\0".as_ptr() as *const c_char) };
         unsafe {
             ptr::write(
                 handler,
@@ -2331,8 +2331,8 @@ mod tests {
         }
 
         unsafe {
-            xmlFree(name as *mut c_void);
-            xmlFree(handler as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
+            xmlFreeImpl(handler as *mut c_void);
         }
     }
 
@@ -2426,7 +2426,7 @@ mod tests {
     #[test]
     fn test_append_to_xml_buffer() {
         unsafe {
-            let content = xmlMalloc(64) as *mut xmlChar;
+            let content = xmlMallocImpl(64) as *mut xmlChar;
             assert!(!content.is_null());
 
             let mut buf = _xmlBuffer {
@@ -2447,7 +2447,7 @@ mod tests {
             let slice = core::slice::from_raw_parts(buf.content, 11);
             assert_eq!(slice, b"Hello World");
 
-            xmlFree(buf.content as *mut c_void);
+            xmlFreeImpl(buf.content as *mut c_void);
         }
     }
 

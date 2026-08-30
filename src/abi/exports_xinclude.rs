@@ -32,7 +32,7 @@ use core::mem::size_of;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocZero};
 use crate::abi::structs::{_xmlDoc, _xmlNode};
 use crate::abi::types::{XML_ERR_ARGUMENT, XML_ERR_INTERNAL_ERROR, XML_ERR_OK};
 use crate::xml::xinclude;
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn xmlXIncludeFreeContext(ctxt: xmlXIncludeCtxtPtr) {
     // The context owns no heap allocations of its own (the engine keeps its
     // per-include state only for the duration of a process call), so the
     // struct itself is the only thing to release.
-    unsafe { xmlFree(ctxt as *mut c_void) };
+    unsafe { xmlFreeImpl(ctxt as *mut c_void) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

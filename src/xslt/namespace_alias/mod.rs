@@ -13,7 +13,7 @@
 //! mapping is applied: a namespace declared with the stylesheet URI is
 //! emitted with the result URI instead.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 use std::os::raw::c_int;
@@ -41,7 +41,7 @@ pub unsafe fn xsltAddNsAlias(
     let rlen = libc::strlen(result_ns as *const libc::c_char);
     let rcopy = libc::malloc(rlen + 1) as *mut xmlChar;
     if rcopy.is_null() {
-        xmlFree(alias as *mut libc::c_void);
+        xmlFreeImpl(alias as *mut libc::c_void);
         return -1;
     }
     libc::memcpy(
@@ -54,7 +54,7 @@ pub unsafe fn xsltAddNsAlias(
     let scopy = libc::malloc(slen + 1) as *mut xmlChar;
     if scopy.is_null() {
         libc::free(rcopy as *mut libc::c_void);
-        xmlFree(alias as *mut libc::c_void);
+        xmlFreeImpl(alias as *mut libc::c_void);
         return -1;
     }
     libc::memcpy(
@@ -88,7 +88,7 @@ pub unsafe fn xsltFreeNsAlias(alias: *mut _xsltNsAlias) {
         libc::free((*alias).styleNs as *mut libc::c_void);
     }
     (*alias).next = ptr::null_mut();
-    xmlFree(alias as *mut libc::c_void);
+    xmlFreeImpl(alias as *mut libc::c_void);
 }
 
 /// Free all namespace aliases in a stylesheet.

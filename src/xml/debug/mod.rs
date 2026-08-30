@@ -5,7 +5,7 @@
 //! libxml2's debug APIs for printing tree structure, XPath expressions, etc.
 //! These are used by `xmllint --debug` and other diagnostic tools.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode, _xmlNs};
 use core::ffi::{c_char, c_int, c_void};
 use core::ptr;
@@ -233,7 +233,7 @@ pub unsafe extern "C" fn xmlDebugDumpOneNode(
                     let c = crate::xml::tree::node_get_content(node);
                     if !c.is_null() {
                         libc::fprintf(output, b"%s\0".as_ptr() as *const c_char, c);
-                        crate::abi::allocator::xmlFree(c as *mut c_void);
+                        crate::abi::allocator::xmlFreeImpl(c as *mut c_void);
                     }
                 }
                 libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
@@ -871,7 +871,7 @@ pub type _IO_FILE = libc::FILE;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlMalloc;
+    use crate::abi::allocator::xmlMallocImpl;
     use crate::abi::structs::*;
     use crate::abi::types::xmlChar;
     use crate::xml::tree::*;

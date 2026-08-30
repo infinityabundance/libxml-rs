@@ -23,7 +23,7 @@
 //!   `xmlStrcmp`, extended by locale-aware comparison when available)
 //! - `order="descending"` inverts the comparison result
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{
     xmlStrcmp, xmlXPathCastStringToNumber, xmlXPathCastToString, xmlXPathCmpNodes,
     xmlXPathEvalExpression, xmlXPathFreeObject,
@@ -137,7 +137,7 @@ pub unsafe fn xsltFreeSort(sort: *mut _xsltSort) {
         libc::free((*sort).caseOrder as *mut libc::c_void);
     }
     (*sort).next = ptr::null_mut();
-    xmlFree(sort as *mut libc::c_void);
+    xmlFreeImpl(sort as *mut libc::c_void);
 }
 
 /// Free a chain of sort specifications.

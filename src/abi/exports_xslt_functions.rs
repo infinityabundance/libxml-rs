@@ -42,7 +42,7 @@ use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_ushort};
 use std::ptr;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -635,7 +635,7 @@ pub unsafe extern "C" fn xsltDocumentFunction(ctxt: *mut c_void, nargs: c_int) {
             let resolved =
                 crate::abi::exports_uri::xmlBuildURI(url as *const c_char, base as *const c_char);
             if !base.is_null() {
-                xmlFree(base as *mut c_void);
+                xmlFreeImpl(base as *mut c_void);
             }
             if resolved.is_null() {
                 if !tctxt.is_null()
@@ -662,17 +662,17 @@ pub unsafe extern "C" fn xsltDocumentFunction(ctxt: *mut c_void, nargs: c_int) {
                 }
             } else {
                 xslt_document_function_load_document(ctxt, resolved, fragment);
-                xmlFree(resolved as *mut c_void);
+                xmlFreeImpl(resolved as *mut c_void);
             }
         }
     }
 
     // error: label cleanup
     if !new_uri.is_null() {
-        xmlFree(new_uri as *mut c_void);
+        xmlFreeImpl(new_uri as *mut c_void);
     }
     if !fragment.is_null() {
-        xmlFree(fragment as *mut c_void);
+        xmlFreeImpl(fragment as *mut c_void);
     }
     if !obj.is_null() {
         crate::abi::exports_xml2::xmlXPathFreeObject(obj);
@@ -801,14 +801,14 @@ pub unsafe extern "C" fn xsltKeyFunction(ctxt: *mut c_void, nargs: c_int) {
                     key = crate::abi::exports_xml2::xmlStrdup(qname);
                     key_uri = ptr::null();
                     if !prefix.is_null() {
-                        xmlFree(prefix as *mut c_void);
+                        xmlFreeImpl(prefix as *mut c_void);
                     }
                 } else if !prefix.is_null() {
                     key_uri = crate::xml::xpath::exports::xmlXPathNsLookup(xpctxt, prefix);
                     if key_uri.is_null() {
                         xslt_error(tctxt, b"key() : prefix %s is not bound\n\0");
                     }
-                    xmlFree(prefix as *mut c_void);
+                    xmlFreeImpl(prefix as *mut c_void);
                 } else {
                     key_uri = ptr::null();
                 }
@@ -893,7 +893,7 @@ pub unsafe extern "C" fn xsltKeyFunction(ctxt: *mut c_void, nargs: c_int) {
                 value_push(pc, crate::xml::xpath::exports::xmlXPathWrapNodeSet(merged));
             }
             if !key.is_null() {
-                xmlFree(key as *mut c_void);
+                xmlFreeImpl(key as *mut c_void);
             }
         }
     }
@@ -1900,7 +1900,7 @@ pub unsafe extern "C" fn xsltFormatNumberFunction(ctxt: *mut c_void, nargs: c_in
         {
             value_push(pc, xmlXPathNewString(result));
             if !result.is_null() {
-                xmlFree(result as *mut c_void);
+                xmlFreeImpl(result as *mut c_void);
             }
         }
     }
@@ -2050,7 +2050,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
         set_source_node_flags(tctxt, cur, XSLT_SOURCE_NODE_HAS_ID);
     }
 
-    let buf = xmlMalloc(size) as *mut u8;
+    let buf = xmlMallocImpl(size) as *mut u8;
     if buf.is_null() {
         xslt_error(tctxt, b"generate-id(): out of memory\n\0");
         (*pc).error = XPATH_MEMORY_ERROR as c_int;
@@ -2205,10 +2205,10 @@ pub unsafe extern "C" fn xsltSystemPropertyFunction(ctxt: *mut c_void, nargs: c_
             value_push(pc, xmlXPathNewString(ptr::null()));
         }
         if !name.is_null() {
-            xmlFree(name as *mut c_void);
+            xmlFreeImpl(name as *mut c_void);
         }
         if !prefix.is_null() {
-            xmlFree(prefix as *mut c_void);
+            xmlFreeImpl(prefix as *mut c_void);
         }
     }
     crate::abi::exports_xml2::xmlXPathFreeObject(obj);
@@ -2354,10 +2354,10 @@ pub unsafe extern "C" fn xsltElementAvailableFunction(ctxt: *mut c_void, nargs: 
 
     crate::abi::exports_xml2::xmlXPathFreeObject(obj);
     if !name.is_null() {
-        xmlFree(name as *mut c_void);
+        xmlFreeImpl(name as *mut c_void);
     }
     if !prefix.is_null() {
-        xmlFree(prefix as *mut c_void);
+        xmlFreeImpl(prefix as *mut c_void);
     }
 }
 
@@ -2432,10 +2432,10 @@ pub unsafe extern "C" fn xsltFunctionAvailableFunction(ctxt: *mut c_void, nargs:
 
     crate::abi::exports_xml2::xmlXPathFreeObject(obj);
     if !name.is_null() {
-        xmlFree(name as *mut c_void);
+        xmlFreeImpl(name as *mut c_void);
     }
     if !prefix.is_null() {
-        xmlFree(prefix as *mut c_void);
+        xmlFreeImpl(prefix as *mut c_void);
     }
 }
 

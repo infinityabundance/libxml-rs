@@ -29,7 +29,7 @@ use std::ptr;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::structs::{_xmlDoc, _xmlNode};
 use crate::abi::types::xmlChar;
 use crate::xml::string::{
@@ -1235,10 +1235,10 @@ pub(crate) unsafe fn convert() -> *mut _xmlDoc {
         if child.is_null() {
             // Free allocated strings and continue
             if !attr1_value.is_null() {
-                xmlFree(attr1_value as *mut c_void);
+                xmlFreeImpl(attr1_value as *mut c_void);
             }
             if !attr2_value.is_null() {
-                xmlFree(attr2_value as *mut c_void);
+                xmlFreeImpl(attr2_value as *mut c_void);
             }
             continue;
         }
@@ -1250,10 +1250,10 @@ pub(crate) unsafe fn convert() -> *mut _xmlDoc {
 
         // Free the temporary xmlChar strings we created
         if !attr1_value.is_null() {
-            xmlFree(attr1_value as *mut c_void);
+            xmlFreeImpl(attr1_value as *mut c_void);
         }
         if !attr2_value.is_null() {
-            xmlFree(attr2_value as *mut c_void);
+            xmlFreeImpl(attr2_value as *mut c_void);
         }
     }
 
@@ -1868,7 +1868,7 @@ pub unsafe extern "C" fn xmlCatalogLocalResolveURI(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
     use crate::xml::string::xmlstr_to_bytes;
     use std::ffi::CString;
     use std::sync::Mutex;
@@ -1896,7 +1896,7 @@ mod tests {
 
     unsafe fn free_xmlstr(ptr: *const xmlChar) {
         if !ptr.is_null() {
-            xmlFree(ptr as *mut c_void);
+            xmlFreeImpl(ptr as *mut c_void);
         }
     }
 
@@ -1939,7 +1939,7 @@ mod tests {
                 xmlstr_to_bytes(result),
                 b"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
             );
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             // Unknown public ID returns NULL
             let unknown = to_xmlstr_str("-//Unknown//DTD Unknown//EN");
@@ -1967,7 +1967,7 @@ mod tests {
             let result = resolve_system(sys_id);
             assert!(!result.is_null());
             assert_eq!(xmlstr_to_bytes(result), b"/local/foo.dtd");
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(type_);
             free_xmlstr(sys_id);
@@ -1991,7 +1991,7 @@ mod tests {
             let result = resolve_uri(sys_id);
             assert!(!result.is_null());
             assert_eq!(xmlstr_to_bytes(result), b"/local/resource.xml");
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(type_);
             free_xmlstr(sys_id);
@@ -2018,7 +2018,7 @@ mod tests {
                 xmlstr_to_bytes(result),
                 b"http://mirror.example.com/new/path/file.xml"
             );
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(type_);
             free_xmlstr(prefix);
@@ -2046,7 +2046,7 @@ mod tests {
                 xmlstr_to_bytes(result),
                 b"http://mirror.example.com/new/path/file.xml"
             );
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(type_);
             free_xmlstr(prefix);
@@ -2235,7 +2235,7 @@ URI "http://example.com/resource" "/local/resource"
             let result = resolve_system(sys_id);
             assert!(!result.is_null());
             assert_eq!(xmlstr_to_bytes(result), b"/direct/uri.xml");
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(type_sys);
             free_xmlstr(sys_id);
@@ -2374,12 +2374,12 @@ URI "http://example.com/resource" "/local/resource"
             let r1 = resolve_public(id1);
             assert!(!r1.is_null());
             assert_eq!(xmlstr_to_bytes(r1), b"a.dtd");
-            xmlFree(r1 as *mut c_void);
+            xmlFreeImpl(r1 as *mut c_void);
 
             let r2 = resolve_public(id2);
             assert!(!r2.is_null());
             assert_eq!(xmlstr_to_bytes(r2), b"b.dtd");
-            xmlFree(r2 as *mut c_void);
+            xmlFreeImpl(r2 as *mut c_void);
 
             free_xmlstr(t);
             free_xmlstr(id1);
@@ -2409,7 +2409,7 @@ URI "http://example.com/resource" "/local/resource"
             let result = resolve_system(sys_id);
             assert!(!result.is_null());
             assert_eq!(xmlstr_to_bytes(result), b"/specific/file.xml");
-            xmlFree(result as *mut c_void);
+            xmlFreeImpl(result as *mut c_void);
 
             free_xmlstr(t);
             free_xmlstr(p1);
@@ -2429,7 +2429,7 @@ URI "http://example.com/resource" "/local/resource"
 #[cfg(test)]
 mod c_abi_tests {
     use super::*;
-    use crate::abi::allocator::xmlFree;
+    use crate::abi::allocator::xmlFreeImpl;
 
     fn cstr(s: &[u8]) -> *const xmlChar {
         s.as_ptr() as *const xmlChar
@@ -2487,11 +2487,11 @@ mod c_abi_tests {
             assert!(!r.is_null());
             let bytes = xmlstr_to_bytes(r);
             assert_eq!(bytes, b"file:///tmp/foo.xml");
-            xmlFree(r as *mut libc::c_void);
+            xmlFreeImpl(r as *mut libc::c_void);
             // Resolve URI hits system entries too.
             let r2 = xmlACatalogResolveURI(h, cstr(b"http://example.com/foo\0"));
             assert!(!r2.is_null());
-            xmlFree(r2 as *mut libc::c_void);
+            xmlFreeImpl(r2 as *mut libc::c_void);
             // Unknown type rejected.
             assert_eq!(
                 xmlACatalogAdd(h, cstr(b"bogus\0"), cstr(b"a\0"), cstr(b"b\0")),
@@ -2535,11 +2535,11 @@ mod c_abi_tests {
             let r = xmlACatalogResolvePublic(h, cstr(b"-//OASIS//DTD X//EN\0"));
             assert!(!r.is_null());
             assert_eq!(xmlstr_to_bytes(r), b"file:///dtd/x.dtd");
-            xmlFree(r as *mut libc::c_void);
+            xmlFreeImpl(r as *mut libc::c_void);
             let r2 = xmlACatalogResolveSystem(h, cstr(b"http://old/foo.xml\0"));
             assert!(!r2.is_null());
             assert_eq!(xmlstr_to_bytes(r2), b"http://new/foo.xml");
-            xmlFree(r2 as *mut libc::c_void);
+            xmlFreeImpl(r2 as *mut libc::c_void);
             xmlFreeCatalog(h);
         }
     }

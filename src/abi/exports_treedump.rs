@@ -46,7 +46,7 @@ use core::ptr;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
 use crate::abi::types::xmlElementType::*;
@@ -255,7 +255,7 @@ unsafe fn new_entity_ref(doc: *const _xmlDoc, name: *const xmlChar) -> *mut _xml
     }
     let name_copy = xml_strdup(name);
     if name_copy.is_null() {
-        xmlFree(node as *mut c_void);
+        xmlFreeImpl(node as *mut c_void);
         return ptr::null_mut();
     }
     unsafe {
@@ -413,7 +413,7 @@ unsafe fn escape_text_flags(str: *const xmlChar, flags: c_int) -> *mut xmlChar {
         }
     }
     out.push(0);
-    let p = xmlMalloc(out.len()) as *mut xmlChar;
+    let p = xmlMallocImpl(out.len()) as *mut xmlChar;
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -536,7 +536,7 @@ unsafe fn node_list_get_string_internal(
                             return ptr::null_mut();
                         }
                         io::buf_cat(buf, encoded);
-                        xmlFree(encoded as *mut c_void);
+                        xmlFreeImpl(encoded as *mut c_void);
                     }
                 }
             } else if t == XML_ENTITY_REF_NODE as c_int {
@@ -544,7 +544,7 @@ unsafe fn node_list_get_string_internal(
                     let content = node_get_content(cur as *mut _xmlNode);
                     if !content.is_null() {
                         io::buf_cat(buf, content);
-                        xmlFree(content as *mut c_void);
+                        xmlFreeImpl(content as *mut c_void);
                     }
                 } else {
                     io::buf_add(buf, b"&" as *const u8, 1);
@@ -810,7 +810,7 @@ unsafe fn node_parse_att_value(
                             let node = new_doc_text(doc, buf.as_ptr() as *const xmlChar);
                             buf.pop();
                             if node.is_null() {
-                                xmlFree(name as *mut c_void);
+                                xmlFreeImpl(name as *mut c_void);
                                 free_node_list(head);
                                 return -1;
                             }
@@ -840,7 +840,7 @@ unsafe fn node_parse_att_value(
                             );
                             (*ent).flags &= !XML_ENT_EXPANDING;
                             if res < 0 {
-                                xmlFree(name as *mut c_void);
+                                xmlFreeImpl(name as *mut c_void);
                                 free_node_list(head);
                                 return -1;
                             }
@@ -850,7 +850,7 @@ unsafe fn node_parse_att_value(
                         /* create a new REFERENCE_REF node */
                         let node = new_entity_ref(doc, name);
                         if node.is_null() {
-                            xmlFree(name as *mut c_void);
+                            xmlFreeImpl(name as *mut c_void);
                             free_node_list(head);
                             return -1;
                         }
@@ -868,7 +868,7 @@ unsafe fn node_parse_att_value(
                         }
                         last = node;
                     }
-                    xmlFree(name as *mut c_void);
+                    xmlFreeImpl(name as *mut c_void);
                 }
                 unsafe {
                     cur = cur.add(1);
@@ -1420,12 +1420,12 @@ unsafe fn free_prop_internal(prop: *mut _xmlAttr) {
     }
     unsafe {
         if !(*prop).name.is_null() {
-            xmlFree((*prop).name as *mut c_void);
+            xmlFreeImpl((*prop).name as *mut c_void);
         }
         if !(*prop).children.is_null() {
             free_node_list((*prop).children);
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 }
 
@@ -1446,13 +1446,13 @@ unsafe fn free_node(node: *mut _xmlNode) {
             return;
         }
         if !(*node).name.is_null() {
-            xmlFree((*node).name as *mut c_void);
+            xmlFreeImpl((*node).name as *mut c_void);
         }
         if !(*node).content.is_null()
             && t != XML_ATTRIBUTE_NODE as c_int
             && t != XML_ENTITY_REF_NODE as c_int
         {
-            xmlFree((*node).content as *mut c_void);
+            xmlFreeImpl((*node).content as *mut c_void);
         }
         if !(*node).properties.is_null() {
             let mut cur = (*node).properties;
@@ -1465,7 +1465,7 @@ unsafe fn free_node(node: *mut _xmlNode) {
         if !(*node).children.is_null() {
             free_node_list((*node).children);
         }
-        xmlFree(node as *mut c_void);
+        xmlFreeImpl(node as *mut c_void);
     }
 }
 
@@ -1530,12 +1530,12 @@ unsafe fn free_ns_list(ns: *mut _xmlNs) {
         let next = unsafe { (*cur).next };
         unsafe {
             if !(*cur).href.is_null() {
-                xmlFree((*cur).href as *mut c_void);
+                xmlFreeImpl((*cur).href as *mut c_void);
             }
             if !(*cur).prefix.is_null() {
-                xmlFree((*cur).prefix as *mut c_void);
+                xmlFreeImpl((*cur).prefix as *mut c_void);
             }
-            xmlFree(cur as *mut c_void);
+            xmlFreeImpl(cur as *mut c_void);
         }
         cur = next;
     }
@@ -1673,7 +1673,7 @@ pub unsafe extern "C" fn xmlCopyEnumeration(cur: *mut _xmlEnumeration) -> *mut _
             if !(*c).name.is_null() {
                 (*copy).name = xml_strdup((*c).name);
                 if (*copy).name.is_null() {
-                    xmlFree(copy as *mut c_void);
+                    xmlFreeImpl(copy as *mut c_void);
                     free_enumeration(ret);
                     return ptr::null_mut();
                 }
@@ -1702,9 +1702,9 @@ unsafe fn free_enumeration(cur: *mut _xmlEnumeration) {
         let next = unsafe { (*c).next };
         unsafe {
             if !(*c).name.is_null() {
-                xmlFree((*c).name as *mut c_void);
+                xmlFreeImpl((*c).name as *mut c_void);
             }
-            xmlFree(c as *mut c_void);
+            xmlFreeImpl(c as *mut c_void);
         }
         c = next;
     }
@@ -1815,12 +1815,12 @@ unsafe fn free_element_content_internal(cur: *mut _xmlElementContent) {
             free_element_content_internal((*cur).c2);
         }
         if !(*cur).name.is_null() {
-            xmlFree((*cur).name as *mut c_void);
+            xmlFreeImpl((*cur).name as *mut c_void);
         }
         if !(*cur).prefix.is_null() {
-            xmlFree((*cur).prefix as *mut c_void);
+            xmlFreeImpl((*cur).prefix as *mut c_void);
         }
-        xmlFree(cur as *mut c_void);
+        xmlFreeImpl(cur as *mut c_void);
     }
 }
 
@@ -1959,13 +1959,13 @@ unsafe fn free_dtd_internal(dtd: *mut _xmlDtd) {
     }
     unsafe {
         if !(*dtd).name.is_null() {
-            xmlFree((*dtd).name as *mut c_void);
+            xmlFreeImpl((*dtd).name as *mut c_void);
         }
         if !(*dtd).ExternalID.is_null() {
-            xmlFree((*dtd).ExternalID as *mut c_void);
+            xmlFreeImpl((*dtd).ExternalID as *mut c_void);
         }
         if !(*dtd).SystemID.is_null() {
-            xmlFree((*dtd).SystemID as *mut c_void);
+            xmlFreeImpl((*dtd).SystemID as *mut c_void);
         }
 
         unsafe extern "C" fn free_notation_wrapper(payload: *mut c_void, _name: *mut u8) {
@@ -2014,7 +2014,7 @@ unsafe fn free_dtd_internal(dtd: *mut _xmlDtd) {
         if !(*dtd).children.is_null() {
             free_node_list((*dtd).children);
         }
-        xmlFree(dtd as *mut c_void);
+        xmlFreeImpl(dtd as *mut c_void);
     }
 }
 
@@ -2552,7 +2552,7 @@ pub unsafe extern "C" fn xmlDocDumpFormatMemoryEnc(
     let len = io::buf_length(buf);
 
     if !content.is_null() && len > 0 {
-        let result = xmlMalloc((len + 1) as usize) as *mut xmlChar;
+        let result = xmlMallocImpl((len + 1) as usize) as *mut xmlChar;
         if !result.is_null() {
             ptr::copy_nonoverlapping(content, result, len as usize);
             *result.add(len as usize) = 0;

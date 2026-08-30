@@ -376,7 +376,7 @@ unsafe fn process_single_include(
 
     // Check for circular reference.
     if visited.iter().any(|v| v.as_slice() == href_str) {
-        allocator::xmlFree(href as *mut c_void);
+        allocator::xmlFreeImpl(href as *mut c_void);
         return unsafe { apply_fallback(include_node, doc, visited) };
     }
 
@@ -385,7 +385,7 @@ unsafe fn process_single_include(
     let is_text_mode = if !parse_attr.is_null() {
         let parse_str = unsafe { xmlstr_to_bytes(parse_attr) };
         let result = parse_str == b"text";
-        allocator::xmlFree(parse_attr as *mut c_void);
+        allocator::xmlFreeImpl(parse_attr as *mut c_void);
         result
     } else {
         false
@@ -420,19 +420,19 @@ unsafe fn process_single_include(
     visited.pop();
 
     // Free allocated attribute strings.
-    allocator::xmlFree(href as *mut c_void);
+    allocator::xmlFreeImpl(href as *mut c_void);
 
     if !parse_attr.is_null() {
-        allocator::xmlFree(parse_attr as *mut c_void);
+        allocator::xmlFreeImpl(parse_attr as *mut c_void);
     }
     if !xpointer_attr.is_null() {
-        allocator::xmlFree(xpointer_attr as *mut c_void);
+        allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
     }
     if !accept_attr.is_null() {
-        allocator::xmlFree(accept_attr as *mut c_void);
+        allocator::xmlFreeImpl(accept_attr as *mut c_void);
     }
     if !accept_language_attr.is_null() {
-        allocator::xmlFree(accept_language_attr as *mut c_void);
+        allocator::xmlFreeImpl(accept_language_attr as *mut c_void);
     }
 
     match result {
@@ -470,9 +470,9 @@ unsafe fn process_text_include(
     // Create a text node with the file content.
     let text_node = unsafe { tree::new_text(content as *const xmlChar) };
     if text_node.is_null() {
-        allocator::xmlFree(content as *mut c_void);
+        allocator::xmlFreeImpl(content as *mut c_void);
         if !encoding_attr.is_null() {
-            allocator::xmlFree(encoding_attr as *mut c_void);
+            allocator::xmlFreeImpl(encoding_attr as *mut c_void);
         }
         return Err(());
     }
@@ -480,9 +480,9 @@ unsafe fn process_text_include(
     // Replace the include node with the text node.
     unsafe { replace_node_with_content(include_node, text_node, doc) };
 
-    allocator::xmlFree(content as *mut c_void);
+    allocator::xmlFreeImpl(content as *mut c_void);
     if !encoding_attr.is_null() {
-        allocator::xmlFree(encoding_attr as *mut c_void);
+        allocator::xmlFreeImpl(encoding_attr as *mut c_void);
     }
 
     Ok(1)
@@ -798,7 +798,7 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
     }
 
     // Allocate via xmlMalloc and copy with null terminator.
-    let result = unsafe { allocator::xmlMalloc(data.len() + 1) as *mut xmlChar };
+    let result = unsafe { allocator::xmlMallocImpl(data.len() + 1) as *mut xmlChar };
     if result.is_null() {
         return ptr::null_mut();
     }
@@ -843,7 +843,7 @@ unsafe fn parse_xml_document(filename: *const xmlChar) -> *mut _xmlDoc {
         )
     };
 
-    allocator::xmlFree(content as *mut c_void);
+    allocator::xmlFreeImpl(content as *mut c_void);
 
     doc
 }
@@ -1039,12 +1039,12 @@ mod tests {
         if let Some(h) = href {
             let h_str = crate::xml::string::bytes_to_xmlstr(h);
             tree::set_prop(elem, ATTR_HREF.as_ptr() as *const xmlChar, h_str);
-            allocator::xmlFree(h_str as *mut c_void);
+            allocator::xmlFreeImpl(h_str as *mut c_void);
         }
         if let Some(p) = parse {
             let p_str = crate::xml::string::bytes_to_xmlstr(p);
             tree::set_prop(elem, ATTR_PARSE.as_ptr() as *const xmlChar, p_str);
-            allocator::xmlFree(p_str as *mut c_void);
+            allocator::xmlFreeImpl(p_str as *mut c_void);
         }
         elem
     }
@@ -1359,12 +1359,12 @@ mod tests {
             let include = create_include_child(root, Some(b"test.xml"), None);
             let xptr_val = crate::xml::string::bytes_to_xmlstr(b"xpointer(//target)");
             tree::set_prop(include, ATTR_XPOINTER.as_ptr() as *const xmlChar, xptr_val);
-            allocator::xmlFree(xptr_val as *mut c_void);
+            allocator::xmlFreeImpl(xptr_val as *mut c_void);
 
             let xptr = tree::get_prop(include, ATTR_XPOINTER.as_ptr() as *const xmlChar);
             assert!(!xptr.is_null(), "Should have xpointer attribute");
             assert_eq!(xmlstr_to_bytes(xptr), b"xpointer(//target)");
-            allocator::xmlFree(xptr as *mut c_void);
+            allocator::xmlFreeImpl(xptr as *mut c_void);
 
             tree::free_doc(doc);
         }
@@ -1378,7 +1378,7 @@ mod tests {
 
             let accept_val = crate::xml::string::bytes_to_xmlstr(b"application/xml");
             tree::set_prop(include, ATTR_ACCEPT.as_ptr() as *const xmlChar, accept_val);
-            allocator::xmlFree(accept_val as *mut c_void);
+            allocator::xmlFreeImpl(accept_val as *mut c_void);
 
             let lang_val = crate::xml::string::bytes_to_xmlstr(b"en");
             tree::set_prop(
@@ -1386,17 +1386,17 @@ mod tests {
                 ATTR_ACCEPT_LANGUAGE.as_ptr() as *const xmlChar,
                 lang_val,
             );
-            allocator::xmlFree(lang_val as *mut c_void);
+            allocator::xmlFreeImpl(lang_val as *mut c_void);
 
             let accept = tree::get_prop(include, ATTR_ACCEPT.as_ptr() as *const xmlChar);
             assert!(!accept.is_null());
             assert_eq!(xmlstr_to_bytes(accept), b"application/xml");
-            allocator::xmlFree(accept as *mut c_void);
+            allocator::xmlFreeImpl(accept as *mut c_void);
 
             let lang = tree::get_prop(include, ATTR_ACCEPT_LANGUAGE.as_ptr() as *const xmlChar);
             assert!(!lang.is_null());
             assert_eq!(xmlstr_to_bytes(lang), b"en");
-            allocator::xmlFree(lang as *mut c_void);
+            allocator::xmlFreeImpl(lang as *mut c_void);
 
             tree::free_doc(doc);
         }
@@ -1410,12 +1410,12 @@ mod tests {
 
             let enc_val = crate::xml::string::bytes_to_xmlstr(b"UTF-8");
             tree::set_prop(include, ATTR_ENCODING.as_ptr() as *const xmlChar, enc_val);
-            allocator::xmlFree(enc_val as *mut c_void);
+            allocator::xmlFreeImpl(enc_val as *mut c_void);
 
             let encoding = tree::get_prop(include, ATTR_ENCODING.as_ptr() as *const xmlChar);
             assert!(!encoding.is_null());
             assert_eq!(xmlstr_to_bytes(encoding), b"UTF-8");
-            allocator::xmlFree(encoding as *mut c_void);
+            allocator::xmlFreeImpl(encoding as *mut c_void);
 
             tree::free_doc(doc);
         }

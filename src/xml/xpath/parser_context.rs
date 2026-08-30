@@ -35,7 +35,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc, xmlMallocZero};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero};
 use crate::abi::structs::{_xmlDoc, _xmlNode, _xmlNodeSet, _xmlXPathContext, _xmlXPathObject};
 use crate::abi::types::{xmlChar, xmlXPathObjectType};
 use crate::xml::xpath::types::{node_string_value, NodeSet, XPathValue};
@@ -89,9 +89,9 @@ pub unsafe fn new_parser_context(
         return ptr::null_mut();
     }
     let tab =
-        xmlMalloc(VALUE_TAB_SIZE * size_of::<*mut _xmlXPathObject>()) as *mut *mut _xmlXPathObject;
+        xmlMallocImpl(VALUE_TAB_SIZE * size_of::<*mut _xmlXPathObject>()) as *mut *mut _xmlXPathObject;
     if tab.is_null() {
-        xmlFree(pc as *mut c_void);
+        xmlFreeImpl(pc as *mut c_void);
         return ptr::null_mut();
     }
     unsafe {
@@ -128,9 +128,9 @@ pub unsafe fn free_parser_context(pc: *mut XmlXPathParserContext) {
                     crate::abi::exports_xml2::xmlXPathFreeObject(obj);
                 }
             }
-            xmlFree(tab as *mut c_void);
+            xmlFreeImpl(tab as *mut c_void);
         }
-        xmlFree(pc as *mut c_void);
+        xmlFreeImpl(pc as *mut c_void);
     }
 }
 

@@ -177,13 +177,13 @@ pub unsafe fn hash_free(table: *mut HashTable, f: Option<xmlHashDeallocator>) {
             }
             if !t.dict_owned {
                 if !entry.key1.is_null() {
-                    allocator::xmlFree(entry.key1 as *mut c_void);
+                    allocator::xmlFreeImpl(entry.key1 as *mut c_void);
                 }
                 if !entry.key2.is_null() {
-                    allocator::xmlFree(entry.key2 as *mut c_void);
+                    allocator::xmlFreeImpl(entry.key2 as *mut c_void);
                 }
                 if !entry.key3.is_null() {
-                    allocator::xmlFree(entry.key3 as *mut c_void);
+                    allocator::xmlFreeImpl(entry.key3 as *mut c_void);
                 }
             }
         }
@@ -276,17 +276,17 @@ pub unsafe fn hash_add_entry3(
     let k1 = if name.is_null() {
         ptr::null()
     } else {
-        unsafe { allocator::xmlMemStrdup(name as *const c_char) as *const xmlChar }
+        unsafe { allocator::xmlMemStrdupImpl(name as *const c_char) as *const xmlChar }
     };
     let k2 = if name2.is_null() {
         ptr::null()
     } else {
-        unsafe { allocator::xmlMemStrdup(name2 as *const c_char) as *const xmlChar }
+        unsafe { allocator::xmlMemStrdupImpl(name2 as *const c_char) as *const xmlChar }
     };
     let k3 = if name3.is_null() {
         ptr::null()
     } else {
-        unsafe { allocator::xmlMemStrdup(name3 as *const c_char) as *const xmlChar }
+        unsafe { allocator::xmlMemStrdupImpl(name3 as *const c_char) as *const xmlChar }
     };
 
     t.buckets[bucket_idx].push(HashEntry {
@@ -560,13 +560,13 @@ pub unsafe fn hash_remove_entry3(
         }
         if !t.dict_owned {
             if !entry.key1.is_null() {
-                allocator::xmlFree(entry.key1 as *mut c_void);
+                allocator::xmlFreeImpl(entry.key1 as *mut c_void);
             }
             if !entry.key2.is_null() {
-                allocator::xmlFree(entry.key2 as *mut c_void);
+                allocator::xmlFreeImpl(entry.key2 as *mut c_void);
             }
             if !entry.key3.is_null() {
-                allocator::xmlFree(entry.key3 as *mut c_void);
+                allocator::xmlFreeImpl(entry.key3 as *mut c_void);
             }
         }
         t.count -= 1;
@@ -677,17 +677,17 @@ pub unsafe fn hash_copy(table: *mut HashTable, f: Option<xmlHashCopier>) -> *mut
             let k1 = if entry.key1.is_null() {
                 ptr::null()
             } else {
-                allocator::xmlMemStrdup(entry.key1 as *const c_char) as *const xmlChar
+                allocator::xmlMemStrdupImpl(entry.key1 as *const c_char) as *const xmlChar
             };
             let k2 = if entry.key2.is_null() {
                 ptr::null()
             } else {
-                allocator::xmlMemStrdup(entry.key2 as *const c_char) as *const xmlChar
+                allocator::xmlMemStrdupImpl(entry.key2 as *const c_char) as *const xmlChar
             };
             let k3 = if entry.key3.is_null() {
                 ptr::null()
             } else {
-                allocator::xmlMemStrdup(entry.key3 as *const c_char) as *const xmlChar
+                allocator::xmlMemStrdupImpl(entry.key3 as *const c_char) as *const xmlChar
             };
 
             let hash = combined_hash(k1, k2, k3);
@@ -744,7 +744,7 @@ mod tests {
 
     fn c_str(s: &str) -> *const xmlChar {
         let bytes = s.as_bytes();
-        let buf = unsafe { allocator::xmlMalloc(bytes.len() + 1) as *mut u8 };
+        let buf = unsafe { allocator::xmlMallocImpl(bytes.len() + 1) as *mut u8 };
         if !buf.is_null() {
             unsafe {
                 ptr::copy_nonoverlapping(bytes.as_ptr(), buf, bytes.len());

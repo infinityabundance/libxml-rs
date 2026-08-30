@@ -24,7 +24,7 @@
 //! source node and node list; `contextSize` / `proximityPosition` track
 //! the XPath context.
 
-use crate::abi::allocator::xmlFree;
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
@@ -404,7 +404,7 @@ pub unsafe extern "C" fn xsltRunStylesheetUser(
             -1
         } else {
             let written = crate::xml::io::output_buffer_write(IObuf, len, txt as *const c_char);
-            crate::abi::allocator::xmlFree(txt as *mut c_void);
+            crate::abi::allocator::xmlFreeImpl(txt as *mut c_void);
             written
         }
     } else {
@@ -1797,14 +1797,14 @@ pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *
     }
     let insert = (*ctxt).insert;
     if insert.is_null() {
-        xmlFree(name_str as *mut c_void);
+        xmlFreeImpl(name_str as *mut c_void);
         return;
     }
     // Evaluate the content into a temporary buffer.
     let saved_insert = (*ctxt).insert;
     let buf = libc::calloc(1, core::mem::size_of::<_xmlBuffer>()) as *mut _xmlBuffer;
     if buf.is_null() {
-        xmlFree(name_str as *mut c_void);
+        xmlFreeImpl(name_str as *mut c_void);
         return;
     }
     (*buf).content = libc::calloc(1, 64) as *mut xmlChar;
@@ -1813,7 +1813,7 @@ pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *
     let frag_doc = libc::calloc(1, core::mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
     if frag_doc.is_null() {
         libc::free(buf as *mut libc::c_void);
-        xmlFree(name_str as *mut c_void);
+        xmlFreeImpl(name_str as *mut c_void);
         return;
     }
     (*frag_doc).type_ = XML_DOCUMENT_NODE as c_int;
@@ -1840,7 +1840,7 @@ pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *
     let mut cvalue = value.clone();
     cvalue.push(0);
     set_prop(insert, name_str, cvalue.as_ptr() as *const xmlChar);
-    xmlFree(name_str as *mut c_void);
+    xmlFreeImpl(name_str as *mut c_void);
 }
 
 /// Process `xsl:text`.
@@ -1901,7 +1901,7 @@ pub(crate) unsafe fn process_pi(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     if !content.is_null() {
         libc::free(content as *mut libc::c_void);
     }
-    xmlFree(name_str as *mut c_void);
+    xmlFreeImpl(name_str as *mut c_void);
 }
 
 /// Process `xsl:number`.
@@ -2199,14 +2199,14 @@ pub(crate) unsafe fn eval_avt(
                 let expr_c = crate::xml::string::bytes_to_xmlstr(expr_bytes);
                 if !expr_c.is_null() {
                     let obj = eval_xpath(ctxt, expr_c);
-                    xmlFree(expr_c as *mut c_void);
+                    xmlFreeImpl(expr_c as *mut c_void);
                     if !obj.is_null() {
                         let strv = xmlXPathCastToString(obj);
                         xmlXPathFreeObject(obj);
                         if !strv.is_null() {
                             let slen = libc::strlen(strv as *const libc::c_char);
                             out.extend_from_slice(core::slice::from_raw_parts(strv, slen));
-                            xmlFree(strv as *mut c_void);
+                            xmlFreeImpl(strv as *mut c_void);
                         }
                     }
                 }
@@ -2267,7 +2267,7 @@ pub(crate) unsafe fn process_literal_element(
                     libc::free(attr_val as *mut libc::c_void);
                     if !avt_val.is_null() {
                         set_prop(elem, attr_name, avt_val);
-                        xmlFree(avt_val as *mut c_void);
+                        xmlFreeImpl(avt_val as *mut c_void);
                     }
                 }
             }
@@ -2356,16 +2356,16 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         let value_c = crate::xml::string::bytes_to_xmlstr(value_str.as_bytes());
         if name_c.is_null() || value_c.is_null() {
             if !name_c.is_null() {
-                crate::abi::allocator::xmlFree(name_c as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(name_c as *mut c_void);
             }
             if !value_c.is_null() {
-                crate::abi::allocator::xmlFree(value_c as *mut c_void);
+                crate::abi::allocator::xmlFreeImpl(value_c as *mut c_void);
             }
             return Ok(XPathValue::NodeSet(NodeSet::new()));
         }
         let ns = unsafe { crate::xslt::keys::xsltEvalKeyFunction(tctxt, name_c, value_c) };
-        crate::abi::allocator::xmlFree(name_c as *mut c_void);
-        crate::abi::allocator::xmlFree(value_c as *mut c_void);
+        crate::abi::allocator::xmlFreeImpl(name_c as *mut c_void);
+        crate::abi::allocator::xmlFreeImpl(value_c as *mut c_void);
         if ns.is_null() {
             return Ok(XPathValue::NodeSet(NodeSet::new()));
         }
@@ -2557,6 +2557,70 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             .as_ref()
             .map_or(std::ptr::null_mut(), |s| s.doc),
     );
+
+    // Extension functions: `prefix:local(...)` resolves the prefix against
+    // the stylesheet's namespace declarations and dispatches to the
+    // transform context's registered extension functions (upstream
+    // XSLT_REGISTER_FUNCTION_LOOKUP -> xsltXPathFunctionLookup,
+    // extensions.c). The C callback runs through the same synthesized
+    // parser-context bridge used by xmlXPathRegisterFunc.
+    internal.function_lookup = Some(Box::new(|ctx: &XPathContext, name: &str| {
+        let Some((prefix, local)) = name.split_once(':') else {
+            return None;
+        };
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        if tctxt.is_null() {
+            return None;
+        }
+        // Resolve the prefix from the stylesheet's in-scope namespaces.
+        let style = unsafe { (*tctxt).style.as_ref() }?;
+        let style_doc = style.doc;
+        let prefix_c = crate::xml::string::bytes_to_xmlstr(prefix.as_bytes());
+        let root = unsafe { (*style_doc).children };
+        let ns = unsafe { crate::xml::tree::search_ns(style_doc, root, prefix_c) };
+        if !prefix_c.is_null() {
+            crate::abi::allocator::xmlFreeImpl(prefix_c as *mut c_void);
+        }
+        if ns.is_null() {
+            return None;
+        }
+        let href = unsafe { (*ns).href };
+        if href.is_null() {
+            return None;
+        }
+        let href_str = unsafe {
+            std::ffi::CStr::from_ptr(href as *const std::os::raw::c_char)
+                .to_string_lossy()
+                .into_owned()
+        };
+        let local_c = crate::xml::string::bytes_to_xmlstr(local.as_bytes());
+        let href_c = crate::xml::string::bytes_to_xmlstr(href_str.as_bytes());
+        let fnptr = unsafe { crate::xslt::extensions::xsltFindExtFunction(tctxt, local_c, href_c) };
+        if !local_c.is_null() {
+            crate::abi::allocator::xmlFreeImpl(local_c as *mut c_void);
+        }
+        if !href_c.is_null() {
+            crate::abi::allocator::xmlFreeImpl(href_c as *mut c_void);
+        }
+        if fnptr.is_null() {
+            return None;
+        }
+        // SAFETY: fnptr was stored by xsltRegisterExtFunction as the C
+        // xmlXPathFunction callback.
+        let f: Option<unsafe extern "C" fn(*mut c_void, c_int)> =
+            unsafe { std::mem::transmute(fnptr) };
+        let tctxt_addr = tctxt as usize;
+        Some(Box::new(
+            move |_ctx: &mut XPathContext, args: &[XPathValue]| {
+                let t = tctxt_addr as *mut _xsltTransformContext;
+                let xpath_ctxt = unsafe { (*t).xpathCtxt };
+                if xpath_ctxt.is_null() {
+                    return Err("XSLT: null XPath context".to_string());
+                }
+                unsafe { crate::abi::exports_xml2::call_c_xpath_function(f, xpath_ctxt, args) }
+            },
+        ))
+    }));
 }
 
 /// The set of EXSLT element names recognized by `element-available()`.

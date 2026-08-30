@@ -67,7 +67,7 @@ const UNDEFINED_DEFAULT_NS_MARKER: &[u8] = &[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 ///
 /// - The caller owns the returned allocation (free with `xmlFree`).
 unsafe fn alloc_str(bytes: &[u8]) -> *mut xmlChar {
-    let p = xmlMalloc(bytes.len() + 1) as *mut xmlChar;
+    let p = xmlMallocImpl(bytes.len() + 1) as *mut xmlChar;
     if p.is_null() {
         return ptr::null_mut();
     }
@@ -188,7 +188,7 @@ unsafe fn new_attr_text_node(attr: *mut _xmlAttr, content: *mut xmlChar) -> *mut
         return ptr::null_mut();
     }
     if !(*text).content.is_null() {
-        xmlFree((*text).content as *mut c_void);
+        xmlFreeImpl((*text).content as *mut c_void);
     }
     (*text).content = content;
     (*attr).last = text;
@@ -253,7 +253,7 @@ pub unsafe extern "C" fn xsltAttrListTemplateProcess(
             let value = crate::xml::tree::node_get_content((*attr).children);
             if !value.is_null() {
                 crate::xslt::attributes::xsltApplyAttrSets(ctxt, target, value);
-                xmlFree(value as *mut c_void);
+                xmlFreeImpl(value as *mut c_void);
             }
         }
         attr = (*attr).next;
@@ -693,7 +693,7 @@ pub unsafe extern "C" fn xsltEvalAttrValueTemplate(
         return ptr::null_mut();
     }
     let ret = xsltAttrTemplateValueProcessNode(ctxt, expr, inst);
-    xmlFree(expr as *mut c_void);
+    xmlFreeImpl(expr as *mut c_void);
     ret
 }
 
@@ -743,7 +743,7 @@ pub unsafe extern "C" fn xsltEvalStaticAttrValueTemplate(
         *found = 1;
     }
     if !xmlStrchr(expr, b'{' as xmlChar).is_null() {
-        xmlFree(expr as *mut c_void);
+        xmlFreeImpl(expr as *mut c_void);
         return ptr::null();
     }
     let mut ret = xmlDictLookup((*style).dict, expr, -1);
@@ -753,7 +753,7 @@ pub unsafe extern "C" fn xsltEvalStaticAttrValueTemplate(
         // way).
         ret = b"\0".as_ptr() as *const xmlChar;
     }
-    xmlFree(expr as *mut c_void);
+    xmlFreeImpl(expr as *mut c_void);
     ret
 }
 
@@ -905,7 +905,7 @@ pub unsafe extern "C" fn xsltGetCNsProp(
                 ret = dict_empty((*style).dict);
             } else {
                 ret = xmlDictLookup((*style).dict, tmp, -1);
-                xmlFree(tmp as *mut c_void);
+                xmlFreeImpl(tmp as *mut c_void);
             }
             return ret;
         }
@@ -1291,7 +1291,7 @@ unsafe fn xslt_declare_new_prefix(
             return ptr::null_mut();
         }
         let ns = xmlSearchNs((*target).doc, target, pref_c);
-        xmlFree(pref_c as *mut c_void);
+        xmlFreeImpl(pref_c as *mut c_void);
         if counter > 1000 {
             crate::xslt::errors::xsltTransformError(
                 ctxt,
@@ -1466,7 +1466,7 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
             node,
             b"namespace-alias: result-prefix attribute missing\n\0".as_ptr() as *const c_char,
         );
-        xmlFree(style_prefix as *mut c_void);
+        xmlFreeImpl(style_prefix as *mut c_void);
         return;
     }
 
@@ -1489,8 +1489,8 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
                 node,
                 b"namespace-alias: prefix not bound to any namespace\n\0".as_ptr() as *const c_char,
             );
-            xmlFree(style_prefix as *mut c_void);
-            xmlFree(result_prefix as *mut c_void);
+            xmlFreeImpl(style_prefix as *mut c_void);
+            xmlFreeImpl(result_prefix as *mut c_void);
             return;
         }
         literal_ns_name = (*literal_ns).href;
@@ -1517,8 +1517,8 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
                 node,
                 b"namespace-alias: prefix not bound to any namespace\n\0".as_ptr() as *const c_char,
             );
-            xmlFree(style_prefix as *mut c_void);
-            xmlFree(result_prefix as *mut c_void);
+            xmlFreeImpl(style_prefix as *mut c_void);
+            xmlFreeImpl(result_prefix as *mut c_void);
             return;
         }
         target_ns_name = (*target_ns).href;
@@ -1550,16 +1550,16 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
         ));
         if result_stored.is_null() || style_stored.is_null() {
             if !result_stored.is_null() {
-                xmlFree(result_stored as *mut c_void);
+                xmlFreeImpl(result_stored as *mut c_void);
             }
             if !style_stored.is_null() {
-                xmlFree(style_stored as *mut c_void);
+                xmlFreeImpl(style_stored as *mut c_void);
             }
         } else {
             let alias = libc::calloc(1, core::mem::size_of::<_xsltNsAlias>()) as *mut _xsltNsAlias;
             if alias.is_null() {
-                xmlFree(result_stored as *mut c_void);
-                xmlFree(style_stored as *mut c_void);
+                xmlFreeImpl(result_stored as *mut c_void);
+                xmlFreeImpl(style_stored as *mut c_void);
             } else {
                 (*alias).styleNs = style_stored;
                 (*alias).resultNs = result_stored;
@@ -1569,8 +1569,8 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
         }
     }
 
-    xmlFree(style_prefix as *mut c_void);
-    xmlFree(result_prefix as *mut c_void);
+    xmlFreeImpl(style_prefix as *mut c_void);
+    xmlFreeImpl(result_prefix as *mut c_void);
 }
 
 /// Free the memory used by namespace aliases.
@@ -1673,7 +1673,7 @@ pub unsafe extern "C" fn xsltCopyTextString(
             // xmlStringTextNoenc static, which lacks its NUL terminator.
             let name = alloc_str(b"textnoenc");
             if !name.is_null() {
-                xmlFree((*copy).name as *mut c_void);
+                xmlFreeImpl((*copy).name as *mut c_void);
                 (*copy).name = name;
             }
         }
@@ -1762,7 +1762,7 @@ unsafe fn xslt_add_text_string(
                 (*ctxt).lasttsize + extra
             };
             let newbuf =
-                xmlRealloc((*target).content as *mut c_void, size as usize) as *mut xmlChar;
+                xmlReallocImpl((*target).content as *mut c_void, size as usize) as *mut xmlChar;
             if newbuf.is_null() {
                 crate::xslt::errors::xsltTransformError(
                     ctxt,
@@ -1902,7 +1902,7 @@ pub unsafe extern "C" fn xsltGetQNameURI(
         return ptr::null();
     }
     if node.is_null() {
-        xmlFree(qname as *mut c_void);
+        xmlFreeImpl(qname as *mut c_void);
         *name = ptr::null_mut();
         return ptr::null();
     }
@@ -1926,18 +1926,18 @@ pub unsafe extern "C" fn xsltGetQNameURI(
             return ptr::null();
         }
         *name = xmlStrdup(qname.add(4));
-        xmlFree(qname as *mut c_void);
+        xmlFreeImpl(qname as *mut c_void);
         return crate::abi::constants::XML_XML_NAMESPACE.as_ptr() as *const xmlChar;
     }
     *qname.add(len) = 0;
     let ns = xmlSearchNs((*node).doc, node, qname);
     if ns.is_null() {
         *name = ptr::null_mut();
-        xmlFree(qname as *mut c_void);
+        xmlFreeImpl(qname as *mut c_void);
         return ptr::null();
     }
     *name = xmlStrdup(qname.add(len + 1));
-    xmlFree(qname as *mut c_void);
+    xmlFreeImpl(qname as *mut c_void);
     (*ns).href
 }
 
@@ -2009,7 +2009,7 @@ pub unsafe extern "C" fn xsltGetQNameURI2(
         }
         *name = ptr::null();
         if !qname_prefix.is_null() {
-            xmlFree(qname_prefix as *mut c_void);
+            xmlFreeImpl(qname_prefix as *mut c_void);
         }
         return ptr::null();
     }
@@ -2019,7 +2019,7 @@ pub unsafe extern "C" fn xsltGetQNameURI2(
         *name = ptr::null();
     }
     if !qname_prefix.is_null() {
-        xmlFree(qname_prefix as *mut c_void);
+        xmlFreeImpl(qname_prefix as *mut c_void);
     }
     (*ns).href
 }
@@ -2130,7 +2130,7 @@ mod tests {
 
     fn free_str(s: *mut xmlChar) {
         if !s.is_null() {
-            unsafe { xmlFree(s as *mut c_void) };
+            unsafe { xmlFreeImpl(s as *mut c_void) };
         }
     }
 

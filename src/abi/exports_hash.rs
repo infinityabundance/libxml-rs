@@ -283,7 +283,7 @@ pub unsafe extern "C" fn xmlHashCopySafe(
 #[no_mangle]
 pub unsafe extern "C" fn xmlHashDefaultDeallocator(entry: *mut c_void, _name: *const xmlChar) {
     if !entry.is_null() {
-        unsafe { allocator::xmlFree(entry) };
+        unsafe { allocator::xmlFreeImpl(entry) };
     }
 }
 

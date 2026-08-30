@@ -26,7 +26,7 @@
 use core::ptr;
 use std::os::raw::{c_char, c_double, c_int, c_uint, c_void};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::exports_buffer::xmlBufferCCat;
 use crate::abi::exports_html::{htmlNewDoc, htmlNewDocNoDtD};
 use crate::abi::exports_string::{xmlStrstr, xmlUTF8Strloc, xmlUTF8Strpos, xmlUTF8Strsize};
@@ -1461,7 +1461,7 @@ pub unsafe extern "C" fn xsltNumberFormat(
             return;
         }
         xslt_number_format_tokenize(format, &mut tokens);
-        xmlFree(format as *mut c_void);
+        xmlFreeImpl(format as *mut c_void);
     }
 
     let output = xmlBufferCreate();
@@ -1551,15 +1551,15 @@ pub unsafe extern "C" fn xsltNumberFormat(
 /// Free the allocated parts of a tokenized number-format picture.
 unsafe fn cleanup_tokens(tokens: *mut xsltFormat) {
     if !(*tokens).start.is_null() {
-        xmlFree((*tokens).start as *mut c_void);
+        xmlFreeImpl((*tokens).start as *mut c_void);
     }
     if !(*tokens).end.is_null() {
-        xmlFree((*tokens).end as *mut c_void);
+        xmlFreeImpl((*tokens).end as *mut c_void);
     }
     let mut i: c_int = 0;
     while i < (*tokens).nTokens {
         if !(*tokens).tokens[i as usize].separator.is_null() {
-            xmlFree((*tokens).tokens[i as usize].separator as *mut c_void);
+            xmlFreeImpl((*tokens).tokens[i as usize].separator as *mut c_void);
         }
         i += 1;
     }
@@ -2524,7 +2524,7 @@ pub unsafe extern "C" fn xsltComputeSortResult(
     let len = (*list).nodeNr;
     let is_number = (*compiled).isText == 0;
 
-    let results = xmlMalloc(len as usize * core::mem::size_of::<*mut _xmlXPathObject>())
+    let results = xmlMallocImpl(len as usize * core::mem::size_of::<*mut _xmlXPathObject>())
         as *mut *mut _xmlXPathObject;
     if results.is_null() {
         emit_generic_error(b"xsltComputeSortResult: memory allocation failure\n\0");
@@ -2560,13 +2560,13 @@ pub unsafe extern "C" fn xsltComputeSortResult(
                 // Recover: record a NULL slot like upstream does on
                 // evaluation failure.
                 *results.offset(i as isize) = ptr::null_mut();
-                xmlFree(key as *mut c_void);
+                xmlFreeImpl(key as *mut c_void);
             } else if is_number {
                 (*obj).type_ = xmlXPathObjectType::XPATH_NUMBER as c_int;
                 (*obj).floatval = xmlXPathCastStringToNumber(key);
                 (*obj).index = i;
                 *results.offset(i as isize) = obj;
-                xmlFree(key as *mut c_void);
+                xmlFreeImpl(key as *mut c_void);
             } else {
                 (*obj).type_ = xmlXPathObjectType::XPATH_STRING as c_int;
                 (*obj).stringval = key;
@@ -2739,7 +2739,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                 xmlXPathFreeObject(obj);
                 v
             };
-            xmlFree(URL as *mut c_void);
+            xmlFreeImpl(URL as *mut c_void);
             URL = val;
         }
         if URL.is_null() {
@@ -2785,7 +2785,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
         let esc_url = xmlURIEscapeStr(URL, b":/.?,\0".as_ptr() as *const xmlChar);
         if !esc_url.is_null() {
             filename = xmlBuildURI(esc_url as *const c_char, (*ctxt).outputFile);
-            xmlFree(esc_url as *mut c_void);
+            xmlFreeImpl(esc_url as *mut c_void);
         }
     }
     if filename.is_null() {
@@ -2795,7 +2795,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             inst,
             b"xsltDocumentElem: URL computation failed\n\0".as_ptr() as *const c_char,
         );
-        xmlFree(URL as *mut c_void);
+        xmlFreeImpl(URL as *mut c_void);
         return;
     }
 
@@ -2820,8 +2820,8 @@ pub unsafe extern "C" fn xsltDocumentElem(
                     b"xsltDocumentElem: write rights denied\n\0".as_ptr() as *const c_char,
                 );
             }
-            xmlFree(URL as *mut c_void);
-            xmlFree(filename as *mut c_void);
+            xmlFreeImpl(URL as *mut c_void);
+            xmlFreeImpl(filename as *mut c_void);
             return;
         }
     }
@@ -2866,7 +2866,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     );
     if !prop.is_null() {
         if !(*style).version.is_null() {
-            xmlFree((*style).version as *mut c_void);
+            xmlFreeImpl((*style).version as *mut c_void);
         }
         (*style).version = prop;
     }
@@ -2878,7 +2878,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     );
     if !prop.is_null() {
         if !(*style).encoding.is_null() {
-            xmlFree((*style).encoding as *mut c_void);
+            xmlFreeImpl((*style).encoding as *mut c_void);
         }
         (*style).encoding = prop;
     }
@@ -2907,7 +2907,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                     b"invalid value for method\n\0".as_ptr() as *const c_char,
                 );
                 (*style).warnings += 1;
-                xmlFree(method_name as *mut c_void);
+                xmlFreeImpl(method_name as *mut c_void);
             }
         } else {
             (*style).method = method_name;
@@ -2922,7 +2922,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     );
     if !prop.is_null() {
         if !(*style).doctypeSystem.is_null() {
-            xmlFree((*style).doctypeSystem as *mut c_void);
+            xmlFreeImpl((*style).doctypeSystem as *mut c_void);
         }
         (*style).doctypeSystem = prop;
     }
@@ -2934,7 +2934,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     );
     if !prop.is_null() {
         if !(*style).doctypePublic.is_null() {
-            xmlFree((*style).doctypePublic as *mut c_void);
+            xmlFreeImpl((*style).doctypePublic as *mut c_void);
         }
         (*style).doctypePublic = prop;
     }
@@ -2958,7 +2958,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             );
             (*style).warnings += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
     prop = xsltEvalAttrValueTemplate(
         ctxt,
@@ -2980,7 +2980,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             );
             (*style).warnings += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
     prop = xsltEvalAttrValueTemplate(
         ctxt,
@@ -3002,7 +3002,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             );
             (*style).warnings += 1;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 
     /*
@@ -3042,12 +3042,12 @@ pub unsafe extern "C" fn xsltDocumentElem(
                         uri,
                         b"cdata\0".as_ptr() as *mut c_void,
                     );
-                    xmlFree(el as *mut c_void);
+                    xmlFreeImpl(el as *mut c_void);
                 }
                 element = end;
             }
         }
-        xmlFree(elements as *mut c_void);
+        xmlFreeImpl(elements as *mut c_void);
     }
 
     /*
@@ -3215,7 +3215,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
         } else {
             (*style).omitXmlDeclaration = 0;
         }
-        xmlFree(prop as *mut c_void);
+        xmlFreeImpl(prop as *mut c_void);
     }
 
     if redirect_write_append != 0 {
@@ -3275,10 +3275,10 @@ unsafe fn goto_error(
     (*ctxt).type_ = old_type;
     (*ctxt).outputFile = old_output_file;
     if !url.is_null() {
-        xmlFree(url as *mut c_void);
+        xmlFreeImpl(url as *mut c_void);
     }
     if !filename.is_null() {
-        xmlFree(filename as *mut c_void);
+        xmlFreeImpl(filename as *mut c_void);
     }
     if !style.is_null() {
         crate::xslt::stylesheet::xsltFreeStylesheet(style);
