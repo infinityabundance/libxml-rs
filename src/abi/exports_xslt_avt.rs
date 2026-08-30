@@ -2412,7 +2412,10 @@ mod tests {
             assert!(xsltCopyTextString(ctxt, elem, ptr::null(), 0).is_null());
             libc::free(ctxt as *mut libc::c_void);
             crate::xml::tree::free_node_list(elem);
-            crate::xml::tree::free_node(ns as *mut _xmlNode);
+            // The original ns is standalone (new_ns(NULL, ...)); freeing it
+            // with free_node would misinterpret the _xmlNs layout (ASan
+            // heap-use-after-free). Use the namespace free.
+            crate::abi::exports_tree::xmlFreeNs(ns);
         }
     }
 }

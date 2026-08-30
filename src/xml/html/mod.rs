@@ -3259,7 +3259,7 @@ mod tests {
     #[test]
     fn test_parse_doc() {
         unsafe {
-            let html = b"<p>Hello from parse_doc</p>";
+            let html = b"<p>Hello from parse_doc</p>\0";
             let doc = parse_doc(html.as_ptr() as *const xmlChar, ptr::null());
             assert!(!doc.is_null());
 
