@@ -31,6 +31,9 @@ pub(crate) enum XmlToken {
     StartTag {
         name: Vec<u8>,
         attributes: Vec<(Vec<u8>, Vec<u8>)>,
+        /// Byte offset just past each attribute value's closing quote
+        /// (parallel to `attributes`; used for namespace-URI diagnostics).
+        attr_end: Vec<usize>,
         empty: bool,
         unterminated: bool,
     },
@@ -485,11 +488,14 @@ impl XmlTokenizer {
             return XmlToken::StartTag {
                 name,
                 attributes,
+                attr_end: Vec::new(),
                 empty,
                 unterminated: true,
             };
         }
 
+        let mut attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        let mut attr_end: Vec<usize> = Vec::new();
         loop {
             self.skip_whitespace();
 
@@ -599,6 +605,10 @@ impl XmlTokenizer {
                     }
 
                     if let Some(v) = attr_value {
+                        // The value-end offset is captured just past the
+                        // closing quote (upstream's error position for
+                        // namespace-URI diagnostics).
+                        attr_end.push(self.input.current_pos().2);
                         attributes.push((attr_name, v));
                     }
 
@@ -691,6 +701,7 @@ impl XmlTokenizer {
         XmlToken::StartTag {
             name,
             attributes,
+            attr_end,
             empty,
             unterminated,
         }

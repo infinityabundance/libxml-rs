@@ -1923,6 +1923,235 @@
      "historical_status": "CURRENT_ONLY"
     }
    }
+  },
+  "TREE-001": {
+   "probe": "courts/suites/data-abi/tree-structure-probe.c",
+   "runner": "tools/abi/tree_structure_probe.py",
+   "oracle": "/usr/lib/libxml2.so.16",
+   "symbols": {
+    "libxml2:xmlReadMemory": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewDoc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlFreeDoc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlDocGetRootElement": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlDocSetRootElement": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewText": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewComment": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewPI": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewCDataBlock": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCopyNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlDocCopyNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlUnlinkNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlAddChild": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetProp": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetProp": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlHasProp": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNodeSetContent": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNodeSetName": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetTreeDoc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetLineNo": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlFirstElementChild": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlLastElementChild": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNextElementSibling": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlPreviousElementSibling": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNodeIsText": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlIsBlankNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNodeGetContent": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNodeGetBase": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSetNs": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlNewNs": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlSearchNs": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetNsList": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetIntSubset": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetDocEntity": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetDtdElementDesc": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlFreeNode": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    }
+   }
   }
  }
 }

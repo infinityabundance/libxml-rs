@@ -35,14 +35,16 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
 
 use crate::abi::allocator;
 use crate::abi::constants::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA;
 use crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8;
-use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
+use crate::abi::types::xmlDocProperties::{
+    XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_USERBUILT, XML_DOC_WELLFORMED,
+};
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::globals;
@@ -140,7 +142,8 @@ pub unsafe fn new_doc(version: *const xmlChar) -> *mut _xmlDoc {
         (*doc).type_ = XML_DOCUMENT_NODE as c_int;
         (*doc).standalone = -1; // unknown
         (*doc).doc = doc; // self-reference
-        (*doc).properties = XML_DOC_WELLFORMED as c_int;
+        (*doc).properties = XML_DOC_USERBUILT as c_int;
+        (*doc).compression = -1; // not initialized (upstream xmlNewDoc)
         (*doc).charset = XML_CHAR_ENCODING_UTF8 as c_int;
 
         // Set version
@@ -182,14 +185,24 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
 
     let d = unsafe { &mut *doc };
 
-    // Free internal subset (DTD)
-    if !d.intSubset.is_null() {
-        free_dtd(d.intSubset);
+    // UPSTREAM-PARITY (tree.c xmlFreeDoc): the subset DTD nodes are unlinked
+    // from the child list before the tree is freed (they may be part of
+    // doc->children after a parse).
+    let dict = d.dict;
+    let mut ext_subset = d.extSubset;
+    let int_subset = d.intSubset;
+    if !ext_subset.is_null() && ext_subset == int_subset {
+        ext_subset = ptr::null_mut();
     }
-
-    // Free external subset (DTD)
-    if !d.extSubset.is_null() {
-        free_dtd(d.extSubset);
+    if !ext_subset.is_null() {
+        unlink_node_internal(ext_subset as *mut _xmlNode, d as *mut _xmlDoc);
+        d.extSubset = ptr::null_mut();
+        free_dtd(ext_subset);
+    }
+    if !int_subset.is_null() {
+        unlink_node_internal(int_subset as *mut _xmlNode, d as *mut _xmlDoc);
+        d.intSubset = ptr::null_mut();
+        free_dtd(int_subset);
     }
 
     // Free the tree
@@ -215,6 +228,37 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
 
     // Free the document itself
     allocator::xmlFreeImpl(doc as *mut c_void);
+
+    // UPSTREAM-PARITY: the document holds a reference on its dictionary.
+    if !dict.is_null() {
+        crate::abi::exports_xml2::xmlDictFree(dict);
+    }
+}
+
+/// Unlink a node from its parent's child list without freeing it
+/// (upstream xmlUnlinkNodeInternal semantics; doc is used for ID/ref
+/// bookkeeping which the candidate does not maintain on unlink).
+unsafe fn unlink_node_internal(node: *mut _xmlNode, _doc: *mut _xmlDoc) {
+    if node.is_null() {
+        return;
+    }
+    let parent = (*node).parent;
+    if parent.is_null() {
+        return;
+    }
+    if (*node).prev.is_null() {
+        (*parent).children = (*node).next;
+    } else {
+        (*(*node).prev).next = (*node).next;
+    }
+    if (*node).next.is_null() {
+        (*parent).last = (*node).prev;
+    } else {
+        (*(*node).next).prev = (*node).prev;
+    }
+    (*node).next = ptr::null_mut();
+    (*node).prev = ptr::null_mut();
+    (*node).parent = ptr::null_mut();
 }
 
 /// Copy a document (deep copy by default).
@@ -357,12 +401,60 @@ pub fn doc_get_root_element(doc: *mut _xmlDoc) -> *mut _xmlNode {
 /// ```
 ///
 /// Returns the line number, or 0 if not available.
-pub fn get_line_no(node: *const _xmlNode) -> c_int {
+pub fn get_line_no(node: *const _xmlNode) -> c_long {
+    unsafe { get_line_no_internal(node, 0) }
+}
+
+/// UPSTREAM-PARITY (tree.c xmlGetLineNoInternal): element/text/comment/PI
+/// nodes report their stored line; other node types (DTD nodes, entity
+/// references, declarations, ...) walk to the nearest previous or ancestor
+/// element-ish node and return -1 when none exists.
+unsafe fn get_line_no_internal(node: *const _xmlNode, depth: c_int) -> c_long {
+    if depth >= 5 {
+        return -1;
+    }
     if node.is_null() {
-        return 0;
+        return -1;
     }
     let n = unsafe { &*node };
-    n.line as c_int
+    if n.type_ == XML_ELEMENT_NODE as c_int
+        || n.type_ == XML_TEXT_NODE as c_int
+        || n.type_ == XML_COMMENT_NODE as c_int
+        || n.type_ == XML_PI_NODE as c_int
+    {
+        if n.line == 65535 {
+            if n.type_ == XML_ELEMENT_NODE as c_int && !n.children.is_null() {
+                let r = unsafe { get_line_no_internal(n.children, depth + 1) };
+                if r != -1 {
+                    return r;
+                }
+            }
+            if !n.next.is_null() {
+                let r = unsafe { get_line_no_internal(n.next, depth + 1) };
+                if r != -1 {
+                    return r;
+                }
+            }
+            if !n.prev.is_null() {
+                let r = unsafe { get_line_no_internal(n.prev, depth + 1) };
+                if r != -1 {
+                    return r;
+                }
+            }
+        }
+        n.line as c_long
+    } else if !n.prev.is_null()
+        && (unsafe { (*n.prev).type_ } == XML_ELEMENT_NODE as c_int
+            || unsafe { (*n.prev).type_ } == XML_TEXT_NODE as c_int
+            || unsafe { (*n.prev).type_ } == XML_COMMENT_NODE as c_int
+            || unsafe { (*n.prev).type_ } == XML_PI_NODE as c_int)
+    {
+        unsafe { get_line_no_internal(n.prev, depth + 1) }
+    } else if !n.parent.is_null() && unsafe { (*n.parent).type_ } == XML_ELEMENT_NODE as c_int {
+        unsafe { get_line_no_internal(n.parent, depth + 1) }
+    } else {
+        -1
+    }
 }
 
 /// Get the content of a node, recursively concatenating child text.
@@ -558,18 +650,34 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
         return;
     }
 
-    // UPSTREAM-PARITY (tree.c xmlFreeNode): the deregister hook fires before
-    // the node is torn down.
-    crate::abi::data_globals::deregister_node_hook(node);
-
     let n = unsafe { &mut *node };
 
-    // UPSTREAM-PARITY: xmlFreeNode routes DTD nodes to xmlFreeDtd (the DTD
-    // layout is only partially node-compatible).
+    // UPSTREAM-PARITY (tree.c xmlFreeNode): declaration nodes and namespace
+    // declarations are routed to their dedicated free functions (their
+    // struct layouts diverge from _xmlNode).
     if n.type_ == XML_DTD_NODE as c_int {
         free_dtd(node as *mut _xmlDtd);
         return;
+    } else if n.type_ == XML_NAMESPACE_DECL as c_int {
+        free_ns(node as *mut _xmlNs);
+        return;
+    } else if n.type_ == XML_ATTRIBUTE_NODE as c_int {
+        free_prop(node as *mut _xmlAttr);
+        return;
+    } else if n.type_ == XML_ELEMENT_DECL as c_int {
+        crate::xml::dtd::free_element(node as *mut _xmlElement);
+        return;
+    } else if n.type_ == XML_ATTRIBUTE_DECL as c_int {
+        crate::xml::dtd::free_attribute(node as *mut _xmlAttribute);
+        return;
+    } else if n.type_ == XML_ENTITY_DECL as c_int {
+        crate::xml::entities::free_entity(node as *mut _xmlEntity);
+        return;
     }
+
+    // UPSTREAM-PARITY (tree.c xmlFreeNode): the deregister hook fires before
+    // the node is torn down.
+    crate::abi::data_globals::deregister_node_hook(node);
 
     // Free properties and namespace declarations. Only element nodes carry
     // them; compact text nodes store their inline content at the address of
@@ -591,7 +699,8 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 
     // Free content (for text/CDATA nodes). Compact text content lives inside
     // the node struct (at the `properties` field address) and must not be
-    // freed separately.
+    // freed separately. UPSTREAM-PARITY: entity-reference content is shared
+    // with the entity declaration and must not be freed here.
     if !n.content.is_null() {
         let node_type = n.type_;
         if node_type == XML_TEXT_NODE as c_int
@@ -613,6 +722,17 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 ///
 /// Frees all nodes in the list and their children recursively.
 ///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void xmlFreeNodeList(xmlNodePtr node);
+/// ```
+///
+/// Does NOT descend into `XML_ENTITY_REF_NODE` children (their child list
+/// points at the shared entity declaration, owned by the DTD) nor free
+/// `XML_DTD_NODE` children (a DTD node in the list is unlinked, not freed —
+/// xmlFreeDtd owns the subset teardown).
+///
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
@@ -620,9 +740,21 @@ pub unsafe fn free_node_list(node: *mut _xmlNode) {
     let mut cur = node;
     while !cur.is_null() {
         let next = unsafe { (*cur).next };
+        let t = unsafe { (*cur).type_ };
 
-        // Free children recursively
-        if !unsafe { (*cur).children }.is_null() {
+        if t == XML_DTD_NODE as c_int {
+            // UPSTREAM-PARITY: DTD nodes are unlinked but not freed here.
+            unsafe {
+                (*cur).prev = ptr::null_mut();
+                (*cur).next = ptr::null_mut();
+            }
+            cur = next;
+            continue;
+        }
+
+        // Free children recursively (entity-ref children are shared with the
+        // entity declaration and are owned by the DTD).
+        if t != XML_ENTITY_REF_NODE as c_int && !unsafe { (*cur).children }.is_null() {
             free_node_list(unsafe { (*cur).children });
         }
 
@@ -640,20 +772,32 @@ unsafe fn free_prop_list(prop: *mut _xmlAttr) {
     let mut cur = prop;
     while !cur.is_null() {
         let next = unsafe { (*cur).next };
-
-        // Free children (text nodes with value)
-        if !unsafe { (*cur).children }.is_null() {
-            free_node_list(unsafe { (*cur).children });
-        }
-
-        // Free name
-        if !unsafe { (*cur).name }.is_null() {
-            allocator::xmlFreeImpl(unsafe { (*cur).name } as *mut c_void);
-        }
-
-        allocator::xmlFreeImpl(cur as *mut c_void);
+        free_prop(cur);
         cur = next;
     }
+}
+
+/// Free a single attribute (upstream `xmlFreeProp`).
+///
+/// # SAFETY
+///
+/// - `prop` must be a valid pointer to an _xmlAttr, or NULL.
+unsafe fn free_prop(prop: *mut _xmlAttr) {
+    if prop.is_null() {
+        return;
+    }
+
+    // Free children (text nodes with value)
+    if !unsafe { (*prop).children }.is_null() {
+        free_node_list(unsafe { (*prop).children });
+    }
+
+    // Free name
+    if !unsafe { (*prop).name }.is_null() {
+        allocator::xmlFreeImpl(unsafe { (*prop).name } as *mut c_void);
+    }
+
+    allocator::xmlFreeImpl(prop as *mut c_void);
 }
 
 /// Free a linked list of namespace declarations.
@@ -665,18 +809,30 @@ unsafe fn free_ns_list(ns: *mut _xmlNs) {
     let mut cur = ns;
     while !cur.is_null() {
         let next = unsafe { (*cur).next };
-
-        // Free href and prefix
-        if !unsafe { (*cur).href }.is_null() {
-            allocator::xmlFreeImpl(unsafe { (*cur).href } as *mut c_void);
-        }
-        if !unsafe { (*cur).prefix }.is_null() {
-            allocator::xmlFreeImpl(unsafe { (*cur).prefix } as *mut c_void);
-        }
-
-        allocator::xmlFreeImpl(cur as *mut c_void);
+        free_ns(cur);
         cur = next;
     }
+}
+
+/// Free a single namespace declaration (upstream `xmlFreeNs`).
+///
+/// # SAFETY
+///
+/// - `ns` must be a valid pointer to an _xmlNs, or NULL.
+unsafe fn free_ns(ns: *mut _xmlNs) {
+    if ns.is_null() {
+        return;
+    }
+
+    // Free href and prefix
+    if !unsafe { (*ns).href }.is_null() {
+        allocator::xmlFreeImpl(unsafe { (*ns).href } as *mut c_void);
+    }
+    if !unsafe { (*ns).prefix }.is_null() {
+        allocator::xmlFreeImpl(unsafe { (*ns).prefix } as *mut c_void);
+    }
+
+    allocator::xmlFreeImpl(ns as *mut c_void);
 }
 
 /// Copy a node (shallow or deep).
@@ -708,7 +864,12 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
     unsafe {
         (*new_node).type_ = n.type_;
         (*new_node).name = dup_xml_str(n.name);
-        (*new_node).line = n.line;
+        // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): the line number is
+        // copied for element nodes only; text/CDATA/comment/PI copies keep
+        // line 0.
+        if n.type_ == XML_ELEMENT_NODE as c_int {
+            (*new_node).line = n.line;
+        }
         (*new_node).extra = n.extra;
         (*new_node).psvi = n.psvi;
         (*new_node)._private = n._private;
@@ -748,13 +909,23 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
             }
         }
 
-        // Copy children if recursive
+        // Copy children if recursive (each copied child gets its parent and
+        // document pointers; `last` follows the upstream link order).
         if recursive != 0 && !n.children.is_null() {
             (*new_node).children = copy_node_list(n.children, recursive);
             if !(*new_node).children.is_null() {
-                (*(*new_node).children).parent = new_node;
-                (*(*new_node).children).doc = (*new_node).doc;
-                propagate_doc((*new_node).children, (*new_node).doc);
+                let mut child = (*new_node).children;
+                let mut last_child = child;
+                while !child.is_null() {
+                    (*child).parent = new_node;
+                    (*child).doc = (*new_node).doc;
+                    propagate_doc(child, (*new_node).doc);
+                    if (*child).next.is_null() {
+                        last_child = child;
+                    }
+                    child = (*child).next;
+                }
+                (*new_node).last = last_child;
             }
         }
     }
@@ -1337,7 +1508,8 @@ pub unsafe fn new_cdata_block(
 
     unsafe {
         (*node).type_ = XML_CDATA_SECTION_NODE as c_int;
-        (*node).name = dup_xml_str(b"cdata\0" as *const u8 as *const xmlChar);
+        // UPSTREAM-PARITY (tree.c xmlNewCDataBlock): the name field is left
+        // NULL (zero-initialised).
         (*node).doc = doc;
 
         if !content.is_null() && len > 0 {
@@ -1697,7 +1869,8 @@ pub unsafe fn set_prop(
         (*attr).name = dup_xml_str(name);
         (*attr).parent = node;
         (*attr).doc = n.doc;
-        (*attr).atype = XML_ATTRIBUTE_CDATA as c_int;
+        // UPSTREAM-PARITY (tree.c xmlNewProp): atype stays 0 for instance
+        // attributes.
 
         // Set value
         if !value.is_null() {
@@ -2189,13 +2362,9 @@ pub unsafe fn new_dtd(
         (*dtd).parent = doc;
         (*dtd).doc = doc;
 
-        // Create hash tables for declarations (upstream creates these lazily;
-        // we create them eagerly so dumps and lookups can rely on them).
-        (*dtd).notations = crate::xml::hash::hash_create(8) as *mut c_void;
-        (*dtd).elements = crate::xml::hash::hash_create(16) as *mut c_void;
-        (*dtd).attributes = crate::xml::hash::hash_create(16) as *mut c_void;
-        (*dtd).entities = crate::xml::hash::hash_create(8) as *mut c_void;
-        (*dtd).pentities = crate::xml::hash::hash_create(8) as *mut c_void;
+        // UPSTREAM-PARITY (tree.c xmlNewDtd): the declaration hash tables are
+        // created lazily by the xmlAdd* functions on first use; an empty DTD
+        // exposes NULL table pointers.
 
         // Attach to document
         if !doc.is_null() {
@@ -2219,6 +2388,29 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
     }
 
     let d = unsafe { &mut *dtd };
+    let d = &mut *dtd;
+
+    // UPSTREAM-PARITY (tree.c xmlFreeDtd): element/attribute/entity
+    // declaration nodes in the child list are owned by the hash tables and
+    // are freed by the deallocators below; only non-declaration children
+    // (comments, PIs) are unlinked and freed from the list here. This must
+    // run BEFORE the hash tables are freed so the decl nodes are still alive
+    // when their type is inspected.
+    if !d.children.is_null() {
+        let mut c = d.children;
+        while !c.is_null() {
+            let next = (*c).next;
+            let t = (*c).type_;
+            if t != XML_ELEMENT_DECL as c_int
+                && t != XML_ATTRIBUTE_DECL as c_int
+                && t != XML_ENTITY_DECL as c_int
+            {
+                unlink_node_internal(c, ptr::null_mut());
+                free_node(c);
+            }
+            c = next;
+        }
+    }
 
     // Free name
     if !d.name.is_null() {
@@ -2279,11 +2471,6 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
             Some(free_entity_wrapper),
         );
         d.pentities = ptr::null_mut();
-    }
-
-    // Free children
-    if !d.children.is_null() {
-        free_node_list(d.children);
     }
 
     allocator::xmlFreeImpl(dtd as *mut c_void);

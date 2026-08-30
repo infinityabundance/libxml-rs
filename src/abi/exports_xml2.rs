@@ -45,7 +45,7 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::mem::size_of;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
 
 use crate::xml::xinclude;
 use crate::xml::xpath::ast::CompiledExpr;
@@ -2398,7 +2398,7 @@ pub unsafe extern "C" fn xmlEncodeEntities(
 /// long xmlGetLineNo(const xmlNode *node);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetLineNo(node: *const _xmlNode) -> c_int {
+pub extern "C" fn xmlGetLineNo(node: *const _xmlNode) -> c_long {
     crate::xml::tree::get_line_no(node)
 }
 
@@ -2716,10 +2716,19 @@ pub unsafe extern "C" fn xmlReadMemory(
     // `file:line:` error prefix and doc->URL).
     let input = crate::xml::parser::helpers::input_from_memory_named(buffer, size, URL);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
-    (*ctxt).options = options;
-    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
-        let doc = (*ctxt).myDoc;
-        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    // UPSTREAM-PARITY (xmlReadMemory -> xmlCtxtReadMemory): the parse
+    // options are mirrored into the context members (dictNames, keepBlanks,
+    // recovery, ...) before parsing starts.
+    crate::abi::exports_parser::apply_options(ctxt, options);
+    let parsed = crate::xml::parser::helpers::parse_document(ctxt);
+    let doc = (*ctxt).myDoc;
+    // UPSTREAM-PARITY: the URL is attached to the document on success AND on
+    // the recovery path (the partial tree keeps the document identity).
+    if !doc.is_null() && !URL.is_null() && (*doc).URL.is_null() {
+        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    if parsed != 0 {
         // UPSTREAM-PARITY: on a hard (non-recoverable) parse error the
         // partially built document is discarded and NULL is returned; with
         // XML_PARSE_RECOVER the partial tree is kept.
@@ -2731,11 +2740,6 @@ pub unsafe extern "C" fn xmlReadMemory(
         }
         return ptr::null_mut();
     }
-    let doc = (*ctxt).myDoc;
-    if !doc.is_null() && !URL.is_null() {
-        (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
-    }
-    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
     doc
 }
 
@@ -3769,7 +3773,17 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreate() -> *mut c_void {
-    unsafe { crate::xml::dictionary::dict_create() as *mut c_void }
+    let d = unsafe { crate::xml::dictionary::dict_create() as *mut c_void };
+    if !d.is_null() {
+        // UPSTREAM-PARITY: the creator holds the base reference (count 1);
+        // xmlDictReference adds to it and xmlDictFree decrements, freeing
+        // the dictionary when it reaches zero.
+        *crate::abi::exports_hash::DICT_REFS
+            .lock()
+            .entry(d as usize)
+            .or_insert(0) = 1;
+    }
+    d
 }
 
 /// Create a sub-dictionary.
@@ -3781,10 +3795,17 @@ pub extern "C" fn xmlDictCreate() -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreateSub(sub: *mut c_void) -> *mut c_void {
-    unsafe {
+    let d = unsafe {
         crate::xml::dictionary::dict_create_sub(sub as *mut crate::xml::dictionary::Dict)
             as *mut c_void
+    };
+    if !d.is_null() {
+        *crate::abi::exports_hash::DICT_REFS
+            .lock()
+            .entry(d as usize)
+            .or_insert(0) = 1;
     }
+    d
 }
 
 /// Look up a string in the dictionary.
@@ -3848,9 +3869,31 @@ pub extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
 /// ```c
 /// void xmlDictFree(xmlDictPtr dict);
 /// ```
+///
+/// The reference counter added by `xmlDictReference` is honored: the
+/// underlying dictionary is destroyed only when the last reference is
+/// released (the base owner counts as one implicit reference).
 #[no_mangle]
 pub extern "C" fn xmlDictFree(dict: *mut c_void) {
-    unsafe { crate::xml::dictionary::dict_free(dict as *mut crate::xml::dictionary::Dict) }
+    if dict.is_null() {
+        return;
+    }
+    let mut remaining = 0u32;
+    {
+        let mut refs = crate::abi::exports_hash::DICT_REFS.lock();
+        if let Some(r) = refs.get_mut(&(dict as usize)) {
+            if *r > 0 {
+                *r -= 1;
+            }
+            remaining = *r;
+            if remaining == 0 {
+                refs.remove(&(dict as usize));
+            }
+        }
+    }
+    if remaining == 0 {
+        unsafe { crate::xml::dictionary::dict_free(dict as *mut crate::xml::dictionary::Dict) };
+    }
 }
 
 /// Set the dictionary size limit.

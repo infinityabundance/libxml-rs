@@ -501,6 +501,12 @@ XMLPUBFUN xmlNodePtr xmlNewCDataBlock(xmlDocPtr doc, const xmlChar *content, int
 XMLPUBFUN xmlNodePtr xmlDocSetRootElement(xmlDocPtr doc, xmlNodePtr root);
 XMLPUBFUN xmlNodePtr xmlDocGetRootElement(const xmlDoc *doc);
 XMLPUBFUN long xmlGetLineNo(const xmlNode *node);
+XMLPUBFUN xmlNodePtr xmlFirstElementChild(xmlNodePtr parent);
+XMLPUBFUN xmlNodePtr xmlLastElementChild(xmlNodePtr parent);
+XMLPUBFUN xmlNodePtr xmlNextElementSibling(xmlNodePtr node);
+XMLPUBFUN xmlNodePtr xmlPreviousElementSibling(xmlNodePtr node);
+XMLPUBFUN int xmlNodeIsText(const xmlNode *node);
+XMLPUBFUN int xmlIsBlankNode(const xmlNode *node);
 XMLPUBFUN xmlNsPtr xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix);
 XMLPUBFUN void xmlSetNs(xmlNodePtr node, xmlNsPtr ns);
 XMLPUBFUN xmlNsPtr *xmlGetNsList(xmlDocPtr doc, const xmlNode *node);
@@ -508,6 +514,17 @@ XMLPUBFUN xmlNsPtr xmlSearchNs(xmlDocPtr doc, xmlNodePtr node, const xmlChar *na
 XMLPUBFUN xmlNsPtr xmlSearchNsByHref(xmlDocPtr doc, xmlNodePtr node, const xmlChar *href);
 XMLPUBFUN xmlAttrPtr xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value);
 XMLPUBFUN xmlChar *xmlGetProp(const xmlNode *node, const xmlChar *name);
+XMLPUBFUN xmlChar *xmlNodeGetContent(const xmlNode *cur);
+XMLPUBFUN xmlChar *xmlNodeGetBase(const xmlDoc *doc, const xmlNode *cur);
+XMLPUBFUN void xmlNodeSetContent(xmlNodePtr cur, const xmlChar *content);
+XMLPUBFUN void xmlNodeSetName(xmlNodePtr cur, const xmlChar *name);
+XMLPUBFUN void xmlSetTreeDoc(xmlNodePtr tree, xmlDocPtr doc);
+XMLPUBFUN void xmlSetListDoc(xmlNodePtr list, xmlDocPtr doc);
+XMLPUBFUN xmlAttrPtr xmlHasProp(const xmlNode *node, const xmlChar *name);
+XMLPUBFUN xmlNodePtr xmlDocCopyNode(const xmlNodePtr node, xmlDocPtr doc, int extended);
+XMLPUBFUN xmlNodePtr xmlCopyNodeList(const xmlNodePtr node);
+XMLPUBFUN xmlAttrPtr xmlCopyProp(xmlNodePtr target, const xmlAttrPtr cur);
+XMLPUBFUN xmlAttrPtr xmlCopyPropList(xmlNodePtr target, const xmlAttrPtr cur);
 XMLPUBFUN xmlChar *xmlGetNsProp(const xmlNode *node, const xmlChar *name, const xmlChar *nameSpace);
 XMLPUBFUN xmlAttrPtr xmlSetNsProp(xmlNodePtr node, xmlNsPtr ns,
                                    const xmlChar *name, const xmlChar *value);

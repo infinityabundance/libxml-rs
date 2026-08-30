@@ -77,6 +77,15 @@ pub unsafe fn add_entity(
 
         // Determine which hash table to use
         let is_param = is_parameter_entity(etype);
+        // UPSTREAM-PARITY (entities.c xmlAddEntity): the table is created
+        // lazily on first use.
+        if is_param {
+            if (*dtd).pentities.is_null() {
+                (*dtd).pentities = hash::hash_create(8) as *mut c_void;
+            }
+        } else if (*dtd).entities.is_null() {
+            (*dtd).entities = hash::hash_create(8) as *mut c_void;
+        }
         let hash_table = if is_param {
             d.pentities as *mut hash::HashTable
         } else {
@@ -121,6 +130,17 @@ pub unsafe fn add_entity(
             // Failed to add
             free_entity_internal(entity, false);
             return ptr::null_mut();
+        }
+
+        // UPSTREAM-PARITY (entities.c xmlAddDocEntity/xmlAddDtdEntity
+        // "Link it to the DTD"): the entity decl is a child node of the DTD.
+        if (*dtd).last.is_null() {
+            (*dtd).children = entity as *mut _xmlNode;
+            (*dtd).last = entity as *mut _xmlNode;
+        } else {
+            (*(*dtd).last).next = entity as *mut _xmlNode;
+            (*entity).prev = (*dtd).last;
+            (*dtd).last = entity as *mut _xmlNode;
         }
 
         entity

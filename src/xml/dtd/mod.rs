@@ -83,15 +83,40 @@ pub unsafe fn create_int_subset(
         (*dtd).parent = doc;
         (*dtd).doc = doc;
 
-        // Create hash tables for declarations
-        (*dtd).notations = hash::hash_create(8) as *mut c_void;
-        (*dtd).elements = hash::hash_create(16) as *mut c_void;
-        (*dtd).attributes = hash::hash_create(16) as *mut c_void;
-        (*dtd).entities = hash::hash_create(8) as *mut c_void;
-        (*dtd).pentities = hash::hash_create(8) as *mut c_void;
+        // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): the declaration hash
+        // tables are created lazily by the xmlAdd* functions on first use;
+        // an empty DTD exposes NULL table pointers.
 
         // Attach to document
         (*doc).intSubset = dtd;
+
+        // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): the DTD node is
+        // inserted into the document's child chain immediately before the
+        // first element node (comments/PIs in the prolog stay ahead of it).
+        let doc_children = (*doc).children;
+        if doc_children.is_null() {
+            (*doc).children = dtd as *mut _xmlNode;
+            (*doc).last = dtd as *mut _xmlNode;
+        } else {
+            let mut next = doc_children;
+            while !next.is_null() && (*next).type_ != XML_ELEMENT_NODE as c_int {
+                next = (*next).next;
+            }
+            if next.is_null() {
+                (*dtd).prev = (*doc).last;
+                (*(*doc).last).next = dtd as *mut _xmlNode;
+                (*doc).last = dtd as *mut _xmlNode;
+            } else {
+                (*dtd).next = next;
+                (*dtd).prev = (*next).prev;
+                if (*dtd).prev.is_null() {
+                    (*doc).children = dtd as *mut _xmlNode;
+                } else {
+                    (*(*dtd).prev).next = dtd as *mut _xmlNode;
+                }
+                (*next).prev = dtd as *mut _xmlNode;
+            }
+        }
     }
 
     dtd
@@ -133,12 +158,8 @@ pub unsafe fn new_dtd(
         (*dtd).parent = doc;
         (*dtd).doc = doc;
 
-        // Create hash tables for declarations
-        (*dtd).notations = hash::hash_create(8) as *mut c_void;
-        (*dtd).elements = hash::hash_create(16) as *mut c_void;
-        (*dtd).attributes = hash::hash_create(16) as *mut c_void;
-        (*dtd).entities = hash::hash_create(8) as *mut c_void;
-        (*dtd).pentities = hash::hash_create(8) as *mut c_void;
+        // UPSTREAM-PARITY (tree.c xmlNewDtd): the declaration hash tables are
+        // created lazily by the xmlAdd* functions on first use.
 
         // Attach to document if it has no internal subset yet
         if !doc.is_null() && (*doc).intSubset.is_null() {
@@ -227,6 +248,27 @@ pub unsafe fn free_dtd(dtd: *mut _xmlDtd) {
     unsafe {
         let d = &mut *dtd;
 
+        // UPSTREAM-PARITY (tree.c xmlFreeDtd): element/attribute/entity
+        // declaration nodes in the child list are owned by the hash tables
+        // and are freed by the deallocators below; only non-declaration
+        // children (comments, PIs) are unlinked and freed from the list here.
+        // This must run BEFORE the hash tables are freed so the decl nodes
+        // are still alive when their type is inspected.
+        if !d.children.is_null() {
+            let mut c = d.children;
+            while !c.is_null() {
+                let next = (*c).next;
+                let t = (*c).type_;
+                if t != XML_ELEMENT_DECL as c_int
+                    && t != XML_ATTRIBUTE_DECL as c_int
+                    && t != XML_ENTITY_DECL as c_int
+                {
+                    crate::xml::tree::free_node(c);
+                }
+                c = next;
+            }
+        }
+
         // Free hash tables with their deallocators
         if !d.notations.is_null() {
             hash::hash_free(
@@ -270,14 +312,6 @@ pub unsafe fn free_dtd(dtd: *mut _xmlDtd) {
         }
         if !d.SystemID.is_null() {
             allocator::xmlFreeImpl(d.SystemID as *mut c_void);
-        }
-
-        // Free children (tree nodes)
-        if !d.children.is_null() {
-            // Children are tree nodes, freed by the tree module
-            // For now we skip freeing children since we don't have the tree
-            // module's free_node_list accessible here. In practice,
-            // DTD children are freed by the caller or tree module.
         }
 
         allocator::xmlFreeImpl(dtd as *mut c_void);
@@ -342,6 +376,11 @@ pub unsafe fn add_notation_decl(
     }
 
     unsafe {
+        // UPSTREAM-PARITY (valid.c xmlAddNotationDecl): the table is
+        // created lazily on first use.
+        if (*dtd).notations.is_null() {
+            (*dtd).notations = hash::hash_create(8) as *mut c_void;
+        }
         let d = &*dtd;
 
         // Check if notation already exists
@@ -626,6 +665,11 @@ pub unsafe fn add_element_decl(
     }
 
     unsafe {
+        // UPSTREAM-PARITY (valid.c xmlAddElementDecl): the table is created
+        // lazily on first use.
+        if (*dtd).elements.is_null() {
+            (*dtd).elements = hash::hash_create(8) as *mut c_void;
+        }
         let d = &*dtd;
 
         // Check if element already exists
@@ -640,8 +684,12 @@ pub unsafe fn add_element_decl(
             return ptr::null_mut();
         }
 
+        // UPSTREAM-PARITY (valid.c xmlAddElementDecl): the node type is
+        // XML_ELEMENT_DECL; the element type (EMPTY/ANY/MIXED/ELEMENT) is
+        // stored in `etype` only. The caller passes the element type as
+        // `type_` (matching the upstream parameter list).
         (*elem).name = string::xml_strdup(name);
-        (*elem).type_ = type_;
+        (*elem).type_ = XML_ELEMENT_DECL as c_int;
         (*elem).etype = type_; // xmlElementTypeVal mirrors xmlElementType here
         (*elem).content = content; // Takes ownership of the content model
         (*elem).attributes = ptr::null_mut();
@@ -651,7 +699,7 @@ pub unsafe fn add_element_decl(
         (*elem).parent = dtd;
         (*elem).next = ptr::null_mut();
         (*elem).prev = ptr::null_mut();
-        (*elem).doc = ptr::null_mut();
+        (*elem).doc = (*dtd).doc;
         (*elem).cont_model = ptr::null_mut();
 
         // Add to hash table
@@ -664,6 +712,17 @@ pub unsafe fn add_element_decl(
             // Failed to add
             free_element(elem);
             return ptr::null_mut();
+        }
+
+        // UPSTREAM-PARITY (valid.c xmlAddElementDecl "Link it to the DTD"):
+        // the element decl is a child node of the DTD.
+        if (*dtd).last.is_null() {
+            (*dtd).children = elem as *mut _xmlNode;
+            (*dtd).last = elem as *mut _xmlNode;
+        } else {
+            (*(*dtd).last).next = elem as *mut _xmlNode;
+            (*elem).prev = (*dtd).last;
+            (*dtd).last = elem as *mut _xmlNode;
         }
 
         elem
@@ -689,8 +748,60 @@ pub unsafe fn get_element_decl(dtd: *mut _xmlDtd, name: *const xmlChar) -> *mut 
 
     unsafe {
         let d = &*dtd;
+        if d.elements.is_null() {
+            return ptr::null_mut();
+        }
         let payload = hash::hash_lookup(d.elements as *mut hash::HashTable, name);
         payload as *mut _xmlElement
+    }
+}
+
+/// UPSTREAM-PARITY (valid.c xmlGetDtdElementDesc2): lookup an element
+/// declaration, creating an UNDEFINED placeholder when missing. The
+/// placeholder is registered in the elements table but NOT linked into the
+/// DTD's child list (the attribute-decl path that triggers this leaves the
+/// element undeclared).
+///
+/// # SAFETY
+///
+/// - `dtd` must be a valid pointer to an _xmlDtd, or NULL.
+/// - `name` must be a valid null-terminated string.
+pub unsafe fn get_element_decl_created(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+) -> *mut _xmlElement {
+    if dtd.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+
+    unsafe {
+        if (*dtd).elements.is_null() {
+            (*dtd).elements = hash::hash_create(8) as *mut c_void;
+        }
+        let existing = hash::hash_lookup((*dtd).elements as *mut hash::HashTable, name);
+        if !existing.is_null() {
+            return existing as *mut _xmlElement;
+        }
+
+        let elem = allocator::xmlMallocZero(size_of::<_xmlElement>() as usize) as *mut _xmlElement;
+        if elem.is_null() {
+            return ptr::null_mut();
+        }
+        (*elem).type_ = XML_ELEMENT_DECL as c_int;
+        (*elem).name = string::xml_strdup(name);
+        (*elem).etype = XML_ELEMENT_TYPE_UNDEFINED as c_int;
+        (*elem).doc = (*dtd).doc;
+        (*elem).parent = dtd;
+        if hash::hash_add_entry(
+            (*dtd).elements as *mut hash::HashTable,
+            name,
+            elem as *mut c_void,
+        ) != 0
+        {
+            free_element(elem);
+            return ptr::null_mut();
+        }
+        elem
     }
 }
 
@@ -930,6 +1041,11 @@ pub unsafe fn add_attribute_decl(
     }
 
     unsafe {
+        // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl): the table is
+        // created lazily on first use.
+        if (*dtd).attributes.is_null() {
+            (*dtd).attributes = hash::hash_create(8) as *mut c_void;
+        }
         let d = &*dtd;
         let elem_name = if elem.is_null() {
             ptr::null()
@@ -938,7 +1054,14 @@ pub unsafe fn add_attribute_decl(
         };
 
         // Check if attribute already exists for this element
-        let existing = hash::hash_lookup2(d.attributes as *mut hash::HashTable, elem_name, name);
+        // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl): the attribute table
+        // is keyed by (name, prefix, elem).
+        let existing = hash::hash_lookup3(
+            d.attributes as *mut hash::HashTable,
+            name,
+            ptr::null(),
+            elem_name,
+        );
         if !existing.is_null() {
             return existing as *mut _xmlAttribute;
         }
@@ -962,11 +1085,13 @@ pub unsafe fn add_attribute_decl(
         (*attr).prefix = ptr::null_mut();
         (*attr).elem = string::xml_strdup(elem_name);
 
-        // Add to DTD's attribute hash table (keyed by element name + attribute name)
-        let ret = hash::hash_add_entry2(
+        // Add to DTD's attribute hash table (keyed by attribute name,
+        // prefix, element name — upstream xmlHashAdd3).
+        let ret = hash::hash_add_entry3(
             d.attributes as *mut hash::HashTable,
-            elem_name,
             name,
+            ptr::null(),
+            elem_name,
             attr as *mut c_void,
         );
         if ret != 0 {
@@ -989,6 +1114,17 @@ pub unsafe fn add_attribute_decl(
         if !elem.is_null() {
             (*attr).nexth = (*elem).attributes;
             (*elem).attributes = attr;
+        }
+
+        // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl "Link it to the
+        // DTD"): the attribute decl is a child node of the DTD.
+        if (*dtd).last.is_null() {
+            (*dtd).children = attr as *mut _xmlNode;
+            (*dtd).last = attr as *mut _xmlNode;
+        } else {
+            (*(*dtd).last).next = attr as *mut _xmlNode;
+            (*attr).prev = (*dtd).last;
+            (*dtd).last = attr as *mut _xmlNode;
         }
 
         attr
@@ -1030,7 +1166,14 @@ pub unsafe fn get_attribute_decl(
             (*elem).name
         };
 
-        let payload = hash::hash_lookup2(d.attributes as *mut hash::HashTable, elem_name, name);
+        // UPSTREAM-PARITY (valid.c xmlGetDtdQAttrDesc): keyed by
+        // (name, prefix, elem).
+        let payload = hash::hash_lookup3(
+            d.attributes as *mut hash::HashTable,
+            name,
+            ptr::null(),
+            elem_name,
+        );
         payload as *mut _xmlAttribute
     }
 }
@@ -1636,7 +1779,8 @@ mod tests {
 
             let e2 = add_element_decl(dtd, name, XML_ELEMENT_TYPE_ANY as c_int, ptr::null_mut());
             assert_eq!(e1, e2); // Same pointer returned
-            assert_eq!((*e2).type_, XML_ELEMENT_TYPE_EMPTY as c_int); // Still empty
+            assert_eq!((*e2).type_, XML_ELEMENT_DECL as c_int); // node type
+            assert_eq!((*e2).etype, XML_ELEMENT_TYPE_EMPTY as c_int); // Still empty
 
             free_dtd(dtd);
             allocator::xmlFreeImpl(doc as *mut c_void);
@@ -1669,7 +1813,8 @@ mod tests {
             let copy = copy_element(elem);
             assert!(!copy.is_null());
             assert_ne!(copy, elem);
-            assert_eq!((*copy).type_, XML_ELEMENT_TYPE_ELEMENT as c_int);
+            assert_eq!((*copy).type_, XML_ELEMENT_DECL as c_int);
+            assert_eq!((*copy).etype, XML_ELEMENT_TYPE_ELEMENT as c_int);
             assert_eq!(string::xml_strcmp((*copy).name, name), 0);
             assert!(!(*copy).content.is_null());
             assert_ne!((*copy).content, cm);

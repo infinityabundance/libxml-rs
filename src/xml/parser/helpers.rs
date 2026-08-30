@@ -75,6 +75,11 @@ pub(crate) unsafe fn create_parser_ctxt() -> *mut _xmlParserCtxt {
         c.keepBlanks = 1;
         c.replaceEntities = 0;
         c.linenumbers = 1;
+        // UPSTREAM-PARITY (parser.c xmlInitParserCtxt): a fresh context is
+        // valid and namespace-well-formed until a failure says otherwise;
+        // endDocument mirrors these into the document properties.
+        c.valid = 1;
+        c.nsWellFormed = 1;
         // UPSTREAM-PARITY: the standalone flag is tri-state: -1 unknown/unset,
         // 0 "no", 1 "yes" (xmlNewParserCtxt initialises it to -1).
         c.standalone = -1;
@@ -155,6 +160,11 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
             // SAFETY: The pointer was obtained via Box::into_raw in setup_parser_input.
             // Reconstruct the Box and let it drop.
             let _ = Box::from_raw(private_data as *mut InputBuffer);
+        }
+
+        // Free the parser dictionary (upstream xmlFreeParserCtxt).
+        if !(*ctxt).dict.is_null() {
+            crate::abi::exports_xml2::xmlDictFree((*ctxt).dict);
         }
 
         // Free the context itself.

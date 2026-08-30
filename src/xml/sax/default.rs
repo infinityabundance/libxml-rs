@@ -31,7 +31,9 @@ use crate::abi::allocator;
 use crate::abi::callbacks::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
-use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
+use crate::abi::types::xmlDocProperties::{
+    XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_USERBUILT, XML_DOC_WELLFORMED,
+};
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::XML_PARSE_COMPACT;
 use crate::xml::tree;
@@ -269,7 +271,7 @@ pub(crate) mod default_sax_handler {
                         (*attr_mut).children = text;
                         (*attr_mut).last = text;
                         (*text).parent = existing as *mut _xmlNode;
-                        (*text).doc = n.doc;
+                        (*text).doc = (*ctxt).myDoc;
                     }
                     return existing;
                 }
@@ -285,15 +287,20 @@ pub(crate) mod default_sax_handler {
             (*attr).name = crate::xml::string::xml_strdup(name);
             (*attr).ns = ns;
             (*attr).parent = node;
-            (*attr).doc = n.doc;
-            (*attr).atype = crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int;
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): the attribute
+            // belongs to the parser's document (the element's own doc pointer
+            // is only propagated when the node is linked into the tree).
+            (*attr).doc = (*ctxt).myDoc;
+            // UPSTREAM-PARITY (tree.c xmlNewProp): atype is left at the
+            // zero-initialised value (0) for instance attributes; the
+            // XML_ATTRIBUTE_* values are used by DTD attribute declarations.
 
             let text = parser_new_text_node(ctxt, value, value_len as c_int);
             if !text.is_null() {
                 (*attr).children = text;
                 (*attr).last = text;
                 (*text).parent = attr as *mut _xmlNode;
-                (*text).doc = n.doc;
+                (*text).doc = (*ctxt).myDoc;
             }
 
             // Add to the node's property list.
@@ -341,6 +348,23 @@ pub(crate) mod default_sax_handler {
 
             c.myDoc = doc;
             c.wellFormed = 1;
+
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartDocument): the parser
+            // owns the document properties; the flags are set at
+            // endDocument. parseFlags mirrors the parse options, and the
+            // document shares the parser's dictionary (refcounted).
+            (*doc).properties = 0;
+            (*doc).parseFlags = c.options;
+            (*doc).standalone = c.standalone;
+            if c.dictNames != 0 {
+                if c.dict.is_null() {
+                    c.dict = crate::abi::exports_xml2::xmlDictCreate();
+                }
+                if !c.dict.is_null() {
+                    (*doc).dict = c.dict;
+                    crate::abi::exports_hash::xmlDictReference(c.dict);
+                }
+            }
         }
     }
 
@@ -379,9 +403,16 @@ pub(crate) mod default_sax_handler {
                     }
                 }
 
-                // Mark the document as well-formed if no errors occurred.
+                // Mark the document as well-formed if no errors occurred
+                // (upstream xmlSAX2EndDocument flag set).
                 if c.wellFormed != 0 {
                     (*(c.myDoc)).properties |= XML_DOC_WELLFORMED as c_int;
+                    if c.valid != 0 {
+                        (*(c.myDoc)).properties |= XML_DOC_DTDVALID as c_int;
+                    }
+                    if c.nsWellFormed != 0 {
+                        (*(c.myDoc)).properties |= XML_DOC_NSVALID as c_int;
+                    }
                 }
             }
         }
@@ -451,22 +482,35 @@ pub(crate) mod default_sax_handler {
             // UPSTREAM-PARITY: nodes carry the line of their construct.
             (*node).line = current_line(ctxt);
 
-            // Set namespace on the node if provided.
-            if !URI.is_null() && ns.is_null() {
-                // Create a new namespace declaration on this element.
-                let new_ns = tree::new_ns(node, URI, prefix);
-                (*node).ns = new_ns;
-            }
-
-            // Process namespace declarations.
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): namespace
+            // declarations are built from the namespaces array only; the
+            // node's namespace is resolved against its own declarations
+            // first, then the parent chain (already searched above). This
+            // avoids double-registering the default namespace declaration.
+            let mut own_ns: *mut _xmlNs = ptr::null_mut();
             if nb_namespaces > 0 && !namespaces.is_null() {
                 let mut i: c_int = 0;
                 while i < nb_namespaces {
                     let ns_prefix = *namespaces.add((i * 2) as usize);
                     let ns_uri = *namespaces.add((i * 2 + 1) as usize);
-                    tree::new_ns(node, ns_uri, ns_prefix);
+                    let new_ns = tree::new_ns(node, ns_uri, ns_prefix);
+                    if own_ns.is_null() && !URI.is_null() && !new_ns.is_null() {
+                        let same = if ns_prefix.is_null() {
+                            prefix.is_null()
+                        } else if prefix.is_null() {
+                            false
+                        } else {
+                            crate::abi::exports_xml2::xmlStrEqual(ns_prefix, prefix) != 0
+                        };
+                        if same {
+                            own_ns = new_ns;
+                        }
+                    }
                     i += 1;
                 }
+            }
+            if !own_ns.is_null() {
+                (*node).ns = own_ns;
             }
 
             // Process attributes.
@@ -500,7 +544,7 @@ pub(crate) mod default_sax_handler {
                             // UPSTREAM-PARITY: xmlSAX2AttributeNs builds the
                             // attribute value text with xmlSAX2TextNode, so
                             // short values are compact under XML_PARSE_COMPACT.
-                            parser_set_prop(
+                            let attr = parser_set_prop(
                                 ctxt,
                                 node,
                                 attr_name,
@@ -508,6 +552,37 @@ pub(crate) mod default_sax_handler {
                                 attr_value_start,
                                 value_len,
                             );
+                            // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs tail):
+                            // ID/IDREF attributes are registered against the
+                            // DTD attribute declarations.
+                            if !attr.is_null() {
+                                let av = (*attr).children;
+                                let v = if av.is_null() || (*av).content.is_null() {
+                                    ptr::null()
+                                } else {
+                                    (*av).content
+                                };
+                                if !v.is_null() {
+                                    let res = crate::xml::validation::is_id(c.myDoc, node, attr);
+                                    if res > 0 {
+                                        crate::xml::validation::add_id(
+                                            ptr::null_mut(),
+                                            c.myDoc,
+                                            v,
+                                            attr,
+                                        );
+                                    } else if crate::xml::validation::is_ref(c.myDoc, node, attr)
+                                        > 0
+                                    {
+                                        crate::xml::validation::add_ref(
+                                            ptr::null_mut(),
+                                            c.myDoc,
+                                            v,
+                                            attr,
+                                        );
+                                    }
+                                }
+                            }
                         }
                     }
                     i += 1;
@@ -808,12 +883,17 @@ pub(crate) mod default_sax_handler {
                 return;
             }
 
-            // Create a DTD node for the internal subset.
-            let dtd = tree::new_dtd(c.myDoc, name, ext_id, sys_id);
-            if !dtd.is_null() {
-                // The DTD is attached to the document as intSubset by new_dtd.
-                // Nothing further to do here.
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2InternalSubset): a pre-existing
+            // internal subset is unlinked and freed before the new one is
+            // created with xmlCreateIntSubset (which links the DTD node into
+            // the document's child list before the first element node).
+            let old = (*(c.myDoc)).intSubset;
+            if !old.is_null() {
+                tree::unlink_node(old as *mut crate::abi::structs::_xmlNode);
+                crate::xml::dtd::free_dtd(old);
+                (*(c.myDoc)).intSubset = ptr::null_mut();
             }
+            crate::xml::dtd::create_int_subset(c.myDoc, name, ext_id, sys_id);
         }
     }
 
@@ -1240,12 +1320,22 @@ pub(crate) mod default_sax_handler {
                 return;
             }
 
+            // UPSTREAM-PARITY (tree.c xmlNewReference): the reference node
+            // carries the entity's content (shared pointer) and points its
+            // child list at the entity declaration node itself.
+            let ent = crate::xml::entities::get_entity(c.myDoc, name);
+
             let ref_node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
             if !ref_node.is_null() {
                 (*ref_node).type_ = XML_ENTITY_REF_NODE as c_int;
                 (*ref_node).name = crate::xml::string::xml_strdup(name);
                 (*ref_node).doc = c.myDoc;
                 (*ref_node).line = current_line(ctxt);
+                if !ent.is_null() {
+                    (*ref_node).content = (*ent).content;
+                    (*ref_node).children = ent as *mut _xmlNode;
+                    (*ref_node).last = ent as *mut _xmlNode;
+                }
                 tree::add_child(parent, ref_node);
             }
         }

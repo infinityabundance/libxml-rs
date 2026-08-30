@@ -1058,11 +1058,13 @@ pub unsafe fn validate_element(
                 let attr_ref = &*attr_prop;
                 let attr_name = attr_ref.name;
 
-                // Look up the attribute declaration
-                let attr_decl = hash::hash_lookup2(
+                // Look up the attribute declaration (keyed by name, prefix,
+                // elem — upstream xmlHashLookup3).
+                let attr_decl = hash::hash_lookup3(
                     dtd_ref.attributes as *mut hash::HashTable,
-                    elem_name,
                     attr_name,
+                    ptr::null(),
+                    elem_name,
                 );
 
                 if attr_decl.is_null() {
@@ -2348,7 +2350,7 @@ unsafe fn add_id_internal(
             *id_ptr = id;
         }
         (*id).attr = attr;
-        (*id).lineno = tree::get_line_no((*attr).parent);
+        (*id).lineno = tree::get_line_no((*attr).parent) as c_int;
         (*attr).atype = XML_ATTRIBUTE_ID as c_int;
         (*attr).id = id as *mut c_void;
         1
@@ -2505,7 +2507,7 @@ pub unsafe fn add_ref(
             (*ret).name = ptr::null();
             (*ret).attr = attr;
         }
-        (*ret).lineno = tree::get_line_no((*attr).parent);
+        (*ret).lineno = tree::get_line_no((*attr).parent) as c_int;
 
         // References are lists of xmlRef per value.
         let ref_list = hash::hash_lookup(table, value) as *mut crate::xml::list::List;

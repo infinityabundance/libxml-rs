@@ -23,7 +23,9 @@ use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong, c_void};
 
 use parking_lot::Mutex;
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlMemStrdupImpl, xmlReallocImpl};
+use crate::abi::allocator::{
+    xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlMemStrdupImpl, xmlReallocImpl,
+};
 use crate::abi::callbacks::{
     xmlGenericErrorFunc, xmlInputCloseCallback, xmlInputReadCallback, xmlOutputCloseCallback,
     xmlOutputWriteCallback, xmlStructuredErrorFunc,
@@ -184,7 +186,7 @@ unsafe fn init_sax_parser_ctxt(
 /// # Safety
 ///
 /// `ctxt` must be a valid, writable parser context.
-unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
+pub(crate) unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
     unsafe {
         let c = &mut *ctxt;
         c.options = options;
@@ -198,8 +200,16 @@ unsafe fn apply_options(ctxt: *mut _xmlParserCtxt, options: c_int) {
             };
         c.validate = (options & XML_PARSE_DTDVALID != 0) as c_int;
         c.pedantic = (options & XML_PARSE_PEDANTIC != 0) as c_int;
-        c.keepBlanks = if options & XML_PARSE_NOBLANKS != 0 { 0 } else { 1 };
-        c.dictNames = if options & XML_PARSE_NODICT != 0 { 0 } else { 1 };
+        c.keepBlanks = if options & XML_PARSE_NOBLANKS != 0 {
+            0
+        } else {
+            1
+        };
+        c.dictNames = if options & XML_PARSE_NODICT != 0 {
+            0
+        } else {
+            1
+        };
     }
 }
 
@@ -225,8 +235,8 @@ unsafe fn encoding_handler_for(enc: c_int) -> *mut _xmlCharEncodingHandler {
 /// `buf` must be a valid input buffer or NULL, and must outlive the returned
 /// input.
 unsafe fn parser_input_from_buf(buf: *mut _xmlParserInputBuffer) -> *mut _xmlParserInput {
-    let input = unsafe { xmlMallocZero(core::mem::size_of::<_xmlParserInput>()) }
-        as *mut _xmlParserInput;
+    let input =
+        unsafe { xmlMallocZero(core::mem::size_of::<_xmlParserInput>()) } as *mut _xmlParserInput;
     if input.is_null() {
         return ptr::null_mut();
     }
@@ -891,10 +901,7 @@ pub unsafe extern "C" fn xmlCheckFilename(path: *const c_char) -> c_int {
 /// int xmlIsXHTML(const xmlChar *systemID, const xmlChar *publicID);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlIsXHTML(
-    systemID: *const xmlChar,
-    publicID: *const xmlChar,
-) -> c_int {
+pub unsafe extern "C" fn xmlIsXHTML(systemID: *const xmlChar, publicID: *const xmlChar) -> c_int {
     const XHTML_STRICT_PUBLIC_ID: &[u8] = b"-//W3C//DTD XHTML 1.0 Strict//EN\0";
     const XHTML_STRICT_SYSTEM_ID: &[u8] = b"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\0";
     const XHTML_FRAME_PUBLIC_ID: &[u8] = b"-//W3C//DTD XHTML 1.0 Frameset//EN\0";
@@ -909,14 +916,10 @@ pub unsafe extern "C" fn xmlIsXHTML(
     unsafe {
         if !publicID.is_null() {
             if string::xml_strcmp(publicID, XHTML_STRICT_PUBLIC_ID.as_ptr() as *const xmlChar) == 0
-                || string::xml_strcmp(
-                    publicID,
-                    XHTML_FRAME_PUBLIC_ID.as_ptr() as *const xmlChar,
-                ) == 0
-                || string::xml_strcmp(
-                    publicID,
-                    XHTML_TRANS_PUBLIC_ID.as_ptr() as *const xmlChar,
-                ) == 0
+                || string::xml_strcmp(publicID, XHTML_FRAME_PUBLIC_ID.as_ptr() as *const xmlChar)
+                    == 0
+                || string::xml_strcmp(publicID, XHTML_TRANS_PUBLIC_ID.as_ptr() as *const xmlChar)
+                    == 0
             {
                 return 1;
             }
@@ -925,10 +928,8 @@ pub unsafe extern "C" fn xmlIsXHTML(
             if string::xml_strcmp(systemID, XHTML_STRICT_SYSTEM_ID.as_ptr() as *const xmlChar) == 0
                 || string::xml_strcmp(systemID, XHTML_FRAME_SYSTEM_ID.as_ptr() as *const xmlChar)
                     == 0
-                || string::xml_strcmp(
-                    systemID,
-                    XHTML_TRANS_SYSTEM_ID.as_ptr() as *const xmlChar,
-                ) == 0
+                || string::xml_strcmp(systemID, XHTML_TRANS_SYSTEM_ID.as_ptr() as *const xmlChar)
+                    == 0
             {
                 return 1;
             }
@@ -1218,8 +1219,7 @@ pub unsafe extern "C" fn xmlCtxtReadFd(
             }
             buf.extend_from_slice(&tmp[..n as usize]);
         }
-        let input =
-            helpers::input_from_memory(buf.as_ptr() as *const c_char, buf.len() as c_int);
+        let input = helpers::input_from_memory(buf.as_ptr() as *const c_char, buf.len() as c_int);
         ctxt_read_doc(ctxt, input, URL, options)
     }
 }
@@ -1330,7 +1330,9 @@ pub unsafe extern "C" fn xmlAllocParserInputBuffer(enc: c_int) -> *mut _xmlParse
         }
         b.compressed = -1;
 
-        if enc != xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int && enc != xmlCharEncoding::XML_CHAR_ENCODING_ERROR as c_int {
+        if enc != xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int
+            && enc != xmlCharEncoding::XML_CHAR_ENCODING_ERROR as c_int
+        {
             let handler = encoding_handler_for(enc);
             if !handler.is_null() {
                 b.encoder = handler as *mut c_void;
@@ -1496,8 +1498,7 @@ pub unsafe extern "C" fn xmlParserInputShrink(in_: *mut _xmlParserInput) {
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewInputStream(ctxt: *mut _xmlParserCtxt) -> *mut _xmlParserInput {
     unsafe {
-        let input = xmlMallocZero(core::mem::size_of::<_xmlParserInput>())
-            as *mut _xmlParserInput;
+        let input = xmlMallocZero(core::mem::size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
         if input.is_null() {
             if !ctxt.is_null() {
                 xmlCtxtErrMemory(ctxt);
@@ -1534,7 +1535,9 @@ pub unsafe extern "C" fn xmlNewIOInputStream(
             return ptr::null_mut();
         }
         (*pi).buf = input;
-        if enc != xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int && enc != xmlCharEncoding::XML_CHAR_ENCODING_ERROR as c_int {
+        if enc != xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int
+            && enc != xmlCharEncoding::XML_CHAR_ENCODING_ERROR as c_int
+        {
             let handler = encoding_handler_for(enc);
             if !handler.is_null() {
                 io::input_buffer_set_encoder(input, handler);
@@ -1600,10 +1603,7 @@ pub unsafe extern "C" fn xmlSetupParserForBuffer(
         } else {
             CStr::from_ptr(filename).to_str().ok()
         };
-        let input = InputBuffer::from_memory(
-            core::slice::from_raw_parts(buffer, len),
-            uri,
-        );
+        let input = InputBuffer::from_memory(core::slice::from_raw_parts(buffer, len), uri);
         helpers::setup_parser_input(ctxt, input);
     }
 }
@@ -1935,7 +1935,11 @@ pub unsafe extern "C" fn xmlParserAddNodeInfo(
 
         // Grow the block.
         if seq.size + 1 > seq.block_max {
-            let new_max = if seq.block_max == 0 { 4 } else { seq.block_max * 2 };
+            let new_max = if seq.block_max == 0 {
+                4
+            } else {
+                seq.block_max * 2
+            };
             let new_block = xmlReallocImpl(
                 seq.block as *mut c_void,
                 (new_max as usize) * core::mem::size_of::<_xmlParserNodeInfo>(),
@@ -2194,7 +2198,8 @@ unsafe extern "C" fn default_external_entity_loader(
         }
 
         // Fall back to a plain file open.
-        let buf = io::input_buffer_create_file(url, xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int);
+        let buf =
+            io::input_buffer_create_file(url, xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int);
         if buf.is_null() {
             return ptr::null_mut();
         }
@@ -2297,7 +2302,9 @@ pub unsafe extern "C" fn xmlCheckHTTPInput(
             let filename = (*ret).filename;
             if !filename.is_null() {
                 let len = libc::strlen(filename);
-                if len >= 7 && libc::strncasecmp(filename, b"http://\0".as_ptr() as *const c_char, 7) == 0 {
+                if len >= 7
+                    && libc::strncasecmp(filename, b"http://\0".as_ptr() as *const c_char, 7) == 0
+                {
                     if !(*ret).buf.is_null() {
                         io::input_buffer_free((*ret).buf);
                     }
@@ -2358,7 +2365,12 @@ pub unsafe extern "C" fn xmlFileRead(
         return -1;
     }
     unsafe {
-        let n = libc::fread(buffer as *mut c_void, 1, len as usize, context as *mut libc::FILE);
+        let n = libc::fread(
+            buffer as *mut c_void,
+            1,
+            len as usize,
+            context as *mut libc::FILE,
+        );
         if n < len as usize && libc::ferror(context as *mut libc::FILE) != 0 {
             return -1;
         }
@@ -2518,7 +2530,11 @@ pub unsafe extern "C" fn xmlNextChar(ctxt: *mut _xmlParserCtxt) {
                 pi.col = 1;
             } else if c == b'\r' {
                 // CRLF is a single line break.
-                pi.cur = cur.add(if avail >= 2 && *cur.add(1) == b'\n' { 2 } else { 1 });
+                pi.cur = cur.add(if avail >= 2 && *cur.add(1) == b'\n' {
+                    2
+                } else {
+                    1
+                });
                 pi.line += 1;
                 pi.col = 1;
             } else {
@@ -2914,10 +2930,7 @@ pub unsafe extern "C" fn xmlDecodeEntities(
                     let ent = entities::get_entity((*ctxt).myDoc, name_nul.as_ptr());
                     if !ent.is_null() && !(*ent).content.is_null() {
                         let clen = string::xml_strlen((*ent).content);
-                        out.extend_from_slice(core::slice::from_raw_parts(
-                            (*ent).content,
-                            clen,
-                        ));
+                        out.extend_from_slice(core::slice::from_raw_parts((*ent).content, clen));
                         replaced = true;
                     }
                 }
@@ -3336,7 +3349,11 @@ unsafe fn input_buffer_data(buf: *mut _xmlParserInputBuffer) -> Vec<u8> {
             let mut out = Vec::new();
             let mut tmp = [0u8; 4096];
             loop {
-                let n = read(b.context, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int);
+                let n = read(
+                    b.context,
+                    tmp.as_mut_ptr() as *mut c_char,
+                    tmp.len() as c_int,
+                );
                 if n <= 0 {
                     break;
                 }

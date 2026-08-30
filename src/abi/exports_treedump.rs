@@ -1958,6 +1958,25 @@ unsafe fn free_dtd_internal(dtd: *mut _xmlDtd) {
         return;
     }
     unsafe {
+        // UPSTREAM-PARITY (tree.c xmlFreeDtd): declaration nodes in the child
+        // list are owned by the hash tables and freed by the deallocators
+        // below; only non-declaration children (comments, PIs) are freed here.
+        // This must run BEFORE the hash tables are freed so the decl nodes are
+        // still alive when their type is inspected.
+        if !(*dtd).children.is_null() {
+            let mut c = (*dtd).children;
+            while !c.is_null() {
+                let next = (*c).next;
+                let t = (*c).type_;
+                if t != crate::abi::types::xmlElementType::XML_ELEMENT_DECL as c_int
+                    && t != crate::abi::types::xmlElementType::XML_ATTRIBUTE_DECL as c_int
+                    && t != crate::abi::types::xmlElementType::XML_ENTITY_DECL as c_int
+                {
+                    free_node(c);
+                }
+                c = next;
+            }
+        }
         if !(*dtd).name.is_null() {
             xmlFreeImpl((*dtd).name as *mut c_void);
         }
@@ -2010,9 +2029,6 @@ unsafe fn free_dtd_internal(dtd: *mut _xmlDtd) {
                 (*dtd).pentities as *mut crate::xml::hash::HashTable,
                 Some(free_entity_wrapper),
             );
-        }
-        if !(*dtd).children.is_null() {
-            free_node_list((*dtd).children);
         }
         xmlFreeImpl(dtd as *mut c_void);
     }

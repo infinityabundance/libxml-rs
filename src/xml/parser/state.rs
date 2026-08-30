@@ -11,6 +11,7 @@ use crate::abi::constants::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementContentOccur::*;
 use crate::abi::types::xmlElementContentType::*;
+use crate::abi::types::xmlElementType::*;
 use crate::abi::types::xmlElementTypeVal::*;
 use crate::abi::types::xmlEntityType::*;
 use crate::abi::types::*;
@@ -30,6 +31,26 @@ const XML_PARSER_PROLOG: c_int = 2;
 const XML_PARSER_CONTENT: c_int = 3;
 const XML_PARSER_CDATA_SECTION: c_int = 4;
 const XML_PARSER_ENTITY_REF: c_int = 5;
+
+/// XML_WAR_NS_URI_RELATIVE (include/libxml/xmlerror.h:100) — the namespace
+/// URI warning for relative (non-absolute) xmlns URIs.
+const XML_WAR_NS_URI_RELATIVE: c_int = 100;
+
+/// Whether a namespace URI carries a scheme (`[a-zA-Z][a-zA-Z0-9+.-]*:`
+/// prefix) — upstream xmlParseURISafe's `scheme == NULL` check.
+fn has_uri_scheme(uri: &[u8]) -> bool {
+    let mut i = 0usize;
+    if i < uri.len() && uri[i].is_ascii_alphabetic() {
+        i += 1;
+        while i < uri.len()
+            && (uri[i].is_ascii_alphanumeric() || matches!(uri[i], b'+' | b'-' | b'.'))
+        {
+            i += 1;
+        }
+        return i < uri.len() && uri[i] == b':';
+    }
+    false
+}
 
 /// Whether a SAX `error` slot holds one of the candidate's legacy default
 /// handlers (upstream error.c treats these as "do not invoke directly —
@@ -139,6 +160,11 @@ impl XmlParser {
     /// Return whether the parser is in recovery mode.
     fn is_recovery(&self) -> bool {
         (self.options & XML_PARSE_RECOVER) != 0
+    }
+
+    /// Return whether pedantic mode (XML_PARSE_PEDANTIC) is active.
+    fn is_pedantic(&self) -> bool {
+        unsafe { (*self.ctxt).pedantic != 0 }
     }
 
     /// Return whether SAX dispatch is currently disabled.
@@ -450,6 +476,10 @@ impl XmlParser {
             }
         }
 
+        // UPSTREAM-PARITY (parser.c xmlParseXMLDecl / xmlParseSDDecl): an
+        // XML declaration without a standalone attribute yields -2; a
+        // declared standalone="yes"/"no" yields 1/0.
+        unsafe { (*self.ctxt).standalone = -2 };
         // Store standalone
         if let Some(sa) = standalone {
             if sa.eq_ignore_ascii_case(b"yes") {
@@ -925,7 +955,10 @@ impl XmlParser {
         let mut rest = trim_ascii(&args[name_end..]);
         let elem_cstr = Self::vec_to_cstr_null(elem_name);
         unsafe {
-            let elem_decl = crate::xml::dtd::get_element_decl(dtd, elem_cstr);
+            // UPSTREAM-PARITY (parser.c xmlParseAttlistDecl): an ATTLIST for
+            // an undeclared element creates an UNDEFINED element declaration
+            // (valid.c xmlGetDtdElementDesc).
+            let elem_decl = crate::xml::dtd::get_element_decl_created(dtd, elem_cstr);
             if elem_decl.is_null() {
                 crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
                 return;
@@ -1041,6 +1074,7 @@ impl XmlParser {
             XmlToken::StartTag {
                 name,
                 attributes,
+                attr_end,
                 empty,
                 unterminated,
             } => {
@@ -1049,7 +1083,7 @@ impl XmlParser {
                     // already raised; upstream's element parse failed.
                     return Err(());
                 }
-                self.parse_element(name, attributes, empty)?;
+                self.parse_element(name, attributes, attr_end, empty)?;
 
                 // UPSTREAM-PARITY: trailing misc, then xmlParserCheckEOF.
                 self.parse_misc_after_root()?;
@@ -1125,6 +1159,7 @@ impl XmlParser {
         &mut self,
         name: Vec<u8>,
         attributes: Vec<(Vec<u8>, Vec<u8>)>,
+        attr_end: Vec<usize>,
         empty: bool,
     ) -> Result<(), ()> {
         // Line where this element's start tag appeared (used for upstream
@@ -1152,7 +1187,54 @@ impl XmlParser {
         }
         let attributes = new_attributes;
 
-        for (attr_name, attr_value) in &attributes {
+        for (idx, (attr_name, attr_value)) in attributes.iter().enumerate() {
+            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): the default
+            // namespace declaration warns when the URI is not absolute
+            // (xmlns: URI %s is not absolute); the prefixed form warns only
+            // in pedantic mode. The diagnostic is attributed to the position
+            // just past the value's closing quote.
+            if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
+                if attr_name == b"xmlns" {
+                    if !attr_value.is_empty() && !has_uri_scheme(attr_value) {
+                        let pos = attr_end.get(idx).copied().unwrap_or(0);
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_WAR_NS_URI_RELATIVE,
+                            xmlErrorLevel::XML_ERR_WARNING as c_int,
+                            format!(
+                                "xmlns: URI {} is not absolute\n",
+                                String::from_utf8_lossy(attr_value)
+                            ),
+                            Some(attr_value.clone()),
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                    }
+                } else if self.is_pedantic()
+                    && !attr_value.is_empty()
+                    && !has_uri_scheme(attr_value)
+                {
+                    let prefix = &attr_name[b"xmlns:".len()..];
+                    let pos = attr_end.get(idx).copied().unwrap_or(0);
+                    self.raise_error_at(
+                        XML_FROM_NAMESPACE,
+                        XML_WAR_NS_URI_RELATIVE,
+                        xmlErrorLevel::XML_ERR_WARNING as c_int,
+                        format!(
+                            "xmlns:{}: URI {} is not absolute\n",
+                            String::from_utf8_lossy(prefix),
+                            String::from_utf8_lossy(attr_value)
+                        ),
+                        Some(attr_value.clone()),
+                        None,
+                        None,
+                        0,
+                        pos,
+                    );
+                }
+            }
             if attr_name == b"xmlns" {
                 // Default namespace declaration: xmlns="uri"
                 ns_decls.push((Vec::new(), attr_value.clone()));
@@ -1229,6 +1311,7 @@ impl XmlParser {
                     XmlToken::StartTag {
                         name: child_name,
                         attributes: child_attrs,
+                        attr_end: child_attr_end,
                         empty: child_empty,
                         unterminated,
                     } => {
@@ -1239,11 +1322,22 @@ impl XmlParser {
                             self.pop_name();
                             return Err(());
                         }
-                        self.parse_element(child_name, child_attrs, child_empty)?;
+                        self.parse_element(child_name, child_attrs, child_attr_end, child_empty)?;
                     }
                     XmlToken::Characters(data) => {
                         if !data.is_empty() {
-                            self.sax_characters(&data);
+                            // UPSTREAM-PARITY (parser.c xmlCharacters): with
+                            // XML_PARSE_NOBLANKS (keepBlanks == 0) a
+                            // whitespace-only run is dropped before the SAX
+                            // characters event fires.
+                            let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
+                            if keep_blanks
+                                || !data
+                                    .iter()
+                                    .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+                            {
+                                self.sax_characters(&data);
+                            }
                         }
                     }
                     XmlToken::Comment(data) => {
@@ -1514,7 +1608,9 @@ impl XmlParser {
                 // UPSTREAM-PARITY (xmlParseReference): an undeclared entity
                 // in a document without external subset/PE refs is fatal:
                 // "Entity '%s' not defined\n" (26), str1 = name, at the
-                // current position (after the ';').
+                // current position (after the ';'). In recovery mode the
+                // reference event still fires, building an entity-ref node
+                // without a backing declaration.
                 self.raise_error_now(
                     XML_FROM_PARSER,
                     XML_ERR_UNDECLARED_ENTITY,
@@ -1525,10 +1621,25 @@ impl XmlParser {
                     None,
                     0,
                 );
-                return Err(());
+                if !self.is_recovery() {
+                    return Err(());
+                }
+                if !self.is_sax_disabled() {
+                    let name_cstr = Self::vec_to_cstr_null(name);
+                    unsafe {
+                        let sax = &*(*self.ctxt).sax;
+                        let ctx = (*self.ctxt).userData;
+                        SaxDispatcher::reference(sax, ctx, name_cstr);
+                    }
+                }
+                return Ok(());
             }
 
             if (self.options & XML_PARSE_NOENT) != 0 {
+                // UPSTREAM-PARITY (xmlParseReference): the entity content is
+                // parsed into ent->children on first reference regardless of
+                // the substitution mode.
+                self.parse_entity_content(entity)?;
                 if !unsafe { (*entity).content }.is_null() {
                     // Re-parse the entity content from a pushed input.
                     let content = unsafe { (*entity).content };
@@ -1566,6 +1677,10 @@ impl XmlParser {
                     }
                 }
             } else {
+                // UPSTREAM-PARITY (xmlParseReference): the entity content is
+                // parsed into ent->children on the first reference
+                // (xmlCtxtParseEntity), before the reference event fires.
+                self.parse_entity_content(entity)?;
                 // Not substituting: dispatch the reference event.
                 if !self.is_sax_disabled() {
                     let name_cstr = Self::vec_to_cstr_null(name);
@@ -1579,6 +1694,173 @@ impl XmlParser {
 
             Ok(())
         }
+    }
+
+    /// UPSTREAM-PARITY (parser.c xmlCtxtParseEntity, first-parse branch):
+    /// parse the entity's content into a node list stored in `ent->children`
+    /// (`ent->last` updated, each node's parent set to `ent`, document
+    /// pointer propagated). Text runs and character references become text
+    /// nodes (coalesced); nested general-entity references are resolved
+    /// recursively and become entity-ref nodes carrying the referenced entity
+    /// (content shared, children = entity), matching xmlNewReference. The
+    /// parse is guarded against loops with the XML_ENT_EXPANDING flag and
+    /// cached with XML_ENT_PARSED.
+    fn parse_entity_content(&mut self, ent: *mut _xmlEntity) -> Result<(), ()> {
+        const XML_ENT_PARSED: c_int = 1 << 0;
+        const XML_ENT_EXPANDING: c_int = 1 << 3;
+        unsafe {
+            if ent.is_null() || ((*ent).flags & XML_ENT_PARSED) != 0 {
+                return Ok(());
+            }
+            if ((*ent).flags & XML_ENT_EXPANDING) != 0 {
+                // Entity loop — upstream raises XML_ERR_ENTITY_LOOP here.
+                return Ok(());
+            }
+            if (*ent).content.is_null() {
+                (*ent).flags |= XML_ENT_PARSED;
+                return Ok(());
+            }
+            let doc = (*ent).doc;
+            let content = (*ent).content;
+            let len = libc::strlen(content as *const c_char);
+            let bytes = core::slice::from_raw_parts(content, len);
+
+            (*ent).flags |= XML_ENT_EXPANDING;
+
+            let mut head: *mut _xmlNode = ptr::null_mut();
+            let mut last: *mut _xmlNode = ptr::null_mut();
+            let mut pending: Vec<u8> = Vec::new();
+
+            macro_rules! flush_text {
+                () => {
+                    if !pending.is_empty() {
+                        let mut nul = pending.clone();
+                        nul.push(0);
+                        let node = crate::xml::tree::new_text(nul.as_ptr() as *const xmlChar);
+                        if !node.is_null() {
+                            (*node).doc = doc;
+                            // UPSTREAM-PARITY: the entity input stream starts
+                            // at line 1, so parsed content nodes carry line 1.
+                            (*node).line = 1;
+                            if last.is_null() {
+                                head = node;
+                            } else {
+                                (*last).next = node;
+                                (*node).prev = last;
+                            }
+                            last = node;
+                        }
+                        pending.clear();
+                    }
+                };
+            }
+
+            let mut i = 0usize;
+            while i < bytes.len() {
+                if bytes[i] == b'&' {
+                    if let Some(semi_rel) = bytes[i + 1..].iter().position(|&b| b == b';') {
+                        let inner = &bytes[i + 1..i + 1 + semi_rel];
+                        if inner.starts_with(b"#") {
+                            // Numeric character reference: decoded into text.
+                            let mut digits = &inner[1..];
+                            let radix = if digits
+                                .strip_prefix(b"x")
+                                .or_else(|| digits.strip_prefix(b"X"))
+                                .is_some()
+                            {
+                                digits = &digits[1..];
+                                16
+                            } else {
+                                10
+                            };
+                            if let Ok(cp) =
+                                u32::from_str_radix(&String::from_utf8_lossy(digits), radix)
+                            {
+                                if let Some(ch) = char::from_u32(cp) {
+                                    let mut buf4 = [0u8; 4];
+                                    pending.extend_from_slice(ch.encode_utf8(&mut buf4).as_bytes());
+                                }
+                            }
+                        } else {
+                            // Named reference.
+                            let replacement = match inner {
+                                b"amp" => Some(b"&" as &[u8]),
+                                b"lt" => Some(b"<" as &[u8]),
+                                b"gt" => Some(b">" as &[u8]),
+                                b"quot" => Some(b"\"" as &[u8]),
+                                b"apos" => Some(b"'" as &[u8]),
+                                _ => None,
+                            };
+                            if let Some(rep) = replacement {
+                                pending.extend_from_slice(rep);
+                            } else {
+                                // General entity: resolve, recurse, and emit an
+                                // entity-ref node carrying the entity.
+                                let name_cstr = Self::vec_to_cstr_null(inner);
+                                let ent2 = if !self.is_sax_disabled() {
+                                    let sax = &*(*self.ctxt).sax;
+                                    let ctx = (*self.ctxt).userData;
+                                    SaxDispatcher::get_entity(sax, ctx, name_cstr)
+                                } else {
+                                    ptr::null_mut()
+                                };
+                                if !ent2.is_null() {
+                                    self.parse_entity_content(ent2)?;
+                                    flush_text!();
+                                    let node =
+                                        crate::abi::allocator::xmlMallocZero(core::mem::size_of::<
+                                            _xmlNode,
+                                        >(
+                                        )) as *mut _xmlNode;
+                                    if !node.is_null() {
+                                        (*node).type_ = XML_ENTITY_REF_NODE as c_int;
+                                        (*node).name = crate::xml::string::xml_strdup(name_cstr);
+                                        (*node).doc = doc;
+                                        (*node).content = (*ent2).content;
+                                        (*node).children = ent2 as *mut _xmlNode;
+                                        (*node).last = ent2 as *mut _xmlNode;
+                                        if last.is_null() {
+                                            head = node;
+                                        } else {
+                                            (*last).next = node;
+                                            (*node).prev = last;
+                                        }
+                                        last = node;
+                                    }
+                                }
+                                crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+                            }
+                        }
+                        i += semi_rel + 2;
+                        continue;
+                    }
+                }
+                let start = i;
+                while i < bytes.len() && bytes[i] != b'&' {
+                    i += 1;
+                }
+                if i > start {
+                    pending.extend_from_slice(&bytes[start..i]);
+                }
+            }
+            flush_text!();
+
+            (*ent).flags &= !XML_ENT_EXPANDING;
+            (*ent).flags |= XML_ENT_PARSED;
+
+            (*ent).children = head;
+            (*ent).last = last;
+            let mut cur = head;
+            while !cur.is_null() {
+                (*cur).parent = ent as *mut _xmlNode;
+                if (*cur).doc != doc {
+                    // UPSTREAM-PARITY: xmlSetTreeDoc on the parsed list.
+                    crate::abi::exports_tree::xmlSetTreeDoc(cur, doc);
+                }
+                cur = (*cur).next;
+            }
+        }
+        Ok(())
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1701,7 +1983,16 @@ impl XmlParser {
                 } else {
                     Self::vec_to_cstr_null(prefix)
                 };
-                let uri_cstr = Self::vec_to_cstr_null(uri);
+                // UPSTREAM-PARITY: xmlns="" declares an empty (not NULL)
+                // namespace URI — xmlNewNs stores href="".
+                let uri_cstr = if uri.is_empty() {
+                    let mut empty = vec![0u8];
+                    let p = empty.as_ptr();
+                    core::mem::forget(empty);
+                    p as *const xmlChar
+                } else {
+                    Self::vec_to_cstr_null(uri)
+                };
                 ns_vec.push(prefix_cstr);
                 ns_vec.push(uri_cstr);
             }

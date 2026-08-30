@@ -19,11 +19,13 @@ mod debug_test {
             XmlToken::StartTag {
                 name,
                 attributes,
+                attr_end,
                 empty,
                 unterminated,
             } => {
                 assert_eq!(name.as_slice(), b"root");
                 assert!(attributes.is_empty());
+                assert!(attr_end.is_empty());
                 assert!(*empty);
                 assert!(!*unterminated);
             }
@@ -69,11 +71,13 @@ mod debug_test {
             XmlToken::StartTag {
                 name,
                 attributes,
+                attr_end,
                 empty,
                 unterminated,
             } => {
                 assert_eq!(name.as_slice(), b"root");
                 assert_eq!(attributes.len(), 1);
+                assert_eq!(attr_end.len(), 1);
                 assert!(*empty);
                 assert!(!*unterminated);
             }

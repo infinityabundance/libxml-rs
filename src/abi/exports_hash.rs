@@ -541,9 +541,10 @@ pub unsafe extern "C" fn xmlHashScanFull3(
 ///
 /// Upstream keeps `ref_counter` inside the `xmlDict` struct; the internal
 /// `Dict` has no self-refcount field (its refcounts are per-entry), so the
+/// Reference counts for dictionaries (upstream xmlDictReference). The
 /// reference count is tracked here in a side table keyed by the opaque dict
 /// pointer.
-static DICT_REFS: Lazy<Mutex<HashMap<usize, u32>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+pub static DICT_REFS: Lazy<Mutex<HashMap<usize, u32>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Interned string pointers owned by each dictionary, keyed by dict pointer.
 ///
