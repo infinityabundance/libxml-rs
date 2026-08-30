@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**12 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160, R-000165
+**13 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160, R-000165, R-000166
 
 ## Phase 0 Residuals
 
@@ -781,6 +781,18 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Oracle versions:** libxml2 2.15.3 / libxslt 1.1.45 / libexslt (system DSOs, nm -D --defined-only)
 - **Root cause:** The 11.1-O complete subsystem census (tools/evidence/subsystem_census.py; 45 libxml2 + 24 libxslt + 8 EXSLT subsystems, membership from Doxygen inventory + Clang AST atlas + symbol patterns, oracle baseline = system DSO exports) found 65 oracle-DSO-exported symbols with no candidate definition. The PARITY_OBLIGATIONS ledger reported MISSING: 0 because the obligations generator's oracle symbol set omitted these families (parser-context accessors, the xlink module, per-module EXSLT registrations, resource-loader setters and several small helpers), so the export-completeness claim was not actually proven for them.
 - **Observable residual:** A C consumer dlopen/dlsym'ing or linking against the candidate for xmlCtxtGetDict, xmlNewInputFromMemory, xlinkIsLink, exsltMathRegister, xmlSchemaSetResourceLoader, xmlUTF8ToIsolat1, xslDebugStatus, etc. fails with an undefined symbol. dlsym returns NULL for each of the 65 names in atlas/SUBSYSTEM_CENSUS.json missing_symbols.
+- **Classification:** CANDIDATE_BUG
+
+## Phase 11.1-P Residuals
+
+### R-000166: Standards three-way divergences: candidate misses WFC diagnostics (comment '--', '<' in attr values), namespace-declaration errors (xmlns:p="", xmlns:xml wrong URI, XML ns as default), C14N absolute-URI rule + inclusive ns propagation, XSLT number formatting (format-number empty, value-of full double precision) (OPEN)
+
+- **Status:** OPEN
+- **Component:** src/xml/parser/state.rs, src/xml/parser/tokenizer.rs, src/xml/sax/default.rs, src/abi/exports_xslt_apply.rs, src/abi/exports_xslt_exec.rs, src/abi/exports_xptr.rs, src/xml/xpath/mod.rs, src/xml/c14n/mod.rs, tools/evidence/standards_reconciliation.py, atlas/standards/STANDARDS_RECONCILIATION.json
+- **Surface:** xmlParseComment WFC 'Double hyphen within comment'; xmlParseAttValue 'Unescaped <' not allowed'; xmlParseStartTag2 namespace declaration errors (XML_NS_ERR_XML_NAMESPACE family); xmlC14NExecute absolute-URI enforcement and inclusive namespace propagation; libxslt xsltFormatNumberConversion / xmlXPathCastNumberToString (XSLT 1.0 12.3 / 7.6)
+- **Oracle versions:** libxml2 2.15.3 / libxslt 1.1.45 (xmllint/xsltproc probes)
+- **Root cause:** The 11.1-P three-way reconciliation (SPECIFICATION / UPSTREAM ORACLE / LIBXML-RS, 14 standards areas, executable probes on both binaries) found four candidate divergence clusters the existing courts do not cover: (1) well-formedness WFC diagnostics for comments containing '--' and '<' inside attribute values are not raised; (2) namespace-declaration errors (empty xmlns:p="", xmlns:xml mapped to a wrong URI, XML namespace URI as default namespace) are accepted silently; (3) canonicalization accepts relative namespace URIs that upstream rejects with 'Failed to canonicalize' and re-declares in-scope namespaces per element (inclusive C14N propagation needs audit); (4) XSLT number formatting diverges hard: format-number(1234567.891,'#,##0.00') yields empty output (oracle '1,234,567.89') and value-of 1234567.891 prints full double precision '1234567.891000000061467' (oracle '1234567.891').
+- **Observable residual:** xmllint probes: '<a><!-- a -- b --></a>', '<a b="x < y"/>', '<a xmlns:p=""><p:b/></a>', '<a xmlns:xml="urn:x"/>', '<a xmlns="http://www.w3.org/XML/1998/namespace"/>' all parse without the oracle's diagnostics; 'xmllint --c14n' on relative-URI docs canonicalizes instead of failing; xsltproc format-number produces empty output with rc=0.
 - **Classification:** CANDIDATE_BUG
 
 ## Classification Legend

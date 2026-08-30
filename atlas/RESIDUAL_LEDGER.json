@@ -17,7 +17,8 @@
   "11.1-L",
   "11.1-M",
   "11.1-N",
-  "11.1-O"
+  "11.1-O",
+  "11.1-P"
  ],
  "ledger": [
   {
@@ -2021,6 +2022,38 @@
     }
    ],
    "lesson": "Export-completeness must be measured against the oracle DSO's actual dynamic symbol table (including versioned symbols and undocumented families such as xlink), not only against a curated obligations list. A subsystem census with three independent membership sources and an explicit uncategorized bucket turns 'API complete' claims into auditable numbers."
+  },
+  {
+   "id": "R-000166",
+   "status": "OPEN",
+   "phase": "11.1-P",
+   "title": "Standards three-way divergences: candidate misses WFC diagnostics (comment '--', '<' in attr values), namespace-declaration errors (xmlns:p=\"\", xmlns:xml wrong URI, XML ns as default), C14N absolute-URI rule + inclusive ns propagation, XSLT number formatting (format-number empty, value-of full double precision)",
+   "surface": "xmlParseComment WFC 'Double hyphen within comment'; xmlParseAttValue 'Unescaped <' not allowed'; xmlParseStartTag2 namespace declaration errors (XML_NS_ERR_XML_NAMESPACE family); xmlC14NExecute absolute-URI enforcement and inclusive namespace propagation; libxslt xsltFormatNumberConversion / xmlXPathCastNumberToString (XSLT 1.0 12.3 / 7.6)",
+   "component": [
+    "src/xml/parser/state.rs",
+    "src/xml/parser/tokenizer.rs",
+    "src/xml/sax/default.rs",
+    "src/abi/exports_xslt_apply.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xptr.rs",
+    "src/xml/xpath/mod.rs",
+    "src/xml/c14n/mod.rs",
+    "tools/evidence/standards_reconciliation.py",
+    "atlas/standards/STANDARDS_RECONCILIATION.json"
+   ],
+   "discovery_date": "2026-08-30",
+   "oracle_versions": "libxml2 2.15.3 / libxslt 1.1.45 (xmllint/xsltproc probes)",
+   "root_cause": "The 11.1-P three-way reconciliation (SPECIFICATION / UPSTREAM ORACLE / LIBXML-RS, 14 standards areas, executable probes on both binaries) found four candidate divergence clusters the existing courts do not cover: (1) well-formedness WFC diagnostics for comments containing '--' and '<' inside attribute values are not raised; (2) namespace-declaration errors (empty xmlns:p=\"\", xmlns:xml mapped to a wrong URI, XML namespace URI as default namespace) are accepted silently; (3) canonicalization accepts relative namespace URIs that upstream rejects with 'Failed to canonicalize' and re-declares in-scope namespaces per element (inclusive C14N propagation needs audit); (4) XSLT number formatting diverges hard: format-number(1234567.891,'#,##0.00') yields empty output (oracle '1,234,567.89') and value-of 1234567.891 prints full double precision '1234567.891000000061467' (oracle '1234567.891').",
+   "observable_residual": "xmllint probes: '<a><!-- a -- b --></a>', '<a b=\"x < y\"/>', '<a xmlns:p=\"\"><p:b/></a>', '<a xmlns:xml=\"urn:x\"/>', '<a xmlns=\"http://www.w3.org/XML/1998/namespace\"/>' all parse without the oracle's diagnostics; 'xmllint --c14n' on relative-URI docs canonicalizes instead of failing; xsltproc format-number produces empty output with rc=0.",
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "date": "2026-08-30",
+     "event": "discovered by the 11.1-P standards reconciliation probes; recorded OPEN with exact probe inputs; closure scheduled for 11.1-X with PARSER-002 (WFC cluster), NS-001, C14N-001 and XSLT-002 courts",
+     "status": "OPEN"
+    }
+   ],
+   "lesson": "Spec-vs-upstream-vs-candidate must be checked per area with executable probes on both binaries, not only within the existing court corpora: small WFC/namespace checks and number formatting that no court exercises can silently diverge while every curated court passes."
   }
  ]
 }
