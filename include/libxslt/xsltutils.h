@@ -21,6 +21,27 @@ XMLPUBFUN void xsltSetTransformErrorFunc(xsltTransformContextPtr ctxt,
                                           void *ctx,
                                           xmlGenericErrorFunc handler);
 XMLPUBFUN int xsltCheckFeature(int feature);
+XMLPUBFUN void xsltSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handler);
+XMLPUBFUN void xsltTransformError(xsltTransformContextPtr ctxt,
+                                  xsltStylesheetPtr style, xmlNodePtr node,
+                                  const char *msg, ...);
+XMLPUBFUN void xsltPrintErrorContext(xsltTransformContextPtr ctxt,
+                                     xsltStylesheetPtr style, xmlNodePtr node);
+XMLPUBFUN int xsltSetCtxtParseOptions(xsltTransformContextPtr ctxt, int options);
+XMLPUBFUN int xsltGetDebuggerStatus(void);
+XMLPUBFUN long xsltTimestamp(void);
+XMLPUBFUN void xsltCalibrateAdjust(long delta);
+XMLPUBFUN xmlDocPtr xsltGetProfileInformation(xsltTransformContextPtr ctxt);
+XMLPUBFUN xmlDocPtr xsltProfileStylesheet(xsltStylesheetPtr style, xmlDocPtr doc,
+                                          const char **params, FILE *output);
+XMLPUBFUN void xsltSaveProfiling(xsltTransformContextPtr ctxt, FILE *output);
+XMLPUBFUN int xsltSaveResultTo(xmlOutputBufferPtr buf, xmlDocPtr result,
+                               xsltStylesheetPtr style);
+XMLPUBFUN int xsltIsBlank(xmlChar *str);
+XMLPUBFUN const xmlChar *xsltSplitQName(xmlDictPtr dict, const xmlChar *name,
+                                        const xmlChar **prefix);
+XMLPUBFUN const xmlChar *xsltGetQNameURI(xmlNodePtr node, xmlChar **name);
+XMLPUBFUN int xsltGetUTF8Char(const unsigned char *utf, int *len);
 
 
 
@@ -94,6 +115,9 @@ typedef enum{
     XSLT_DEBUG_RUN_RESTART,
     XSLT_DEBUG_QUIT
 } xsltDebugStatusCodes;
+
+XMLPUBFUN xsltDebugTraceCodes xsltDebugGetDefaultTrace(void);
+XMLPUBFUN void xsltDebugSetDefaultTrace(xsltDebugTraceCodes val);
 
 /* [11.1-G] end: extracted definitions */
 #ifdef __cplusplus

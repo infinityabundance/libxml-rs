@@ -111,7 +111,8 @@ pub unsafe extern "C" fn xsltRegisterExtModule(
     initFunc: Option<xsltExtInitFunction>,
     shutdownFunc: Option<xsltExtShutdownFunction>,
 ) -> c_int {
-    if URI.is_null() {
+    // Upstream xsltRegisterExtModuleFull: NULL URI or NULL initFunc -> -1.
+    if URI.is_null() || initFunc.is_none() {
         return -1;
     }
     let key = unsafe { CStr::from_ptr(URI as *const c_char).to_bytes().to_vec() };
@@ -147,7 +148,7 @@ pub unsafe extern "C" fn xsltRegisterExtModuleFull(
     styleInitFunc: Option<xsltStyleExtInitFunction>,
     styleShutdownFunc: Option<xsltStyleExtShutdownFunction>,
 ) -> c_int {
-    if URI.is_null() {
+    if URI.is_null() || initFunc.is_none() {
         return -1;
     }
     let key = unsafe { CStr::from_ptr(URI as *const c_char).to_bytes().to_vec() };

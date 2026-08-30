@@ -1,6 +1,6 @@
 {
  "schema": "parity-obligations-3",
- "generated": "2026-08-30T11:37:43Z",
+ "generated": "2026-08-30T11:45:04Z",
  "status_model": {
   "schema": "parity-obligations-status-model-2",
   "export_status": [
@@ -69,8 +69,8 @@
     "MISSING": 0,
     "STUB": 18,
     "INTENTIONAL_NOOP": 14,
-    "IMPLEMENTED_UNVERIFIED": 1565,
-    "CURRENT_PARITY_VERIFIED": 4,
+    "IMPLEMENTED_UNVERIFIED": 1363,
+    "CURRENT_PARITY_VERIFIED": 206,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
     "DATA_MISSING": 0,
@@ -90,22 +90,22 @@
      "NOT_APPLICABLE": 45
     },
     "abi_status": {
-     "UNVERIFIED": 1642,
-     "PASS": 4,
+     "UNVERIFIED": 1432,
+     "PASS": 214,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
     "semantic_status": {
-     "UNVERIFIED": 1642,
+     "UNVERIFIED": 1432,
      "PARTIAL": 0,
-     "PASS": 4,
+     "PASS": 214,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
     "ownership_status": {
      "NOT_APPLICABLE": 45,
-     "UNVERIFIED": 1597,
-     "PASS": 4,
+     "UNVERIFIED": 1387,
+     "PASS": 214,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
@@ -1548,14 +1548,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogDump",
@@ -1564,14 +1566,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogRemove",
@@ -1580,14 +1584,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogResolve",
@@ -1596,14 +1602,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogResolvePublic",
@@ -1612,14 +1620,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogResolveSystem",
@@ -1628,14 +1638,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlACatalogResolveURI",
@@ -1676,14 +1688,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlAddChildList",
@@ -1900,14 +1914,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlAllocParserInputBuffer",
@@ -2416,14 +2432,17 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001",
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlBufferCreate",
@@ -2432,14 +2451,17 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001",
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlBufferCreateSize",
@@ -2528,14 +2550,17 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001",
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlBufferGrow",
@@ -2560,14 +2585,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlBufferResize",
@@ -2928,14 +2955,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCatalogGetDefaults",
@@ -2992,14 +3021,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCatalogLocalResolve",
@@ -3008,14 +3039,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCatalogLocalResolveURI",
@@ -3120,14 +3153,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCatalogSetDefaultPrefer",
@@ -3136,14 +3171,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCatalogSetDefaults",
@@ -3494,14 +3531,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlCleanupPredefinedEntities",
@@ -5066,14 +5105,17 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001",
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlDocSetRootElement",
@@ -5082,14 +5124,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlDumpAttributeDecl",
@@ -5450,14 +5494,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlFreeDoc",
@@ -5466,14 +5512,18 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001",
+      "SAVE-001",
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlFreeDocElementContent",
@@ -5866,14 +5916,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlFreeTextWriter",
@@ -5882,14 +5934,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlFreeURI",
@@ -7314,14 +7368,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlInitParserCtxt",
@@ -7480,14 +7536,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "DATA-GLOBALS-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlIsChar",
@@ -7672,14 +7730,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "DATA-GLOBALS-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlIsMainThread",
@@ -8296,14 +8356,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlLoadCatalog",
@@ -9566,14 +9628,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "CATALOG-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlNewCharEncodingHandler",
@@ -9646,14 +9710,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlNewDocComment",
@@ -9966,14 +10032,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlNewNodeEatName",
@@ -10158,14 +10226,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlNewTextChild",
@@ -10286,14 +10356,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlNewTextWriterPushParser",
@@ -10768,14 +10840,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferCreateBuffer",
@@ -10784,14 +10858,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferCreateFd",
@@ -10912,14 +10988,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferGetSize",
@@ -10928,14 +11006,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferWrite",
@@ -10944,14 +11024,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferWriteEscape",
@@ -10960,14 +11042,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlOutputBufferWriteString",
@@ -12864,14 +12948,17 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001",
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlReaderForDoc",
@@ -12880,14 +12967,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlReaderForFd",
@@ -13024,14 +13113,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlReaderNewWalker",
@@ -13056,14 +13147,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlRealloc",
@@ -14640,14 +14733,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveDoc",
@@ -14656,14 +14751,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveFile",
@@ -14720,14 +14817,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveFlush",
@@ -14736,14 +14835,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveFormatFile",
@@ -14784,14 +14885,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveNoEmptyTags",
@@ -14848,14 +14951,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveToFd",
@@ -14912,14 +15017,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "SAVE-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlSaveUri",
@@ -17376,14 +17483,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderBaseUri",
@@ -17408,14 +17517,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderClose",
@@ -17440,14 +17551,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstEncoding",
@@ -17456,14 +17569,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstLocalName",
@@ -17472,14 +17587,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstName",
@@ -17488,14 +17605,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstNamespaceUri",
@@ -17504,14 +17623,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstPrefix",
@@ -17520,14 +17641,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstString",
@@ -17568,14 +17691,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderConstXmlVersion",
@@ -17584,14 +17709,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderCurrentDoc",
@@ -17632,14 +17759,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderExpand",
@@ -17728,14 +17857,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderGetParserColumnNumber",
@@ -17792,14 +17923,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderHasAttributes",
@@ -17808,14 +17941,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderHasValue",
@@ -17840,14 +17975,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderIsEmptyElement",
@@ -17856,14 +17993,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderIsNamespaceDecl",
@@ -17872,14 +18011,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderIsValid",
@@ -17968,14 +18109,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderMoveToAttributeNo",
@@ -18000,14 +18143,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderMoveToElement",
@@ -18016,14 +18161,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderMoveToFirstAttribute",
@@ -18032,14 +18179,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderMoveToNextAttribute",
@@ -18048,14 +18197,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderName",
@@ -18128,14 +18279,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderNormalization",
@@ -18208,14 +18361,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderRead",
@@ -18224,14 +18379,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderReadAttributeValue",
@@ -18416,14 +18573,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderSetParserProp",
@@ -18512,14 +18671,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "READER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextReaderXmlLang",
@@ -18544,14 +18705,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterEndAttribute",
@@ -18608,14 +18771,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterEndDTDAttlist",
@@ -18672,14 +18837,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterEndElement",
@@ -18688,14 +18855,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterEndPI",
@@ -18720,14 +18889,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterFullEndElement",
@@ -18736,14 +18907,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterSetIndent",
@@ -18752,14 +18925,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterSetIndentString",
@@ -18784,14 +18959,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterStartAttribute",
@@ -18864,14 +19041,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterStartDTDAttlist",
@@ -18928,14 +19107,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterStartElement",
@@ -18944,14 +19125,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterStartElementNS",
@@ -18960,14 +19143,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterStartPI",
@@ -18992,14 +19177,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteAttributeNS",
@@ -19008,14 +19195,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteBase64",
@@ -19056,14 +19245,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteComment",
@@ -19072,14 +19263,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteDTD",
@@ -19104,14 +19297,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteDTDElement",
@@ -19120,14 +19315,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteDTDEntity",
@@ -19152,14 +19349,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteDTDExternalEntityContents",
@@ -19184,14 +19383,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteDTDNotation",
@@ -19200,14 +19401,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteElement",
@@ -19248,12 +19451,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19280,12 +19485,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19296,12 +19503,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19376,12 +19585,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19408,12 +19619,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19424,12 +19637,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19440,12 +19655,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "UNKNOWN",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "no source body found",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
      "overall": "IMPLEMENTED_UNVERIFIED"
     },
@@ -19456,14 +19673,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteRaw",
@@ -19504,14 +19723,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlTextWriterWriteVFormatAttribute",
@@ -19712,14 +19933,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "WRITER-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlThrDefBufferAllocScheme",
@@ -23632,14 +23855,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathBooleanFunction",
@@ -23648,14 +23873,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCastBooleanToNumber",
@@ -23792,14 +24019,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCastStringToBoolean",
@@ -23872,14 +24101,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCeilingFunction",
@@ -23888,14 +24119,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCmpNodes",
@@ -23920,14 +24153,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCompile",
@@ -23936,14 +24171,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCompiledEval",
@@ -23952,14 +24189,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCompiledEvalToBoolean",
@@ -23968,14 +24207,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathConcatFunction",
@@ -23984,14 +24225,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathContainsFunction",
@@ -24000,14 +24243,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathContextSetCache",
@@ -24016,14 +24261,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathConvertBoolean",
@@ -24080,14 +24327,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathCtxtCompile",
@@ -24096,14 +24345,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathDebugDumpCompExpr",
@@ -24112,14 +24363,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathDebugDumpObject",
@@ -24128,14 +24381,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathDifference",
@@ -24192,14 +24447,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathEqualValues",
@@ -24208,14 +24465,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathErr",
@@ -24256,14 +24515,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathEvalExpression",
@@ -24288,14 +24549,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathEvaluatePredicateResult",
@@ -24304,14 +24567,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFalseFunction",
@@ -24320,14 +24585,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFloorFunction",
@@ -24336,14 +24603,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFreeCompExpr",
@@ -24352,14 +24621,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFreeContext",
@@ -24368,14 +24639,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFreeNodeSet",
@@ -24416,14 +24689,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFreeParserContext",
@@ -24432,14 +24707,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFunctionLookup",
@@ -24448,14 +24725,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathFunctionLookupNS",
@@ -24464,14 +24743,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathHasSameNodes",
@@ -24592,14 +24873,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathLastFunction",
@@ -24608,14 +24891,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathLeading",
@@ -24656,14 +24941,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathModValues",
@@ -24672,14 +24959,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathMultValues",
@@ -24688,14 +24977,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNAN",
@@ -24736,14 +25027,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewBoolean",
@@ -24752,14 +25045,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewCString",
@@ -24784,14 +25079,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewFloat",
@@ -24800,14 +25097,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewNodeSet",
@@ -24816,14 +25115,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewNodeSetList",
@@ -24832,14 +25133,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewParserContext",
@@ -24848,14 +25151,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewString",
@@ -24864,14 +25169,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNewValueTree",
@@ -24896,14 +25203,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextAncestorOrSelf",
@@ -24912,14 +25221,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextAttribute",
@@ -24928,14 +25239,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextChild",
@@ -24944,14 +25257,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextDescendant",
@@ -24960,14 +25275,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextDescendantOrSelf",
@@ -24976,14 +25293,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextFollowing",
@@ -24992,14 +25311,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextFollowingSibling",
@@ -25008,14 +25329,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextNamespace",
@@ -25024,14 +25347,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextParent",
@@ -25040,14 +25365,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextPreceding",
@@ -25056,14 +25383,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextPrecedingSibling",
@@ -25072,14 +25401,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNextSelf",
@@ -25088,14 +25419,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNodeEval",
@@ -25104,14 +25437,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNodeLeading",
@@ -25152,14 +25487,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNodeSetAddNs",
@@ -25216,14 +25553,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNodeSetDel",
@@ -25344,14 +25683,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNotEqualValues",
@@ -25360,14 +25701,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNotFunction",
@@ -25376,14 +25719,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNsLookup",
@@ -25392,14 +25737,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNumberFunction",
@@ -25408,14 +25755,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathObjectCopy",
@@ -25440,14 +25789,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPINF",
@@ -25472,14 +25823,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathParseName",
@@ -25488,14 +25841,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPopBoolean",
@@ -25504,14 +25859,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPopExternal",
@@ -25520,14 +25877,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPopNodeSet",
@@ -25536,14 +25895,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPopNumber",
@@ -25552,14 +25913,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPopString",
@@ -25568,14 +25931,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathPositionFunction",
@@ -25584,14 +25949,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterAllFunctions",
@@ -25600,12 +25967,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "STUB",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "empty body",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
      "overall": "STUB"
     },
@@ -25616,14 +25985,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterFuncLookup",
@@ -25632,14 +26003,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterFuncNS",
@@ -25648,14 +26021,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterNs",
@@ -25664,14 +26039,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterVariable",
@@ -25680,14 +26057,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterVariableLookup",
@@ -25696,14 +26075,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterVariableNS",
@@ -25712,14 +26093,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisteredFuncsCleanup",
@@ -25728,14 +26111,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisteredNsCleanup",
@@ -25744,14 +26129,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisteredVariablesCleanup",
@@ -25760,14 +26147,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRoot",
@@ -25776,14 +26165,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathRoundFunction",
@@ -25792,14 +26183,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSetContextNode",
@@ -25808,14 +26201,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSetErrorHandler",
@@ -25824,14 +26219,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathStartsWithFunction",
@@ -25840,14 +26237,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathStringEvalNumber",
@@ -25872,14 +26271,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathStringLengthFunction",
@@ -25888,14 +26289,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSubValues",
@@ -25904,14 +26307,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSubstringAfterFunction",
@@ -25920,14 +26325,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSubstringBeforeFunction",
@@ -25936,14 +26343,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSubstringFunction",
@@ -25952,14 +26361,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathSumFunction",
@@ -25968,14 +26379,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathTrailing",
@@ -26016,14 +26429,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathTrueFunction",
@@ -26032,14 +26447,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathValueFlipSign",
@@ -26048,14 +26465,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathVariableLookup",
@@ -26064,14 +26483,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathVariableLookupNS",
@@ -26080,14 +26501,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathWrapCString",
@@ -26112,14 +26535,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathWrapNodeSet",
@@ -26144,14 +26569,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XPATH-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPatherror",
@@ -26501,8 +26928,8 @@
     "MISSING": 0,
     "STUB": 0,
     "INTENTIONAL_NOOP": 6,
-    "IMPLEMENTED_UNVERIFIED": 226,
-    "CURRENT_PARITY_VERIFIED": 0,
+    "IMPLEMENTED_UNVERIFIED": 201,
+    "CURRENT_PARITY_VERIFIED": 25,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
     "DATA_MISSING": 0,
@@ -26522,22 +26949,22 @@
      "NOT_APPLICABLE": 11
     },
     "abi_status": {
-     "UNVERIFIED": 243,
-     "PASS": 0,
+     "UNVERIFIED": 213,
+     "PASS": 30,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
     "semantic_status": {
-     "UNVERIFIED": 243,
+     "UNVERIFIED": 213,
      "PARTIAL": 0,
-     "PASS": 0,
+     "PASS": 30,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
     "ownership_status": {
      "NOT_APPLICABLE": 11,
-     "UNVERIFIED": 232,
-     "PASS": 0,
+     "UNVERIFIED": 202,
+     "PASS": 30,
      "FAIL": 0,
      "EVIDENCE_CONFLICT": 0
     },
@@ -26700,14 +27127,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltApplyStylesheetUser",
@@ -26940,14 +27369,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltCleanupTemplates",
@@ -27180,14 +27611,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltDebugSetDefaultTrace",
@@ -27196,14 +27629,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltDecimalFormatGetByName",
@@ -27228,14 +27663,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltDefaultSortFunction",
@@ -27628,14 +28065,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltExtModuleTopLevelLookup",
@@ -27660,14 +28099,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltExtensionInstructionResultRegister",
@@ -27676,12 +28117,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "INTENTIONAL_NOOP",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "documented intentional no-op (residual R-000160)",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [
       "R-000160"
      ],
@@ -27774,14 +28217,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltFormatNumberFunction",
@@ -27952,14 +28397,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltFreeLocales",
@@ -27968,12 +28415,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "INTENTIONAL_NOOP",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "documented intentional no-op (residual R-000160)",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [
       "R-000160"
      ],
@@ -28082,14 +28531,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltFreeTemplateHashes",
@@ -28114,14 +28565,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltFunctionAvailableFunction",
@@ -28258,12 +28711,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "INTENTIONAL_NOOP",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "documented intentional no-op (residual R-000160)",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [
       "R-000160"
      ],
@@ -28388,14 +28843,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltGetQNameURI",
@@ -28532,14 +28989,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltInitAllDocKeys",
@@ -28788,14 +29247,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltMaxDepth",
@@ -28916,14 +29377,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltNewSecurityPrefs",
@@ -28964,14 +29427,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltNewTransformContext",
@@ -28980,14 +29445,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltNextImport",
@@ -29124,14 +29591,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltParseStylesheetFile",
@@ -29492,14 +29961,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltRegisterExtModuleElement",
@@ -29540,14 +30011,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltRegisterExtModuleTopLevel",
@@ -29812,14 +30285,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltSecurityAllow",
@@ -29828,12 +30303,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "INTENTIONAL_NOOP",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "documented intentional no-op (residual R-000160)",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [
       "R-000160"
      ],
@@ -29846,12 +30323,14 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "INTENTIONAL_NOOP",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "documented intentional no-op (residual R-000160)",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [
       "R-000160"
      ],
@@ -29864,14 +30343,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltSetCtxtSecurityPrefs",
@@ -30104,14 +30585,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltStyleGetExtData",
@@ -30280,14 +30763,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltUnregisterExtModuleElement",
@@ -30312,14 +30797,16 @@
      "kind": "FUNC",
      "export_status": "EXPORTED",
      "implementation_status": "IMPLEMENTED",
-     "abi_status": "UNVERIFIED",
-     "semantic_status": "UNVERIFIED",
-     "ownership_status": "UNVERIFIED",
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
      "stub_reason": "has logic",
-     "courts": [],
+     "courts": [
+      "XSLT-001"
+     ],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "CURRENT_PARITY_VERIFIED"
     },
     {
      "entity_id": "libxslt:xsltUnregisterExtModuleTopLevel",

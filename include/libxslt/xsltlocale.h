@@ -18,6 +18,13 @@ extern "C" {
 
 /* Functions will be declared here as they are implemented. */
 
+XMLPUBFUN void *xsltNewLocale(const xmlChar *languageTag, int lowerFirst);
+XMLPUBFUN void xsltFreeLocale(void *locale);
+XMLPUBFUN void xsltFreeLocales(void);
+XMLPUBFUN int xsltLocaleStrcmp(void *locale, const xmlChar *str1,
+                               const xmlChar *str2);
+XMLPUBFUN xmlChar *xsltStrxfrm(void *locale, const xmlChar *string);
+
 #ifdef __cplusplus
 }
 #endif

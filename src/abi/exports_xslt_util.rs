@@ -228,8 +228,18 @@ pub unsafe extern "C" fn xsltSetCtxtParseOptions(
     if ctxt.is_null() {
         return -1;
     }
+    // Upstream returns the PREVIOUS options (plus the XInclude bit when set).
+    let mut oldopts = (*ctxt).parserOptions;
+    if (*ctxt).xinclude != 0 {
+        oldopts |= XML_PARSE_XINCLUDE;
+    }
     (*ctxt).parserOptions = options;
-    0
+    if options & XML_PARSE_XINCLUDE != 0 {
+        (*ctxt).xinclude = 1;
+    } else {
+        (*ctxt).xinclude = 0;
+    }
+    oldopts
 }
 
 /// `xsltSetGenericErrorFunc` (xslt.c): set the global generic error handler.
@@ -457,27 +467,95 @@ pub unsafe extern "C" fn xsltNewLocale(
     if languageTag.is_null() {
         return ptr::null_mut();
     }
+    // Port of upstream 1.1.45 xsltlocale.c xsltNewLocale (XSLT_LOCALE_POSIX):
+    // convert "pt-br" -> "pt_BR.UTF-8" and try newlocale(LC_ALL_MASK, ...).
     let tag = std::ffi::CStr::from_ptr(languageTag as *const c_char).to_bytes();
-    if tag.is_empty() {
+    let mut name: Vec<u8> = Vec::new();
+    let mut i = 0;
+    while i < tag.len() && tag[i].is_ascii_alphabetic() {
+        name.push(tag[i].to_ascii_lowercase());
+        i += 1;
+    }
+    let llen = i;
+    if llen == 0 {
         return ptr::null_mut();
     }
-    let mut ctag = tag.to_vec();
-    ctag.push(0);
+    if i < tag.len() {
+        if tag[i] != b'-' {
+            return ptr::null_mut();
+        }
+        i += 1;
+        name.push(b'_');
+        let mut j = 0;
+        while i < tag.len() && tag[i].is_ascii_alphabetic() && j < 2 {
+            name.push(tag[i].to_ascii_uppercase());
+            i += 1;
+            j += 1;
+        }
+        if j == 0 || i < tag.len() {
+            return ptr::null_mut();
+        }
+        name.extend_from_slice(b".UTF-8");
+        name.push(0);
+        let locale = libc::newlocale(
+            libc::LC_ALL_MASK,
+            name.as_ptr() as *const c_char,
+            ptr::null_mut(),
+        );
+        if !locale.is_null() {
+            return locale as *mut c_void;
+        }
+        // Continue without the country code.
+        name.truncate(llen);
+    }
+    // Try the language without a territory (e.g. "eo.UTF-8").
+    name.extend_from_slice(b".UTF-8");
+    name.push(0);
     let locale = libc::newlocale(
-        libc::LC_COLLATE_MASK,
-        ctag.as_ptr() as *const c_char,
+        libc::LC_ALL_MASK,
+        name.as_ptr() as *const c_char,
         ptr::null_mut(),
     );
-    if locale.is_null() {
-        // Fall back to the C locale when the tag is not supported.
-        let c = b"C\0";
-        return libc::newlocale(
-            libc::LC_COLLATE_MASK,
-            c.as_ptr() as *const c_char,
-            ptr::null_mut(),
-        ) as *mut c_void;
+    if !locale.is_null() {
+        return locale as *mut c_void;
     }
-    locale as *mut c_void
+    // For two-letter languages upstream consults xsltDefaultRegion; the
+    // candidate keeps the common ISO-3166 fallbacks. Divergence: languages
+    // absent from the table return NULL where upstream may find a region.
+    if llen == 2 {
+        let region: Option<&[u8]> = match &name[..llen] {
+            b"en" => Some(b"US"),
+            b"fr" => Some(b"FR"),
+            b"de" => Some(b"DE"),
+            b"es" => Some(b"ES"),
+            b"it" => Some(b"IT"),
+            b"pt" => Some(b"BR"),
+            b"nl" => Some(b"NL"),
+            b"sv" => Some(b"SE"),
+            b"ja" => Some(b"JP"),
+            b"zh" => Some(b"CN"),
+            b"ko" => Some(b"KR"),
+            b"ru" => Some(b"RU"),
+            b"pl" => Some(b"PL"),
+            _ => None,
+        };
+        if let Some(region) = region {
+            let mut rn: Vec<u8> = name[..llen].to_vec();
+            rn.push(b'_');
+            rn.extend_from_slice(region);
+            rn.extend_from_slice(b".UTF-8");
+            rn.push(0);
+            let locale = libc::newlocale(
+                libc::LC_ALL_MASK,
+                rn.as_ptr() as *const c_char,
+                ptr::null_mut(),
+            );
+            if !locale.is_null() {
+                return locale as *mut c_void;
+            }
+        }
+    }
+    ptr::null_mut()
 }
 
 /// `xsltFreeLocale` (xsltlocale.c): free a locale created by

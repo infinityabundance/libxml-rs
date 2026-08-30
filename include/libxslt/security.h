@@ -21,6 +21,17 @@ extern "C" {
 typedef struct _xsltSecurityPrefs xsltSecurityPrefs;
 typedef xsltSecurityPrefs *xsltSecurityPrefsPtr;
 
+XMLPUBFUN int xsltSecurityAllow(xsltSecurityPrefsPtr sec,
+                                xsltTransformContextPtr ctxt, const char *value);
+XMLPUBFUN int xsltSecurityForbid(xsltSecurityPrefsPtr sec,
+                                 xsltTransformContextPtr ctxt, const char *value);
+XMLPUBFUN int xsltSetCtxtSecurityPrefs(xsltSecurityPrefsPtr sec,
+                                       xsltTransformContextPtr ctxt);
+XMLPUBFUN int xsltCheckRead(xsltSecurityPrefsPtr sec,
+                            xsltTransformContextPtr ctxt, const xmlChar *URL);
+XMLPUBFUN int xsltCheckWrite(xsltSecurityPrefsPtr sec,
+                             xsltTransformContextPtr ctxt, const xmlChar *URL);
+
 /**
  * xsltSecurityOption:
  *
