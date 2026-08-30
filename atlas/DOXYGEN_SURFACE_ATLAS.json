@@ -1,0 +1,263 @@
+{
+ "current": {
+  "libexslt": {
+   "doxygen_version": "1.18.0",
+   "config_hash": "eb711a3db0821c391a86d1fc5bfe9e2c2031b651f7bea5c684023e79682e5f60",
+   "source_tree_hash": null,
+   "counts": {
+    "define": 19,
+    "function": 13,
+    "variable": 4,
+    "total": 36
+   }
+  },
+  "libxml2": {
+   "doxygen_version": "1.18.0",
+   "config_hash": "fd73e1f5065326c3c9c9aab0afca8f757564ce91782c7d77d89629f24c67a7e9",
+   "source_tree_hash": null,
+   "counts": {
+    "define": 247,
+    "enum": 41,
+    "function": 1374,
+    "typedef": 255,
+    "variable": 625,
+    "total": 2542
+   }
+  },
+  "libxslt": {
+   "doxygen_version": "1.18.0",
+   "config_hash": "69acd8b470cabe7036c6a6c5aff4ebc3660a4c3e2706462be47d014b0632e458",
+   "source_tree_hash": null,
+   "counts": {
+    "define": 52,
+    "enum": 7,
+    "function": 235,
+    "typedef": 51,
+    "variable": 279,
+    "total": 624
+   }
+  }
+ },
+ "historical": {
+  "libexslt": {
+   "0.8.25": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "aea657b753623e0013f6e22cbccc82a94fc99e60cf812e7c4db32fe02af9434e",
+    "counts": {
+     "define": 21,
+     "function": 13,
+     "variable": 4,
+     "total": 38
+    }
+   }
+  },
+  "libxml2": {
+   "2.10.4": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "7227db8ee41fae99998b20dae28ac43f5863e77e2cae564f9b0ff7034c13b94f",
+    "counts": {
+     "define": 244,
+     "enum": 43,
+     "function": 1499,
+     "typedef": 288,
+     "variable": 728,
+     "total": 2802
+    }
+   },
+   "2.11.5": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "7980566ad0e92f101e26ac5ecc5894a1a657379d0376ab3e7657654b0e34dd8b",
+    "counts": {
+     "define": 244,
+     "enum": 43,
+     "function": 1502,
+     "typedef": 288,
+     "variable": 734,
+     "total": 2811
+    }
+   },
+   "2.12.6": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "245287b15b6904bb19b3736e9009b1da38afef6d64654b8c45f1cb5245314e31",
+    "counts": {
+     "define": 267,
+     "enum": 44,
+     "function": 1479,
+     "typedef": 290,
+     "variable": 705,
+     "total": 2785
+    }
+   },
+   "2.13.0": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "a329a35dcd624a40a47e217acac7307f6555c13deddfea7e5d055efe9ab2f238",
+    "counts": {
+     "define": 256,
+     "enum": 44,
+     "function": 1507,
+     "typedef": 290,
+     "variable": 708,
+     "total": 2805
+    }
+   },
+   "2.13.5": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "fed0d8431dc27f22f2a36716db1907915f5015721e20433a111b86a3fcc323d8",
+    "counts": {
+     "define": 261,
+     "enum": 44,
+     "function": 1507,
+     "typedef": 290,
+     "variable": 708,
+     "total": 2810
+    }
+   },
+   "2.14.1": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "a76919ea16c853da723ca150b7430970af782d8e3689f6de02ba33d28a74fa04",
+    "counts": {
+     "define": 274,
+     "enum": 48,
+     "function": 1368,
+     "typedef": 288,
+     "variable": 688,
+     "total": 2666
+    }
+   },
+   "2.15.0": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "466024154963659a6d777d3076f91afed6978752bf9792a199c843c5ebb7e474",
+    "counts": {
+     "define": 242,
+     "enum": 40,
+     "function": 1345,
+     "typedef": 247,
+     "variable": 625,
+     "total": 2499
+    }
+   },
+   "2.7.8": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "ac9c03b99d7b7d78bb5a84baac9352adad3c995cd5ddec1d742c90c4e5f4fa46",
+    "counts": {
+     "define": 236,
+     "enum": 43,
+     "function": 1580,
+     "typedef": 297,
+     "variable": 728,
+     "total": 2884
+    }
+   },
+   "2.8.0": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "72aa5f031b22bd205659ed76825f5ee47880022a8360b85e0077961e3246dc6e",
+    "counts": {
+     "define": 237,
+     "enum": 43,
+     "function": 1583,
+     "typedef": 297,
+     "variable": 730,
+     "total": 2890
+    }
+   },
+   "2.9.10": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "1df83fe18d2ee311fafaf94b612d86b4988dd363f77295a073a445ffdb05a9a9",
+    "counts": {
+     "define": 240,
+     "enum": 42,
+     "function": 1580,
+     "typedef": 296,
+     "variable": 734,
+     "total": 2892
+    }
+   },
+   "2.9.14": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "006425dc83e08f978418d9e8d6d0084a03f182a7bf99bd2e4171416d1e347fc1",
+    "counts": {
+     "define": 241,
+     "enum": 43,
+     "function": 1585,
+     "typedef": 298,
+     "variable": 732,
+     "total": 2899
+    }
+   },
+   "2.9.4": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "887ea4c0da114a556d7122f28a6751381f53053cb77dbd2c805450f046a524dc",
+    "counts": {
+     "define": 242,
+     "enum": 43,
+     "function": 1598,
+     "typedef": 300,
+     "variable": 731,
+     "total": 2914
+    }
+   }
+  },
+  "libxslt": {
+   "1.1.26": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "f7f3fcd5708ef250a28fcfd2ce2d2c2816c17be0950f6fdf6ec3030ac20acadd",
+    "counts": {
+     "define": 69,
+     "enum": 7,
+     "function": 246,
+     "typedef": 48,
+     "variable": 261,
+     "total": 631
+    }
+   },
+   "1.1.32": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "855d46a012322d3eb136e914a4bb779b4152fd5809b1c884159092a7b7ba60d1",
+    "counts": {
+     "define": 73,
+     "enum": 7,
+     "function": 248,
+     "typedef": 48,
+     "variable": 273,
+     "total": 649
+    }
+   },
+   "1.1.35": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "662be78d4bc14f53eb53c8a4189e4ad018bd7f9daadc3714e87074c70596e2a6",
+    "counts": {
+     "define": 73,
+     "enum": 7,
+     "function": 250,
+     "typedef": 48,
+     "variable": 277,
+     "total": 655
+    }
+   },
+   "1.1.38": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "5cfed82ada5041d0766ba1616e55dc68e1df69e55e84242ec2d9ebed0caf7bb8",
+    "counts": {
+     "define": 74,
+     "enum": 7,
+     "function": 251,
+     "typedef": 51,
+     "variable": 281,
+     "total": 664
+    }
+   },
+   "1.1.42": {
+    "doxygen_version": "1.18.0",
+    "config_hash": "71f5b1c0c3b91ca9861002730bd565faf6b954ef9989447493a4aaae0f8a22c6",
+    "counts": {
+     "define": 73,
+     "enum": 7,
+     "function": 251,
+     "typedef": 51,
+     "variable": 283,
+     "total": 665
+    }
+   }
+  }
+ }
+}

@@ -16,7 +16,7 @@ structured diff of:
 Usage:
   symbols.py libxml2 <version> <dso-path> [--symbols-dir <dir>]
   symbols.py libxslt <version> <dso-path> [--symbols-dir <dir>]
-  symbols.py libxml2 2.15.3 /usr/lib/libxml2.so.2
+  symbols.py libxml2 2.15.3 /usr/lib/libxml2.so.16
 """
 
 import json

@@ -66,7 +66,7 @@ def main():
         "phase": "11.1-I",
         "timestamp": ts,
         "probe": "courts/suites/data-abi/writer-family-probe.c",
-        "oracle": {"dso": "/usr/lib/libxml2.so.2", "stdout_sha256": o_hash},
+        "oracle": {"dso": "/usr/lib/libxml2.so.16", "stdout_sha256": o_hash},
         "candidate": {"dso": CAND_SO, "stdout_sha256": c_hash},
         "verdict": "PASS" if identical else "FAIL",
         "mismatch_count": len(mismatches),

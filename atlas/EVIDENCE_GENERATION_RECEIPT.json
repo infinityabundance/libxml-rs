@@ -1,0 +1,107 @@
+{
+ "schema": "evidence-generation-receipt-1",
+ "phase": "11.1-W",
+ "mode": "generate",
+ "candidate_git_head": "a0115160ef850641c40575408365437d625e292e",
+ "tools": {
+  "python": "Python 3.14.7",
+  "doxygen": "1.18.0",
+  "gcc": "gcc (GCC) 16.2.1 20260810",
+  "clang": "clang version 22.1.8",
+  "nm": "GNU nm (GNU Binutils) 2.47",
+  "readelf": "GNU readelf (GNU Binutils) 2.47",
+  "git": "git version 2.55.0"
+ },
+ "inputs": {
+  "oracle doxygen inventories": null,
+  "clang AST atlas": {
+   "files": 3,
+   "aggregate_sha256": "ca05c7bd228f63f14f2a13d7150b526bdd1634f78f388ef6fb351457f21df356"
+  },
+  "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
+  "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
+  "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
+  "candidate DSO": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
+  "candidate SONAME libxml2": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
+  "candidate SONAME libxslt": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
+  "candidate SONAME libexslt": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
+  "candidate headers": null,
+  "residual ledger JSON (hand-maintained)": {
+   "files": 1,
+   "aggregate_sha256": "a02ff2d4e405c03624243c6e1af9a97735a3e4624dea0ebb90e2bf3235b0a620"
+  },
+  "symbol court index": {
+   "files": 1,
+   "aggregate_sha256": "722fb0f85a99b3867976de185eb589f553eec4fd2e9cbb4e9db3c5d50f95be58"
+  }
+ },
+ "steps": [
+  {
+   "step": "surface_reconcile",
+   "ok": true,
+   "detail": "lDoValidityCheckingDefaultValue\n    ast-only fn: __xmlFree\n    ast-only fn: __xmlGenericError\n    ast-only fn: __xmlGenericErrorContext\n    ast-only fn: __xmlGetWarningsDefaultValue\n═══ libxslt ═══\n  functions: dox=235 ast=231 dso=232\n  dox-only functions: 8 ast-only: 4\n  candidate DSO vs system: missing 0, extra 1674\n  headers: dox 22 installed 22\n    dox-only fn: xsltCleanupSourceDoc\n    dox-only fn: xsltCopyNamespace\n    dox-only fn: xsltCopyNamespaceList\n    dox-only fn: xsltFreeNamespaceAliasHashes\n    dox-only fn: xsltGetNamespace\n    dox-only fn: xsltGetPlainNamespace\n    ast-only fn: xslAddCall\n    ast-only fn: xslDropCall\n    ast-only fn: xsltSetDebuggerCallbacks\n    ast-only fn: xsltSetDebuggerStatus\nreconciliation -> /mnt/1tb_kingston/libxml-rs/atlas/SURFACE_RECONCILIATION.json\n",
+   "hashes": {
+    "atlas/SURFACE_RECONCILIATION.json": "ca2c7b4058c8cf30aa8d96b624595178cfb5f58461ce4146e4ee2fe32af03c58",
+    "atlas/SURFACE_RECONCILIATION.md": "17563951513cd628a02c6d40485806ef67ad1a42f3cfcbd5171edb3f86855fa6"
+   }
+  },
+  {
+   "step": "parity_matrix",
+   "ok": true,
+   "detail": "wrote PARITY_MATRIX.json/.md, API_PARITY_LEDGER.json/.md, DOXYGEN_SURFACE_ATLAS.json/.md\n",
+   "hashes": {
+    "atlas/PARITY_MATRIX.json": "5596940ec299d5506fe5e9186ede1035ee39824ce839c4e0f218a31db1c7db12",
+    "atlas/PARITY_MATRIX.md": "a3131d3bc7bef5ef584c56ca29b4d191ec7b148953a6e7b95310d1b05cb1283c",
+    "atlas/API_PARITY_LEDGER.json": "6794c70835f30b63515d983cb993b616738746d34dfd4bb215361fd0db977bf8",
+    "atlas/API_PARITY_LEDGER.md": "ad13586f173585433b2d24be287d21d5137caa9cd6356c445f47bf7230be2466",
+    "atlas/DOXYGEN_SURFACE_ATLAS.json": "71826ee43fb10aa3eb0481f4b6f5f0efe173879fffe338a48daa75918797b15e",
+    "atlas/DOXYGEN_SURFACE_ATLAS.md": "8f525f5a5426c11924ab6ff44117ff329cc3311bf886941290cbdcde7b820222"
+   }
+  },
+  {
+   "step": "surface_delta_engine",
+   "ok": true,
+   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/HISTORICAL_SURFACE_EPOCHS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/HISTORICAL_SURFACE_EPOCHS.md\nlibxml2: entities=2785 boundaries=11 added=220 removed=526 changed=1182\nlibxslt: entities=617 boundaries=4 added=37 removed=7 changed=62\n",
+   "hashes": {
+    "atlas/HISTORICAL_SURFACE_EPOCHS.json": "5b4bc05b46ba9429c618093885da66f6ffe2f449a15cf7f2a8408a36d403687b",
+    "atlas/HISTORICAL_SURFACE_EPOCHS.md": "d1df919ad7b05850842f76e3790396f93491e96e3fe49c845241d47fcf395576"
+   }
+  },
+  {
+   "step": "abi_probe_gen",
+   "ok": true,
+   "detail": "libxml2: probe with 43 structs, 41 enums -> /mnt/1tb_kingston/libxml-rs/target/abi-probe-libxml2.c\n  oracle: discovered=658 measurable=658 classified=0 silent=0\n  candidate: discovered=658 measurable=658 classified=0 silent=0\n  oracle entities=658 candidate=658 mismatches=0 header-gaps=0 verdict=PASS\nlibxslt: probe with 14 structs, 7 enums -> /mnt/1tb_kingston/libxml-rs/target/abi-probe-libxslt.c\n  oracle: discovered=279 measurable=279 classified=0 silent=0\n  candidate: discovered=279 measurable=279 classified=0 silent=0\n  oracle entities=279 candidate=279 mismatches=0 header-gaps=0 verdict=PASS\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/ABI_PARITY_LEDGER.json\n",
+   "hashes": {
+    "atlas/ABI_PARITY_LEDGER.json": "12ebfdf627a3c3354caa5e9b871a46b0981c214b415d417bf7e6b76abd9bee82",
+    "atlas/ABI_PARITY_LEDGER.md": "b947cc674cfad4be6790a2ba85b60c165843351bbe95708651581d0dd68b1ab2"
+   }
+  },
+  {
+   "step": "parity_obligations",
+   "ok": true,
+   "detail": "libxml2: funcs=1400 data=22\n    MISSING: 52\n    STUB: 15\n    INTENTIONAL_NOOP: 9\n    IMPLEMENTED_UNVERIFIED: 1061\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 11\n    DATA_MISSING: 1\nlibexslt: funcs=13 data=4\n    MISSING: 12\n    IMPLEMENTED_UNVERIFIED: 1\n    DATA_MISSING: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
+   "hashes": {
+    "atlas/PARITY_OBLIGATIONS.json": "38c3c912d0a29bac1c8bbadd18009ac2d672a870e7ad1a5135018e7ec9ef4de8",
+    "atlas/PARITY_OBLIGATIONS.md": "04d8b967824728da33a130982d68395d0bb4eb568900e1155b7a6ef72e55f698"
+   }
+  },
+  {
+   "step": "subsystem_census",
+   "ok": true,
+   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 44, \"PARTIAL\": 41}\nuncategorized: 0 []\n",
+   "hashes": {
+    "atlas/SUBSYSTEM_CENSUS.json": "ab97bb78323f7dfa2ae9f3616b8c266dd9744317a821cd2dd8753a0342578b6d",
+    "atlas/SUBSYSTEM_CENSUS.md": "09401de55337dec634586a4c6dad19d9c9a10cc12b468d211109d09ffeef119e"
+   }
+  },
+  {
+   "step": "ledger_gen",
+   "ok": true,
+   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/RESIDUAL_LEDGER.md\n",
+   "hashes": {
+    "atlas/RESIDUAL_LEDGER.md": "2668bb7174b0d95b30765a29672348e7a57226a0a3842bf6307f55a9ad72075d"
+   }
+  }
+ ],
+ "verdict": "PASS"
+}

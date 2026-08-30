@@ -146,10 +146,12 @@
     "IMPLEMENTED": 29
    },
    "obligation_gap": 0,
-   "semantic_verified": 0,
+   "semantic_verified": 4,
    "stub_symbols": [],
    "unknown_symbols": [],
-   "courts": [],
+   "courts": [
+    "CALLBACK-001"
+   ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
@@ -175,10 +177,12 @@
     "IMPLEMENTED": 26
    },
    "obligation_gap": 0,
-   "semantic_verified": 0,
+   "semantic_verified": 4,
    "stub_symbols": [],
    "unknown_symbols": [],
-   "courts": [],
+   "courts": [
+    "CALLBACK-001"
+   ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
@@ -234,14 +238,16 @@
     "IMPLEMENTED": 157
    },
    "obligation_gap": 0,
-   "semantic_verified": 13,
+   "semantic_verified": 36,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "DATA-GLOBALS-001",
     "GLOBALS-THREADING-001",
     "READER-001",
     "SAVE-001",
+    "TREE-001",
     "WRITER-001",
     "XPATH-001"
    ],
@@ -271,14 +277,16 @@
     "IMPLEMENTED": 172
    },
    "obligation_gap": 0,
-   "semantic_verified": 13,
+   "semantic_verified": 41,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "DATA-GLOBALS-001",
     "GLOBALS-THREADING-001",
     "READER-001",
     "SAVE-001",
+    "TREE-001",
     "WRITER-001",
     "XPATH-001"
    ],
@@ -307,10 +315,12 @@
     "IMPLEMENTED": 19
    },
    "obligation_gap": 0,
-   "semantic_verified": 0,
+   "semantic_verified": 1,
    "stub_symbols": [],
    "unknown_symbols": [],
-   "courts": [],
+   "courts": [
+    "TREE-001"
+   ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
@@ -337,14 +347,16 @@
     "IMPLEMENTED": 186
    },
    "obligation_gap": 0,
-   "semantic_verified": 13,
+   "semantic_verified": 42,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "DATA-GLOBALS-001",
     "GLOBALS-THREADING-001",
     "READER-001",
     "SAVE-001",
+    "TREE-001",
     "WRITER-001",
     "XPATH-001"
    ],
@@ -374,12 +386,14 @@
     "STUB": 1
    },
    "obligation_gap": 0,
-   "semantic_verified": 0,
+   "semantic_verified": 1,
    "stub_symbols": [
     "xmlSprintfElementContent"
    ],
    "unknown_symbols": [],
-   "courts": [],
+   "courts": [
+    "TREE-001"
+   ],
    "verdict": "PARTIAL",
    "note": ""
   },
@@ -437,22 +451,62 @@
     "xmlNewInputFromString",
     "xmlNewInputFromUrl"
    ],
-   "obligations_total": 77,
+   "obligations_total": 112,
    "obligations": {
     "IMPLEMENTED": 71,
     "INTENTIONAL_NOOP": 2,
+    "UNKNOWN": 35,
     "NOT_APPLICABLE": 3,
     "STUB": 1
    },
-   "obligation_gap": 35,
-   "semantic_verified": 3,
+   "obligation_gap": 0,
+   "semantic_verified": 7,
    "stub_symbols": [
     "xmlParserInputRead"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
    "courts": [
+    "CALLBACK-001",
+    "ERROR-001",
     "GLOBALS-THREADING-001",
     "READER-001",
+    "TREE-001",
     "XPATH-001"
    ],
    "verdict": "PARTIAL",
@@ -478,15 +532,19 @@
     "xmlCtxtPopInput",
     "xmlCtxtPushInput"
    ],
-   "obligations_total": 76,
+   "obligations_total": 78,
    "obligations": {
     "IMPLEMENTED": 73,
+    "UNKNOWN": 2,
     "NOT_APPLICABLE": 3
    },
-   "obligation_gap": 2,
+   "obligation_gap": 0,
    "semantic_verified": 1,
    "stub_symbols": [],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlCtxtPopInput",
+    "xmlCtxtPushInput"
+   ],
    "courts": [
     "DATA-GLOBALS-001"
    ],
@@ -547,22 +605,62 @@
     "xmlNewInputFromString",
     "xmlNewInputFromUrl"
    ],
-   "obligations_total": 98,
+   "obligations_total": 133,
    "obligations": {
     "IMPLEMENTED": 92,
     "INTENTIONAL_NOOP": 2,
+    "UNKNOWN": 35,
     "NOT_APPLICABLE": 3,
     "STUB": 1
    },
-   "obligation_gap": 35,
-   "semantic_verified": 3,
+   "obligation_gap": 0,
+   "semantic_verified": 7,
    "stub_symbols": [
     "xmlParserInputRead"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
    "courts": [
+    "CALLBACK-001",
+    "ERROR-001",
     "GLOBALS-THREADING-001",
     "READER-001",
+    "TREE-001",
     "XPATH-001"
    ],
    "verdict": "PARTIAL",
@@ -649,20 +747,24 @@
     "htmlCtxtSetOptions",
     "htmlUTF8ToHtml"
    ],
-   "obligations_total": 44,
+   "obligations_total": 46,
    "obligations": {
     "IMPLEMENTED": 40,
+    "UNKNOWN": 2,
     "NOT_APPLICABLE": 1,
     "STUB": 3
    },
-   "obligation_gap": 2,
+   "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [
     "htmlElementAllowedHere",
     "htmlInitAutoClose",
     "htmlParseCharRef"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "htmlCtxtSetOptions",
+    "htmlUTF8ToHtml"
+   ],
    "courts": [],
    "verdict": "PARTIAL",
    "note": ""
@@ -755,10 +857,12 @@
     "IMPLEMENTED": 25
    },
    "obligation_gap": 0,
-   "semantic_verified": 0,
+   "semantic_verified": 4,
    "stub_symbols": [],
    "unknown_symbols": [],
-   "courts": [],
+   "courts": [
+    "CALLBACK-001"
+   ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
@@ -808,11 +912,11 @@
    "header_only_functions": 0,
    "candidate_functions": 37,
    "missing_symbols": [],
-   "obligations_total": 36,
+   "obligations_total": 37,
    "obligations": {
-    "IMPLEMENTED": 36
+    "IMPLEMENTED": 37
    },
-   "obligation_gap": 1,
+   "obligation_gap": 0,
    "semantic_verified": 14,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -847,15 +951,19 @@
     "xmlIsolat1ToUTF8",
     "xmlUTF8ToIsolat1"
    ],
-   "obligations_total": 35,
+   "obligations_total": 39,
    "obligations": {
-    "IMPLEMENTED": 28,
-    "NOT_APPLICABLE": 7
+    "IMPLEMENTED": 30,
+    "NOT_APPLICABLE": 7,
+    "UNKNOWN": 2
    },
-   "obligation_gap": 4,
-   "semantic_verified": 4,
+   "obligation_gap": 0,
+   "semantic_verified": 6,
    "stub_symbols": [],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlIsolat1ToUTF8",
+    "xmlUTF8ToIsolat1"
+   ],
    "courts": [
     "ENCODING-001"
    ],
@@ -881,12 +989,12 @@
    "header_only_functions": 0,
    "candidate_functions": 28,
    "missing_symbols": [],
-   "obligations_total": 27,
+   "obligations_total": 28,
    "obligations": {
-    "IMPLEMENTED": 27
+    "IMPLEMENTED": 28
    },
-   "obligation_gap": 1,
-   "semantic_verified": 6,
+   "obligation_gap": 0,
+   "semantic_verified": 7,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
@@ -977,19 +1085,20 @@
    "header_only_functions": 0,
    "candidate_functions": 117,
    "missing_symbols": [],
-   "obligations_total": 115,
+   "obligations_total": 117,
    "obligations": {
-    "IMPLEMENTED": 113,
+    "IMPLEMENTED": 115,
     "STUB": 2
    },
-   "obligation_gap": 2,
-   "semantic_verified": 85,
+   "obligation_gap": 0,
+   "semantic_verified": 87,
    "stub_symbols": [
     "xmlXPathNodeSetFreeNs",
     "xmlXPathRegisterAllFunctions"
    ],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XPATH-001"
    ],
    "verdict": "PARTIAL",
@@ -1043,14 +1152,17 @@
    "missing_symbols": [
     "xmlXIncludeSetResourceLoader"
    ],
-   "obligations_total": 12,
+   "obligations_total": 13,
    "obligations": {
-    "IMPLEMENTED": 12
+    "IMPLEMENTED": 12,
+    "UNKNOWN": 1
    },
-   "obligation_gap": 1,
+   "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlXIncludeSetResourceLoader"
+   ],
    "courts": [],
    "verdict": "PARTIAL",
    "note": ""
@@ -1076,12 +1188,20 @@
     "xlinkSetDefaultDetect",
     "xlinkSetDefaultHandler"
    ],
-   "obligations_total": 0,
-   "obligations": {},
-   "obligation_gap": 5,
+   "obligations_total": 5,
+   "obligations": {
+    "UNKNOWN": 5
+   },
+   "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xlinkGetDefaultDetect",
+    "xlinkGetDefaultHandler",
+    "xlinkIsLink",
+    "xlinkSetDefaultDetect",
+    "xlinkSetDefaultHandler"
+   ],
    "courts": [],
    "verdict": "PARTIAL",
    "note": "xlink.h functions are exported but undocumented (absent from the Doxygen public inventory)."
@@ -1106,17 +1226,20 @@
    "missing_symbols": [
     "xmlSchemaSetResourceLoader"
    ],
-   "obligations_total": 29,
+   "obligations_total": 30,
    "obligations": {
     "IMPLEMENTED": 28,
-    "STUB": 1
+    "STUB": 1,
+    "UNKNOWN": 1
    },
-   "obligation_gap": 1,
+   "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [
     "xmlSchemaFreeWildcard"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlSchemaSetResourceLoader"
+   ],
    "courts": [],
    "verdict": "PARTIAL",
    "note": ""
@@ -1174,18 +1297,23 @@
     "xmlRelaxNGValidCtxtClearErrors",
     "xmlRelaxParserSetIncLImit"
    ],
-   "obligations_total": 24,
+   "obligations_total": 27,
    "obligations": {
     "STUB": 2,
-    "IMPLEMENTED": 22
+    "IMPLEMENTED": 22,
+    "UNKNOWN": 3
    },
-   "obligation_gap": 3,
+   "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [
     "xmlRelaxNGCleanupTypes",
     "xmlRelaxNGInitTypes"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlRelaxNGSetResourceLoader",
+    "xmlRelaxNGValidCtxtClearErrors",
+    "xmlRelaxParserSetIncLImit"
+   ],
    "courts": [],
    "verdict": "PARTIAL",
    "note": ""
@@ -1326,14 +1454,17 @@
    "missing_symbols": [
     "xmlTextReaderSetResourceLoader"
    ],
-   "obligations_total": 88,
+   "obligations_total": 89,
    "obligations": {
-    "IMPLEMENTED": 88
+    "IMPLEMENTED": 88,
+    "UNKNOWN": 1
    },
-   "obligation_gap": 1,
+   "obligation_gap": 0,
    "semantic_verified": 31,
    "stub_symbols": [],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlTextReaderSetResourceLoader"
+   ],
    "courts": [
     "READER-001"
    ],
@@ -1468,10 +1599,12 @@
     "IMPLEMENTED": 22
    },
    "obligation_gap": 0,
-   "semantic_verified": 1,
+   "semantic_verified": 7,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
+    "ERROR-001",
     "GLOBALS-THREADING-001"
    ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
@@ -1595,25 +1728,67 @@
     "xmlNewInputFromString",
     "xmlNewInputFromUrl"
    ],
-   "obligations_total": 346,
+   "obligations_total": 383,
    "obligations": {
     "IMPLEMENTED": 337,
     "INTENTIONAL_NOOP": 2,
+    "UNKNOWN": 37,
     "NOT_APPLICABLE": 6,
     "STUB": 1
    },
-   "obligation_gap": 37,
-   "semantic_verified": 18,
+   "obligation_gap": 0,
+   "semantic_verified": 50,
    "stub_symbols": [
     "xmlParserInputRead"
    ],
-   "unknown_symbols": [],
+   "unknown_symbols": [
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDict",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetDocument",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetVersion",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtIsStopped",
+    "xmlCtxtParseContent",
+    "xmlCtxtParseDtd",
+    "xmlCtxtPopInput",
+    "xmlCtxtPushInput",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetDict",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtValidateDtd",
+    "xmlInputSetEncodingHandler",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromUrl"
+   ],
    "courts": [
+    "CALLBACK-001",
     "DATA-GLOBALS-001",
     "ENCODING-001",
+    "ERROR-001",
     "GLOBALS-THREADING-001",
     "READER-001",
     "SAVE-001",
+    "TREE-001",
     "WRITER-001",
     "XPATH-001"
    ],
@@ -1672,13 +1847,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 48,
+   "obligations_total": 49,
    "obligations": {
+    "NOT_APPLICABLE": 9,
     "IMPLEMENTED": 39,
-    "NOT_APPLICABLE": 8,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 11,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -1767,13 +1942,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 73,
+   "obligations_total": 74,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 68,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 7,
+   "obligation_gap": 6,
    "semantic_verified": 9,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -1862,13 +2037,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 50,
+   "obligations_total": 51,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 45,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -1927,13 +2102,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 39,
+   "obligations_total": 40,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 34,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -1964,13 +2139,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 55,
+   "obligations_total": 56,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 50,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2029,13 +2204,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 38,
+   "obligations_total": 39,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 33,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2095,13 +2270,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 38,
+   "obligations_total": 39,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 33,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2189,13 +2364,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 39,
+   "obligations_total": 40,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 34,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 7,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2256,17 +2431,18 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 51,
+   "obligations_total": 52,
    "obligations": {
+    "NOT_APPLICABLE": 9,
     "IMPLEMENTED": 42,
-    "NOT_APPLICABLE": 8,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
-   "semantic_verified": 11,
+   "obligation_gap": 5,
+   "semantic_verified": 12,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XSLT-001"
    ],
    "verdict": "PARTIAL",
@@ -2327,10 +2503,11 @@
     "IMPLEMENTED": 44
    },
    "obligation_gap": 0,
-   "semantic_verified": 5,
+   "semantic_verified": 7,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XSLT-001"
    ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
@@ -2358,10 +2535,11 @@
     "IMPLEMENTED": 34
    },
    "obligation_gap": 0,
-   "semantic_verified": 5,
+   "semantic_verified": 7,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XSLT-001"
    ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
@@ -2390,10 +2568,11 @@
     "INTENTIONAL_NOOP": 2
    },
    "obligation_gap": 0,
-   "semantic_verified": 2,
+   "semantic_verified": 4,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XSLT-001"
    ],
    "verdict": "IMPLEMENTED_UNVERIFIED",
@@ -2420,13 +2599,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 70,
+   "obligations_total": 71,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 65,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 7,
+   "obligation_gap": 6,
    "semantic_verified": 9,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2455,13 +2634,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 38,
+   "obligations_total": 39,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 33,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2491,13 +2670,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 37,
+   "obligations_total": 38,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 32,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],
@@ -2529,17 +2708,18 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 52,
+   "obligations_total": 53,
    "obligations": {
+    "NOT_APPLICABLE": 9,
     "IMPLEMENTED": 43,
-    "NOT_APPLICABLE": 8,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
-   "semantic_verified": 10,
+   "obligation_gap": 5,
+   "semantic_verified": 11,
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
+    "CALLBACK-001",
     "XSLT-001"
    ],
    "verdict": "PARTIAL",
@@ -2594,13 +2774,13 @@
    "missing_symbols": [
     "xslDebugStatus"
    ],
-   "obligations_total": 37,
+   "obligations_total": 38,
    "obligations": {
+    "NOT_APPLICABLE": 5,
     "IMPLEMENTED": 32,
-    "NOT_APPLICABLE": 4,
     "INTENTIONAL_NOOP": 1
    },
-   "obligation_gap": 6,
+   "obligation_gap": 5,
    "semantic_verified": 6,
    "stub_symbols": [],
    "unknown_symbols": [],

@@ -220,8 +220,8 @@ def main():
         "schema": "historical-surface-epochs-1",
         "generator": "tools/evidence/surface_delta_engine.py",
         "phase": "11.1-Q",
-        "generated": datetime.datetime.now(datetime.timezone.utc)
-                     .strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # no embedded timestamp: the JSON is byte-reproducible; generation
+        # time is recorded in the generate_all.py receipt instead
         "policy": "Surface epochs derived from per-version Doxygen public "
                   "inventories; important boundaries correlated with upstream "
                   "NEWS evidence. Layout epochs (struct membership) are "

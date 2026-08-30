@@ -1,0 +1,346 @@
+{
+ "schema": "doxygen-inventory-1",
+ "project": "libexslt",
+ "version": "system",
+ "profile": "public",
+ "doxygen_version": "1.18.0",
+ "config_hash": "eb711a3db0821c391a86d1fc5bfe9e2c2031b651f7bea5c684023e79682e5f60",
+ "source_tree_hash": null,
+ "raw_xml_hash": "403d2222b98b955cc841a4efdeea64dae0e1b1fc01407f4d2cd094289bf38147",
+ "counts": {
+  "define": 19,
+  "function": 13,
+  "variable": 4,
+  "total": 36
+ },
+ "entities": [
+  {
+   "kind": "define",
+   "name": "EXSLT_COMMON_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/common\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "30"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_CRYPTO_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/crypto\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "36"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_DATE_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/dates-and-times\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "66"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_DYNAMIC_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/dynamic\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "72"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_FUNCTIONS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/functions\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_MATH_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/math\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "42"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_SETS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/sets\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "48"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLT_STRINGS_NAMESPACE",
+   "value": "((const xmlChar *) \"http://exslt.org/strings\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "60"
+  },
+  {
+   "kind": "define",
+   "name": "SAXON_NAMESPACE",
+   "value": "((const xmlChar *) \"http://icl.com/saxon\")",
+   "documented": true,
+   "header": "exslt.h",
+   "line": "79"
+  },
+  {
+   "kind": "define",
+   "name": "ATTRIBUTE_UNUSED",
+   "value": "",
+   "documented": true,
+   "header": "exsltconfig.h",
+   "line": "63"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_DOTTED_VERSION",
+   "value": "\"0.8.25\"",
+   "documented": true,
+   "header": "exsltconfig.h",
+   "line": "21"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION",
+   "value": "825",
+   "documented": true,
+   "header": "exsltconfig.h",
+   "line": "28"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION_EXTRA",
+   "value": "\"-GITv1.1.45\"",
+   "documented": true,
+   "header": "exsltconfig.h",
+   "line": "42"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_VERSION_STRING",
+   "value": "\"825\"",
+   "documented": true,
+   "header": "exsltconfig.h",
+   "line": "35"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTCALL",
+   "value": "",
+   "documented": true,
+   "header": "exsltexports.h",
+   "line": "38"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBFUN",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "47"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBLIC",
+   "value": "",
+   "documented": true,
+   "header": "exsltexports.h",
+   "line": "31"
+  },
+  {
+   "kind": "define",
+   "name": "EXSLTPUBVAR",
+   "value": "",
+   "documented": true,
+   "header": "exsltexports.h",
+   "line": "54"
+  },
+  {
+   "kind": "define",
+   "name": "LIBEXSLT_PUBLIC",
+   "value": "",
+   "documented": false,
+   "header": "exsltexports.h",
+   "line": "58"
+  },
+  {
+   "kind": "function",
+   "name": "exsltCommonRegister",
+   "args": "(void)",
+   "definition": "void exsltCommonRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "81"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDateRegister",
+   "args": "(void)",
+   "definition": "void exsltDateRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "89"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDateXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltDateXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "95"
+  },
+  {
+   "kind": "function",
+   "name": "exsltDynRegister",
+   "args": "(void)",
+   "definition": "void exsltDynRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "91"
+  },
+  {
+   "kind": "function",
+   "name": "exsltFuncRegister",
+   "args": "(void)",
+   "definition": "void exsltFuncRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "87"
+  },
+  {
+   "kind": "function",
+   "name": "exsltMathRegister",
+   "args": "(void)",
+   "definition": "void exsltMathRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "85"
+  },
+  {
+   "kind": "function",
+   "name": "exsltMathXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltMathXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "97"
+  },
+  {
+   "kind": "function",
+   "name": "exsltRegisterAll",
+   "args": "(void)",
+   "definition": "void exsltRegisterAll",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "93"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSaxonRegister",
+   "args": "(void)",
+   "definition": "void exsltSaxonRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "90"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSetsRegister",
+   "args": "(void)",
+   "definition": "void exsltSetsRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "86"
+  },
+  {
+   "kind": "function",
+   "name": "exsltSetsXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltSetsXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "99"
+  },
+  {
+   "kind": "function",
+   "name": "exsltStrRegister",
+   "args": "(void)",
+   "definition": "void exsltStrRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "88"
+  },
+  {
+   "kind": "function",
+   "name": "exsltStrXpathCtxtRegister",
+   "args": "(xmlXPathContextPtr ctxt, const xmlChar *prefix)",
+   "definition": "int exsltStrXpathCtxtRegister",
+   "static": false,
+   "prot": "public",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "101"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibexsltVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "21"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibraryVersion",
+   "type": "externconst char *",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "20"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibxmlVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "23"
+  },
+  {
+   "kind": "variable",
+   "name": "exsltLibxsltVersion",
+   "type": "externconst int",
+   "documented": false,
+   "header": "exslt.h",
+   "line": "22"
+  }
+ ],
+ "inventory_hash": "e3d0a23bfd848ea80e0beb009d6ed38bdd69ad1442f1f26d91f0dfe88540f226"
+}

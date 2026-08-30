@@ -1,0 +1,422 @@
+{
+  "callbacks": [],
+  "enumerators": [],
+  "enums": [],
+  "functions": [
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 81,
+      "name": "exsltCommonRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 83,
+      "name": "exsltCryptoRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 85,
+      "name": "exsltMathRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 86,
+      "name": "exsltSetsRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 87,
+      "name": "exsltFuncRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 88,
+      "name": "exsltStrRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 89,
+      "name": "exsltDateRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 90,
+      "name": "exsltSaxonRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 91,
+      "name": "exsltDynRegister",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 28,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 93,
+      "name": "exsltRegisterAll",
+      "params": [],
+      "storage": null,
+      "type": "void (void)"
+    },
+    {
+      "col": 27,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 95,
+      "name": "exsltDateXpathCtxtRegister",
+      "params": [
+        {
+          "name": "ctxt",
+          "type": "xmlXPathContextPtr"
+        },
+        {
+          "name": "prefix",
+          "type": "const xmlChar *"
+        }
+      ],
+      "storage": null,
+      "type": "int (xmlXPathContextPtr, const xmlChar *)"
+    },
+    {
+      "col": 27,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 97,
+      "name": "exsltMathXpathCtxtRegister",
+      "params": [
+        {
+          "name": "ctxt",
+          "type": "xmlXPathContextPtr"
+        },
+        {
+          "name": "prefix",
+          "type": "const xmlChar *"
+        }
+      ],
+      "storage": null,
+      "type": "int (xmlXPathContextPtr, const xmlChar *)"
+    },
+    {
+      "col": 27,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 99,
+      "name": "exsltSetsXpathCtxtRegister",
+      "params": [
+        {
+          "name": "ctxt",
+          "type": "xmlXPathContextPtr"
+        },
+        {
+          "name": "prefix",
+          "type": "const xmlChar *"
+        }
+      ],
+      "storage": null,
+      "type": "int (xmlXPathContextPtr, const xmlChar *)"
+    },
+    {
+      "col": 27,
+      "header": "exslt.h",
+      "isVariadic": false,
+      "kind": "FunctionDecl",
+      "line": 101,
+      "name": "exsltStrXpathCtxtRegister",
+      "params": [
+        {
+          "name": "ctxt",
+          "type": "xmlXPathContextPtr"
+        },
+        {
+          "name": "prefix",
+          "type": "const xmlChar *"
+        }
+      ],
+      "storage": null,
+      "type": "int (xmlXPathContextPtr, const xmlChar *)"
+    }
+  ],
+  "generator": "tools/archaeology/apiatlas.py",
+  "globals": [
+    {
+      "col": 25,
+      "header": "exslt.h",
+      "kind": "VarDecl",
+      "line": 20,
+      "name": "exsltLibraryVersion",
+      "type": "const char *"
+    },
+    {
+      "col": 23,
+      "header": "exslt.h",
+      "kind": "VarDecl",
+      "line": 21,
+      "name": "exsltLibexsltVersion",
+      "type": "const int"
+    },
+    {
+      "col": 23,
+      "header": "exslt.h",
+      "kind": "VarDecl",
+      "line": 22,
+      "name": "exsltLibxsltVersion",
+      "type": "const int"
+    },
+    {
+      "col": 23,
+      "header": "exslt.h",
+      "kind": "VarDecl",
+      "line": 23,
+      "name": "exsltLibxmlVersion",
+      "type": "const int"
+    }
+  ],
+  "headers": [
+    {
+      "declarations": [
+        {
+          "kind": "TypedefDecl",
+          "name": "__int128_t",
+          "type": "__int128"
+        },
+        {
+          "kind": "TypedefDecl",
+          "name": "__uint128_t",
+          "type": "unsigned __int128"
+        },
+        {
+          "kind": "TypedefDecl",
+          "name": "__NSConstantString",
+          "type": "struct __NSConstantString_tag"
+        },
+        {
+          "kind": "TypedefDecl",
+          "name": "__builtin_ms_va_list",
+          "type": "char *"
+        },
+        {
+          "kind": "TypedefDecl",
+          "name": "__builtin_va_list",
+          "type": "struct __va_list_tag[1]"
+        },
+        {
+          "kind": "VarDecl",
+          "name": "exsltLibraryVersion",
+          "type": "const char *"
+        },
+        {
+          "kind": "VarDecl",
+          "name": "exsltLibexsltVersion",
+          "type": "const int"
+        },
+        {
+          "kind": "VarDecl",
+          "name": "exsltLibxsltVersion",
+          "type": "const int"
+        },
+        {
+          "kind": "VarDecl",
+          "name": "exsltLibxmlVersion",
+          "type": "const int"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltCommonRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltCryptoRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltMathRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltSetsRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltFuncRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltStrRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltDateRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltSaxonRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltDynRegister",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltRegisterAll",
+          "type": "void (void)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltDateXpathCtxtRegister",
+          "type": "int (xmlXPathContextPtr, const xmlChar *)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltMathXpathCtxtRegister",
+          "type": "int (xmlXPathContextPtr, const xmlChar *)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltSetsXpathCtxtRegister",
+          "type": "int (xmlXPathContextPtr, const xmlChar *)"
+        },
+        {
+          "kind": "FunctionDecl",
+          "name": "exsltStrXpathCtxtRegister",
+          "type": "int (xmlXPathContextPtr, const xmlChar *)"
+        }
+      ],
+      "header": "exslt.h"
+    },
+    {
+      "declarations": [],
+      "header": "exsltconfig.h"
+    },
+    {
+      "declarations": [],
+      "header": "exsltexports.h"
+    },
+    {
+      "declarations": [],
+      "header": "libexslt.h",
+      "preprocess_error": "/tmp/apiatlas-libexslt-ix532kud/libexslt/libexslt.h:15:10: fatal error: 'config.h' file not found\n   15 | #include \"config.h\"\n      |          ^~~~~~~~~~\n1 error generated.\n"
+    }
+  ],
+  "project": "libexslt",
+  "records": [],
+  "summary": {
+    "callbacks": 0,
+    "enumerators": 0,
+    "enums": 0,
+    "functions": 14,
+    "globals": 4,
+    "headers": 4,
+    "records": 0,
+    "typedefs": 5
+  },
+  "typedefs": [
+    {
+      "col": null,
+      "header": "exslt.h",
+      "kind": "TypedefDecl",
+      "line": null,
+      "name": "__int128_t",
+      "type": "__int128"
+    },
+    {
+      "col": null,
+      "header": "exslt.h",
+      "kind": "TypedefDecl",
+      "line": null,
+      "name": "__uint128_t",
+      "type": "unsigned __int128"
+    },
+    {
+      "col": null,
+      "header": "exslt.h",
+      "kind": "TypedefDecl",
+      "line": null,
+      "name": "__NSConstantString",
+      "type": "struct __NSConstantString_tag"
+    },
+    {
+      "col": null,
+      "header": "exslt.h",
+      "kind": "TypedefDecl",
+      "line": null,
+      "name": "__builtin_ms_va_list",
+      "type": "char *"
+    },
+    {
+      "col": null,
+      "header": "exslt.h",
+      "kind": "TypedefDecl",
+      "line": null,
+      "name": "__builtin_va_list",
+      "type": "struct __va_list_tag[1]"
+    }
+  ],
+  "version_tag": "v1.1.45"
+}

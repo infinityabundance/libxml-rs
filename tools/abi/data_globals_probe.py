@@ -31,7 +31,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROBE = os.path.join(ROOT, "courts", "suites", "data-abi", "data-globals-probe.c")
 RECEIPTS = os.path.join(ROOT, "courts", "receipts", "phase-11")
-ORACLE_SO = "/usr/lib/libxml2.so.2"
+ORACLE_SO = "/usr/lib/libxml2.so.16"
 CAND_SO = os.path.join(ROOT, "target", "debug", "liblibxml_rs.so")
 
 

@@ -31,12 +31,15 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 GIT_DIRS = {
     "libxml2": ROOT / "archaeology" / "libxml2-git",
     "libxslt": ROOT / "archaeology" / "libxslt-git",
+    # libexslt ships inside the libxslt tree
+    "libexslt": ROOT / "archaeology" / "libxslt-git",
 }
 
 # Templates (path within the git tree).
 TEMPLATES = {
     "libxml2": "include/libxml/xmlversion.h.in",
     "libxslt": "libxslt/xsltconfig.h.in",
+    "libexslt": "libexslt/exsltconfig.h.in",
 }
 
 # Feature profiles. Each maps the @WITH_*@ placeholder to a value.
@@ -82,6 +85,10 @@ PROFILES = {
             "WITH_TRIO": 1,
             "WITH_XSLT_DEBUG": 1,
         },
+        "libexslt": {
+            "WITH_EXSLT_DEBUG": 1,
+            "WITH_CRYPTO": 1,
+        },
     },
     # Minimal profile for probing compile-against behavior of minimal builds.
     "minimal": {
@@ -100,6 +107,10 @@ PROFILES = {
         "libxslt": {
             "WITH_DEBUGGER": 0, "WITH_MODULES": 0, "WITH_PROFILER": 0,
             "WITH_TRIO": 0, "WITH_XSLT_DEBUG": 0,
+        },
+        "libexslt": {
+            "WITH_EXSLT_DEBUG": 0,
+            "WITH_CRYPTO": 0,
         },
     },
 }
@@ -140,6 +151,15 @@ def generate(project, version, tag, profile, outdir):
         special["LIBXSLT_VERSION_NUMBER"] = maj * 10000 + minor * 100 + micro
         special["LIBXSLT_VERSION_EXTRA"] = ""
         special["LIBXSLT_DEFAULT_PLUGINS_PATH"] = "/usr/lib/libxslt-plugins"
+    elif project == "libexslt":
+        special["VERSION"] = version
+        special["LIBEXSLT_VERSION"] = version
+        parts = version.split(".")
+        maj, minor, micro = (int(parts[0]), int(parts[1]),
+                             int(parts[2]) if len(parts) > 2 else 0)
+        special["LIBEXSLT_VERSION_NUMBER"] = maj * 10000 + minor * 100 + micro
+        special["LIBEXSLT_VERSION_EXTRA"] = ""
+        special["LIBEXSLT_DOTTED_VERSION"] = version
 
     def repl(m):
         key = m.group(1)
@@ -155,6 +175,8 @@ def generate(project, version, tag, profile, outdir):
 
     if project == "libxml2":
         outname = "xmlversion.h"
+    elif project == "libexslt":
+        outname = "exsltconfig.h"
     else:
         outname = "xsltconfig.h"
     outdir = Path(outdir)

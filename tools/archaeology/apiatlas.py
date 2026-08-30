@@ -39,12 +39,17 @@ import profileconfig  # noqa: E402
 GIT_DIRS = {
     "libxml2": ROOT / "archaeology" / "libxml2-git",
     "libxslt": ROOT / "archaeology" / "libxslt-git",
+    # libexslt ships inside the libxslt tree (libexslt/); its version
+    # (0.8.x) has no separate tags, so the caller passes the libxslt tag
+    # that shipped the matching exslt release (0.8.25 == v1.1.45).
+    "libexslt": ROOT / "archaeology" / "libxslt-git",
 }
 
 # Header subdirectories within the git tree, per project.
 HEADER_DIRS = {
     "libxml2": ["include/libxml"],
     "libxslt": ["libxslt"],
+    "libexslt": ["libexslt"],
 }
 
 # Headers that are internal/private and should not contribute to the public
@@ -58,6 +63,10 @@ PRIVATE_HEADERS = {
     "libxslt": {
         "triodef.h", "trio.h",  # bundled trio (printf impl) internals
         "win32config.h",        # windows build config
+    },
+    "libexslt": {
+        "exsltconfig.h.in",     # configure template, not a real header
+        "Makefile.am",
     },
 }
 
@@ -195,6 +204,11 @@ def extract(project, version, tag, cc="clang", tmpdir=None):
     if project == "libxml2":
         gen_meta = profileconfig.generate(
             project, version, tag, profile, dest / "include" / "libxml")
+    elif project == "libexslt":
+        # libexslt ships inside the libxslt tree; its config header template
+        # is libexslt/exsltconfig.h.in (generated into the same dir).
+        gen_meta = profileconfig.generate(
+            project, version, tag, profile, dest / "libexslt")
     else:
         gen_meta = profileconfig.generate(
             project, version, tag, profile, dest / "libxslt")
@@ -203,9 +217,11 @@ def extract(project, version, tag, cc="clang", tmpdir=None):
     # Headers include each other as <libxml/...> (angle-bracket with the
     # libxml/ prefix), so -I must point at the PARENT of the libxml/ dir.
     # For libxslt we also need the libxml headers on the include path because
-    # libxslt headers include <libxml/...>.
+    # libxslt headers include <libxml/...>. libexslt needs both libxml2 and
+    # libxslt headers (exslt.h includes <libxml/tree.h> and <libxml/xpath.h>;
+    # libexslt.h includes <libxslt/xsltconfig.h>).
     inc_dirs = [str(hdr_root.parent)]
-    if project == "libxslt":
+    if project in ("libxslt", "libexslt"):
         # Reuse a libxml2 header export from the sibling git tree at a modern tag.
         libxml_tag = "v2.15.3"
         libxml_dest = dest / "libxml-includes"
@@ -215,6 +231,14 @@ def extract(project, version, tag, cc="clang", tmpdir=None):
         profileconfig.generate("libxml2", "2.15.3", libxml_tag, "distro",
                                libxml_dest / "include" / "libxml")
         inc_dirs.append(str(libxml_dest / "include"))
+    if project == "libexslt":
+        # libexslt.h includes <libxslt/xsltconfig.h> and <libxml/xmlversion.h>
+        xslt_tag = tag
+        xslt_dest = dest / "libxslt-includes"
+        git_archive("libxslt", xslt_tag, ["libxslt"], xslt_dest)
+        profileconfig.generate("libxslt", "1.1.45", xslt_tag, "distro",
+                               xslt_dest / "libxslt")
+        inc_dirs.append(str(xslt_dest))
     inc_args = []
     for d in inc_dirs:
         inc_args += ["-I", d]

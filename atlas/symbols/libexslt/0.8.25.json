@@ -1,0 +1,27 @@
+{
+  "functions": [
+    "exsltCommonRegister",
+    "exsltCryptoRegister",
+    "exsltDateRegister",
+    "exsltDateXpathCtxtRegister",
+    "exsltDynRegister",
+    "exsltFuncRegister",
+    "exsltMathRegister",
+    "exsltMathXpathCtxtRegister",
+    "exsltRegisterAll",
+    "exsltSaxonRegister",
+    "exsltSetsRegister",
+    "exsltSetsXpathCtxtRegister",
+    "exsltStrRegister",
+    "exsltStrXpathCtxtRegister"
+  ],
+  "globals": [
+    "exsltLibexsltVersion",
+    "exsltLibraryVersion",
+    "exsltLibxmlVersion",
+    "exsltLibxsltVersion"
+  ],
+  "project": "libexslt",
+  "version": "0.8.25",
+  "version_tag": "v1.1.45"
+}

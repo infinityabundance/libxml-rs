@@ -782,7 +782,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Root cause:** The 11.1-O complete subsystem census (tools/evidence/subsystem_census.py; 45 libxml2 + 24 libxslt + 8 EXSLT subsystems, membership from Doxygen inventory + Clang AST atlas + symbol patterns, oracle baseline = system DSO exports) found 65 oracle-DSO-exported symbols with no candidate definition. The PARITY_OBLIGATIONS ledger reported MISSING: 0 because the obligations generator's oracle symbol set omitted these families (parser-context accessors, the xlink module, per-module EXSLT registrations, resource-loader setters and several small helpers), so the export-completeness claim was not actually proven for them.
 - **Observable residual:** A C consumer dlopen/dlsym'ing or linking against the candidate for xmlCtxtGetDict, xmlNewInputFromMemory, xlinkIsLink, exsltMathRegister, xmlSchemaSetResourceLoader, xmlUTF8ToIsolat1, xslDebugStatus, etc. fails with an undefined symbol. dlsym returns NULL for each of the 65 names in atlas/SUBSYSTEM_CENSUS.json missing_symbols.
 - **Classification:** CANDIDATE_BUG
-- **History:** OPEN 2026-08-30; OPEN 2026-08-30
+- **History:** OPEN 2026-08-30; OPEN 2026-08-30; OPEN 2026-08-30
 
 ## Phase 11.1-P Residuals
 

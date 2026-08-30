@@ -22,7 +22,19 @@
   "11.1-S",
   "11.1-T",
   "11.1-U",
-  "11.1-V"
+  "11.1-V",
+  "11.1-A",
+  "11.1-B",
+  "11.1-C",
+  "11.1-D",
+  "11.1-E",
+  "11.1-F",
+  "11.1-Q",
+  "11.1-R",
+  "11.1-W",
+  "11.1-X",
+  "11.1-Y",
+  "11.1-Z"
  ],
  "ledger": [
   {
@@ -2027,6 +2039,12 @@
     {
      "date": "2026-08-30",
      "event": "11.1-S header-surface audit: with the complete upstream header surface installed (all 2.15.3/1.1.45/0.8.25 header declarations now present in include/), the header-compile court check #5 exposes 63 of the 65 symbols as declared-but-not-exported. The explicit residual allowlist courts/suites/header-compile/residual-exports.txt tracks them (owned by this residual); it must be empty for the 11.1-Z seal.",
+     "status": "OPEN"
+    },
+    {
+     "date": "2026-08-30",
+     "event": "11.1-W generated-parity-matrix work: the obligations generator now covers three projects (libexslt added as its own oracle DSO) and the xlink* / xsl* prefixes; regeneration against the true system oracle (/usr/lib/libxml2.so.16, 21503-GITv2.15.3) surfaces 69 missing obligations total: 52 libxml2 (47 xml/html/__xml + 5 xlink), 1 libxslt (xslDebugStatus, data), 16 libexslt (12 per-module exslt*Register + exsltLibexsltVersion/exsltLibraryVersion/exsltLibxmlVersion/exsltLibxsltVersion data). All 69 remain to be implemented in 11.1-X; the header-compile residual allowlist (courts/suites/header-compile/residual-exports.txt) tracks the declared-but-unexported subset and must be empty for the 11.1-Z seal.",
+     "phase": "11.1-W",
      "status": "OPEN"
     }
    ],

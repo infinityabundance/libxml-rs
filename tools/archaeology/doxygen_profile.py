@@ -20,6 +20,7 @@ Usage:
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -27,7 +28,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT = os.path.join(ROOT, "oracle", "historical")
 DOX = os.path.join(OUT, "doxygen")
 GIT = {"libxml2": os.path.join(ROOT, "archaeology", "libxml2-git"),
-       "libxslt": os.path.join(ROOT, "archaeology", "libxslt-git")}
+       "libxslt": os.path.join(ROOT, "archaeology", "libxslt-git"),
+       # libexslt ships inside the libxslt tree (libexslt/); its own version
+       # (0.8.x) has no separate git tags, so historical extractions resolve
+       # through the libxslt tag that shipped the matching exslt release.
+       "libexslt": os.path.join(ROOT, "archaeology", "libxslt-git")}
+# libexslt version -> libxslt git tag that shipped it (system 0.8.25 == 1.1.45)
+EXSLT_TAG_MAP = {"0.8.25": "v1.1.45"}
 PREFIX = os.path.join(OUT, "prefix")
 
 AGGRESSIVE = {
@@ -73,6 +80,8 @@ AGGRESSIVE = {
 
 def resolve_tag(project, version):
     git = GIT[project]
+    if project == "libexslt" and version in EXSLT_TAG_MAP:
+        return EXSLT_TAG_MAP[version]
     for cand in (version, f"v{version}",
                  f"LIBXML2.{version[2:]}",
                  "LIBXML_" + version.replace(".", "_")):
@@ -129,9 +138,12 @@ def doxygen_version():
 
 def gen(project, version, profile="public"):
     tag = resolve_tag(project, version) if version != "system" else None
+    work = os.path.join(DOX, f"{project}-{version}")
     if version == "system":
         # system oracle: use the installed system headers
-        src = {"libxml2": "/usr/include/libxml2", "libxslt": "/usr/include/libxslt"}[project]
+        src = {"libxml2": "/usr/include/libxml2",
+               "libxslt": "/usr/include/libxslt",
+               "libexslt": "/usr/include/libexslt"}[project]
         commit = None
         src_hash = None
         prefix_inc = src
@@ -144,6 +156,18 @@ def gen(project, version, profile="public"):
         prefix_inc = os.path.join(PREFIX, f"{project}-{version}", "include")
         if project == "libxml2":
             prefix_inc = os.path.join(prefix_inc, "libxml2")
+        if project == "libexslt" and not os.path.isdir(prefix_inc):
+            # No prefix capture exists for libexslt. Build a headers-only
+            # input matching the installed consumer surface (exslt.h +
+            # exsltexports.h + the generated exsltconfig.h), so the
+            # historical profile is comparable with the system profile.
+            prefix_inc = os.path.join(work, "pubhdr")
+            os.makedirs(prefix_inc, exist_ok=True)
+            for hdr in ("exslt.h", "exsltexports.h", "libexslt.h"):
+                shutil.copy2(os.path.join(src, "libexslt", hdr),
+                             os.path.join(prefix_inc, hdr))
+            shutil.copy2(os.path.join("/usr/include/libexslt", "exsltconfig.h"),
+                         os.path.join(prefix_inc, "exsltconfig.h"))
 
     if profile == "public":
         inputs = prefix_inc

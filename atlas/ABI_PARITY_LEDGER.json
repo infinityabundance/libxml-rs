@@ -8,7 +8,7 @@
     "doxygen_inventory_hash": "237b9d8ff2ab2bfdffd20e3d3d02c56246a280bfa4816a1d8198cf31f3a3015e",
     "oracle_headers": "/usr/include/libxml2",
     "candidate_headers": "include",
-    "oracle_dso": "/usr/lib/libxml2.so.2",
+    "oracle_dso": "/usr/lib/libxml2.so.16",
     "candidate_dso": "target/debug/liblibxml_rs.so",
     "probe_compiler": "gcc -std=c11",
     "note": "Current ABI seal derived from current-system Doxygen public inventory (libxml2-system / libxslt-system) × current-system headers (/usr/include) × current-system DSO. Historical ABI epochs are sealed separately from historical inventories (atlas/HISTORICAL_SURFACE_EPOCHS.json)"
@@ -100,21 +100,6 @@
    "mismatches": [],
    "candidate_header_gap_entities": [],
    "verdict": "PASS"
-  }
- },
- "_gap_accounting": {
-  "libxml2": {
-   "discovered": 0,
-   "measurable": 0,
-   "classified_unmeasurable": 0,
-   "silently_omitted": 0,
-   "skip_classifications": {
-    "OPAQUE_FORWARD_DECL": [],
-    "NOT_LAYOUT_OBSERVABLE": [],
-    "CONFIGURATION_ABSENT": [],
-    "TOOLING_LIMITATION": [],
-    "CANDIDATE_GAP": []
-   }
   }
  }
 }
