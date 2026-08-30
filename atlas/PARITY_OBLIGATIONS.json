@@ -1,6 +1,6 @@
 {
  "schema": "parity-obligations-3",
- "generated": "2026-08-30T11:45:04Z",
+ "generated": "2026-08-30T11:49:04Z",
  "status_model": {
   "schema": "parity-obligations-status-model-2",
   "export_status": [
@@ -68,8 +68,8 @@
    "counts": {
     "MISSING": 0,
     "STUB": 18,
-    "INTENTIONAL_NOOP": 14,
-    "IMPLEMENTED_UNVERIFIED": 1363,
+    "INTENTIONAL_NOOP": 12,
+    "IMPLEMENTED_UNVERIFIED": 1365,
     "CURRENT_PARITY_VERIFIED": 206,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
@@ -84,8 +84,8 @@
     },
     "implementation_status": {
      "STUB": 18,
-     "INTENTIONAL_NOOP": 14,
-     "IMPLEMENTED": 1556,
+     "INTENTIONAL_NOOP": 12,
+     "IMPLEMENTED": 1558,
      "UNKNOWN": 13,
      "NOT_APPLICABLE": 45
     },
@@ -8711,17 +8711,17 @@
      "candidate_symbol": "xmlMemShow",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "INTENTIONAL_NOOP",
+     "implementation_status": "IMPLEMENTED",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "documented intentional no-op (residual R-000131)",
+     "stub_reason": "has logic",
      "courts": [],
      "residuals": [
       "R-000131"
      ],
-     "overall": "INTENTIONAL_NOOP"
+     "overall": "IMPLEMENTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlMemSize",
@@ -8729,17 +8729,15 @@
      "candidate_symbol": "xmlMemSize",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "INTENTIONAL_NOOP",
+     "implementation_status": "IMPLEMENTED",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "documented intentional no-op (residual R-000131)",
+     "stub_reason": "has logic",
      "courts": [],
-     "residuals": [
-      "R-000131"
-     ],
-     "overall": "INTENTIONAL_NOOP"
+     "residuals": [],
+     "overall": "IMPLEMENTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlMemStrdup",

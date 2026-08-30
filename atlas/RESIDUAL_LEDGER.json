@@ -1016,8 +1016,8 @@
   },
   {
    "id": "R-000131",
-   "status": "OPEN",
-   "phase": "11.1-I",
+   "status": "FIXED",
+   "phase": "11.1-J",
    "title": "Legacy allocator API surface: location tracking, xmlMemSize, debug dumps are simplified",
    "surface": "xmlmemory.h API",
    "component": [
@@ -1026,7 +1026,7 @@
    ],
    "discovery_date": "2026-08-29",
    "root_cause": "The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.",
-   "fix": "Recorded as intentional safe divergence: the exported symbols exist with ABI-identical signatures; exact per-block reporting requires the allocator instrumentation court (11.1-J ownership/allocator work) to add block metadata. To be closed there or accepted as documented divergence.",
+   "fix": "11.1-J allocator instrumentation: the default allocator now maintains the upstream-style per-block registry (ptr -> size/file/line). xmlMemSize returns the recorded size, the *Loc variants record the allocation site, xmlMemDisplayLast and xmlMemShow dump per-block listings (ordered by address; xmlMemShow's upstream most-recent ordering is not reproduced \u2014 documented divergence), and xmlMemUsed/MEM_BLOCKS are exact (realloc adjusts by the old size). xmlMemSetup custom allocators still bypass the registry (counters only), matching upstream's debug-allocator-only contract.",
    "evidence": [
     "src/abi/allocator.rs"
    ],

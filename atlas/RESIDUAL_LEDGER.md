@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**12 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000131, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160
+**11 open residuals:** R-000119, R-000120, R-000121, R-000122, R-000123, R-000136, R-000138, R-000157, R-000158, R-000159, R-000160
 
 ## Phase 0 Residuals
 
@@ -470,16 +470,6 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Classification:** CANDIDATE_BUG
 
 ## Phase 11.1-I Residuals
-
-### R-000131: Legacy allocator API surface: location tracking, xmlMemSize, debug dumps are simplified (OPEN)
-
-- **Status:** OPEN
-- **Component:** src/abi/allocator.rs, include/libxml/xmlmemory.h
-- **Surface:** xmlmemory.h API
-- **Root cause:** The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.
-- **Fix:** Recorded as intentional safe divergence: the exported symbols exist with ABI-identical signatures; exact per-block reporting requires the allocator instrumentation court (11.1-J ownership/allocator work) to add block metadata. To be closed there or accepted as documented divergence.
-- **Evidence:** ['src/abi/allocator.rs']
-- **Classification:** CANDIDATE_BUG
 
 ### R-000135: Exported C data globals: 11 libxml2 symbols remain (SAX handler structs, char tables, xmlLastError) (FIXED)
 

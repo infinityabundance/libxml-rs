@@ -22,6 +22,7 @@ use core::ffi::c_void;
 use core::ptr;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
+use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_long};
 
 use parking_lot::RwLock;
@@ -162,6 +163,48 @@ struct AllocatorFuncs {
 static MEM_USED: AtomicUsize = AtomicUsize::new(0);
 static MEM_BLOCKS: AtomicUsize = AtomicUsize::new(0);
 
+/// Per-block metadata (upstream xmlmemory.c block table): enables
+/// xmlMemSize, exact xmlMemUsed and per-block dumps (11.1-J / R-000131).
+/// The file pointer is stored as a raw address (usize) so the registry stays
+/// Send + Sync.
+#[derive(Clone, Copy)]
+struct BlockMeta {
+    size: usize,
+    file: usize,
+    line: c_int,
+}
+
+static BLOCKS: once_cell::sync::Lazy<
+    parking_lot::Mutex<std::collections::HashMap<usize, BlockMeta>>,
+> = once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(std::collections::HashMap::new()));
+
+/// Record a block in the registry (no-op for NULL).
+unsafe fn block_record(ptr: *mut c_void, size: usize, file: *const c_char, line: c_int) {
+    if ptr.is_null() {
+        return;
+    }
+    BLOCKS.lock().insert(
+        ptr as usize,
+        BlockMeta {
+            size,
+            file: file as usize,
+            line,
+        },
+    );
+}
+
+/// Drop a block from the registry; returns its recorded size (0 if unknown).
+unsafe fn block_forget(ptr: *mut c_void) -> usize {
+    if ptr.is_null() {
+        return 0;
+    }
+    BLOCKS
+        .lock()
+        .remove(&(ptr as usize))
+        .map(|m| m.size)
+        .unwrap_or(0)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Public Allocator API
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -294,6 +337,7 @@ pub unsafe extern "C" fn xmlMalloc(size: usize) -> *mut c_void {
     if !ptr.is_null() {
         MEM_USED.fetch_add(size, Ordering::Relaxed);
         MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        unsafe { block_record(ptr, size, ptr::null(), 0) };
     }
     ptr
 }
@@ -340,14 +384,16 @@ pub unsafe extern "C" fn xmlRealloc(ptr: *mut c_void, size: usize) -> *mut c_voi
         .unwrap_or(default_realloc as xmlReallocFunc);
     let new_ptr = unsafe { realloc_func(ptr, size) };
     if !new_ptr.is_null() {
-        // Update counters (approximate — we don't know the old size)
-        MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        // Exact accounting via the block registry.
+        let old_size = unsafe { block_forget(ptr) };
+        MEM_USED.fetch_add(size.saturating_sub(old_size), Ordering::Relaxed);
         if ptr.is_null() {
-            MEM_USED.fetch_add(size, Ordering::Relaxed);
+            MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
         }
-        // Note: we don't subtract old size because we don't track it.
-        // This makes counters approximate, matching upstream behavior
-        // where the debugging allocator tracks sizes but the default doesn't.
+        unsafe { block_record(new_ptr, size, ptr::null(), 0) };
+    } else if !ptr.is_null() {
+        // realloc failure: the old block is still alive.
+        unsafe { block_record(ptr, block_forget(ptr), ptr::null(), 0) };
     }
     new_ptr
 }
@@ -376,8 +422,12 @@ pub unsafe extern "C" fn xmlFree(ptr: *mut c_void) {
     // SAFETY: We call the stored free function pointer.
     let alloc = ALLOCATOR.read();
     let free_func = alloc.free_func.unwrap_or(default_free as xmlFreeFunc);
+    let old_size = unsafe { block_forget(ptr) };
     unsafe { free_func(ptr) };
     MEM_BLOCKS.fetch_sub(1, Ordering::Relaxed);
+    if old_size > 0 {
+        MEM_USED.fetch_sub(old_size, Ordering::Relaxed);
+    }
 }
 
 /// Duplicate a C string using the configured allocator.
@@ -407,6 +457,7 @@ pub unsafe extern "C" fn xmlMemStrdup(str: *const c_char) -> *mut c_void {
         let len = unsafe { libc::strlen(str) } + 1;
         MEM_USED.fetch_add(len, Ordering::Relaxed);
         MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        unsafe { block_record(ptr, len, ptr::null(), 0) };
     }
     ptr
 }
@@ -490,9 +541,43 @@ pub unsafe extern "C" fn xmlMemDisplay(fp: *mut c_void) {
 /// Prints debug memory information for the last `nr` allocations.
 /// With the default allocator, this is a no-op (we don't track allocation history).
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemShow(_fp: *mut c_void, _nr: c_int) {
-    // Phase 1: no-op with the default allocator.
-    // A future debugging allocator could track allocation history.
+pub unsafe extern "C" fn xmlMemShow(fp: *mut c_void, nr: c_int) {
+    // Upstream xmlMemShow(fp, nr) prints the nr most recently allocated
+    // blocks from the debug allocator's history. The candidate's block
+    // registry is unordered; print the live blocks (bounded by nr), which
+    // preserves the observable purpose (per-block debugging output).
+    unsafe {
+        let out = if fp.is_null() {
+            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
+        } else {
+            fp
+        };
+        if out.is_null() {
+            return;
+        }
+        let mut msg = String::from("Recent blocks\n");
+        let map = BLOCKS.lock();
+        let mut entries: Vec<(usize, &BlockMeta)> = map.iter().map(|(k, v)| (*k, v)).collect();
+        entries.sort_by_key(|(k, _)| *k);
+        let mut shown = 0;
+        for (addr, meta) in entries {
+            if nr > 0 && shown >= nr {
+                break;
+            }
+            msg.push_str(&format!(
+                "  {:018p} : {:>7} bytes\n",
+                addr as *const c_void, meta.size
+            ));
+            shown += 1;
+        }
+        let bytes = msg.as_bytes();
+        libc::fwrite(
+            bytes.as_ptr() as *const c_void,
+            1,
+            bytes.len(),
+            out as *mut libc::FILE,
+        );
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -659,11 +744,14 @@ pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocLoc(
     size: usize,
-    _file: *const c_char,
-    _line: c_int,
+    file: *const c_char,
+    line: c_int,
 ) -> *mut c_void {
-    // SAFETY: identical contract to xmlMalloc.
-    unsafe { xmlMalloc(size) }
+    let ptr = unsafe { xmlMalloc(size) };
+    if !ptr.is_null() {
+        unsafe { block_record(ptr, size, file, line) };
+    }
+    ptr
 }
 
 /// Allocate zeroed memory, recording the allocation site (upstream xmlmemory.h).
@@ -674,11 +762,14 @@ pub unsafe extern "C" fn xmlMallocLoc(
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocAtomicLoc(
     size: usize,
-    _file: *const c_char,
-    _line: c_int,
+    file: *const c_char,
+    line: c_int,
 ) -> *mut c_void {
-    // SAFETY: identical contract to xmlMallocZero.
-    unsafe { xmlMallocZero(size) }
+    let ptr = unsafe { xmlMallocZero(size) };
+    if !ptr.is_null() {
+        unsafe { block_record(ptr, size, file, line) };
+    }
+    ptr
 }
 
 /// Reallocate memory, recording the allocation site (upstream xmlmemory.h).
@@ -690,11 +781,20 @@ pub unsafe extern "C" fn xmlMallocAtomicLoc(
 pub unsafe extern "C" fn xmlReallocLoc(
     ptr: *mut c_void,
     size: usize,
-    _file: *const c_char,
-    _line: c_int,
+    file: *const c_char,
+    line: c_int,
 ) -> *mut c_void {
-    // SAFETY: identical contract to xmlRealloc.
-    unsafe { xmlRealloc(ptr, size) }
+    let new_ptr = unsafe { xmlRealloc(ptr, size) };
+    if !new_ptr.is_null() {
+        unsafe { block_record(new_ptr, size, file, line) };
+    } else if !ptr.is_null() {
+        // Keep the old site on failure.
+        let meta = BLOCKS.lock().get(&(ptr as usize)).copied();
+        if let Some(m) = meta {
+            unsafe { block_record(ptr, m.size, m.file as *const c_char, m.line) };
+        }
+    }
+    new_ptr
 }
 
 /// Duplicate a string, recording the allocation site (upstream xmlmemory.h).
@@ -705,11 +805,15 @@ pub unsafe extern "C" fn xmlReallocLoc(
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemStrdupLoc(
     str: *const c_char,
-    _file: *const c_char,
-    _line: c_int,
+    file: *const c_char,
+    line: c_int,
 ) -> *mut c_void {
-    // SAFETY: identical contract to xmlMemStrdup.
-    unsafe { xmlMemStrdup(str) }
+    let ptr = unsafe { xmlMemStrdup(str) };
+    if !ptr.is_null() {
+        let len = unsafe { libc::strlen(str) } + 1;
+        unsafe { block_record(ptr, len, file, line) };
+    }
+    ptr
 }
 
 /// Return the size of an allocated block (upstream xmlmemory.h).
@@ -718,13 +822,18 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
 /// size_t xmlMemSize(void *ptr);
 /// ```
 ///
-/// The default candidate allocator does not maintain a per-block size table
-/// (that is the upstream debug-allocator block list); it therefore returns 0
-/// for all blocks — a documented safe divergence (residual R-000131) until
-/// the allocator instrumentation court (11.1-J) adds block metadata.
+/// Returns the recorded size from the block registry (0 for unknown or
+/// foreign pointers, matching upstream's lookup-miss behavior).
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemSize(_ptr: *mut c_void) -> usize {
-    0
+pub unsafe extern "C" fn xmlMemSize(ptr: *mut c_void) -> usize {
+    if ptr.is_null() {
+        return 0;
+    }
+    BLOCKS
+        .lock()
+        .get(&(ptr as usize))
+        .map(|m| m.size)
+        .unwrap_or(0)
 }
 
 /// Display a limited amount of memory debug information (upstream xmlmemory.h).
@@ -733,33 +842,59 @@ pub unsafe extern "C" fn xmlMemSize(_ptr: *mut c_void) -> usize {
 /// void xmlMemDisplayLast(FILE *fp, long nbBytes);
 /// ```
 ///
-/// The default candidate allocator prints the global counters (it has no
-/// per-block list); the output format is intentionally simpler than
-/// upstream's block dump — a documented safe divergence (residual R-000131).
+/// Dumps the per-block registry (upstream xmlMemDisplayLast block listing):
+/// one line per live block with its address, size and recorded allocation
+/// site, bounded by `nb_bytes` when positive. The aggregate footer matches
+/// upstream's counters.
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, _nb_bytes: c_long) {
+pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
     // SAFETY: fp must be a valid FILE* or NULL (stderr used).
     unsafe {
-        let used = MEM_USED.load(Ordering::Relaxed);
-        let blocks = MEM_BLOCKS.load(Ordering::Relaxed);
         let out = if fp.is_null() {
             libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
         } else {
             fp
         };
-        if !out.is_null() {
-            let msg = format!(
-                "libxml-rs allocator: {} blocks, {} bytes in use\n",
-                blocks, used
-            );
-            let bytes = msg.as_bytes();
-            libc::fwrite(
-                bytes.as_ptr() as *const c_void,
-                1,
-                bytes.len(),
-                out as *mut libc::FILE,
-            );
+        if out.is_null() {
+            return;
         }
+        let mut total: usize = 0;
+        let mut msg = String::new();
+        msg.push_str("MEMORY ALLOCATED : 0, MAX : 0, BLOCKS : ");
+        let blocks = MEM_BLOCKS.load(Ordering::Relaxed);
+        msg.push_str(&blocks.to_string());
+        msg.push('\n');
+        let map = BLOCKS.lock();
+        let mut entries: Vec<(usize, &BlockMeta)> = map.iter().map(|(k, v)| (*k, v)).collect();
+        entries.sort_by_key(|(k, _)| *k);
+        for (addr, meta) in entries {
+            if nb_bytes > 0 && (total as c_long) >= nb_bytes {
+                break;
+            }
+            total += meta.size;
+            msg.push_str(&format!(
+                "  {:018p} : {:>7} bytes",
+                addr as *const c_void, meta.size
+            ));
+            if meta.file != 0 {
+                let file = CStr::from_ptr(meta.file as *const c_char).to_string_lossy();
+                msg.push_str(&format!(" @ {}:{}", file, meta.line));
+            }
+            msg.push('\n');
+        }
+        drop(map);
+        let used = MEM_USED.load(Ordering::Relaxed);
+        msg.push_str(&format!(
+            "TOTAL MEMORY ALLOCATED : {} bytes, TOTAL BLOCKS : {}\n",
+            used, blocks
+        ));
+        let bytes = msg.as_bytes();
+        libc::fwrite(
+            bytes.as_ptr() as *const c_void,
+            1,
+            bytes.len(),
+            out as *mut libc::FILE,
+        );
     }
 }
 
@@ -886,16 +1021,17 @@ mod tests {
     #[test]
     fn test_mem_stats() {
         unsafe {
-            let before_used = xmlMemUsed();
-            let before_blocks = xmlMemBlocks();
-
             let ptr = xmlMalloc(100);
             assert!(!ptr.is_null());
 
-            // After allocation, used and blocks should be higher
-            assert!(xmlMemBlocks() >= before_blocks + 1);
+            // The block registry records the exact size (deterministic,
+            // unlike the process-wide counters which other test threads
+            // mutate concurrently).
+            assert_eq!(xmlMemSize(ptr), 100);
 
             xmlFree(ptr);
+            // Freed blocks leave the registry.
+            assert_eq!(xmlMemSize(ptr), 0);
         }
     }
 }

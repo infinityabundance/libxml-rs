@@ -72,6 +72,9 @@ static ENCODING_HANDLERS: Lazy<RwLock<Vec<HandlerPtr>>> = Lazy::new(|| RwLock::n
 /// Whether the built-in encoding handlers have been initialized.
 static ENCODING_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
+/// Serializes first-time handler registration (see init_encodings).
+static ENCODING_INIT_MUTEX: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. Encoding detection
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -538,11 +541,20 @@ pub(crate) fn utf8_to_latin1(data: &[u8]) -> Result<Vec<u8>, ()> {
 ///
 /// Safe to call multiple times — only the first call has an effect.
 pub(crate) fn init_encodings() {
-    if ENCODING_INITIALIZED.swap(true, Ordering::SeqCst) {
+    if ENCODING_INITIALIZED.load(Ordering::SeqCst) {
         return;
     }
-
+    // Serialize first-time registration: without the mutex, a second thread
+    // can observe ENCODING_INITIALIZED == true and look up handlers while
+    // the first thread is still registering them (race found by the parallel
+    // test suite: xml::io test_output_buffer_with_encoding intermittently
+    // failed to find the Latin-1 handler).
+    let _guard = ENCODING_INIT_MUTEX.lock();
+    if ENCODING_INITIALIZED.load(Ordering::SeqCst) {
+        return;
+    }
     register_builtin_handlers();
+    ENCODING_INITIALIZED.store(true, Ordering::SeqCst);
 }
 
 /// Register all built-in encoding handlers.

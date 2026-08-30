@@ -209,7 +209,6 @@ DOCUMENTED_NOOPS = {
     "xmlCleanupMemory": "R-000131",
     "xmlInitGlobals": "R-000131",
     "xmlCleanupGlobals": "R-000131",
-    "xmlMemSize": "R-000131",
     "xmlMemShow": "R-000131",
     "xmlAutomataSetFinalState": "R-000135",
     "xmlAutomataNewCounter": "R-000135",
