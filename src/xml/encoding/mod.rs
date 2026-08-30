@@ -29,7 +29,10 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
 use crate::abi::allocator::{xmlFree, xmlMalloc, xmlRealloc};
-use crate::abi::callbacks::{xmlCharEncodingInputFunc, xmlCharEncodingOutputFunc};
+use crate::abi::callbacks::{
+    xmlCharEncConvCtxtDtor, xmlCharEncConvFunc, xmlCharEncConvImpl, xmlCharEncodingInputFunc,
+    xmlCharEncodingOutputFunc,
+};
 use crate::abi::constants::XML_MAX_ENCODING_NAME_LEN;
 use crate::abi::structs::{
     _xmlBuffer, _xmlCharEncodingHandler, EncodingInputUnion, EncodingOutputUnion,
@@ -232,7 +235,7 @@ pub(crate) fn encoding_name(enc: xmlCharEncoding) -> Option<&'static [u8]> {
         xmlCharEncoding::XML_CHAR_ENCODING_2022_JP => Some(b"ISO-2022-JP" as &[u8]),
         xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS => Some(b"SHIFT_JIS" as &[u8]),
         xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP => Some(b"EUC-JP" as &[u8]),
-        xmlCharEncoding::XML_CHAR_ENCODING_ASCII => Some(b"ASCII" as &[u8]),
+        xmlCharEncoding::XML_CHAR_ENCODING_ASCII => Some(b"US-ASCII" as &[u8]),
         _ => None,
     }
 }
@@ -580,13 +583,35 @@ fn register_builtin_handlers() {
         Some(latin1_output_func as xmlCharEncodingOutputFunc),
     );
 
-    // ASCII
+    // ASCII — upstream's static default handler (defaultHandlers[22]) is named
+    // "US-ASCII"; the name "ASCII" is registered as a second entry so name-based
+    // lookups (xmlFindCharEncodingHandler, the saver path) accept both spellings
+    // exactly like upstream's xmlParseCharEncodingInternal mapping.
+    register_handler(
+        b"US-ASCII\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
+        Some(ascii_input_func as xmlCharEncodingInputFunc),
+        Some(ascii_output_func as xmlCharEncodingOutputFunc),
+    );
     register_handler(
         b"ASCII\0",
         xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
         xmlCharEncoding::XML_CHAR_ENCODING_ASCII,
         Some(ascii_input_func as xmlCharEncodingInputFunc),
         Some(ascii_output_func as xmlCharEncodingOutputFunc),
+    );
+
+    // UTF-16 (default handler for enc == XML_CHAR_ENCODING_UTF16 == 23): the
+    // upstream converter is UTF16LEToUTF8/UTF8ToUTF16 (the latter emits the LE
+    // BOM on its init call). Our converter pair is the UTF-16LE pair; the BOM
+    // init protocol is not emitted (documented divergence, conversion only).
+    register_handler(
+        b"UTF-16\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE,
+        Some(utf16le_input_func as xmlCharEncodingInputFunc),
+        Some(utf16le_output_func as xmlCharEncodingOutputFunc),
     );
 }
 
@@ -663,6 +688,11 @@ pub(crate) fn find_encoding_handler(name: *const xmlChar) -> *mut _xmlCharEncodi
     if name.is_null() {
         return ptr::null_mut();
     }
+
+    /* The upstream default-handler table is static and always present; the
+     * candidate's registry is populated lazily, so ensure it is initialized
+     * before any name-based lookup. Idempotent. */
+    init_encodings();
 
     let name_str = unsafe {
         match CStr::from_ptr(name as *const c_char).to_bytes() {
@@ -1298,16 +1328,18 @@ pub(crate) fn xmlFindCharEncodingHandler(name: *const c_char) -> *mut _xmlCharEn
 ///
 /// Returns the canonical name for an encoding, or `ptr::null()` if unknown.
 pub(crate) fn xmlGetCharEncodingName(enc: xmlCharEncoding) -> *const c_char {
-    // Return null-terminated C strings using static CStr literals
+    // Return null-terminated C strings using static CStr literals.
+    // Mirrors upstream 2.15 xmlGetCharEncodingName: the UTF-16/UCS-4 pairs
+    // return the W3C canonical names before the defaultHandlers table.
     match enc {
         xmlCharEncoding::XML_CHAR_ENCODING_UTF8 => c"UTF-8".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE => c"UTF-16LE".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => c"UTF-16BE".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE => c"UCS-4LE".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE => c"UCS-4BE".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC => c"EBCDIC".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UCS4_2143 => c"UCS-4-2143".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_UCS4_3412 => c"UCS-4-3412".as_ptr(),
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE | xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => {
+            c"UTF-16".as_ptr()
+        }
+        xmlCharEncoding::XML_CHAR_ENCODING_UCS4LE | xmlCharEncoding::XML_CHAR_ENCODING_UCS4BE => {
+            c"UCS-4".as_ptr()
+        }
+        xmlCharEncoding::XML_CHAR_ENCODING_EBCDIC => c"IBM037".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_UCS2 => c"UCS-2".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_8859_1 => c"ISO-8859-1".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_8859_2 => c"ISO-8859-2".as_ptr(),
@@ -1319,9 +1351,10 @@ pub(crate) fn xmlGetCharEncodingName(enc: xmlCharEncoding) -> *const c_char {
         xmlCharEncoding::XML_CHAR_ENCODING_8859_8 => c"ISO-8859-8".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_8859_9 => c"ISO-8859-9".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_2022_JP => c"ISO-2022-JP".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS => c"SHIFT_JIS".as_ptr(),
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS => c"Shift_JIS".as_ptr(),
         xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP => c"EUC-JP".as_ptr(),
-        xmlCharEncoding::XML_CHAR_ENCODING_ASCII => c"ASCII".as_ptr(),
+        // upstream defaultHandlers[22].name
+        xmlCharEncoding::XML_CHAR_ENCODING_ASCII => c"US-ASCII".as_ptr(),
         _ => ptr::null(),
     }
 }
@@ -1507,6 +1540,289 @@ pub(crate) fn xmlInitCharEncodingHandlers() {
 /// `xmlCleanupCharEncodingHandlers` implementation.
 pub(crate) fn xmlCleanupCharEncodingHandlers() {
     cleanup_encodings();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. Handler lookup / creation (upstream 2.13.0+ encoding.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream keeps a static `defaultHandlers[32]` table indexed by xmlCharEncoding
+// plus iconv/ICU fallbacks. The candidate ships no iconv/ICU, so encodings whose
+// upstream default handler carries a real converter (UTF-8, UTF-16LE, UTF-16BE,
+// UTF-16, ISO-8859-1, US-ASCII) resolve to the registered built-in handlers;
+// every other encoding reports XML_ERR_UNSUPPORTED_ENCODING exactly where
+// upstream would fall through to iconv/ICU.
+
+/// `xmlLookupCharEncodingHandler` implementation (upstream encoding.c).
+///
+/// Mirrors the upstream control flow:
+///  - `out == NULL`                     → XML_ERR_ARGUMENT (115)
+///  - `enc <= 0 || enc >= 32`           → XML_ERR_UNSUPPORTED_ENCODING (32)
+///  - UTF-8                             → XML_ERR_OK, `*out` stays NULL
+///  - native built-in encoding          → XML_ERR_OK, `*out` = static handler
+///  - iconv/ICU-only encoding           → XML_ERR_UNSUPPORTED_ENCODING
+///
+/// The returned handler is a static registry entry and must NOT be freed.
+pub(crate) fn xmlLookupCharEncodingHandler(enc: c_int, out: *mut *mut c_void) -> c_int {
+    if out.is_null() {
+        return crate::abi::types::XML_ERR_ARGUMENT;
+    }
+    unsafe {
+        *out = ptr::null_mut();
+    }
+    if enc <= 0 || enc >= 32 {
+        return crate::abi::types::XML_ERR_UNSUPPORTED_ENCODING;
+    }
+    /* Return NULL handler for UTF-8 */
+    if enc == xmlCharEncoding::XML_CHAR_ENCODING_UTF8 as c_int {
+        return crate::abi::types::XML_ERR_OK;
+    }
+    let canonical: &[u8] = match enc {
+        /* XML_CHAR_ENCODING_UTF16LE */
+        2 => b"UTF-16LE\0",
+        /* XML_CHAR_ENCODING_UTF16BE */
+        3 => b"UTF-16BE\0",
+        /* XML_CHAR_ENCODING_8859_1 */
+        10 => b"ISO-8859-1\0",
+        /* XML_CHAR_ENCODING_ASCII */
+        22 => b"US-ASCII\0",
+        /* XML_CHAR_ENCODING_UTF16 (not in the local enum) */
+        23 => b"UTF-16\0",
+        _ => return crate::abi::types::XML_ERR_UNSUPPORTED_ENCODING,
+    };
+    let h = find_encoding_handler(canonical.as_ptr() as *const xmlChar);
+    if h.is_null() {
+        return crate::abi::types::XML_ERR_UNSUPPORTED_ENCODING;
+    }
+    unsafe {
+        *out = h as *mut c_void;
+    }
+    crate::abi::types::XML_ERR_OK
+}
+
+/// `xmlGetCharEncodingHandler` implementation (deprecated upstream wrapper).
+pub(crate) fn xmlGetCharEncodingHandler(enc: c_int) -> *mut c_void {
+    let mut ret: *mut c_void = ptr::null_mut();
+    let _rc = xmlLookupCharEncodingHandler(enc, &mut ret);
+    ret
+}
+
+/// `xmlCreateCharEncodingHandler` implementation (upstream 2.14.0+ encoding.c).
+///
+/// Flags: XML_ENC_INPUT = 1, XML_ENC_OUTPUT = 2, XML_ENC_HTML = 4.
+/// Unlike upstream, no iconv/ICU backend exists, so encodings without a native
+/// converter fall through to `find_extra_handler` (custom impl / deprecated
+/// global registry) and otherwise report XML_ERR_UNSUPPORTED_ENCODING.
+pub(crate) fn xmlCreateCharEncodingHandler(
+    name: *const c_char,
+    flags: c_int,
+    impl_: Option<xmlCharEncConvImpl>,
+    implCtxt: *mut c_void,
+    out: *mut *mut c_void,
+) -> c_int {
+    if out.is_null() {
+        return crate::abi::types::XML_ERR_ARGUMENT;
+    }
+    unsafe {
+        *out = ptr::null_mut();
+    }
+    if name.is_null() || flags == 0 {
+        return crate::abi::types::XML_ERR_ARGUMENT;
+    }
+    let norig = unsafe { CStr::from_ptr(name).to_bytes() };
+
+    /* Alias resolution (upstream xmlGetEncodingAlias). */
+    let mut eff: &[u8] = norig;
+    let alias = get_encoding_alias(name);
+    if !alias.is_null() {
+        eff = unsafe { CStr::from_ptr(alias).to_bytes() };
+    }
+
+    let enc = encoding_from_name(eff);
+
+    /* Return NULL handler for UTF-8 */
+    if enc == xmlCharEncoding::XML_CHAR_ENCODING_UTF8 {
+        return crate::abi::types::XML_ERR_OK;
+    }
+
+    let canonical: &[u8] = match enc {
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE => b"UTF-16LE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => b"UTF-16BE\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_1 => b"ISO-8859-1\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_ASCII => b"US-ASCII\0",
+        _ => {
+            return find_extra_handler(norig, eff, flags, impl_, implCtxt, out);
+        }
+    };
+    let h = find_encoding_handler(canonical.as_ptr() as *const xmlChar);
+    if h.is_null() {
+        return find_extra_handler(norig, eff, flags, impl_, implCtxt, out);
+    }
+    unsafe {
+        let src = &*h;
+        let has_in = (flags & 1) == 0 || !src.input.legacyFunc.is_none();
+        let has_out = (flags & 2) == 0 || !src.output.legacyFunc.is_none();
+        if !has_in || !has_out {
+            return find_extra_handler(norig, eff, flags, impl_, implCtxt, out);
+        }
+        /*
+         * Return a copy of the handler with the original name (upstream
+         * "Return a copy of the handler with the original name").
+         */
+        let copy = xmlMalloc(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler;
+        if copy.is_null() {
+            return crate::abi::types::XML_ERR_NO_MEMORY;
+        }
+        let name_copy = crate::abi::allocator::xmlMemStrdup(name) as *mut c_char;
+        if name_copy.is_null() {
+            xmlFree(copy as *mut c_void);
+            return crate::abi::types::XML_ERR_NO_MEMORY;
+        }
+        ptr::write(
+            copy,
+            _xmlCharEncodingHandler {
+                name: name_copy,
+                input: EncodingInputUnion {
+                    legacyFunc: src.input.legacyFunc,
+                },
+                output: EncodingOutputUnion {
+                    legacyFunc: src.output.legacyFunc,
+                },
+                inputCtxt: src.inputCtxt,
+                outputCtxt: src.outputCtxt,
+                ctxtDtor: src.ctxtDtor,
+                flags: src.flags,
+            },
+        );
+        *out = copy as *mut c_void;
+    }
+    crate::abi::types::XML_ERR_OK
+}
+
+/// Fallback path of `xmlCreateCharEncodingHandler` (upstream `xmlFindExtraHandler`).
+///
+/// Tries the caller-supplied custom implementation first, then the deprecated
+/// global handler registry. iconv/ICU do not exist in the candidate, so the
+/// final result is XML_ERR_UNSUPPORTED_ENCODING.
+fn find_extra_handler(
+    norig: &[u8],
+    name: &[u8],
+    flags: c_int,
+    impl_: Option<xmlCharEncConvImpl>,
+    implCtxt: *mut c_void,
+    out: *mut *mut c_void,
+) -> c_int {
+    /* Custom implementation before deprecated global handlers. */
+    if let Some(f) = impl_ {
+        let mut n = norig.to_vec();
+        n.push(0);
+        let rc = unsafe {
+            f(
+                implCtxt,
+                n.as_ptr() as *const c_char,
+                flags,
+                out as *mut *mut crate::abi::structs::_xmlCharEncodingHandler,
+            )
+        };
+        return rc;
+    }
+    /* Deprecated global handlers registry (xmlRegisterCharEncodingHandler). */
+    let mut n = name.to_vec();
+    n.push(0);
+    let h = find_encoding_handler(n.as_ptr() as *const xmlChar);
+    if !h.is_null() {
+        unsafe {
+            let src = &*h;
+            let has_in = (flags & 1) == 0 || !src.input.legacyFunc.is_none();
+            let has_out = (flags & 2) == 0 || !src.output.legacyFunc.is_none();
+            if has_in && has_out {
+                *out = h as *mut c_void;
+                return crate::abi::types::XML_ERR_OK;
+            }
+        }
+    }
+    crate::abi::types::XML_ERR_UNSUPPORTED_ENCODING
+}
+
+/// `xmlOpenCharEncodingHandler` implementation (upstream encoding.c).
+pub(crate) fn xmlOpenCharEncodingHandler(
+    name: *const c_char,
+    output: c_int,
+    out: *mut *mut c_void,
+) -> c_int {
+    /* XML_ENC_OUTPUT if output else XML_ENC_INPUT */
+    let flags: c_int = if output != 0 { 2 } else { 1 };
+    xmlCreateCharEncodingHandler(name, flags, None, ptr::null_mut(), out)
+}
+
+/// `xmlCharEncNewCustomHandler` implementation (upstream 2.15.0+ encoding.c).
+///
+/// Creates a handler backed by modern `xmlCharEncConvFunc` callbacks (with
+/// per-direction contexts and a context destructor). The handler must be
+/// released with `xmlCharEncCloseFunc`.
+pub(crate) fn xmlCharEncNewCustomHandler(
+    name: *const c_char,
+    input: xmlCharEncConvFunc,
+    output: xmlCharEncConvFunc,
+    ctxtDtor: Option<xmlCharEncConvCtxtDtor>,
+    inputCtxt: *mut c_void,
+    outputCtxt: *mut c_void,
+    out: *mut *mut c_void,
+) -> c_int {
+    if out.is_null() {
+        return crate::abi::types::XML_ERR_ARGUMENT;
+    }
+    let handler =
+        unsafe { xmlMalloc(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+    if handler.is_null() {
+        unsafe {
+            if let Some(d) = ctxtDtor {
+                if !inputCtxt.is_null() {
+                    d(inputCtxt);
+                }
+                if !outputCtxt.is_null() {
+                    d(outputCtxt);
+                }
+            }
+        }
+        return crate::abi::types::XML_ERR_NO_MEMORY;
+    }
+    let name_copy = if name.is_null() {
+        ptr::null_mut()
+    } else {
+        let nc = unsafe { crate::abi::allocator::xmlMemStrdup(name) } as *mut c_char;
+        if nc.is_null() {
+            unsafe { xmlFree(handler as *mut c_void) };
+            unsafe {
+                if let Some(d) = ctxtDtor {
+                    if !inputCtxt.is_null() {
+                        d(inputCtxt);
+                    }
+                    if !outputCtxt.is_null() {
+                        d(outputCtxt);
+                    }
+                }
+            }
+            return crate::abi::types::XML_ERR_NO_MEMORY;
+        }
+        nc
+    };
+    unsafe {
+        ptr::write(
+            handler,
+            _xmlCharEncodingHandler {
+                name: name_copy,
+                input: EncodingInputUnion { func: Some(input) },
+                output: EncodingOutputUnion { func: Some(output) },
+                inputCtxt,
+                outputCtxt,
+                ctxtDtor,
+                flags: 0,
+            },
+        );
+        *out = handler as *mut c_void;
+    }
+    crate::abi::types::XML_ERR_OK
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

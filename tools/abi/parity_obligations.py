@@ -246,6 +246,10 @@ def load_symbol_courts():
     d = json.load(open(SYMBOL_COURT_INDEX))
     out = {}
     conflicts = []
+    # Map long dimension names ("abi_status") to the short keys consumed by
+    # main() ("abi"). The index file accepts either spelling.
+    SHORT = {"abi_status": "abi", "semantic_status": "semantic",
+             "ownership_status": "ownership", "historical_status": "historical"}
     for cid, cdata in sorted((d.get("courts") or {}).items()):
         for key, verdicts in sorted((cdata.get("symbols") or {}).items()):
             entry = out.setdefault(key, {})
@@ -254,15 +258,17 @@ def load_symbol_courts():
                     continue  # these come from the DSO/source scan, not courts
                 v = verdicts.get(dim)
                 if v is None:
+                    v = verdicts.get(SHORT.get(dim))
+                if v is None:
                     continue
-                cur = entry.get(dim)
+                cur = entry.get(SHORT.get(dim))
                 if cur is None:
-                    entry[dim] = {"status": v, "courts": [cid]}
+                    entry[SHORT.get(dim)] = {"status": v, "courts": [cid]}
                     continue
                 merged = merge_dim(cur["status"], v)
                 if merged == "EVIDENCE_CONFLICT":
-                    conflicts.append((key, dim, cur["status"], v, cid))
-                entry[dim] = {"status": merged, "courts": cur["courts"] + [cid]}
+                    conflicts.append((key, SHORT.get(dim), cur["status"], v, cid))
+                entry[SHORT.get(dim)] = {"status": merged, "courts": cur["courts"] + [cid]}
     return out, conflicts
 
 

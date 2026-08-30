@@ -1,5 +1,49 @@
 {
-  "schema": "symbol-court-index-1",
-  "purpose": "Per-symbol court verdicts consumed by tools/abi/parity_obligations.py. A parity obligation earns PARITY_VERIFIED only when a court registered here passes for it (abi + semantic + ownership). Populated by per-symbol courts as they land (11.1-I family courts, 11.1-J ownership courts, ...). Never hand-edited alongside the ledger; the ledger is regenerated from this index.",
-  "courts": {}
+ "schema": "symbol-court-index-1",
+ "purpose": "Per-symbol court verdicts consumed by tools/abi/parity_obligations.py. A parity obligation earns PARITY_VERIFIED only when a court registered here passes for it (abi + semantic + ownership). Populated by per-symbol courts as they land (11.1-I family courts, 11.1-J ownership courts, ...). Never hand-edited alongside the ledger; the ledger is regenerated from this index.",
+ "courts": {
+  "ENCODING-001": {
+   "probe": "courts/suites/data-abi/encoding-family-probe.c",
+   "runner": "tools/abi/encoding_family_probe.py",
+   "oracle": "/usr/lib/libxml2.so.16",
+   "symbols": {
+    "libxml2:xmlLookupCharEncodingHandler": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetCharEncodingHandler": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlOpenCharEncodingHandler": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCreateCharEncodingHandler": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlCharEncNewCustomHandler": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    },
+    "libxml2:xmlGetCharEncodingName": {
+     "abi_status": "PASS",
+     "semantic_status": "PASS",
+     "ownership_status": "PASS",
+     "historical_status": "CURRENT_ONLY"
+    }
+   }
+  }
+ }
 }

@@ -4824,6 +4824,17 @@ pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlGetCharEncodingName(enc: c_int) -> *const c_char {
+    /* Values outside the local enum resolve against the upstream
+     * defaultHandlers table (XML_CHAR_ENCODING_UTF16=23, HTML=24,
+     * WINDOWS_1252=31); anything else is unknown (NULL). */
+    if enc < -1 || enc > 22 {
+        return match enc {
+            23 => c"UTF-16".as_ptr(),
+            24 => c"HTML".as_ptr(),
+            31 => c"windows-1252".as_ptr(),
+            _ => ptr::null(),
+        };
+    }
     let e: crate::abi::types::xmlCharEncoding = unsafe { core::mem::transmute(enc) };
     crate::xml::encoding::xmlGetCharEncodingName(e)
 }
@@ -4972,6 +4983,97 @@ pub extern "C" fn xmlInitCharEncodingHandlers() {
 #[no_mangle]
 pub extern "C" fn xmlCleanupCharEncodingHandlers() {
     crate::xml::encoding::xmlCleanupCharEncodingHandlers();
+}
+
+/// Look up a built-in encoding handler by `xmlCharEncoding` value.
+///
+/// Returns an `xmlParserErrors` code; on success `*out` receives the static
+/// handler (NULL for UTF-8, which needs no conversion).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlParserErrors xmlLookupCharEncodingHandler(xmlCharEncoding enc,
+///                                              xmlCharEncodingHandler **out);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlLookupCharEncodingHandler(enc: c_int, out: *mut *mut c_void) -> c_int {
+    crate::xml::encoding::xmlLookupCharEncodingHandler(enc, out)
+}
+
+/// Get the encoding handler for an `xmlCharEncoding` value (deprecated).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlCharEncodingHandler *xmlGetCharEncodingHandler(xmlCharEncoding enc);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlGetCharEncodingHandler(enc: c_int) -> *mut c_void {
+    crate::xml::encoding::xmlGetCharEncodingHandler(enc)
+}
+
+/// Find or create an encoding handler by name for one conversion direction.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlParserErrors xmlOpenCharEncodingHandler(const char *name, int output,
+///                                            xmlCharEncodingHandler **out);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlOpenCharEncodingHandler(
+    name: *const c_char,
+    output: c_int,
+    out: *mut *mut c_void,
+) -> c_int {
+    crate::xml::encoding::xmlOpenCharEncodingHandler(name, output, out)
+}
+
+/// Find or create an encoding handler by name with flags and an optional
+/// custom conversion implementation.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlParserErrors xmlCreateCharEncodingHandler(
+///     const char *name, xmlCharEncFlags flags, xmlCharEncConvImpl impl,
+///     void *implCtxt, xmlCharEncodingHandler **out);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCreateCharEncodingHandler(
+    name: *const c_char,
+    flags: c_int,
+    impl_: Option<crate::abi::callbacks::xmlCharEncConvImpl>,
+    implCtxt: *mut c_void,
+    out: *mut *mut c_void,
+) -> c_int {
+    crate::xml::encoding::xmlCreateCharEncodingHandler(name, flags, impl_, implCtxt, out)
+}
+
+/// Create an encoding handler backed by modern conversion callbacks.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlParserErrors xmlCharEncNewCustomHandler(
+///     const char *name, xmlCharEncConvFunc input, xmlCharEncConvFunc output,
+///     xmlCharEncConvCtxtDtor ctxtDtor, void *inputCtxt, void *outputCtxt,
+///     xmlCharEncodingHandler **out);
+/// ```
+#[no_mangle]
+pub extern "C" fn xmlCharEncNewCustomHandler(
+    name: *const c_char,
+    input: crate::abi::callbacks::xmlCharEncConvFunc,
+    output: crate::abi::callbacks::xmlCharEncConvFunc,
+    ctxtDtor: Option<crate::abi::callbacks::xmlCharEncConvCtxtDtor>,
+    inputCtxt: *mut c_void,
+    outputCtxt: *mut c_void,
+    out: *mut *mut c_void,
+) -> c_int {
+    crate::xml::encoding::xmlCharEncNewCustomHandler(
+        name, input, output, ctxtDtor, inputCtxt, outputCtxt, out,
+    )
 }
 
 /// Convert an input buffer's encoding.

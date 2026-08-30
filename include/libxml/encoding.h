@@ -110,10 +110,39 @@ struct _xmlCharEncodingHandler {
 XMLPUBFUN int xmlGetCharEncoding(const char *name);
 XMLPUBFUN xmlCharEncodingHandlerPtr xmlFindCharEncodingHandler(const char *name);
 XMLPUBFUN int xmlCharEncCloseFunc(xmlCharEncodingHandlerPtr handler);
+XMLPUBFUN xmlParserErrors
+    xmlLookupCharEncodingHandler(xmlCharEncoding enc,
+                                xmlCharEncodingHandler **out);
+XMLPUBFUN xmlParserErrors
+    xmlOpenCharEncodingHandler(const char *name, int output,
+                               xmlCharEncodingHandler **out);
+XMLPUBFUN xmlParserErrors
+    xmlCreateCharEncodingHandler(const char *name, xmlCharEncFlags flags,
+                                 xmlCharEncConvImpl impl, void *implCtxt,
+                                 xmlCharEncodingHandler **out);
+XMLPUBFUN xmlCharEncodingHandler *
+    xmlGetCharEncodingHandler(xmlCharEncoding enc);
+XMLPUBFUN xmlParserErrors
+    xmlCharEncNewCustomHandler(const char *name,
+                               xmlCharEncConvFunc input,
+                               xmlCharEncConvFunc output,
+                               xmlCharEncConvCtxtDtor ctxtDtor,
+                               void *inputCtxt, void *outputCtxt,
+                               xmlCharEncodingHandler **out);
 
-
-
-
+XMLPUBFUN void xmlInitCharEncodingHandlers(void);
+XMLPUBFUN void xmlCleanupCharEncodingHandlers(void);
+XMLPUBFUN void xmlRegisterCharEncodingHandler(xmlCharEncodingHandler *handler);
+XMLPUBFUN xmlCharEncodingHandler *
+    xmlNewCharEncodingHandler(const char *name,
+                              xmlCharEncodingInputFunc input,
+                              xmlCharEncodingOutputFunc output);
+XMLPUBFUN int xmlAddEncodingAlias(const char *name, const char *alias);
+XMLPUBFUN int xmlDelEncodingAlias(const char *alias);
+XMLPUBFUN const char *xmlGetEncodingAlias(const char *alias);
+XMLPUBFUN void xmlCleanupEncodingAliases(void);
+XMLPUBFUN xmlCharEncoding xmlParseCharEncoding(const char *name);
+XMLPUBFUN const char *xmlGetCharEncodingName(xmlCharEncoding enc);
 
 
 
