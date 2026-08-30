@@ -18,6 +18,10 @@
 extern "C" {
 #endif
 
+/* Validation callback types (upstream schematron.h) */
+typedef void (*xmlSchematronValidityErrorFunc) (void *ctx, const char *msg, ...);
+typedef void (*xmlSchematronValidityWarningFunc) (void *ctx, const char *msg, ...);
+
 typedef struct _xmlSchematron xmlSchematron;
 typedef xmlSchematron *xmlSchematronPtr;
 typedef struct _xmlSchematronParserCtxt xmlSchematronParserCtxt;
@@ -45,6 +49,24 @@ XMLPUBFUN xmlSchematronValidCtxtPtr xmlSchematronNewValidCtxt(xmlSchematronPtr s
 XMLPUBFUN void xmlSchematronFreeValidCtxt(xmlSchematronValidCtxtPtr ctxt);
 XMLPUBFUN int xmlSchematronValidateDoc(xmlSchematronValidCtxtPtr ctxt,
                                        xmlDocPtr instance);
+
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN int xmlSchematronGetParserErrors(xmlSchematronParserCtxt *ctxt, xmlSchematronValidityErrorFunc * err, xmlSchematronValidityWarningFunc * warn, void **ctx);
+XMLPUBFUN int xmlSchematronGetValidErrors (xmlSchematronValidCtxt *ctxt, xmlSchematronValidityErrorFunc *err, xmlSchematronValidityWarningFunc *warn, void **ctx);
+XMLPUBFUN int xmlSchematronIsValid (xmlSchematronValidCtxt *ctxt);
+XMLPUBFUN xmlSchematronParserCtxt * xmlSchematronNewDocParserCtxt(xmlDoc *doc);
+XMLPUBFUN void xmlSchematronSetParserErrors(xmlSchematronParserCtxt *ctxt, xmlSchematronValidityErrorFunc err, xmlSchematronValidityWarningFunc warn, void *ctx);
+XMLPUBFUN void xmlSchematronSetValidErrors (xmlSchematronValidCtxt *ctxt, xmlSchematronValidityErrorFunc err, xmlSchematronValidityWarningFunc warn, void *ctx);
+XMLPUBFUN int xmlSchematronSetValidOptions(xmlSchematronValidCtxt *ctxt, int options);
+XMLPUBFUN void xmlSchematronSetValidStructuredErrors( xmlSchematronValidCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx);
+XMLPUBFUN int xmlSchematronValidCtxtGetOptions(xmlSchematronValidCtxt *ctxt);
+XMLPUBFUN int xmlSchematronValidateOneElement (xmlSchematronValidCtxt *ctxt, xmlNode *elem);
+/* [11.1-S] end: oracle-extracted declarations */
 
 #ifdef __cplusplus
 }

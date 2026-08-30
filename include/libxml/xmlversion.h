@@ -7,9 +7,9 @@
 #ifndef __XML_VERSION_H__
 #define __XML_VERSION_H__
 
-#define LIBXML_DOTTED_VERSION "2.12.0"
-#define LIBXML_VERSION 21200
-#define LIBXML_VERSION_STRING "21200"
+#define LIBXML_DOTTED_VERSION "2.15.3"
+#define LIBXML_VERSION 21503
+#define LIBXML_VERSION_STRING "21503"
 #define LIBXML_VERSION_EXTRA ""
 
 /* Feature macros — all enabled by default in libxml-rs */
@@ -44,12 +44,12 @@
 #define LIBXML_HTTP_STUBS_ENABLED
 
 /* libxslt version */
-#define LIBXSLT_DOTTED_VERSION "1.1.39"
-#define LIBXSLT_VERSION 10139
-#define LIBXSLT_VERSION_STRING "10139"
+#define LIBXSLT_DOTTED_VERSION "1.1.45"
+#define LIBXSLT_VERSION 10145
+#define LIBXSLT_VERSION_STRING "10145"
 #define LIBXSLT_VERSION_EXTRA ""
 
-#define LIBXML_TEST_VERSION xmlCheckVersion(21200);
+#define LIBXML_TEST_VERSION xmlCheckVersion(21503);
 
 #include <libxml/xmlexports.h>
 

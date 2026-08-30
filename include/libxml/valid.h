@@ -210,6 +210,49 @@ XMLPUBFUN xmlNotation *
                 xmlGetDtdNotationDesc     (xmlDtdPtr dtd,
                                            const xmlChar *name);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN xmlAttribute * xmlAddAttributeDecl (xmlValidCtxt *ctxt, xmlDtd *dtd, const xmlChar *elem, const xmlChar *name, const xmlChar *ns, xmlAttributeType type, xmlAttributeDefault def, const xmlChar *defaultValue, xmlEnumeration *tree);
+XMLPUBFUN xmlElement * xmlAddElementDecl (xmlValidCtxt *ctxt, xmlDtd *dtd, const xmlChar *name, xmlElementTypeVal type, xmlElementContent *content);
+XMLPUBFUN xmlNotation * xmlAddNotationDecl (xmlValidCtxt *ctxt, xmlDtd *dtd, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN xmlAttributeTable * xmlCopyAttributeTable (xmlAttributeTable *table);
+XMLPUBFUN xmlElementContent * xmlCopyDocElementContent(xmlDoc *doc, xmlElementContent *content);
+XMLPUBFUN xmlElementContent * xmlCopyElementContent (xmlElementContent *content);
+XMLPUBFUN xmlElementTable * xmlCopyElementTable (xmlElementTable *table);
+XMLPUBFUN xmlEnumeration * xmlCopyEnumeration (xmlEnumeration *cur);
+XMLPUBFUN xmlNotationTable * xmlCopyNotationTable (xmlNotationTable *table);
+XMLPUBFUN xmlEnumeration * xmlCreateEnumeration (const xmlChar *name);
+XMLPUBFUN void xmlDumpAttributeDecl (xmlBuffer *buf, xmlAttribute *attr);
+XMLPUBFUN void xmlDumpAttributeTable (xmlBuffer *buf, xmlAttributeTable *table);
+XMLPUBFUN void xmlDumpElementDecl (xmlBuffer *buf, xmlElement *elem);
+XMLPUBFUN void xmlDumpElementTable (xmlBuffer *buf, xmlElementTable *table);
+XMLPUBFUN void xmlDumpNotationDecl (xmlBuffer *buf, xmlNotation *nota);
+XMLPUBFUN void xmlDumpNotationTable (xmlBuffer *buf, xmlNotationTable *table);
+XMLPUBFUN void xmlFreeAttributeTable (xmlAttributeTable *table);
+XMLPUBFUN void xmlFreeDocElementContent(xmlDoc *doc, xmlElementContent *cur);
+XMLPUBFUN void xmlFreeElementContent (xmlElementContent *cur);
+XMLPUBFUN void xmlFreeElementTable (xmlElementTable *table);
+XMLPUBFUN void xmlFreeEnumeration (xmlEnumeration *cur);
+XMLPUBFUN void xmlFreeNotationTable (xmlNotationTable *table);
+XMLPUBFUN void xmlFreeValidCtxt(xmlValidCtxt *);
+XMLPUBFUN int xmlIsMixedElement (xmlDoc *doc, const xmlChar *name);
+XMLPUBFUN xmlElementContent * xmlNewDocElementContent (xmlDoc *doc, const xmlChar *name, xmlElementContentType type);
+XMLPUBFUN xmlElementContent * xmlNewElementContent (const xmlChar *name, xmlElementContentType type);
+XMLPUBFUN xmlValidCtxt * xmlNewValidCtxt(void);
+XMLPUBFUN void xmlSnprintfElementContent(char *buf, int size, xmlElementContent *content, int englob);
+XMLPUBFUN void xmlSprintfElementContent(char *buf, xmlElementContent *content, int englob);
+XMLPUBFUN xmlChar * xmlValidCtxtNormalizeAttributeValue(xmlValidCtxt *ctxt, xmlDoc *doc, xmlNode *elem, const xmlChar *name, const xmlChar *value);
+XMLPUBFUN int xmlValidGetPotentialChildren(xmlElementContent *ctree, const xmlChar **names, int *len, int max);
+XMLPUBFUN int xmlValidGetValidElements(xmlNode *prev, xmlNode *next, const xmlChar **names, int max);
+XMLPUBFUN xmlChar * xmlValidNormalizeAttributeValue(xmlDoc *doc, xmlNode *elem, const xmlChar *name, const xmlChar *value);
+XMLPUBFUN int xmlValidateDtd (xmlValidCtxt *ctxt, xmlDoc *doc, xmlDtd *dtd);
+XMLPUBFUN int xmlValidateDtdFinal (xmlValidCtxt *ctxt, xmlDoc *doc);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

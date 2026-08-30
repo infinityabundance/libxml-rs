@@ -30,7 +30,6 @@ XMLPUBVAR int xmlParserDebugEntities;
 XMLPUBVAR int xmlIndentTreeOutput;
 XMLPUBVAR int xmlTreeIndentNumber;
 XMLPUBVAR const char *xmlTreeIndentString;
-XMLPUBVAR const char *xmlParserVersion;
 XMLPUBVAR int xmlSaveNoEmptyTags;
 XMLPUBVAR xmlGenericErrorFunc xmlGenericError;
 XMLPUBVAR void *xmlGenericErrorContext;

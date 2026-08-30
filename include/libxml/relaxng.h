@@ -13,10 +13,15 @@
 #include <libxml/xmlversion.h>
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
+#include <libxml/parser.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Validation callback types (upstream relaxng.h) */
+typedef void (*xmlRelaxNGValidityErrorFunc) (void *ctx, const char *msg, ...) LIBXML_ATTR_FORMAT(2,3);
+typedef void (*xmlRelaxNGValidityWarningFunc) (void *ctx, const char *msg, ...) LIBXML_ATTR_FORMAT(2,3);
 
 /* Opaque types (upstream relaxng.h) */
 typedef struct _xmlRelaxNG xmlRelaxNG;
@@ -97,6 +102,32 @@ XMLPUBFUN int xmlRelaxNGValidateDoc(xmlRelaxNGValidCtxtPtr ctxt,
 XMLPUBFUN int xmlRelaxNGValidateFullElement(xmlRelaxNGValidCtxtPtr ctxt,
                                             xmlDocPtr doc,
                                             xmlNodePtr elem);
+
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void xmlRelaxNGCleanupTypes (void);
+XMLPUBFUN void xmlRelaxNGDump (FILE *output, xmlRelaxNG *schema);
+XMLPUBFUN void xmlRelaxNGDumpTree (FILE * output, xmlRelaxNG *schema);
+XMLPUBFUN int xmlRelaxNGGetParserErrors(xmlRelaxNGParserCtxt *ctxt, xmlRelaxNGValidityErrorFunc *err, xmlRelaxNGValidityWarningFunc *warn, void **ctx);
+XMLPUBFUN int xmlRelaxNGGetValidErrors(xmlRelaxNGValidCtxt *ctxt, xmlRelaxNGValidityErrorFunc *err, xmlRelaxNGValidityWarningFunc *warn, void **ctx);
+XMLPUBFUN int xmlRelaxNGInitTypes (void);
+XMLPUBFUN xmlRelaxNGParserCtxt * xmlRelaxNGNewDocParserCtxt (xmlDoc *doc);
+XMLPUBFUN void xmlRelaxNGSetParserErrors(xmlRelaxNGParserCtxt *ctxt, xmlRelaxNGValidityErrorFunc err, xmlRelaxNGValidityWarningFunc warn, void *ctx);
+XMLPUBFUN void xmlRelaxNGSetParserStructuredErrors( xmlRelaxNGParserCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx);
+XMLPUBFUN void xmlRelaxNGSetResourceLoader (xmlRelaxNGParserCtxt *ctxt, xmlResourceLoader loader, void *vctxt);
+XMLPUBFUN void xmlRelaxNGSetValidErrors(xmlRelaxNGValidCtxt *ctxt, xmlRelaxNGValidityErrorFunc err, xmlRelaxNGValidityWarningFunc warn, void *ctx);
+XMLPUBFUN void xmlRelaxNGSetValidStructuredErrors(xmlRelaxNGValidCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx);
+XMLPUBFUN void xmlRelaxNGValidCtxtClearErrors(xmlRelaxNGValidCtxt* ctxt);
+XMLPUBFUN int xmlRelaxNGValidatePopElement (xmlRelaxNGValidCtxt *ctxt, xmlDoc *doc, xmlNode *elem);
+XMLPUBFUN int xmlRelaxNGValidatePushCData (xmlRelaxNGValidCtxt *ctxt, const xmlChar *data, int len);
+XMLPUBFUN int xmlRelaxNGValidatePushElement (xmlRelaxNGValidCtxt *ctxt, xmlDoc *doc, xmlNode *elem);
+XMLPUBFUN int xmlRelaxParserSetFlag (xmlRelaxNGParserCtxt *ctxt, int flag);
+XMLPUBFUN int xmlRelaxParserSetIncLImit (xmlRelaxNGParserCtxt *ctxt, int limit);
+/* [11.1-S] end: oracle-extracted declarations */
 
 #ifdef __cplusplus
 }

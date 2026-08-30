@@ -43,6 +43,24 @@ XMLPUBFUN int xmlURIUnescapeString(const char *str, int len, char *target);
 XMLPUBFUN char *xmlURIEscapeStr(const char *str, const char *list);
 XMLPUBFUN int xmlNormalizeURIPath(char *path);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN xmlChar * xmlBuildRelativeURI (const xmlChar *URI, const xmlChar *base);
+XMLPUBFUN int xmlBuildRelativeURISafe (const xmlChar *URI, const xmlChar *base, xmlChar **out);
+XMLPUBFUN xmlChar * xmlBuildURI (const xmlChar *URI, const xmlChar *base);
+XMLPUBFUN int xmlBuildURISafe (const xmlChar *URI, const xmlChar *base, xmlChar **out);
+XMLPUBFUN xmlChar* xmlCanonicPath (const xmlChar *path);
+XMLPUBFUN xmlURI * xmlCreateURI (void);
+XMLPUBFUN int xmlParseURISafe (const char *str, xmlURI **uri);
+XMLPUBFUN xmlChar* xmlPathToURI (const xmlChar *path);
+XMLPUBFUN void xmlPrintURI (FILE *stream, xmlURI *uri);
+XMLPUBFUN xmlChar * xmlURIEscape (const xmlChar *str);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

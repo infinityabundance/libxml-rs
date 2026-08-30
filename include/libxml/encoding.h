@@ -146,6 +146,20 @@ XMLPUBFUN const char *xmlGetCharEncodingName(xmlCharEncoding enc);
 
 
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN int xmlCharEncFirstLine (xmlCharEncodingHandler *handler, struct _xmlBuffer *out, struct _xmlBuffer *in);
+XMLPUBFUN int xmlCharEncInFunc (xmlCharEncodingHandler *handler, struct _xmlBuffer *out, struct _xmlBuffer *in);
+XMLPUBFUN int xmlCharEncOutFunc (xmlCharEncodingHandler *handler, struct _xmlBuffer *out, struct _xmlBuffer *in);
+XMLPUBFUN xmlCharEncoding xmlDetectCharEncoding (const unsigned char *in, int len);
+XMLPUBFUN int xmlIsolat1ToUTF8 (unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+XMLPUBFUN int xmlUTF8ToIsolat1 (unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

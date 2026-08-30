@@ -15,6 +15,12 @@
 extern "C" {
 #endif
 
+/* htmlParserCtxt aliases the XML parser context (upstream HTMLparser.h) */
+typedef xmlParserCtxt htmlParserCtxt;
+typedef xmlParserCtxtPtr htmlParserCtxtPtr;
+typedef xmlSAXHandler htmlSAXHandler;
+typedef xmlSAXHandlerPtr htmlSAXHandlerPtr;
+
 
 
 
@@ -326,6 +332,53 @@ struct _htmlEntityDesc {
 };
 
 /* [11.1-G] end: extracted definitions */
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN htmlStatus htmlAttrAllowed(const htmlElemDesc*, const xmlChar*, int) ;
+XMLPUBFUN int htmlAutoCloseTag(xmlDoc *doc, const xmlChar *name, xmlNode *elem);
+XMLPUBFUN htmlParserCtxt * htmlCreateMemoryParserCtxt(const char *buffer, int size);
+XMLPUBFUN htmlParserCtxt * htmlCreatePushParserCtxt(htmlSAXHandler *sax, void *user_data, const char *chunk, int size, const char *filename, xmlCharEncoding enc);
+XMLPUBFUN xmlDoc * htmlCtxtParseDocument (htmlParserCtxt *ctxt, xmlParserInput *input);
+XMLPUBFUN xmlDoc * htmlCtxtReadDoc (xmlParserCtxt *ctxt, const xmlChar *cur, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlCtxtReadFd (xmlParserCtxt *ctxt, int fd, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlCtxtReadFile (xmlParserCtxt *ctxt, const char *filename, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlCtxtReadIO (xmlParserCtxt *ctxt, xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlCtxtReadMemory (xmlParserCtxt *ctxt, const char *buffer, int size, const char *URL, const char *encoding, int options);
+XMLPUBFUN void htmlCtxtReset (htmlParserCtxt *ctxt);
+XMLPUBFUN int htmlCtxtSetOptions (htmlParserCtxt *ctxt, int options);
+XMLPUBFUN int htmlCtxtUseOptions (htmlParserCtxt *ctxt, int options);
+XMLPUBFUN int htmlElementAllowedHere(const htmlElemDesc*, const xmlChar*) ;
+XMLPUBFUN htmlStatus htmlElementStatusHere(const htmlElemDesc*, const htmlElemDesc*) ;
+XMLPUBFUN int htmlEncodeEntities(unsigned char *out, int *outlen, const unsigned char *in, int *inlen, int quoteChar);
+XMLPUBFUN const htmlEntityDesc * htmlEntityLookup(const xmlChar *name);
+XMLPUBFUN const htmlEntityDesc * htmlEntityValueLookup(unsigned int value);
+XMLPUBFUN int htmlHandleOmittedElem(int val);
+XMLPUBFUN void htmlInitAutoClose (void);
+XMLPUBFUN int htmlIsAutoClosed(xmlDoc *doc, xmlNode *elem);
+XMLPUBFUN int htmlIsScriptAttribute(const xmlChar *name);
+XMLPUBFUN htmlParserCtxt * htmlNewParserCtxt(void);
+XMLPUBFUN htmlParserCtxt * htmlNewSAXParserCtxt(const htmlSAXHandler *sax, void *userData);
+XMLPUBFUN htmlStatus htmlNodeStatus(xmlNode *, int) ;
+XMLPUBFUN int htmlParseCharRef(htmlParserCtxt *ctxt);
+XMLPUBFUN int htmlParseChunk (htmlParserCtxt *ctxt, const char *chunk, int size, int terminate);
+XMLPUBFUN int htmlParseDocument(htmlParserCtxt *ctxt);
+XMLPUBFUN void htmlParseElement(htmlParserCtxt *ctxt);
+XMLPUBFUN const htmlEntityDesc * htmlParseEntityRef(htmlParserCtxt *ctxt, const xmlChar **str);
+XMLPUBFUN xmlDoc * htmlReadDoc (const xmlChar *cur, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlReadFd (int fd, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlReadFile (const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlReadIO (xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlReadMemory (const char *buffer, int size, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * htmlSAXParseDoc (const xmlChar *cur, const char *encoding, htmlSAXHandler *sax, void *userData);
+XMLPUBFUN xmlDoc * htmlSAXParseFile(const char *filename, const char *encoding, htmlSAXHandler *sax, void *userData);
+XMLPUBFUN const htmlElemDesc * htmlTagLookup (const xmlChar *tag);
+XMLPUBFUN int htmlUTF8ToHtml (unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

@@ -139,6 +139,48 @@ struct _xmlSAXHandler {
 XMLPUBFUN void xmlSAX2InitDefaultSAXHandler(xmlSAXHandlerPtr handler, int warning);
 XMLPUBFUN void xmlSAX2InitHtmlDefaultSAXHandler(xmlSAXHandlerPtr handler);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void htmlDefaultSAXHandlerInit (void);
+XMLPUBFUN void xmlDefaultSAXHandlerInit (void);
+XMLPUBFUN void xmlSAX2AttributeDecl (void *ctx, const xmlChar *elem, const xmlChar *fullname, int type, int def, const xmlChar *defaultValue, xmlEnumeration *tree);
+XMLPUBFUN void xmlSAX2CDataBlock (void *ctx, const xmlChar *value, int len);
+XMLPUBFUN void xmlSAX2Characters (void *ctx, const xmlChar *ch, int len);
+XMLPUBFUN void xmlSAX2Comment (void *ctx, const xmlChar *value);
+XMLPUBFUN void xmlSAX2ElementDecl (void *ctx, const xmlChar *name, int type, xmlElementContent *content);
+XMLPUBFUN void xmlSAX2EndDocument (void *ctx);
+XMLPUBFUN void xmlSAX2EndElement (void *ctx, const xmlChar *name);
+XMLPUBFUN void xmlSAX2EndElementNs (void *ctx, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI);
+XMLPUBFUN void xmlSAX2EntityDecl (void *ctx, const xmlChar *name, int type, const xmlChar *publicId, const xmlChar *systemId, xmlChar *content);
+XMLPUBFUN void xmlSAX2ExternalSubset (void *ctx, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN int xmlSAX2GetColumnNumber (void *ctx);
+XMLPUBFUN xmlEntity * xmlSAX2GetEntity (void *ctx, const xmlChar *name);
+XMLPUBFUN int xmlSAX2GetLineNumber (void *ctx);
+XMLPUBFUN xmlEntity * xmlSAX2GetParameterEntity (void *ctx, const xmlChar *name);
+XMLPUBFUN const xmlChar * xmlSAX2GetPublicId (void *ctx);
+XMLPUBFUN const xmlChar * xmlSAX2GetSystemId (void *ctx);
+XMLPUBFUN int xmlSAX2HasExternalSubset (void *ctx);
+XMLPUBFUN int xmlSAX2HasInternalSubset (void *ctx);
+XMLPUBFUN void xmlSAX2IgnorableWhitespace (void *ctx, const xmlChar *ch, int len);
+XMLPUBFUN void xmlSAX2InternalSubset (void *ctx, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN int xmlSAX2IsStandalone (void *ctx);
+XMLPUBFUN void xmlSAX2NotationDecl (void *ctx, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN void xmlSAX2ProcessingInstruction (void *ctx, const xmlChar *target, const xmlChar *data);
+XMLPUBFUN void xmlSAX2Reference (void *ctx, const xmlChar *name);
+XMLPUBFUN xmlParserInput * xmlSAX2ResolveEntity (void *ctx, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN void xmlSAX2SetDocumentLocator (void *ctx, xmlSAXLocator *loc);
+XMLPUBFUN void xmlSAX2StartDocument (void *ctx);
+XMLPUBFUN void xmlSAX2StartElement (void *ctx, const xmlChar *fullname, const xmlChar **atts);
+XMLPUBFUN void xmlSAX2StartElementNs (void *ctx, const xmlChar *localname, const xmlChar *prefix, const xmlChar *URI, int nb_namespaces, const xmlChar **namespaces, int nb_attributes, int nb_defaulted, const xmlChar **attributes);
+XMLPUBFUN void xmlSAX2UnparsedEntityDecl (void *ctx, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId, const xmlChar *notationName);
+XMLPUBFUN int xmlSAXDefaultVersion (int version);
+XMLPUBFUN int xmlSAXVersion (xmlSAXHandler *hdlr, int version);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

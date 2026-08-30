@@ -19,6 +19,12 @@
 extern "C" {
 #endif
 
+/* Validation callback types (upstream xmlschemas.h) */
+typedef void (*xmlSchemaValidityErrorFunc) (void *ctx, const char *msg, ...) LIBXML_ATTR_FORMAT(2,3);
+typedef void (*xmlSchemaValidityWarningFunc) (void *ctx, const char *msg, ...) LIBXML_ATTR_FORMAT(2,3);
+typedef int (*xmlSchemaValidityLocatorFunc) (void *ctx,
+                           const char **file, unsigned long *line);
+
 
 
 
@@ -307,6 +313,42 @@ typedef enum{
 typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 /* [11.1-G] end: extracted definitions */
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void xmlSchemaDump (FILE *output, xmlSchema *schema);
+XMLPUBFUN void xmlSchemaFree (xmlSchema *schema);
+XMLPUBFUN void xmlSchemaFreeParserCtxt (xmlSchemaParserCtxt *ctxt);
+XMLPUBFUN void xmlSchemaFreeValidCtxt (xmlSchemaValidCtxt *ctxt);
+XMLPUBFUN int xmlSchemaGetParserErrors (xmlSchemaParserCtxt *ctxt, xmlSchemaValidityErrorFunc * err, xmlSchemaValidityWarningFunc * warn, void **ctx);
+XMLPUBFUN int xmlSchemaGetValidErrors (xmlSchemaValidCtxt *ctxt, xmlSchemaValidityErrorFunc *err, xmlSchemaValidityWarningFunc *warn, void **ctx);
+XMLPUBFUN int xmlSchemaIsValid (xmlSchemaValidCtxt *ctxt);
+XMLPUBFUN xmlSchemaParserCtxt * xmlSchemaNewDocParserCtxt (xmlDoc *doc);
+XMLPUBFUN xmlSchemaParserCtxt * xmlSchemaNewMemParserCtxt (const char *buffer, int size);
+XMLPUBFUN xmlSchemaParserCtxt * xmlSchemaNewParserCtxt (const char *URL);
+XMLPUBFUN xmlSchemaValidCtxt * xmlSchemaNewValidCtxt (xmlSchema *schema);
+XMLPUBFUN xmlSchema * xmlSchemaParse (xmlSchemaParserCtxt *ctxt);
+XMLPUBFUN xmlSchemaSAXPlugStruct * xmlSchemaSAXPlug (xmlSchemaValidCtxt *ctxt, xmlSAXHandler **sax, void **user_data);
+XMLPUBFUN int xmlSchemaSAXUnplug (xmlSchemaSAXPlugStruct *plug);
+XMLPUBFUN void xmlSchemaSetParserErrors (xmlSchemaParserCtxt *ctxt, xmlSchemaValidityErrorFunc err, xmlSchemaValidityWarningFunc warn, void *ctx);
+XMLPUBFUN void xmlSchemaSetParserStructuredErrors(xmlSchemaParserCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx);
+XMLPUBFUN void xmlSchemaSetResourceLoader (xmlSchemaParserCtxt *ctxt, xmlResourceLoader loader, void *data);
+XMLPUBFUN void xmlSchemaSetValidErrors (xmlSchemaValidCtxt *ctxt, xmlSchemaValidityErrorFunc err, xmlSchemaValidityWarningFunc warn, void *ctx);
+XMLPUBFUN int xmlSchemaSetValidOptions (xmlSchemaValidCtxt *ctxt, int options);
+XMLPUBFUN void xmlSchemaSetValidStructuredErrors(xmlSchemaValidCtxt *ctxt, xmlStructuredErrorFunc serror, void *ctx);
+XMLPUBFUN int xmlSchemaValidCtxtGetOptions(xmlSchemaValidCtxt *ctxt);
+XMLPUBFUN xmlParserCtxt * xmlSchemaValidCtxtGetParserCtxt(xmlSchemaValidCtxt *ctxt);
+XMLPUBFUN int xmlSchemaValidateDoc (xmlSchemaValidCtxt *ctxt, xmlDoc *instance);
+XMLPUBFUN int xmlSchemaValidateFile (xmlSchemaValidCtxt *ctxt, const char * filename, int options);
+XMLPUBFUN int xmlSchemaValidateOneElement (xmlSchemaValidCtxt *ctxt, xmlNode *elem);
+XMLPUBFUN void xmlSchemaValidateSetFilename(xmlSchemaValidCtxt *vctxt, const char *filename);
+XMLPUBFUN void xmlSchemaValidateSetLocator (xmlSchemaValidCtxt *vctxt, xmlSchemaValidityLocatorFunc f, void *ctxt);
+XMLPUBFUN int xmlSchemaValidateStream (xmlSchemaValidCtxt *ctxt, xmlParserInputBuffer *input, xmlCharEncoding enc, const xmlSAXHandler *sax, void *user_data);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

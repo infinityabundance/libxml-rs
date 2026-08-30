@@ -1088,6 +1088,24 @@ typedef enum{
 } xmlErrorDomain;
 
 /* [11.1-G] end: extracted definitions */
+
+/* Forward declaration: the extracted declarations below use
+ * `struct _xmlParserInput *` verbatim from the upstream header; upstream
+ * relies on tree.h having been included. Declaring the tag here keeps this
+ * header self-contained when compiled alone (header-compile court). */
+struct _xmlParserInput;
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void xmlParserPrintFileContext (struct _xmlParserInput *input);
+XMLPUBFUN void xmlParserPrintFileInfo (struct _xmlParserInput *input);
+XMLPUBFUN void xmlThrDefSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handler);
+XMLPUBFUN void xmlThrDefSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc handler);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

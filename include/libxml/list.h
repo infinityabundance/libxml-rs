@@ -45,6 +45,20 @@ XMLPUBFUN void xmlListReverse(xmlListPtr list);
 XMLPUBFUN void xmlListReverseSplice(xmlListPtr list, xmlListPtr list2);
 XMLPUBFUN void xmlListMerge(xmlListPtr list, xmlListPtr list2);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void * xmlLinkGetData (xmlLink *lk);
+XMLPUBFUN int xmlListCopy (xmlList *cur, xmlList *old);
+XMLPUBFUN xmlList * xmlListDup (xmlList *old);
+XMLPUBFUN xmlLink * xmlListEnd (xmlList *l);
+XMLPUBFUN void * xmlListReverseSearch (xmlList *l, void *data);
+XMLPUBFUN void xmlListReverseWalk (xmlList *l, xmlListWalker walker, void *user);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

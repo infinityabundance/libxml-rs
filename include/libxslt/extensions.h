@@ -79,6 +79,23 @@ XMLPUBFUN void xsltRegisterExtras(xsltTransformContextPtr ctxt);
 XMLPUBFUN void xsltRegisterAllElement(xsltTransformContextPtr ctxt);
 XMLPUBFUN void xsltRegisterTestModule(void);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XSLTPUBFUN void XSLTCALL xsltDebugDumpExtensions (FILE * output);
+XSLTPUBFUN void XSLTCALL xsltFreeExts (xsltStylesheetPtr style);
+XSLTPUBFUN void XSLTCALL xsltInitElemPreComp (xsltElemPreCompPtr comp, xsltStylesheetPtr style, xmlNodePtr inst, xsltTransformFunction function, xsltElemPreCompDeallocator freeFunc);
+XSLTPUBFUN void XSLTCALL xsltInitGlobals (void);
+XSLTPUBFUN xsltElemPreCompPtr XSLTCALL xsltNewElemPreComp (xsltStylesheetPtr style, xmlNodePtr inst, xsltTransformFunction function);
+XSLTPUBFUN xsltElemPreCompPtr XSLTCALL xsltPreComputeExtModuleElement (xsltStylesheetPtr style, xmlNodePtr inst);
+XSLTPUBFUN void XSLTCALL xsltShutdownExts (xsltStylesheetPtr style);
+XSLTPUBFUN void * XSLTCALL xsltStyleStylesheetLevelGetExtData( xsltStylesheetPtr style, const xmlChar * URI);
+XSLTPUBFUN xsltTransformContextPtr XSLTCALL xsltXPathGetTransformContext (xmlXPathParserContextPtr ctxt);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

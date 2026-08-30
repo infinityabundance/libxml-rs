@@ -65,8 +65,8 @@ def load_conditions():
 def candidate_symbols():
     """Exported symbol names of the candidate DSOs."""
     out = {"libxml2": set(), "libxslt": set()}
-    for proj, soname in (("libxml2", "libxml2.so.2.15.3"),
-                         ("libxslt", "libxslt.so.1.1.47")):
+    for proj, soname in (("libxml2", "libxml2.so.16.1.3"),
+                         ("libxslt", "libxslt.so.1.1.45")):
         path = os.path.join(ROOT, "target", "debug", soname)
         if not os.path.exists(path):
             continue

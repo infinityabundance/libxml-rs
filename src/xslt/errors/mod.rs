@@ -14,7 +14,7 @@ use std::os::raw::c_int;
 // ── Error domains ─────────────────────────────────────────────────────────
 //
 // These constants identify the category of an XSLT error.
-// Source: xslt.h / xsltInternals.h (libxslt 1.1.39).
+// Source: xslt.h / xsltInternals.h (libxslt 1.1.45).
 
 /// No error.
 pub const XSLT_ERR_NONE: c_int = 0;
@@ -82,7 +82,7 @@ pub const XSLT_ERR_INTERNAL: c_int = 20;
 // ── Error levels ──────────────────────────────────────────────────────────
 //
 // These constants indicate the severity of an XSLT error.
-// Source: xslt.h (libxslt 1.1.39).
+// Source: xslt.h (libxslt 1.1.45).
 
 /// No error level (unset).
 pub const XSLT_ERR_LEVEL_NONE: c_int = 0;

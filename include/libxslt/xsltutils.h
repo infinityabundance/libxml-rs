@@ -127,6 +127,36 @@ typedef enum{
 } xsltDebugStatusCodes;
 
 /* [11.1-G] end: extracted definitions */
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XSLTPUBFUN xmlXPathObjectPtr * XSLTCALL xsltComputeSortResult (xsltTransformContextPtr ctxt, xmlNodePtr sort);
+XSLTPUBFUN void XSLTCALL xsltDefaultSortFunction (xsltTransformContextPtr ctxt, xmlNodePtr *sorts, int nbsorts);
+XSLTPUBFUN void XSLTCALL xsltDoSortFunction (xsltTransformContextPtr ctxt, xmlNodePtr * sorts, int nbsorts);
+XSLTPUBFUN void XSLTCALL xsltDocumentSortFunction (xmlNodeSetPtr list);
+XSLTPUBVAR xmlGenericErrorFunc xsltGenericDebug;
+XSLTPUBVAR void *xsltGenericDebugContext;
+XSLTPUBVAR xmlGenericErrorFunc xsltGenericError;
+XSLTPUBVAR void *xsltGenericErrorContext;
+XSLTPUBFUN const xmlChar * XSLTCALL xsltGetCNsProp (xsltStylesheetPtr style, xmlNodePtr node, const xmlChar *name, const xmlChar *nameSpace);
+XSLTPUBFUN xmlChar * XSLTCALL xsltGetNsProp (xmlNodePtr node, const xmlChar *name, const xmlChar *nameSpace);
+XSLTPUBFUN const xmlChar * XSLTCALL xsltGetQNameURI2 (xsltStylesheetPtr style, xmlNodePtr node, const xmlChar **name);
+XSLTPUBFUN int XSLTCALL xsltGetUTF8CharZ (const unsigned char *utf, int *len);
+XSLTPUBFUN void XSLTCALL xsltMessage (xsltTransformContextPtr ctxt, xmlNodePtr node, xmlNodePtr inst);
+XSLTPUBFUN int XSLTCALL xsltSaveResultToFilename (const char *URI, xmlDocPtr result, xsltStylesheetPtr style, int compression);
+XSLTPUBFUN void XSLTCALL xsltSetCtxtLocaleHandlers (xsltTransformContextPtr ctxt, xsltNewLocaleFunc newLocale, xsltFreeLocaleFunc freeLocale, xsltGenSortKeyFunc genSortKey);
+XSLTPUBFUN void XSLTCALL xsltSetCtxtSortFunc (xsltTransformContextPtr ctxt, xsltSortFunc handler);
+XSLTPUBFUN int XSLTCALL xsltSetDebuggerCallbacks (int no, void *block);
+XSLTPUBFUN void XSLTCALL xsltSetDebuggerStatus (int value);
+XSLTPUBFUN void XSLTCALL xsltSetGenericDebugFunc (void *ctx, xmlGenericErrorFunc handler);
+XSLTPUBFUN void XSLTCALL xsltSetSortFunc (xsltSortFunc handler);
+XSLTPUBFUN xmlXPathCompExprPtr XSLTCALL xsltXPathCompile (xsltStylesheetPtr style, const xmlChar *str);
+XSLTPUBFUN xmlXPathCompExprPtr XSLTCALL xsltXPathCompileFlags (xsltStylesheetPtr style, const xmlChar *str, int flags);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

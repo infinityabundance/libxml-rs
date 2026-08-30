@@ -9,9 +9,9 @@
 
 #include <libxml/xmlversion.h>
 
-#define LIBXSLT_DOTTED_VERSION "1.1.39"
-#define LIBXSLT_VERSION 10139
-#define LIBXSLT_VERSION_STRING "10139"
+#define LIBXSLT_DOTTED_VERSION "1.1.45"
+#define LIBXSLT_VERSION 10145
+#define LIBXSLT_VERSION_STRING "10145"
 
 /* libxslt features */
 #define LIBXSLT_HAVE_STRUCT_TIMESPEC 1

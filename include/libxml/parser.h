@@ -747,6 +747,107 @@ XMLPUBFUN void
 XMLPUBFUN xmlExternalEntityLoader
 		xmlGetExternalEntityLoader(void);
 /* [11.1-L] end: extracted declarations */
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBVAR const char *const xmlParserVersion;
+XMLPUBFUN long xmlByteConsumed (xmlParserCtxt *ctxt);
+XMLPUBFUN void xmlClearNodeInfoSeq (xmlParserNodeInfoSeq *seq);
+XMLPUBFUN void xmlClearParserCtxt (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlParserCtxt * xmlCreateIOParserCtxt (xmlSAXHandler *sax, void *user_data, xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, xmlCharEncoding enc);
+XMLPUBFUN xmlParserCtxt * xmlCreatePushParserCtxt(xmlSAXHandler *sax, void *user_data, const char *chunk, int size, const char *filename);
+XMLPUBFUN void * xmlCtxtGetCatalogs (xmlParserCtxt *ctxt);
+XMLPUBFUN const xmlChar * xmlCtxtGetDeclaredEncoding(xmlParserCtxt *ctxt);
+XMLPUBFUN xmlDict * xmlCtxtGetDict (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtGetDocTypeDecl (xmlParserCtxt *ctxt, const xmlChar **name, const xmlChar **systemId, const xmlChar **publicId);
+XMLPUBFUN xmlDoc * xmlCtxtGetDocument (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtGetInputPosition (xmlParserCtxt *ctxt, int inputIndex, const char **filname, int *line, int *col, unsigned long *bytePos);
+XMLPUBFUN int xmlCtxtGetInputWindow (xmlParserCtxt *ctxt, int inputIndex, const xmlChar **startOut, int *sizeInOut, int *offsetOut);
+XMLPUBFUN xmlNode * xmlCtxtGetNode (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtGetOptions (xmlParserCtxt *ctxt);
+XMLPUBFUN void * xmlCtxtGetPrivate (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlSAXHandler * xmlCtxtGetSaxHandler (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtGetStandalone (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlParserStatus xmlCtxtGetStatus (xmlParserCtxt *ctxt);
+XMLPUBFUN void * xmlCtxtGetUserData (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlValidCtxt * xmlCtxtGetValidCtxt (xmlParserCtxt *ctxt);
+XMLPUBFUN const xmlChar * xmlCtxtGetVersion (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtIsHtml (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtIsInSubset (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtIsStopped (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlNode * xmlCtxtParseContent (xmlParserCtxt *ctxt, xmlParserInput *input, xmlNode *node, int hasTextDecl);
+XMLPUBFUN xmlDoc * xmlCtxtParseDocument (xmlParserCtxt *ctxt, xmlParserInput *input);
+XMLPUBFUN xmlDtd * xmlCtxtParseDtd (xmlParserCtxt *ctxt, xmlParserInput *input, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN xmlDoc * xmlCtxtReadDoc (xmlParserCtxt *ctxt, const xmlChar *cur, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * xmlCtxtReadFd (xmlParserCtxt *ctxt, int fd, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * xmlCtxtReadFile (xmlParserCtxt *ctxt, const char *filename, const char *encoding, int options);
+XMLPUBFUN xmlDoc * xmlCtxtReadIO (xmlParserCtxt *ctxt, xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, const char *URL, const char *encoding, int options);
+XMLPUBFUN xmlDoc * xmlCtxtReadMemory (xmlParserCtxt *ctxt, const char *buffer, int size, const char *URL, const char *encoding, int options);
+XMLPUBFUN void xmlCtxtReset (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlCtxtResetPush (xmlParserCtxt *ctxt, const char *chunk, int size, const char *filename, const char *encoding);
+XMLPUBFUN void xmlCtxtSetCatalogs (xmlParserCtxt *ctxt, void *catalogs);
+XMLPUBFUN void xmlCtxtSetCharEncConvImpl(xmlParserCtxt *ctxt, xmlCharEncConvImpl impl, void *vctxt);
+XMLPUBFUN void xmlCtxtSetDict (xmlParserCtxt *ctxt, xmlDict *);
+XMLPUBFUN void xmlCtxtSetErrorHandler (xmlParserCtxt *ctxt, xmlStructuredErrorFunc handler, void *data);
+XMLPUBFUN void xmlCtxtSetMaxAmplification(xmlParserCtxt *ctxt, unsigned maxAmpl);
+XMLPUBFUN int xmlCtxtSetOptions (xmlParserCtxt *ctxt, int options);
+XMLPUBFUN void xmlCtxtSetPrivate (xmlParserCtxt *ctxt, void *priv);
+XMLPUBFUN void xmlCtxtSetResourceLoader(xmlParserCtxt *ctxt, xmlResourceLoader loader, void *vctxt);
+XMLPUBFUN int xmlCtxtSetSaxHandler (xmlParserCtxt *ctxt, const xmlSAXHandler *sax);
+XMLPUBFUN int xmlCtxtValidateDocument (xmlParserCtxt *ctxt, xmlDoc *doc);
+XMLPUBFUN int xmlCtxtValidateDtd (xmlParserCtxt *ctxt, xmlDoc *doc, xmlDtd *dtd);
+XMLPUBFUN int xmlHasFeature (xmlFeature feature);
+XMLPUBFUN xmlDtd * xmlIOParseDTD (xmlSAXHandler *sax, xmlParserInputBuffer *input, xmlCharEncoding enc);
+XMLPUBFUN void xmlInitNodeInfoSeq (xmlParserNodeInfoSeq *seq);
+XMLPUBFUN int xmlInitParserCtxt (xmlParserCtxt *ctxt);
+XMLPUBFUN xmlParserErrors xmlInputSetEncodingHandler(xmlParserInput *input, xmlCharEncodingHandler *handler);
+XMLPUBFUN int xmlKeepBlanksDefault (int val);
+XMLPUBFUN int xmlLineNumbersDefault (int val);
+XMLPUBFUN xmlParserInput * xmlLoadExternalEntity (const char *URL, const char *ID, xmlParserCtxt *ctxt);
+XMLPUBFUN xmlParserInput * xmlNewIOInputStream (xmlParserCtxt *ctxt, xmlParserInputBuffer *input, xmlCharEncoding enc);
+XMLPUBFUN xmlParserInput * xmlNewInputFromFd(const char *url, int fd, xmlParserInputFlags flags);
+XMLPUBFUN xmlParserInput * xmlNewInputFromIO(const char *url, xmlInputReadCallback ioRead, xmlInputCloseCallback ioClose, void *ioCtxt, xmlParserInputFlags flags);
+XMLPUBFUN xmlParserInput * xmlNewInputFromMemory(const char *url, const void *mem, size_t size, xmlParserInputFlags flags);
+XMLPUBFUN xmlParserInput * xmlNewInputFromString(const char *url, const char *str, xmlParserInputFlags flags);
+XMLPUBFUN xmlParserErrors xmlNewInputFromUrl(const char *url, xmlParserInputFlags flags, xmlParserInput **out);
+XMLPUBFUN xmlParserCtxt * xmlNewParserCtxt (void);
+XMLPUBFUN xmlParserCtxt * xmlNewSAXParserCtxt (const xmlSAXHandler *sax, void *userData);
+XMLPUBFUN int xmlParseBalancedChunkMemory(xmlDoc *doc, xmlSAXHandler *sax, void *user_data, int depth, const xmlChar *string, xmlNode **lst);
+XMLPUBFUN int xmlParseBalancedChunkMemoryRecover(xmlDoc *doc, xmlSAXHandler *sax, void *user_data, int depth, const xmlChar *string, xmlNode **lst, int recover);
+XMLPUBFUN int xmlParseCtxtExternalEntity(xmlParserCtxt *ctx, const xmlChar *URL, const xmlChar *ID, xmlNode **lst);
+XMLPUBFUN xmlDtd * xmlParseDTD (const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN xmlDoc * xmlParseEntity (const char *filename);
+XMLPUBFUN int xmlParseExtParsedEnt (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlParseExternalEntity (xmlDoc *doc, xmlSAXHandler *sax, void *user_data, int depth, const xmlChar *URL, const xmlChar *ID, xmlNode **lst);
+XMLPUBFUN xmlParserErrors xmlParseInNodeContext (xmlNode *node, const char *data, int datalen, int options, xmlNode **lst);
+XMLPUBFUN void xmlParserAddNodeInfo (xmlParserCtxt *ctxt, xmlParserNodeInfo *info);
+XMLPUBFUN const xmlParserNodeInfo* xmlParserFindNodeInfo (xmlParserCtxt *ctxt, xmlNode *node);
+XMLPUBFUN unsigned long xmlParserFindNodeInfoIndex(xmlParserNodeInfoSeq *seq, xmlNode *node);
+XMLPUBFUN int xmlParserInputGrow (xmlParserInput *in, int len);
+XMLPUBFUN int xmlParserInputRead (xmlParserInput *in, int len);
+XMLPUBFUN int xmlPedanticParserDefault(int val);
+XMLPUBFUN xmlDoc * xmlRecoverDoc (const xmlChar *cur);
+XMLPUBFUN xmlDoc * xmlRecoverFile (const char *filename);
+XMLPUBFUN xmlDoc * xmlRecoverMemory (const char *buffer, int size);
+XMLPUBFUN xmlDtd * xmlSAXParseDTD (xmlSAXHandler *sax, const xmlChar *publicId, const xmlChar *systemId);
+XMLPUBFUN xmlDoc * xmlSAXParseEntity (xmlSAXHandler *sax, const char *filename);
+XMLPUBFUN xmlDoc * xmlSAXParseFileWithData (xmlSAXHandler *sax, const char *filename, int recovery, void *data);
+XMLPUBFUN xmlDoc * xmlSAXParseMemoryWithData (xmlSAXHandler *sax, const char *buffer, int size, int recovery, void *data);
+XMLPUBFUN void xmlSetupParserForBuffer (xmlParserCtxt *ctxt, const xmlChar* buffer, const char *filename);
+XMLPUBFUN void xmlStopParser (xmlParserCtxt *ctxt);
+XMLPUBFUN int xmlSubstituteEntitiesDefault(int val);
+XMLPUBFUN int xmlThrDefDoValidityCheckingDefaultValue(int v);
+XMLPUBFUN int xmlThrDefGetWarningsDefaultValue(int v);
+XMLPUBFUN int xmlThrDefKeepBlanksDefaultValue(int v);
+XMLPUBFUN int xmlThrDefLineNumbersDefaultValue(int v);
+XMLPUBFUN int xmlThrDefLoadExtDtdDefaultValue(int v);
+XMLPUBFUN int xmlThrDefPedanticParserDefaultValue(int v);
+XMLPUBFUN int xmlThrDefSubstituteEntitiesDefaultValue(int v);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

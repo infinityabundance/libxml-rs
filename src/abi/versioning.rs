@@ -15,7 +15,7 @@
 //!
 //! # Compatibility profile
 //!
-//! Currently targeting libxml2 2.15.3 / libxslt 1.1.47 compatibility
+//! Currently targeting libxml2 2.15.3 / libxslt 1.1.45 compatibility
 //! (the oracle toolchain on the reference system).
 //!
 //! # UPSTREAM-PARITY
@@ -45,13 +45,13 @@ const TARGET_LIBXML2_MICRO: c_int = 3;
 /// The target libxslt version we aim to be compatible with.
 const TARGET_LIBXSLT_MAJOR: c_int = 1;
 const TARGET_LIBXSLT_MINOR: c_int = 1;
-const TARGET_LIBXSLT_MICRO: c_int = 47;
+const TARGET_LIBXSLT_MICRO: c_int = 45;
 
 /// The version string for libxml2 compatibility.
 const LIBXML2_VERSION_STRING: &[u8; 7] = b"2.15.3\0";
 
 /// The version string for libxslt compatibility.
-const LIBXSLT_VERSION_STRING: &[u8; 7] = b"1.1.47\0";
+const LIBXSLT_VERSION_STRING: &[u8; 7] = b"1.1.45\0";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Version Macros (also defined in types.rs for compile-time use)
@@ -70,7 +70,7 @@ pub const LIBXML2_VERSION_NUM: c_int = version_number(
     TARGET_LIBXML2_MICRO,
 );
 
-/// libxslt version as a number: 1 * 10000 + 1 * 100 + 39 = 10139
+/// libxslt version as a number: 1 * 10000 + 1 * 100 + 45 = 10145
 pub const LIBXSLT_VERSION_NUM: c_int = version_number(
     TARGET_LIBXSLT_MAJOR,
     TARGET_LIBXSLT_MINOR,

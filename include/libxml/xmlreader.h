@@ -228,6 +228,22 @@ XMLPUBFUN int xmlTextReaderRelaxNGValidateCtxt(xmlTextReaderPtr reader,
 XMLPUBFUN int xmlTextReaderRelaxNGSetSchema(xmlTextReaderPtr reader,
                                             xmlRelaxNGPtr schema);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN xmlTextReader * xmlNewTextReader (xmlParserInputBuffer *input, const char *URI);
+XMLPUBFUN int xmlTextReaderHasValue(xmlTextReader *reader);
+XMLPUBFUN xmlChar * xmlTextReaderLookupNamespace(xmlTextReader *reader, const xmlChar *prefix);
+XMLPUBFUN xmlChar * xmlTextReaderNamespaceUri(xmlTextReader *reader);
+XMLPUBFUN int xmlTextReaderNextSibling (xmlTextReader *reader);
+XMLPUBFUN int xmlTextReaderReadState (xmlTextReader *reader);
+XMLPUBFUN void xmlTextReaderSetResourceLoader(xmlTextReader *reader, xmlResourceLoader loader, void *data);
+XMLPUBFUN int xmlTextReaderSetup(xmlTextReader *reader, xmlParserInputBuffer *input, const char *URL, const char *encoding, int options);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

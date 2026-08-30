@@ -842,7 +842,7 @@ pub struct _xmlNodeSet {
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Layout matches upstream `_xsltStylesheet` from xsltInternals.h (libxslt 1.1.39).
+/// Layout matches upstream `_xsltStylesheet` from xsltInternals.h (libxslt 1.1.45).
 /// Field order and types match the C struct exactly for ABI compatibility.
 ///
 /// Courts: XSLT-STYLESHEET-*

@@ -615,6 +615,16 @@ struct _xmlSchemaWildcardNs {
 };
 
 /* [11.1-G] end: extracted definitions */
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void xmlSchemaFreeType (xmlSchemaType *type);
+XMLPUBFUN void xmlSchemaFreeWildcard(xmlSchemaWildcard *wildcard);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

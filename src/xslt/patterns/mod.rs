@@ -14,7 +14,7 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! Implements XSLT 1.0 §5 "Patterns" with match semantics matching libxslt 1.1.39.
+//! Implements XSLT 1.0 §5 "Patterns" with match semantics matching libxslt 1.1.45.
 //! Pattern matching uses the XPath 1.0 AST from `src/xml/xpath` for parsing, then
 //! applies XSLT-specific matching rules.
 //!

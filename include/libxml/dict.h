@@ -26,6 +26,19 @@ XMLPUBFUN void xmlDictFree(xmlDictPtr dict);
 XMLPUBFUN unsigned int xmlDictSetLimit(xmlDictPtr dict, unsigned int limit);
 XMLPUBFUN unsigned int xmlDictGetUsage(const xmlDictPtr dict);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN void xmlDictCleanup (void);
+XMLPUBFUN int xmlDictOwns (xmlDict *dict, const xmlChar *str);
+XMLPUBFUN const xmlChar * xmlDictQLookup (xmlDict *dict, const xmlChar *prefix, const xmlChar *name);
+XMLPUBFUN int xmlDictReference(xmlDict *dict);
+XMLPUBFUN int xmlInitializeDict(void);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif

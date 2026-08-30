@@ -415,9 +415,9 @@ def gen_xmlversion():
 #ifndef __XML_VERSION_H__
 #define __XML_VERSION_H__
 
-#define LIBXML_DOTTED_VERSION "2.12.0"
-#define LIBXML_VERSION 21200
-#define LIBXML_VERSION_STRING "21200"
+#define LIBXML_DOTTED_VERSION "2.15.3"
+#define LIBXML_VERSION 21503
+#define LIBXML_VERSION_STRING "21503"
 #define LIBXML_VERSION_EXTRA ""
 
 /* Feature macros — all enabled by default in libxml-rs */
@@ -452,12 +452,12 @@ def gen_xmlversion():
 #define LIBXML_HTTP_STUBS_ENABLED
 
 /* libxslt version */
-#define LIBXSLT_DOTTED_VERSION "1.1.39"
-#define LIBXSLT_VERSION 10139
-#define LIBXSLT_VERSION_STRING "10139"
+#define LIBXSLT_DOTTED_VERSION "1.1.45"
+#define LIBXSLT_VERSION 10145
+#define LIBXSLT_VERSION_STRING "10145"
 #define LIBXSLT_VERSION_EXTRA ""
 
-#define LIBXML_TEST_VERSION xmlCheckVersion(21200);
+#define LIBXML_TEST_VERSION xmlCheckVersion(21503);
 
 #include <libxml/xmlexports.h>
 
@@ -2503,9 +2503,9 @@ extern "C" {{
 #endif
 
 /* XSLT version */
-#define LIBXSLT_DOTTED_VERSION "1.1.39"
-#define LIBXSLT_VERSION 10139
-#define LIBXSLT_VERSION_STRING "10139"
+#define LIBXSLT_DOTTED_VERSION "1.1.45"
+#define LIBXSLT_VERSION 10145
+#define LIBXSLT_VERSION_STRING "10145"
 #define LIBXSLT_VERSION_EXTRA ""
 
 /* Stylesheet type */
@@ -2660,9 +2660,9 @@ XMLPUBFUN int xsltCheckFeature(int feature);
 
 #include <libxml/xmlversion.h>
 
-#define LIBXSLT_DOTTED_VERSION "1.1.39"
-#define LIBXSLT_VERSION 10139
-#define LIBXSLT_VERSION_STRING "10139"
+#define LIBXSLT_DOTTED_VERSION "1.1.45"
+#define LIBXSLT_VERSION 10145
+#define LIBXSLT_VERSION_STRING "10145"
 
 /* libxslt features */
 #define LIBXSLT_HAVE_STRUCT_TIMESPEC 1
@@ -2709,6 +2709,276 @@ extern "C" {{
         print(f"  Generated include/libxslt/{filename}")
 
 
+def gen_exslt_headers():
+    """Generate include/libexslt/ headers.
+
+    Upstream ships three headers (oracle/historical/prefix/libxslt-1.1.42/
+    include/libexslt/): exslt.h, exsltconfig.h and exsltexports.h. The content
+    mirrors upstream 1.1.45 (verified byte-equivalent with the archaeology
+    tree). EXSLT carries its own version line: 0.8.25 for the libxslt 1.1.45
+    target (configure.ac: LIBEXSLT_MAJOR=0, MINOR=8, MICRO=25).
+
+    NOTE (R-000165): exslt.h declares the full upstream API, but the candidate
+    DSO currently exports only `exsltRegisterAll`. The header-compile court
+    tracks the remaining declarations as an explicit open residual (see
+    courts/suites/header-compile/court-runner.sh, EXSLT_RESIDUAL list); the
+    exports land with the R-000165 closure in 11.1-X.
+    """
+    include_exslt = REPO_ROOT / "include" / "libexslt"
+    include_exslt.mkdir(parents=True, exist_ok=True)
+
+    # exsltconfig.h — upstream exsltconfig.h (0.8.25)
+    (include_exslt / "exsltconfig.h").write_text('''/*
+ * exsltconfig.h: compile-time version information for the EXSLT library
+ *
+ * UPSTREAM-PARITY: libexslt/exsltconfig.h (libxslt 1.1.45)
+ */
+
+#ifndef __XML_EXSLTCONFIG_H__
+#define __XML_EXSLTCONFIG_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * LIBEXSLT_DOTTED_VERSION:
+ *
+ * the version string like "1.2.3"
+ */
+#define LIBEXSLT_DOTTED_VERSION "0.8.25"
+
+/**
+ * LIBEXSLT_VERSION:
+ *
+ * the version number: 1.2.3 value is 10203
+ */
+#define LIBEXSLT_VERSION 825
+
+/**
+ * LIBEXSLT_VERSION_STRING:
+ *
+ * the version number string, 1.2.3 value is "10203"
+ */
+#define LIBEXSLT_VERSION_STRING "825"
+
+/**
+ * LIBEXSLT_VERSION_EXTRA:
+ *
+ * extra version information, used to show a Git commit description
+ */
+#define	LIBEXSLT_VERSION_EXTRA ""
+
+/**
+ * WITH_CRYPTO:
+ *
+ * Whether crypto support is configured into exslt
+ */
+#if 0
+#define EXSLT_CRYPTO_ENABLED
+#endif
+
+/**
+ * ATTRIBUTE_UNUSED:
+ *
+ * This macro is used to flag unused function parameters to GCC
+ */
+#ifdef __GNUC__
+#ifndef ATTRIBUTE_UNUSED
+#define ATTRIBUTE_UNUSED __attribute__((unused))
+#endif
+#else
+#define ATTRIBUTE_UNUSED
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __XML_EXSLTCONFIG_H__ */
+''')
+    print("  Generated include/libexslt/exsltconfig.h")
+
+    # exsltexports.h — upstream exsltexports.h
+    (include_exslt / "exsltexports.h").write_text('''/*
+ * Summary: macros for marking symbols as exportable/importable.
+ *
+ * UPSTREAM-PARITY: libexslt/exsltexports.h (libxslt 1.1.45)
+ */
+
+#ifndef __EXSLT_EXPORTS_H__
+#define __EXSLT_EXPORTS_H__
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+/** DOC_DISABLE */
+
+#ifdef LIBEXSLT_STATIC
+  #define EXSLTPUBLIC
+#elif defined(IN_LIBEXSLT)
+  #define EXSLTPUBLIC __declspec(dllexport)
+#else
+  #define EXSLTPUBLIC __declspec(dllimport)
+#endif
+
+#define EXSLTCALL __cdecl
+
+/** DOC_ENABLE */
+#else /* not Windows */
+
+/**
+ * EXSLTPUBLIC:
+ *
+ * Macro which declares a public symbol
+ */
+#define EXSLTPUBLIC
+
+/**
+ * EXSLTCALL:
+ *
+ * Macro which declares the calling convention for exported functions
+ */
+#define EXSLTCALL
+
+#endif /* platform switch */
+
+/*
+ * EXSLTPUBFUN:
+ *
+ * Macro which declares an exportable function
+ */
+#define EXSLTPUBFUN EXSLTPUBLIC
+
+/**
+ * EXSLTPUBVAR:
+ *
+ * Macro which declares an exportable variable
+ */
+#define EXSLTPUBVAR EXSLTPUBLIC extern
+
+/* Compatibility */
+#if !defined(LIBEXSLT_PUBLIC)
+#define LIBEXSLT_PUBLIC EXSLTPUBVAR
+#endif
+
+#endif /* __EXSLT_EXPORTS_H__ */
+''')
+    print("  Generated include/libexslt/exsltexports.h")
+
+    # exslt.h — upstream exslt.h (1.1.45) verbatim declarations
+    (include_exslt / "exslt.h").write_text('''/*
+ * Summary: main header file
+ *
+ * UPSTREAM-PARITY: libexslt/exslt.h (libxslt 1.1.45)
+ *
+ * R-000165: the candidate DSO currently exports only `exsltRegisterAll`;
+ * the remaining declarations below are the upstream drop-in contract and
+ * are tracked by the header-compile court as an explicit open residual.
+ */
+
+#ifndef __EXSLT_H__
+#define __EXSLT_H__
+
+#include <libxml/tree.h>
+#include <libxml/xpath.h>
+#include "exsltexports.h"
+#include <libexslt/exsltconfig.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+EXSLTPUBVAR const char *exsltLibraryVersion;
+EXSLTPUBVAR const int exsltLibexsltVersion;
+EXSLTPUBVAR const int exsltLibxsltVersion;
+EXSLTPUBVAR const int exsltLibxmlVersion;
+
+/**
+ * EXSLT_COMMON_NAMESPACE:
+ *
+ * Namespace for EXSLT common functions
+ */
+#define EXSLT_COMMON_NAMESPACE ((const xmlChar *) "http://exslt.org/common")
+/**
+ * EXSLT_CRYPTO_NAMESPACE:
+ *
+ * Namespace for EXSLT crypto functions
+ */
+#define EXSLT_CRYPTO_NAMESPACE ((const xmlChar *) "http://exslt.org/crypto")
+/**
+ * EXSLT_MATH_NAMESPACE:
+ *
+ * Namespace for EXSLT math functions
+ */
+#define EXSLT_MATH_NAMESPACE ((const xmlChar *) "http://exslt.org/math")
+/**
+ * EXSLT_SETS_NAMESPACE:
+ *
+ * Namespace for EXSLT set functions
+ */
+#define EXSLT_SETS_NAMESPACE ((const xmlChar *) "http://exslt.org/sets")
+/**
+ * EXSLT_FUNCTIONS_NAMESPACE:
+ *
+ * Namespace for EXSLT functions extension functions
+ */
+#define EXSLT_FUNCTIONS_NAMESPACE ((const xmlChar *) "http://exslt.org/functions")
+/**
+ * EXSLT_STRINGS_NAMESPACE:
+ *
+ * Namespace for EXSLT strings functions
+ */
+#define EXSLT_STRINGS_NAMESPACE ((const xmlChar *) "http://exslt.org/strings")
+/**
+ * EXSLT_DATE_NAMESPACE:
+ *
+ * Namespace for EXSLT date functions
+ */
+#define EXSLT_DATE_NAMESPACE ((const xmlChar *) "http://exslt.org/dates-and-times")
+/**
+ * EXSLT_DYNAMIC_NAMESPACE:
+ *
+ * Namespace for EXSLT dynamic functions
+ */
+#define EXSLT_DYNAMIC_NAMESPACE ((const xmlChar *) "http://exslt.org/dynamic")
+
+/**
+ * SAXON_NAMESPACE:
+ *
+ * Namespace for SAXON extensions functions
+ */
+#define SAXON_NAMESPACE ((const xmlChar *) "http://icl.com/saxon")
+
+EXSLTPUBFUN void EXSLTCALL exsltCommonRegister (void);
+#ifdef EXSLT_CRYPTO_ENABLED
+EXSLTPUBFUN void EXSLTCALL exsltCryptoRegister (void);
+#endif
+EXSLTPUBFUN void EXSLTCALL exsltMathRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltSetsRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltFuncRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltStrRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltDateRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltSaxonRegister (void);
+EXSLTPUBFUN void EXSLTCALL exsltDynRegister(void);
+
+EXSLTPUBFUN void EXSLTCALL exsltRegisterAll (void);
+
+EXSLTPUBFUN int EXSLTCALL exsltDateXpathCtxtRegister (xmlXPathContextPtr ctxt,
+                                                      const xmlChar *prefix);
+EXSLTPUBFUN int EXSLTCALL exsltMathXpathCtxtRegister (xmlXPathContextPtr ctxt,
+                                                      const xmlChar *prefix);
+EXSLTPUBFUN int EXSLTCALL exsltSetsXpathCtxtRegister (xmlXPathContextPtr ctxt,
+                                                      const xmlChar *prefix);
+EXSLTPUBFUN int EXSLTCALL exsltStrXpathCtxtRegister (xmlXPathContextPtr ctxt,
+                                                     const xmlChar *prefix);
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* __EXSLT_H__ */
+''')
+    print("  Generated include/libexslt/exslt.h")
+
+
 # ────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────
@@ -2745,12 +3015,17 @@ def main():
     print()
     print("libxslt headers:")
     gen_libxslt_headers()
-    
+
     print()
-    print("Done! Generated headers in include/libxml/ and include/libxslt/")
+    print("libexslt headers:")
+    gen_exslt_headers()
+
+    print()
+    print("Done! Generated headers in include/libxml/, include/libxslt/ and include/libexslt/")
     print()
     print(f"  libxml headers: {len(list(INCLUDE_LIBXML.iterdir()))}")
     print(f"  libxslt headers: {len(list(INCLUDE_LIBXSLT.iterdir()))}")
+    print(f"  libexslt headers: {len(list((REPO_ROOT / 'include' / 'libexslt').iterdir()))}")
 
 
 if __name__ == "__main__":

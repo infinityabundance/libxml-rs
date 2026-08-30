@@ -29,11 +29,11 @@ DOX = os.path.join(ROOT, "oracle", "historical", "doxygen")
 ATLAS = os.path.join(ROOT, "atlas")
 
 PROFILES = {
-    "libxml2": {"version": "2.15.3", "system_dso": "/usr/lib/libxml2.so.2",
-                "cand_dso": os.path.join(ROOT, "target", "debug", "libxml2.so.2.15.3"),
+    "libxml2": {"version": "2.15.3", "system_dso": "/usr/lib/libxml2.so.16",
+                "cand_dso": os.path.join(ROOT, "target", "debug", "libxml2.so.16.1.3"),
                 "headers_dir": "/usr/include/libxml2/libxml"},
     "libxslt": {"version": "1.1.45", "system_dso": "/usr/lib/libxslt.so.1",
-                "cand_dso": os.path.join(ROOT, "target", "debug", "libxslt.so.1.1.47"),
+                "cand_dso": os.path.join(ROOT, "target", "debug", "libxslt.so.1.1.45"),
                 "headers_dir": "/usr/include/libxslt"},
 }
 

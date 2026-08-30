@@ -346,6 +346,15 @@ XMLPUBFUN int
 XMLPUBFUN int
 		xmlTextWriterClose		(xmlTextWriterPtr writer);
 
+
+/* [11.1-S] begin: oracle-extracted declarations
+ * Extracted verbatim from the upstream headers (11.1-S header-surface
+ * audit: every function the oracle headers declare must be declared by the
+ * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
+ */
+XMLPUBFUN xmlTextWriter * xmlNewTextWriterPushParser(xmlParserCtxt *ctxt, int compression);
+/* [11.1-S] end: oracle-extracted declarations */
+
 #ifdef __cplusplus
 }
 #endif
