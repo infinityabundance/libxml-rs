@@ -1,0 +1,24 @@
+{
+  "court": "AST-SURFACE",
+  "phase": "11.1-D",
+  "timestamp": "2026-08-31T23:32:33Z",
+  "atlas_dir": "/mnt/1tb_kingston/libxml-rs/atlas/api",
+  "cases": [
+    {"item":"libxml2:atlas:present","status":"PASS"},
+    {"item":"libxml2:generator=apiatlas","status":"PASS"},
+    {"item":"libxml2:version_tag=v2.15.3","status":"PASS"},
+    {"item":"libxml2:functions=1403","status":"PASS"},
+    {"item":"libxslt:atlas:present","status":"PASS"},
+    {"item":"libxslt:generator=apiatlas","status":"PASS"},
+    {"item":"libxslt:version_tag=v1.1.45","status":"PASS"},
+    {"item":"libxslt:functions=231","status":"PASS"},
+    {"item":"libexslt:atlas:present","status":"PASS"},
+    {"item":"libexslt:generator=apiatlas","status":"PASS"},
+    {"item":"libexslt:version_tag=v1.1.45","status":"PASS"},
+    {"item":"libexslt:functions=14","status":"PASS"},
+    {"item":"parity-matrix:consumes-clang-ast","status":"PASS"}
+  ],
+  "summary": { "passed": 13, "failed": 0 },
+  "failures": {
+  }
+}

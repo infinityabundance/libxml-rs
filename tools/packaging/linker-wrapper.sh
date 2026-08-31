@@ -7,6 +7,16 @@
 # bin/test/example link of a build; the lib target is always complete by
 # then) — regenerates the libxslt/libexslt facade DSOs if they are stale.
 #
+# Phase 12 (EXPORT-SURFACE-DISPOSITION): rustc emits its own version script
+# for cdylibs (a temp `deps/rustciXXXXXX/list` listing every no_mangle
+# symbol as an unversioned global). With two --version-script args GNU ld
+# merges them — the rustc list wins the symbol assignment, defeating the
+# exact export map. This wrapper rewrites that rustc-generated script path
+# to the committed tools/packaging/libxml2.syms, so ld receives exactly one
+# version script: the upstream LIBXML2_2.x named-version graph + terminal
+# node, with INTERNAL_LEAK symbols hidden. Bins/tests/examples (rlib links)
+# are unaffected (no cdylib script).
+#
 # rustc's default linker is `cc`, so this adds no new toolchain requirement;
 # cross builds and non-Linux targets are unaffected (the config key is
 # target-specific and this script no-ops there).
@@ -15,12 +25,26 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 out=
 prev=
+args=""
 for a in "$@"; do
     if [ "$prev" = "-o" ]; then out="$a"; fi
     prev="$a"
+    case "$a" in
+        -Wl,--version-script=*)
+            vs="${a#-Wl,--version-script=}"
+            # rustc's generated cdylib export list lives under deps/rustci*
+            if printf '%s' "$vs" | grep -qi '/deps/rustc.*/list$'; then
+                if [ -f "$SCRIPT_DIR/libxml2.syms" ]; then
+                    a="-Wl,--version-script=$SCRIPT_DIR/libxml2.syms"
+                fi
+            fi
+            ;;
+    esac
+    args="$args $a"
 done
 
-cc "$@"
+# shellcheck disable=SC2086
+cc $args
 rc=$?
 [ "$rc" -ne 0 ] && exit "$rc"
 

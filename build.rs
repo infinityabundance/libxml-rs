@@ -181,6 +181,27 @@ fn main() {
     // runtime.
     println!("cargo:rustc-cdylib-link-arg=-Wl,-soname,libxml2.so.16");
 
+    // Phase 12 (EXPORT-SURFACE-DISPOSITION): the core gets an explicit
+    // version-script export map (tools/packaging/libxml2.syms) so that only
+    // the dispositioned surface is dynamic — every #[no_mangle] Rust helper
+    // not in the current-oracle / historical-compat / extension planes is
+    // hidden (local: *). The map carries the upstream LIBXML2_2.x
+    // named-version chain (libxml2-2.13.5/libxml2.syms) plus the terminal
+    // LIBXML2_2.15.0 node, so both unversioned (executed-oracle) consumers
+    // and versioned-distro binaries bind. The published-crate fallback (no
+    // tools/) keeps the symlink layout without the map, as documented.
+    if three_dso_active {
+        let syms = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap_or_default())
+            .join("tools/packaging/libxml2.syms");
+        if syms.is_file() {
+            println!(
+                "cargo:rustc-cdylib-link-arg=-Wl,--version-script={}",
+                syms.display()
+            );
+            println!("cargo:rerun-if-changed=tools/packaging/libxml2.syms");
+        }
+    }
+
     // Print cargo instructions
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Cargo.toml");

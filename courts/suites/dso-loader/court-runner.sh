@@ -257,26 +257,30 @@ sym_type() { # sym_type <dso> <name> — strip @@LIBXML2_x.y.z version suffixes
 ORACLE_XML="/usr/lib/libxml2.so.16"
 ORACLE_XSLT="/usr/lib/libxslt.so.1"
 ORACLE_EXSLT="/usr/lib/libexslt.so.0"
+# Phase 12 contract: xslt*/exslt* symbols live in the facade DSOs, so the
+# candidate side is checked against the facade files (not the core).
+CAND_XSLT="${LIBDIR}/libxslt.so.1.1.45"
+CAND_EXSLT="${LIBDIR}/libexslt.so.0.8.25"
 type_mismatch=0
 for spec in \
-    "xmlReadMemory:T:${ORACLE_XML}" \
-    "xmlNewDoc:T:${ORACLE_XML}" \
-    "xmlParserVersion:D:${ORACLE_XML}" \
-    "__xmlGenericError:D:${ORACLE_XML}" \
-    "__xmlLastError:B:${ORACLE_XML}" \
-    "xsltApplyStylesheet:T:${ORACLE_XSLT}" \
-    "xsltLibxmlVersion:R:${ORACLE_XSLT}" \
-    "xsltLibxsltVersion:R:${ORACLE_XSLT}" \
-    "xsltEngineVersion:D:${ORACLE_XSLT}" \
-    "xsltGenericDebug:D:${ORACLE_XSLT}" \
-    "exsltRegisterAll:T:${ORACLE_EXSLT}" \
-    "exsltLibexsltVersion:R:${ORACLE_EXSLT}" \
-    "exsltLibxmlVersion:R:${ORACLE_EXSLT}" \
-    "exsltLibxsltVersion:R:${ORACLE_EXSLT}" \
-    "exsltLibraryVersion:D:${ORACLE_EXSLT}" \
-    "xmlXPathEval:T:${ORACLE_XML}"; do
-    name="${spec%%:*}"; rest="${spec#*:}"; want="${rest%%:*}"; odso="${rest#*:}"
-    t_cand="$(sym_type "$DSO" "$name")"
+    "xmlReadMemory:T:${ORACLE_XML}:${DSO}" \
+    "xmlNewDoc:T:${ORACLE_XML}:${DSO}" \
+    "xmlParserVersion:D:${ORACLE_XML}:${DSO}" \
+    "__xmlGenericError:T:${ORACLE_XML}:${DSO}" \
+    "__xmlLastError:T:${ORACLE_XML}:${DSO}" \
+    "xsltApplyStylesheet:T:${ORACLE_XSLT}:${CAND_XSLT}" \
+    "xsltLibxmlVersion:R:${ORACLE_XSLT}:${CAND_XSLT}" \
+    "xsltLibxsltVersion:R:${ORACLE_XSLT}:${CAND_XSLT}" \
+    "xsltEngineVersion:D:${ORACLE_XSLT}:${CAND_XSLT}" \
+    "xsltGenericDebug:D:${ORACLE_XSLT}:${CAND_XSLT}" \
+    "exsltRegisterAll:T:${ORACLE_EXSLT}:${CAND_EXSLT}" \
+    "exsltLibexsltVersion:R:${ORACLE_EXSLT}:${CAND_EXSLT}" \
+    "exsltLibxmlVersion:R:${ORACLE_EXSLT}:${CAND_EXSLT}" \
+    "exsltLibxsltVersion:R:${ORACLE_EXSLT}:${CAND_EXSLT}" \
+    "exsltLibraryVersion:D:${ORACLE_EXSLT}:${CAND_EXSLT}" \
+    "xmlXPathEval:T:${ORACLE_XML}:${DSO}"; do
+    name="${spec%%:*}"; rest="${spec#*:}"; want="${rest%%:*}"; rest2="${rest#*:}"; odso="${rest2%%:*}"; cdso="${rest2#*:}"
+    t_cand="$(sym_type "$cdso" "$name")"
     t_orac="$(sym_type "$odso" "$name")"
     if [ "$t_cand" = "$t_orac" ]; then
         record PASS "symtype:$name=$t_cand"

@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLLINT-0042",
+  "observations": {
+    "candidate": {
+      "exit_status": 4,
+      "stderr": "Can't open wfc-comment.xml\n",
+      "stderr_hash": "3359e3a2abe3acc27f453714fbfecd863c44aa1b32a09e451baa24dba1cd1409",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.404890+00:00",
+  "verdict": "UNKNOWN"
+}

@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLLINT-0005",
+  "observations": {
+    "candidate": {
+      "exit_status": 4,
+      "stderr": "Can't open valid.xml\n",
+      "stderr_hash": "8f470dda68271f0e27031bc543bf2f06824752734a58b14cbc5ccffd0a622cd6",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.355984+00:00",
+  "verdict": "UNKNOWN"
+}

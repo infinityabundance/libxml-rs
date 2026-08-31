@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLLINT-0044",
+  "observations": {
+    "candidate": {
+      "exit_status": 4,
+      "stderr": "Can't open c14n-ns.xml\n",
+      "stderr_hash": "171ae26aa9d4206781bb57dd368467d391f9a0acde42fbf74553453e61d166cf",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.407427+00:00",
+  "verdict": "UNKNOWN"
+}

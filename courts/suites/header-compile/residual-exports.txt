@@ -10,3 +10,17 @@
 # the xmlCtxt/xmlNewInputFrom* families, the schematron/xslt/exslt helpers
 # and the version data symbols) is exported by the candidate DSO, so the
 # check #5 runs unrelaxed. R-000165 closed.
+#
+# Phase 12 (EXPORT-SURFACE-DISPOSITION): the shipped shared-DSO surface is
+# the exact executed-oracle surface (plus the documented extension plane),
+# and the executed oracle DSOs THEMSELVES do not export these four
+# symbols — they are declared in the upstream headers only (the oracle's own
+# headers declare them; its DSOs do not). The candidate now matches the
+# oracle: hidden from the shared DSOs by the generated version scripts
+# (INTERNAL_LEAK disposition; still linkable through the staticlib). These
+# are the R-000165-class header-declared/DSO-absent residuals for the
+# Phase-12 contract.
+xsltStyleStylesheetLevelGetExtData
+xsltGetUTF8CharZ
+xsltSetCtxtLocaleHandlers
+exsltCryptoRegister

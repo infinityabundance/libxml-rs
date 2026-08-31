@@ -49,14 +49,33 @@ needs_gen() {
     [ -f "$1" ] || return 0
     [ "$1" -nt "$CORE" ] || return 0
     [ "$1" -nt "$ARCHIVE" ] || return 0
+    # Phase 12: regenerate when the generated export maps / generator change
+    for vs in "$SCRIPT_DIR/libxslt.syms" "$SCRIPT_DIR/libexslt.syms" \
+              "$SCRIPT_DIR/../phase12/export_surface.py"; do
+        [ -f "$vs" ] || continue
+        [ "$1" -nt "$vs" ] || return 0
+    done
     return 1
 }
 
 XSLT_VS="$(mktemp "$ART/.libxslt.vs.XXXXXX")"
 EXSLT_VS="$(mktemp "$ART/.libexslt.vs.XXXXXX")"
-trap 'rm -f "$XSLT_VS" "$EXSLT_VS"' EXIT
-
-cat > "$XSLT_VS" <<'VSEOF'
+TMP_VS=1
+# Phase 12: the facades use the generated EXACT export maps with the
+# oracle's named-version graph (libxslt.syms: the 27-node LIBXML2_1.x chain
+# with the per-symbol node assignment of the executed oracle) instead of the
+# pre-Phase-12 anonymous `xslt*` filter. libexslt.syms is the exact oracle
+# surface (unversioned, matching the executed 0.8.25). Both hide every
+# unlisted symbol (local: *), so xslt/exslt implementation internals that
+# the oracle does not export no longer escape into the dynamic surface
+# (EXPORT-SURFACE-DISPOSITION, Phase 12).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/libxslt.syms" ]; then
+    rm -f "$XSLT_VS"
+    XSLT_VS="$SCRIPT_DIR/libxslt.syms"
+    TMP_VS=0
+else
+    cat > "$XSLT_VS" <<'VSEOF'
 {
   global:
     xslt*;
@@ -64,13 +83,23 @@ cat > "$XSLT_VS" <<'VSEOF'
   local: *;
 };
 VSEOF
-cat > "$EXSLT_VS" <<'VSEOF'
+fi
+if [ -f "$SCRIPT_DIR/libexslt.syms" ]; then
+    rm -f "$EXSLT_VS"
+    EXSLT_VS="$SCRIPT_DIR/libexslt.syms"
+    TMP_VS=0
+else
+    cat > "$EXSLT_VS" <<'VSEOF'
 {
   global:
     exslt*;
   local: *;
 };
 VSEOF
+fi
+if [ "$TMP_VS" = 1 ]; then
+    trap 'rm -f "$XSLT_VS" "$EXSLT_VS"' EXIT
+fi
 
 GEN_OK=1
 if needs_gen "$XSLT_OUT"; then

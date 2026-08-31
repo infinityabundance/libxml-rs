@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLLINT-0004",
+  "observations": {
+    "candidate": {
+      "exit_status": 4,
+      "stderr": "Can't open fmt.xml\n",
+      "stderr_hash": "58a0b66792e82668ca28d7cea93a5aedd1a936695f2e65c17fb98bc5c7316252",
+      "stdout": "",
+      "stdout_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.354529+00:00",
+  "verdict": "UNKNOWN"
+}

@@ -213,19 +213,18 @@ int main(int argc, char **argv) {
         void *(*getDetect)(void) = (void *(*)(void))dlsym(h, "xlinkGetDefaultDetect");
         CHECK(getDetect != NULL && getDetect() == NULL, "xlinkGetDefaultDetect NULL");
 
-        /* xslt helpers */
+        /* xslt helpers — Phase 12 contract: xslt* live in the libxslt.so.1
+         * facade, not the core. xsltGetUTF8CharZ is an INTERNAL_LEAK that
+         * the exact export map hides (EXPORT-SURFACE-DISPOSITION) -> dlsym
+         * must FAIL (negative). The oracle-exported helpers still resolve. */
         unsigned int (*utf8z)(const unsigned char *, int *) =
-            (unsigned int (*)(const unsigned char *, int *))dlsym(h, "xsltGetUTF8CharZ");
-        void (*setDbgStatus)(int) = (void (*)(int))dlsym(h, "xsltSetDebuggerStatus");
-        int (*setDbgCb)(int, void *) = (int (*)(int, void *))dlsym(h, "xsltSetDebuggerCallbacks");
-        int *dbgStatus = (int *)dlsym(h, "xslDebugStatus");
-        CHECK(utf8z && setDbgStatus && setDbgCb && dbgStatus,
+            (unsigned int (*)(const unsigned char *, int *))dlsym(hx, "xsltGetUTF8CharZ");
+        void (*setDbgStatus)(int) = (void (*)(int))dlsym(hx, "xsltSetDebuggerStatus");
+        int (*setDbgCb)(int, void *) = (int (*)(int, void *))dlsym(hx, "xsltSetDebuggerCallbacks");
+        int *dbgStatus = (int *)dlsym(hx, "xslDebugStatus");
+        CHECK(utf8z == NULL, "dlsym(xsltGetUTF8CharZ) hidden (INTERNAL_LEAK)");
+        CHECK(setDbgStatus && setDbgCb && dbgStatus,
               "dlsym(xslt helpers)");
-        if (utf8z) {
-            int len = 0;
-            unsigned int cp = utf8z((const unsigned char *)"\xC3\xA9", &len);
-            CHECK(cp == 0xE9 && len == 2, "xsltGetUTF8CharZ decodes");
-        }
         if (setDbgCb) {
             CHECK(setDbgCb(3, NULL) == -1, "xsltSetDebuggerCallbacks NULL block");
         }
@@ -234,16 +233,20 @@ int main(int argc, char **argv) {
             CHECK(*dbgStatus == 0, "xslDebugStatus initial");
         }
 
-        /* per-module EXSLT registration entry points */
+        /* per-module EXSLT registration entry points — Phase 12 contract:
+         * they live in the libexslt.so.0 facade; exsltCryptoRegister is an
+         * INTERNAL_LEAK (never an oracle export) -> negative dlsym. */
         void (*reg)(void) = NULL;
         const char *mods[] = {"exsltCommonRegister", "exsltMathRegister", "exsltSetsRegister",
                               "exsltFuncRegister", "exsltStrRegister", "exsltDateRegister",
-                              "exsltSaxonRegister", "exsltDynRegister", "exsltCryptoRegister"};
+                              "exsltSaxonRegister", "exsltDynRegister"};
         int all_present = 1;
         for (size_t i = 0; i < sizeof(mods) / sizeof(mods[0]); i++) {
             if (dlsym(he, mods[i]) == NULL) all_present = 0;
         }
         CHECK(all_present, "dlsym(per-module exslt*Register)");
+        CHECK(dlsym(he, "exsltCryptoRegister") == NULL,
+              "dlsym(exsltCryptoRegister) hidden (INTERNAL_LEAK)");
         reg = (void (*)(void))dlsym(he, "exsltCommonRegister");
         if (reg) reg();
         int (*xreg)(void *, const char *) = (int (*)(void *, const char *))dlsym(he, "exsltDateXpathCtxtRegister");

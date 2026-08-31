@@ -1,0 +1,334 @@
+{
+ "court": "ABI-FUNCTION-SIGNATURE",
+ "case": "ABI-FUNCTION-SIGNATURE-001",
+ "phase": "11.1-Z.3",
+ "timestamp": "20260831T233429Z",
+ "schema": "function-signature-court-2",
+ "toolchain": {
+  "clang": "clang version 22.1.8"
+ },
+ "planes": {
+  "oracle": "system headers via clang AST (isolated include env)",
+  "candidate_headers": "include/ via clang AST (isolated include env)",
+  "rust": "src/ extern \"C\" fn extraction (const/unsafe aware)"
+ },
+ "environments": {
+  "oracle_include_paths": [
+   "/usr/include/libxml2"
+  ],
+  "candidate_include_paths": [
+   "/mnt/1tb_kingston/libxml-rs/include"
+  ],
+  "oracle_forbidden_roots": [
+   "include"
+  ],
+  "candidate_forbidden_roots": [
+   "../../../usr/include/libxml2",
+   "../../../usr/include/libxslt",
+   "../../../usr/include/libexslt"
+  ]
+ },
+ "fingerprints": {
+  "source": "SOURCE_PROTOTYPE_FINGERPRINT (canonical base type, pointer depth, pointee const/restrict, typedef identity, full fn-pointer signature, variadic, arg count, return type, calling convention)",
+  "machine": "MACHINE_ABI_FINGERPRINT (ABI class, width, signedness, pointer depth, struct-by-value identity, callback ABI, variadic)"
+ },
+ "accounting": {
+  "oracle_headers_discovered": 71,
+  "oracle_headers_parsed": 71,
+  "oracle_headers_failed": 0,
+  "candidate_headers_discovered": 73,
+  "candidate_headers_parsed": 73,
+  "candidate_headers_failed": 0,
+  "oracle_fn_decls": 1648,
+  "candidate_fn_decls": 1656,
+  "rust_signatures_measured": 2097,
+  "asm_shims_classified": 8,
+  "data_exports_classified": 59,
+  "generated_macro_exports_classified": 13,
+  "candidate_header_auxiliary_classified": 1,
+  "oracle_internal_globals_classified": 21,
+  "header_declared_oracle_dso_absent": 2,
+  "unmeasured_functions": 0,
+  "unclassified_rust_types": 0,
+  "silent_omissions": 0
+ },
+ "summary": {
+  "compared": 3259,
+  "ok": 3259,
+  "findings": 0
+ },
+ "classified": [
+  {
+   "symbol": "__xmlDeregisterNodeDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlDoValidityCheckingDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlGenericError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlGenericErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlGetWarningsDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlIndentTreeOutput",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlKeepBlanksDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlLastError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlLineNumbersDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlLoadExtDtdDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlPedanticParserDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlRegisterNodeDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlSaveNoEmptyTags",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlSubstituteEntitiesDefaultValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlTreeIndentString",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "xslHandleDebugger",
+   "plane": "oracle-vs-candidate",
+   "kind": "header-declared-oracle-dso-absent",
+   "detail": "declared in the oracle transform.h (XSLT debugger hook) but NOT exported by the system libxslt.so.1 (verified: nm -D has no such symbol, only xsltGetDebuggerStatus); current-oracle requirement: N/A — not a candidate obligation; feature: XSLT debugger"
+  },
+  {
+   "symbol": "xsltCleanupSourceDoc",
+   "plane": "oracle-vs-candidate",
+   "kind": "header-declared-oracle-dso-absent",
+   "detail": "declared in the oracle internal header transformInternals.h but NOT exported by the system libxslt.so.1 (verified: nm -D has no such symbol); current-oracle requirement: N/A — not a candidate obligation"
+  },
+  {
+   "symbol": "trio_strerror",
+   "plane": "candidate-vs-rust",
+   "kind": "candidate-header-auxiliary",
+   "detail": "declared in the vendored candidate-only trio.h (the oracle 1.1.45 ships no trio.h); not part of the drop-in parity surface"
+  },
+  {
+   "symbol": "xmlOutputBufferCreateFilenameDefault",
+   "plane": "candidate-vs-rust",
+   "kind": "data-export",
+   "detail": "DATA function-pointer/global symbol"
+  },
+  {
+   "symbol": "xmlParserError",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  },
+  {
+   "symbol": "xmlParserInputBufferCreateFilenameDefault",
+   "plane": "candidate-vs-rust",
+   "kind": "data-export",
+   "detail": "DATA function-pointer/global symbol"
+  },
+  {
+   "symbol": "xmlParserValidityError",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  },
+  {
+   "symbol": "xmlParserValidityWarning",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  },
+  {
+   "symbol": "xmlParserWarning",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  },
+  {
+   "symbol": "xmlStrPrintf",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatAttribute",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatAttributeNS",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatCDATA",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatComment",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTD",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDAttlist",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDElement",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDInternalEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatElement",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatElementNS",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatPI",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatRaw",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatString",
+   "plane": "candidate-vs-rust",
+   "kind": "generated-macro-shim",
+   "detail": "variadic asm shim generated by vfmt_shim!/fmt_stub! (writer/mod.rs); the fixed-arg ABI is captured from registers and forwarded to the measured xmlTextWriterWriteVFormat* counterpart"
+  },
+  {
+   "symbol": "xsltTransformError",
+   "plane": "candidate-vs-rust",
+   "kind": "asm-shim",
+   "detail": "x86-64 variadic asm shim (R-000161); declared C arity is a Rust-side shim form"
+  }
+ ],
+ "findings": [],
+ "verdict": "PASS"
+}

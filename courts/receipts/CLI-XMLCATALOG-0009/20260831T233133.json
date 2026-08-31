@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLCATALOG-0009",
+  "observations": {
+    "candidate": {
+      "exit_status": 0,
+      "stderr": "",
+      "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout": "<?xml version=\"1.0\"?>\n<!DOCTYPE catalog PUBLIC \"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN\" \"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd\">\n<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\"/>\n",
+      "stdout_hash": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.520225+00:00",
+  "verdict": "UNKNOWN"
+}

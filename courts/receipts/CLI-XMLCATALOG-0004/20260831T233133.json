@@ -1,0 +1,18 @@
+{
+  "candidate_commit": "952a828119ca056edb1b21d123b57a702dc4d44f",
+  "candidate_commit_time": 1788217443,
+  "case_id": "CLI-XMLCATALOG-0004",
+  "observations": {
+    "candidate": {
+      "exit_status": 1,
+      "stderr": "Unknown option --bogus\n",
+      "stderr_hash": "b880d949ce870ada090f5d29e5518ba67843998de1d8776a4e53c039506506f8",
+      "stdout": "Usage : /mnt/1tb_kingston/libxml-rs/target/release/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\n",
+      "stdout_hash": "d12212c0540939e212857f465e96e57d09f48c6226ab5c22cde8fe1b8df24a15"
+    }
+  },
+  "oracle_image": null,
+  "residuals": [],
+  "timestamp": "2026-08-31T23:31:33.513752+00:00",
+  "verdict": "UNKNOWN"
+}

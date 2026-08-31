@@ -132,9 +132,22 @@ done
 # 5: declared-but-not-exported check against the candidate DSO        #
 # ------------------------------------------------------------------ #
 DSO="${PROJECT_DIR}/target/debug/liblibxml_rs.so"
+LIBDIR="${PROJECT_DIR}/target/debug/lib"
 dso_symbols=""
 if [ -f "$DSO" ]; then
-    dso_symbols="$(nm -D --defined-only "$DSO" 2>/dev/null | awk '{print $3}' | grep -E '^(xml|html|xslt|exslt)' | sort -u)"
+    # Phase 12 contract: xslt*/exslt* live in the facade DSOs, so the
+    # declared-functions-exported check consults the union of the three
+    # shipped DSOs (core + libxslt + libexslt facades), stripping the
+    # named-version (@@LIBXML2_2.x / @@LIBXML2_1.x) suffixes.
+    dso_symbols="$(nm -D --defined-only "$DSO" 2>/dev/null | awk '{print $3}' | sed 's/@@.*//' | grep -E '^(xml|html|xslt|exslt)' | sort -u)"
+    for facade in "${LIBDIR}/libxslt.so.1.1.45" "${LIBDIR}/libexslt.so.0.8.25"; do
+        if [ -f "$facade" ]; then
+            dso_symbols="$(printf '%s\n' "$dso_symbols" \
+                ; nm -D --defined-only "$facade" 2>/dev/null | awk '{print $3}' | sed 's/@@.*//' \
+                | grep -E '^(xml|html|xslt|exslt)' | sort -u)"
+            dso_symbols="$(printf '%s\n' "$dso_symbols" | sort -u)"
+        fi
+    done
 fi
 # Explicit open residuals: functions the drop-in headers declare (upstream
 # contract, 11.1-S header-surface audit) that the candidate DSO does not yet

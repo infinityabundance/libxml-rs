@@ -59,7 +59,7 @@ def main():
         return 1
     rc, _, err = run(["gcc", "-std=c11", "-w", "-o", os.path.join(ROOT, "target", "cb-cand"),
                       PROBE, "-I", os.path.join(ROOT, "include"),
-                      "-L", os.path.join(ROOT, "target", "debug"), "-llibxml_rs",
+                      "-L", os.path.join(ROOT, "target", "debug"), "-lxslt", "-lxml2",
                       "-Wl,-rpath," + os.path.join(ROOT, "target", "debug")])
     if rc != 0:
         print("CANDIDATE COMPILE FAILED:\n" + b2s(err)[-2000:])
