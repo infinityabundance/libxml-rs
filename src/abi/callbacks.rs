@@ -16,6 +16,66 @@
 //! - Pointers passed to callbacks remain valid for the callback's duration
 //! - Callbacks observe the upstream ownership/lifetime contract
 //! - Thread safety matches upstream expectations
+//!
+//! # Upstream contract
+//!
+//! The parity target is libxml2 2.15.3 (`SRC-LIBXML2-2.15.0-SAX2-C`:
+//! `oracle/historical/src/libxml2-2.15.0/SAX2.c` and `globals.c`). Every `pub
+//! type` here mirrors an upstream `typedef` verbatim so the function-pointer
+//! fields of the `#[repr(C)]` struct mirrors in `structs.rs` line up
+//! byte-for-byte.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the callback surface of the public headers: SAX1
+//! handlers, SAX2 namespace-aware handlers, error/structured-error callbacks,
+//! validity callbacks, XPath extension callbacks, I/O read/write/close
+//! callbacks, the resource-loader and encoding-conversion callbacks, and the
+//! SAX locator. The callback types are the contract — they define what a C
+//! consumer may register and what the candidate must invoke.
+//!
+//! # Ownership & safety invariants
+//!
+//! Callback user-data pointers are stored and returned verbatim; the caller
+//! keeps them alive and frees them after deregistration, and the candidate
+//! never dereferences user-data (OWNERSHIP_ATLAS section 6). Pointers passed
+//! to callbacks remain valid for the callbacks duration. These typedefs are
+//! `unsafe extern C` because they are invoked across the FFI boundary with
+//! C calling conventions.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000130 (11.1-G): `xmlResourceLoader` and `xmlCharEncConvImpl` had
+//! non-upstream signatures (the loader used 4 args where upstream parser.h
+//! declares 5 with an `xmlParserInput**` out-param) and were fixed to the
+//! upstream signatures. R-000129 (11.1-G): the `_xmlCharEncodingHandler`
+//! layout mismatch (48 vs 56 bytes) was fixed alongside the encoding
+//! callbacks. Since the 2.5 `sax2` epoch (HISTORY.md) the namespace-aware
+//! SAX2 callbacks are the default parser path.
+//!
+//! # Deliberate oddities
+//!
+//! The two R-000130 callback typedefs are ABI-exact but never invoked by the
+//! candidate (the internal engine does not use C resource loaders or
+//! encoding-conversion impls) — a deliberate parity-only surface: their only
+//! purpose is that downstream code compiling against the headers links and
+//! sees the upstream layout.
+//!
+//! # Proving courts
+//!
+//! The ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING court families
+//! exercise this surface; the CALLBACK-001 probe
+//! (`courts/suites/data-abi/callback-family-probe.c`) requires byte-identical
+//! output against the oracle DSO, and the RUST-MIRROR-ABI court measures the
+//! struct mirrors that embed these typedefs.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to drop the unused-but-ABI-exact callbacks
+//! (R-000130) or to let a Rust `fn` signature substitute for the upstream
+//! typedef — that would change the C header layout downstream code compiles
+//! against and break the CALLBACK-001 / RUST-MIRROR-ABI courts, which must
+//! not be allowed to pass on a smaller surface than the oracle exports.
 
 #![allow(non_camel_case_types)]
 

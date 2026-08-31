@@ -1,0 +1,10 @@
+{
+ "module": "exslt/dynamic/mod",
+ "upstream": [
+  "libexslt/dynamic.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [],
+ "court_families": []
+}

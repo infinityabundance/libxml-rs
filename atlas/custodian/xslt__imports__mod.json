@@ -1,0 +1,12 @@
+{
+ "module": "xslt/imports/mod",
+ "upstream": [
+  "imports.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-imports"
+ ],
+ "residuals": [],
+ "court_families": []
+}

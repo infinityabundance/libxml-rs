@@ -1,0 +1,45 @@
+{
+ "module": "abi/exports_xslt_exec",
+ "upstream": [
+  "transform.c",
+  "templates.c",
+  "imports.c",
+  "documents.c",
+  "extensions.c",
+  "xsltutils.c"
+ ],
+ "export_samples": [
+  "xsltAttribute",
+  "xsltElement",
+  "xsltText",
+  "xsltComment",
+  "xsltProcessingInstruction",
+  "xsltCopy"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-imports",
+  "xslt-templates",
+  "xslt-priorities",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-decimal-formats",
+  "xslt-documents",
+  "xslt-transform-ctxt",
+  "xslt-transform-exec",
+  "xslt-extension-functions",
+  "xslt-extension-elements",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-loader-hooks",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000166"
+ ],
+ "court_families": []
+}

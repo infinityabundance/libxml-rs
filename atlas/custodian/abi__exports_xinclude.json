@@ -1,0 +1,23 @@
+{
+ "module": "abi/exports_xinclude",
+ "upstream": [
+  "xinclude.c"
+ ],
+ "export_samples": [
+  "xmlXIncludeNewContext",
+  "xmlXIncludeFreeContext",
+  "xmlXIncludeProcessNode",
+  "xmlXIncludeProcessTree",
+  "xmlXIncludeProcessTreeFlags",
+  "xmlXIncludeProcessTreeFlagsData"
+ ],
+ "subsystems": [
+  "xinclude"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": [
+  "XINCLUDE"
+ ]
+}

@@ -21,6 +21,68 @@
 //! # Courts
 //!
 //! XSLT-PATTERNS-*
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `patterns.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-PATTERNS-C` under oracle/historical/src). Patterns
+//! are the XSLT 1.0 §5 subset of XPath 1.0 used in `match` attributes of
+//! `xsl:template`, `xsl:key`, `xsl:strip-space` and `xsl:preserve-space`;
+//! the observable surface is `xsltCompilePattern`, `xsltTestPattern` and
+//! the default-priority computation used by template matching.
+//!
+//! # Conceptual behavior
+//!
+//! Patterns parse through the XPath 1.0 AST (`src/xml/xpath`) and are
+//! compiled into reverse-ordered step chains (child/attribute/descendant
+//! axes, node tests, bounded predicates, union branches, absolute-root
+//! sentinel). Matching walks the steps against the candidate node; a bare
+//! `node()`-style node test becomes a child-axis step and priority is
+//! derived from the pattern AST per XSLT 1.0 §5.5 default priorities
+//! (0.5 for node(), 0 for name tests, -0.5 for *-tests).
+//!
+//! # Ownership & safety invariants
+//!
+//! Compiled patterns are heap-allocated and owned by their callers: a
+//! template (`_xsltTemplate.match` slot, see templates module), a key
+//! definition, or the local match cache. `xsltFreePattern` releases the
+//! step chain and its predicate expressions; the pattern string itself is
+//! borrowed from the stylesheet document and never freed by the pattern
+//! free path (R-000103 lesson).
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000105 (Phase 8): bare `node()`/`text()`/`comment()`/
+//! `processing-instruction()` parse as XPath FunctionCall nodes and were
+//! treated as unknown — fixed by translating them into child-axis steps
+//! with the upstream priorities (-0.25 for node(), 0.0 for the others).
+//! R-000106: `match="/"` is a bare Self_/node() step that matched every
+//! node — fixed so an empty absolute pattern matches only document nodes.
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): pattern evaluation is frozen in the
+//! byte-identical xsltproc epoch (1.1.26, 2009, through 1.1.45).
+//!
+//! # Deliberate oddities
+//!
+//! - Steps are stored in reverse order for efficient matching — an
+//!   intentional internal representation with identical semantics.
+//! - The compiled pattern is carried in the `_xsltTemplate.params` slot
+//!   (opaque to the C ABI; R-000140 layout), a documented reuse.
+//!
+//! # Proving courts
+//!
+//! XSLT-PATTERNS-*, pattern priority and compile tests, CLI-XSLTPROC
+//! (match/priority corpus), and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Treating bare node tests as function calls (the pre-R-000105
+//!   behavior) makes every `match="node()"`-style pattern a 0.5-priority
+//!   unknown — no template ever matches.
+//! - Implementing `match="/"` as match-any (the pre-R-000106 behavior)
+//!   makes the root template also match the root element, changing which
+//!   template wins on the root node.
+//! - Dropping the default-priority mapping (XSLT 1.0 §5.5) breaks
+//!   conflict resolution between overlapping patterns.
 
 use crate::abi::structs::*;
 use crate::abi::types::*;

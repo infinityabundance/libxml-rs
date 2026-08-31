@@ -1,0 +1,13 @@
+{
+ "module": "exslt/dates/mod",
+ "upstream": [
+  "libexslt/date.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000112",
+  "R-000168"
+ ],
+ "court_families": []
+}

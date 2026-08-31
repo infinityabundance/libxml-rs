@@ -1,0 +1,22 @@
+{
+ "module": "xml/chvalid",
+ "upstream": [
+  "chvalid.c",
+  "xmlunicode.c"
+ ],
+ "export_samples": [
+  "xmlIsBaseChar",
+  "xmlIsBlank",
+  "xmlIsChar",
+  "xmlIsCombining",
+  "xmlIsDigit",
+  "xmlIsExtender"
+ ],
+ "subsystems": [
+  "encoding"
+ ],
+ "residuals": [
+  "R-000135"
+ ],
+ "court_families": []
+}

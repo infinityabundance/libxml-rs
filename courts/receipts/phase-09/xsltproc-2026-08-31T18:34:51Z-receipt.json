@@ -1,0 +1,34 @@
+{
+  "receipt_id": "CLI-XSLTPROC-09-2026-08-31T18:34:51Z",
+  "phase": "09",
+  "tool": "xsltproc",
+  "timestamp": "2026-08-31T18:34:51Z",
+  "candidate_commit": "a33f3289cd63bf2061ee86dad6c6156825f78c93",
+  "oracle_identity": "Using libxml 21503-GITv2.15.3, libxslt 10145-GITv1.1.45 and libexslt 825-GITv1.1.45\nxsltproc was compiled against libxml 21501, libxslt 10145 and libexslt 825\nlibxslt 10145 was compiled against libxml 21501\nlibexslt 825 was compiled against libxml 21501",
+  "oracle_binary": "/usr/bin/xsltproc",
+  "candidate_binary": "/mnt/1tb_kingston/libxml-rs/target/debug/xsltproc",
+  "normalization": "argv0 path normalized to TOOL (tools echo their own invocation path); all other bytes compared raw",
+  "cases": [
+    {
+      "case_id": "CLI-XSLTPROC-0021",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "5c0315186f9cb00819e6cb42213cec6cbd2a897a516a07dc1a6863bb4ae7b05f",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "5c0315186f9cb00819e6cb42213cec6cbd2a897a516a07dc1a6863bb4ae7b05f",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": false,
+      "expected_match": true
+    }
+  ],
+  "totals": {
+    "pass": 1,
+    "fail": 0
+  },
+  "verdict": "PASS"
+}

@@ -26,7 +26,60 @@
 //! `xmlStringLenGetNodeList` is already exported by the string workstream
 //! (`src/abi/exports_string.rs`) and is deliberately NOT re-exported here.
 //! `xmlCopyNode` is exported by `src/abi/exports_xml2.rs` (same internal
-//! tree helper); `xmlCopyNodeList` is the copy-list member of this family.
+//! `xmlCopyNodeList` is the copy-list member of this family.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `debugXML.c`, `tree.c`, `valid.c`, `entities.c`,
+//! `xmlsave.c` and `parserInternals.c` (libxml2 2.15.3) with the `tree.h`/
+//! `valid.h`/`entities.h`/`debugXML.h` signatures; R-000164 (11.1-N) exercised
+//! the copy/dump paths in the TREE-001 structural probe.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the copy/dump/serialize/debug/node-list family:
+//! node/prop/namespace/Dtd/table copy functions, `xmlNodeDumpOutput` and the
+//! doc dump helpers, `xmlAttrSerializeTxtContent`, the node-list string
+//! conversions (`xmlNodeListGetString`/`RawString`, `xmlStringGetNodeList`),
+//! and the `xmlDebug*` dump entry points.
+//!
+//! # Ownership & safety invariants
+//!
+//! Copy functions return fresh caller-owned objects (freed with the matching
+//! free function — `xmlFreeNodeList` for `xmlCopyNodeList`, `xmlFreeProp` for
+//! `xmlCopyProp`, `xmlFreeDtd` for `xmlCopyDtd`); `xmlNodeListGetString`
+//! returns an xml-allocator string the caller frees with `xmlFree`;
+//! `xmlCopyChar`/`xmlCopyCharMultiByte` write into caller-provided buffers.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-004 (SEMANTIC_EPOCHS): `--debug --noent` dumps changed in 2.13.0 (commit
+//! `8d04f0ee`, 2024-03-11, tree text-node refactor) from `TEXT` to
+//! `TEXT compact` — the debug-dump formatting this module feeds. R-000164:
+//! copy_node parent/last/line handling was aligned with upstream (line
+//! preserved only for elements, text copies keep line 0).
+//!
+//! # Deliberate oddities
+//!
+//! `xmlStringLenGetNodeList` is deliberately not re-exported here (it lives in
+//! exports_string — single owner per symbol); `xmlCopyNode` is exported from
+//! exports_xml2 with the same internal helper, so this module only carries the
+//! list member.
+//!
+//! # Proving courts
+//!
+//! The TREE-STRUCTURE court family (TREE-001 byte-identical) plus the
+//! C14N/CLI-XMLLINT debug-dump cases and DSO-LOADER/HEADER-COMPILE cover this
+//! module; the copy/dump unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to implement the copy functions with shallow
+//! pointer copies — upstream copies deep (children, namespaces, properties),
+//! and R-000164s TREE-001 probe fingerprint would diverge (the copy_node
+//! parent/last/line defects were exactly that class). Another shortcut, skipping
+//! the `TEXT compact` threshold in dumps, would fail the E-004 epoch comparison
+//! against the 2.13+ oracle.
 
 #![allow(
     missing_docs,

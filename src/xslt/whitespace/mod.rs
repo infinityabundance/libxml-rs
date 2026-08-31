@@ -14,6 +14,38 @@
 //! Rules are stored on the stylesheet as linked lists (`stripSpaces`,
 //! `preserveSpaces`) of `_xsltStripSpace` entries holding element names
 //! (QName patterns) and import depths.
+//!
+//! # Conceptual behavior
+//!
+//! Whitespace stripping is decided by rule precedence: `xsl:strip-space`
+//! and `xsl:preserve-space` are both stored as name patterns, and a
+//! whitespace-only text node is preserved only when a preserve-space rule
+//! applies and no higher-precedence strip-space rule applies. Import
+//! depth and specificity (element-name vs. `*`) participate in the
+//! comparison, exactly as upstream xslt.c computes it.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45), and whitespace
+//! handling is part of the frozen transform output. The interplay between
+//! `xml:space="preserve"` and strip/preserve rules is a long-standing
+//! upstream behavior that must not be simplified away.
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC corpus (byte-identical vs the oracle) includes
+//! whitespace-sensitive transforms; the module unit tests (cargo test
+//! --lib xslt::whitespace) cover strip/preserve precedence and the
+//! `xml:space` interaction.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to strip every whitespace-only text node
+//! that has no preserve-space rule. Upstream applies the rules in
+//! precedence order with the `xml:space` attribute overriding them, and
+//! strips BEFORE any stylesheet processing — changing the order or the
+//! precedence breaks transform output on whitespace-sensitive documents;
+//! the CLI corpus regresses.
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;

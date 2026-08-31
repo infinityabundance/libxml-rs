@@ -1,0 +1,14 @@
+{
+ "module": "xml/sax/dispatch",
+ "upstream": [
+  "SAX2.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "sax2"
+ ],
+ "residuals": [
+  "R-000161"
+ ],
+ "court_families": []
+}

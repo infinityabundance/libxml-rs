@@ -1,0 +1,23 @@
+{
+ "module": "abi/exports_hash",
+ "upstream": [
+  "hash.c",
+  "dict.c"
+ ],
+ "export_samples": [
+  "xmlHashAdd",
+  "xmlHashAdd2",
+  "xmlHashAdd3",
+  "xmlHashCopySafe",
+  "xmlHashDefaultDeallocator",
+  "xmlHashQLookup"
+ ],
+ "subsystems": [
+  "dictionaries",
+  "hashes"
+ ],
+ "residuals": [],
+ "court_families": [
+  "HIST-SURFACE-EPOCH"
+ ]
+}

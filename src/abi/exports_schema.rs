@@ -21,11 +21,66 @@
 //!   (defined in `src/xml/schemas/mod.rs`) box the schema/validation structs
 //!   directly and cannot be extended without breaking that module's layout.
 //! - `xmlSchemaNewDocParserCtxt` boxes a parsed `XsdSchema`, matching the
-//!   internal engine's convention that `xmlSchemaParse` returns its context
+//!   internal engine convention that `xmlSchemaParse` returns its context
 //!   as the schema pointer (`schema == pctxt`).
 //! - Functions requiring streaming/SAX interception the internal DOM engine
 //!   cannot provide (`xmlSchemaSAXPlug`, `xmlSchemaValidateStream` without a
 //!   readable input buffer) are simplified and documented inline.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xmlschemas.c`, `xmlschemastypes.c` and
+//! `schematron.c` (libxml2 2.15.3) with the `xmlschemas.h`/
+//! `xmlschemastypes.h`/`schematron.h` signatures; R-000165 closed the xsd
+//! export gaps and R-000168 (11.1-U) recorded the platform-conditional
+//! surface (c_ulong-vs-u64 width bugs in `xmlSchemaValidateFacetWhtsp` were
+//! fixed by that residual).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the XML Schema ABI: schema parse/validate contexts,
+//! datatype value/facet machinery (`xmlSchemaVal`, `xmlSchemaFacet`, built-in
+//! `xmlSchemaType` descriptors), the white-space normalization helpers and the
+//! SAX-plug streaming entry points. Real schema behavior wraps the internal
+//! `src/xml/schemas` engine (which powers `xmllint --schema`); the datatype
+//! descriptors are provided here as small `repr(C)` structs.
+//!
+//! # Ownership & safety invariants
+//!
+//! Schema/validation contexts are caller-owned (freed with `xmlSchemaFree`/
+//! `xmlSchemaFreeParserCtxt`/`xmlSchemaFreeValidCtxt`); datatype values and
+//! facet objects are xml-allocator objects freed with `xmlSchemaFreeValue`/
+//! `xmlSchemaFreeFacet`; the side registries for context state live as long
+//! as the owning context. R-000168 fixed word-size-dependent typing so the
+//! mirror is correct on 32-bit/arm64.
+//!
+//! # Historical quirks & epochs
+//!
+//! XML Schema support was added in the 2.6 `validation_era` (HISTORY.md) and
+//! the schema ABI has been stable since; R-000165 (11.1-O) added the missing
+//! schema symbols (e.g. `xmlSchemaSetResourceLoader`) and R-000168 (11.1-U)
+//! audited the platform-conditioned families.
+//!
+//! # Deliberate oddities
+//!
+//! The streaming/SAX entry points that the internal DOM engine cannot provide
+//! (`xmlSchemaSAXPlug`, `xmlSchemaValidateStream`) are simplified with the
+//! divergence documented inline per function — deliberate, not silent.
+//!
+//! # Proving courts
+//!
+//! The CLI-XMLLINT XSD cases, the data-ABI schema probes and the
+//! DSO-LOADER/HEADER-COMPILE courts cover this module; the schemas unit tests
+//! run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to type the datatype machinery with platform
+//! `c_ulong` everywhere — R-000168 proved that produces word-size-dependent
+//! bugs (the facet-whitespace probe caught the width error); the mirror must
+//! stay fixed-width. Another shortcut, dropping the built-in type descriptors,
+//! would break `xmlSchemaGetBuiltInType` consumers that enumerate the
+//! predefined datatypes.
 
 #![allow(
     missing_docs,

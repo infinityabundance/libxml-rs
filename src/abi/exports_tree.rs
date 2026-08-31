@@ -26,6 +26,61 @@
 //! `unlink_node`, `free_node`, `free_node_list`, `new_ns`, `get_doc_entity`,
 //! ...) are reused wherever they match upstream semantics; functions whose
 //! upstream behavior is not covered by those helpers are ported locally.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `tree.c`, `buf.c`, `entities.c`, `valid.c` and
+//! `parserInternals.c` (libxml2 2.15.3) with the `tree.h`/`entities.h`/
+//! `valid.h` signatures. Residuals R-000164 (parser/tree structural parity)
+//! and R-000165 (tree-family export gaps) both land here.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the tree-construction/editing ABI: child/sibling
+//! linking, node/property/namespace creation, content get/set/add,
+//! xml:lang/xml:space/xml:base handling, namespace reconciliation, free
+//! functions, the `xmlDOMWrap*` family and the entities/valid tables. Internal
+//! helpers from `src/xml/tree/mod.rs` are reused wherever their semantics
+//! match upstream; the rest are ported locally.
+//!
+//! # Ownership & safety invariants
+//!
+//! Tree ownership per OWNERSHIP_ATLAS section 2: `xmlAddChild`/
+//! `xmlAddNextSibling` transfer subtree ownership to the new parent;
+//! `xmlUnlinkNode` detaches; `xmlFreeNodeList` frees a whole list; `xmlFreeNs`
+//! frees only standalone `xmlNewNs` results (ns attached to nodes are freed
+//! with the node); `xmlSetTreeDoc` re-parents docs across a subtree; borrowed
+//! pointers (parent/doc/ns) are never freed by the reader.
+//!
+//! # Historical quirks & epochs
+//!
+//! LORE-0006/QUIRK-0002: namespace nodes have no parent pointer — a
+//! long-standing upstream divergence (commit `044fc6b7`, 2002-03-04, fixing
+//! #61290) that downstream XPath namespace-axis code depends on. R-000164
+//! (11.1-N, TREE-001 byte-identical) aligned the parse-time DOM with upstream
+//! including the namespace/decl handling and free paths.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlSetCompressMode`/`xmlGetCompressMode` keep upstreams gzip-compression
+//! global; the namespace-node parent gap (QUIRK-0002) is deliberately
+//! preserved rather than fixed because it is observable surface; `xmlNewNodeEatName`
+//! consumes its name argument per upstreams ownership transfer.
+//!
+//! # Proving courts
+//!
+//! The OWNERSHIP and TREE-STRUCTURE court families (TREE-001 probe
+//! byte-identical, 0 mismatch lines) plus DSO-LOADER and HEADER-COMPILE cover
+//! this module; the tree unit suite runs under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to give namespace nodes a parent pointer (it
+//! would make Rust code simpler) — QUIRK-0002 records that upstream
+//! deliberately has none and XPath namespace-axis semantics depend on it, so
+//! the XPATH-NS courts would fail. Another shortcut, freeing ns objects from
+//! `xmlFreeNode` unconditionally, would double-free standalone `xmlNewNs`
+//! results; the ownership split must stay.
 
 #![allow(
     missing_docs,
@@ -1744,6 +1799,9 @@ unsafe fn ns_map_pop_depth(ns_map: *mut NsMap, depth: c_int) {
 /// - `cur` must be a valid pointer to an _xmlNs, or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreeNs(cur: *mut _xmlNs) {
+    // QUIRK-0002/LORE-0006: namespace nodes have no parent (commit `044fc6b7`);
+    // this frees only standalone xmlNewNs results — ns attached to nodes are
+    // freed with the node, never via this path.
     unsafe { free_ns_impl(cur) };
 }
 

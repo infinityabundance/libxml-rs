@@ -1,0 +1,26 @@
+{
+ "module": "xml/tree/mod",
+ "upstream": [
+  "tree.c",
+  "buf.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "tree",
+  "namespaces",
+  "dtd",
+  "serialization",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000110",
+  "R-000128",
+  "R-000139",
+  "R-000162",
+  "R-000164"
+ ],
+ "court_families": [
+  "OWNERSHIP",
+  "TREE-STRUCTURE"
+ ]
+}

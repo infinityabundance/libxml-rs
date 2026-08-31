@@ -11,13 +11,60 @@
 //! its layout. Behavior mirrors xmlsave.c: options XML_SAVE_FORMAT,
 //! XML_SAVE_NO_DECL, XML_SAVE_NO_EMPTY and the deprecated escape callbacks.
 //! Formatting/decl handling is provided by the tree serializer
-//! (`serialize_node_opts`), which mirrors upstream's `xmlSaveDoc`/
+//! (`serialize_node_opts`), which mirrors upstream `xmlSaveDoc`/
 //! `xmlSaveTree`/DumpState mechanics.
 //!
 //! # Courts
 //!
 //! SAVE-* differential cases compare `xmlSave*` output byte-for-byte with
 //! the oracle DSO across option combinations.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xmlsave.c` (+ xmlIO.c output buffers) at libxml2
+//! 2.15.3 (`SRC-LIBXML2-2.15.0-XMLSAVE-C`): `xmlSaveToFd` / `xmlSaveToIO` /
+//! `xmlSaveToFilename` / `xmlSaveToBuffer`, `xmlSaveDoc`, `xmlSaveTree`,
+//! `xmlSaveFlush` / `xmlSaveFinish` / `xmlSaveClose`, and the deprecated
+//! `xmlSaveSetEscape` / `xmlSaveSetAttrEscape` hooks.
+//!
+//! # Conceptual behavior
+//!
+//! A save context wraps an output buffer plus the `XML_SAVE_*` option mask;
+//! `xmlSaveDoc`/`xmlSaveTree` delegate to the tree serializer
+//! (`serialize_node_opts`), which mirrors upstream DumpState mechanics
+//! (format/indent, XML declaration suppression, empty-element policy).
+//!
+//! # Ownership & safety invariants
+//!
+//! `xmlSaveTo*` adopts the output buffer; `xmlSaveClose` flushes and frees
+//! it. The escape/attrEscape callback slots are stored verbatim and never
+//! dereferenced by the context (deprecated upstream).
+//!
+//! # Historical quirks & epochs
+//!
+//! The escape/attrEscape hooks are deprecated since the 2.x era and kept
+//! only for source compatibility; the serializer behavior targets the
+//! 2.15.3 epoch (e.g. the html-dump single-line epoch E-007 applies to the
+//! HTML serializer, and XSLT output relies on these options).
+//!
+//! # Deliberate oddities
+//!
+//! `xmlSaveCtxt` is opaque in the public header, so the candidate-internal
+//! layout is unconstrained — the deliberate fidelity surface is the
+//! behavior, not the struct bytes.
+//!
+//! # Proving courts
+//!
+//! SAVE-* differential probes (courts/suites/data-abi/*) compare output
+//! byte-identical against the oracle DSO; the CLI differential courts
+//! (xmllint save paths) and cargo test round-trips cover the options.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not drop the deprecated escape callback slots: consumers still set
+//! them and observe them firing during serialization. Do not bypass the
+//! output-buffer layer (xmlIO.c): flush counts and encoder interaction
+//! (R-000151) are observable through `xmlSaveFlush`/`xmlSaveClose`.
 
 use crate::abi::callbacks::{
     xmlCharEncodingOutputFunc, xmlOutputCloseCallback, xmlOutputWriteCallback,

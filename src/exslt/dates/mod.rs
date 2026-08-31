@@ -16,6 +16,41 @@
 //!
 //! We implement the ISO 8601 handling natively (civil-date algorithms) —
 //! no external date library is used.
+//!
+//! # Ownership & safety invariants
+//!
+//! Every `date:` function takes ISO 8601 strings and returns freshly
+//! allocated string values owned by the returned XPathValue (caller frees
+//! with xmlXPathFreeObject via the engine). No date objects cross the ABI;
+//! all state is per-call, so there are no global date tables to
+//! initialize/tear down (contrast with upstream's date.c which keeps no
+//! persistent state either).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt transform epoch is byte-identical from 1.1.26 through
+//! 1.1.45, and the date module output is part of that frozen surface.
+//! `date:format-date`/`date:parse-date` follow the EXSLT picture-string
+//! grammar; the fallback behaviors (e.g. default picture `[Y0001]-[M01]-[D01]`)
+//! must match upstream date.c exactly, not the XSLT 2.0 grammar which is a
+//! separate, incompatible spec.
+//!
+//! # Proving courts
+//!
+//! The xsltproc CLI court family (byte-identical vs the oracle) exercises
+//! the registered date: functions through stylesheets; the module unit
+//! tests (cargo test --lib exslt::dates) cover ISO 8601 parsing, leap
+//! years, week numbers and the picture-string formatter.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to delegate date formatting to a modern
+//! date library (chrono-style). Upstream's formatting is hand-rolled and
+//! has quirks — e.g. how it renders unknown/missing fields, zero-padding
+//! rules and the fallback picture — that a general library will not
+//! reproduce. The differential CLI court would catch the divergence, so
+//! keep the native civil-date algorithms even when a crate looks
+//! convenient.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

@@ -1,0 +1,27 @@
+{
+ "module": "xslt/serialization/mod",
+ "upstream": [
+  "xsltutils.c"
+ ],
+ "export_samples": [
+  "xsltSaveResultToString",
+  "xsltSaveResultToFile",
+  "xsltSaveResultToFilename",
+  "xsltSaveResultToFd"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-decimal-formats",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [],
+ "court_families": []
+}

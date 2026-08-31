@@ -1,0 +1,32 @@
+{
+ "module": "abi/exports_shell",
+ "upstream": [
+  "xmllint.c",
+  "debugXML.c"
+ ],
+ "export_samples": [
+  "xmlShellPrintXPathError",
+  "xmlShellPrintNode",
+  "xmlShellPrintXPathResult",
+  "xmlShellList",
+  "xmlShellBase",
+  "xmlShellDir"
+ ],
+ "subsystems": [
+  "debug-xml"
+ ],
+ "residuals": [
+  "R-000168"
+ ],
+ "court_families": [
+  "C14N",
+  "CLI-XMLLINT",
+  "DTD",
+  "HTML",
+  "PARSER",
+  "RELAXNG",
+  "SCHEMATRON",
+  "XINCLUDE",
+  "XSD"
+ ]
+}

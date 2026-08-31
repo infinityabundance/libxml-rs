@@ -19,6 +19,58 @@
 //! upstream behaviour (the engine is oracle-tested through the xsltproc
 //! CLI), the exports below are wired to it; the rest are faithful ports of
 //! the upstream C sources in `archaeology/libxslt-git/libxslt/`.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 (`transform.c`, `templates.c`,
+//! `imports.c`, `documents.c`, `extensions.c`, `xsltutils.c`, `numbers.c`,
+//! `extra.c`) with the upstream headers; R-000166 (11.1-P) exercised the
+//! number-formatting and value-of paths here.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the element-instruction execution ABI: the `xslt*`
+//! runtime handlers for xsl:attribute/element/text/comment/pi/copy/copy-of/
+//! value-of/number/choose/if/for-each/sort/message, the multi-document
+//! extension element, the numbering machinery (`xsltNumberFormat`,
+//! `xsltFormatNumberConversion`, decimal-format lookup) and the sorting
+//! machinery (`xslt*SortFunction`, `xsltComputeSortResult`).
+//!
+//! # Ownership & safety invariants
+//!
+//! Execution handlers write into the caller-owned result tree; sorting result
+//! lists are caller-owned (freed with the matching free);
+//! `xsltFormatNumberConversion` returns an xml-allocator string freed with
+//! `xmlFree`; decimal-format objects are borrowed from the stylesheet (never
+//! freed by the caller).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the transform output this family produces has been byte-identical
+//! from libxslt 1.1.26 (2009) to 1.1.45 — the candidate must match that
+//! frozen epoch. R-000166 fixed `format-number` (canonical numbers.c port,
+//! CLI-XSLTPROC-0014/0015/0017) and `value-of` full double precision
+//! (xmlXPathFormatNumber port) which diverged before 11.1-P.
+//!
+//! # Deliberate oddities
+//!
+//! The number-formatting port reproduces upstreams exact quirks (1e9/1e-5
+//! scientific threshold, DBL_DIG=15 fraction digits, e+NN/e-NN exponent form,
+//! trailing-zero trim); `xsltDebug` (extra.c) is the upstream debug helper.
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC-0014/0015/0017 regression courts (R-000166), the XSLT
+//! court family and DSO-LOADER/HEADER-COMPILE cover this module; the 967/967
+//! number() corpus and the exec unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to format numbers with the hosts printf `%g`
+//! — R-000166 proved that prints full double precision (1234567.891000000061467)
+//! where the oracle prints 1234567.891; the xmlXPathFormatNumber port must
+//! stay. Another shortcut, skipping the decimal-format lookup table, would
+//! break format-number with named formats.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

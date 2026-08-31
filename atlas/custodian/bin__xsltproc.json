@@ -1,0 +1,16 @@
+{
+ "module": "bin/xsltproc",
+ "upstream": [
+  "xsltproc.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000125"
+ ],
+ "court_families": [
+  "CLI-XSLTPROC",
+  "EXSLT",
+  "XSLT"
+ ]
+}

@@ -6,6 +6,58 @@
 //! This module implements libxml2's URI parsing subsystem in native Rust,
 //! covering URI parsing, normalization, resolution, and C ABI-compatible
 //! wrapper functions.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `uri.c` (`SRC-LIBXML2-2.15.0-URI-C`, parity target
+//! libxml2 2.15.3 oracle); the parse/resolve/build surface follows
+//! RFC3986/RFC3987 but keeps libxml2 permissive parsing of malformed URIs.
+//! `xmlParseURI` returns a `_xmlURI` C-layout object (R-000132 fixed a
+//! non-C-layout UriParts object being handed to C callers as xmlURIPtr;
+//! R-000133 closed the declared-but-unexported header functions).
+//!
+//! # Conceptual behavior
+//!
+//! The parser tokenizes scheme, authority (userinfo@host:port), path,
+//! query and fragment with libxml2 character classification (unreserved /
+//! reserved / gen-delim / sub-delim), then percent-decodes per component.
+//! Normalization and resolution (`xmlBuildURI`, `xmlNormalizeURIPath`)
+//! implement the RFC3986 reference-resolution algorithm with the upstream
+//! quirks retained.
+//!
+//! # Ownership & safety invariants
+//!
+//! `xmlParseURI` returns an object the caller frees with `xmlFreeURI`
+//! (caller frees); the struct owns its component strings. Internal parse
+//! state is stack-local — no global tables, so no locking is required.
+//!
+//! # Historical quirks & epochs
+//!
+//! The permissive malformed-URI behavior is a long-standing upstream quirk;
+//! the canonicalization matrix case `c14n` is byte-identical across the
+//! whole 2.7.8 → 2.15.3 span (SEMANTIC_EPOCHS.md stable cases), and
+//! `xmlC14NExecute` enforces the absolute-URI rule this module parses
+//! (R-000166).
+//!
+//! # Deliberate oddities
+//!
+//! Malformed URIs are accepted where a strict RFC3986 parser would reject
+//! them (upstream quirk, e.g. missing scheme, stray percent signs) — this
+//! module is deliberately NOT a general URI library.
+//!
+//! # Proving courts
+//!
+//! Exercised by the C14N court family (relative-URI rejection byte-identical
+//! in both inclusive and exclusive modes, R-000166), the CLI differential
+//! courts and cargo test URI round-trip suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not replace the hand-written parser with a strict RFC3986 crate:
+//! consumers feed it already-escaped or partially-escaped URLs that
+//! libxml2 tolerates, and rejection would change observable behavior. Do
+//! not return a Rust struct as xmlURIPtr: R-000132 proved the C-layout
+//! contract the header promises.
 
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]

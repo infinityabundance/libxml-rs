@@ -1,0 +1,19 @@
+{
+ "module": "abi/exports_uri",
+ "upstream": [
+  "uri.c"
+ ],
+ "export_samples": [
+  "xmlBuildURISafe",
+  "xmlBuildURI",
+  "xmlBuildRelativeURISafe",
+  "xmlBuildRelativeURI",
+  "xmlCanonicPath",
+  "xmlPathToURI"
+ ],
+ "subsystems": [
+  "uri"
+ ],
+ "residuals": [],
+ "court_families": []
+}

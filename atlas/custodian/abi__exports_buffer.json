@@ -1,0 +1,29 @@
+{
+ "module": "abi/exports_buffer",
+ "upstream": [
+  "buf.c",
+  "tree.c"
+ ],
+ "export_samples": [
+  "xmlBufEnd",
+  "xmlBufGetNodeContent",
+  "xmlBufNodeDump",
+  "xmlBufShrink",
+  "xmlBufUse",
+  "xmlBufferCCat"
+ ],
+ "subsystems": [
+  "tree",
+  "namespaces",
+  "dtd",
+  "serialization",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": [
+  "OWNERSHIP",
+  "TREE-STRUCTURE"
+ ]
+}

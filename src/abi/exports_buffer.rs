@@ -8,6 +8,60 @@
 //! exports therefore operate on the `_xmlBuf` fields directly, allocating
 //! through the candidate allocator (`xmlMalloc`/`xmlFree`), exactly as
 //! upstream manipulates `buf->content`/`buf->use`/`buf->size`.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `buf.c` and `tree.c` (libxml2 2.15.3): the
+//! `xmlBuf*`/`xmlBuffer*`/`xmlCharStr*` entry points with the exact upstream
+//! signatures from `buf.h` and `tree.h`. R-000165 (11.1-O) closed the
+//! buffer-family gaps in the subsystem census.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the buffer ABI: content accessors, appends, shrinks,
+//! dumps, node-content extraction and the deprecated `xmlBuffer*` wrappers.
+//! In 2.15 `xmlBuf` and `xmlBuffer` are the same C struct upstream, but the
+//! candidate mirrors them as two distinct structs (`_xmlBuffer` vs `_xmlBuf`)
+//! and operates on the matching field set — see the header notes above.
+//!
+//! # Ownership & safety invariants
+//!
+//! Buffers are caller-owned: `xmlBufferCreate`/`xmlBufCreate` results are
+//! freed with `xmlBufferFree`/`xmlBufFree`; `xmlBufferDetach` transfers the
+//! content pointer to the caller (caller frees with `xmlFree`); returned
+//! content pointers are borrowed and valid until the next mutation
+//! (OWNERSHIP_ATLAS section 1). All internal allocation goes through
+//! `xmlMalloc`/`xmlFree` so the xml allocator domain holds.
+//!
+//! # Historical quirks & epochs
+//!
+//! `xmlBuffer` is the deprecated 1.x-era struct; `xmlBuf` superseded it in the
+//! 2.9 era (upstream keeps both in the ABI — HISTORY.md records the 2.0 ABI
+//! break and the modern 2.10+ epoch). R-000165: the buffer family was part of
+//! the 65-symbol export gap closed in 11.1-X.
+//!
+//! # Deliberate oddities
+//!
+//! The two-struct mirror (where upstream aliases one typedef) is a deliberate
+//! candidate-internal split: the field layouts differ (`_xmlBuf` carries
+//! error/buffer/io), and keeping them distinct keeps the Rust accessors honest
+//! about which fields exist.
+//!
+//! # Proving courts
+//!
+//! The OWNERSHIP and TREE-STRUCTURE court families exercise the buffer
+//! surface; the WRITER-001 probe (writer-family-probe.c) drives buffers
+//! through the writer and requires byte-identical output; DSO-LOADER resolves
+//! every export.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to unify `_xmlBuffer` and `_xmlBuf` into one
+//! struct because upstream typedefs them together — but the candidate field
+//! sets genuinely differ, and conflating them would make the `xmlBuf*`
+//! accessors read the wrong offsets (the R-000129 layout-defect class).
+//! Another shortcut — returning raw byte counts from append calls — is the
+//! WRITER-001 lesson (R-000151): write returns are encoder-dependent.
 
 #![allow(
     missing_docs,

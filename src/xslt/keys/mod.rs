@@ -18,6 +18,72 @@
 //! Table building: for each node matching the match pattern, the use
 //! expression is evaluated. Each resulting string value maps to the node.
 //! A node can appear under multiple values.
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `keys.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-KEYS-C` under oracle/historical/src). Subsystem
+//! census: xslt-keys. The observable surface is `xsltAddKeyDef`,
+//! `xsltInitCtxtKey`/`xsltInitAllDocKeys`, the `key()` XPath function
+//! registered into transform contexts, and `xsltFreeKeys`/
+//! `xsltFreeDocumentKeys` teardown.
+//!
+//! # Conceptual behavior
+//!
+//! `xslt:key` definitions (name, match pattern, use expression) are
+//! collected at compile time. At transform start, for each document, every
+//! node matching the match pattern has its use expression evaluated; each
+//! resulting string value indexes the node in the key table (a node may
+//! appear under many values). `key(name, value)` then returns the indexed
+//! node-set for the current document, and the same table serves key()
+//! inside match patterns.
+//!
+//! # Ownership & safety invariants
+//!
+//! - Key definitions are owned by the stylesheet (`style->keys` chain,
+//!   freed by `xsltFreeKeys`); their `inst`/`match`/`use` pointers borrow
+//!   the stylesheet document (never freed here, R-000103 lesson).
+//! - Key tables are owned by the per-document wrapper (`idoc->keys`,
+//!   `xsltFreeDocumentKeys`; atlas/OWNERSHIP_ATLAS.md section 4) and live
+//!   behind the `_xsltKeyTable.keys` slot as the candidate array
+//!   `_xsltKeyTableData` (opaque to the C ABI; R-000140 layout).
+//! - `build_key_table` save/restores the XPath context node/doc/
+//!   proximity-position/context-size around each use evaluation so the
+//!   evaluator sees the matched node as the context node.
+//!
+//! # Historical quirks & epochs
+//!
+//! Keys have been part of libxslt since the 1.1 series (2004+;
+//! atlas/HISTORY.md) and fall inside the E-008 frozen epoch (2009 →
+//! 1.1.45; atlas/SEMANTIC_EPOCHS.md). R-000116 closed the Phase 9 stub:
+//! key() was a no-op that returned an empty node-set; the table build and
+//! lookup now match the oracle (CLI-XSLTPROC corpus). R-000140 covered
+//! the `_xslt*` ABI mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! - `_xsltKeyTableData` repurposes the upstream `xmlHashTablePtr` slot as
+//!   an opaque pointer to a candidate array — a documented layout reuse
+//!   that keeps `_xsltKeyTable` ABI-identical.
+//! - Key definitions are prepended to the stylesheet list while upstream
+//!   appends; matching semantics are preserved (order is not observable
+//!   for key lookup).
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (key() corpus from R-000116), XSLT-001, and the in-crate
+//! `cargo test` suites (key table build/lookup tests).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Indexing only the first use-value per node breaks multi-valued keys
+//!   (a node reachable by several values).
+//! - Evaluating use expressions without setting the context node breaks
+//!   relative `use` expressions like `@id` (the save/restore in
+//!   `build_key_table` is mandatory — same context-discipline lesson as
+//!   R-000159).
+//! - Freeing match/use strings with the definition would double-free
+//!   stylesheet-document-owned strings (R-000103 lesson).
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{

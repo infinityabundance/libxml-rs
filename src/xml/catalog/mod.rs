@@ -8,7 +8,7 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! Matches libxml2's catalog behavior:
+//! Matches the libxml2 catalog behavior:
 //! - XML Catalog format (OASIS TR 9401:1999)
 //! - SGML catalog format (SOLEX)
 //! - Environment variables: XML_CATALOG_FILES, SGML_CATALOG_FILES
@@ -16,6 +16,62 @@
 //! - Catalog entry types: public, system, rewriteSystem, rewriteURI,
 //!   delegatePublic, delegateSystem, delegateURI, nextCatalog, group
 //! - Resolution order: public → system → URI
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `catalog.c` (`SRC-LIBXML2-2.15.0-CATALOG-C`, parity
+//! target libxml2 2.15.3 oracle). Export samples: `xmlNewCatalog`,
+//! `xmlFreeCatalog`, `xmlLoadACatalog`, `xmlLoadSGMLSuperCatalog`,
+//! `xmlConvertSGMLCatalog`, `xmlACatalogAdd`. `xmlLoadCatalog` returns
+//! int 0/1 (success/error) per upstream catalog.c (SECURITY_HISTORY §5.1).
+//!
+//! # Conceptual behavior
+//!
+//! Implements the OASIS XML Catalog model (OASIS-CATALOG-1.0) plus the
+//! SGML/SOLEX format: files are detected as XML or SGML by content
+//! (`detect_catalog_format`), parsed into a common `CatalogEntry` model,
+//! and resolved in upstream order public → system → URI, honoring
+//! rewriteSystem/rewriteURI, delegate*, nextCatalog chains and the
+//! `XML_CATALOG_FILES` / `SGML_CATALOG_FILES` environment variables.
+//!
+//! # Ownership & safety invariants
+//!
+//! `xmlLoadCatalog` / `xmlNewCatalog` return a catalog the caller frees
+//! with `xmlFreeCatalog`; `xmlCatalogAdd` copies values into the catalog
+//! (the caller keeps its own strings); `xmlCatalogGetEntries` returns
+//! borrowed internal structures the caller must not free (OWNERSHIP_ATLAS
+//! §5). The global default catalog is guarded by a RwLock.
+//!
+//! # Historical quirks & epochs
+//!
+//! The SGML (SOLEX) path is a compatibility surface inherited from the
+//! 1990s SGML catalog world (OASIS TR 9401:1999 lineage) and predates the
+//! XML Catalog 1.0 spec; upstream has kept it since the 2.0 era. The
+//! `xmlLoadCatalog` int-return contract was corrected during the 11.1-V
+//! security audit to match catalog.c.
+//!
+//! # Deliberate oddities
+//!
+//! SGML directives that do not participate in resolution (SGMLDECL,
+//! DOCTYPE, ENTITY, OVERRIDE) are intentionally ignored rather than
+//! rejected; the XML/SGML split is by content sniffing, not by file
+//! extension, matching upstream `xmlLoadACatalog` detection.
+//!
+//! # Proving courts
+//!
+//! CLI-XMLCATALOG court family exercises catalog resolution end-to-end;
+//! the xmlcatalog CLI differential probes (CLI-XMLCATALOG-*) compare
+//! output byte-identical against the oracle (R-000122/R-000123 locked the
+//! option parsing and shell-command semantics).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not parse SGML catalogs with the XML parser (or vice versa): the two
+//! formats have different directives and quote rules, and the content
+//! sniff must stay. Do not flatten nextCatalog/delegate chains into a
+//! single entry list — precedence and re-resolution semantics would
+//! change. Do not return borrowed internals to the caller as owned: that
+//! would double-free.
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
@@ -617,6 +673,11 @@ fn read_file_bytes(path: &str) -> Option<Vec<u8>> {
 }
 
 /// Determine whether a catalog file is XML or SGML format.
+///
+/// UPSTREAM-PARITY: upstream `xmlLoadACatalog` sniffs the first non-blank
+/// character (catalog.c): `'<'` means XML Catalog, anything else is treated
+/// as an SGML/SOLEX supercatalog. The split matters because the two formats
+/// share no directive grammar.
 fn detect_catalog_format(data: &[u8]) -> CatalogFormat {
     let trimmed = trim_whitespace(data);
     if trimmed.starts_with(b"<?xml") || trimmed.starts_with(b"<catalog") {

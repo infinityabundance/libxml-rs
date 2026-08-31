@@ -19,6 +19,57 @@
 //! upstream behaviour (the engine is oracle-tested through the xsltproc
 //! CLI), the exports below are wired to it; the rest are faithful ports of
 //! the upstream C sources in `archaeology/libxslt-git/libxslt/`.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `transform.c` (libxslt 1.1.45,
+//! SRC-LIBXSLT-1.1.45-TRANSFORM-C) with the `transform.h`/`templates.h`
+//! signatures; R-000166 (11.1-P) exercised this family in the XSLT
+//! number/apply probes.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the template-application ABI: `xsltApplyTemplates`
+//! and the process/apply entry points, attribute-set application, template
+//! lookup and cleanup, whitespace stripping and the compiled-pattern
+//! (`xsltCompMatch`) API. Engine-backed where the native-Rust engine already
+//! implements the behavior; faithful ports otherwise.
+//!
+//! # Ownership & safety invariants
+//!
+//! Compiled patterns (`xsltCompMatchPtr`) are caller-owned (freed with
+//! `xsltFreeCompMatchList`); template application never takes ownership of the
+//! source doc (caller keeps it, result doc is caller-owned per OWNERSHIP_ATLAS
+//! section 4); `xsltApplyAttributeSet` runs against the callers result tree
+//! in place.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: XSLT transform output has been byte-identical since 1.1.26 (2009) —
+//! this family targets that frozen epoch. R-000166 fixed `format-number`/
+//! `value-of` number formatting (CLI-XSLTPROC-0014/0015/0017) in the exec
+//! family that shares the apply machinery.
+//!
+//! # Deliberate oddities
+//!
+//! `xsltApplyImports`/`xsltNextImport` follow upstreams import-chain
+//! semantics including the style-sheet list order; the whitespace stripping
+//! helpers reproduce upstreams `xmlKeepBlanksDefaultValue` dependence.
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC court cases (basic/num/empty, E-008 stable) plus the XSLT
+//! court family and DSO-LOADER/HEADER-COMPILE cover this module; the
+//! apply/pattern unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to evaluate templates directly against the
+//! source document without the compiled-pattern cache — the `xsltCompMatch`
+//! API is public and the CLI-XSLTPROC matching courts depend on the match
+//! semantics; removing the API surface would break linking. Another shortcut,
+//! taking ownership of the source doc in `xsltApplyTemplates`, would break the
+//! caller-owned source contract.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

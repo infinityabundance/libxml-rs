@@ -1,0 +1,31 @@
+{
+ "module": "abi/exports_parserint",
+ "upstream": [
+  "parserInternals.c",
+  "parser.c"
+ ],
+ "export_samples": [
+  "xmlNamespaceParseNCName",
+  "xmlNamespaceParseQName",
+  "xmlNamespaceParseNSDef",
+  "xmlParseNamespace",
+  "xmlParseQuotedString",
+  "xmlParseName"
+ ],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "parser-internals",
+  "push-parser",
+  "sax1",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000165",
+  "R-000169"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

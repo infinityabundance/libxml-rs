@@ -5,6 +5,64 @@
 //!
 //! This module implements the libxml2 I/O subsystem in native Rust.
 //! No C dependencies beyond `libc` for file operations.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xmlIO.c` (`SRC-LIBXML2-2.15.0-XMLIO-C`, parity target
+//! libxml2 2.15.3 oracle): the xmlInput/xmlOutput callback registries,
+//! `xmlParserInputBuffer` / `xmlOutputBuffer` / `xmlBuffer` / `xmlBuf`
+//! families, the entity loader slot (`xmlSetExternalEntityLoader` /
+//! `xmlLoadExternalEntity`), and the file/fd/memory/IO input constructors.
+//!
+//! # Conceptual behavior
+//!
+//! Buffers grow per the `XML_BUFFER_ALLOC_*` scheme (DOUBLEIT=0, EXACT=1,
+//! IMMUTABLE=2 — the upstream xmlBufferAllocationScheme enum order).
+//! Input/output callback pairs are registered in a global table and matched
+//! by URL scheme; output buffers integrate the encoding layer, where
+//! `xmlOutputBufferWrite` takes the encoder path below the 256-byte
+//! conversion threshold (xmlIO.c).
+//!
+//! # Ownership & safety invariants
+//!
+//! An output buffer owns its write/close callbacks and its encoder;
+//! `xmlOutputBufferClose` drains and frees them. A buffer handed to a
+//! writer (`xmlNewTextWriterMemory`) is borrowed — the writer appends, the
+//! caller frees after the writer (OWNERSHIP_ATLAS §5). `xmlBufferDetach`
+//! transfers the content pointer to the caller (caller frees with xmlFree).
+//! Callback user-data pointers are stored verbatim and never dereferenced
+//! (OWNERSHIP_ATLAS §6).
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000151: the encoder-dependent byte-count contract (0 bytes below the
+//! 256-byte threshold once an encoder is installed) comes from xmlIO.c and
+//! is required by WRITER-001. R-000161: the default buffer alloc scheme is
+//! EXACT (xmlBufferAllocScheme default 1) per the 2.15.3 oracle defaults
+//! dump. R-000162: the NOENT external-entity path must consult
+//! `xmlLoadExternalEntity` so registered entity loaders actually fire.
+//!
+//! # Deliberate oddities
+//!
+//! The deprecated `xmlBuffer*` family is kept byte-faithful (alloc scheme
+//! constants in enum order) instead of being replaced by `xmlBuf*`;
+//! the registry stores callbacks as raw fn pointers plus a context that is
+//! passed back verbatim, mirroring xmlIO.c registration semantics.
+//!
+//! # Proving courts
+//!
+//! Exercised by WRITER-001, ENCODING-001 and CALLBACK-001
+//! (`courts/suites/data-abi/*-family-probe.c`), which require byte-identical
+//! output against the oracle DSO; the parallel lib test suite (cargo test)
+//! covers the alloc schemes and buffer lifecycle.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not make write paths always return raw byte counts: the encoder
+//! threshold (R-000151) and the writer return contract depend on the 0-byte
+//! behavior. Do not drop the entity-loader consultation (R-000162) and do
+//! not unify the three alloc schemes into one growth policy — both are
+//! observable through the C ABI.
 
 #![allow(
     clippy::cast_possible_truncation,

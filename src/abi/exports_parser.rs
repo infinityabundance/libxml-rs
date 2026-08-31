@@ -11,6 +11,65 @@
 //! the export wraps it; otherwise the function is ported from upstream
 //! `parser.c` / `parserInternals.c` / `xmlIO.c` / `error.c` / `encoding.c`
 //! (see `archaeology/libxml2-git`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `parser.c`, `parserInternals.c`, `xmlIO.c`,
+//! `error.c` and `encoding.c` (libxml2 2.15.3) with the `parser.h`/
+//! `parserInternals.h`/`xmlIO.h` signatures. Residuals R-000164 (parser/tree
+//! structural parity), R-000165 (parser-context accessors and input
+//! constructors) and R-000169 (input filename ownership) all land here.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the parser export surface: parser-context
+//! creation/lifecycle, the `xmlCtxtRead*`/`xmlRead*` families, parser input
+//! buffers and streams, encoding switches, the deprecated node-info sequence,
+//! global I/O callback registration, external-entity loaders, the `xmlFile*`
+//! I/O callbacks and the SAX/DTD parse front-ends. Internal engine entry
+//! points are wrapped; the rest are ported from the upstream sources.
+//!
+//! # Ownership & safety invariants
+//!
+//! Parser contexts are caller-owned (freed with `xmlFreeParserCtxt`); docs
+//! returned by `xmlRead*` are caller-owned (freed with `xmlFreeDoc`); inputs
+//! created by `xmlNewInputFrom*` are owned by the context once pushed.
+//! Filenames stored in `_xmlParserInput.filename` and `doc->URL` are owned
+//! copies — R-000169 fixed xml_strndup on non-NUL-terminated Rust Strings
+//! (heap-buffer-overflow) and borrowed filename pointers.
+//!
+//! # Historical quirks & epochs
+//!
+//! QUIRK-0001/LORE-0001: since 2.9.0 (commit `52d8ade7`, 2012-07-30) default
+//! parser limits apply unless `XML_PARSE_HUGE` is set. E-002: parse-error
+//! diagnostics changed across 2.9.10 (non-recursive parser refactor) and
+//! 2.12.x (error-handling rework); E-005: exit codes reworked in 2.13.0.
+//! R-000164 (11.1-N) aligned the parse-time DOM construction with upstream
+//! (TREE-001 byte-identical).
+//!
+//! # Deliberate oddities
+//!
+//! The deprecated `xmlParse*` no-ops and the `xmlFileMatch`/
+//! `xmlParserInputRead` trivial bodies are deliberate (R-000138 set:
+//! upstreams own bodies are empty/trivial). `xmlReadMemory` accepts size-0
+//! input (R-000163) and applies options/URL on both success and recovery
+//! paths (R-000164).
+//!
+//! # Proving courts
+//!
+//! The PARSER court family, the ERROR-001 probe (error-family-probe.c, 48/48
+//! byte-identical), the TREE-001 structural probe and the DSO-LOADER/
+//! HEADER-COMPILE courts cover this module; the parser unit suite runs under
+//! cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to store the input filename as a borrowed
+//! pointer into a Rust String — R-000169 proved that produces dangling
+//! `filename`/`doc->URL` pointers and heap-reuse garbage on the second parse;
+//! every construction path must own its filename copy. Another shortcut,
+//! skipping the `XML_PARSE_HUGE`/limits logic, would diverge from the 2.9.0+
+//! oracle on large documents (PARSER-LIMIT courts).
 
 #![allow(missing_docs)]
 #![allow(non_snake_case)]

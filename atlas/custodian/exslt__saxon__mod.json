@@ -1,0 +1,10 @@
+{
+ "module": "exslt/saxon/mod",
+ "upstream": [
+  "libexslt/saxon.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [],
+ "court_families": []
+}

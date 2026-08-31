@@ -9,6 +9,56 @@
 //!
 //! UPSTREAM-PARITY notes are recorded per function; behaviors verified by the
 //! XPATH-001 differential court.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xpath.c` / `xpathInternals.h`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! the exported `xmlXPath*` / `xmlXPtr*` surface — object constructors and
+//! wrappers (xmlXPathNewString, xmlXPathWrapNodeSet, ...), the value-stack
+//! push/pop functions and the compiled-expression entry points
+//! (xmlXPathCtxtCompile, xmlXPathCompiledEval).
+//!
+//! # Conceptual behavior
+//!
+//! Bridges the C ABI `_xmlXPathObject` / `_xmlNodeSet` representation to
+//! the internal `XPathValue` / `NodeSet` model and provides the
+//! parser-context value stack that exported core-function implementations
+//! operate on. Object storage is xmlMalloc'd C-layout; the bridge converts
+//! both directions on every crossing.
+//!
+//! # Ownership & safety invariants
+//!
+//! Objects returned to C are owned by the caller (freed with
+//! `xmlXPathFreeObject`); wrapped strings/node-sets transfer ownership of
+//! the backing storage, not the tree nodes. `dup_rust_string` must NOT use
+//! xml_strdup on a Rust String as_ptr (not NUL-terminated) — the R-000169
+//! heap-buffer-overflow fix is visible here and in pop_string.
+//!
+//! # Historical quirks & epochs
+//!
+//! This bridge was built during the 11.1-I XPath family closure
+//! (R-000126 header surface, R-000128 struct widths) and hardened in
+//! 11.1-X (R-000169 xml_strndup ownership fix); the target is the 2.15.3
+//! oracle epoch.
+//!
+//! # Deliberate oddities
+//!
+//! Wrapping functions take ownership of caller storage exactly like
+//! upstream (xmlXPathWrapString adopts the xmlChar*), including on the
+//! error path where upstream frees the input.
+//!
+//! # Proving courts
+//!
+//! XPATH-001 (courts/suites/data-abi/xpath-family-probe.c) exercises the
+//! object/wrapper surface byte-identical against the oracle DSO; cargo
+//! test covers the bridge unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not copy strings with xml_strdup on Rust String pointers: that is
+//! the R-000169 heap-buffer-overflow. Do not return internal Rust values
+//! directly as _xmlXPathObject: C consumers read the C-layout fields.
 
 #![allow(
     missing_docs,

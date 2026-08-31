@@ -1,0 +1,25 @@
+{
+ "module": "xml/parser/tokenizer",
+ "upstream": [
+  "parser.c",
+  "parserInternals.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "parser-internals",
+  "push-parser",
+  "sax1",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000163",
+  "R-000164",
+  "R-000166"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

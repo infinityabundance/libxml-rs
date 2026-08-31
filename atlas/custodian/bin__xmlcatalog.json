@@ -1,0 +1,15 @@
+{
+ "module": "bin/xmlcatalog",
+ "upstream": [
+  "xmlcatalog.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000122",
+  "R-000123"
+ ],
+ "court_families": [
+  "CLI-XMLCATALOG"
+ ]
+}

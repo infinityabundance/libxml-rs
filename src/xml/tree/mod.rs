@@ -6,7 +6,7 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! libxml2's tree is an observable data structure. The pointer topology
+//! The libxml2 tree is an observable data structure. The pointer topology
 //! (parent, children, last, next, prev, doc, ns, properties, nsDef) is
 //! part of the compatibility contract and must be court-tested.
 //!
@@ -32,6 +32,62 @@
 //!
 //! Complete — all tree operations are implemented.
 //! Future phases may add more edge-case handling for historical quirks.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream tree.c and buf.c (SRC-LIBXML2-2.15.0, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/`). The tree is an observable data
+//! structure: pointer topology (parent, children, last, next, prev, doc, ns,
+//! properties, nsDef) is part of the compatibility contract and must be
+//! court-tested. Parity target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Complete tree construction/manipulation: namespaces, attributes,
+//! dictionaries, entity structures, document ownership, copying, linking and
+//! freeing. Nodes are C-layout mirrors (tree.h); copy/link/free semantics
+//! follow xmlCopyNode / xmlAddChild / xmlFreeNodeList / xmlFreeDoc.
+//!
+//! # Ownership & safety invariants
+//!
+//! Documents own all their nodes; freeing the document frees the subtree.
+//! node->parent, node->doc, node->ns, node->next/prev are borrowed pointers —
+//! never freed by the reader. Allocator domain: xmlMalloc, freed with xmlFree
+//! (atlas/OWNERSHIP_ATLAS.md). SAFETY: the Rust mirrors enforce layout exactly
+//! (`#[repr(C)]`); `_xmlElement` is 104 bytes upstream and must stay that size
+//! (R-000139: a 56-byte mirror under-allocated every element declaration).
+//!
+//! # Historical quirks & epochs
+//!
+//! QUIRK-0002 / LORE-0006: namespace nodes have no parent — a long-standing
+//! divergence upstream was aware of since the c14n fix commit 044fc6b7
+//! (2002). E-004: entity-content text nodes became TEXT compact at 2.13.0
+//! (commit 8d04f0ee). The 11.1-N structural alignment (R-000164) pinned
+//! doc->children DTD placement, CDATA node names, standalone=-2 and the
+//! attribute hash (name,prefix,elem) key order.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities preserved for parity: an xmlns= declaration with an
+//! empty value yields href pointing at an empty string (not NULL), parsed
+//! attributes keep atype=0, the DTD node joins doc->children before the first
+//! element, and xmlGetLineNo returns long with the upstream -1 walk for
+//! non-element nodes (all R-000164).
+//!
+//! # Proving courts
+//!
+//! OWNERSHIP and TREE-STRUCTURE court families; TREE-001 (27-block structural
+//! fingerprint of 20 corpus docs x 8 option variants, byte-identical), ASan
+//! full-suite runs, and `cargo test --lib` (1135+ tests). Receipts under
+//! courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is a nicer Rust node type instead of the exact
+//! `_xmlNode` / `_xmlElement` mirrors — it would break the C ABI layout
+//! (R-000139 class) and every C consumer reading fields at upstream offsets.
+//! Do not auto-maintain parent pointers for namespace nodes (QUIRK-0002); do
+//! not drop the last/next/prev links — TREE-001 fingerprints them.
 
 use core::ffi::c_void;
 use core::ptr;

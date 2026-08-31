@@ -1,0 +1,2822 @@
+{
+ "schema": "custodian-commentary-court-1",
+ "court": "CUSTODIAN-COMMENTARY-0001",
+ "phase": "11.2",
+ "timestamp": "2026-08-31T17:21:01Z",
+ "title": "Forensic custodian commentary court (11.2)",
+ "dimensions": [
+  {
+   "key": "upstream_contract",
+   "label": "1. upstream subsystem/contract"
+  },
+  {
+   "key": "conceptual_behavior",
+   "label": "2. conceptual behavior"
+  },
+  {
+   "key": "ownership_safety",
+   "label": "3. ownership/safety invariants"
+  },
+  {
+   "key": "historical_epochs",
+   "label": "4. historical quirks/epochs/commits"
+  },
+  {
+   "key": "deliberate_oddities",
+   "label": "5. deliberate oddities"
+  },
+  {
+   "key": "proving_courts",
+   "label": "6. proving courts"
+  },
+  {
+   "key": "tempting_simplification",
+   "label": "7. what a tempting simplification would break"
+  }
+ ],
+ "modules_total": 127,
+ "modules_passed": 13,
+ "modules_not_applicable": 7,
+ "not_applicable": [
+  {
+   "module": "src/abi/exports_xslt_internals.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated/assembled export registry"
+  },
+  {
+   "module": "src/abi/ucs_blocks.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/abi/gen_ucs_blocks.py)"
+  },
+  {
+   "module": "src/abi/ucs_cat.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/abi/gen_ucs_blocks.py)"
+  },
+  {
+   "module": "src/compatibility/historical/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/HISTORY.md + SEMANTIC_EPOCHS.md"
+  },
+  {
+   "module": "src/compatibility/platform/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/PLATFORM_SURFACE_ATLAS.md"
+  },
+  {
+   "module": "src/compatibility/quirks/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/QUIRKS.md"
+  },
+  {
+   "module": "src/xml/unicode_tables.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/archaeology/gen_chvalid_tables.py)"
+  }
+ ],
+ "failures": [
+  {
+   "module": "src/abi/callbacks.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/constants.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_automata.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_buffer.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_hash.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_html.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_misc.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_nano.rs",
+   "missing_dimensions": [
+    "ownership_safety"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_parser.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_parserint.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_relaxng.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_schema.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_string.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_tree.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_treedump.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xinclude.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xlink.rs",
+   "missing_dimensions": [
+    "deliberate_oddities"
+   ],
+   "missing_cues": {
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xml2.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xptr.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_apply.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_avt.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_compile.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_exec.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_ext.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_functions.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_util.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_vars.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/ownership.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/types.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "deliberate_oddities"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/abi/versioning.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/bin/xmlcatalog.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/bin/xmllint.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/bin/xsltproc.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/compatibility/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/compatibility/profiles/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/common/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/dates/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/dynamic/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/functions/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/math/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/saxon/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/sets/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/exslt/strings/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/internal/globals.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "conceptual_behavior",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/internal/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/automata/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/catalog/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/debug/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/dictionary/mod.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/dtd/mod.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/encoding/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/entities/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/errors/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/hash/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/html/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/io/mod.rs",
+   "missing_dimensions": [
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/list/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/memory/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/namespaces/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/debug_test.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "deliberate_oddities"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/helpers.rs",
+   "missing_dimensions": [
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/input.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/state.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/tests.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/parser/tokenizer.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/relaxng/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/save.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/sax/default.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/sax/dispatch.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/sax/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/schemas/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/string.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/threads/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/tree/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/uri/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "deliberate_oddities",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/writer/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xinclude/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/ast.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/axes.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/context.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/eval.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/exports.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/functions.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/lexer.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser_context.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpath/types.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xml/xpointer/mod.rs",
+   "missing_dimensions": [
+    "upstream_contract",
+    "conceptual_behavior",
+    "historical_epochs",
+    "deliberate_oddities",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "upstream_contract": {
+     "label": "1. upstream subsystem/contract",
+     "pass": false,
+     "cues_hit": []
+    },
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/attributes/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/compiler/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/documents/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/errors/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/extensions/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/imports/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/keys/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/mod.rs",
+   "missing_dimensions": [
+    "ownership_safety",
+    "historical_epochs",
+    "deliberate_oddities"
+   ],
+   "missing_cues": {
+    "ownership_safety": {
+     "label": "3. ownership/safety invariants",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "deliberate_oddities": {
+     "label": "5. deliberate oddities",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/namespace_alias/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/numbering/mod.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/parameters/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/patterns/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/security/mod.rs",
+   "missing_dimensions": [
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/serialization/mod.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/sorting/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/stylesheet/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "proving_courts"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/templates/mod.rs",
+   "missing_dimensions": [
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/transform/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/variables/mod.rs",
+   "missing_dimensions": [
+    "historical_epochs",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  },
+  {
+   "module": "src/xslt/whitespace/mod.rs",
+   "missing_dimensions": [
+    "conceptual_behavior",
+    "historical_epochs",
+    "proving_courts",
+    "tempting_simplification"
+   ],
+   "missing_cues": {
+    "conceptual_behavior": {
+     "label": "2. conceptual behavior",
+     "pass": false,
+     "cues_hit": []
+    },
+    "historical_epochs": {
+     "label": "4. historical quirks/epochs/commits",
+     "pass": false,
+     "cues_hit": []
+    },
+    "proving_courts": {
+     "label": "6. proving courts",
+     "pass": false,
+     "cues_hit": []
+    },
+    "tempting_simplification": {
+     "label": "7. what a tempting simplification would break",
+     "pass": false,
+     "cues_hit": []
+    }
+   }
+  }
+ ],
+ "verdict": "FAIL"
+}

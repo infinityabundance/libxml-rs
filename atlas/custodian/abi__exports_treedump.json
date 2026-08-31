@@ -1,0 +1,21 @@
+{
+ "module": "abi/exports_treedump",
+ "upstream": [
+  "debugXML.c"
+ ],
+ "export_samples": [
+  "xmlCopyCharMultiByte",
+  "xmlCopyChar",
+  "xmlNodeListGetString",
+  "xmlNodeListGetRawString",
+  "xmlStringGetNodeList",
+  "xmlCopyNamespace"
+ ],
+ "subsystems": [
+  "debug-xml"
+ ],
+ "residuals": [
+  "R-000164"
+ ],
+ "court_families": []
+}

@@ -1,0 +1,17 @@
+{
+ "module": "internal/globals",
+ "upstream": [
+  "globals.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "globals"
+ ],
+ "residuals": [],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "THREADING"
+ ]
+}

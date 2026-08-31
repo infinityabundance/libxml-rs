@@ -1,0 +1,19 @@
+{
+ "module": "abi/exports_automata",
+ "upstream": [
+  "xmlautomata.c"
+ ],
+ "export_samples": [
+  "xmlAutomataIsDeterminist",
+  "xmlAutomataNewTransition2",
+  "xmlAutomataNewNegTrans",
+  "xmlAutomataNewCountTrans2",
+  "xmlAutomataNewOnceTrans2",
+  "xmlRegExecPushString2"
+ ],
+ "subsystems": [
+  "automata"
+ ],
+ "residuals": [],
+ "court_families": []
+}

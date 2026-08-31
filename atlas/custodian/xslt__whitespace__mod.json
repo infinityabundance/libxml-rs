@@ -1,0 +1,24 @@
+{
+ "module": "xslt/whitespace/mod",
+ "upstream": [
+  "xsltutils.c",
+  "preproc.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-compilation",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-decimal-formats",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [],
+ "court_families": []
+}

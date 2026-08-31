@@ -1,3 +1,40 @@
+//! Parser-internal debug/tokenizer tests (§85 Phase 3).
+//!
+//! # Upstream contract
+//!
+//! These unit tests exercise the tokenizer and input-stack plumbing that
+//! underpin the parser state machine (upstream parser.c/parserInternals.c).
+//! They exist to catch regressions in the internal pipeline; the
+//! byte-identical CLI corpus (CLI-XMLLINT-*) is the authoritative oracle
+//! parity evidence, while these tests pin the Rust-internal behavior.
+//!
+//! # Conceptual behavior
+//!
+//! The tests drive `XmlTokenizer` / `InputStack` / `InputBuffer` directly
+//! over small XML snippets (elements, attributes, namespaces, entities) and
+//! assert the resulting token streams and buffer states — the same inputs
+//! the state machine consumes when parsing real documents.
+//!
+//! # Historical quirks & epochs
+//!
+//! Parser diagnostic counts and caret positions are epoch-pinned
+//! observables (E-002/E-005 in SEMANTIC_EPOCHS.md); the tokenizer-level
+//! expectations here intentionally follow the current 2.15.3 epoch and
+//! must be updated together with the state machine when an epoch boundary
+//! is crossed.
+//!
+//! # Deliberate oddities
+//!
+//! The tests are compiled only under `#[cfg(test)]`; they are not part of
+//! the published crate surface and must never be reached from the ABI.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to drop these tests because the CLI corpus
+//! already covers the parser. The corpus runs whole documents end-to-end;
+//! these tests isolate single tokenizer/input behaviors (e.g. BOM
+//! handling, buffer refill) that a document-level mismatch would be slow
+//! to attribute. Keep them as the first-level bisection aid.
 #[cfg(test)]
 #[allow(clippy::module_inception)]
 mod debug_test {

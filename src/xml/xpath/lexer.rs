@@ -11,6 +11,57 @@
 //! # Courts
 //!
 //! XPATH-LEXER-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the tokenizer half of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! xmlXPathLexer token classes (names, numbers, strings, operators, axes,
+//! function names, variable references, punctuation) over the XPath 1.0
+//! grammar.
+//!
+//! # Conceptual behavior
+//!
+//! Implements a hand-written scanner: names (NCName/QName), `*` wildcard,
+//! `.`/`..` abbreviations, `@`, `::`, `/` and `//`, `|`, `+`/`-`, the six
+//! comparison operators, string literals, numbers, and the `$var`
+//! reference form — with the upstream maximal-munch behavior for
+//! ambiguous sequences.
+//!
+//! # Ownership & safety invariants
+//!
+//! Tokens own their payloads as Rust Strings — no pointers into the
+//! expression buffer escape the token stream, so a lexer result is fully
+//! owned and safe to store. This differs from upstream, where tokens are
+//! offsets into the caller expression string.
+//!
+//! # Historical quirks & epochs
+//!
+//! The token model tracks the upstream lexer as of the 2.15.3 oracle;
+//! R-000105 (node tests vs function calls) is resolved at the parser
+//! layer but depends on the lexer not swallowing `(` after node-test
+//! names.
+//!
+//! # Deliberate oddities
+//!
+//! Numbers are tokenized as raw text and converted later by the
+//! R-000166 string-eval-number port, reproducing the oracle digit
+//! accumulation (MAX_FRAC=20 cap, exponent underflow) instead of Rust
+//! f64::from_str, which accepts forms the oracle rejects (e.g. leading
+//! `+`).
+//!
+//! # Proving courts
+//!
+//! XPATH-LEXER-* and the XPATH differential probes compile expressions
+//! byte-identical against the oracle; cargo test covers the tokenizer
+//! unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not convert number literals with Rust float parsing: the oracle
+//! accumulation differs on leading `+`, exponent limits and underflow
+//! (R-000166). Do not return borrowed spans into the expression string:
+//! owned tokens keep the AST independent of the source text lifetime.
 
 use std::fmt;
 

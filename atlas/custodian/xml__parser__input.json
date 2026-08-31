@@ -1,0 +1,22 @@
+{
+ "module": "xml/parser/input",
+ "upstream": [
+  "parserInternals.c",
+  "xmlIO.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xml-parser",
+  "parser-internals",
+  "push-parser",
+  "io",
+  "resource-loading",
+  "serialization",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000163"
+ ],
+ "court_families": []
+}

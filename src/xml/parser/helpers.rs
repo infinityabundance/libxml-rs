@@ -20,6 +20,60 @@
 //! field the application set would free the application's pointer as an `InputBuffer`
 //! (11.1-X R-000165 closure discovery). The boxed input lives in `PARSER_INPUT_STASH` keyed by
 //! context address and is released by `free_parser_ctxt`/`xmlCtxtReset`/`parse_document`.
+//!
+//! # Upstream contract
+//!
+//! Glue layer between the C ABI entry points (`crate::abi::exports_*`) and the
+//! internal parser; mirrors the context-creation and parse-entry surface of
+//! upstream parser.c and parserInternals.c (SRC-LIBXML2-2.15.0). Parity
+//! target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Each helper takes raw C pointers, converts them to safe Rust types,
+//! delegates to the internal parser, and converts results back. It also owns
+//! the per-context input-buffer stash that keeps `_xmlParserInput`
+//! base/cur/end pointers alive across the parse.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership model (see above): `setup_parser_input` boxes and leaks the
+//! InputBuffer into the `PARSER_INPUT_STASH` side table keyed by context
+//! address; `parse_document` / `parse_chunk` take that box back, run the
+//! parser, and drop everything. SAFETY: `ctxt._private` is never used for
+//! internal state — it is application data (`xmlCtxtSetPrivate`), and stashing
+//! the input there would free the application pointer as an InputBuffer
+//! (11.1-X R-000165 closure discovery). Filenames are owned duplicates
+//! (`xml_strndup`, R-000169).
+//!
+//! # Historical quirks & epochs
+//!
+//! The side-table design dates from the 11.1-X closure (R-000165/R-000169):
+//! earlier code either borrowed the boxed buffer Rust String into
+//! `_xmlParserInput.filename` (dangling) or `xml_strdup`ed a non-NUL-
+//! terminated `as_ptr()` (heap-buffer-overflow, caught by ASan). Epoch: the
+//! 2.15.3 oracle era.
+//!
+//! # Deliberate oddities
+//!
+//! The stash is a deliberate oddity: a global mutex map keyed by context
+//! address with StashPtr manually Send+Sync — required because the C-visible
+//! input must outlive the caller input-buffer handle but cannot live in
+//! `_private`.
+//!
+//! # Proving courts
+//!
+//! Exercised by TREE-001 (doc->URL / base fingerprints), ERROR-001 (filename
+//! prefixes like e.xml:1:), the DSO-LOADER court and `cargo test --lib`
+//! (ASan-clean). Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is stashing the boxed input in `ctxt._private`
+//! — that would free the application pointer when the context is freed
+//! (11.1-X discovery) and break `xmlCtxtSetPrivate` consumers. A second one
+//! is passing Rust String slices as filenames — non-NUL-terminated and
+//! dangling after the context dies (R-000169). Never do either.
 
 use core::ffi::CStr;
 use core::ptr;

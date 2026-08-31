@@ -1,0 +1,23 @@
+{
+ "module": "xml/globals/mod",
+ "upstream": [
+  "globals.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "globals"
+ ],
+ "residuals": [
+  "R-000135",
+  "R-000161",
+  "R-000163",
+  "R-000170",
+  "R-000171"
+ ],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "THREADING"
+ ]
+}

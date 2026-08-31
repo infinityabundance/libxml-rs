@@ -1,0 +1,35 @@
+{
+ "module": "xml/parser/mod",
+ "upstream": [
+  "parser.c",
+  "parserInternals.c",
+  "SAX2.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "parser-internals",
+  "push-parser",
+  "sax1",
+  "sax2",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000101",
+  "R-000119",
+  "R-000120",
+  "R-000121",
+  "R-000124",
+  "R-000161",
+  "R-000162",
+  "R-000163",
+  "R-000164",
+  "R-000166",
+  "R-000169"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

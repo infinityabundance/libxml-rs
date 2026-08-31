@@ -27,6 +27,80 @@
 //! | `ValidationNoDtdExit` | E-006 (--valid without DTD) | 2.15.0 |
 //! | `GlobalStateInit` | 2.12 lazy-init rework | 2.12.0 |
 //! | `XslTransform` | E-008 (libxslt output frozen) | stable since ≤1.1.26 |
+//!
+//! # Upstream contract
+//!
+//! This module encodes the *behavioral* contract of upstream across
+//! versions. The upstream evidence files are parser.c, xpath.c, HTMLtree.c,
+//! valid.c and xmllint.c (SRC-LIBXML2-GIT, archaeology/libxml2-git): each
+//! capability above is the observable change a specific upstream commit or
+//! release made in one of those files. There is no upstream
+//! "capabilities" API — this module is the candidate own single
+//! structure for representing those changes, and it is not part of the C
+//! ABI.
+//!
+//! # Conceptual behavior
+//!
+//! A capability epoch is a maximal version span over which one observable
+//! behavior is byte-identical; `capabilities_for_libxml2` resolves every
+//! tracked capability for a target version, and `CompatibilityProfile`
+//! bundles the resolved set for a (libxml2, libxslt) pair. The model is
+//! deliberately epoch-based: the resolver is a pure function of the version
+//! string, so historical emulation and regression triage address one
+//! structure instead of ad-hoc version checks.
+//!
+//! # Ownership & safety invariants
+//!
+//! Every type in this module is a plain `Copy` value; capabilities are
+//! resolved at profile construction and never mutated afterwards. There is
+//! no shared state, no heap ownership and no unsafe code in the resolver:
+//! `capabilities_for_libxml2` is a pure function of the version string, so
+//! profiles can be resolved concurrently from any thread. The one safety
+//! invariant is the fail-fast `assert!` in `CompatibilityProfile::for_libxml2`:
+//! versions newer than the system oracle panic instead of silently
+//! resolving an unmeasured epoch.
+//!
+//! # Historical quirks & epochs
+//!
+//! The capability table is the executable encoding of the E-epoch findings
+//! (atlas/SEMANTIC_EPOCHS.md): E-001 (da35eeae, 2.9.10), E-002 (de5b624f
+//! fix / 2.12 rework), E-003 (e85f9b98 2.11.0 then 387a952b 2.12.6),
+//! E-004 (8d04f0ee, 2.13.0), E-005 (2.13.0), E-006 (2.15.0), E-007
+//! (2.15.0) and E-008 (stable since ≤1.1.26). Each boundary is pinned by
+//! the historical oracle matrix and by the unit tests below, which assert
+//! the exact version where each behavior flipped.
+//!
+//! # Deliberate oddities
+//!
+//! - `XslTransform` has a single value (Stable): E-008 proved byte-
+//!   identical output across 1.1.26..1.1.45, so the enum documents the
+//!   proven absence of a boundary rather than inventing one.
+//! - `GlobalStateInit` models the 2.12 lazy-init rework, which upstream
+//!   never announced as a behavioral change; representing it keeps
+//!   emulation uniform.
+//! - The resolver uses numeric tuple comparison on parsed (major, minor,
+//!   patch) rather than semver crates — a deliberate dependency-free choice
+//!   matching the evidence tables.
+//!
+//! # Proving courts
+//!
+//! The unit tests in this module (`cargo test`) assert every boundary;
+//! the differential court families that exercise the modeled behaviors
+//! are CLI-XMLLINT-* (E-001/E-003/E-005/E-006), XPATH, PARSER, DTD,
+//! HTML, C14N, XINCLUDE, XSD, RELAXNG, SCHEMATRON and XPOINTER, plus the
+//! HIST-EPOCH-* historical casefiles and the matrix receipts
+//! (courts/receipts/historical-matrix-*).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Replacing this resolver with scattered version checks in each
+//!   subsystem would scatter the boundaries and make epoch regression
+//!   triage un-auditable.
+//! - Collapsing the three-value enums (e.g. `XpathAttrEmptyExit`) to a
+//!   bool would lose the middle 2.11.0..2.12.5 window (E-003).
+//! - Letting `for_libxml2` accept versions beyond 2.15.3 would fabricate
+//!   epochs for versions no oracle has measured — a hazard for the
+//!   completeness claim.
 
 use core::fmt;
 
@@ -46,10 +120,10 @@ pub enum ParserDiagnostic {
     /// Two diagnostics for unexpected EOF ("Premature end of data in tag ..."
     /// as the second line) — libxml2 <= 2.9.4 and >= 2.9.11 (fix de5b624f).
     Dual,
-    /// The 2.9.10 regression variant ("EndTag: '</' not found").
+    /// The 2.9.10 regression variant (EndTag close-tag-not-found diagnostic).
     Regression,
     /// Single diagnostic; the second line was dropped in the 2.12.x error
-    /// handling rework (>= 2.12.6; crate's current epoch).
+    /// handling rework (>= 2.12.6; the current epoch of the crate).
     Single,
 }
 
@@ -221,7 +295,7 @@ pub fn capabilities_for_libxml2(version: &str) -> Capabilities {
 
 /// A resolved compatibility profile for a target upstream version pair.
 ///
-/// The candidate's current target is the system oracle
+/// The current target of the candidate is the system oracle
 /// (libxml2 2.15.3 / libxslt 1.1.45); emulating older releases resolves this
 /// profile against the capability table instead of ad-hoc version branches.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -235,7 +309,7 @@ pub struct CompatibilityProfile {
 }
 
 impl CompatibilityProfile {
-    /// The candidate's current-system profile (libxml2 2.15.3 / libxslt 1.1.45).
+    /// The current-system profile of the candidate (libxml2 2.15.3 / libxslt 1.1.45).
     pub fn current() -> CompatibilityProfile {
         CompatibilityProfile {
             libxml2_version: "2.15.3",

@@ -22,6 +22,68 @@
 //! - `data-type="text"`: byte-wise string comparison (upstream uses
 //!   `xmlStrcmp`, extended by locale-aware comparison when available)
 //! - `order="descending"` inverts the comparison result
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `sort.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-SORT-C` under oracle/historical/src). The observable
+//! surface is `xsltCompileSort`, `xsltNewSort`/`xsltFreeSort` and
+//! `xsltSortNodeSet`, driven from `xsl:for-each` and `xsl:apply-templates`
+//! (transform module).
+//!
+//! # Conceptual behavior
+//!
+//! Each `xsl:sort` child compiles into an `_xsltSort` holding select,
+//! lang, data-type, order and case-order attributes; multiple sort keys
+//! chain via `next` (first = primary). At execution time
+//! `xsltSortNodeSet` computes a sort key per node per level and sorts the
+//! node-set in place (insertion sort for small sets, quicksort over
+//! indices for larger — an adaptive replacement for the upstream qsort
+//! with identical comparison semantics): numeric vs text, descending
+//! inversion, NaN-last for numeric, per-key chaining via
+//! `xsltCompareNodes`.
+//!
+//! # Ownership & safety invariants
+//!
+//! `_xsltSort` entries are heap-allocated, own their duplicated
+//! select/lang/data-type/order/case-order strings, and are owned by the
+//! instruction pre-comp tree (freed with the stylesheet via
+//! `xsltFreeSort`); `inst`/`style` are borrowed. `xsltSortNodeSet` sorts
+//! the caller-owned node-set in place; the transform module owns the
+//! temporary sorted set and frees it exactly once after use.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000115 (Phase 9): `xsl:sort` was never compiled or applied — the
+//! sort pipeline was a no-op; the fix wired compilation and execution and
+//! is pinned by the CLI-XSLTPROC sort corpus. E-008 (atlas/
+//! SEMANTIC_EPOCHS.md): sorted output participates in the byte-identical
+//! xsltproc epoch (1.1.26, 2009, through 1.1.45). R-000140 covered the
+//! `_xslt*` ABI mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! - The default `isText = 1` (text sort) matches upstream; `data-type`
+//!   is consulted only to flip to numeric — the attribute string is still
+//!   stored.
+//! - All-equal keys fall back to document order via `xmlXPathCmpNodes`,
+//!   a candidate determinism guarantee upstream does not state (the
+//!   comparator is strict, so the qsort result is deterministic either
+//!   way).
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (sort corpus from R-000115), XSLT-001, the in-crate sort
+//! unit tests, and `cargo test`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Skipping the sort pass (the pre-R-000115 no-op) emits the source
+//!   order — the observable divergence the corpus detects.
+//! - Sorting strings with a collation-aware comparator instead of
+//!   byte-wise `xmlStrcmp` changes ordering for non-ASCII input.
+//! - Sorting numbers with NaN-first ordering (the naive comparator)
+//!   inverts the upstream NaN-last result.
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{

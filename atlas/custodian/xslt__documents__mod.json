@@ -1,0 +1,18 @@
+{
+ "module": "xslt/documents/mod",
+ "upstream": [
+  "documents.c"
+ ],
+ "export_samples": [
+  "xsltSetLoaderFunc"
+ ],
+ "subsystems": [
+  "xslt-documents",
+  "xslt-loader-hooks"
+ ],
+ "residuals": [
+  "R-000109",
+  "R-000140"
+ ],
+ "court_families": []
+}

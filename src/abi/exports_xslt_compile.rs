@@ -39,6 +39,64 @@
 //! `style->preComps` chain for the structures that genuinely exist) and
 //! skip the dead precomp allocation. Each such divergence is documented
 //! at the function.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 (`xslt.c`, `imports.c`, `preproc.c`,
+//! `attributes.c`, `attrvt.c`, `documents.c`, `variables.c`, `extensions.c`,
+//! `pattern.c`) with the upstream headers; the oracle build has
+//! XSLT_REFACTORED disabled, so the old code paths are the authoritative
+//! semantics. The BUILD-CONFIG-SCRIPT, CLI-XSLTPROC, EXSLT, ORACLE-IDENTITY,
+//! PREPROCESSOR-SURFACE and XSLT court families cover this module.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the stylesheet-compilation ABI: stylesheet creation
+//! and the Parse entry points, import/include handling, top-level construct
+//! parsing (output, attribute sets, global variables/params), content
+//! preprocessing (`xsltParseTemplateContent`, `xsltCompileAttr`),
+//! precomputed-instruction management and style document lifecycle. The
+//! engine compiles eagerly; instruction compilers keep their observable
+//! semantics (grammar checks, error counts, preComps chain) and skip dead
+//! precomp allocation — each divergence is documented at the function.
+//!
+//! # Ownership & safety invariants
+//!
+//! Stylesheets are caller-owned (freed with `xsltFreeStylesheet`, which
+//! releases imports, templates, key defs and style docs per OWNERSHIP_ATLAS
+//! section 4); style documents are owned by the stylesheets docList;
+//! `xsltNewStyleDocument`/`xsltLoadStyleDocument` wrappers are freed by
+//! `xsltFreeStyleDocuments`.
+//!
+//! # Historical quirks & epochs
+//!
+//! The XSLT_REFACTORED flag (2.7-era refactor, never enabled in the oracle
+//! build) is the key historical quirk — the candidate implements the
+//! non-refactored semantics the oracle DSO actually ships. E-008: the
+//! stylesheet compilation feeds the frozen 2009+ transform epoch.
+//!
+//! # Deliberate oddities
+//!
+//! The per-instruction compilers that keep observable semantics but skip dead
+//! precomp allocation (documented at each function) and the
+//! XSLT_REFACTORED-disabled orientation are the deliberate oddities of this
+//! module.
+//!
+//! # Proving courts
+//!
+//! The BUILD-CONFIG-SCRIPT, CLI-XSLTPROC, EXSLT, ORACLE-IDENTITY and
+//! PREPROCESSOR-SURFACE court families plus DSO-LOADER (25/25) and
+//! HEADER-COMPILE (595/595) cover this module; the compiler unit tests run
+//! under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to enable the refactored code paths because
+//! they are the upstream default in source — the oracle DSO was built with
+//! XSLT_REFACTORED disabled, so the stylesheet struct layout (R-000140 mirror)
+//! and behavior would diverge from the oracle. Another shortcut, dropping the
+//! preComps chain entirely, would break the public `xsltStylePreCompute`/
+//! `xsltFreeStylePreComps` API consumers.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

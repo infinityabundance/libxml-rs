@@ -16,6 +16,38 @@
 //! Both are also registered as extension *elements* in the `exsl:` namespace
 //! by upstream; the element forms are only meaningful inside `<exsl:document>`
 //! context and are treated as no-ops outside it.
+//!
+//! # Ownership & safety invariants
+//!
+//! `exsl:node-set` returns an XPathValue that OWNS its node-set; the RTF root
+//! node it wraps stays owned by the transform result tree (OWNERSHIP_ATLAS
+//! section 4), so the function must not free or detach it — only borrow the
+//! tree pointers into the node-set. Atomic values are wrapped in a
+//! candidate-owned document that is freed with the value.
+//!
+//! # Historical quirks & epochs
+//!
+//! The libxslt transform epoch is stable (E-008: byte-identical output
+//! 1.1.26..1.1.45); exsl:node-set semantics have not changed across that
+//! span, so no epoch branching exists here. The element-form no-op outside
+//! `<exsl:document>` matches upstream's own behavior since 1.1.x (exslt.c
+//! registers the element handlers unconditionally).
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0003 (exsl:node-set on RTF + math:/set:/str:) is
+//! byte-identical against the oracle xsltproc; the module's Rust unit tests
+//! (cargo test --lib exslt::common) cover RTF, string, number and boolean
+//! conversion paths.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to return the RTF document itself as the
+//! node-set. Upstream instead exposes the RTF *root node* — a node-set whose
+//! single member is the document root — and node-set consumers (XPath
+//! paths like `exsl:node-set($var)/child`) depend on that exact topology.
+//! Returning the document breaks every such path; the unit tests and
+//! CLI-XSLTPROC-0003 regress it.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

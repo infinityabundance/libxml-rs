@@ -32,6 +32,65 @@
 //! 16. Catalog
 //! 17. HTML
 //! 18. Debug/misc
+//!
+//! # Upstream contract
+//!
+//! The parity target is the complete libxml2.so.2 export surface of the oracle
+//! DSO (libxml2 2.15.3): `globals.c`, `parser.c`, `threads.c`, `encoding.c`,
+//! `xmlmemory.c` and `xmlstring.c` entry points with upstream header
+//! signatures. Residuals R-000116, R-000117, R-000132, R-000133, R-000135,
+//! R-000136, R-000138, R-000157, R-000161, R-000162, R-000163, R-000164 and
+//! R-000165 all touch this module.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the core libxml2 ABI: init/cleanup, version, memory,
+//! error handling, string utilities, tree/document construction, parser entry
+//! points, I/O, dict/hash/list, buffer, encoding, XPath and catalog — grouped
+//! by subsystem in upstream header order. Functions needing the engine call
+//! into `src/xml/*`; the rest are faithful ports.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership follows OWNERSHIP_ATLAS: docs/nodes/strings returned to C are
+//! caller-owned (freed with the documented xmlFree-family); `xmlReadMemory`/
+//! `xmlCtxtRead*` propagate the URL into the owned input filename (R-000161);
+//! the error channel routes through the exported handler slots
+//! (R-000161/R-000163). The deprecated init/cleanup no-ops are deliberate:
+//! upstream bodies are empty (R-000138).
+//!
+//! # Historical quirks & epochs
+//!
+//! QUIRK-0001: 2.9.0 default parser limits (commit `52d8ade7`); E-002/E-005:
+//! parse-error diagnostics and exit codes across 2.9.10-2.13.0; R-000138: the
+//! deprecated no-op entry points dispositioned as the oracles own behavior;
+//! R-000161: the five wrong default values fixed (e.g. `xmlParserVersion` =
+//! `21503-GITv2.15.3`); R-000162: allocator entry points exported as DATA;
+//! R-000157: iconv-only encodings report XML_ERR_UNSUPPORTED_ENCODING (no
+//! iconv backend — OPEN residual).
+//!
+//! # Deliberate oddities
+//!
+//! The no-op init/cleanup exports (R-000138), the `xmlGenericError`/
+//! `xsltGenericError` variadic asm stderr printers (R-000161), and the
+//! XML_ERR_UNSUPPORTED_ENCODING divergence for iconv/ICU-only encodings
+//! (R-000157) are the deliberate oddities of this module.
+//!
+//! # Proving courts
+//!
+//! ABI-DATA, ALLOCATOR, GLOBAL-STATE, PARSER and THREADING court families;
+//! the data-ABI probes (CALLBACK-001, ERROR-001, TREE-001, ENCODING-001, ...)
+//! require byte-identical output vs the oracle DSO; DSO-LOADER (25/25) and
+//! HEADER-COMPILE (595/595) close the surface.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to delete the deprecated no-op exports as dead
+//! code — R-000138 records they ARE the upstream observable behavior and
+//! downstream linking depends on them. Another shortcut, defaulting
+//! `xmlGenericError` to NULL instead of the variadic stderr printer, is the
+//! pre-R-000161 state that broke counting handlers (err-count 1 vs oracle 6).
+//! Both must not be simplified.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
@@ -104,6 +163,8 @@ pub const unsafe extern "C" fn xmlInitGlobals() {
 #[no_mangle]
 pub const unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
     // No-op: the candidate's globals are statically initialized.
+    // R-000138: upstream globals.c body is empty (lazy init); the no-op
+    // IS the oracle behavior, so this must never become a real initializer.
 }
 
 /// Upstream `xmlInitializeDict` (dict.c) — ensures the dictionary
@@ -116,6 +177,8 @@ pub const unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
 /// ```
 #[no_mangle]
 pub const extern "C" fn xmlInitializeDict() -> c_int {
+    // R-000138: upstream dict.c xmlInitializeDict is an empty body after lazy
+    // init; returning 0 is the oracle observable behavior.
     0
 }
 
@@ -375,6 +438,8 @@ pub unsafe extern "C" fn xmlRMutexUnlock(tok: *mut c_void) {
 /// ```
 #[no_mangle]
 pub const extern "C" fn xmlCheckThreadLocalStorage() -> c_int {
+    // R-000138: upstream threads.c body is empty (TLS always works); 0 is the
+    // oracle observable behavior, not a stub.
     0
 }
 

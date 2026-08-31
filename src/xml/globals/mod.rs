@@ -25,6 +25,62 @@
 //!
 //! Complete — all global state management is implemented.
 //! Future phases may add historical version-specific behavior.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream globals.c (SRC-LIBXML2-2.15.0-GLOBALS-C, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/globals.c`): the library-wide global
+//! variables (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue,
+//! xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError,
+//! xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, ...) exposed as
+//! public ABI data symbols (R-000135).
+//!
+//! # Conceptual behavior
+//!
+//! Manages parser defaults, generic/structured error callbacks, catalog
+//! defaults, memory hooks, thread-local error state and init/cleanup
+//! reference counting. The exported data symbols are wired to the parser-
+//! default accessors so there is a single source of truth.
+//!
+//! # Ownership & safety invariants
+//!
+//! SAFETY: exported C-visible globals keep upstream documented racy semantics
+//! for direct readers, while the internal Rust accessors serialize (handler,
+//! ctx) slot pairs under ERROR_HANDLER_LOCK so readers never observe a new
+//! handler with an old context (R-000171). The xmlLastError mirror is deep-
+//! copied under LAST_ERROR_MIRROR_LOCK (R-000170: concurrent sync/reset
+//! double-freed the mirror strings). Error state is thread-local.
+//!
+//! # Historical quirks & epochs
+//!
+//! Thread support predates the thread-local-globals era: globals.c threading
+//! integrated 2001-10-12/13 (commits b847864f, d0463560; LORE-0005). Modern
+//! 2.10+ initialization is lazy; deprecated init/cleanup entry points are
+//! genuine no-ops (R-000138). R-000161 fixed the exported default values
+//! (xmlLineNumbersDefaultValue 1, xmlTreeIndentString two spaces,
+//! xmlParserVersion 21503-GITv2.15.3).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: xmlGenericError and xsltGenericError default to the
+//! variadic stderr printers (asm va_list shims; R-000161) rather than NULL;
+//! the deprecated init entry points are exported no-ops reproducing upstream
+//! empty bodies (R-000138).
+//!
+//! # Proving courts
+//!
+//! ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING court families;
+//! DATA-GLOBALS-001 differential probe (byte-identical), GLOBALS-THREADING
+//! probe, DSO-LOADER (25/25), and `cargo test --lib` (100/100 parallel runs
+//! clean after R-000170/R-000171).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is hiding the C globals behind accessors only
+//! — downstream code that reads/writes xmlDoValidityCheckingDefaultValue
+//! directly would fail to link (R-000135). Do not fix the racy C-visible
+//! symbols: the internal locks must not change the documented upstream
+//! semantics for direct consumers.
 
 use core::cell::RefCell;
 use core::ffi::c_void;

@@ -5,12 +5,65 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! All functions follow the XPath 1.0 specification and libxml2's
+//! All functions follow the XPath 1.0 specification and libxml2
 //! observable behavior, including edge cases and historical quirks.
 //!
 //! # Courts
 //!
 //! XPATH-FUNCTIONS-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the core-function library of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! the 25 XPath 1.0 §4 functions (node-set, string, boolean, number
+//! groups) with libxml2 observable edge cases.
+//!
+//! # Conceptual behavior
+//!
+//! Implements each function over already-evaluated `XPathValue` arguments
+//! with the upstream argument-count and coercion behavior: node-set
+//! functions (last, position, count, id, local-name, namespace-uri, name),
+//! string functions (string, concat, starts-with, substring, translate,
+//! ...), boolean functions and number functions (number, sum, floor,
+//! ceiling, round). number()/string() route through the R-000166 number
+//! formatter (1e9/1e-5 scientific threshold, DBL_DIG=15 fraction digits).
+//!
+//! # Ownership & safety invariants
+//!
+//! Functions return owned `XPathValue`s; node-set arguments are borrowed
+//! views over the tree (valid for the call). No function stores or caches
+//! argument pointers — values are copied at the boundary, so the registry
+//! is safe to share.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000114 (attribute string-value must be the attribute content, not
+//! empty) and R-000166 (full double-precision value-of printing) were
+//! fixed against the 2.15.3 oracle; the number() corpus (967/967 cases)
+//! locks the formatting epoch. The E-008 stable libxslt epoch means any
+//! function-level divergence is a candidate bug, not an epoch difference.
+//!
+//! # Deliberate oddities
+//!
+//! round()/floor()/ceiling() reproduce libxml2 IEEE-754 handling
+//! (including negative zero and NaN propagation) rather than Rust
+//! rounding helpers, which differ on ties and sign.
+//!
+//! # Proving courts
+//!
+//! XPATH-FUNCTIONS-* differential probes and the 967/967 number() corpus
+//! compare results byte-identical against the oracle; the XSLT courts
+//! (CLI-XSLTPROC-0014/0015/0017) exercise value-of/format-number through
+//! these functions.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not delegate number formatting to Rust float formatting: the
+//! scientific threshold, digit counts and exponent padding are
+//! oracle-observable (R-000166). Do not coerce arguments more eagerly
+//! than upstream (e.g. empty node-sets to string) — R-000114 proved the
+//! string-value rules are observable.
 
 use crate::xml::xpath::context::XPathContext;
 use crate::xml::xpath::types::{node_string_value, string_to_number, NodeSet, XPathValue};

@@ -1,5 +1,69 @@
 //! XSLT attribute sets (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `attributes.c` (1.1.45; verified against
+//! `SRC-LIBXSLT-1.1.42-ATTRIBUTES-C` under oracle/historical/src). The
+//! observable surface is `xsltCompileAttrSet` / `xsltFreeAttrSets` /
+//! `xsltApplyAttrSets` and the `xsl:use-attribute-sets` attribute on
+//! literal result elements, `xsl:element`, and `xsl:copy` (XSLT 1.0).
+//!
+//! # Conceptual behavior
+//!
+//! Compilation records each attribute set with its name (QName), optional
+//! namespace, and the defining `xsl:attribute-set` element. At instantiation
+//! time, `use-attribute-sets` (a whitespace-separated list of names) is
+//! resolved and every `xsl:attribute` child of each named set is executed
+//! as an instruction against the current node, in the order the names
+//! appear in the list.
+//!
+//! # Ownership & safety invariants
+//!
+//! Each `_xsltAttrSet` is heap-allocated (libc::calloc) by the candidate,
+//! owns its duplicated `name`/`ns` strings, and is owned by the stylesheet
+//! `attributeSets` chain; `xsltFreeAttrSets` (called from
+//! `xsltFreeStylesheet`) unlinks and frees every entry exactly once. The
+//! `inst` pointer is borrowed from the stylesheet document — never freed
+//! here. `xsltApplyAttrSets` requires a live transform context and result
+//! node; attribute evaluation goes through the transform engine.
+//!
+//! # Historical quirks & epochs
+//!
+//! Attribute sets have been part of the libxslt 1.1 series since the
+//! 1.1 era (2004+; atlas/HISTORY.md). E-008 (atlas/SEMANTIC_EPOCHS.md):
+//! xsltproc output is byte-identical from 1.1.26 (2009) through 1.1.45, so
+//! the attribute-set output path is frozen — a divergence here is a
+//! candidate bug, not an epoch difference. The candidate diverges from the
+//! upstream hash storage (see oddities) but keeps the observable semantics.
+//!
+//! # Deliberate oddities
+//!
+//! Upstream stores attribute sets in an `xmlHashTable` keyed by
+//! `{ns}name`; the candidate keeps a linked list in the same `attributeSets`
+//! slot and matches by exact name bytes only (the namespace component of
+//! the key is not consulted). This is a documented storage divergence
+//! (annotated at the compile/apply functions); it is observable only
+//! through behavior, which the CLI corpus pins down.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (xsltproc corpus stylesheets using use-attribute-sets),
+//! XSLT-001 (xslt-family differential probe), and the in-crate `cargo
+//! test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Matching by local name only (dropping the list walk) would accept
+//!   attribute sets from the wrong namespace — XSLT 1.0 resolves the
+//!   QName through the in-scope namespaces at compile time.
+//! - Reusing the compiled `xsl:attribute` nodes instead of re-evaluating
+//!   them per use would break AVT evaluation and context-dependent
+//!   attribute values (R-000108 lesson: attribute instructions are
+//!   evaluated, not copied).
+//! - Freeing the `inst` pointer would double-free stylesheet-document nodes
+//!   (R-000103 lesson: template/instruction content is owned by the
+//!   stylesheet document).
+//!
 //! `<xsl:attribute-set>` defines a named set of attributes that can be
 //! applied to a result element via `use-attribute-sets`.
 //!

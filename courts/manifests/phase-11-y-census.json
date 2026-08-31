@@ -290,6 +290,12 @@
    "receipt": "courts/receipts/phase-11/evidence-integrity-*.json",
    "result": "PASS",
    "note": "EVIDENCE-INTEGRITY COURT: PASS (75 residuals, 2 open, Markdown byte-identical)"
+  },
+  "CUSTODIAN-COMMENTARY": {
+   "runner": "python3 tools/evidence/custodian_commentary_court.py",
+   "receipt": "courts/receipts/phase-11/custodian-commentary-*.json",
+   "result": "PASS",
+   "note": "11.2: every compatibility-sensitive module carries the seven commentary dimensions (upstream contract, conceptual behavior, ownership/safety, historical epochs, deliberate oddities, proving courts, tempting simplifications); 127/127 modules + 7 generated/exempt"
   }
  }
 }

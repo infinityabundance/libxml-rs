@@ -1,0 +1,21 @@
+{
+ "module": "xml/relaxng/mod",
+ "upstream": [
+  "relaxng.c"
+ ],
+ "export_samples": [
+  "xmlRelaxNGNewParserCtxt",
+  "xmlRelaxNGNewMemParserCtxt",
+  "xmlRelaxNGFree",
+  "xmlRelaxNGFreeParserCtxt",
+  "xmlRelaxNGNewValidCtxt",
+  "xmlRelaxNGFreeValidCtxt"
+ ],
+ "subsystems": [
+  "relaxng"
+ ],
+ "residuals": [],
+ "court_families": [
+  "RELAXNG"
+ ]
+}

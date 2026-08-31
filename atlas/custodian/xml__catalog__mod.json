@@ -1,0 +1,21 @@
+{
+ "module": "xml/catalog/mod",
+ "upstream": [
+  "catalog.c"
+ ],
+ "export_samples": [
+  "xmlNewCatalog",
+  "xmlFreeCatalog",
+  "xmlLoadACatalog",
+  "xmlLoadSGMLSuperCatalog",
+  "xmlConvertSGMLCatalog",
+  "xmlACatalogAdd"
+ ],
+ "subsystems": [
+  "catalogs"
+ ],
+ "residuals": [],
+ "court_families": [
+  "CLI-XMLCATALOG"
+ ]
+}

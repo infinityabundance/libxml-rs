@@ -16,7 +16,7 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! This module follows libxml2's `valid.c` implementation. The validation
+//! This module follows upstream libxml2 `valid.c` implementation. The validation
 //! context (`xmlValidCtxt`) accumulates ID/IDREF tables across the document
 //! and checks consistency in `xmlValidateDocumentFinal`.
 //!
@@ -24,6 +24,57 @@
 //!
 //! Complete — all core DTD validation functions are implemented.
 //! Edge-case behavior for degenerate DTDs matches upstream.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream valid.c (SRC-LIBXML2-2.15.0-VALID-C, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/valid.c`): xmlValidateDocument,
+//! xmlValidateDtd, xmlValidCtxt ID/IDREF tables, xmlValidateElement,
+//! xmlValidateAttributeDecl and the content-model validation walks.
+//!
+//! # Conceptual behavior
+//!
+//! DTD validation against element/attribute declarations: content-model
+//! matching, attribute value types (CDATA, ID, IDREF(S), ENTITY(IES),
+//! NMTOKEN(S), ENUMERATION, NOTATION), ID/IDREF consistency, REQUIRED
+//! attributes, NOTATION references and well-formedness constraints. The
+//! xmlValidCtxt accumulates ID/IDREF tables across the document and checks
+//! consistency in xmlValidateDocumentFinal.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: the validation context owns its ID/IDREF table storage and
+//! error output; the document and declarations are borrowed. SAFETY: the
+//! recursive validation walks are depth-bounded (VALID_CTXT_DEPTH_MAX = 256)
+//! to avoid stack exhaustion on degenerate DTDs.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-005: --valid on an invalid document exits 3 from 2.13.0 (was 4);
+//! E-006: --valid with no DTD exits 0 from 2.15.0 (was 3) — the no-DTD-found
+//! failure stopped being exit-worthy. Parse-time ID/IDREF registration
+//! (xmlIsID/xmlAddID) was aligned with upstream in 11.1-N (R-000164); the
+//! `_xmlElement` mirror is 104 bytes (R-000139).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: element-decl type_ carries XML_ELEMENT_DECL while
+//! etype holds the element type (upstream field split); ATTLISTs for
+//! undeclared elements create UNDEFINED placeholders not linked into the DTD
+//! children (xmlGetDtdElementDesc semantics).
+//!
+//! # Proving courts
+//!
+//! DTD, RELAXNG and XSD court families; TREE-001 (ID/IDREF registration,
+//! atype = XML_ATTRIBUTE_ID), CLI-XMLLINT valid cases (exit codes 3/0 per
+//! E-005/E-006) and `cargo test --lib`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is skipping parse-time ID registration and
+//! resolving IDs lazily at validation time — it would break doc->ids
+//! fingerprints and xmlIsID semantics (R-000164). Do not unbounded the
+//! recursion: VALID_CTXT_DEPTH_MAX mirrors the hardened oracle (SD-002).
 
 use core::ffi::c_void;
 use core::ptr;

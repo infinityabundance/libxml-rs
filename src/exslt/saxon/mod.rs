@@ -22,6 +22,51 @@
 //! wrong arities report `Invalid number of arguments`. Both surface as
 //! `XPath error : ...` and stop the transformation (exit 10), matching the
 //! candidate's XPath error reporting.
+//!
+//! # Conceptual behavior
+//!
+//! The Saxon namespace is a historical compatibility surface: upstream
+//! libexslt ships it (exslt.c registers `saxon:` with URI
+//! `http://icl.com/saxon`) so stylesheets written for the Saxon processor
+//! keep working. `saxon:line-number` reads the parser-recorded line
+//! numbers off the node; `saxon:systemId` reads the document URL;
+//! `saxon:evaluate`/`saxon:expression`/`saxon:eval` provide dynamic XPath
+//! evaluation with a stored-expression indirection.
+//!
+//! # Ownership & safety invariants
+//!
+//! `saxon:line-number`/`saxon:systemId` return numbers/strings owned by
+//! the returned XPathValue. Stored expressions are marker-prefixed strings
+//! (the NUL marker cannot collide with a real expression); the marker
+//! approach means no per-transform hash table is kept, so there is no
+//! cross-call state to free — matching the observable behavior of
+//! expression/expression+eval pairs.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45). The Saxon
+//! namespace URI `http://icl.com/saxon` is a historical artifact of the
+//! pre-EXSLT Saxon processor era and must be preserved verbatim; the
+//! `Invalid type`/`Invalid number of arguments` diagnostics are part of
+//! the observable error surface.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0018 exercises the Saxon extensions (systemId,
+//! line-number, evaluate, expression+eval) byte-identical against the
+//! oracle xsltproc; the module unit tests (cargo test --lib exslt::saxon)
+//! cover arity and type errors.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to compile and cache saxon:expression
+//! results in a hash table like upstream. The candidate instead stores the
+//! expression text with a NUL marker; this is observably equivalent for
+//! expression/expression+eval pairs and avoids lifetime management of a
+//! per-transform cache. Do NOT replace the marker approach with a plain
+//! string round-trip that drops the marker — saxon:eval must distinguish
+//! stored expressions from raw strings exactly like upstream (`Invalid
+//! type` otherwise).
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

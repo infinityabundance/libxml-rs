@@ -17,6 +17,23 @@
 //! # Courts
 //!
 //! XSLT-VARIABLES-*, XSLT-PARAMS-*
+//!
+//! # Historical quirks & epochs
+//!
+//! The libxslt variable-stack discipline has been stable across the whole
+//! epoch (E-008: 1.1.26..1.1.45 byte-identical). R-000158 (11.1-X)
+//! established the stack contract: push loops must snapshot the source
+//! list, and pops must restore the pre-call stack depth — never a count
+//! derived from the pushed items.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to use a Rust Vec and pop exactly as many
+//! elements as were pushed. R-000158 proved that is wrong: the stack is
+//! shared with caller frames, so restoring must happen by saved depth.
+//! Another shortcut, deep-copying variable values on push, breaks RTF
+//! identity (exsl:node-set on a variable must see the original result
+//! tree fragment, not a copy).
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{xmlXPathFreeObject, xmlXPathObjectCopy};

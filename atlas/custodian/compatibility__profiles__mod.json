@@ -1,0 +1,37 @@
+{
+ "module": "compatibility/profiles/mod",
+ "upstream": [
+  "parser.c",
+  "xpath.c",
+  "HTMLtree.c",
+  "valid.c",
+  "xmllint.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "dtd",
+  "validity",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "html-tree",
+  "xpath",
+  "xpath-internals",
+  "legacy"
+ ],
+ "residuals": [],
+ "court_families": [
+  "C14N",
+  "CLI-XMLLINT",
+  "DTD",
+  "HTML",
+  "PARSER",
+  "RELAXNG",
+  "SCHEMATRON",
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER",
+  "XSD"
+ ]
+}

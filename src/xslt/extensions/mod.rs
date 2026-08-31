@@ -1,5 +1,71 @@
 //! XSLT extension mechanisms (§33, §35, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `extensions.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-EXTENSIONS-C` under oracle/historical/src).
+//! Subsystem census: xslt-extension-functions, xslt-extension-elements,
+//! xslt-global-state. ABI surface: `xsltRegisterExtFunction`,
+//! `xsltRegisterExtElement`, plus the per-module extension registries
+//! (`xsltRegisterExtModule*`) exercised by XSLT-001.
+//!
+//! # Conceptual behavior
+//!
+//! Extension functions/elements are registered per transform context
+//! (upstream `extFunctions`/`extElements`), each entry carrying the
+//! namespace URI, local name, and a callback. At call time the XPath
+//! function lookup resolves `prefix:local` through the stylesheet
+//! namespace bindings and dispatches to the registered callback; extension
+//! elements are recognized during instruction execution by namespace.
+//! EXSLT rides the same mechanism (registered into every new context).
+//!
+//! # Ownership & safety invariants
+//!
+//! Entries are heap-allocated and own duplicated `name`/`ns` strings;
+//! they are freed with the context (`xsltFreeCtxtExts`, matching
+//! atlas/OWNERSHIP_ATLAS.md section 4 extension-module-data row). The
+//! callback pointer is borrowed user-code; the library never invokes
+//! unknown-arity functions with a full XPath stack unless the bridge in
+//! R-000162 is active (C XPath functions go through the parser-context
+//! bridge). `ctxt`, `name`, `NS_uri` must be valid; failure paths free
+//! partial entries exactly once.
+//!
+//! # Historical quirks & epochs
+//!
+//! Extension registration has been stable since the libxslt 1.1 series
+//! (2004+; atlas/HISTORY.md) and falls inside the E-008 frozen output
+//! epoch (2009 → 1.1.45; atlas/SEMANTIC_EPOCHS.md). R-000162 closed the
+//! C XPath-function callback bridge (`xmlXPathRegisterFunc` + the
+//! namespaced `function_lookup` fallback dispatching through
+//! `xsltFindExtFunction`); R-000165 added the per-module EXSLT
+//! registration exports; R-000140 covered the `_xslt*` ABI mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! - The `f` parameter of `xsltRegisterExtFunction` is declared with an
+//!   intentionally minimal C signature (opaque `(void*, int)`) — the real
+//!   dispatch contract lives in the R-000162 bridge; the stored pointer is
+//!   opaque to this module.
+//! - Registration is a per-context linked list (upstream uses
+//!   `xmlHashTable`); the candidate linear-searches, an internal storage
+//!   divergence with identical observable semantics.
+//!
+//! # Proving courts
+//!
+//! XSLT-001 (xslt-family differential probe: `xsltRegisterExtModule*`,
+//! `xsltExtModuleFunctionLookup`), EXSLT, CLI-XSLTPROC (extension-using
+//! corpus), and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Stubbing registered functions instead of dispatching (the pre-R-000162
+//!   behavior) breaks every C extension consumer; the callback bridge is
+//!   mandatory.
+//! - Deduplicating entries by name alone would break duplicate
+//!   registration semantics (upstream last-registration-wins per context).
+//! - Freeing the callback pointer would violate the borrowed-user-data
+//!   invariant (atlas/OWNERSHIP_ATLAS.md section 6).
+//!
 //! Extensions allow stylesheets to call external functions and elements.
 //! Registered via `xsltRegisterExtFunction` (functions) and
 //! `xsltRegisterExtElement` (elements).
@@ -12,7 +78,7 @@
 //! similarly with their transform function.
 //!
 //! Registration is per-context; functions are looked up at call time via
-//! the context's XPath function lookup mechanism.
+//! the context XPath function lookup mechanism.
 
 use crate::abi::structs::*;
 use crate::abi::types::*;

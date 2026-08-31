@@ -22,6 +22,57 @@
 //! # Phase 1 status
 //!
 //! Complete — all memory functions delegate to the ABI allocator layer.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream xmlmemory.c (SRC-LIBXML2-2.15.0-XMLMEMORY-C): xmlMemSetup
+//! / xmlMemGet / xmlGcMemSetup / xmlMemUsed / xmlMemBlocks / xmlMemDisplay /
+//! xmlMemShow and the xmlMalloc* family. The actual implementation lives in
+//! `crate::abi::allocator`; this module is the internal Rust interface.
+//!
+//! # Conceptual behavior
+//!
+//! Wraps the allocator hooks for use by the XML implementation modules. The
+//! allocator defaults to libc malloc and is swappable via xmlMemSetup; the
+//! block registry (R-000131) tracks blocks for xmlMemSize, xmlMemUsed and the
+//! debug dumps.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership rule (atlas/OWNERSHIP_ATLAS.md): a pointer returned by an xml*
+//! allocator must be freed by xmlFree; a pointer from libc::calloc inside the
+//! engine is freed internally and never escapes. SAFETY: xmlFree on a
+//! foreign/unknown pointer is a no-op removal from the registry (documented
+//! safe divergence — upstream would corrupt).
+//!
+//! # Historical quirks & epochs
+//!
+//! The debug allocator with block tracking has been part of libxml2 since the
+//! early 2.x era; xmlMemDisplayLast / xmlMemShow report per-block data.
+//! xmlMemSetup keeps counter-only accounting when custom allocators are
+//! installed (R-000131 divergence, matching upstream debug-allocator-only
+//! block table).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: the exported allocator entry points are DATA
+//! function-pointer globals (xmlMallocImpl etc.) matching the oracle ABI
+//! (R-000162: upstream exports them as data variables so the xmlMalloc =
+//! custom override can link).
+//!
+//! # Proving courts
+//!
+//! ALLOCATOR court family, the DATA-GLOBALS-001 probe (allocator globals
+//! byte-identical), ASan full-suite runs (0 invalid reads/writes, 0 double-
+//! free) and `cargo test --lib` (1135+ tests).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is routing all allocation through the Rust global
+//! allocator — it would break xmlMemSetup overrides, xmlMemUsed accounting
+//! and the exported xmlMalloc data-symbol ABI (R-000162). Do not replace the
+//! registry no-op free with a real free of foreign pointers: that would
+//! corrupt the allocator (documented divergence, OWNERSHIP_ATLAS section 8).
 
 pub use crate::abi::allocator::{
     xmlFreeImpl, xmlInitMemory, xmlMallocAtomicImpl, xmlMallocAtomicZero, xmlMallocImpl,

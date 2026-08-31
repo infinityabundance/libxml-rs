@@ -26,6 +26,62 @@
 //!
 //! All types derived from SRC-LIBXML2-2.15.3-TREE-H and related headers.
 //! See atlas/SOURCES.md and atlas/api/ for the complete declaration inventory.
+//!
+//! # Upstream contract
+//!
+//! Mirrors the public libxml2/libxslt type surface at the 2.15.3/1.1.45 parity
+//! target: `tree.h`, `parser.h`, `xpath.h`, `xmlerror.h`, `xmlreader.h`,
+//! `xmlwriter.h`, `encoding.h` and the libxslt headers. Enum discriminants and
+//! typedef values are the contract — C consumers compile against these exact
+//! numbers.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the fundamental C-compatible types: `xmlChar` and
+//! pointers, the `xmlElementType`/`xmlAttributeType`/`xmlEntityType` node
+//! kinds, the `xmlErrorLevel`/`xmlErrorDomain` and `XML_ERR_*` error codes,
+//! parser option flags, encoding ids, buffer allocation schemes and the
+//! XML/XMLNS constant pointers. These feed every other ABI module.
+//!
+//! # Ownership & safety invariants
+//!
+//! Enum/flag types carry no ownership; the string constants are static
+//! NUL-terminated slices never freed by callers. The numeric values must stay
+//! fixed: shifting an `XML_ERR_*` constant changes every error code the parser
+//! reports to C consumers.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000163 (11.1-M): the `XML_ERR_*` constants 64-96 were a synthetic
+//! renumbered enum (e.g. SPACE_REQUIRED 89 instead of upstream 65,
+//! TAG_NOT_FINISHED 96 instead of 77) and had to be corrected to the
+//! header/upstream numbering — every error the parser emits uses them.
+//! QUIRK-0001/LORE-0001 record the 2.9.0 default parser limits epoch (commit
+//! `52d8ade7`) and LORE-0003 that `XML_PARSE_HUGE` (1<<19) existed since 2.8.0
+//! as a near-no-op before the limits made it meaningful.
+//!
+//! # Deliberate oddities
+//!
+//! The `_deprecated_*`/`_unused_*` variants and historical enum values are
+//! deliberately retained even when the current code never produces them — the
+//! numeric surface is part of the ABI. Missing-docs is allowed here for the
+//! same reason as structs.rs: the C headers are the documentation.
+//!
+//! # Proving courts
+//!
+//! The ERROR-001 differential probe (`courts/suites/data-abi/error-family-
+//! probe.c`) verifies every error code/level/message byte-identical against
+//! the oracle DSO (48/48 cases); the RUST-MIRROR-ABI court checks enum
+//! discriminants; the header-compile court (571/571) compiles every public
+//! header against the candidate DSO.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to renumber the error enums into a tidy
+//! contiguous sequence — R-000163 proved that shifts error codes silently
+//! (SPACE_REQUIRED 89 vs 65) and every C consumer matching on
+//! `XML_ERR_SPACE_REQUIRED` would misbehave. The values must match the
+//! upstream headers exactly, gaps and all.
 
 use std::os::raw::c_int;
 

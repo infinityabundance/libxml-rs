@@ -1,0 +1,16 @@
+{
+ "module": "xml/xpointer/mod",
+ "upstream": [
+  "xpointer.c"
+ ],
+ "export_samples": [
+  "xmlXPtrEvalNodeSet"
+ ],
+ "subsystems": [
+  "xpointer"
+ ],
+ "residuals": [],
+ "court_families": [
+  "XPOINTER"
+ ]
+}

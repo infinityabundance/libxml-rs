@@ -1,0 +1,20 @@
+{
+ "module": "bin/xmllint",
+ "upstream": [
+  "xmllint.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [],
+ "court_families": [
+  "C14N",
+  "CLI-XMLLINT",
+  "DTD",
+  "HTML",
+  "PARSER",
+  "RELAXNG",
+  "SCHEMATRON",
+  "XINCLUDE",
+  "XSD"
+ ]
+}

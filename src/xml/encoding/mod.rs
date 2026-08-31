@@ -17,6 +17,67 @@
 //! The internal encoding is always UTF-8. All conversions go to/from UTF-8.
 //! The handler registry stores `_xmlCharEncodingHandler` structs that contain
 //! function pointers for input (→UTF-8) and output (UTF-8→) conversion.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `encoding.c` / `encoding.h`
+//! (`SRC-LIBXML2-2.15.0-ENCODING-C`, parity target libxml2 2.15.3 oracle).
+//! ABI surface: `xmlLookupCharEncodingHandler`, `xmlGetCharEncodingHandler`,
+//! `xmlOpenCharEncodingHandler`, `xmlCreateCharEncodingHandler`,
+//! `xmlCharEncInput`/`xmlCharEncOutput` and the `_xmlCharEncodingHandler`
+//! C-layout struct (R-000129 fixed the Rust mirror from 48 to the upstream
+//! 56 bytes).
+//!
+//! # Conceptual behavior
+//!
+//! Detection runs BOM first, then the XML declaration, then registry lookup.
+//! The registry mirrors upstream `defaultHandlers[32]` plus the extra-handler
+//! table (`globalHandlers`, encoding.c): named handlers are registered under
+//! their canonical lowercased alias and found by `xmlFindCharEncodingHandler`
+//! via `find_encoding_handler`.
+//!
+//! # Ownership & safety invariants
+//!
+//! Handlers are allocated with xmlMalloc and owned by the registry; `xmlFree` releases
+//! them at teardown. Registry access is serialized by an RwLock; that
+//! serialization is exactly what makes the raw `HandlerPtr` Send+Sync
+//! SAFETY sound (documented on the wrapper). Names from
+//! `xmlGetCharEncodingName`/alias tables are borrowed statics — the caller
+//! never frees them.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000157 (OPEN, INTENTIONAL_SAFE_DIVERGENCE): the crate ships no
+//! iconv/ICU backend, so the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC,
+//! UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252)
+//! report XML_ERR_UNSUPPORTED_ENCODING (32) where the 2.15.3 oracle returns
+//! a converter, while the native set (UTF-8, UTF-16LE/BE, UTF-16,
+//! ISO-8859-1, US-ASCII) and all error paths are byte-identical. Upstream
+//! itself removed the libiconv dependence where possible in the 2.10+ era
+//! (HISTORY.md §1.8), which is the epoch this module targets.
+//!
+//! # Deliberate oddities
+//!
+//! The bounded native set is a deliberate divergence, not a stub: the
+//! missing encodings are absent because no converter exists, and every
+//! error path matches the oracle. `xmlLookupCharEncodingHandler` returns
+//! XML_ERR_OK with a NULL handler for UTF-8/NONE exactly like upstream
+//! encoding.c (`/* Return NULL handler for UTF-8 */`).
+//!
+//! # Proving courts
+//!
+//! ENCODING-001 (`courts/suites/data-abi/encoding-family-probe.c`) compiles
+//! one C probe against the oracle DSO and the candidate and requires
+//! byte-identical stdout across the native set and all error paths.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not collapse the registry to a fixed match statement: custom handlers
+//! added through `xmlAddCharEncodingHandler` must stay discoverable by later
+//! lookups. Do not fabricate handlers for the iconv-only encodings — that
+//! would fake a converter that does not exist and break the R-000157
+//! bounded-obligation record. Do not touch the struct layout: R-000129
+//! proved a 48-byte mirror breaks the C ABI.
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
@@ -68,6 +129,11 @@ unsafe impl Send for HandlerPtr {}
 unsafe impl Sync for HandlerPtr {}
 
 /// Global list of registered encoding handlers, protected by a read-write lock.
+///
+/// UPSTREAM-PARITY: this is the Rust mirror of encoding.c `globalHandlers`
+/// (the table behind `xmlFindExtraHandler`); `xmlAddCharEncodingHandler`
+/// appends here and lookups scan it after the built-in `defaultHandlers[32]`
+/// set (R-000157: only the native subset is backed by real converters).
 static ENCODING_HANDLERS: Lazy<RwLock<Vec<HandlerPtr>>> = Lazy::new(|| RwLock::new(Vec::new()));
 
 /// Whether the built-in encoding handlers have been initialized.

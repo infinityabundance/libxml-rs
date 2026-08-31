@@ -28,6 +28,59 @@
 //! never fabricates success: without a network no context can be returned,
 //! so `xmlNanoHTTPMethodRedir` (and everything built on it) returns NULL
 //! exactly as upstream does when the connect fails.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `nanoftp.c` and `nanohttp.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-NANOHTTP-C / SRC-LIBXML2-2.15.0-NANOFTP-C) with the
+//! `nanoftp.h`/`nanohttp.h`/`xmlIO.h` signatures — 48 exported entry points
+//! resolved by the oracle DSO (R-000165 closed the nano gaps).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the legacy network-client ABI: FTP control/data
+//! lifecycle, HTTP method wrappers and the xmlIO protocol callbacks. Because
+//! the crate is an offline forensic reimplementation there is no network
+//! stack: the design is documented above — control-plane simulation only,
+//! never fabricated data-plane success.
+//!
+//! # Ownership & safety invariants
+//!
+//! Context handles (`xmlNanoFTPCtxtPtr`/`xmlNanoHTTPCtxtPtr`) are owned by the
+//! caller and freed with `xmlNanoFTPFreeCtxt`/`xmlNanoHTTPFreeCtxt`; internal
+//! state lives in the side registries (`FTP_CTXTS`/`HTTP_CTXTS`) keyed by the
+//! allocated handle, so a handle is never dereferenced after its free. Fake
+//! fds allocated by the connect simulation are released by the matching close
+//! entry points.
+//!
+//! # Historical quirks & epochs
+//!
+//! nanohttp/nanoftp date to the 2.4-2.6 era and are deprecated upstream but
+//! still exported; the modern 2.10+ epoch kept the ABI for legacy consumers.
+//! The offline no-network divergence is a deliberate project-level decision
+//! recorded in the header above.
+//!
+//! # Deliberate oddities
+//!
+//! The fake-transport simulation (connect returns a fake fd, list/get return
+//! upstream failure values) is the deliberate core oddity: the observable
+//! contract is kept where it does not require a server, and never faked where
+//! it does.
+//!
+//! # Proving courts
+//!
+//! The DSO-LOADER court resolves all 48 symbols from the built DSO; the
+//! HEADER-COMPILE court compiles the nanoftp/nanohttp headers; the
+//! failure-path behaviors are exercised by the data-ABI probe suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to make every nano function return the failure
+//! value unconditionally (no control-plane simulation) — that would break the
+//! documented FTP lifecycle contract (`NewCtxt → Connect → Quit → Close`) that
+//! downstream code sequences, and the `xmlNanoFTPConnect`/`GetConnection`
+//! entry points would stop matching their upstream return shapes. The
+//! simulation must stay as bounded as documented, no more and no less.
 
 #![allow(
     missing_docs,

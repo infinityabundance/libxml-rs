@@ -11,6 +11,62 @@
 //! # Courts
 //!
 //! XPATH-TYPES-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the value model of upstream `xpath.c` / `xpathInternals.h`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! `xmlXPathObject` types (XPATH_NODESET, XPATH_BOOLEAN, XPATH_NUMBER,
+//! XPATH_STRING, XPATH_POINT/RANGE/LOCATIONSET, XPATH_USERS,
+//! XPATH_XSLT_TREE) and the string/number conversion functions
+//! `xmlXPathCastToString`, `xmlXPathStringEvalNumber` and
+//! `xmlXPathCastNumberToString`.
+//!
+//! # Conceptual behavior
+//!
+//! Defines the runtime value types and their conversions. Node-sets are
+//! ordered, deduplicated collections of borrowed document nodes;
+//! `node_string_value` computes the XPath string-value of a node
+//! (R-000114 fixed the empty attribute string-value); `string_bytes_to_
+//! number` / `number_to_string` are faithful ports of the R-000166
+//! number conversion with the 1e9/1e-5 scientific threshold and
+//! DBL_DIG=15 fraction digits.
+//!
+//! # Ownership & safety invariants
+//!
+//! `XPathNode` holds a raw `*mut _xmlNode` that is borrowed from the
+//! document — the tree must outlive evaluation (SAFETY note on the
+//! struct). Values own their storage (String/NodeSet) and are freed by
+//! drop; nothing here allocates through the C allocator except the
+//! exports bridge.
+//!
+//! # Historical quirks & epochs
+//!
+//! The conversion rules track the 2.15.3 oracle epoch: the E-001
+//! newline-separated node-set dump (commit da35eeae, 2.9.10) is the
+//! output epoch the XPath CLI surfaces target, and number formatting
+//! (R-000166, 967/967 number() corpus) is fixed since the same era.
+//!
+//! # Deliberate oddities
+//!
+//! `-0.0` serializes as `0`, NaN as `NaN`, infinities as `Infinity`/
+//! `-Infinity`, and integral values take the integer shortcut — the
+//! upstream xmlXPathFormatNumber quirks reproduced instead of Rust
+//! Display.
+//!
+//! # Proving courts
+//!
+//! XPATH-TYPES-* differential probes and the 967/967 number() corpus
+//! compare conversions byte-identical against the oracle; cargo test
+//! runs the conversion unit suites (incl. test_number_to_string).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not switch conversions to Rust std float formatting or parsing:
+//! the oracle digit accumulation (MAX_FRAC=20), exponent underflow
+//! (5e-324 → 0), threshold selection and exponent padding are observable
+//! (R-000166). Do not make node-sets own the tree: callers free the
+//! document independently of the XPath object.
 
 use crate::abi::structs::_xmlNode;
 use std::cmp::Ordering;

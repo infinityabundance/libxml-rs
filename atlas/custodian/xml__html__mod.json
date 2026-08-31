@@ -1,0 +1,17 @@
+{
+ "module": "xml/html/mod",
+ "upstream": [
+  "HTMLparser.c",
+  "HTMLtree.c",
+  "HTMLdocument.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "html-parser",
+  "html-tree"
+ ],
+ "residuals": [
+  "R-000118"
+ ],
+ "court_families": []
+}

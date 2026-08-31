@@ -1,0 +1,19 @@
+{
+ "module": "xml/xpath/types",
+ "upstream": [
+  "xpath.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xpath",
+  "xpath-internals"
+ ],
+ "residuals": [
+  "R-000114"
+ ],
+ "court_families": [
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER"
+ ]
+}

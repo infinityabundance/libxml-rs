@@ -1,0 +1,24 @@
+{
+ "module": "abi/exports_xslt_vars",
+ "upstream": [
+  "variables.c",
+  "params.c"
+ ],
+ "export_samples": [
+  "xsltVariableLookup",
+  "xsltEvalGlobalVariables",
+  "xsltEvalUserParams",
+  "xsltEvalOneUserParam",
+  "xsltQuoteUserParams",
+  "xsltQuoteOneUserParam"
+ ],
+ "subsystems": [
+  "xslt-variables",
+  "xslt-parameters",
+  "xslt-rvt"
+ ],
+ "residuals": [
+  "R-000160"
+ ],
+ "court_families": []
+}

@@ -1,7 +1,57 @@
 //! String utility functions for libxml-rs.
 //!
 //! Provides operations on `xmlChar*` (i.e. `*mut u8`) strings compatible
-//! with upstream libxml2's string handling.
+//! with upstream libxml2 string handling.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream xmlstring.c (SRC-LIBXML2-2.15.0-XMLSTRING-C): xmlStrlen,
+//! xmlStrdup, xmlStrndup, xmlStrchr, xmlStrstr, xmlStrcmp, xmlStrEqual,
+//! xmlStrsub, the UTF-8 helpers and the xmlChar* memory functions. Parity
+//! target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Provides operations on xmlChar* (u8) NUL-terminated strings compatible
+//! with upstream semantics: length scan, duplication, comparison, UTF-8
+//! iteration and substring extraction. String values are owned per the
+//! upstream contract — the caller frees xmlStrdup results with xmlFree.
+//!
+//! # Ownership & safety invariants
+//!
+//! SAFETY: functions require NUL-terminated inputs (or NULL); callers own
+//! returned copies (freed with xmlFree). The R-000169 lesson applies here:
+//! xml_strndup must be used when the source is a Rust String with an exact
+//! length — xml_strdup on a non-NUL-terminated as_ptr() scans past the
+//! allocation (heap-buffer-overflow, caught by ASan).
+//!
+//! # Historical quirks & epochs
+//!
+//! The 11.1-X fix (R-000169) switched the parser filename duplication from
+//! xml_strdup to xml_strndup(fname.as_ptr(), fname.len()) after ASan pinned
+//! the overflow. Historical quirk: the upstream limit macro XML_MAX_TEXT_
+//! LENGHT was misspelled for years (QUIRK-0004, commit 1fb2e0df) — the
+//! spelling is part of the observable header surface.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddity: xml_strdup returns NULL on NULL input and on OOM
+//! (matching upstream xmlStrdup); the module deliberately never assumes
+//! Rust-length semantics — every operation is NUL-terminated-centric.
+//!
+//! # Proving courts
+//!
+//! Exercised indirectly by TREE-001 (URL/base fingerprints), ERROR-001
+//! (str1/str2/str3 copies), the data-ABI family probes, and `cargo test
+//! --lib` under ASan (which caught the R-000169 overflow).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is using Rust String/slices everywhere and
+//! dropping the NUL-terminated xmlChar* model — it would break the C ABI
+//! (xmlChar* parameters) and the ownership contract. Do not fix xml_strdup
+//! callers to assume NUL-termination of Rust Strings: that was the exact
+//! heap-buffer-overflow R-000169 fixed.
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::types::xmlChar;

@@ -1,0 +1,79 @@
+{
+ "schema": "custodian-commentary-court-1",
+ "court": "CUSTODIAN-COMMENTARY-0001",
+ "phase": "11.2",
+ "timestamp": "2026-08-31T18:38:01Z",
+ "title": "Forensic custodian commentary court (11.2)",
+ "dimensions": [
+  {
+   "key": "upstream_contract",
+   "label": "1. upstream subsystem/contract"
+  },
+  {
+   "key": "conceptual_behavior",
+   "label": "2. conceptual behavior"
+  },
+  {
+   "key": "ownership_safety",
+   "label": "3. ownership/safety invariants"
+  },
+  {
+   "key": "historical_epochs",
+   "label": "4. historical quirks/epochs/commits"
+  },
+  {
+   "key": "deliberate_oddities",
+   "label": "5. deliberate oddities"
+  },
+  {
+   "key": "proving_courts",
+   "label": "6. proving courts"
+  },
+  {
+   "key": "tempting_simplification",
+   "label": "7. what a tempting simplification would break"
+  }
+ ],
+ "modules_total": 127,
+ "modules_passed": 127,
+ "modules_not_applicable": 7,
+ "not_applicable": [
+  {
+   "module": "src/abi/exports_xslt_internals.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated/assembled export registry"
+  },
+  {
+   "module": "src/abi/ucs_blocks.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/abi/gen_ucs_blocks.py)"
+  },
+  {
+   "module": "src/abi/ucs_cat.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/abi/gen_ucs_blocks.py)"
+  },
+  {
+   "module": "src/compatibility/historical/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/HISTORY.md + SEMANTIC_EPOCHS.md"
+  },
+  {
+   "module": "src/compatibility/platform/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/PLATFORM_SURFACE_ATLAS.md"
+  },
+  {
+   "module": "src/compatibility/quirks/mod.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "re-export facade; docs live in atlas/QUIRKS.md"
+  },
+  {
+   "module": "src/xml/unicode_tables.rs",
+   "classification": "NOT-APPLICABLE",
+   "reason": "generated table (tools/archaeology/gen_chvalid_tables.py)"
+  }
+ ],
+ "failures": [],
+ "verdict": "PASS"
+}

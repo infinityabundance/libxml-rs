@@ -1,6 +1,6 @@
 //! HTML parser and serializer (§29, §85 Phase 4).
 //!
-//! libxml2's historical HTML parser — a tag-recovery parser, NOT a WHATWG
+//! The libxml2 historical HTML parser — a tag-recovery parser, NOT a WHATWG
 //! HTML5 parser. Preserves version-specific historical behavior.
 //!
 //! Implements:
@@ -10,6 +10,64 @@
 //! - Auto-creation of html/head/body when missing
 //! - HTML-specific serialization (no self-closing void tags, no namespace decls)
 //! - Minimized and unquoted attribute support
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `HTMLparser.c`, `HTMLtree.c` and `HTMLdocument.c`
+//! (`SRC-LIBXML2-2.15.0-HTMLPARSER-C` et al., parity target libxml2 2.15.3
+//! oracle): the tag-recovery HTML parser, the htmlElementInfo table,
+//! htmlDocDump serialization and the htmlDefaultSAXHandler /
+//! htmlDefaultSAXLocator data globals (R-000135 exports them
+//! byte-identical; htmlInitAutoClose / htmlElementAllowedHere are the
+//! R-000138 no-op set).
+//!
+//! # Conceptual behavior
+//!
+//! Implements libxml2 historical HTML parsing: case-insensitive tag
+//! recovery with auto-close and implicit-open rules driven by the
+//! htmlElementInfo flags table (HTML_EMPTY/HTML_NO_END/HTML_HEAD/...),
+//! HTML entity resolution, auto-creation of html/head/body, minimized and
+//! unquoted attributes, and HTML-specific serialization (no self-closing
+//! void tags, no namespace declarations). This is deliberately NOT a
+//! WHATWG HTML5 parser (WHATWG-HTML).
+//!
+//! # Ownership & safety invariants
+//!
+//! The parser creates a document the caller owns (freed with
+//! `xmlFreeDoc`, same as XML); elements/attributes are owned by the tree.
+//! Serialization borrows the tree and writes through the output buffer.
+//! Push-mode input buffers are owned by the parser context (CVE-2015-8242
+//! fixed a push-mode buffer overread upstream, SEC-0008).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-007: the `--html` dump became a single line in the 2.15.0 epoch —
+//! six `xmlOutputBufferWriteString(buf, "\n")` calls were removed from
+//! HTMLtree.c (commits 0d81d6f8, 46f05ea4); the crate matches the 2.15+
+//! single-line epoch. R-000118 locked the HTML output method for XSLT.
+//! The tag-recovery rules themselves go back to the 1.x/2.0 HTML era and
+//! stay version-faithful.
+//!
+//! # Deliberate oddities
+//!
+//! The htmlElementInfo table ordering and flag values reproduce upstream
+//! exactly (R-000135 DATA-GLOBALS-001 fingerprints the default handler
+//! slots); case-folding and the auto-close stack follow HTMLparser.c
+//! rather than the WHATWG spec — a deliberate historical fidelity choice.
+//!
+//! # Proving courts
+//!
+//! HTML-* courts (SEC-0008), the CLI `--html` differential cases
+//! (html-dump epoch case in SEMANTIC_EPOCHS.md) and DATA-GLOBALS-001
+//! compare output byte-identical against the oracle; cargo test runs the
+//! HTML unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not switch to a WHATWG HTML5 parser: downstream consumers depend on
+//! libxml2 tag-recovery quirks. Do not re-add newlines to the dump (E-007
+//! epoch) and do not reorder or re-flag the element table — both are
+//! observable through the serializer and the exported data globals.
 
 use core::ffi::c_void;
 use core::ptr;
@@ -29,7 +87,7 @@ use crate::xml::tree;
 // HTML Element Info
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// HTML element flag constants matching libxml2's HTMLparser.h.
+/// HTML element flag constants matching libxml2 HTMLparser.h.
 const HTML_INLINE: u32 = 0x1;
 const HTML_BLOCK: u32 = 0x2;
 const HTML_EMPTY: u32 = 0x4;

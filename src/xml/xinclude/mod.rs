@@ -25,6 +25,58 @@
 //!
 //! This implementation follows the XInclude 1.0 W3C Recommendation:
 //! https://www.w3.org/TR/xinclude/
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xinclude.c` (`SRC-LIBXML2-2.15.0-XINCLUDE-C`, parity
+//! target libxml2 2.15.3 oracle): `xmlXIncludeProcess`, `xmlXIncludeProcess
+//! Flags`, `xmlXIncludeProcessNode` and the resource-loader setter
+//! `xmlXIncludeSetResourceLoader` (R-000165 closed the loader surface).
+//!
+//! # Conceptual behavior
+//!
+//! Implements the XInclude processing model: locate `<xi:include>` in the
+//! XInclude namespace, resolve `href` through the loader, parse
+//! `parse="xml"` (default) or `parse="text"`, honor the `xpointer`
+//! attribute, apply `<xi:fallback>` when resolution fails, recurse into
+//! included documents, and detect circular references via URL tracking.
+//! Processed nodes are replaced by `XML_XINCLUDE_START` / `XML_XINCLUDE_END`
+//! sentinel nodes per upstream.
+//!
+//! # Ownership & safety invariants
+//!
+//! The document is owned by the caller and borrowed during processing;
+//! included content is parsed into fresh nodes that are spliced into the
+//! document (owned by it from then on). Loaded documents from the loader
+//! cache are owned per the loader contract; the sentinel nodes are owned
+//! by the document like any other node.
+//!
+//! # Historical quirks & epochs
+//!
+//! The crate targets the libxml2 2.15.3 oracle epoch: the XINCLUDE
+//! differential probes compare processed output byte-identical against the
+//! oracle DSO, and the xpointer-attribute path rides on the XPointer
+//! module (SEC-0009 hardened that path in the 2016 epoch).
+//!
+//! # Deliberate oddities
+//!
+//! The sentinel-node model (XML_XINCLUDE_START/END wrappers with the
+//! XInclude namespace) is upstream-specific — a plain splice would lose
+//! the include boundaries that downstream consumers (e.g. XSLT
+//! document() and debug dumps) observe.
+//!
+//! # Proving courts
+//!
+//! The XINCLUDE court family and the XINCLUDE differential probes compare
+//! processed trees/output byte-identical against the oracle; XPointer
+//! courts cover the xpointer-attribute path.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not drop the sentinel nodes: consumers detect include boundaries
+//! through them. Do not skip the loader hook (R-000165): custom resource
+//! loaders must fire. Do not inline `parse="text"` content as XML:
+//! text inclusion must bypass the XML parser.
 
 use core::ffi::c_void;
 use core::ptr;

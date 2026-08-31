@@ -1,0 +1,33 @@
+{
+ "module": "abi/exports_xslt_util",
+ "upstream": [
+  "xsltutils.c"
+ ],
+ "export_samples": [
+  "xsltSetCtxtSecurityPrefs",
+  "xsltCheckRead",
+  "xsltCheckWrite",
+  "xsltSetCtxtParseOptions",
+  "xsltSetGenericErrorFunc",
+  "xsltTransformErrorV"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-decimal-formats",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000160",
+  "R-000161",
+  "R-000168"
+ ],
+ "court_families": []
+}

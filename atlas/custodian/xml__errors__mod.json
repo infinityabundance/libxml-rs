@@ -1,0 +1,26 @@
+{
+ "module": "xml/errors/mod",
+ "upstream": [
+  "error.c"
+ ],
+ "export_samples": [
+  "xmlParserError",
+  "xmlParserWarning",
+  "xmlParserValidityError",
+  "xmlParserValidityWarning"
+ ],
+ "subsystems": [
+  "errors"
+ ],
+ "residuals": [
+  "R-000135",
+  "R-000161",
+  "R-000163",
+  "R-000168",
+  "R-000171"
+ ],
+ "court_families": [
+  "CALLBACK",
+  "ERROR"
+ ]
+}

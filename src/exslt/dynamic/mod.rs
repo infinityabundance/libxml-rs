@@ -15,6 +15,38 @@
 //!   bridge requires the transform context, which the safe XPath function
 //!   signature does not carry; the common `dyn:call` usage pattern is
 //!   documented as limited.
+//!
+//! # Ownership & safety invariants
+//!
+//! `dyn:element`/`dyn:attribute` build temporary nodes owned by the
+//! returned node-set's document (freed with the XPathValue); the transform
+//! context is borrowed for the duration of the call and never stored.
+//! `dyn:evaluate` parses and evaluates an expression string in the current
+//! context; the resulting value owns its own memory per the XPath object
+//! rules (OWNERSHIP_ATLAS section 1).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45 byte-identical), so
+//! the dynamic module has no epoch branching. The documented limitation on
+//! `dyn:call` (no full template bridge) is a candidate-side constraint
+//! recorded in the module; upstream's dyn:call requires the transform
+//! context and is rarely exercised by real stylesheets.
+//!
+//! # Proving courts
+//!
+//! The xsltproc CLI court family and the module unit tests
+//! (cargo test --lib exslt::dynamic) exercise dyn:evaluate, dyn:element
+//! and dyn:attribute against the oracle where a CLI case covers them.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to implement dyn:evaluate by invoking the
+//! engine's public XPath evaluation entry point directly. Upstream instead
+//! evaluates in the *current* context (variable bindings and namespace
+//! scope included); losing that context makes dynamic expressions return
+//! different results than the oracle. Keep the context-threading through
+//! the function signature even when it looks redundant.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

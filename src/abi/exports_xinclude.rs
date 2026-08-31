@@ -14,11 +14,62 @@
 //!
 //! # Engine scope
 //!
-//! The engine's public entry points (`xinclude_process`,
+//! The engine public entry points (`xinclude_process`,
 //! `xinclude_process_flags`) always walk the whole document starting at its
 //! root element. The tree-based entry points below therefore process the
 //! document that owns the given node; for a node that is the document root
 //! (the common case) this is exactly the upstream subtree semantics.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xinclude.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-XINCLUDE-C) with the `xinclude.h` signatures; R-000165
+//! (11.1-O) closed the xinclude export gaps (e.g.
+//! `xmlXIncludeSetResourceLoader`).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the XInclude context ABI: context create/free, the
+//! process entry points (`xmlXIncludeProcessNode`, `xmlXIncludeProcessTree`
+//! [Flags][Data]), the recursive flag variants and the context accessors,
+//! wrapping the native-Rust engine in `src/xml/xinclude` that also powers
+//! `xmllint --xinclude`.
+//!
+//! # Ownership & safety invariants
+//!
+//! Contexts are caller-owned (freed with `xmlXIncludeFreeContext`); processed
+//! documents stay caller-owned — the engine mutates the tree in place and
+//! never adopts the doc; the context records only the document, flags, error
+//! handler and last error code (all internal per-include state is Rust-owned
+//! and process-lifetime). Return codes follow upstream (-1 error, 0
+//! not-processed, 1 processed).
+//!
+//! # Historical quirks & epochs
+//!
+//! XInclude support arrived in the 2.6 era and its ABI is stable through the
+//! 2.15.3 parity target; R-000165 (11.1-O) added the missing xinclude symbols
+//! so the oracle export set is complete.
+//!
+//! # Deliberate oddities
+//!
+//! The tree-based entry points process the whole document that owns the given
+//! node rather than a strict subtree (documented in the header above) — a
+//! deliberate scope choice that is exactly upstream semantics for the common
+//! root-node case.
+//!
+//! # Proving courts
+//!
+//! The XINCLUDE court family, the CLI-XMLLINT xinclude cases and the
+//! DSO-LOADER/HEADER-COMPILE courts cover this module; the xinclude unit
+//! tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to make `xmlXIncludeProcessNode` process only
+//! the node subtree — for non-root nodes upstream walks the owning document,
+//! so the fingerprint the XINCLUDE courts compare would diverge. Another
+//! shortcut, freeing the document in `xmlXIncludeFreeContext`, would break the
+//! caller-owned-document contract.
 
 #![allow(
     missing_docs,

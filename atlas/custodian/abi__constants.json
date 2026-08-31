@@ -1,0 +1,19 @@
+{
+ "module": "abi/constants",
+ "upstream": [
+  "globals.c",
+  "xmlerror.h",
+  "parser.h"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "globals"
+ ],
+ "residuals": [],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "THREADING"
+ ]
+}

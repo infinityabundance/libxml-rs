@@ -1,7 +1,7 @@
 //! XML Schema implementation (§27, §85 Phase 6).
 //!
-//! XML Schema (W3C XSD) validation and datatype machinery. libxml2's schema
-//! support is an UPSTREAM_EXTENSION known to deviate from the standard in
+//! XML Schema (W3C XSD) validation and datatype machinery. Upstream libxml2
+//! schema support is an UPSTREAM_EXTENSION known to deviate from the standard in
 //! places — parity follows the oracle.
 //!
 //! Phase 6: Complete — schema parsing, datatype validation, document validation,
@@ -10,8 +10,62 @@
 //! # UPSTREAM-PARITY
 //!
 //! This module implements a simplified but functional XSD validator that
-//! follows libxml2's observable behavior for the most common patterns.
+//! follows upstream libxml2 observable behavior for the most common patterns.
 //! Deviations from the W3C specification that match libxml2 are intentional.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream xmlschemas.c, xmlschemastypes.c and xmlschemavalues.c
+//! (SRC-LIBXML2-2.15.0, oracle tree `oracle/historical/src/libxml2-2.15.0/`):
+//! xmlSchema parse/valid contexts, component model, facet validation and the
+//! built-in datatypes. Parity target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! XML Schema (W3C XSD) validation and datatype machinery: schema parsing,
+//! component classification, simple/complex type validation, facets and
+//! document validation. Upstream libxml2 schema support is an
+//! UPSTREAM_EXTENSION known to deviate from the standard in places — parity
+//! follows the oracle.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: schemas own their component tree (xmlSchemaFree); parser and
+//! valid contexts own their state (xmlSchemaFreeParserCtxt /
+//! xmlSchemaFreeValidCtxt); the validated document and the schema
+//! import/resource-loading are borrowed through xmlSchemaSetResourceLoader.
+//! SAFETY: facet validation operates on owned string representations, never
+//! on borrowed C buffers beyond the call.
+//!
+//! # Historical quirks & epochs
+//!
+//! XSD support was solidified in the 2.6 validation era (2003-2004,
+//! atlas/HISTORY.md 1.5). R-000124 (11.1-G) closed the header-surface gap so
+//! every public schema header declaration compiles against the DSO;
+//! xmlSchemaFreeWildcard is a safe no-op (the candidate never allocates
+//! wildcard objects; R-000138) and xmlSchemaCleanupTypes is a documented
+//! no-op.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: deviations from the W3C XSD specification that match
+//! upstream libxml2 are intentional; the exported entry points
+//! (xmlSchemaNewParserCtxt, xmlSchemaNewMemParserCtxt, xmlSchemaFree,
+//! xmlSchemaValidateDoc, xmlSchemaFreeParserCtxt, xmlSchemaFreeValidCtxt)
+//! follow the upstream signatures.
+//!
+//! # Proving courts
+//!
+//! Exercised by the XSD court family, the header-compile court (595/595), the
+//! dso-loader court (25/25) and `cargo test --lib`. Receipts under
+//! courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is a clean-room full XSD 1.0 engine — the
+//! oracle deviations (UPSTREAM_EXTENSION) would not be reproduced and
+//! differential output would diverge. Do not drop the lazy/empty type-cleanup
+//! entry points: they are part of the exported surface (R-000138).
 
 use core::ffi::c_void;
 use core::ptr;
@@ -25,7 +79,8 @@ use crate::abi::types::xmlElementType::*;
 // XSD Component Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// XSD component types — mirrors libxml2's schema component classification.
+/// XSD component types — mirrors the upstream libxml2 schema component
+/// classification.
 ///
 /// # UPSTREAM-PARITY
 ///

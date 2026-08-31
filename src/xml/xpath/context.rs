@@ -13,6 +13,60 @@
 //! # Courts
 //!
 //! XPATH-CONTEXT-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors `xmlXPathContext` (xpath.c / xpathInternals.h,
+//! `SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! context node/document, position/size, variable and function registries,
+//! namespace scope, the C var/function lookup hooks, and the opLimit/
+//! opCount fields (R-000128 fixed their widths in the C mirror).
+//!
+//! # Conceptual behavior
+//!
+//! Holds the state an evaluation needs: current document, context node,
+//! context position/size, variable bindings, namespace declarations,
+//! registered extension functions and recursion-depth tracking. The
+//! C function bridge (R-000162) synthesizes an `xmlXPathParserContext`
+//! around the value stack, pushes evaluated args, invokes the registered
+//! C function and converts its result back — including the namespaced
+//! function_lookup fallback the XSLT engine uses for prefix:local calls.
+//!
+//! # Ownership & safety invariants
+//!
+//! Callback user-data pointers (`var_lookup_data` / `func_lookup_data`)
+//! are stored verbatim and passed back — the caller keeps them alive
+//! (OWNERSHIP_ATLAS §6). A `VarLookupFunc` returning an
+//! `_xmlXPathObject` transfers ownership to the caller. Context state is
+//! single-threaded per evaluation; the recursion guard bounds nesting.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000162: the C XPath function registry was a stub that always errored
+//! ('C extension function cannot be called') until the 11.1-L callback
+//! audit built the parser-context bridge — registered functions now run
+//! with oracle-verified semantics. The recursion guard mirrors upstream
+//! depth handling introduced in the hardening epochs (SEC-0001 lineage).
+//!
+//! # Deliberate oddities
+//!
+//! The synthesized parser context is an internal adapter, not the full
+//! upstream xmlXPathParserContext: only the value-stack operations that
+//! C extension functions observe are modeled.
+//!
+//! # Proving courts
+//!
+//! XPATH-CONTEXT-* and CALLBACK-001 (courts/suites/data-abi/callback-
+//! family-probe.c) verify registered C function invocation byte-identical
+//! against the oracle; cargo test covers variable/function resolution.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not drop the C-callback bridge back to a Rust-only registry: XSLT
+//! extension functions and C consumers register raw function pointers
+//! through xmlXPathRegisterFunc[NS] and observe them firing (R-000162).
+//! Do not remove the recursion guard — deep expressions must fail like
+//! the oracle, not overflow the stack.
 
 use crate::abi::structs::{_xmlDoc, _xmlNode, _xmlXPathObject};
 use crate::abi::types::xmlChar;

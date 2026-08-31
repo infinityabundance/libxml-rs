@@ -3,6 +3,61 @@
 //! General entities, parameter entities, external entities, entity
 //! substitution, entity references, security limits, recursive entities,
 //! expansion limits.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream entities.c and the entity paths of parser.c
+//! (SRC-LIBXML2-2.15.0, oracle tree `oracle/historical/src/libxml2-2.15.0/`):
+//! xmlAddEntity, xmlGetEntity, xmlGetPredefinedEntity, xmlNewReference,
+//! entity content caching and the expansion limits. Parity target: the system
+//! libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! General entities, parameter entities, external entities, entity
+//! substitution, entity references, security limits, recursive entities and
+//! expansion limits. The entity model parses a referenced entity content once
+//! into ent->children (XML_ENT_PARSED / XML_ENT_EXPANDING flags) and reuses
+//! it — structural re-expansion is impossible by construction.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: entity declarations are owned by the DTD hash tables
+//! (entities/pentities); ent->children nodes are owned by the declaration and
+//! freed with the DTD; entity-ref nodes share content with the entity
+//! (xmlNewReference semantics) and must never be freed separately (R-000164).
+//! SAFETY: the expansion guards make entity processing loop-free.
+//!
+//! # Historical quirks & epochs
+//!
+//! Security epochs: CVE-2014-3660 (billion laughs) fix be2a7eda and its
+//! regression fix 72a46a51 (SEC-0006) bounded expansion; CVE-2013-2877
+//! (SEC-0004) added loop detection; the 2015 batch (SEC-0008: 69030714,
+//! f1063fdb) fixed entity-boundary bugs; the recursion-depth increments came
+//! from commit 8f30bdff (2016, SEC-0009). XML_ENTITY_CONTENT_DEPTH_MAX = 32
+//! and XML_ENTITY_CONTENT_EXPANSION_MAX = 1,000,000 follow upstream.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: the amplification guard fires unconditionally with no
+//! XML_PARSE_HUGE bypass; unloadable external entities fail silently
+//! (xmlCtxtParseEntity) rather than raising undeclared-entity errors;
+//! predefined entities (amp/lt/gt/quot/apos) substitute unconditionally
+//! regardless of XML_PARSE_NOENT.
+//!
+//! # Proving courts
+//!
+//! PARSER-ENTITY-* court family, SECURITY-LIMITS probe (amplification sweep
+//! L4..L9 x 10 matches the oracle on every boundary), TREE-001, CLI-XMLLINT-
+//! 0033/0034 and `cargo test --lib`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Not caching entity content would re-parse per reference (exponential
+//! blowup — the vulnerable pre-CVE behavior); skipping the XML_ENT_EXPANDING
+//! re-entry check would loop on a self-referential entity (CVE-2013-2877). Do
+//! not drop the silent-failure path for unloadable external entities — the
+//! NONET oracle behavior depends on it (SD-004).
 
 use core::ffi::c_void;
 use core::ptr;

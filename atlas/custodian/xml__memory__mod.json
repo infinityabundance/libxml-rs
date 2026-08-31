@@ -1,0 +1,12 @@
+{
+ "module": "xml/memory/mod",
+ "upstream": [
+  "xmlmemory.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "memory"
+ ],
+ "residuals": [],
+ "court_families": []
+}

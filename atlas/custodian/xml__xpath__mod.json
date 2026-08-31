@@ -1,0 +1,26 @@
+{
+ "module": "xml/xpath/mod",
+ "upstream": [
+  "xpath.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xpath",
+  "xpath-internals"
+ ],
+ "residuals": [
+  "R-000102",
+  "R-000114",
+  "R-000126",
+  "R-000128",
+  "R-000159",
+  "R-000162",
+  "R-000166",
+  "R-000169"
+ ],
+ "court_families": [
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER"
+ ]
+}

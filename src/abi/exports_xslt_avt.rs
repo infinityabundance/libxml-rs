@@ -17,6 +17,58 @@
 //! `templates.c`, `attrvt.c`, `namespaces.c`, `transform.c`, `xsltutils.c`
 //! and `xslt.c`. The engine-level wiring notes (where the native-Rust engine
 //! replaces an upstream data structure) are documented per function.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 (`templates.c`, `attrvt.c`,
+//! `namespaces.c`, `transform.c`, `xsltutils.c`, `xslt.c`) with the upstream
+//! headers; R-000160 (11.1-I) dispositioned `xsltFreeAVTList` (empty body in
+//! the candidate because AVTs are stored as raw strings).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the attribute-value-template ABI: the
+//! `xsltAttr*TemplateProcess*` family, `xsltEvalAVT` and the
+//! `xsltEval*ValueTemplate` entry points, namespace fixup (`xsltGetNamespace`,
+//! `xsltGetSpecialNamespace`, `xsltCopyNamespace*`), `xsltSplitQName`/
+//! `xsltGetQNameURI` and `xsltGetUTF8Char`.
+//!
+//! # Ownership & safety invariants
+//!
+//! `xsltEvalAVT`/`xsltAttrTemplateValueProcess` return fresh xml-allocator
+//! strings the caller frees with `xmlFree` (OWNERSHIP_ATLAS section 3);
+//! `xsltSplitQName` returns dict-interned borrowed strings; `xsltGetSpecialNamespace`
+//! returns a namespace owned by the nodes ns list (borrowed — never freed
+//! separately); `xsltCopyNamespace` returns a fresh copy the caller frees with
+//! `xmlFreeNs`.
+//!
+//! # Historical quirks & epochs
+//!
+//! The AVT machinery dates to the libxslt 1.1 era (2004+, HISTORY.md 2.5) and
+//! is covered by the frozen E-008 transform epoch; R-000160 records that
+//! `xsltFreeAVTList` is a literal empty body in upstreams own
+//! caller-visible behavior for this engine (the candidate stores AVTs as
+//! plain strings owned by the stylesheet doc).
+//!
+//! # Deliberate oddities
+//!
+//! `xsltFreeAVTList` is a no-op that accepts any pointer without dereferencing
+//! it (documented above) — a deliberate safe no-op because this engine never
+//! allocates `xsltAttrVT` structures.
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC court cases and the XSLT court family cover the AVT
+//! evaluation paths; DSO-LOADER (25/25) and HEADER-COMPILE (595/595) resolve
+//! the exports; the avt/namespace unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to have `xsltFreeAVTList` free its argument
+//! when non-NULL to be defensive — the argument cannot belong to this engine,
+//! so freeing it would corrupt foreign memory; the no-op must stay. Another
+//! shortcut, returning owned Rust strings from `xsltSplitQName`, would break
+//! the dict-borrowed contract downstream code relies on.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
@@ -847,6 +899,9 @@ pub unsafe extern "C" fn xsltEvalTemplateString(
 /// - `avt` may be any pointer; it is never dereferenced.
 #[no_mangle]
 pub const unsafe extern "C" fn xsltFreeAVTList(_avt: *mut c_void) {}
+// R-000160: upstream 1.1.45 xsltFreeAVTList frees xsltAttrVT lists this engine
+// never allocates (AVTs are plain strings owned by the stylesheet doc); the
+// empty body is the oracle observable behavior, not a stub.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Namespace helpers (namespaces.c / xsltutils.c)

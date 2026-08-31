@@ -4,16 +4,69 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! Each axis follows the XPath 1.0 specification (§2.2) and libxml2's
+//! Each axis follows the XPath 1.0 specification (§2.2) and libxml2
 //! observable behavior for node ordering and filtering.
 //!
 //! # Courts
 //!
 //! XPATH-AXES-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the axis traversal of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! the 13 axes per XPath 1.0 §2.2, including document-order and
+//! reverse-axis ordering and the namespace-axis synthesis.
+//!
+//! # Conceptual behavior
+//!
+//! Each axis walks the tree from the context node and filters by the node
+//! test. Forward axes (child, descendant, following-sibling, following,
+//! attribute, namespace, self, descendant-or-self) emit document order;
+//! reverse axes (ancestor, ancestor-or-self, preceding-sibling, preceding)
+//! emit reverse document order, which the evaluator re-reverses.
+//! Namespace nodes are synthesized from nsDef chains and carry no parent
+//! pointer.
+//!
+//! # Ownership & safety invariants
+//!
+//! Traversal borrows the tree: returned node-sets hold borrowed `_xmlNode`
+//! pointers valid while the document lives; the axis code never frees or
+//! detaches nodes. Namespace nodes are ephemeral views over nsDef
+//! entries, not owned copies.
+//!
+//! # Historical quirks & epochs
+//!
+//! Namespace nodes have no parent pointer — a long-standing upstream
+//! divergence (QUIRK-0002 / LORE-0006): the c14n.c birth commit 044fc6b7
+//! (2002-03-04) already references "fixing #61290 namespace nodes have no
+//! parent long standing divergence", and the XPath namespace-axis behavior
+//! remains special. Axis ordering has been byte-stable across the 2.7.8 →
+//! 2.15.3 oracle span.
+//!
+//! # Deliberate oddities
+//!
+//! The namespace axis emits nodes whose name/URI come from the nsDef
+//! entry while their parent is NULL — reproduced deliberately because
+//! XPath namespace-axis consumers (XSLT, exsl:node-set) depend on it.
+//!
+//! # Proving courts
+//!
+//! XPATH-AXES-* and the XPATH differential probes compare axis results
+//! byte-identical against the oracle; the XSLT match-pattern courts
+//! (CLI-XSLTPROC-*) exercise axes through compiled templates.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not give namespace nodes a parent pointer and do not dedupe or sort
+//! axis output by value: ordering, duplicates and the parent-less
+//! namespace model are observable through xmlXPathObject node-sets.
 
 use crate::abi::structs::_xmlNode;
+use crate::abi::types::xmlElementType;
 use crate::xml::xpath::ast::{Axis, NameTest, NodeTest};
 use crate::xml::xpath::types::NodeSet;
+use std::os::raw::c_int;
 
 /// Traverse an axis from a context node, returning nodes matching the node test.
 ///
@@ -78,13 +131,26 @@ pub unsafe fn traverse_axis(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// child axis: children of context node.
+///
+/// UPSTREAM-PARITY (xpath.c xmlXPathNextChild/xmlXPathNextChildElement):
+/// the DTD node that heads `doc->children` is NOT part of the XPath data
+/// model. Upstream's child traversal either starts at the root element
+/// (xmlXPathNextChildElement via xmlDocGetRootElement for name tests) or
+/// skips XML_DTD_NODE while walking siblings; the XPath 1.0 child axis of
+/// the document node contains only element, text, comment and PI nodes.
+/// Including the DTD (type 14) would make `/root` match the doctype name
+/// and corrupt string-values, e.g. count(/root) returning 2 and
+/// string(/root) returning the DTD's empty value.
 unsafe fn child_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut NodeSet) {
     if node.is_null() {
         return;
     }
     let mut child = (*node).children;
     while !child.is_null() {
-        if matches_node_test(child, node_test) {
+        let child_type = unsafe { (*child).type_ };
+        if child_type != xmlElementType::XML_DTD_NODE as c_int
+            && matches_node_test(child, node_test)
+        {
             result.push(child);
         }
         child = (*child).next;

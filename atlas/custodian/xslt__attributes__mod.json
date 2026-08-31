@@ -1,0 +1,12 @@
+{
+ "module": "xslt/attributes/mod",
+ "upstream": [
+  "attributes.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-attribute-sets"
+ ],
+ "residuals": [],
+ "court_families": []
+}

@@ -16,6 +16,71 @@
 //!
 //! Allocator hooks are `unsafe` because they operate on raw pointers and are called
 //! from C code. Every public function documents its safety contract.
+//!
+//! # Upstream contract
+//!
+//! The parity target is libxml2 2.15.3 (`SRC-LIBXML2-2.15.0-XMLMEMORY-C`:
+//! `oracle/historical/src/libxml2-2.15.0/xmlmemory.c`) plus the allocator globals
+//! of `globals.c`. The 5 allocator entry points (`xmlMalloc`, `xmlMallocAtomic`,
+//! `xmlRealloc`, `xmlFree`, `xmlMemStrdup`) are exported as DATA function-pointer
+//! globals matching the upstream `XMLPUBVAR` declarations (R-000162).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the complete libxml2 memory-hook system: swappable
+//! allocator hooks via `xmlMemSetup`/`xmlMemGet` (and the GC aliases), a
+//! per-block metadata registry mirroring upstream xmlmemory.cs debug block
+//! table, and the tracking/debug entry points built on it (`xmlMemUsed`,
+//! `xmlMemBlocks`, `xmlMemSize`, `xmlMemDisplay*`, `xmlMemShow`,
+//! `xmlMemoryDump`).
+//!
+//! # Ownership & safety invariants
+//!
+//! Every pointer returned by an xml* allocator must be freed with `xmlFree`
+//! (OWNERSHIP_ATLAS section 1). The block registry records
+//! ptr -> (size, file, line) so `xmlMemSize` and the dumps are exact, and
+//! `xmlMemUsed`/`xmlMemBlocks` track live totals. `xmlMemSetup` custom
+//! allocators bypass the registry (counters only), matching upstreams
+//! debug-allocator-only contract. `xmlFree` on a foreign/unknown pointer is a
+//! registry-removal no-op instead of upstreams corruption — a documented safe
+//! divergence (OWNERSHIP_ATLAS section 8).
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000131 (11.1-J): the legacy allocator surface was simplified before the
+//! per-block registry existed — `xmlMemSize` returned 0 and the `*Loc` variants
+//! ignored file/line. Since the 11.1-J fix the registry is the source of truth;
+//! `xmlMemShow`s upstream most-recent ordering is still not reproduced
+//! (documented divergence). R-000133 (11.1-H): the legacy names
+//! (`xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/`xmlMemoryStrdup`) were
+//! declared-but-unexported and had to be implemented for the honest-header
+//! rule.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlMemSetup` keeps counter-only accounting for custom allocators
+//! (deliberate: upstreams block table exists only in the debug allocator).
+//! The default allocator routes through Rusts global allocator but the hook
+//! table defaults to the four default_* functions so downstream `xmlMemSetup`
+//! swaps behave identically to upstream.
+//!
+//! # Proving courts
+//!
+//! ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING court families; the
+//! allocator probes (`tools/abi/*_probe.py` + `courts/suites/data-abi/*`)
+//! compile the same C probe against the oracle DSO and the candidate and
+//! require byte-identical output; the DSO-LOADER court resolves every exported
+//! symbol from the built DSO.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to drop the per-block registry and return 0
+//! from `xmlMemSize` — that is exactly the pre-R-000131 state and would break
+//! the ALLOCATOR probes, `xmlMemUsed` exactness, and every downstream
+//! allocator-debugging consumer. Another tempting shortcut is exporting the
+//! allocator entry points as plain functions — upstream exports them as data
+//! function pointers, so the allocator-override mechanism (`xmlMalloc` =
+//! custom) could not link (R-000162 lesson).
 
 use core::alloc::Layout;
 use core::ffi::c_void;

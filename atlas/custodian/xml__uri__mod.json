@@ -1,0 +1,15 @@
+{
+ "module": "xml/uri/mod",
+ "upstream": [
+  "uri.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "uri"
+ ],
+ "residuals": [
+  "R-000132",
+  "R-000133"
+ ],
+ "court_families": []
+}

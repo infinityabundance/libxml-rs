@@ -1,0 +1,14 @@
+{
+ "module": "xml/hash/mod",
+ "upstream": [
+  "hash.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "hashes"
+ ],
+ "residuals": [],
+ "court_families": [
+  "HIST-SURFACE-EPOCH"
+ ]
+}

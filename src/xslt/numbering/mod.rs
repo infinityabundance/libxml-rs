@@ -1,5 +1,70 @@
 //! XSLT numbering (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `numbers.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-NUMBERS-C` under oracle/historical/src). Subsystem
+//! census: xslt-numbering. The observable surface is `xsltNumberFormat`/
+//! `xsltNumberFormatInsert` (xsl:number), `xsltFormatNumberConversion` /
+//! `xsltFormatNumberFunction` (format-number), and the default decimal
+//! format (xslt.c `xsltNewDecimalFormat`).
+//!
+//! # Conceptual behavior
+//!
+//! `xsl:number` computes a level/from/count sequence and formats it with
+//! the token grammar above (XSLT 1.0 §7.7). `format-number()` implements
+//! the JDK 1.1 DecimalFormat picture language: `#`/`0` digit positions,
+//! grouping separators, decimal point, percent/permille multipliers, the
+//! sub-picture separator `;` for negative patterns, and the single-quote
+//! literal escape character. The port keeps upstream quirks: the default
+//! decimal format when no xsl:decimal-format matches, the
+//! `is_negative_pattern` field set but never read, and the UTF-8 character
+//! comparisons (`xsltUTF8Charcmp`).
+//!
+//! # Ownership & safety invariants
+//!
+//! The picture parsers borrow the input strings and the `_xsltDecimalFormat`
+//! (owned by the stylesheet chain); output buffers are caller-owned
+//! (`xsltFormatNumberConversion` writes into a caller buffer, matching
+//! the upstream `caller frees` contract). The default character tables
+//! (`DEF_*`) are static; nothing here allocates beyond the output buffer.
+//! `fmt_char` resolves a format field or its default — never dereferences
+//! a NULL `fmt`.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): xsltproc `num` output is
+//! byte-identical from libxslt 1.1.26 (2009) through 1.1.45. R-000166
+//! (11.1-P) found format-number(1234567.891, `#,##0.00`) empty and
+//! value-of at full double precision; the canonical numbers.c port
+//! (R-000163) closed both, pinned by CLI-XSLTPROC-0014/0015/0017 and
+//! test_xml_number_to_string_parity_cases.
+//!
+//! # Deliberate oddities
+//!
+//! - The `is_negative_pattern` info field is set but not read by
+//!   `xsltFormatNumberConversion` — kept for fidelity to upstream
+//!   `_xsltFormatNumberInfo` (annotated in the struct).
+//! - Percent/permille handling keeps upstream multiplier semantics rather
+//!   than the simpler single-percent behavior.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0014, CLI-XSLTPROC-0015, CLI-XSLTPROC-0017 (format-number
+//! corpus), XSLT-001 (xsltFormatNumberConversion via the xslt-family
+//! probe), test_xml_number_to_string_parity_cases, and the in-crate
+//! `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Replacing the picture parser with a formatting crate breaks the
+//!   JDK 1.1 sub-picture, grouping, and percent semantics the oracle
+//!   reproduces (R-000166).
+//! - Using Rust `{:.*}` precision for value-of breaks the full-precision
+//!   epoch output (R-000166: `1234567.891000000061467` vs `1234567.891`).
+//! - Dropping the `;` negative sub-picture breaks negative format-number
+//!   output.
+//!
 //! `<xsl:number>` computes and formats numbers for output. Supported
 //! formats include decimal ("1"), alphabetic ("a", "A"), and roman
 //! ("i", "I") sequences.
@@ -23,7 +88,7 @@
 //! machinery (numbers.c 1.1.45): `xsltFormatNumberConversion` and the
 //! picture-parsing helpers it uses. Every ABI entry point that formats a
 //! number with a decimal-format picture (`xsltFormatNumberConversion`,
-//! `xsltFormatNumberFunction`, the internal XSLT evaluator's
+//! `xsltFormatNumberFunction`, the internal XSLT evaluator
 //! `format-number()`) delegates here so there is exactly one
 //! implementation of the JDK 1.1 DecimalFormat algorithm.
 

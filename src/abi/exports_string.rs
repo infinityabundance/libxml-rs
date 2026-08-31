@@ -16,6 +16,61 @@
 //! provided through the same inline-assembly forwarder used by the writer
 //! module's `xmlTextWriterWriteFormat*` exports (see
 //! `src/xml/writer/mod.rs`, `format_shims`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xmlstring.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-XMLSTRING-C) plus the `xmlstring.h`/`parserInternals.h`/
+//! `tree.h` signatures; R-000165 closed the string export gaps (the string
+//! family here completes the rest).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the string-family ABI: printf-style construction
+//! (`xmlStrPrintf`/`xmlStrVPrintf` — the former variadic, provided through the
+//! same inline-assembly forwarder as the writers `xmlTextWriterWriteFormat*`,
+//! R-000155 pattern), substring and case search, UTF-8 position/size/char
+//! helpers, and the entity-decoding string entry points (`xmlStringCurrentChar`,
+//! `xmlStringDecodeEntities`, `xmlStringLenDecodeEntities`).
+//!
+//! # Ownership & safety invariants
+//!
+//! All returned strings are xml-allocator allocations the caller frees with
+//! `xmlFree` (OWNERSHIP_ATLAS section 3); `xmlStrVPrintf` output is
+//! caller-freed. The decode-entities entry points take a live `xmlParserCtxt*`
+//! (or NULL) and return fresh strings; input buffers must be readable per the
+//! documented SAFETY sections.
+//!
+//! # Historical quirks & epochs
+//!
+//! The decode-entities API is the 2.0-era entity path that the modern parser
+//! no longer uses for its main flow; SECURITY_HISTORY section 5.3 records that
+//! `xmlStringDecodeEntities`/`xmlStringLenDecodeEntities` are a documented
+//! simplified port (the depth-20/XML_ENT_EXPANDING guards exist but errors are
+//! silent — the main parser path carries the full semantics). R-000165
+//! (11.1-O) added the string gaps.
+//!
+//! # Deliberate oddities
+//!
+//! The silent-error simplification of the decode-entities port is the
+//! deliberate oddity here (fidelity note in SECURITY_HISTORY 5.3); the
+//! git-version contract (NULL on `str[len] != 0` or any non-zero end marker)
+//! is reproduced verbatim.
+//!
+//! # Proving courts
+//!
+//! The DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts plus the string
+//! unit tests under cargo test cover this module; the ENCODING-001 probe
+//! exercises the UTF-8 helpers against the oracle.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to make the decode-entities entry points raise
+//! errors through the full parser path — the upstream API here is silent
+//! (fidelity note), so adding errors would change observable behavior;
+//! conversely, dropping the depth/expansion guards entirely would reintroduce
+//! the entity-expansion class that SEC-0006 (CVE-2014-3660) bounded. Both
+//! simplifications must not be applied.
 
 #![allow(
     missing_docs,
@@ -811,6 +866,9 @@ pub unsafe extern "C" fn xmlStringDecodeEntities(
     end2: xmlChar,
     end3: xmlChar,
 ) -> *mut xmlChar {
+    // SECURITY_HISTORY 5.3 fidelity note: this port keeps the depth-20 /
+    // XML_ENT_EXPANDING guards but raises errors silently — deliberate; the
+    // main parser path carries the full error semantics.
     if ctxt.is_null() || str.is_null() {
         return ptr::null_mut();
     }

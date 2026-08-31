@@ -1,0 +1,12 @@
+{
+ "module": "xml/namespaces/mod",
+ "upstream": [
+  "namespaces.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-namespace-alias"
+ ],
+ "residuals": [],
+ "court_families": []
+}

@@ -1,0 +1,14 @@
+{
+ "module": "xslt/namespace_alias/mod",
+ "upstream": [
+  "namespaces.c",
+  "preproc.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-compilation",
+  "xslt-namespace-alias"
+ ],
+ "residuals": [],
+ "court_families": []
+}

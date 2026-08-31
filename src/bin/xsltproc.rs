@@ -2,8 +2,8 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! Faithful port of upstream libxslt's `xsltproc` command-line tool
-//! (xsltproc.c 1.1.45). The pipeline is entirely native Rust:
+//! Faithful port of the upstream libxslt `xsltproc` command-line tool
+//! (xsltproc.c 1.1.45, the system oracle). The pipeline is entirely native Rust:
 //!
 //! ```text
 //! Rust CLI → Rust libxslt compatibility layer → Rust XSLT engine
@@ -25,6 +25,93 @@
 //!   option, 4 cannot parse stylesheet, 5 stylesheet errors, 6 cannot parse
 //!   input, 7 unsupported output method, 8 bad stringparam, 9 transform
 //!   error, 10 transformation stopped, 11 save failure.
+//!
+//! # Upstream contract
+//!
+//! Mirrors `xsltproc.c` from SRC-LIBXSLT-GIT (archaeology/libxslt-git,
+//! version 1.1.45). The parity target is the option surface (--version/-V,
+//! --verbose/-v, --output/-o, --timing, --repeat, --dumpextensions,
+//! --novalid, --nodtdattr, --noout, --maxdepth, --maxvars, --huge,
+//! --seed-rand, --html, --encoding, --param, --stringparam, --path,
+//! --nonet, --nowrite, --nomkdir, --writesubtree, --catalogs, --xinclude,
+//! --xincludestyle, --load-trace, --profile/--norman), the diagnostics, the
+//! four-line version report, and the exit status. The CLI is not part of the
+//! C ABI; its contract is the command line.
+//!
+//! # Conceptual behavior
+//!
+//! xsltproc parses the stylesheet with the native Rust XSLT compiler, then
+//! applies it to each input document through a transform context and
+//! serializes the result. The implementation model follows xsltproc.c:
+//! fixed upstream limits (MAX_PARAMETERS=64, MAX_PATHS=64), a first pass
+//! that parses options until the first non-option argument, a second scan
+//! that locates the stylesheet while skipping option/value pairs, a
+//! per-input transform loop, and a final exit with the accumulated errorno.
+//! Security preferences are enforced through the libxslt callback API.
+//!
+//! # Ownership & safety invariants
+//!
+//! - Stylesheets and input documents are owned by their respective APIs
+//!   (xsltParseStylesheetDoc / xmlReadFile) and freed exactly once
+//!   (xsltFreeStylesheet / xmlFreeDoc); every transform context is freed
+//!   with xsltFreeTransformContext after each apply.
+//! - The security-preferences object is created with xsltNewSecurityPrefs,
+//!   registered as default, and freed with xsltFreeSecurityPrefs at exit.
+//! - --param/--stringparam values are duplicated with `cstr_alloc` into
+//!   `params` (NUL-terminated, libc-owned) and freed in a final loop; the
+//!   trailing NULL terminator pushed after the loop is never freed.
+//! - The cached stderr/stdout FILE* handles (fdopen) are process-lifetime
+//!   singletons and are never closed.
+//!
+//! # Historical quirks & epochs
+//!
+//! - E-008: libxslt transform output is a fully stable epoch — byte-
+//!   identical across 1.1.26 (2009) .. 1.1.45 (atlas/SEMANTIC_EPOCHS.md).
+//!   Any modern divergence from the oracle is a candidate bug, not an epoch
+//!   difference.
+//! - The option pass stops at the first non-option argument
+//!   (`if (argv[i][0] != '-') break;` in xsltproc.c), exactly like
+//!   xmlcatalog and unlike modern xmllint.
+//! - The exit-code ladder (1..11) is the stable xsltproc contract,
+//!   unchanged across the measured oracle span; there is no exit-code epoch
+//!   for this CLI.
+//!
+//! # Deliberate oddities
+//!
+//! - Security options register the static `xslt_security_forbid` callback
+//!   (always denies) through the callback-based API per R-000125 — never an
+//!   int allow/deny value.
+//! - `--repeat` sets 20 repetitions the first time and 100 the second
+//!   (upstream: `if (repeat == 0) repeat = 20; else repeat = 100`).
+//! - `--novalid` and `--nodtdattr` REPLACE the parse options (assignment,
+//!   not accumulation), exactly as xsltproc.c does.
+//! - `--nodict` is parsed and ignored, matching the upstream conditional
+//!   handling.
+//! - `--version` reads the exported DATA symbols (R-000167) rather than
+//!   re-deriving versions from the host build.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0001..0019 (courts/suites/cli/xsltproc/) compare the
+//! candidate (exit, stdout, stderr) against the 1.1.45 system oracle; the
+//! EXSLT and XSLT court families exercise the transform engine; the
+//! historical matrix xsltproc cases (basic/num/empty) pin the E-008
+//! stable epoch. R-000125 is regressed by the security callback tests and
+//! the CLI-XSLTPROC courts.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - A general-purpose argument parser would break the break-at-first-
+//!   non-option semantics and the 1/2/3 usage-family exit codes.
+//! - Freeing the parameter sentinel or building one Vec without the
+//!   terminator would double-free or drop the trailing NULL the transform
+//!   APIs require.
+//! - Replacing the security callbacks with internal flag values would
+//!   revert R-000125 and break the callback ABI the CLI exercises.
+//! - Reducing the version report to a single line would break the four-line
+//!   byte-identical output (R-000167).
+//! - Merging the distinct transform states into one error would blur exit 9
+//!   (transform error) and 10 (transformation stopped).
 
 use std::ffi::c_void;
 use std::os::raw::{c_char, c_int, c_uint};
@@ -40,7 +127,9 @@ use libxml_rs::xslt::transform::{
     xsltNewTransformContext, xsltRunStylesheetUser,
 };
 
-// Upstream limits.
+// Upstream limits (xsltproc.c: `#define MAX_PARAMETERS 64` and
+// `#define MAX_PATHS 64`; both are fixed-array caps upstream, and the
+// candidate enforces the same counts — see the "too many params" exit 2).
 const MAX_PARAMETERS: usize = 64;
 const MAX_PATHS: usize = 64;
 
@@ -49,7 +138,11 @@ const MAX_PATHS: usize = 64;
 const XML_PARSE_NOENT: c_int = 1 << 1;
 const XML_PARSE_DTDLOAD: c_int = 1 << 2;
 const XML_PARSE_DTDATTR: c_int = 1 << 3;
-const XML_PARSE_NOCDATA: c_int = 1 << 4;
+// UPSTREAM-PARITY (parser.h): XML_PARSE_NOCDATA = 1<<14. Do NOT "fix"
+// this to 1<<4 — that bit is XML_PARSE_DTDVALID and would enable DTD
+// validation during xsltproc document loads where upstream does not
+// validate (upstream xsltproc.c uses NOENT|NOCDATA here).
+const XML_PARSE_NOCDATA: c_int = 1 << 14;
 const XML_PARSE_NONET: c_int = 1 << 11;
 const XML_PARSE_HUGE: c_int = 1 << 19;
 
@@ -60,8 +153,8 @@ const XSLT_SECPREF_WRITE_FILE: c_int = 2;
 const XSLT_SECPREF_CREATE_DIRECTORY: c_int = 3;
 const XSLT_SECPREF_WRITE_NETWORK: c_int = 5;
 
-/// Security check that forbids an operation (upstream xsltproc.c's static
-/// `xsltSecurityForbid`): always returns 0 (deny).
+/// Security check that forbids an operation (the static xsltSecurityForbid
+/// of upstream xsltproc.c): always returns 0 (deny).
 unsafe extern "C" fn xslt_security_forbid(
     _sec: *mut std::ffi::c_void,
     _ctxt: *mut std::ffi::c_void,
@@ -70,7 +163,7 @@ unsafe extern "C" fn xslt_security_forbid(
     0
 }
 
-/// CLI option state (mirrors upstream's file-scope globals).
+/// CLI option state (mirrors the upstream file-scope globals).
 struct Cli {
     repeat: c_int,
     timing: bool,
@@ -226,7 +319,7 @@ unsafe fn read_file(filename: &str, cli: &Cli) -> *mut _xmlDoc {
         free_cstr(enc);
     }
     if doc.is_null() && std::path::Path::new(filename).exists() {
-        // The file exists but failed to parse; upstream's loader warning
+        // The file exists but failed to parse; the upstream loader warning
         // only fires for load failures, not parse failures.
     }
     if cli.load_trace && !doc.is_null() {
@@ -478,9 +571,14 @@ unsafe fn main_impl() {
     let mut i = 1usize;
     while i < argv.len() {
         if argv[i] == "-" {
+            // UPSTREAM-PARITY: a lone "-" also terminates the option pass.
             break;
         }
         if !argv[i].starts_with('-') {
+            // UPSTREAM-PARITY: xsltproc.c breaks its option pass at the
+            // first non-option argument (`if (argv[i][0] != '-')`); what
+            // remains is the stylesheet followed by input documents. A naive
+            // full-argv option parser would mis-assign the stylesheet.
             break;
         }
         match argv[i].as_str() {
@@ -531,6 +629,9 @@ unsafe fn main_impl() {
                 std::process::exit(0);
             }
             "-repeat" | "--repeat" => {
+                // UPSTREAM-PARITY: first use runs 20 times, second use 100
+                // (xsltproc.c: `if (repeat == 0) repeat = 20; else repeat =
+                // 100`).
                 cli.repeat = if cli.repeat == 0 { 20 } else { 100 };
             }
             "-novalid" | "--novalid" => cli.novalid = true,
@@ -556,6 +657,8 @@ unsafe fn main_impl() {
                     // UPSTREAM-PARITY (R-000125): xsltproc registers the
                     // xsltSecurityForbid callback (returns 0) for the write
                     // options; the API is callback-based, not value-based.
+                    // Mirrors the xsltSetSecurityPrefs(sec,
+                    // XSLT_SECPREF_WRITE_FILE, xsltSecurityForbid) trio.
                     libxml_rs::xslt::security::xsltSetSecurityPrefs(
                         sec,
                         XSLT_SECPREF_WRITE_FILE,
@@ -704,6 +807,10 @@ unsafe fn main_impl() {
     cli.params.push(ptr::null());
 
     if cli.novalid {
+        // UPSTREAM-PARITY: --novalid/--nodtdattr REPLACE the parse options
+        // (assignment, not accumulation) exactly as xsltproc.c does
+        // (`if (novalid != 0) options = NOENT|NOCDATA; else if (nodtdattr)
+        // options = NOENT|DTDLOAD|NOCDATA;`).
         cli.options = XML_PARSE_NOENT | XML_PARSE_NOCDATA;
     } else if cli.nodtdattr {
         cli.options = XML_PARSE_NOENT | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA;
@@ -716,7 +823,7 @@ unsafe fn main_impl() {
         dump_extensions();
     }
 
-    // ── Locate the stylesheet (upstream's second scan) ──────────────────
+    // ── Locate the stylesheet (upstream second scan) ──────────────────
     let mut cur: *mut _xsltStylesheet = ptr::null_mut();
     let mut i = 1usize;
     loop {

@@ -1,0 +1,19 @@
+{
+ "module": "xml/xpath/context",
+ "upstream": [
+  "xpath.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xpath",
+  "xpath-internals"
+ ],
+ "residuals": [
+  "R-000162"
+ ],
+ "court_families": [
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER"
+ ]
+}

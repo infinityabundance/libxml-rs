@@ -1,13 +1,15 @@
 //! xmlcatalog — XML catalog manipulation tool (§36, §85 Phase 10).
 //!
-//! Faithful port of upstream libxml2's `xmlcatalog` command-line tool
-//! (xmlcatalog.c, libxml2 2.12 target):
+//! Faithful port of the upstream libxml2 `xmlcatalog` command-line tool
+//! (xmlcatalog.c, libxml2 2.12..2.15 target; current capability target
+//! 2.15.3):
 //!
 //! ```text
 //! xmlcatalog [options] catalogfile entities...
 //! ```
 //!
-//! Exit codes: 0 success, 1 usage/unknown option.
+//! Exit codes: 0 success, 1 usage/unknown option (and failed --del), 2 SGML
+//! super-catalog save failure, 3 failed --add, 4 unresolved entity query.
 //!
 //! # UPSTREAM-PARITY
 //!
@@ -21,6 +23,89 @@
 //! - The dump format matches upstream: XML declaration, the OASIS catalog
 //!   DOCTYPE, and a `<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">`
 //!   root with two-space-indented entries.
+//!
+//! # Upstream contract
+//!
+//! Mirrors `xmlcatalog.c` from SRC-LIBXML2-GIT (archaeology/libxml2-git).
+//! The parity target is the option surface (--sgml, --shell, --create,
+//! --add, --del, --noout, --no-super-update, -v/--verbose), the interactive
+//! shell command grammar and its diagnostics ("public requires 1
+//! arguments", "add requires 2 or 3 arguments", "No entry for ..."), the
+//! catalog dump format, and the exit status. The CLI is not part of the C
+//! ABI; its contract is the command line and the shell transcript.
+//!
+//! # Conceptual behavior
+//!
+//! xmlcatalog loads the named catalog file (or seeds a fresh catalog entry
+//! under --create when the load fails), applies any --add/--del operations,
+//! then either runs the interactive shell or resolves each remaining
+//! positional argument as an entity — strings that are not parseable URIs
+//! take the PUBLIC path, everything else goes SYSTEM then URI — and finally
+//! dumps or saves the catalog when it was modified or created. The model is
+//! xmlcatalog.c main(): one option pass, one add/del pass, one query
+//! pass, and a trailing dump gate (`if (add || del || create)`), with the
+//! exit value accumulated across all passes.
+//!
+//! # Ownership & safety invariants
+//!
+//! - The catalog lives inside the libxml catalog API; every resolver result
+//!   is allocator-owned and freed with `xmlFreeImpl` after printing, and
+//!   every `cstr_alloc` is paired with `free_cstr` (libc malloc/free).
+//! - The shell reads one line at a time into a Rust String; tokens are
+//!   converted to owned values before any C call, so no borrowed C pointer
+//!   outlives its allocation (the quote-aware tokenizer owns every token).
+//! - --add values are captured as owned byte vectors during option parsing
+//!   and applied only after the catalog file is loaded, mirroring
+//!   upstream two-phase parse-then-apply structure.
+//!
+//! # Historical quirks & epochs
+//!
+//! - R-000122 (FIXED): upstream parses options in a loop that breaks at the
+//!   first non-option argument (`if (argv[i][0] != '-') break;` in
+//!   xmlcatalog.c), so `--create FILE --noout` resolves the trailing
+//!   --noout as an entity and still dumps the catalog. This parser
+//!   reproduces that break exactly.
+//! - R-000123 (FIXED): the shell 'public'/'system' commands validate exact
+//!   argument counts ("public requires 1 arguments" when not exactly one
+//!   argument), preserved here by the quote-aware tokenizer.
+//! - A lone `-` also terminates the option pass (xmlcatalog.c checks
+//!   `strcmp(argv[i], "-")` first).
+//! - Unlike xmllint, the xmlcatalog query exit codes (4 on unresolved
+//!   entities) are stable across the measured 2.7.8..2.15.3 span — no
+//!   exit-code epoch exists for this CLI.
+//!
+//! # Deliberate oddities
+//!
+//! - The shell `del` command prints "del command failed" for EVERY removal:
+//!   xmlHashRemoveEntry returns 0 on success, so the upstream check is
+//!   inverted and the message always fires. This is reproduced byte-for-byte
+//!   rather than "fixed".
+//! - Command-line --add requires exactly three values (XML form) and
+//!   rejects the one-value SGML form, while the shell `add` accepts 2 or 3
+//!   arguments — an upstream asymmetry preserved in both parsers.
+//! - --create on an existing file loads and dumps that file; the load is
+//!   never skipped because --create is set.
+//!
+//! # Proving courts
+//!
+//! CLI-XMLCATALOG-0001..0011 (courts/suites/cli/xmlcatalog/) compare the
+//! candidate (exit, stdout, stderr) against the 2.15.3 system oracle.
+//! R-000122 is regressed by CLI-XMLCATALOG-0002 and R-000123 by
+//! CLI-XMLCATALOG-0010, both byte-identical since the 11.1-X closure loop.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Parsing options anywhere in argv (the pre-R-000122 behavior) would
+//!   swallow trailing operands such as --noout, changing both the
+//!   diagnostics and the exit code of `--create FILE --noout`.
+//! - Tokenizing the shell with a naive `split_whitespace` would split
+//!   quoted public identifiers (e.g. `-//OASIS//DTD X//EN` is one token)
+//!   and break the argument-count diagnostics (R-000123).
+//! - Skipping the trailing dump because the query loop already printed
+//!   output would break the `if (add || del || create)` gate: --create
+//!   always dumps (or saves with --noout) even when entity queries failed.
+//! - "Correcting" the always-failing shell `del` message would break byte
+//!   parity with every upstream version.
 
 use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
@@ -210,7 +295,7 @@ unsafe fn shell_del(value: &str) {
 /// Shell tokenizer matching upstream xmlcatalog.c usershell(): whitespace
 /// separates tokens; single and double quotes group characters into one
 /// token (the quotes are consumed). Unbalanced quotes terminate the token at
-/// end-of-line, exactly like upstream's pointer walk.
+/// end-of-line, exactly like the upstream pointer walk.
 fn shell_tokens(line: &str) -> Vec<String> {
     let mut tokens: Vec<String> = Vec::new();
     let mut chars = line.chars().peekable();
@@ -264,7 +349,11 @@ unsafe fn shell_loop() {
         match parts[0].as_str() {
             "quit" | "exit" | "bye" | "q" => break,
             "public" => {
-                // UPSTREAM-PARITY: exactly one argument (nbargs != 1 fails)
+                // UPSTREAM-PARITY (R-000123, CLI-XMLCATALOG-0010): upstream
+                // usershell requires exactly one argument (`if (nbargs != 1)`
+                // prints "public requires 1 arguments"); the quote-aware
+                // tokenizer above guarantees the count matches the upstream
+                // pointer walk.
                 if parts.len() != 2 {
                     println!("public requires 1 arguments");
                 } else {
@@ -397,8 +486,11 @@ fn main() {
                     std::process::exit(1);
                 }
                 positionals.push(arg.to_string());
-                // UPSTREAM-PARITY: the option loop stops at the first
-                // non-option argument; the remainder are positional entities.
+                // UPSTREAM-PARITY (R-000122, CLI-XMLCATALOG-0002):
+                // xmlcatalog.c breaks its option pass at the first non-option
+                // argument (`if (argv[i][0] != '-') break;`, and also for a
+                // lone "-"), so every remaining word — even one that looks
+                // like an option — becomes a resolution operand.
                 for a in &args[i + 1..] {
                     positionals.push(a.clone());
                 }
@@ -518,7 +610,9 @@ fn main() {
         // UPSTREAM-PARITY: the dump/save runs AFTER the query loop, and
         // independently of it (xmlcatalog.c: `if (add || del || create)` at
         // the end of main) — so `--create FILE --noout` both resolves the
-        // trailing --noout as an entity (exit 4) AND dumps the new catalog.
+        // trailing --noout as an entity (exit 4, R-000122) AND dumps the new
+        // catalog. A tempting "cleanup" that moved this gate before the
+        // query loop would break CLI-XMLCATALOG-0002 byte parity.
         if modified || cli.create {
             if cli.noout {
                 // Save the catalog (only when something changed or created).

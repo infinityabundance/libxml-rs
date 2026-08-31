@@ -1,0 +1,20 @@
+{
+ "module": "xml/validation/mod",
+ "upstream": [
+  "valid.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "dtd",
+  "validity"
+ ],
+ "residuals": [
+  "R-000139",
+  "R-000164"
+ ],
+ "court_families": [
+  "DTD",
+  "RELAXNG",
+  "XSD"
+ ]
+}

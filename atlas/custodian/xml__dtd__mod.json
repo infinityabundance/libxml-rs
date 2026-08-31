@@ -1,0 +1,27 @@
+{
+ "module": "xml/dtd/mod",
+ "upstream": [
+  "valid.c",
+  "parser.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "dtd",
+  "validity",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000139",
+  "R-000164"
+ ],
+ "court_families": [
+  "DTD",
+  "PARSER",
+  "RELAXNG",
+  "XSD"
+ ]
+}

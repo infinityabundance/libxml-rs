@@ -1,0 +1,34 @@
+{
+ "module": "abi/exports_xslt_functions",
+ "upstream": [
+  "functions.c",
+  "xsltutils.c"
+ ],
+ "export_samples": [
+  "xsltDocumentFunction",
+  "xsltKeyFunction",
+  "xsltUnparsedEntityURIFunction",
+  "xsltFormatNumberFunction",
+  "xsltGenerateIdFunction",
+  "xsltSystemPropertyFunction"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-decimal-formats",
+  "xslt-extension-functions",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports",
+  "exslt-functions"
+ ],
+ "residuals": [
+  "R-000168"
+ ],
+ "court_families": []
+}

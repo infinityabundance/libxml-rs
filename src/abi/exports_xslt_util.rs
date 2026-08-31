@@ -12,6 +12,62 @@
 //! `xsltLoadDocument`, `xsltFindDocument`, `xsltFreeDocuments`).
 //!
 //! Semantics follow upstream libxslt 1.1.45 (`archaeology/libxslt-git/`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 `xsltutils.c` (plus `security.c`
+//! and `xsltlocale.c`) with the upstream headers; residuals R-000160 (trivial
+//! security/debug bodies), R-000161 (variadic generic error printers) and
+//! R-000168 (LC_ALL_MASK on musl) touch this module.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the utility ABI: security prefs (`xsltSecurityAllow`/
+//! `Forbid`, `xsltSetCtxtSecurityPrefs`, `xsltCheckRead/Write`), parser
+//! options, generic error handling (`xsltSetGenericErrorFunc`, the variadic
+//! `xsltTransformError`, `xsltPrintErrorContext`), timing/calibration,
+//! collation locales (`xsltNewLocale`, `xsltFreeLocale(s)`, `xsltStrxfrm`),
+//! debugger hooks, profiling, `xsltSaveResultTo` and document-list management.
+//!
+//! # Ownership & safety invariants
+//!
+//! Locales are caller-owned (created `xsltNewLocale`, freed `xsltFreeLocale`;
+//! `xsltFreeLocales` releases the whole list); security prefs are caller-owned
+//! (`xsltNewSecurityPrefs` → `xsltFreeSecurityPrefs` per OWNERSHIP_ATLAS
+//! section 4); error-handler contexts are caller-kept user-data; `xsltSaveResultTo`
+//! output buffers follow the upstream ownership (result strings
+//! xml-allocated).
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000160 (11.1-I): `xsltSecurityAllow` returns 1 and `xsltSecurityForbid`/
+//! `xsltGetDebuggerStatus` return 0 — literal upstream 1.1.45 bodies,
+//! dispositioned as intentional no-ops rather than stubs. R-000161 (11.1-K):
+//! `xsltGenericError`/`xsltGenericErrorContext` default to the variadic stderr
+//! printers via x86-64 SysV inline-asm va_list shims (stable Rust cannot
+//! define variadic extern fns). R-000168 (11.1-U): LC_ALL_MASK is built by
+//! hand on musl because the libc crate lacks it there.
+//!
+//! # Deliberate oddities
+//!
+//! The constant-return security callbacks and the inline-asm variadic shims
+//! are the deliberate oddities; `xsltFreeLocales` is an empty body matching
+//! upstreams (the candidate keeps no locale list to free).
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC, EXSLT and XSLT court families, the ERROR-001 probe
+//! (error routing byte-identical) and DSO-LOADER (25/25) / HEADER-COMPILE
+//! (595/595) cover this module; the util unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to delete the security callbacks as trivial
+//! (they return constants) — they ARE the upstream bodies (R-000160) and the
+//! security-prefs API (R-000125 callback model) depends on them; deleting
+//! would break linking. Another shortcut, defaulting `xsltGenericError` to
+//! NULL, would break the 6-fragment error-stream counting the ERROR probes
+//! verify (R-000161 lesson).
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
@@ -49,6 +105,9 @@ use libc::LC_ALL_MASK;
 /// ```
 ///
 /// Always returns 1 (allowed).
+/// R-000160: upstream 1.1.45 security.c body is literally `return(1)` (verified
+/// against archaeology/libxslt-git/libxslt/security.c) — constant body, not a
+/// placeholder.
 #[no_mangle]
 pub const unsafe extern "C" fn xsltSecurityAllow(
     _sec: *mut c_void,
@@ -69,6 +128,8 @@ pub const unsafe extern "C" fn xsltSecurityAllow(
 /// ```
 ///
 /// Always returns 0 (forbidden).
+/// R-000160: upstream 1.1.45 security.c body is literally `return(0)` — same
+/// trivial-body disposition as xsltSecurityAllow.
 #[no_mangle]
 pub const unsafe extern "C" fn xsltSecurityForbid(
     _sec: *mut c_void,

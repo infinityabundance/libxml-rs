@@ -1,0 +1,19 @@
+{
+ "module": "xml/regex/mod",
+ "upstream": [
+  "xmlregexp.c"
+ ],
+ "export_samples": [
+  "xmlRegexpCompile",
+  "xmlRegexpExec",
+  "xmlRegexpPrint",
+  "xmlRegFreeRegexp",
+  "xmlRegNewExecCtxt",
+  "xmlRegExecPushString"
+ ],
+ "subsystems": [
+  "regex"
+ ],
+ "residuals": [],
+ "court_families": []
+}

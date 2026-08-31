@@ -22,6 +22,62 @@
 //! # Phase 1 status
 //!
 //! Complete — all threading support is implemented.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `threads.c` (`SRC-LIBXML2-2.15.0-THREADS-C`, parity
+//! target libxml2 2.15.3 oracle): `xmlInitThreads`, `xmlCleanupThreads`,
+//! `xmlLockLibrary`, `xmlUnlockLibrary`, `xmlNewMutex`/`xmlFreeMutex`/
+//! `xmlMutexLock`/`xmlMutexUnlock`, `xmlNewRMutex`/`xmlRMutexLock`/
+//! `xmlRMutexUnlock`, `xmlNewCond`/`xmlCondWaitSignal`, and the
+//! thread-local variants.
+//!
+//! # Conceptual behavior
+//!
+//! Implements the legacy explicit threading API. In modern libxml2 (2.12+)
+//! initialization is lazy — `xmlInitParser` calls the init path
+//! automatically, and the deprecated entry points exist for backward
+//! compatibility. Rust primitives (`thread_local!`, parking_lot, atomics)
+//! provide the same guarantees without upstream platform dispatch
+//! (HAVE_POSIX_THREADS / HAVE_WIN32_THREADS).
+//!
+//! # Ownership & safety invariants
+//!
+//! Mutex/rmutex/cond handles are heap objects owned by the caller and
+//! freed with the matching free function; thread-local error/parser state
+//! is owned per thread and never shared. Rust memory-safety guarantees
+//! replace the upstream data-race discipline — the SAFETY argument is the
+//! type system, not lock discipline.
+//!
+//! # Historical quirks & epochs
+//!
+//! Thread support predates the thread-local globals era: globals.c
+//! threading was integrated 2001-10-12/13 (commits b847864f, d0463560,
+//! LORE-0005). R-000138: the deprecated init/cleanup entry points are
+//! genuine no-ops in modern upstream (lazy init) and the candidate matches
+//! that; `xmlCheckThreadLocalStorage` always passes with Rust thread-locals.
+//!
+//! # Deliberate oddities
+//!
+//! The global library lock is a deliberate no-op: Rust prevents data races
+//! at compile time, and upstream xmlLockLibrary itself became vestigial
+//! after the thread-local rewrite. Deprecated entry points keep their
+//! no-op bodies to match the oracle byte-for-byte (R-000138).
+//!
+//! # Proving courts
+//!
+//! The globals-threading differential probe (tools/abi/globals_threading_
+//! probe.py + courts/suites/data-abi/globals-threading-probe.c) verifies
+//! handler-slot and error-global behavior byte-identical vs the oracle;
+//! the parallel lib suite (100/100 runs clean, R-000170/R-000171) and
+//! cargo test exercise the thread-local error model.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not replace thread-locals with globals: per-thread parser error
+//! state and the exported xmlLastError mirror (R-000170) depend on the
+//! thread-local model. Do not make the deprecated entry points do real
+//! work: upstream bodies are empty and observable behavior must match.
 
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicBool, Ordering};

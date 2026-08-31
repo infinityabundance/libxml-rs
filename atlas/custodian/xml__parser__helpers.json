@@ -1,0 +1,24 @@
+{
+ "module": "xml/parser/helpers",
+ "upstream": [
+  "parser.c",
+  "parserInternals.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "parser-internals",
+  "push-parser",
+  "sax1",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000161",
+  "R-000169"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

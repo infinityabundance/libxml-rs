@@ -12,6 +12,64 @@
 //! URI. When copying namespace declarations to the result tree, the alias
 //! mapping is applied: a namespace declared with the stylesheet URI is
 //! emitted with the result URI instead.
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `namespaces.c` + `preproc.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-NAMESPACES-C` under oracle/historical/src).
+//! Subsystem census: xslt-compilation, xslt-namespace-alias. Behavior is
+//! governed by XSLT 1.0 namespace-alias semantics (W3C-XSLT-1.0).
+//!
+//! # Conceptual behavior
+//!
+//! Compilation records each `xsl:namespace-alias stylesheet-prefix=
+//! result-prefix` pair: the stylesheet-side URI is the key and the
+//! result-side URI the value. When result elements/attributes are emitted,
+//! any namespace declaration whose URI matches a stylesheet-side key is
+//! emitted under the mapped result URI, so literal XSLT-namespace output
+//! becomes a plain result-namespace element.
+//!
+//! # Ownership & safety invariants
+//!
+//! Each `_xsltNsAlias` is heap-allocated, owns duplicated
+//! `resultNs`/`styleNs` strings, and is owned by the stylesheet `nsAliases`
+//! chain (freed by `xsltFreeNsAlias` from `xsltFreeStylesheet`). On
+//! allocation failure the partial entry and its copied strings are freed
+//! exactly once. Aliases are duplicated from the stylesheet document so
+//! they outlive the document (documents may be freed independently).
+//!
+//! # Historical quirks & epochs
+//!
+//! Namespace aliasing has been part of libxslt since the 1.1 series
+//! (2004+; atlas/HISTORY.md) and sits inside the E-008 frozen epoch
+//! (2009 → 1.1.45; atlas/SEMANTIC_EPOCHS.md): the alias application is
+//! byte-identical across all oracle versions. The candidate keeps the
+//! upstream hash-key semantics (stylesheet-side URI) in a linked list
+//! storage.
+//!
+//! # Deliberate oddities
+//!
+//! - Upstream stores aliases in an `xmlHashTable`; the candidate uses a
+//!   linked list in the same `nsAliases` slot (linear lookup), a
+//!   documented storage divergence with identical observable semantics.
+//! - Result-URI and stylesheet-URI are both duplicated, even though the
+//!   stylesheet-side URI usually lives in the stylesheet document — a
+//!   defensive choice that keeps alias lifetime independent of the doc.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (stylesheets that emit stylesheets via namespace-alias),
+//! XSLT-001, and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Dropping the result-side mapping (emitting the stylesheet URI
+//!   verbatim) breaks literal-result-element output in the XSLT
+//!   namespace — the exact use case namespace-alias exists for.
+//! - Borrowing the URI strings instead of duplicating them breaks when
+//!   the stylesheet document is freed before the aliases are consumed.
+//! - Freeing the borrowed `inst`-style pointers would double-free
+//!   stylesheet-document nodes (R-000103 lesson).
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;

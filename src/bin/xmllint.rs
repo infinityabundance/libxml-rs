@@ -1,7 +1,9 @@
 //! xmllint — XML validation and formatting tool (§36, §85 Phase 10).
 //!
-//! Faithful port of upstream libxml2's `xmllint` command-line tool
-//! (xmllint.c, libxml2 2.12 target). The pipeline is entirely native Rust:
+//! Faithful port of the upstream libxml2 `xmllint` command-line tool
+//! (xmllint.c, libxml2 2.12..2.15 target; the current capability target is
+//! the system oracle 2.15.3, see atlas/COMPATIBILITY_PROFILES.md). The
+//! pipeline is entirely native Rust:
 //!
 //! ```text
 //! Rust CLI → Rust libxml parser/validator/serializer → Rust XPath/C14N
@@ -18,6 +20,107 @@
 //! | 5 | schema compilation failure |
 //! | 6 | schema validation failure |
 //! | 7 | schematron validation failure |
+//!
+//! # Upstream contract
+//!
+//! Mirrors `xmllint.c` from SRC-LIBXML2-GIT (archaeology/libxml2-git), the
+//! canonical reference implementation of the xmllint command-line tool. The
+//! parity target is the upstream option surface (every `--option` printed by
+//! `usage()`), the observable `xmllintReturnCode` enum declared in xmllint.c
+//! (XMLLINT_ERR_UNCLASS=1, XMLLINT_ERR_VALID=3, XMLLINT_ERR_RDFILE=4,
+//! XMLLINT_ERR_SCHEMACOMP=5, XMLLINT_ERR_OUT=6, XMLLINT_ERR_SCHEMAPAT=7,
+//! XMLLINT_ERR_XPATH=10, XMLLINT_ERR_XPATH_EMPTY=11), the stderr
+//! diagnostics, and the exit status. The CLI is not part of the C ABI; its
+//! contract is the command line itself, verified byte-for-byte against the
+//! 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! The tool parses each input with the native Rust parser, then optionally
+//! runs validation (DTD, WXS schema, RELAX NG, Schematron), XPath queries,
+//! C14N, XInclude, pattern testing, and serialization, printing results in
+//! upstream byte order. The implementation model follows xmllint.c: a state
+//! struct (upstream `xmllintState` + `xmlLintOptions` bits) accumulates parse
+//! options and app options; each input document goes through one
+//! parse-and-process pass; the output dump is skipped only under --noout
+//! (XPath implies --noout); --shell runs a navigating shell; the final exit
+//! status is the worst error seen, and earlier errors are never downgraded
+//! by later successes.
+//!
+//! # Ownership & safety invariants
+//!
+//! - The CLI owns its `Cli` state; each document is owned by the parser and
+//!   freed with `free_doc` exactly once per file (process_file), never by
+//!   the caller.
+//! - Every `cstr_alloc` is paired with `free_cstr` (libc malloc/free), so
+//!   the CLI never mixes Rust allocators with C-side memory.
+//! - `doc->URL` is owned by the document. The CLI only installs it when the
+//!   parser left it null, and always installs an owned duplicate — the
+//!   R-000169 defect family (non-NUL-terminated `xml_strdup`) is closed and
+//!   regressed by the TREE-001 structural probe.
+//! - `CAPTURED_VALIDITY` is a thread_local buffer drained before rendering,
+//!   so no borrowed message outlives its callback.
+//! - The output FILE* from `get_output_file` is closed only when --output
+//!   named a real file; the `fdopen(1, ...)` stdout handle is process-owned
+//!   and never closed here.
+//!
+//! # Historical quirks & epochs
+//!
+//! The observable behavior of the CLI is a mosaic of semantic epochs measured by
+//! the historical oracle matrix (atlas/SEMANTIC_EPOCHS.md):
+//!
+//! - E-001: `--xpath` node-set output became newline-separated in 2.9.10
+//!   (commit da35eeae, an upstream-documented breaking change).
+//! - E-003: an empty XPath node-set exits 10 → 0 (commit e85f9b98, 2.11.0)
+//!   → 11 (commit 387a952b, 2.12.6); the crate targets the 2.12.6+ epoch.
+//! - E-005: parser-error/undeclared exits moved 1 → 4 and valid-invalid
+//!   4 → 3 in 2.13.0 (xmllint error/option-handling rework).
+//! - E-006: `--valid` with no DTD exits 0 since 2.15.0 (was 3 in
+//!   2.13.0..2.14.1, 4 before that).
+//! - E-004: `--debug --noent` entity content dumps `TEXT compact` since
+//!   2.13.0 (commit 8d04f0ee).
+//! - E-007: `--html` dump is single-line since 2.15.0 (newline writes were
+//!   removed from HTMLtree.c).
+//!
+//! # Deliberate oddities
+//!
+//! - Running with no arguments prints usage and exits 1
+//!   (XMLLINT_ERR_UNCLASS), matching `if (argc <= 1)` in xmllint.c.
+//! - The option pass does NOT stop at the first non-option argument: modern
+//!   xmllint.c parses options and files in two passes (`continue` on
+//!   non-option args in the option loop, `skipArgs` in the document loop),
+//!   so options may interleave with filenames. This is a deliberate
+//!   asymmetry with xmlcatalog/xsltproc, which do break at the first
+//!   non-option argument — the CLI trio mirrors the asymmetry upstream itself has.
+//! - Unknown options print `Unknown option` + usage to stderr and exit 1.
+//! - `--xmlout` without `--html` prints a warning and continues.
+//!
+//! # Proving courts
+//!
+//! The CLI-XMLLINT-* differential court family
+//! (courts/suites/cli/xmllint/, CLI-XMLLINT-0001..0047) compares the
+//! candidate (exit, stdout, stderr) against the 2.15.3 system oracle; the
+//! historical matrix (oracle/historical/run_matrix.sh, HIST-EPOCH-* casefiles
+//! and receipts) pins every epoch boundary above. The C14N, DTD, HTML,
+//! PARSER, RELAXNG, SCHEMATRON, XINCLUDE and XSD court families exercise the
+//! engine paths this CLI drives; R-000121 and R-000169 are regressed by
+//! CLI-XMLLINT-0034 and the TREE-001 probe.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Replacing the hand-rolled option loop with a general-purpose argument
+//!   parser would change the unknown-option exit code and the exact usage
+//!   text that courts compare.
+//! - Collapsing the epoch exit codes into one generic error value would
+//!   break E-003/E-005: scripts distinguish exit 3 (validity) from 4
+//!   (parse/IO) and 11 (empty XPath node-set).
+//! - Treating an empty XPath node-set as success would silently revert to
+//!   the 2.11.0..2.12.5 epoch (E-003).
+//! - Serializing XPath results with a naive `join` would break the E-001
+//!   byte-identical newline placement (and the --xpath0 NUL separator).
+//! - Copying the xmlcatalog break-at-first-non-option parsing here would
+//!   reject interleaved `--option file.xml --option2` invocations that
+//!   modern xmllint accepts.
 
 use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
@@ -454,8 +557,8 @@ unsafe fn dump_document(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) {
     let _ = filename;
 }
 
-// Capture validity messages reported through the validation context's error
-// callback so the CLI can render them in the upstream location format.
+// Capture validity messages reported through the error callback of the
+// validation context so the CLI can render them in the upstream location format.
 thread_local! {
     static CAPTURED_VALIDITY: std::cell::RefCell<Vec<Vec<u8>>> =
         const { std::cell::RefCell::new(Vec::new()) };
@@ -471,7 +574,7 @@ unsafe extern "C" fn capture_validity_msg(_ctx: *mut c_void, msg: *const c_char)
 
 /// Print a validity diagnostic in the upstream format:
 /// `file:line: element NAME: validity error : MSG` + source line + caret.
-/// The source line is re-read from the document's file (the caret column for
+/// The source line is re-read from the file of the document (the caret column for
 /// declaration errors points past the line end, matching the oracle; the
 /// no-DTD notice caret is placed after the root start tag).
 unsafe fn print_validity_error(
@@ -557,6 +660,11 @@ unsafe fn validate_doc(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) -> c_in
             // overrides both for display. The caret sits after the root
             // start tag and there is no element prefix (the upstream notice
             // has a NULL node).
+            //
+            // E-006 (2.15.0): --valid without a DTD exits 0 since 2.15.0;
+            // 2.13.0..2.14.1 exited 3 and <= 2.12.6 exited 4. The exit code
+            // epoch, not the notice text, is what the HIST-EPOCH matrix
+            // distinguishes.
             let name = root_element_name(doc);
             let caret = name.len() + 1;
             print_validity_error(
@@ -572,7 +680,7 @@ unsafe fn validate_doc(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) -> c_in
         }
         if ret != 1 {
             // Declaration/content errors: the oracle caret is past the end of
-            // the element's source line.
+            // the source line of the element.
             let context_len = source_line_len(filename, root_element_line(doc));
             for m in &msgs {
                 print_validity_error(cli, filename, doc, m, context_len, true);
@@ -779,11 +887,19 @@ unsafe fn eval_xpath_expr(cli: &Cli, expr: &str, doc: *mut _xmlDoc) -> c_int {
         xmlXPathFreeContext(ctxt);
         return 10;
     }
+    // E-001 (2.9.10, commit da35eeae): nodes in a node-set are separated
+    // by newlines with a trailing newline; --xpath0 swaps in NUL. The
+    // concatenated form (<= 2.9.4) would match only the pre-2.9.10 oracle
+    // and is pinned by the CLI-XMLLINT xpath courts.
     let sep: u8 = if cli.xpath0 { 0 } else { b'\n' };
     let typ = (*obj).type_;
     if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
         let ns = (*obj).nodesetval as *mut _xmlNodeSet;
         if ns.is_null() || (*ns).nodeNr == 0 {
+            // E-003 (2.12.6, commit 387a952b): an empty node-set is an error
+            // (exit 11 = XMLLINT_ERR_XPATH_EMPTY). The pre-2.11 era exited 10,
+            // and 2.11.0..2.12.5 exited 0 (commit e85f9b98) — both would be
+            // wrong for the current 2.15.3 oracle.
             eprintln!("XPath set is empty");
             xmlXPathFreeObject(obj);
             xmlXPathFreeContext(ctxt);
@@ -829,13 +945,15 @@ unsafe fn process_file(cli: &mut Cli, filename: &str) {
     let start = std::time::Instant::now();
     let doc = parse_document(cli, filename);
     if doc.is_null() {
-        // UPSTREAM-PARITY: "Can't open" is printed only when the source file
+        // UPSTREAM-PARITY: the cannot-open message is printed only when the source file
         // itself cannot be opened. A hard parse error already printed the
         // parser diagnostic, so no extra message appears.
         if !cli.quiet && filename != "-" && !std::path::Path::new(filename).exists() {
             eprintln!("Can't open {}", filename);
         }
         cli.return_code = 4;
+        // E-005 (2.13.0): unparsable input / unopenable file exits 4
+        // (XMLLINT_ERR_RDFILE); <= 2.12.6 exited 1.
         return;
     }
     let parse_time = start.elapsed();
@@ -878,6 +996,10 @@ unsafe fn process_file(cli: &mut Cli, filename: &str) {
         let ret = validate_doc(cli, doc, filename);
         // UPSTREAM-PARITY: xmlValidateDocument returns 1 when the document
         // validates, 0 when it does not.
+        // E-005 (2.13.0): DTD-validity failure exits 3 (XMLLINT_ERR_VALID),
+        // reworked from exit 4 in <= 2.12.6. Combined with the parse-error
+        // exit 4 above, the two codes let scripts distinguish validity from
+        // well-formedness failures.
         if ret == 0 && cli.return_code == 0 {
             cli.return_code = 3;
         }
@@ -1081,6 +1203,8 @@ fn main() {
     let mut cli = Cli::default();
 
     if args.is_empty() {
+        // UPSTREAM-PARITY: xmllint.c `if (argc <= 1)` prints usage and
+        // returns XMLLINT_ERR_UNCLASS (exit 1).
         usage();
         std::process::exit(1);
     }

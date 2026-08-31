@@ -1,0 +1,19 @@
+{
+ "module": "xslt/extensions/mod",
+ "upstream": [
+  "extensions.c"
+ ],
+ "export_samples": [
+  "xsltRegisterExtFunction",
+  "xsltRegisterExtElement"
+ ],
+ "subsystems": [
+  "xslt-extension-functions",
+  "xslt-extension-elements",
+  "xslt-global-state"
+ ],
+ "residuals": [
+  "R-000140"
+ ],
+ "court_families": []
+}

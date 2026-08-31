@@ -1,0 +1,22 @@
+{
+ "module": "xml/save",
+ "upstream": [
+  "xmlsave.c",
+  "xmlIO.c"
+ ],
+ "export_samples": [
+  "xmlSaveToFd",
+  "xmlSaveToFilename",
+  "xmlSaveToBuffer",
+  "xmlSaveToIO",
+  "xmlSaveDoc",
+  "xmlSaveTree"
+ ],
+ "subsystems": [
+  "io",
+  "resource-loading",
+  "serialization"
+ ],
+ "residuals": [],
+ "court_families": []
+}

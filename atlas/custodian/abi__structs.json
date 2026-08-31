@@ -1,0 +1,19 @@
+{
+ "module": "abi/structs",
+ "upstream": [
+  "tree.h",
+  "parser.h",
+  "xpath.h",
+  "SAX2.h",
+  "xslt.h",
+  "schemasInternals.h"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000129",
+  "R-000139",
+  "R-000140"
+ ],
+ "court_families": []
+}

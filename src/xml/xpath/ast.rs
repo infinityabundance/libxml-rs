@@ -10,6 +10,57 @@
 //! - Operators (union, comparison, boolean, arithmetic)
 //! - Functions, variables, literals
 //! - Filter expressions (primary with predicates)
+//!
+//! # Upstream contract
+//!
+//! Mirrors the compiled-expression tree of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! where upstream lowers an expression to an `xmlXPathCompExpr` op tree
+//! (the XPATH_OP_* nodes), this module is the internal Rust AST that the
+//! C ABI surface keeps behind a compiled-expression registry
+//! (exports.rs `xmlXPathCtxtCompile` / `xmlXPathCompiledEval`).
+//!
+//! # Conceptual behavior
+//!
+//! The parser builds this AST; the evaluator walks it. The model covers
+//! the full XPath 1.0 grammar: location paths (relative/absolute, steps,
+//! axes, node tests, predicates), operators, function calls, variables,
+//! literals and filter expressions — including the union type and the
+//! step-level attribute/namespace flags that mirror the axis semantics.
+//!
+//! # Ownership & safety invariants
+//!
+//! AST nodes are owned by `CompiledExpr` (a single owning tree, no shared
+//! subnodes); the evaluator borrows it. No raw pointers cross the AST
+//! boundary — node-sets hold borrowed `_xmlNode` pointers defined in
+//! types.rs, so the AST itself is Send-safe for concurrent compilation.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000105: node tests like `node()` / `text()` must parse as node
+//! tests, not as function calls — a parser-epoch bug fixed during the
+//! XPath closure. The step model matches the 2.15.3 oracle, which is the
+//! E-001 epoch for node-set output semantics.
+//!
+//! # Deliberate oddities
+//!
+//! The internal AST deliberately does NOT reproduce the XPATH_OP_* byte
+//! layout of upstream `xmlXPathCompExpr`: the op tree is opaque to C
+//! callers, so the divergence is invisible at the ABI and only the
+//! observable evaluation semantics must match.
+//!
+//! # Proving courts
+//!
+//! XPATH / XPOINTER / XINCLUDE court families exercise compiled
+//! expressions end-to-end (byte-identical against the oracle DSO); cargo
+//! test covers the AST round-trip unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not flatten steps/predicates into a linear list: predicate
+//! evaluation order and context position/size depend on the step tree.
+//! Do not share subnodes (e.g. via Rc): expression ownership is exclusive
+//! and the compiled-expression registry frees whole trees.
 
 use std::fmt;
 

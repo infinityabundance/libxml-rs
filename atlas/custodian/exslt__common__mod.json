@@ -1,0 +1,10 @@
+{
+ "module": "exslt/common/mod",
+ "upstream": [
+  "libexslt/common.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [],
+ "court_families": []
+}

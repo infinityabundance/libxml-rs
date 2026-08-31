@@ -14,6 +14,60 @@
 //!
 //! All semantics follow upstream libxml2 2.15
 //! (`oracle/historical/src/libxml2-2.15.0/hash.c` and `dict.c`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `hash.c` and `dict.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-HASH-C / SRC-LIBXML2-2.15.0-DICT-C) with the signatures
+//! of `hash.h`/`dict.h`. The public `xmlHashTable`/`xmlDict` types are opaque;
+//! this module casts them to the internal `crate::xml::hash::HashTable` and
+//! `crate::xml::dictionary::Dict`.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the hash-table and dictionary export surface:
+//! add/update/lookup/scan/copy with the Q-variants (qualified-name lookups),
+//! deallocators, and the dict lifecycle (`xmlDictCreate*`, `xmlDictReference`,
+//! `xmlDictOwns`, `xmlDictQLookup`, `xmlDictCleanup`). The internal engines
+//! hold the semantics; the exports translate the opaque-handle ABI.
+//!
+//! # Ownership & safety invariants
+//!
+//! Hash tables and dicts are caller-owned (freed with `xmlHashFree`/
+//! `xmlDictFree`); values stored in a hash are owned per the deallocator the
+//! caller installed at creation. Dict lookups return borrowed strings stable
+//! for the dicts lifetime — freeing the dict invalidates them (OWNERSHIP_ATLAS
+//! section 3). `xmlDictReference` adds a caller-owned reference counted
+//! against `xmlDictFree`.
+//!
+//! # Historical quirks & epochs
+//!
+//! The dict subsystem was hardened during the security epoch: SEC-0008 records
+//! CVE-2015-7497 (commit `6360a31a`, 2015-11-20, heap buffer overflow in
+//! `xmlDictComputeFastQKey`), and the hash/dict ABI has been stable since the
+//! 2.6 era. The HIST-SURFACE-EPOCH court family covers this surface.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlDictCleanup` is a deliberate no-op (R-000138 family: upstreams own
+//! body is empty after lazy init); `xmlDictReference` on NULL returns NULL
+//! exactly like upstream. QLookup with NULL prefix is the unqualified lookup
+//! path, matching upstreams prefix==NULL fast path.
+//!
+//! # Proving courts
+//!
+//! The HIST-SURFACE-EPOCH court family plus the DSO-LOADER (25/25) and
+//! HEADER-COMPILE (595/595) courts cover this module; the dict/hash unit tests
+//! in `src/xml/dictionary` and `src/xml/hash` run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to return the internal Rust object as the
+//! handle — the opaque `*mut c_void` casts exist because upstream hides these
+//! structs; exposing them would break the ABI for consumers that pass handles
+//! between the candidate and code compiled against the headers. Dropping the
+//! QLookup fast paths would change qualified-name resolution order that
+//! downstream XPath consumers depend on.
 
 #![allow(
     missing_docs,

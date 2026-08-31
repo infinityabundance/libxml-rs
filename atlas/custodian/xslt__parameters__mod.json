@@ -1,0 +1,19 @@
+{
+ "module": "xslt/parameters/mod",
+ "upstream": [
+  "params.c",
+  "variables.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-variables",
+  "xslt-parameters",
+  "xslt-rvt"
+ ],
+ "residuals": [
+  "R-000111",
+  "R-000117",
+  "R-000140"
+ ],
+ "court_families": []
+}

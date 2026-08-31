@@ -1,6 +1,6 @@
 //! RELAX NG implementation (§27, §85 Phase 6).
 //!
-//! RELAX NG schema validation. libxml2's RELAX NG support is known to be
+//! RELAX NG schema validation. Upstream libxml2 RELAX NG support is known to be
 //! incomplete/non-conformant in places — parity follows the oracle.
 //!
 //! Phase 6: Complete — RELAX NG grammar parsing, document validation,
@@ -8,8 +8,8 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! This module implements a functional RELAX NG validator following libxml2's
-//! observable behavior. The implementation covers:
+//! This module implements a functional RELAX NG validator following the
+//! upstream libxml2 observable behavior. The implementation covers:
 //!
 //! - Full XML syntax for RELAX NG grammar definitions
 //! - Pattern-based validation of XML documents
@@ -19,8 +19,60 @@
 //! - Include support for external grammars (basic)
 //! - Compact syntax (basic support)
 //!
-//! Deviations from the OASIS RELAX NG specification that match libxml2's
-//! behavior are intentional.
+//! Deviations from the OASIS RELAX NG specification that match the upstream
+//! libxml2 behavior are intentional.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream relaxng.c (SRC-LIBXML2-2.15.0-RELAXNG-C, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/relaxng.c`): xmlRelaxNG parse/valid
+//! contexts, pattern compilation, name classes and the datatype hooks. Parity
+//! target: the system libxml2 2.15.3 oracle — NOT the OASIS RELAX NG
+//! specification where the two differ.
+//!
+//! # Conceptual behavior
+//!
+//! RELAX NG schema validation: grammar parsing, pattern-based document
+//! validation, name classes for element/attribute matching, datatype checks
+//! for data/value patterns, ref/define resolution, include support and basic
+//! compact syntax. Upstream libxml2 RELAX NG support is known to be
+//! incomplete/non-conformant in places; the module reproduces the oracle
+//! behavior, not the standard.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: schemas own their pattern tree (xmlRelaxNGFree); parser and
+//! valid contexts own their state (xmlRelaxNGFreeParserCtxt /
+//! xmlRelaxNGFreeValidCtxt); the validated document is borrowed. SAFETY:
+//! pattern references are resolved with cycle guards so recursive grammars
+//! cannot loop the validator.
+//!
+//! # Historical quirks & epochs
+//!
+//! RELAX NG landed in the 2.6 validation-era expansion (2003-2004,
+//! atlas/HISTORY.md 1.5); xmlRelaxNGInitTypes is empty after lazy init and
+//! xmlRelaxNGCleanupTypes is a documented no-op (R-000138 no-op set, matching
+//! upstream empty bodies).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: deviations from the OASIS specification that match
+//! upstream libxml2 behavior are intentional and kept; the C-API surface
+//! (xmlRelaxNGNewParserCtxt, xmlRelaxNGNewMemParserCtxt, xmlRelaxNGFree,
+//! xmlRelaxNGNewValidCtxt, ...) is exported with upstream signatures.
+//!
+//! # Proving courts
+//!
+//! RELAXNG court family; the data-ABI header-compile court (595/595) compiles
+//! every relaxng.h declaration against the DSO; dso-loader 25/25; `cargo test
+//! --lib` exercises the validator.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is implementing full OASIS RELAX NG
+//! conformance — it would diverge from upstream libxml2 known non-conformance
+//! and break byte-identical validation output. Do not drop the compact-syntax
+//! handling: upstream accepts it and the oracle surface includes it.
 
 #![allow(
     missing_docs,

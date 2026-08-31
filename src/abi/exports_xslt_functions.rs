@@ -30,6 +30,61 @@
 //! context's `func_lookup_data` (`xsltNewTransformContext` in
 //! `src/xslt/transform/mod.rs`). `xsltXPathGetTransformContext` therefore
 //! resolves the transform context through that slot.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 (`functions.c`, `extra.c`,
+//! `templates.c`, `xsltutils.c`, `variables.c`, `xslt.c`, `numbers.c`,
+//! `extensions.c`) with the upstream headers; R-000168 (11.1-U) recorded the
+//! generate-id() word-size fix (c_ulong-vs-u64) in this family.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the XSLT XPath extension-function ABI:
+//! `xsltDocumentFunction`, `xsltKeyFunction`, `xsltFormatNumberFunction`,
+//! `xsltGenerateIdFunction`, `xsltSystemPropertyFunction`,
+//! `xsltElementAvailableFunction`, `xsltFunctionAvailableFunction`, the
+//! node-set() helper, the XPath evaluation utilities and the function/variable
+//! lookup hooks. Upstream stores the transform context in the XPath contexts
+//! `extra` slot; the candidate uses `func_lookup_data` (documented in the
+//! header above).
+//!
+//! # Ownership & safety invariants
+//!
+//! XPath objects returned by the evaluation utilities are caller-owned (freed
+//! with `xmlXPathFreeObject`); `xsltEvalXPathString` returns an xml-allocator
+//! string freed with `xmlFree`; the transform context is borrowed for the
+//! duration of evaluation and never freed by the functions.
+//!
+//! # Historical quirks & epochs
+//!
+//! The XPath extension surface dates to the libxslt 1.1 era and sits in the
+//! frozen E-008 transform epoch; R-000166 fixed `format-number`
+//! (CLI-XSLTPROC-0014/0015/0017) and value-of full double precision; R-000168
+//! fixed the generate-id() width bug exposed by cross-compiling to
+//! 32-bit/arm64 targets.
+//!
+//! # Deliberate oddities
+//!
+//! `xsltFunctionNodeSet` reproduces node-set() including the result-tree-fragment
+//! conversion rules; the function-lookup fallback resolves prefix:local
+//! against the stylesheet namespaces and dispatches through the same
+//! C-function bridge as the registered extension functions (R-000162 callback
+//! bridge).
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC court cases (num corpus, 967/967), the EXSLT court family
+//! and DSO-LOADER/HEADER-COMPILE cover this module; the function unit tests
+//! run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to compute generate-id() from a Rust object
+//! address cast to usize — R-000168 proved the width bug (c_ulong is 32-bit
+//! on some targets); the id must be derived portably. Another shortcut,
+//! stubbing the C extension-function bridge with an error (the pre-R-000162
+//! state), would break every registered XSLT extension function.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

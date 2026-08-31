@@ -1,0 +1,30 @@
+{
+ "case_id": "CLI-XMLLINT-0048",
+ "surface": "cli-xmllint",
+ "purpose": "XPath child axis excludes the DTD node on DOCTYPE documents (R-000173): count(/a)=1 not 2, string(/a) returns the element text not the doctype's empty value",
+ "oracle_profile": "libxml2-2.15.3",
+ "inputs": {
+  "argv": [
+   "valid.xml",
+   "--xpath",
+   "concat(count(/a), '|', string(/a))"
+  ],
+  "document": "valid.xml"
+ },
+ "observables": [
+  "exit_status",
+  "stdout_hash",
+  "stderr_hash"
+ ],
+ "normalization": [],
+ "provenance": [
+  "residual-R-000173",
+  "differential"
+ ],
+ "tags": [
+  "differential",
+  "xmllint",
+  "xpath",
+  "dtd"
+ ]
+}

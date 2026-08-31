@@ -1,0 +1,21 @@
+{
+ "module": "xslt/security/mod",
+ "upstream": [
+  "security.c"
+ ],
+ "export_samples": [
+  "xsltNewSecurityPrefs",
+  "xsltFreeSecurityPrefs",
+  "xsltSetSecurityPrefs",
+  "xsltGetSecurityPrefs",
+  "xsltSetDefaultSecurityPrefs",
+  "xsltGetDefaultSecurityPrefs"
+ ],
+ "subsystems": [
+  "xslt-security"
+ ],
+ "residuals": [
+  "R-000125"
+ ],
+ "court_families": []
+}

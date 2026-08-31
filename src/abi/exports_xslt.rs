@@ -34,9 +34,64 @@ use crate::abi::structs::*;
 //   - xsltLibxsltVersion (const int 10145, R)   — was a function (T), R-000167
 //   - xsltEngineVersion  (const char *, D)      — was a function (T), R-000167
 // `xsltLibxsltVersionString` / `xsltCheckVersion` are NOT exported by the
-// oracle DSO and not declared by upstream xslt.h; the candidate's Rust
-// equivalents live in crate::abi::versioning for internal use only (the
+// oracle DSO and not declared by upstream xslt.h; the candidate keeps Rust
+// equivalents in crate::abi::versioning for internal use only (the
 // previous #[no_mangle] function exports were candidate-only extras).
+//
+// # Upstream contract
+//
+// The parity target is the libxslt.so.1 export surface of the oracle DSO
+// (libxslt 1.1.45): `xslt.c`, `xsltutils.c` and `transform.c` entry points
+// with the `xslt.h`/`transform.h` signatures. Residuals R-000135, R-000136,
+// R-000160, R-000161, R-000165, R-000166, R-000167 and R-000168 touch this
+// module.
+//
+// # Conceptual behavior
+//
+// This module implements the top-level libxslt ABI: version reporting,
+// init/cleanup, feature queries, error-handler wiring and the engine version
+// data symbols. The bulk of the XSLT engine lives in `src/xslt/*` with its
+// own `#[no_mangle]` exports; this module holds the rest.
+//
+// # Ownership & safety invariants
+//
+// The version surfaces are exported as DATA (`xsltLibxsltVersion` const int,
+// R; `xsltEngineVersion` const char, D) matching the oracle nm -D types — a
+// consumer reading them per the header contract gets the value, not code
+// bytes (R-000167). Error-handler contexts are caller-kept user-data
+// (OWNERSHIP_ATLAS section 6); global state is lazy-initialized like
+// upstream.
+//
+// # Historical quirks & epochs
+//
+// E-008 (SEMANTIC_EPOCHS): the libxslt core transform output is byte-identical
+// from 1.1.26 (2009) through 1.1.45 — a fully stable epoch. R-000167
+// (11.1-S): `xsltLibxsltVersion` was a function (T) and became a data symbol
+// (R); `xsltLibxsltVersionString` is a candidate-only extra and is
+// deliberately not exported. R-000160: `xsltGetDebuggerStatus`/
+// `xsltExtensionInstructionResultRegister` have trivial upstream bodies
+// (return 0) dispositioned as intentional no-ops.
+//
+// # Deliberate oddities
+//
+// The missing `xsltLibxsltVersionString`/`xsltCheckVersion` exports (upstream
+// has no such symbols — the previous function exports were candidate-only
+// extras, removed for ABI honesty) and the R-000160 trivial-body no-ops are
+// the deliberate oddities here.
+//
+// # Proving courts
+//
+// The BUILD-CONFIG-SCRIPT, CLI-XSLTPROC, EXSLT, ORACLE-IDENTITY,
+// PREPROCESSOR-SURFACE and XSLT court families plus DSO-LOADER (symbol-type
+// parity vs the oracle) and HEADER-COMPILE cover this module.
+//
+// # Tempting simplifications that would break parity
+//
+// A tempting simplification is to re-export `xsltLibxsltVersion` as a function
+// for convenience — R-000167 proved the symbol type must match the oracle (R
+// vs T) or C consumers reading the const int read code bytes. Another
+// shortcut, adding convenience exports upstream does not have, pollutes the
+// drop-in surface and would break the DSO-LOADER symbol-type parity check.
 
 /// Initialize the XSLT library.
 ///

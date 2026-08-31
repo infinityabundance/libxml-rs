@@ -18,6 +18,57 @@
 //! The safe types (`InputBuffer`, `InputStack`, `InputSource`) are NOT `#[repr(C)]`;
 //! they are implementation details. C ABI structs are only populated when crossing
 //! the FFI boundary.
+//!
+//! # Upstream contract
+//!
+//! Mirrors the input-stream layer of upstream parserInternals.c and xmlIO.c
+//! (SRC-LIBXML2-2.15.0, oracle tree `oracle/historical/src/libxml2-2.15.0/`):
+//! `_xmlParserInput` / `_xmlParserInputBuffer` construction, BOM detection,
+//! encoding sniffing, line/column tracking and input stacking. Parity target:
+//! the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Provides safe-Rust abstractions over XML input sources: memory buffers,
+//! files and custom I/O callbacks, with character-level position tracking, BOM
+//! detection, encoding detection from the XML declaration, and the
+//! entity-expansion input stack. The safe types are NOT `#[repr(C)]`; C ABI
+//! structs are only populated at the FFI boundary.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: the InputBuffer owns its byte storage; InputStack owns its
+//! buffers in LIFO order (entity expansion pushes/pops); `_xmlParserInput`
+//! pointers borrow the buffer. SAFETY: line/col/byte positions are computed in
+//! safe code; the only raw pointers are the populated C structs handed to the
+//! parser. Filenames flowing into C structs are owned dupes (R-000169).
+//!
+//! # Historical quirks & epochs
+//!
+//! Epoch facts: the modern era (2.10+, atlas/HISTORY.md 1.8) moved toward a
+//! built-in UTF-8/UTF-16 converter (inferred); the push-parser chunk
+//! semantics date from the 2.6 validation era; the 11.1-M error rework
+//! (R-000163) pinned columns to byte-based `input->col` semantics.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: encoding names are normalized to lowercase with
+//! utf-16 defaulting to LE when there is no BOM; unknown encodings degrade to
+//! `Encoding::Other` rather than failing at load time (the encoding module
+//! owns the unsupported-encoding error, R-000157).
+//!
+//! # Proving courts
+//!
+//! Exercised by the PARSER court family, ERROR-001 (filename/line/column
+//! windows), TREE-001 (input filename fingerprinting) and `cargo test --lib`.
+//! Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Reading the whole input into a single Vec would break the push parser and
+//! the entity-expansion input stack (xmlParseChunk / xmlCtxtParseEntity
+//! semantics). Do not pre-decode the stream at load time — the parser must see
+//! raw bytes so diagnostics and re-encoded input behave like upstream.
 
 #![allow(dead_code)]
 
@@ -343,6 +394,12 @@ impl InputBuffer {
     // ── BOM and encoding detection ─────────────────────────────────────────
 
     /// Detect BOM and encoding from the beginning of the data.
+    ///
+    /// Upstream performs the same sniffing inside its parserInternals.c/xmlIO.c
+    /// input-switch paths (the encoding switch machinery of the parser): UTF-8
+    /// BOM, UTF-16 LE/BE BOMs, then the XML declaration; the BOM must be
+    /// consumed before any character is reported so line/column counts match
+    /// the oracle.
     ///
     /// This checks:
     /// 1. UTF-8 BOM (`EF BB BF`)

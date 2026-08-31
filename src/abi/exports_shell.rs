@@ -46,6 +46,60 @@
 //! - The `set` (fragment parse) and `relaxng` shell commands are not
 //!   dispatched (`xmlParseInNodeContext` / RELAX NG integration not yet
 //!   available in the crate); their help lines are omitted.
+//!
+//! # Upstream contract
+//!
+//! Parity target is the libxml2 shell section of `debugXML.c` (the file named
+//! `xmlshell.c` before 2.0 and `shell.c` after the 2.13 refactor); the
+//! fourteen `xmlShell*` symbols were removed from `debugXML.h` in 2.13+ but
+//! are still exported from the DSO, so the reference ABI is 2.12.6 (last
+//! release declaring them) while the runtime target is 2.15.3. R-000168
+//! (11.1-U) recorded the c_char(u8-on-aarch64) buffer typing fix in the shell
+//! debugger.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the interactive XML shell commands: node printing,
+//! XPath evaluation and printing, directory/base traversal, element/attr/
+//! namespace listing, document validation and the load/save commands, writing
+//! through `ctxt->output` (or stdout) and the generic error channel exactly
+//! like upstream.
+//!
+//! # Ownership & safety invariants
+//!
+//! The `_xmlShellCtxt` is caller-owned; the shell borrows its doc/node/pctxt
+//! (never frees them — the caller owns the document). Strings returned by
+//! `xmlShellReadlineFunc` are caller-allocated. The `FILE*` output is opaque
+//! at the ABI boundary.
+//!
+//! # Historical quirks & epochs
+//!
+//! The shell API is the 2.0-era debugging surface kept exported for xmllint
+//! compatibility; E-005/E-006 (exit-code reworks in 2.13.0 and 2.15.0)
+//! changed the CLI validation behavior that the shells validate command
+//! feeds. The 2.13 header removal is itself a historical oddity the candidate
+//! mirrors by keeping the exports.
+//!
+//! # Deliberate oddities
+//!
+//! The DIVERGENCES listed above are deliberate: `xmlShellPrintXPathResult`
+//! prints via `xmlXPathDebugDumpObject` per the shell closure directive,
+//! `xmlShellValidate` uses a minimal DOCTYPE header scan, and the `set`/
+//! `relaxng` commands are not dispatched.
+//!
+//! # Proving courts
+//!
+//! The C14N, CLI-XMLLINT, DTD, HTML, PARSER, RELAXNG, SCHEMATRON, XINCLUDE
+//! and XSD court families plus DSO-LOADER cover this module.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to drop the shell exports because the
+//! interactive shell is rarely used — they are still oracle-DSO symbols and
+//! the DSO-LOADER court resolves them; removing them would break downstream
+//! embedding of xmllints shell. Another shortcut, routing shell output
+//! straight to stdout instead of `ctxt->output`, would break the
+//! output-redirection contract the CLI-XMLLINT courts exercise.
 
 #![allow(
     missing_docs,

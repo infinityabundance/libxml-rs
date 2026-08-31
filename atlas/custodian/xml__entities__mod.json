@@ -1,0 +1,22 @@
+{
+ "module": "xml/entities/mod",
+ "upstream": [
+  "entities.c",
+  "parser.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "entities",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000164"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

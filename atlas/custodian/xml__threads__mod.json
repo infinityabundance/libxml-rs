@@ -1,0 +1,12 @@
+{
+ "module": "xml/threads/mod",
+ "upstream": [
+  "threads.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "threads"
+ ],
+ "residuals": [],
+ "court_families": []
+}

@@ -1,0 +1,24 @@
+{
+ "module": "xml/schemas/mod",
+ "upstream": [
+  "xmlschemas.c",
+  "xmlschemastypes.c",
+  "xmlschemavalues.c"
+ ],
+ "export_samples": [
+  "xmlSchemaNewParserCtxt",
+  "xmlSchemaNewMemParserCtxt",
+  "xmlSchemaFree",
+  "xmlSchemaValidateDoc",
+  "xmlSchemaFreeParserCtxt",
+  "xmlSchemaFreeValidCtxt"
+ ],
+ "subsystems": [
+  "xsd",
+  "xsd-datatypes"
+ ],
+ "residuals": [
+  "R-000124"
+ ],
+ "court_families": []
+}

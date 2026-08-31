@@ -13,6 +13,59 @@
 //! global xmlHashTable instances) with the same observable contracts:
 //! registrations return 0 on success / -1 on failure and lookups resolve
 //! by (name, URI) case-sensitively.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 `extensions.c` and `extra.c` with
+//! the upstream headers; R-000165 (11.1-O) closed the extension registration
+//! gaps (the per-module EXSLT registration entry points).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the extension-module registry ABI: the
+//! `xsltRegisterExtModule*`/`xsltUnregisterExtModule*` lifecycle, the
+//! `xsltExtModule*Lookup` queries, per-context/per-style extension data
+//! accessors (`xsltGetExtData`, `xsltStyleGetExtData`, `xsltGetExtInfo`) and
+//! the EXSLT registration entry points. The registry lives in
+//! process-lifetime RwLock tables with the same observable contracts as
+//! upstreams global hash tables (0 success / -1 failure, case-sensitive
+//! (name, URI) lookups).
+//!
+//! # Ownership & safety invariants
+//!
+//! Extension module data is owned by the context/style that registered it and
+//! released in the documented order: `xsltShutdownCtxtExts` (callbacks)
+//! before `xsltFreeCtxtExts` (storage) per OWNERSHIP_ATLAS section 7. Module
+//! function pointers are caller-kept; the registry stores and returns them
+//! verbatim.
+//!
+//! # Historical quirks & epochs
+//!
+//! The extension mechanism matured with EXSLT in the 1.1 era (2004+, HISTORY.md
+//! 2.5) and is part of the frozen E-008 transform epoch; R-000165 added the
+//! missing per-module registration exports (exsltMathRegister et al.) so the
+//! oracle export set is complete.
+//!
+//! # Deliberate oddities
+//!
+//! The RwLock-backed registry instead of upstreams xmlHashTable is a
+//! deliberate internal substitution with identical observable behavior — the
+//! ABI never exposes the registry object itself.
+//!
+//! # Proving courts
+//!
+//! The EXSLT court family, the DSO-LOADER (25/25) and HEADER-COMPILE (595/595)
+//! courts and the callback-family probes (CALLBACK-001) cover this module;
+//! the extension unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to make registrations case-insensitive for
+//! convenience — upstream resolves (name, URI) case-sensitively, so a
+//! downstream module registered under a different case would silently stop
+//! resolving. Another shortcut, freeing extension data when the module
+//! unregisters, would break the shutdown-before-free ordering the OWNERSHIP
+//! courts check.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

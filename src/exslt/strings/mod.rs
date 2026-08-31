@@ -22,6 +22,39 @@
 //!   `escape` selects which characters are escaped (default: none beyond
 //!   the required set). Non-ASCII characters are UTF-8 encoded.
 //! - `str:decode-uri(string)` — percent-decodes the string.
+//!
+//! # Ownership & safety invariants
+//!
+//! `str:tokenize`/`str:split` return node-sets of freshly allocated text
+//! nodes owned by the returned XPathValue's document (freed with the
+//! value); the string functions return fresh string values. No module state
+//! is retained across calls, so there is no global registry to
+//! initialize/tear down.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45). The subtle
+//! boundaries are the tokenize-vs-split distinction (ANY delimiter
+//! character vs the exact delimiter string) and the encode-uri default
+//! escape set — both must match upstream strings.c exactly, not the
+//! generic RFC 3986 set.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0003 exercises str: alongside exsl:node-set and math:/set:
+//! byte-identical against the oracle xsltproc; the module unit tests
+//! (cargo test --lib exslt::strings) cover tokenize/split/replace/padding/
+//! align/encode-uri/decode-uri including delimiter edge cases.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to implement str:encode-uri with a generic
+//! percent-encoding crate. Upstream's escape-set selection (which
+//! characters are left unescaped depends on the `escape` argument and the
+//! required RFC set) is hand-rolled and does not match general encoders.
+//! Another shortcut, treating str:tokenize like str:split (exact
+//! delimiter), changes results whenever multi-character delimiters appear;
+//! the differential CLI court regresses both.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

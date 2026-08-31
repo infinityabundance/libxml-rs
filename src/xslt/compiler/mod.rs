@@ -1,5 +1,73 @@
 //! XSLT stylesheet compilation (§32, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `xslt.c` + `preproc.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-XSLT-C` and `SRC-LIBXSLT-1.1.42-PREPROC-C` under
+//! oracle/historical/src/libxslt-1.1.42/). The subsystem census maps this
+//! module to the xslt-lifecycle, xslt-compilation, xslt-includes,
+//! xslt-priorities, xslt-sorting, xslt-whitespace, xslt-transform-ctxt,
+//! xslt-global-state and xslt-exports subsystems.
+//!
+//! # Conceptual behavior
+//!
+//! `xsltParseStylesheetProcess`-style pipeline: preprocess the tree
+//! (merge adjacent text runs, strip whitespace-only runs, drop comments
+//! and PIs — `xsltParsePreprocessStylesheetTree`, xslt.c 1.1.45), detect
+//! normal vs simplified stylesheets, compile top-level elements in import
+//! order, and finish with the output definition, decimal formats, and
+//! strip/preserve rules. Compilation errors are reported through
+//! `xsltTransformError` with a compilation-error context line.
+//!
+//! # Ownership & safety invariants
+//!
+//! `compile` takes ownership of the stylesheet document: it is stored in
+//! `style->doc` and freed by `xsltFreeStylesheet` (R-000103: instruction
+//! content nodes belong to this document and must never be freed by the
+//! template/key/attribute-set free paths). Compiled definitions hold
+//! borrowed pointers into the stylesheet document (`inst`) plus
+//! heap-duplicated strings. On failure the stylesheet is freed; `style`
+//! must be a zero-initialized `_xsltStylesheet` (per-ABI layout,
+//! R-000140).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): xsltproc compilation+transform output
+//! is byte-identical from libxslt 1.1.26 (2009) through 1.1.45, so the
+//! compile-time decisions (import precedence, template priority, whitespace
+//! stripping) are frozen behavior since 2009. R-000109 fixed the RTF
+//! variable double-free whose root cause was a compile-time choice
+//! (`var->tree = inst->children`); R-000140 fixed the eight Rust
+//! `_xslt*` ABI mirrors this module writes through.
+//!
+//! # Deliberate oddities
+//!
+//! - Simplified stylesheet support: a non-XSLT root element is wrapped in
+//!   an implicit `xsl:template match="/"` (upstream `literal_result`
+//!   flag), an intentional compatibility feature.
+//! - The preprocess pass is performed even for non-stylesheet roots
+//!   (guarded by `is_stylesheet`) to match upstream tree shaping.
+//!
+//! # Proving courts
+//!
+//! XSLT, CLI-XSLTPROC (compilation corpus), EXSLT, ORACLE-IDENTITY,
+//! PREPROCESSOR-SURFACE, BUILD-CONFIG-SCRIPT, plus the in-crate `cargo
+//! test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Skipping the tree preprocess (whitespace merging) breaks literal
+//!   text output of stylesheets (upstream xslt.c does it unconditionally).
+//! - Sorting templates with a plain sort instead of the insertion-by-
+//!   priority-with-import-depth-tiebreak breaks XSLT 1.0 conflict
+//!   resolution (see templates module).
+//! - Freeing `inst`-derived content at compile time reintroduces the
+//!   R-000109/R-000103 double-free; stylesheet-document ownership must be
+//!   honored.
+//! - Reusing upstream precedence constants without the candidate layout
+//!   (`position` carrying import depth) breaks apply-imports (R-000158
+//!   lesson on deferred state).
+//!
 //! Walks the parsed stylesheet document and produces the compiled
 //! representation: templates, keys, variables, parameters, attribute
 //! sets, namespace aliases, decimal formats, strip/preserve-space rules,

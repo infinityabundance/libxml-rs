@@ -1,0 +1,12 @@
+{
+ "module": "xml/string",
+ "upstream": [
+  "xmlstring.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "strings"
+ ],
+ "residuals": [],
+ "court_families": []
+}

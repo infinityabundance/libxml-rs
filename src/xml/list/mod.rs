@@ -1,6 +1,6 @@
 //! Linked list — public xmlList API (§85 Phase 1).
 //!
-//! Implements libxml2's linked list.
+//! Implements the libxml2 linked list.
 //!
 //! # UPSTREAM-PARITY
 //!
@@ -18,6 +18,53 @@
 //! # Phase 1 status
 //!
 //! Complete — all list operations are implemented.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `list.c` / `list.h` (`SRC-LIBXML2-2.15.0-LIST-C`, parity
+//! target libxml2 2.15.3 oracle): the `xmlList*` API with deallocator,
+//! comparator and walker callbacks.
+//!
+//! # Conceptual behavior
+//!
+//! Implements a doubly-linked list whose nodes are owned by the list and
+//! whose data pointers are owned by the caller unless a deallocator is
+//! registered. `xmlListAppend` does a plain push_back when no comparator is
+//! set but a SORTED insert once a comparator is present (upstream list.c);
+//! `xmlListWalk` / `xmlListReverseWalk` stop when the walker returns 0.
+//!
+//! # Ownership & safety invariants
+//!
+//! The list owns its ListNode storage (freed by `xmlListDelete` / clear
+//! paths); payload data is freed through the registered deallocator only.
+//! Walkers receive borrowed data pointers valid for the walk duration.
+//!
+//! # Historical quirks & epochs
+//!
+//! The sorted-append and 0-stops-walk semantics were misimplemented in the
+//! candidate and corrected to upstream behavior in the 11.1-L callback
+//! audit (R-000162) — both are long-standing list.c contracts, stable
+//! since the 2.6 validation era through the 2.15.3 oracle.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlListAppend` becoming a sorted insert under a comparator is the
+//! upstream oddity that a naive push_back implementation misses; the walk
+//! stop convention (0 = stop, non-zero = continue) is the inverse of the
+//! intuitive C convention and is reproduced deliberately.
+//!
+//! # Proving courts
+//!
+//! CALLBACK-001 (courts/suites/data-abi/callback-family-probe.c) exercises
+//! `xmlListAppend` ordering and both walks against the oracle DSO and
+//! requires byte-identical output (R-000162 evidence); cargo test runs the
+//! list unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not make `xmlListAppend` always push_back: with a comparator set,
+//! consumers rely on sorted order. Do not invert the walk stop condition
+//! back to non-zero-stops: the 11.1-L audit proved the oracle stops on 0.
 
 use core::ffi::c_void;
 use core::ptr;

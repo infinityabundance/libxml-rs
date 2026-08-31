@@ -1,0 +1,21 @@
+{
+ "module": "abi/ownership",
+ "upstream": [
+  "tree.c",
+  "xmlmemory.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "memory",
+  "tree",
+  "namespaces",
+  "dtd",
+  "serialization",
+  "legacy"
+ ],
+ "residuals": [],
+ "court_families": [
+  "OWNERSHIP",
+  "TREE-STRUCTURE"
+ ]
+}

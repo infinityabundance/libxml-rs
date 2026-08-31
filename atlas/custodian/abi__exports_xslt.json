@@ -1,0 +1,50 @@
+{
+ "module": "abi/exports_xslt",
+ "upstream": [
+  "xslt.c",
+  "xsltutils.c"
+ ],
+ "export_samples": [
+  "xsltInit",
+  "xsltCleanupGlobals",
+  "xsltSetTransformErrorFunc",
+  "xsltSetDebuggerStatus",
+  "xsltSetDebuggerCallbacks",
+  "xsltSetCtxtLocaleHandlers"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-includes",
+  "xslt-priorities",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-whitespace",
+  "xslt-decimal-formats",
+  "xslt-transform-ctxt",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000135",
+  "R-000136",
+  "R-000160",
+  "R-000161",
+  "R-000165",
+  "R-000166",
+  "R-000167",
+  "R-000168"
+ ],
+ "court_families": [
+  "BUILD-CONFIG-SCRIPT",
+  "CLI-XSLTPROC",
+  "EXSLT",
+  "ORACLE-IDENTITY",
+  "PREPROCESSOR-SURFACE",
+  "XSLT"
+ ]
+}

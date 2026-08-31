@@ -28,6 +28,23 @@
 //!
 //! The XPATH-001 differential court verifies the stack operators and the
 //! parser-context APIs against the oracle.
+//!
+//! # Historical quirks & epochs
+//!
+//! The `_xmlXPathParserContext` layout has been stable across the whole
+//! libxml2 matrix (2.7.8..2.15.3): the `valueFrame` field is documented
+//! upstream as always zero for compatibility, and the value-stack
+//! operators (xmlXPathPush*/xmlXPathPop*) have not changed semantics. The
+//! XPath node-set serialization capability E-001 (2.9.10 boundary) is
+//! handled at the CLI layer, not here.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to represent the value stack with a Rust
+//! Vec and pop by truncation. Upstream pops return the object and shift
+//! the stack; the public xmlXPathPop* functions are ABI-observable and
+//! their NULL-on-empty / last-value behavior is court-checked (XPATH-001).
+//! Keep the explicit valueTab/valueNr/valueMax fields byte-compatible.
 
 #![allow(missing_docs)]
 

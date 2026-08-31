@@ -1,0 +1,12 @@
+{
+ "module": "xslt/numbering/mod",
+ "upstream": [
+  "numbers.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-numbering"
+ ],
+ "residuals": [],
+ "court_families": []
+}

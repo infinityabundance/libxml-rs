@@ -1,0 +1,14 @@
+{
+ "module": "xml/list/mod",
+ "upstream": [
+  "list.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "lists"
+ ],
+ "residuals": [
+  "R-000162"
+ ],
+ "court_families": []
+}

@@ -1,0 +1,21 @@
+{
+ "module": "xml/debug/mod",
+ "upstream": [
+  "debugXML.c"
+ ],
+ "export_samples": [
+  "xmlDebugDumpString",
+  "xmlDebugDumpAttr",
+  "xmlDebugDumpAttrList",
+  "xmlDebugDumpOneNode",
+  "xmlDebugDumpNode",
+  "xmlDebugDumpNodeList"
+ ],
+ "subsystems": [
+  "debug-xml"
+ ],
+ "residuals": [
+  "R-000119"
+ ],
+ "court_families": []
+}

@@ -14,6 +14,60 @@
 //! `xsltExtensionInstructionResultFinalize`).
 //!
 //! Semantics follow upstream libxslt 1.1.45 (`archaeology/libxslt-git/`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream libxslt 1.1.45 `variables.c` and `params.c` with
+//! the upstream headers; R-000160 (11.1-I) dispositioned
+//! `xsltExtensionInstructionResultRegister` (upstream body returns 0).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the variable/parameter ABI: the stack management
+//! (`xsltVariableLookup`, `xsltLocalVariablePush/Pop`, `xsltAddStackElemList`,
+//! `xsltFreeStackElemList`), the global/user parameter evaluators, the
+//! result-tree-fragment lifecycle (`xsltCreateRVT`, `xsltRegister*RVT`,
+//! `xsltReleaseRVT`, `xsltFlagRVTs`, `xsltFreeRVTs`), key management and the
+//! extension-result bookkeeping.
+//!
+//! # Ownership & safety invariants
+//!
+//! RVT objects are owned by the context RVT lists and freed with
+//! `xsltReleaseRVT` (local/tmp) or `xsltFreeRVTs` (persist) per OWNERSHIP_ATLAS
+//! section 4; key tables are owned by the document wrapper (`idoc->keys`) and
+//! freed with `xsltFreeDocumentKeys`; stack elements are caller-owned lists
+//! (`xsltFreeStackElemList`); caller parameter strings are copied at eval time
+//! (upstream copies values).
+//!
+//! # Historical quirks & epochs
+//!
+//! The variables subsystem matured in the 1.1 era and feeds the frozen E-008
+//! transform epoch; R-000160 records that
+//! `xsltExtensionInstructionResultRegister` returns 0 with upstreams trivial
+//! body; R-000109 (Phase 9) fixed the RTF double-free and exsl:node-set
+//! support that this modules RVT lifecycle protects.
+//!
+//! # Deliberate oddities
+//!
+//! `xsltExtensionInstructionResultRegister` returns 0 unconditionally
+//! (upstream 1.1.45 body) — a deliberate no-op, not a stub; `xsltQuoteUserParams`
+//! reproduces upstreams quoting of user params including its single-quote
+//! doubling.
+//!
+//! # Proving courts
+//!
+//! The CLI-XSLTPROC court cases (parameter passing, the R-000111-era name=value
+//! parsing), the XSLT court family and DSO-LOADER/HEADER-COMPILE cover this
+//! module; the variables unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to free RVTs eagerly when the transform
+//! context is freed — the callers result tree may still reference them, and
+//! OWNERSHIP_ATLAS records the RVT lists as the owning structure (R-000109
+//! double-free class). Another shortcut, evaluating user parameters without
+//! the quote/unquote round-trip, would break the parameter values the
+//! CLI-XSLTPROC cases pass.
 
 #![allow(non_snake_case)]
 #![allow(unused_variables)]

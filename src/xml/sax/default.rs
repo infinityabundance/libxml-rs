@@ -5,11 +5,19 @@
 //! from the sequence of SAX callbacks, mirroring the upstream behavior of
 //! `xmlSAX2DefaultSAXHandler` / `xmlSAX2*` functions in libxml2's `SAX2.c`.
 //!
+//! # Upstream contract
+//!
+//! The parity target is the SAX2 default-handler path of libxml2 2.15.3
+//! (`SRC-LIBXML2-2.15.0-SAX2-C`). A consumer that installs the default SAX
+//! handler and feeds it events must see the same tree topology that upstream
+//! builds: element/attribute/namespace wiring, entity substitution, text
+//! compaction, and the namespace-declaration list all come from these
+//! handlers.
+//!
 //! # Architecture
 //!
 //! The parser context (`_xmlParserCtxt`) is stored as `userData` (the `ctx`
-//! pointer passed to every SAX callback). The default handlers use this context
-//! to:
+//! pointer passed to every SAX callback). The default handlers use this context to:
 //!
 //! - Access the document being built (`myDoc`)
 //! - Manage the element stack (`nodeTab`, `nodeNr`, `nodeMax`)
@@ -20,6 +28,31 @@
 //! These functions correspond to the `xmlSAX2*` function family in upstream
 //! libxml2 (`SAX2.c`), which are the default SAX2 handlers installed by
 //! `xmlSAX2InitDefaultSAXHandler`.
+//!
+//! # Historical quirks & epochs
+//!
+//! The namespace-aware SAX2 callback surface became the default parser path
+//! in the 2.5 era (HISTORY.md); since then the tree-building contract has
+//! been stable through 2.15.3. R-000147 (11.1-L) established that the
+//! tree namespace model is populated here — the handler must resolve
+//! attribute prefixes against the parser namespace scope, never against the
+//! node current tree state.
+//!
+//! # Proving courts
+//!
+//! The PARSER, TREE-STRUCTURE and CALLBACK court families exercise this
+//! surface; the CLI-XMLLINT corpus (47 byte-identical cases) builds trees
+//! through the default handlers, and the callback-family probe requires
+//! byte-identical handler-slot patterns against the oracle DSO.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to build attributes/namespaces directly from
+//! the element properties when handling StartElementNS. R-000147 proved the
+//! prefix resolution must consult the parser namespace scope (ancestor
+//! declarations), not the partially-built node — otherwise
+//! namespace-declaration order and undefined-prefix behavior diverge from
+//! the oracle and the CLI corpus regresses.
 
 #![allow(non_snake_case)]
 

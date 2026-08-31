@@ -47,6 +47,58 @@
 //! - The `xmlRegister*Callbacks` registrations are stored faithfully in a
 //!   side table (the internal I/O layer does not yet consult them) and
 //!   `xmlRegisterHTTPPostCallbacks` is a no-op (no HTTP support).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xmlautomata.c`/`xmlregexp.c`/`pattern.c`
+//! (libxml2 2.15.3, SRC-LIBXML2-2.15.0-XMLAUTOMATA-C); the signatures follow
+//! `xmlautomata.h`, `xmlregexp.h` and `pattern.h` so every symbol here
+//! resolves against the oracle DSO export set.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the automata/stream/regex-exec/pattern export
+//! family: NFA construction (`xmlAutomataNew*`), determinism checks, regex
+//! execution against pushed strings, and the compiled-pattern streaming
+//! evaluators, wired to the internal engines in `src/xml/automata` and
+//! `src/xml/regex` with the divergences listed above.
+//!
+//! # Ownership & safety invariants
+//!
+//! Handles (`xmlAutomataPtr`, `xmlRegExecCtxtPtr`, `xmlPatternPtr`,
+//! `xmlStreamCtxtPtr`) are owned by the caller and freed with the matching
+//! `xmlAutomataFree*`/`xmlRegFree*`/`xmlPatternFree*`/`xmlStreamFree*` entry
+//! points; the side registries keyed by fake opaque pointers keep internal
+//! state alive until the free functions run.
+//!
+//! # Historical quirks & epochs
+//!
+//! The automata/regex subsystem matured in the 2.6 `validation_era`
+//! (HISTORY.md) and has been ABI-stable since; the parity target is the 2.15.3
+//! oracle. R-000165 (11.1-O) closed the subsystem census so every oracle-DSO
+//! automata symbol is exported.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlRegExecNextValues`/`xmlRegExecErrInfo` return 0 with empty value
+//! lists, `xmlAutomataNewNegTrans` degrades to a plain transition, and
+//! `xmlRegisterHTTPPostCallbacks` is a no-op (no HTTP support) — all
+//! deliberate, documented divergences where the internal engine lacks the
+//! upstream feature.
+//!
+//! # Proving courts
+//!
+//! The RELAXNG/automata probes and the DSO-LOADER court (25/25 symbols load)
+//! plus HEADER-COMPILE (595/595) exercise this module; the data-ABI family
+//! probes require byte-identical behavior on the supported paths.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to fold the token2 value into a single token
+//! and claim full two-token support — the header already documents that only
+//! the first byte is honored by the engine; widening the claim would break the
+//! automata probes that feed two-byte tokens. Dropping the side registries
+//! would make pattern/stream handles dangle across calls.
 
 #![allow(
     missing_docs,

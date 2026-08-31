@@ -1,0 +1,10 @@
+{
+ "module": "exslt/functions/mod",
+ "upstream": [
+  "libexslt/functions.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [],
+ "court_families": []
+}

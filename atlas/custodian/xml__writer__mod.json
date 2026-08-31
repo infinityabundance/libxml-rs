@@ -1,0 +1,26 @@
+{
+ "module": "xml/writer/mod",
+ "upstream": [
+  "xmlwriter.c"
+ ],
+ "export_samples": [
+  "xmlFreeTextWriter",
+  "xmlNewTextWriter",
+  "xmlNewTextWriterFilename",
+  "xmlNewTextWriterMemory",
+  "xmlNewTextWriterDoc",
+  "xmlNewTextWriterTree"
+ ],
+ "subsystems": [
+  "writer"
+ ],
+ "residuals": [
+  "R-000151",
+  "R-000152",
+  "R-000153",
+  "R-000154",
+  "R-000155",
+  "R-000156"
+ ],
+ "court_families": []
+}

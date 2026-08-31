@@ -3,6 +3,28 @@
 //! These tests verify that the parser can parse real XML documents
 //! and produce correct trees. They exercise the full pipeline:
 //! C ABI exports → helpers → input → tokenizer → state machine → SAX → tree.
+//!
+//! # Ownership & safety invariants
+//!
+//! The tests build real documents through the public entry points and then
+//! free them with xmlFreeDoc, exercising the ownership contract
+//! (documents own their whole subtree; node/dict pointers are borrowed).
+//! Any leak or double-free in the tree ownership model surfaces here under
+//! the allocator registry tests.
+//!
+//! # Proving courts
+//!
+//! These tests complement the differential corpus: the CLI-XMLLINT-* cases
+//! (47 byte-identical) prove oracle parity end-to-end, while this module
+//! pins tree topology, namespace wiring and content values in-process.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to assert only well-formedness instead of
+//! exact tree shape. Parser output is an observable contract (node kinds,
+//! attribute values, namespace bindings); tests that accept any
+//! well-formed tree would not catch the topology divergences the oracle
+//! corpus is designed to detect. Assert exact structure.
 
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;

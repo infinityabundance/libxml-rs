@@ -1,0 +1,14 @@
+{
+ "module": "xml/xinclude/mod",
+ "upstream": [
+  "xinclude.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xinclude"
+ ],
+ "residuals": [],
+ "court_families": [
+  "XINCLUDE"
+ ]
+}

@@ -458,7 +458,7 @@ impl XmlTextReader {
             }
 
             // Generate END_ELEMENT for non-empty elements only (upstream
-            // xmlreader.c: empty elements have no end event).
+            // xmlreader.c: empty elements have no end event — R-000144).
             if !unsafe { (*node).children }.is_null() {
                 self.events.push(TraversalEvent {
                     node,
@@ -530,7 +530,7 @@ impl XmlTextReader {
         } else {
             self.node_type = element_type_to_reader_type(etype);
             // UPSTREAM-PARITY: whitespace-only text is reported as
-            // SIGNIFICANT_WHITESPACE (14) unless XML_PARSE_NOBLANKS.
+            // SIGNIFICANT_WHITESPACE (14) unless XML_PARSE_NOBLANKS (R-000144).
             if etype == XML_TEXT_NODE as c_int || etype == XML_CDATA_SECTION_NODE as c_int {
                 let content = unsafe { (*ev_node).content };
                 if !content.is_null() {
@@ -702,7 +702,8 @@ impl XmlTextReader {
     }
 
     /// Unified attribute addressing: namespace declarations first, then
-    /// regular attributes (upstream reader attribute iteration).
+    /// regular attributes (upstream reader attribute iteration, R-000143:
+    /// xmlns / xmlns:prefix count as attributes, ordered before properties).
     unsafe fn attr_at(&self, node: *mut _xmlNode, index: i32) -> AttrTarget {
         if node.is_null() || index < 0 {
             return AttrTarget::None;

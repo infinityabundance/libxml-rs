@@ -1,0 +1,22 @@
+{
+ "module": "abi/exports_nano",
+ "upstream": [
+  "nanohttp.c",
+  "nanoftp.c"
+ ],
+ "export_samples": [
+  "xmlNanoFTPInit",
+  "xmlNanoFTPCleanup",
+  "xmlNanoFTPNewCtxt",
+  "xmlNanoFTPFreeCtxt",
+  "xmlNanoFTPConnectTo",
+  "xmlNanoFTPOpen"
+ ],
+ "subsystems": [
+  "resource-loading"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": []
+}

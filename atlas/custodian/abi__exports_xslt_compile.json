@@ -1,0 +1,45 @@
+{
+ "module": "abi/exports_xslt_compile",
+ "upstream": [
+  "xslt.c",
+  "patterns.c",
+  "keys.c",
+  "numbers.c",
+  "sort.c",
+  "variables.c",
+  "preproc.c"
+ ],
+ "export_samples": [
+  "xsltNewStylesheet",
+  "xsltParseStylesheetProcess",
+  "xsltParseStylesheetUser",
+  "xsltParseStylesheetImportedDoc",
+  "xsltParseStylesheetImport",
+  "xsltParseStylesheetInclude"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-compilation",
+  "xslt-includes",
+  "xslt-priorities",
+  "xslt-variables",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-keys",
+  "xslt-sorting",
+  "xslt-numbering",
+  "xslt-whitespace",
+  "xslt-transform-ctxt",
+  "xslt-global-state",
+  "xslt-exports"
+ ],
+ "residuals": [],
+ "court_families": [
+  "BUILD-CONFIG-SCRIPT",
+  "CLI-XSLTPROC",
+  "EXSLT",
+  "ORACLE-IDENTITY",
+  "PREPROCESSOR-SURFACE",
+  "XSLT"
+ ]
+}

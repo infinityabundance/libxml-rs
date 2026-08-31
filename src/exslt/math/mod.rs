@@ -18,6 +18,38 @@
 //!   `SQRRT2` (sqrt(2)), `LN2`, `LN10`, `LOG2E`, `LOG10E`; `precision`
 //!   (default 27) controls how many significant digits are emitted.
 //! - `math:random()`: a pseudo-random number in [0, 1).
+//!
+//! # Ownership & safety invariants
+//!
+//! All math: functions are pure: they take numeric/string/node-set
+//! arguments and return a fresh Number or NodeSet value owned by the
+//! returned XPathValue. `math:highest`/`math:lowest` return node-sets that
+//! BORROW the input nodes (no copies, no ownership transfer) — the caller
+//! retains ownership of the source node-set, matching upstream math.c.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45). `math:constant`
+//! emits a fixed number of significant digits (default precision 27) using
+//! upstream's formatting, which differs from Rust's default f64 Display;
+//! the exact digit count and rounding must match upstream math.c.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0003 exercises math: alongside exsl:node-set and set:/str:
+//! against the oracle xsltproc (byte-identical); the module unit tests
+//! (cargo test --lib exslt::math) cover max/min/highest/lowest/constant
+//! including the empty-node-set NaN/empty rules.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to format math:constant output with the
+//! standard library's float formatting. Upstream uses its own precision
+//! logic (27 significant digits by default) that a general formatter does
+//! not reproduce — the differential CLI court catches the difference.
+//! Another shortcut, implementing math:highest by returning copies of the
+//! nodes, breaks node identity downstream (XPath comparisons and further
+//! path steps); keep the borrowed node-set.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

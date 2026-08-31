@@ -18,6 +18,38 @@
 //! definition with a body that is a single XPath expression in its `select`
 //! attribute (or whose content is a literal) is registered under its
 //! expanded QName.
+//!
+//! # Ownership & safety invariants
+//!
+//! Function bodies execute as templates inside the transform context; the
+//! results are XPathValues owned by the engine (freed with
+//! xmlXPathFreeObject). The registered function table is owned by the
+//! stylesheet and dies with it — no global registry is kept, matching
+//! upstream's per-stylesheet function resolution.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45), so func: has no
+//! epoch branching. `<func:script>` implementations (JavaScript etc.) were
+//! always optional in upstream (built with LIBXSLT_WITH_FUNCTIONS scripting
+//! backends) and are not part of the core contract; the candidate does not
+//! ship a scripting backend, matching a plain upstream build.
+//!
+//! # Proving courts
+//!
+//! The xsltproc CLI court family exercises stylesheet-defined functions
+//! through CLI-XSLTPROC cases; the module unit tests (cargo test --lib
+//! exslt::functions) cover registration and invocation of select-based
+//! function bodies.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to inline function bodies at their call
+//! sites during compilation. Upstream resolves func:function by *name* at
+//! evaluation time (the XPath call passes through the registered
+//! extension-function lookup), so redefinition and forward references
+//! behave in a specific way. Inlining changes evaluation order and
+//! redefinition semantics; keep the registered-lookup indirection.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

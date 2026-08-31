@@ -9,6 +9,58 @@
 //! - Execution: NFA simulation with state-set tracking
 //! - Incremental matching: push strings into an execution context
 //! - Determinism check
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xmlregexp.c` / `xmlregexp.h`
+//! (`SRC-LIBXML2-2.15.0-XMLREGEXP-C`, parity target libxml2 2.15.3
+//! oracle): `xmlRegexpCompile`, `xmlRegexpExec`, `xmlRegexpPrint`,
+//! `xmlRegFreeRegexp`, `xmlRegNewExecCtxt`, `xmlRegExecPushString` and the
+//! determinism check — the engine behind XML Schema pattern facets, RELAX
+//! NG and XSLT match patterns.
+//!
+//! # Conceptual behavior
+//!
+//! Implements an NFA-based regex engine using Thompson construction:
+//! compilation lowers the pattern to an NFA with epsilon transitions and
+//! character classes, execution simulates the state set, and the
+//! incremental context (`xmlRegExecCtxt`) accepts pushed string fragments
+//! — the automata module compiles its state machines down to this engine.
+//!
+//! # Ownership & safety invariants
+//!
+//! A compiled `XmlRegexp` is owned by its caller (freed with
+//! `xmlRegFreeRegexp`); execution contexts are owned separately and freed
+//! with `xmlRegFreeExecCtxt`. The automata builder stores the compiled
+//! regexp inside the automata and frees it with the automata. No global
+//! mutable state — compiled regexps are shareable across threads for
+//! execution.
+//!
+//! # Historical quirks & epochs
+//!
+//! The engine carries the CVE-2021-3541 fix lineage (SEC-0010) and is
+//! stable across the oracle matrix; the crate targets the 2.15.3 epoch,
+//! where schema-facet compilation and matching are byte-identical.
+//!
+//! # Deliberate oddities
+//!
+//! The determinism check is exposed as an API (xmlRegIsDeterministic /
+//! xmlAutomataIsDeterministic) and reports `not compiled = deterministic`
+//! in the automata layer — a faithful reproduction of the upstream return
+//! contract.
+//!
+//! # Proving courts
+//!
+//! Schema/RELAX NG differential courts compile and execute facets through
+//! this engine byte-identical against the oracle; cargo test runs the
+//! regexp unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not replace the engine with the Rust `regex` crate: the XML Schema
+//! pattern syntax (including the limits and error returns) is not the
+//! regex-crate grammar, and incremental push matching has no counterpart.
+//! Do not drop the determinism API — schema compilation calls it.
 
 #![allow(
     missing_docs,

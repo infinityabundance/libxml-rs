@@ -2393,6 +2393,74 @@
     }
    ],
    "lesson": "Two globals that form one logical (handler, ctx) pair must be published and read as a unit; tests that mutate shared exported slots must serialize against readers."
+  },
+  {
+   "id": "R-000172",
+   "status": "FIXED",
+   "phase": "11.1-Z",
+   "title": "xsl:value-of / xsl:copy-of atomic casts append an empty text node when the cast string is empty; empty result elements serialize as <out></out> instead of the oracle <out/>",
+   "surface": "xsltValueOf / xsltCopyOf result construction",
+   "component": [
+    "src/xslt/transform/mod.rs"
+   ],
+   "discovery_date": "2026-08-31",
+   "oracle_versions": "libxslt 1.1.45 (system)",
+   "root_cause": "The candidate cast the XPath result to string and appended a text node unconditionally. Upstream xsltValueOf/xsltCopyOf (transform.c 1.1.45) guard with `if (value[0] != 0)` — an empty cast result must not create a text node, otherwise an otherwise-empty element serializes as <out></out> rather than the oracle's <out/>.",
+   "fix": "11.1-Z: process_value_of and the copy-of atomic path now skip append_text_node when the first byte of the cast string is NUL, matching upstream's `if (value[0] != 0)` guard. New regression case CLI-XSLTPROC-0020 (byte-identical vs the oracle).",
+   "lesson": "Result-tree text insertion is observable: an empty cast string is 'no text at all', not an empty text node; the empty-text-node difference changes empty-element serialization (<out/> vs <out></out>).",
+   "regression_courts": [
+    "CLI-XSLTPROC-0020"
+   ],
+   "evidence": [
+    "oracle/historical/src/libxslt-1.1.42/libxslt/transform.c (xsltValueOf, xsltCopyOf)"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered during 11.2 custodian commentary audit"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-08-31",
+     "note": "fixed in 11.1-Z/11.2; CLI-XSLTPROC-0020 byte-identical"
+    }
+   ]
+  },
+  {
+   "id": "R-000173",
+   "status": "FIXED",
+   "phase": "11.1-Z",
+   "title": "XPath child axis includes the DTD node when the source document has a DOCTYPE; /root matches the doctype name and string(/root) returns the DTD's empty value",
+   "surface": "XPath child axis traversal",
+   "component": [
+    "src/xml/xpath/axes.rs"
+   ],
+   "discovery_date": "2026-08-31",
+   "oracle_versions": "libxml2 2.15.3 (system)",
+   "root_cause": "child_axis walked doc->children including the XML_DTD_NODE that heads the list. Upstream xmlXPathNextChild/xmlXPathNextChildElement (xpath.c) either start at the root element (xmlDocGetRootElement for name tests) or skip XML_DTD_NODE while walking; the XPath 1.0 child axis of the document contains only element/text/comment/PI nodes.",
+   "fix": "11.1-Z: child_axis now skips XML_DTD_NODE (type 14) before applying the node test. count(/root) returns 1 (not 2) and string(/root) returns the element text (not the DTD's empty value) on DOCTYPE documents. New regression case CLI-XSLTPROC-0021 (byte-identical vs the oracle).",
+   "lesson": "The DTD node is part of the C tree but NOT part of the XPath data model; axis traversal must exclude it or name tests collide with the doctype name.",
+   "regression_courts": [
+    "CLI-XSLTPROC-0021"
+   ],
+   "evidence": [
+    "oracle/historical/src/libxml2-2.15.0/xpath.c (xmlXPathNextChild, xmlXPathNextChildElement)"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered during 11.2 custodian commentary audit"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-08-31",
+     "note": "fixed in 11.1-Z/11.2; CLI-XSLTPROC-0021 byte-identical"
+    }
+   ]
   }
  ]
 }

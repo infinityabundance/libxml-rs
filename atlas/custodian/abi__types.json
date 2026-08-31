@@ -1,0 +1,17 @@
+{
+ "module": "abi/types",
+ "upstream": [
+  "tree.h",
+  "parser.h",
+  "xpath.h",
+  "xmlerror.h",
+  "xmlreader.h",
+  "xmlwriter.h"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000163"
+ ],
+ "court_families": []
+}

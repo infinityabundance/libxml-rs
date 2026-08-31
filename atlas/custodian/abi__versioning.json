@@ -1,0 +1,27 @@
+{
+ "module": "abi/versioning",
+ "upstream": [
+  "globals.c",
+  "parser.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "globals",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000133",
+  "R-000167"
+ ],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "PARSER",
+  "THREADING"
+ ]
+}

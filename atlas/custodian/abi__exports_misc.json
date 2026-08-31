@@ -1,0 +1,37 @@
+{
+ "module": "abi/exports_misc",
+ "upstream": [
+  "parser.c",
+  "tree.c",
+  "uri.c",
+  "xmlstring.c"
+ ],
+ "export_samples": [
+  "xmlGetBufferAllocationScheme",
+  "xmlSetBufferAllocationScheme",
+  "xmlGetFeaturesList",
+  "xmlGetFeature",
+  "xmlSetFeature",
+  "xmlGetNoNsProp"
+ ],
+ "subsystems": [
+  "strings",
+  "tree",
+  "namespaces",
+  "dtd",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "uri",
+  "serialization",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": [
+  "OWNERSHIP",
+  "PARSER",
+  "TREE-STRUCTURE"
+ ]
+}

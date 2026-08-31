@@ -1,0 +1,31 @@
+{
+ "module": "xslt/compiler/mod",
+ "upstream": [
+  "xslt.c",
+  "preproc.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-compilation",
+  "xslt-includes",
+  "xslt-priorities",
+  "xslt-sorting",
+  "xslt-whitespace",
+  "xslt-transform-ctxt",
+  "xslt-global-state",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000109",
+  "R-000140"
+ ],
+ "court_families": [
+  "BUILD-CONFIG-SCRIPT",
+  "CLI-XSLTPROC",
+  "EXSLT",
+  "ORACLE-IDENTITY",
+  "PREPROCESSOR-SURFACE",
+  "XSLT"
+ ]
+}

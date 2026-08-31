@@ -1,0 +1,13 @@
+{
+ "module": "xslt/sorting/mod",
+ "upstream": [
+  "sort.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000115",
+  "R-000140"
+ ],
+ "court_families": []
+}

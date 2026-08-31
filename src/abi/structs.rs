@@ -31,6 +31,69 @@
 //!
 //! Each struct must be verified with `offsetof`/`sizeof` probes compiled
 //! from upstream headers. See courts/abi-struct-*.json for receipts.
+//!
+//! # Upstream contract
+//!
+//! Every `#[repr(C)]` mirror is field-for-field identical to the upstream C
+//! headers at the 2.15.3/1.1.45 parity target: `tree.h`, `parser.h`, `xpath.h`,
+//! `SAX2.h`, `encoding.h`, `xslt.h`, `schemasInternals.h` and friends
+//! (SRC-LIBXML2 / SRC-LIBXSLT archaeology trees). The header closure in
+//! `include/` was extracted verbatim by `tools/headers/header_closure.py`
+//! (R-000124) and the Rust mirrors are measured against those headers.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the C-visible struct layout surface: tree nodes,
+//! documents, parser contexts, SAX handlers, XPath contexts/objects, buffers,
+//! error structs, encoding handlers, and the libxslt engine structs. The
+//! layout IS the behavior — a C consumer reads these fields at fixed offsets,
+//! so size and field order are ABI contract, verified by offsetof/sizeof
+//! probes.
+//!
+//! # Ownership & safety invariants
+//!
+//! These structs are raw C-layout data; ownership of the pointed-to children
+//! follows OWNERSHIP_ATLAS (borrowed parent/doc/ns pointers, owned children
+//! lists). Fields marked deprecated or unused are retained for ABI
+//! compatibility. The mirrors are `unsafe` to construct/destroy because the C
+//! header layout is the invariant and Rust must not add layout assumptions.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000139 (11.1-I): the Rust `_xmlElement` was 56 bytes vs the headers 104
+//! — every `xmlMalloc(sizeof(_xmlElement))` was 48 bytes short. R-000140:
+//! eight libxslt mirrors diverged (121 mismatches, e.g. `_xsltTemplate`
+//! missing the match field entirely) until rewritten from clang record-layout
+//! dumps; the XSLT_REFACTORED-gated fields are omitted because the oracle DSO
+//! ships with XSLT_REFACTORED disabled. R-000129: `_xmlCharEncodingHandler`
+//! was 48 bytes vs upstream 56. R-000135 added the `_xmlSAXHandlerV1` /
+//! `xmlChRangeGroup` mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! Missing-docs and missing-debug-implementations are allowed here
+//! deliberately: the C headers are the canonical documentation (bindgen
+//! rationale), and the byte-exact layout is the contract. Opaque types (dict,
+//! hash, list, regexp, automata, catalog) are defined as empty handles on
+//! purpose — upstream keeps them opaque in the headers too.
+//!
+//! # Proving courts
+//!
+//! The RUST-MIRROR-ABI court (`tools/abi/rust_mirror_abi.py`) measures every
+//! mirror against clang -fdump-record-layouts output of the candidate headers
+//! (0 mismatches at the 11.1-I seal); the C ABI courts compile offsetof/sizeof
+//! probes against the upstream headers; the DATA-GLOBALS-001 and CALLBACK-001
+//! probes exercise the SAX/error structs at runtime.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to rewrite the mirrors as ergonomic Rust
+//! structs (Options, Vecs, enums with payloads) — that is precisely the
+//! defect R-000139/R-000140 fixed and it would shift every field offset a C
+//! consumer reads. Another tempting shortcut is to drop the deprecated fields:
+//! upstream retains them in the ABI, so a smaller struct would make `sizeof`
+//! and every downstream allocation wrong. The mirrors must not diverge from
+//! the headers even when a field is never used by the candidate.
 
 use crate::abi::callbacks::*;
 use crate::abi::types::*;

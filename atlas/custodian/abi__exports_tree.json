@@ -1,0 +1,30 @@
+{
+ "module": "abi/exports_tree",
+ "upstream": [
+  "tree.c",
+  "buf.c"
+ ],
+ "export_samples": [
+  "xmlFreeNs",
+  "xmlFreeNsList",
+  "xmlFreeProp",
+  "xmlFreePropList",
+  "xmlNewNodeEatName",
+  "xmlNewDocNode"
+ ],
+ "subsystems": [
+  "tree",
+  "namespaces",
+  "dtd",
+  "serialization",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000164",
+  "R-000165"
+ ],
+ "court_families": [
+  "OWNERSHIP",
+  "TREE-STRUCTURE"
+ ]
+}

@@ -1,16 +1,16 @@
 //! Dictionary — string interning (§85 Phase 1).
 //!
-//! Implements `xmlDict`, libxml2's string interning mechanism for efficient
+//! Implements `xmlDict`, the libxml2 string interning mechanism for efficient
 //! string comparison and memory sharing.
 //!
 //! # UPSTREAM-PARITY
 //!
-//! libxml2's `xmlDict` is a hash-table-backed string interning dictionary.
+//! The libxml2 `xmlDict` is a hash-table-backed string interning dictionary.
 //! Key properties:
 //!
 //! - Strings are interned (stored once, reused by reference)
 //! - Interned strings are reference-counted
-//! - Sub-dictionaries share the parent's string table but have their own
+//! - Sub-dictionaries share the parent string table but have their own
 //!   reference counting
 //! - Dictionary limits prevent denial-of-service via excessive unique strings
 //! - `xmlDictSetLimit` controls the maximum number of strings
@@ -26,6 +26,55 @@
 //!
 //! Complete — all dictionary functions are implemented.
 //! Uses `hashbrown::HashTable` for the underlying hash table.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `dict.c` / `dict.h` (`SRC-LIBXML2-2.15.0-DICT-C`, parity
+//! target libxml2 2.15.3 oracle): `xmlDictCreate` / `xmlDictCreateSub` /
+//! `xmlDictLookup` / `xmlDictQLookup` / `xmlDictSetLimit` / `xmlDictGetUsage`
+//! / `xmlDictReference` / `xmlDictFree`, with the FNV-1a key hashing of
+//! `xmlDictComputeFastQKey`.
+//!
+//! # Ownership & safety invariants
+//!
+//! Dict-owned strings are stable for the dict lifetime and invalidated by
+//! `xmlDictFree` — the dict must outlive every string interned from it and
+//! the docs that reference them (OWNERSHIP_ATLAS §3, §7.4). A sub-dict
+//! shares the parent table but keeps its own refcounts; `xmlDictReference`
+//! bumps the owning dict so parser/doc sharing stays safe. Concurrent
+//! reads are safe once populated; concurrent modification is NOT (matches
+//! upstream).
+//!
+//! # Historical quirks & epochs
+//!
+//! The default dictionary-size limit dates from the 2.9.0 hardening epoch
+//! (QUIRK-0001 / SEC-0001, commit 52d8ade7 2012-07-30): excessive unique
+//! strings fail unless `XML_PARSE_HUGE` lifts the limits. CVE-2015-7497
+//! (commit 6360a31a, "Avoid an heap buffer overflow in
+//! xmlDictComputeFastQKey") fixed the key-hash path the FNV hasher here
+//! reproduces (SEC-0008).
+//!
+//! # Deliberate oddities
+//!
+//! The FNV-1a hasher is deliberately NOT a general-purpose Rust hasher:
+//! it reproduces the upstream hash so interning behavior (and the
+//! `xmlDictQLookup` collision handling) matches the oracle.
+//!
+//! # Proving courts
+//!
+//! PARSER-LIMIT-* courts verify the default limits and the `XML_PARSE_HUGE`
+//! relaxation; DICT-* courts cover lookups and key hashing; the
+//! SECURITY-LIMITS court covers entity/amplification paths that consult the
+//! dict. All differential courts require byte-identical output vs the
+//! oracle DSO; cargo test runs the Rust unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not replace the interning table with a plain Rust HashMap of Strings:
+//! callers observe stable `xmlDictLookup` pointers, refcount semantics,
+//! sub-dict sharing and `xmlDictSetLimit` accounting — all part of the C
+//! ABI. Do not change the hash: `xmlDictQLookup` collision order is
+//! observable, and the CVE-2015-7497 fix constrains the implementation.
 
 use core::ffi::c_void;
 use core::hash::Hasher;
@@ -68,7 +117,12 @@ struct DictEntry {
 }
 
 /// Simple FNV-1a hasher for consistent hashing across platforms.
-/// This is NOT cryptographically secure; it's for hash table performance.
+/// This is NOT cryptographically secure; it is for hash table performance.
+///
+/// UPSTREAM-PARITY: reproduces `xmlDictComputeFastQKey` (dict.c) so interned
+/// keys hash identically to upstream; the CVE-2015-7497 fix (commit
+/// 6360a31a, SEC-0008) constrained this path, so it must not be swapped for
+/// a different hash.
 struct SimpleHasher(u64);
 
 impl Hasher for SimpleHasher {

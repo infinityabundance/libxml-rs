@@ -2,7 +2,7 @@
 //!
 //! UPSTREAM-PARITY: Corresponds to `xmlautomata.c` / `xmlautomata.h` in libxml2.
 //!
-//! libxml2's internal automata implementation is used primarily by the
+//! The libxml2 internal automata implementation is used primarily by the
 //! schema/RELAX NG validation subsystems. It builds a state machine that
 //! can be compiled into a regex for efficient validation.
 //!
@@ -36,6 +36,54 @@
 //!     xmlAutomataStatePtr from, xmlAutomataStatePtr to, int counter);
 //! xmlAutomataStatePtr xmlAutomataNewCounter(xmlAutomataPtr am, int min, int max);
 //! ```
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xmlautomata.c` / `xmlautomata.h`
+//! (`SRC-LIBXML2-2.15.0-XMLAUTOMATA-C`, parity target libxml2 2.15.3
+//! oracle): the automata builder API plus `xmlAutomataCompile` (compiles to
+//! an xmlRegexp) and `xmlAutomataIsDeterministic`.
+//!
+//! # Conceptual behavior
+//!
+//! Implements a state-machine builder over the regexp engine: transitions
+//! (epsilon, token, count, once, all, counter) grow an NFA that
+//! `xmlAutomataCompile` lowers into an `XmlRegexp` for the schema / RELAX
+//! NG validation subsystems. This is the constructor half of the regexp
+//! subsystem, not an independent matcher.
+//!
+//! # Ownership & safety invariants
+//!
+//! The automata owns its state list and the compiled regexp (stored in
+//! `am.regexp` on `xmlAutomataCompile`); `xmlFreeAutomata` drops both.
+//! States are owned by the automata — callers hold borrowed pointers valid
+//! until the automata is freed.
+//!
+//! # Historical quirks & epochs
+//!
+//! The automata/regexp pairing dates from the schema work in the 2.6
+//! validation-era expansion and is stable through the 2.15.3 oracle; the
+//! regexp side carries the CVE-2021-3541 fix lineage (SEC-0010), so the
+//! compiled-output contract here inherits that hardening.
+//!
+//! # Deliberate oddities
+//!
+//! Counter transitions (xmlAutomataNewCountedTrans/CounterTrans) implement
+//! the upstream bounded-repetition idiom that has no direct NFA analogue;
+//! they are kept because schema facets compile through them.
+//!
+//! # Proving courts
+//!
+//! Schema/RELAX NG differential courts compile facets through this builder;
+//! cargo test covers the automata unit suites (determinism checks and
+//! compiled-regexp execution).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not bypass the builder and construct regexes directly: the schema
+//! layer calls the xmlAutomata* entry points and observes their state/
+//! regexp behavior. Do not drop the determinism check — schema
+//! compilation relies on it.
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::xml::regex::{xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp};

@@ -1,0 +1,22 @@
+{
+ "module": "xslt/templates/mod",
+ "upstream": [
+  "templates.c"
+ ],
+ "export_samples": [
+  "xsltAddTemplate",
+  "xsltFreeTemplate",
+  "xsltFreeTemplates",
+  "xsltFindTemplate",
+  "xsltLookupTemplate"
+ ],
+ "subsystems": [
+  "xslt-templates",
+  "xslt-priorities"
+ ],
+ "residuals": [
+  "R-000103",
+  "R-000140"
+ ],
+ "court_families": []
+}

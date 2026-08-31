@@ -1,0 +1,18 @@
+{
+ "module": "abi/exports_xlink",
+ "upstream": [
+  "xlink.c"
+ ],
+ "export_samples": [
+  "xlinkGetDefaultHandler",
+  "xlinkSetDefaultHandler",
+  "xlinkGetDefaultDetect",
+  "xlinkSetDefaultDetect",
+  "xlinkIsLink"
+ ],
+ "subsystems": [
+  "xlink"
+ ],
+ "residuals": [],
+ "court_families": []
+}

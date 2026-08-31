@@ -38,6 +38,64 @@
 //! - Empirical testing with the oracle
 //!
 //! See `atlas/LORE.md` for detailed ownership archaeology.
+//!
+//! # Upstream contract
+//!
+//! The ownership rules documented here mirror upstream libxml2 2.15.3
+//! (`SRC-LIBXML2-2.15.0-TREE-C` tree.c and `SRC-LIBXML2-2.15.0-XMLMEMORY-C`
+//! xmlmemory.c) and libxslt 1.1.45 conventions, cross-checked in
+//! `atlas/OWNERSHIP_ATLAS.md` — the authoritative ownership record.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the ownership membrane of the C ABI: it classifies
+//! every pointer crossing the FFI boundary as Owned, Borrowed, Transferred,
+//! ConsumedOnSuccess, Nullable, Static or Opaque, and provides the marker
+//! types (`Owned`, `Borrowed`, ...) that track ownership state across the ABI.
+//! It exports no `#[no_mangle]` functions; it exists to make the free-with
+//! contract explicit (freed with `xmlFree`, caller frees, borrowed never
+//! freed).
+//!
+//! # Ownership & safety invariants
+//!
+//! The core invariant: a pointer returned by an xml* allocator must be freed
+//! with `xmlFree`; a borrowed pointer (node->parent, node->doc, node->ns, dict
+//! lookups) is never freed by the reader; a transferred pointer changes owner
+//! at the documented call. Callback user-data is borrowed by convention only.
+//! See OWNERSHIP_ATLAS sections 1-6 for the per-surface tables.
+//!
+//! # Historical quirks & epochs
+//!
+//! The ownership model is the accumulation of upstream fixes: LORE-0006 /
+//! QUIRK-0002 record that namespace nodes have no parent (commit `044fc6b7`,
+//! 2002-03-04) — an ownership divergence downstream code depends on;
+//! R-000139/R-000140 (11.1-I) were struct-mirror defects where Rust layouts
+//! diverged from the C headers, changing which fields exist to free; the
+//! double-free protection (xmlFree on an unknown pointer is a no-op) is a
+//! documented safe divergence from OWNERSHIP_ATLAS section 8.
+//!
+//! # Deliberate oddities
+//!
+//! The marker types (`Owned<T>` etc.) are deliberately kept minimal: they are
+//! the compile-time documentation of the ownership categories, not a full
+//! arena system — wrapping every ABI pointer would change the exported
+//! layouts.
+//!
+//! # Proving courts
+//!
+//! The OWNERSHIP and TREE-STRUCTURE court families exercise the contracts
+//! documented here (`courts/suites/data-abi/tree-structure-probe.c` — the
+//! TREE-001 differential probe requires byte-identical output); the
+//! RUST-MIRROR-ABI court verifies the struct mirrors these rules operate on,
+//! and cargo test runs the ownership unit tests.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to treat every returned pointer as owned by
+//! the caller and free it eagerly — that would double-free the borrowed
+//! pointers (node->ns, dict strings, node->doc) that upstream keeps borrowed,
+//! reproducing the exact double-free class R-000170 chased out of the parallel
+//! test suite. The categories must not be collapsed.
 
 #![allow(dead_code)]
 

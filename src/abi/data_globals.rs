@@ -17,6 +17,75 @@
 //! here with an explicit safety note). C accesses are inherently racy in
 //! upstream too — upstream documents these globals as deprecated and
 //! not thread-safe.
+//!
+//! # Upstream contract
+//!
+//! The parity target is upstream `globals.c` (libxml2 2.15.3), `SAX2.c` and
+//! `chvalid.c`, plus the libxslt `xslt.c` globals. Every symbol here is
+//! exported `#[no_mangle]` as DATA with the upstream name, type and default so
+//! downstream C code that reads or writes the classic global variables links
+//! and observes the same values (R-000135 data-globals closure).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the exported C data-global surface: parser defaults
+//! (`xmlDoValidityCheckingDefaultValue`, `xmlKeepBlanksDefaultValue`, ...),
+//! the error handler/context slots (`xmlGenericError`, `xmlStructuredError`,
+//! `xmlLastError`), the default SAX handler structs and locator, the version
+//! data symbols and the allocator function pointers. The parser-default
+//! accessors in `src/xml/globals/mod.rs` read and write the SAME statics
+//! (single source of truth), so a C write is immediately observable by the
+//! candidate parser.
+//!
+//! # Ownership & safety invariants
+//!
+//! `static mut` globals are inherently racy — upstream documents them as
+//! deprecated and not thread-safe, and the candidate preserves that C-visible
+//! contract. Internal writers are serialized where corruption is possible: the
+//! `xmlLastError` mirror deep-copy/free is guarded by `LAST_ERROR_MIRROR_LOCK`
+//! (R-000170) and the handler-slot pairs are read and written atomically
+//! (R-000171), while C readers keep upstreams documented racy semantics.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000135 (11.1-I): 11 exported data symbols were missing entirely and are
+//! now byte-identical with the oracle DSO. R-000161 (11.1-K): `xmlGenericError`
+//! / `xsltGenericError` default to the variadic stderr printers
+//! (`xmlGenericErrorDefaultFunc` / `xsltGenericErrorDefaultFunc`) via the asm
+//! va_list shims, and five default values were wrong before that fix
+//! (e.g. `xmlLineNumbersDefaultValue` 0 to 1, `xmlTreeIndentString` NULL to a
+//! two-space string). R-000167 (11.1-S): `xsltLibxsltVersion` and friends are
+//! exported as data (R) not functions (T). R-000162 (11.1-L): the allocator
+//! entry points are DATA function pointers. R-000170/R-000171 (11.1-X): the
+//! parallel-suite corruption races.
+//!
+//! # Deliberate oddities
+//!
+//! The candidates internal writers are locked while the exported symbols stay
+//! racy — a deliberate safe divergence that keeps the C-visible contract
+//! identical to upstream while making the Rust internals safe.
+//! `xsltDocDefaultLoader` defaults to NULL instead of upstreams variadic
+//! default function (stable Rust cannot define variadic extern fns) —
+//! documented safe divergence from R-000135.
+//!
+//! # Proving courts
+//!
+//! The DATA-GLOBALS-001 differential court (tools/abi/data_globals_probe.py
+//! and courts/suites/data-abi/data-globals-probe.c) compiles one probe
+//! against the oracle DSO and the candidate and requires byte-identical
+//! output; the ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING families
+//! plus DSO-LOADER (symbol-type parity) and HEADER-COMPILE also cover this
+//! module.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to keep parser defaults only in Rust atomics
+//! and skip the exported C globals — that was the pre-R-000135 state and it
+//! breaks every downstream consumer that reads or writes
+//! `xmlDoValidityCheckingDefaultValue` directly (the link would fail).
+//! Another tempting shortcut is dropping the mirror locks: R-000170 observed
+//! glibc `double free or corruption` aborts in about 12% of parallel runs, so
+//! the locks must not be removed even though upstream is racy.
 
 use core::ffi::c_void;
 use std::os::raw::{c_char, c_int, c_uint};

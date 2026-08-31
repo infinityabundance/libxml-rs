@@ -25,6 +25,63 @@
 //! The `*Safe` variants follow the upstream convention of returning an `int`
 //! status code (0 = success, 1 = invalid argument/URI, -1 = allocation
 //! failure) and storing the result through an out parameter.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `uri.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-URI-C) plus the `uri.h`/`xmlIO.c`/`parser.c`
+//! signatures; the 11 entry points mirror the oracle DSO export set.
+//! R-000132 (11.1-G) is the defining residual for this family.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the URI ABI: `xmlBuildURI`/`xmlBuildRelativeURI`
+//! (and the *Safe out-parameter variants), `xmlCanonicPath`, `xmlPathToURI`,
+//! `xmlPrintURI`, `xmlURIEscape`, `xmlNormalizeWindowsPath`,
+//! `xmlCheckLanguageID` and `xmlParseURISafe`, reusing the internal
+//! parser/resolver from `src/xml/uri/mod.rs` (`parse_uri`, `build_uri`,
+//! `resolve_uri`, `normalize_uri_path`, `xmlURIEscapeStr`, `xmlSaveUri`,
+//! `xmlParseURI`).
+//!
+//! # Ownership & safety invariants
+//!
+//! All returned strings are `xmlMalloc` allocations the caller frees with
+//! `xmlFree` (upstream contract); the *Safe variants fill a caller-owned
+//! out-parameter and return an int status (0 success, 1 invalid argument/URI,
+//! -1 allocation failure). R-000132: `xmlParseURI`/`xmlCreateURI` return the
+//! `repr(C)` `CXmlUri` mirror of `_xmlURI` (104 bytes) — not a Rust `UriParts`
+//! object — and `xmlFreeURI` releases the allocator-owned NUL-terminated
+//! strings.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000132 (11.1-G): `xmlParseURI` returned a non-C-layout `UriParts` box
+//! cast to `xmlURIPtr`; a C consumer reading `uri->scheme` read garbage. The
+//! fix introduced the field-for-field `CXmlUri` mirror and added
+//! `xmlParseURIReference`/`xmlNormalizeURIPath` (R-000133). The URI ABI
+//! follows RFC3986 and has been stable since the 2.6 era.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlNormalizeWindowsPath` keeps the upstream Windows-path normalization
+//! even on POSIX hosts (mirroring upstreams unconditional code);
+//! `xmlCheckLanguageID` follows the upstream language-tag grammar including
+//! its quirks.
+//!
+//! # Proving courts
+//!
+//! The DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts plus the uri
+//! unit suite (`src/xml/uri/mod.rs`, 69 tests per R-000132) and the data-ABI
+//! probes cover this module.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to return the internal `UriParts` (or any
+//! Rust-native URI object) as `xmlURIPtr` — R-000132 proved that breaks every
+//! C consumer reading fields by offset; the returned object must be the exact
+//! `_xmlURI` layout with allocator-owned strings. Another shortcut, making the
+//! *Safe variants return the string directly, would break the upstream
+//! out-parameter ABI.
 
 #![allow(
     missing_docs,

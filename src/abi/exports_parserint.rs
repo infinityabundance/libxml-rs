@@ -27,6 +27,65 @@
 //! (`xmlMalloc`) and must be freed by the caller with `xmlFree`, matching
 //! the upstream contract when `ctxt->dict == NULL` (which is the case for
 //! every context the crate creates).
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `parserInternals.c` and `parser.c` (libxml2
+//! 2.15.3) with the `parserInternals.h`/`parser.h`/`xmlIO.h`/`xmlerror.h`
+//! signatures — the recursive-descent primitives (`xmlParseName`,
+//! `xmlParseAttValue`, `xmlParseStartTag`, `xmlParseElement`, the namespace
+//! parsers, `xmlParseQuotedString`, ...) that custom SAX consumers call
+//! directly on a `xmlParserCtxtPtr`. R-000165 and R-000169 both touch this
+//! module.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the classic parser-internals primitives as faithful
+//! ports operating directly on the `_xmlParserCtxt`/`_xmlParserInput` field
+//! layout, dispatching SAX events through `crate::xml::sax::dispatch` exactly
+//! like upstream (SAX2 variants preferred when present).
+//!
+//! # Ownership & safety invariants
+//!
+//! Strings returned to C are allocated with the crate allocator (`xmlMalloc`)
+//! and must be freed by the caller with `xmlFree`, matching the upstream
+//! contract when `ctxt->dict == NULL`. Parser inputs are owned by the context;
+//! the `_xmlParserInput.filename` is an owned copy — R-000169 made every
+//! construction path own its filename (xml_strndup) and every free path
+//! symmetric with `free_parser_input`.
+//!
+//! # Historical quirks & epochs
+//!
+//! These primitives are the 2.0-era recursive-descent parser surface
+//! (`legacy_parser` epoch in HISTORY.md) that has stayed exported for
+//! custom-SAX consumers; the internal `src/xml/parser/state.rs` engine is the
+//! modern non-recursive path (E-002 epoch for diagnostics). R-000169 (11.1-X)
+//! fixed the dangling-filename defect class in the four parserInternals entry
+//! points.
+//!
+//! # Deliberate oddities
+//!
+//! The primitives are deliberately ported standalone rather than wired to the
+//! internal tokenizer (documented in the header above): the internal engine
+//! consumes input wholesale and cannot expose this granularity. The `xmlParse*`
+//! namespace parsers follow upstreams exact token-by-token consumption
+//! including its error returns.
+//!
+//! # Proving courts
+//!
+//! The PARSER court family plus the DSO-LOADER (25/25) and HEADER-COMPILE
+//! (595/595) courts cover this module; the TREE-001 probe exercises the
+//! structures these primitives build; the parse-helper unit tests run under
+//! cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to build the parsed name strings with
+//! Rust-owned buffers and hand their pointers to C — the strings must be
+//! `xmlMalloc`-allocated so `xmlFree` releases them (ownership contract
+//! above); and a tempting shortcut to store the input filename by borrowing
+//! the Rust String is exactly the R-000169 defect (dangling pointer after
+//! context free). Both must not be simplified.
 
 #![allow(missing_docs)]
 #![allow(non_snake_case)]

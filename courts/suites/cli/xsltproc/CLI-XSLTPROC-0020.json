@@ -1,0 +1,29 @@
+{
+ "case_id": "CLI-XSLTPROC-0020",
+ "surface": "cli-xsltproc",
+ "purpose": "empty value-of/copy-of cast results must not create empty text nodes (R-000172: upstream xsltValueOf/xsltCopyOf guard `if (value[0] != 0)`; an otherwise-empty element must serialize as <out/>, never <out></out>)",
+ "oracle_profile": "libxslt-1.1.45",
+ "inputs": {
+  "argv": [
+   "xslt/emptyvalue.xsl",
+   "xslt/doc.xml"
+  ],
+  "document": "xslt/doc.xml"
+ },
+ "observables": [
+  "exit_status",
+  "stdout_hash",
+  "stderr_hash"
+ ],
+ "normalization": [],
+ "provenance": [
+  "residual-R-000172",
+  "differential"
+ ],
+ "tags": [
+  "differential",
+  "xsltproc",
+  "value-of",
+  "empty-string"
+ ]
+}

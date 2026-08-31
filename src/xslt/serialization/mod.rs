@@ -1,5 +1,63 @@
 //! XSLT result serialization (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `xsltutils.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-XSLTUTILS-C` under oracle/historical/src), the
+//! `xsltSaveResultTo` family. Subsystem census: xslt-output. ABI surface:
+//! `xsltSaveResultTo` / `xsltSaveResultToFilename` / `xsltSaveResultToFile` /
+//! `xsltSaveResultToString` and the `xsl:output` settings they honor.
+//!
+//! # Conceptual behavior
+//!
+//! The result document is serialized honoring the stylesheet output
+//! definition (method, encoding, indent, omit-xml-declaration, doctype,
+//! media-type), resolved through the import chain like upstream
+//! `xsltNextImport`/`XSLT_GET_IMPORT_*`. The XML declaration is written
+//! explicitly (version/encoding/standalone resolution rules below); each
+//! top-level child is dumped with `xmlNodeDumpOutput`-semantics and
+//! newline separators are inserted only for the DTD or non-final comment
+//! children when indentation is enabled.
+//!
+//! # Ownership & safety invariants
+//!
+//! `xsltSaveResultToString` hands the caller a heap buffer allocated with
+//! `xmlMalloc` that the caller frees with `xmlFree` (upstream contract;
+//! atlas/OWNERSHIP_ATLAS.md section 8). File/fd sinks are borrowed from
+//! the caller; the result document is borrowed (never freed here).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): xsltproc output bytes are identical
+//! from libxslt 1.1.26 (2009) through 1.1.45, so the newline/declaration
+//! decisions are frozen since 2009. R-000118 (Phase 9) closed the HTML
+//! output-method divergence (CLI-XSLTPROC-0011); R-000140 covered the
+//! `_xslt*` ABI mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! - The C quirk preserved here: `indent == -1` (the default when no
+//!   `indent` attribute is present) is truthy for the newline logic while
+//!   element-content formatting happens only when `indent == 1`.
+//! - A result document with only a DTD child (or none) is treated as
+//!   empty, matching upstream `xsltSaveResultTo`.
+//!
+//! # Proving courts
+//! CLI-XSLTPROC (output-method corpus incl. R-000118 HTML cases), XSLT-001
+//! (xsltSaveResultToString via the xslt-family probe), the in-crate
+//! serialization tests (incl. test_save_result_indent_quirk), and `cargo
+//! test`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Treating `indent == -1` as no-indent (a naive read of the attribute)
+//!   changes the trailing-newline behavior that the CLI corpus pins
+//!   (test_save_result_indent_quirk).
+//! - Inserting separators between every top-level element changes
+//!   byte-parity for multi-child results (upstream writes none).
+//! - Returning the internal buffer instead of a fresh xmlMalloc copy
+//!   breaks the caller-frees contract.
+//!
 //! Serializes the result tree to a file, fd, or string, honoring the
 //! stylesheet's `<xsl:output>` settings (method, encoding, indent,
 //! omit-xml-declaration, doctype, media-type).

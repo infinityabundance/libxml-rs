@@ -5,6 +5,67 @@
 //! prolog (XML declaration, DTD, misc), content (root element with children),
 //! and epilog (misc after root). SAX events are dispatched through the
 //! `SaxDispatcher` to the handlers registered in the parser context.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream parser.c (SRC-LIBXML2-2.15.0-PARSER-C, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/parser.c`). The parity target is the
+//! system libxml2 2.15.3 oracle: diagnostics, tree structure, entity semantics
+//! and exit codes must be byte-identical.
+//!
+//! # Conceptual behavior
+//!
+//! This module is the parser state machine that orchestrates tokenization and
+//! SAX event dispatch: prolog (XML declaration, DTD, misc), content (root
+//! element with children), epilog, entity reference expansion, recovery modes
+//! and the push parser. It also implements the entity amplification guard
+//! (`parser_entity_check`), entity content caching (`parse_entity_content`) and
+//! attribute-value reference substitution (`substitute_refs`).
+//!
+//! # Ownership & safety invariants
+//!
+//! SAFETY: all raw `_xmlParserCtxt` / `_xmlEntity` / `_xmlNode` accesses are
+//! audited unsafe blocks against the upstream ownership model: the context owns
+//! its inputs and SAX handler; entity content parsed into `ent->children` is
+//! owned by the entity declaration and freed with the DTD; the caller owns the
+//! produced document (`xmlFreeDoc`). Borrowed pointers (node->parent,
+//! node->doc, node->ns) are never freed here.
+//!
+//! # Historical quirks & epochs
+//!
+//! Epoch-pinned diagnostics: E-002 (single diagnostic since the 2.12.x error
+//! rework, commit c6083a32), E-004 (entity content TEXT compact since 2.13.0,
+//! commit 8d04f0ee), E-005 (exit 4 since 2.13.0; the entity-in-attribute fatal
+//! error reported twice by the 2.13+ oracle, R-000121 hybrid). Security epochs:
+//! default parser limits since 2.9.0 (QUIRK-0001, commit 52d8ade7), the
+//! amplification guard since CVE-2014-3660 (SEC-0006, fixes be2a7eda and
+//! 72a46a51), entity loop detection since CVE-2013-2877 (SEC-0004). 2.15.x:
+//! xmlParseReference passes userData to SAX text callbacks (SEC-0011).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities preserved for parity: the unconditional amplification
+//! check with no XML_PARSE_HUGE bypass, disableSAX = 2 catastrophic stop with
+//! 100-error suppression (xmlCtxtVErr parity), TEXT compact synthesis for
+//! short text runs (R-000119), and the double report of XML_ERR_LT_IN_ATTRIBUTE
+//! from the parser plus validation paths (R-000121, E-005 hybrid).
+//!
+//! # Proving courts
+//!
+//! PARSER court family; data-ABI probes ERROR-001 (48 malformed inputs x 4
+//! passes, byte-identical) and TREE-001 (27-block structural fingerprint);
+//! SECURITY-LIMITS amplification sweep; CLI-XMLLINT-0033/0034; and
+//! `cargo test --lib` (1135+ tests). Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Removing the amplification guard would reintroduce CVE-2014-3660; parsing
+//! entity content without the XML_ENT_EXPANDING guard would loop on recursive
+//! declarations (CVE-2013-2877); not caching entity content in `ent->children`
+//! would diverge from the debug dumps (R-000119); reporting errors at the
+//! tokenizer current position instead of the exact detection point would shift
+//! carets (R-000163). Never simplify the epoch hybrid — the single diagnostic
+//! with exit 4 is the oracle current observable behavior.
 
 use crate::abi::callbacks::*;
 use crate::abi::structs::*;
@@ -2818,7 +2879,9 @@ impl XmlParser {
     /// the consumed input exceeds the amplification factor (default
     /// XML_MAX_AMPLIFICATION_DEFAULT, or `xmlCtxtSetMaxAmplification`'s
     /// value), raises a fatal XML_ERR_RESOURCE_LIMIT — with no XML_PARSE_HUGE
-    /// bypass (the guard is unconditional, matching 2.15).
+    /// bypass (the guard is unconditional, matching 2.15). Lineage: SEC-0006
+    /// (CVE-2014-3660, fix commit be2a7eda + regression fix 72a46a51), verified
+    /// by the SECURITY-LIMITS court amplification sweep.
     ///
     /// `slot` is the accumulation target: for references nested inside an
     /// entity content scan it is the scanning entity's `expandedSize`

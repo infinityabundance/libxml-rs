@@ -73,6 +73,65 @@
 //!   not register the `range()`/`here()`/… extension functions: the modern
 //!   2.16 archaeology no longer registers them and those seven functions are
 //!   not part of this export set.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xpointer.c`/`xpath.c` — the location-set
+//! surface that the oracle DSO still exports (versioned `LIBXML2_2.4.30`)
+//! even though it was removed from the public headers since 2.13/2.15;
+//! signatures come from the historical 2.9.14 header and the 2.13.5 source.
+//! R-000166 (11.1-P) exercised the xpointer surface in the three-way
+//! standards reconciliation.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the XPointer location-set/range/node-list ABI:
+//! `xmlXPtrLocationSet*` management, the range constructors (`xmlXPtrNewRange*`,
+//! `xmlXPtrNewCollapsedRange`, ...), node-set wrappers, `xmlXPtrNewContext` and
+//! `xmlXPtrRangeToFunction`. Range objects store start/end in
+//! `user`/`index`/`user2`/`index2`; location-set objects store the set in
+//! `user` (layout notes above).
+//!
+//! # Ownership & safety invariants
+//!
+//! Location sets and range objects are XPath objects: created by the New*
+//! constructors and freed with `xmlXPathFreeObject`; `xmlXPtrFreeLocationSet`
+//! frees a set and its members; `xmlXPtrLocationSetAdd` takes ownership of the
+//! added object (upstream transfers), `xmlXPtrLocationSetDel`/`Remove` drop
+//! members. The node pointers inside are borrowed — never freed by the
+//! location set.
+//!
+//! # Historical quirks & epochs
+//!
+//! The XPointer API dates to the 2.4/2.6 era and was pruned from the headers
+//! in 2.13+ while the DSO kept the exports — the candidate mirrors the
+//! exported DSO surface, not the modern header. SEC-0009 records the 2016
+//! XPointer CVE fixes (commits `9ab01a27`/`c1d1f712`, 2016-06-28). R-000166
+//! aligned `xmlXPtrRangeToFunction` with the 2.9.14/2.13.x behavior (tail call
+//! to xmlXPathErr verified by disassembly).
+//!
+//! # Deliberate oddities
+//!
+//! `xmlXPtrRangeToFunction` only sets `XPATH_EXPR_ERROR` (the pre-2.9
+//! range-push implementation is obsolete upstream — deliberate);
+//! `xmlXPtrNewContext` sets xptr/here/origin but does not register the
+//! range()/here() extension functions (the modern 2.16 archaeology no longer
+//! registers them).
+//!
+//! # Proving courts
+//!
+//! The XINCLUDE, XPATH and XPOINTER court families, the C14N subset cases
+//! (R-000166) and the DSO-LOADER court (versioned-symbol resolution) cover
+//! this module; the xpointer unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to implement `xmlXPtrLocationSetAdd` as a
+//! borrow (no ownership transfer) to match Rust conventions — upstream
+//! transfers ownership, and a double-free would follow when the set and the
+//! caller both release the object. Another shortcut, dropping the legacy
+//! location-set surface because the headers removed it, would break every
+//! consumer that dlsyms these still-exported symbols.
 //! - The internal document-order comparator is a private port of upstream
 //!   `xmlXPathCmpNodes` with upstream return convention (1 if node1 < node2),
 //!   kept for clarity; the public `crate::abi::exports_xml2::xmlXPathCmpNodes`

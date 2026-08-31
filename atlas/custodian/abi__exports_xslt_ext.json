@@ -1,0 +1,23 @@
+{
+ "module": "abi/exports_xslt_ext",
+ "upstream": [
+  "extensions.c"
+ ],
+ "export_samples": [
+  "xsltRegisterExtModule",
+  "xsltRegisterExtModuleFull",
+  "xsltRegisterExtModuleElement",
+  "xsltRegisterExtModuleFunction",
+  "xsltRegisterExtModuleTopLevel",
+  "xsltUnregisterExtModule"
+ ],
+ "subsystems": [
+  "xslt-extension-functions",
+  "xslt-extension-elements",
+  "xslt-global-state"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": []
+}

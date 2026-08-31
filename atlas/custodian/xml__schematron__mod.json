@@ -1,0 +1,21 @@
+{
+ "module": "xml/schematron/mod",
+ "upstream": [
+  "schematron.c"
+ ],
+ "export_samples": [
+  "xmlSchematronNewParserCtxt",
+  "xmlSchematronNewMemParserCtxt",
+  "xmlSchematronFree",
+  "xmlSchematronFreeParserCtxt",
+  "xmlSchematronNewValidCtxt",
+  "xmlSchematronFreeValidCtxt"
+ ],
+ "subsystems": [
+  "schematron"
+ ],
+ "residuals": [],
+ "court_families": [
+  "SCHEMATRON"
+ ]
+}

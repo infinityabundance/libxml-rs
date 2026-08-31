@@ -1,0 +1,12 @@
+{
+ "module": "xml/dictionary/mod",
+ "upstream": [
+  "dict.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "dictionaries"
+ ],
+ "residuals": [],
+ "court_families": []
+}

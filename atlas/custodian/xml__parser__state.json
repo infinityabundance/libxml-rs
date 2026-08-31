@@ -1,0 +1,28 @@
+{
+ "module": "xml/parser/state",
+ "upstream": [
+  "parser.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "namespaces",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000101",
+  "R-000119",
+  "R-000120",
+  "R-000121",
+  "R-000161",
+  "R-000162",
+  "R-000163",
+  "R-000164",
+  "R-000166"
+ ],
+ "court_families": [
+  "PARSER"
+ ]
+}

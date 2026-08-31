@@ -1,0 +1,15 @@
+{
+ "module": "xslt/keys/mod",
+ "upstream": [
+  "keys.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "xslt-keys"
+ ],
+ "residuals": [
+  "R-000116",
+  "R-000140"
+ ],
+ "court_families": []
+}

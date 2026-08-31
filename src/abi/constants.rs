@@ -24,6 +24,56 @@
 //! | `XML_CATALOGS_NAMESPACE` | catalog.h | Catalog namespace URI |
 //! | `XML_CATALOG_PI` | catalog.h | Catalog PI target |
 //! | `XML_SAX2_MAGIC` | parser.h | SAX2 initialization marker |
+//!
+//! # Upstream contract
+//!
+//! Supplementary `#define` constants from the upstream headers `parser.h`,
+//! `parserInternals.h`, `tree.h`, `xpath.h`, `catalog.h` and `xmlerror.h`
+//! (libxml2 2.15.3 parity target) that are not naturally Rust enum variants;
+//! the enums themselves live in `types.rs`.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the remaining ABI constants as typed `const`s so the
+//! candidate compiles against the same numeric values a C consumer gets from
+//! the headers. Each constant carries its upstream header and purpose in the
+//! table above; the values are the contract.
+//!
+//! # Ownership & safety invariants
+//!
+//! These are plain integer/byte-string constants — no ownership transfers, no
+//! pointers escape this module. The string constants (`XML_DEFAULT_VERSION`
+//! and friends) are NUL-terminated byte slices so they can be handed to C
+//! directly; they are static and must never be freed by the caller.
+//!
+//! # Historical quirks & epochs
+//!
+//! The macro surface is itself historical: QUIRK-0004 / LORE-0002 record the
+//! upstream misspelling `XML_MAX_TEXT_LENGHT` (commit `1fb2e0df`, 2009-01-18,
+//! SEC-0002) which is observable surface for code compiled against it, and
+//! SEC-0001/QUIRK-0001 record the 2.9.0 default parser limits (commit
+//! `52d8ade7`) that changed default behavior for all callers since 2.9.0.
+//!
+//! # Deliberate oddities
+//!
+//! Constants that upstream later corrected (like the `LENGHT` spelling) are
+//! deliberately kept available as historical macros where downstream code
+//! compiled against them must still work; the candidate mirrors the modern
+//! 2.15.3 values while the header atlas preserves the historical names.
+//!
+//! # Proving courts
+//!
+//! The ABI-DATA / GLOBAL-STATE court families and the header-compile court
+//! (571/571 headers compile against the DSO) prove every constant the headers
+//! declare is present with the right value; the DSO-LOADER court resolves the
+//! exported symbols.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to inline a few magic numbers at the use sites
+//! and delete this module — that would break the header-vs-Rust value parity
+//! that the API courts check, and any downstream binary compiled against the
+//! historical macro spellings would silently change behavior.
 
 #![allow(non_upper_case_globals)]
 

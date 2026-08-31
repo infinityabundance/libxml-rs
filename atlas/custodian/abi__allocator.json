@@ -1,0 +1,29 @@
+{
+ "module": "abi/allocator",
+ "upstream": [
+  "xmlmemory.c",
+  "globals.c"
+ ],
+ "export_samples": [
+  "xmlMemSetup",
+  "xmlMemGet",
+  "xmlGcMemSetup",
+  "xmlGcMemGet",
+  "xmlMemUsed",
+  "xmlMemBlocks"
+ ],
+ "subsystems": [
+  "memory",
+  "globals"
+ ],
+ "residuals": [
+  "R-000131",
+  "R-000133"
+ ],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "THREADING"
+ ]
+}

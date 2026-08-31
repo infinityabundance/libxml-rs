@@ -1,6 +1,6 @@
 //! Hash table — public xmlHash API (§85 Phase 1).
 //!
-//! Implements libxml2's hash table, used for DTD element/attribute tables,
+//! Implements the libxml2 hash table, used for DTD element/attribute tables,
 //! XPath function lookup, catalog entries, and more.
 //!
 //! # UPSTREAM-PARITY
@@ -15,6 +15,58 @@
 //! # Phase 1 status
 //!
 //! Complete — all hash table operations are implemented.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `hash.c` / `hash.h` (`SRC-LIBXML2-2.15.0-HASH-C`, parity
+//! target libxml2 2.15.3 oracle): `xmlHashCreate` / `xmlHashCreateDict` /
+//! `xmlHashLookup` / `xmlHashAddEntry` / `xmlHashScan` / `xmlHashCopy` /
+//! `xmlHashFree`, including the 1/2/3-key variants and the dict-backed key
+//! mode.
+//!
+//! # Conceptual behavior
+//!
+//! Implements a chained hash table whose keys are NUL-terminated xmlChar
+//! strings (one, two or three of them) with payloads owned per the table
+//! deallocator/copier. Two-key tables are used for DTD element/attribute
+//! declarations (key order (name,prefix,elem), R-000164) and XPath
+//! function lookup; the dictionary-backed variant keeps keys in the dict so
+//! the table never frees them.
+//!
+//! # Ownership & safety invariants
+//!
+//! The table owns its payloads and frees them through the registered
+//! deallocator on `xmlHashFree`/removal; with a copier, `xmlHashCopy`
+//! duplicates payloads. In dict mode the keys are borrowed from the dict
+//! (never freed by the table). Keys are always copied in; the caller keeps
+//! its own strings.
+//!
+//! # Historical quirks & epochs
+//!
+//! The multi-key and dict-backed extensions were added in the 2.6
+//! validation-era expansion and have been stable across the 2.7.8 → 2.15.3
+//! span; the HIST-SURFACE-EPOCH court family (HISTORICAL_SURFACE_EPOCHS.md)
+//! fingerprints the API surface per epoch so a future signature change is
+//! caught.
+//!
+//! # Deliberate oddities
+//!
+//! The 3-key variant (used by the attribute tables) is an upstream
+//! historical extension, not part of any spec — it is kept byte-faithful
+//! because the DTD lookup order depends on it.
+//!
+//! # Proving courts
+//!
+//! HIST-SURFACE-EPOCH fingerprints this module per release epoch; the
+//! TREE-001 structural probe (R-000164) exercises the attribute hash key
+//! order against the oracle; cargo test runs the unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not re-key the DTD tables by (elem,name): R-000164 proved the
+//! upstream (name,prefix,elem) order is observable. Do not drop the
+//! deallocator/copier contract: consumers register custom free/copy
+//! functions and observe them firing.
 
 use core::ffi::c_void;
 use core::ptr;

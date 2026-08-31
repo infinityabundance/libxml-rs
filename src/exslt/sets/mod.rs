@@ -14,6 +14,38 @@
 //!   ns2 that is also in ns1 (document order).
 //! - `set:trailing(ns1, ns2)` — nodes of ns1 that follow the last node of
 //!   ns2 that is also in ns1.
+//!
+//! # Ownership & safety invariants
+//!
+//! Every set: function returns a node-set that BORROWS the input nodes
+//! (no copies, no ownership transfer); the returned XPathValue owns only
+//! the node pointer array. `set:distinct` deduplicates by string value and
+//! keeps the FIRST occurrence in document order — a pure function of the
+//! input, with no retained state.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008: the libxslt epoch is stable (1.1.26..1.1.45), so the set module
+//! has no epoch branching. `set:leading`/`set:trailing` operate on the
+//! node-set returned by the intersection-like scan exactly as upstream
+//! sets.c implements them (positional filtering in document order).
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0003 exercises set: alongside exsl:node-set and math:/str:
+//! byte-identical against the oracle xsltproc; the module unit tests
+//! (cargo test --lib exslt::sets) cover difference/intersection/distinct/
+//! has-same-node/leading/trailing including edge cases (empty sets,
+//! duplicates).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to deduplicate by node identity everywhere.
+//! `set:distinct` deduplicates by STRING VALUE (first occurrence kept),
+//! while the other functions use node identity — mixing the two rules
+//! breaks the observable results. Another shortcut, sorting the output,
+//! destroys the required document-order preservation that every function
+//! here guarantees.
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;

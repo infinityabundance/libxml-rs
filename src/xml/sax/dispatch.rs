@@ -12,6 +12,59 @@
 //! variant (`startElementNs` / `endElementNs`) when it is set, falling back
 //! to the SAX1 variant (`startElement` / `endElement`). This matches the
 //! upstream behavior where the parser uses SAX2 callbacks when available.
+//!
+//! # Upstream contract
+//!
+//! Mirrors the SAX1/SAX2 callback dispatch of upstream SAX2.c and the
+//! xmlSAX2* handler entry points (SRC-LIBXML2-2.15.0, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/`). Parity target: the system libxml2
+//! 2.15.3 oracle callback routing.
+//!
+//! # Conceptual behavior
+//!
+//! Each dispatcher checks the corresponding function pointer in the
+//! `_xmlSAXHandler` struct and invokes it with the provided arguments, or
+//! falls back to a safe default (void callbacks do nothing; value callbacks
+//! return the upstream default, e.g. `is_standalone` returns -1). For start
+//! and end element, the SAX2 variant is preferred over SAX1, matching
+//! upstream parser dispatch.
+//!
+//! # Ownership & safety invariants
+//!
+//! SAFETY: the sax pointer must reference an initialized `_xmlSAXHandler`;
+//! string arguments must be valid null-terminated xmlChar* or NULL; ctx is
+//! passed through verbatim and never dereferenced by the dispatcher. The
+//! dispatcher owns nothing — callbacks keep their C ownership contract.
+//!
+//! # Historical quirks & epochs
+//!
+//! XML_SAX2_MAGIC gates the SAX2 fast path (upstream xmlSAX2StartElementNs
+//! era). The error/warning slots route through the legacy handlers stored by
+//! xmlSAX2InitDefaultSAXHandler since the 11.1-K error-routing closure
+//! (R-000161): a custom SAX error slot receives channel(data, msg) once,
+//! while the legacy default streams the xmlFormatError fragments.
+//!
+//! # Deliberate oddities
+//!
+//! The SAX2-over-SAX1 preference is deliberate and must never be simplified
+//! to a single variant. The legacy error-slot dispatch is a deliberate
+//! oddity: the parser detects the default handlers by pointer identity
+//! (is_legacy_error_handler) so they take the fragment-stream path
+//! (R-000161).
+//!
+//! # Proving courts
+//!
+//! Exercised by the PARSER court family, ERROR-001 (a counting handler sees
+//! the same 6 format fragments as the oracle), TREE-001 and `cargo test
+//! --lib`. Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A naive simplification — always invoking the SAX1 variant, or invoking
+//! every non-NULL slot regardless of SAX2 magic — would break
+//! namespace-aware parsing and the byte-identical callback sequences the
+//! data-ABI courts pin. Do not drop the SAX2-magic gate: it is part of the
+//! upstream dispatch contract.
 
 use crate::abi::callbacks::*;
 use crate::abi::constants::XML_SAX2_MAGIC;

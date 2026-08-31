@@ -1,0 +1,14 @@
+{
+ "module": "xml/io/mod",
+ "upstream": [
+  "xmlIO.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "io",
+  "resource-loading",
+  "serialization"
+ ],
+ "residuals": [],
+ "court_families": []
+}

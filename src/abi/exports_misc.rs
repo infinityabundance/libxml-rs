@@ -17,6 +17,60 @@
 //! (`nm -D /usr/lib/libxml2.so.2`); signatures follow the installed
 //! headers (`/usr/include/libxml2/libxml/*.h`) and the archaeology tree
 //! (`archaeology/libxml2-git/*.c`).
+//!
+//! # Upstream contract
+//!
+//! Parity target is the oracle DSO (`nm -D /usr/lib/libxml2.so.2`): every
+//! symbol here mirrors an exported libxml2 2.15.3 symbol from `parser.c`,
+//! `tree.c`, `uri.c`, `xmlstring.c` and the module loader (`xmlmodule.c`),
+//! with signatures per the installed headers. R-000165 (11.1-O) closed the
+//! misc-family export gaps.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the miscellaneous families: the `xmlGet*/xmlSet*`
+//! legacy accessors (features, threads, globals, tree navigation, buffer
+//! scheme), the `xmlModule*` dynamic-loading API, the legacy `xmlUCSIsBlock`/
+//! `xmlUCSIsCat` name-table lookups, validation helpers, `__xml*` aliases,
+//! `xmlFormatError` and the deprecated stubs.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership follows the per-family contract: module handles are caller-owned
+//! (`xmlModuleClose`), strings from feature/name lookups are borrowed static
+//! tables, and the getset accessors transfer no ownership. The `__xml*`
+//! aliases must keep the same free-with contract as their primary names (xml
+//! allocator results freed with `xmlFree`).
+//!
+//! # Historical quirks & epochs
+//!
+//! The legacy accessors and `__xml*` aliases are remnants of the 2.0-2.4
+//! `legacy_parser` epoch (HISTORY.md) that the ABI still exports;
+//! `xmlGetFeaturesList`/`xmlGetFeature` are deprecated since the 2.9 era.
+//! R-000165 (11.1-O) added the missing misc symbols.
+//!
+//! # Deliberate oddities
+//!
+//! The deprecated stubs are deliberate: several misc2 entry points are kept
+//! with their upstream empty/trivial bodies (R-000138 documented no-op set)
+//! rather than being removed, because removal would break linking for
+//! downstream code.
+//!
+//! # Proving courts
+//!
+//! The OWNERSHIP, PARSER and TREE-STRUCTURE court families plus the
+//! DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts exercise this
+//! module; the data-ABI probes require byte-identical output on the exercised
+//! paths.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to delete the deprecated accessors and
+//! `__xml*` aliases as dead code — they are the observable ABI surface for
+//! legacy consumers and the DSO-LOADER court resolves them, so removing them
+//! would fail symbol resolution. Another shortcut, reimplementing
+//! `xmlGetFeature` as a no-op, would silently change behavior for consumers
+//! probing parser capabilities.
 
 #![allow(missing_docs)]
 #![allow(non_snake_case)]

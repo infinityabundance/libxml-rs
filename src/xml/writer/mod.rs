@@ -8,10 +8,64 @@
 //!
 //! # UPSTREAM-PARITY
 //!
-//! This module mirrors libxml2's `xmlTextWriter` API defined in `xmlwriter.h`.
-//! The writer maintains a state machine that tracks whether we are inside an
-//! element start tag (attributes can be written), inside an attribute value,
-//! inside a CDATA section, etc.
+//! This module mirrors the libxml2 `xmlTextWriter` API defined in
+//! `xmlwriter.h` (upstream xmlwriter.c, parity target libxml2 2.15.3
+//! oracle). The writer maintains a state machine that tracks whether we are
+//! inside an element start tag (attributes can be written), inside an
+//! attribute value, inside a CDATA section, or inside the DTD internal
+//! subset.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xmlwriter.c` (`SRC-LIBXML2-2.15.0-XMLWRITER-C`): the
+//! full `xmlTextWriter*` surface — start/end element (incl. NS forms),
+//! attributes, text/CDATA/comments/PI, DTD declarations, formatting and
+//! the variadic Format functions (R-000155 inline-asm shims).
+//!
+//! # Conceptual behavior
+//!
+//! Implements the streaming writer as a state machine over an output
+//! buffer: element start tags defer namespace declarations to close
+//! (R-000153), the DTD internal-subset bracket is written by the first
+//! child declaration (R-000152), return values follow the encoder-
+//! dependent byte-count contract (R-000151), and escaping follows
+//! xmlEncodeSpecialChars / xmlBufAttrSerializeTxtContent (R-000154).
+//!
+//! # Ownership & safety invariants
+//!
+//! The writer owns its output buffer (created via `xmlNewTextWriter*`) and
+//! must be closed with `xmlFreeTextWriter` after balanced End* calls;
+//! with `xmlNewTextWriterMemory` the buffer is borrowed from the caller
+//! (OWNERSHIP_ATLAS §5). Internal Vec state is dropped by the free path;
+//! the Format shims restore the stack exactly (R-000155).
+//!
+//! # Historical quirks & epochs
+//!
+//! The deferred-separator and return-value behaviors are upstream
+//! xmlwriter.c / xmlIO.c contracts locked by WRITER-001 against the 2.15.3
+//! oracle (R-000151..R-000156); the 2.13/2.15 series kept them stable, so
+//! the crate targets that epoch.
+//!
+//! # Deliberate oddities
+//!
+//! The apostrophe is never escaped (R-000154), the default indent string
+//! is one space, StartPI writes no indentation, and encoder-installed
+//! writers report 0 bytes below the 256-byte conversion threshold — all
+//! deliberate reproductions of upstream quirks.
+//!
+//! # Proving courts
+//!
+//! WRITER-001 (courts/suites/data-abi/writer-family-probe.c) requires
+//! byte-identical output and return values (incl. enddoc counts, DTD
+//! brackets, deferred xmlns, >6-GP variadic overflow); cargo test runs
+//! the writer unit suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not write xmlns inline at StartElementNS (R-000153), do not emit the
+//! DTD bracket from StartDTD (R-000152), do not return raw byte counts
+//! from encoder-active writes (R-000151) and do not escape the apostrophe
+//! (R-000154) — every one of these is observable through the C ABI.
 
 #![allow(
     missing_docs,
@@ -148,6 +202,8 @@ impl XmlTextWriter {
             (*writer).output = output;
             (*writer).indent = 0;
             (*writer).indent_string = b" \0".to_vec();
+            // UPSTREAM-PARITY (R-000154): the default indent string is a
+            // single space, not two; xmlTextWriterSetIndentString overrides it.
             (*writer).qchar = b'"';
             (*writer).doindent = true;
             (*writer).depth = 0;
@@ -237,9 +293,10 @@ impl XmlTextWriter {
         if self.indent == 0 {
             return 0;
         }
-        // UPSTREAM-PARITY (xmlTextWriterWriteIndent): returns the number of
-        // indent strings written, not the byte count. The stored indent
-        // string is NUL-terminated; the NUL must not reach the output.
+        // UPSTREAM-PARITY (xmlTextWriterWriteIndent, R-000151/R-000154):
+        // returns the number of indent strings written, not the byte count.
+        // The stored indent string is NUL-terminated; the NUL must not reach
+        // the output.
         let indent_str = self.indent_string.clone();
         let body = if indent_str.last() == Some(&0) {
             &indent_str[..indent_str.len() - 1]
@@ -272,7 +329,8 @@ impl XmlTextWriter {
     }
 
     /// Write the pending namespace declarations (upstream
-    /// xmlTextWriterOutputNSDecl): ` xmlns:prefix="uri"` / ` xmlns="uri"`.
+    /// xmlTextWriterOutputNSDecl, R-000153): ` xmlns:prefix="uri"` /
+    /// ` xmlns="uri"` — deferred to tag close, after the attributes.
     unsafe fn flush_pending_ns(&mut self) -> c_int {
         let mut sum: c_int = 0;
         let pending = core::mem::take(&mut self.pending_ns);
@@ -2334,6 +2392,9 @@ pub unsafe extern "C" fn xmlTextWriterEndDTD(writer: *mut XmlTextWriter) -> c_in
 /// Internal: the ` [` (+ newline when indented) transition from the DTD state
 /// used by all DTD child starts. Returns false when the state is not usable.
 unsafe fn dtd_child_transition(w: &mut XmlTextWriter) -> bool {
+    // UPSTREAM-PARITY (R-000152): the internal-subset bracket ` [` is
+    // deferred to the first DTD child declaration, not written by StartDTD;
+    // EndDTD emits `]` only from the DTDText state.
     match w.state {
         WriterState::DTD => {
             w.write_slice(b" [");

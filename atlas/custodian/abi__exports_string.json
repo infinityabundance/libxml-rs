@@ -1,0 +1,21 @@
+{
+ "module": "abi/exports_string",
+ "upstream": [
+  "xmlstring.c"
+ ],
+ "export_samples": [
+  "xmlStrVPrintf",
+  "xmlStrPrintf",
+  "xmlStrstr",
+  "xmlStrcasestr",
+  "xmlStringCurrentChar",
+  "xmlStringLenDecodeEntities"
+ ],
+ "subsystems": [
+  "strings"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": []
+}

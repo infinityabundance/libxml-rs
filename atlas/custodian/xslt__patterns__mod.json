@@ -1,0 +1,13 @@
+{
+ "module": "xslt/patterns/mod",
+ "upstream": [
+  "patterns.c"
+ ],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000105",
+  "R-000106"
+ ],
+ "court_families": []
+}

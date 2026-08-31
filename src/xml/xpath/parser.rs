@@ -33,6 +33,56 @@
 //! # Courts
 //!
 //! XPATH-PARSER-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the compilation half of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! xmlXPathCompile builds an xmlXPathCompExpr from the same grammar this
+//! recursive-descent parser implements (XPath 1.0 §3.7).
+//!
+//! # Conceptual behavior
+//!
+//! Implements the full XPath 1.0 grammar from the lexer token stream into
+//! the ast.rs expression tree, including precedence (or → and → equality
+//! → relational → additive → multiplicative → unary → union → path),
+//! predicates on steps and filter expressions, abbreviated steps and the
+//! axis-specifier forms.
+//!
+//! # Ownership & safety invariants
+//!
+//! The parser owns the token stream for the duration of the parse and
+//! produces an owned AST; `ParseError` carries an owned message and
+//! position. No C pointers cross the parser boundary — compilation is
+//! safe to run on any thread.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000105: node tests (`node()`, `text()`, `comment()`, `processing-
+//! instruction()`) were originally parsed as function calls; the fix
+//! distinguishes them at the node-test production, matching the 2.15.3
+//! oracle. The grammar itself is stable across the oracle matrix (the
+//! E-001 epoch changed xmllint node-set output, not expression parsing).
+//!
+//! # Deliberate oddities
+//!
+//! The parser accepts the upstream-lenient forms (e.g. whitespace
+//! handling around abbreviated axes) that a strict grammar would reject,
+//! because compile errors are observable through xmlXPathCompile return
+//! values.
+//!
+//! # Proving courts
+//!
+//! XPATH-PARSER-* differential probes compile expressions against the
+//! oracle and compare success/error byte-identical; the XSLT pattern
+//! courts compile match patterns through this parser.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not treat node-test names as generic function calls: R-000105
+//! proved that breaks `//text()` style paths. Do not normalize or reject
+//! lenient whitespace forms — xmlXPathCompile error parity is part of the
+//! C ABI.
 
 use crate::xml::xpath::ast::*;
 use crate::xml::xpath::lexer::Token;

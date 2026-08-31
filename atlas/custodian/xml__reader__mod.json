@@ -1,0 +1,30 @@
+{
+ "module": "xml/reader/mod",
+ "upstream": [
+  "xmlreader.c"
+ ],
+ "export_samples": [
+  "xmlNewTextReader",
+  "xmlReaderForFile",
+  "xmlReaderForMemory",
+  "xmlReaderForFd",
+  "xmlReaderForIO",
+  "xmlTextReaderRead"
+ ],
+ "subsystems": [
+  "reader"
+ ],
+ "residuals": [
+  "R-000133",
+  "R-000141",
+  "R-000142",
+  "R-000143",
+  "R-000144",
+  "R-000145",
+  "R-000148",
+  "R-000149",
+  "R-000150",
+  "R-000161"
+ ],
+ "court_families": []
+}

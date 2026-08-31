@@ -8,6 +8,60 @@
 //!
 //! These five symbols are part of the 11.1-W parity obligations (5 xlink
 //! obligations) and are declared by the drop-in `include/libxml/xlink.h`.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `xlink.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-XLINK-C) with the `xlink.h` signatures; the five symbols
+//! are part of the 11.1-W parity obligations (R-000165 closed the xlink
+//! surface in 11.1-O/X).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the XLink detection module ABI: the default
+//! handler/detect slots (`xlinkGet/SetDefaultHandler`, `xlinkGet/SetDefaultDetect`)
+//! and `xlinkIsLink`, which implements the deprecated, never-finished
+//! detection rules for XML XLinks. The slots are static globals exactly like
+//! upstream.
+//!
+//! # Ownership & safety invariants
+//!
+//! The handler/detect slots store caller-provided function pointers and return
+//! them verbatim; the caller keeps any associated context alive (callback
+//! user-data contract, OWNERSHIP_ATLAS section 6). `xlinkIsLink` returns an
+//! enum value (0 none / 1 simple / 2 extended / 3 extended set) and never
+//! takes ownership of the node.
+//!
+//! # Historical quirks & epochs
+//!
+//! The XLink module has been effectively frozen since the early 2000s — the
+//! detection rules were never completed upstream (the header comment above
+//! records this); the ABI is still exported in 2.15.3 and the candidate
+//! mirrors it. R-000165 (11.1-O) added the missing xlink symbols
+//! (xlinkGetDefaultDetect/xlinkIsLink family) to the census.
+//!
+//! # Deliberate oddities
+//!
+//! The oddities are the module itself: the 1999 XLink namespace string with
+//! its trailing slash (`http://www.w3.org/1999/xlink/namespace/`), the
+//! never-finished detection rules, and the handler blocks stored as opaque
+//! pointers never dereferenced — all deliberate parity with upstreams
+//! deprecated API.
+//!
+//! # Proving courts
+//!
+//! The DSO-LOADER court resolves all five symbols from the built DSO; the
+//! HEADER-COMPILE court compiles `include/libxml/xlink.h` against it; the
+//! callback-family probe exercises the default-slot round-trip.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to drop the xlink surface entirely because the
+//! detection rules are unfinished — the symbols are still oracle-DSO exports
+//! and downstream code calls `xlinkIsLink` on documents with XLink attributes;
+//! removing them would fail symbol resolution. Another shortcut, correcting
+//! the namespace string to the modern one, would break consumers matching the
+//! historical 1999 URI.
 
 #![allow(
     missing_docs,

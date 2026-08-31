@@ -1,5 +1,65 @@
 //! XSLT stylesheet representation and lifecycle (§32, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `xslt.c` + `xsltInternals.h` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-XSLT-C` under oracle/historical/src). Subsystem
+//! census: xslt-lifecycle, xslt-includes, xslt-priorities, xslt-sorting,
+//! xslt-whitespace, xslt-transform-ctxt, xslt-global-state, xslt-exports.
+//! ABI surface: `xsltStylesheetCreate`, `xsltParseStylesheetDoc`/`File`/
+//! `Memory`, `xsltFreeStylesheet`, `xsltGetStylesheetDoc`,
+//! `xsltSetStylesheetDoc`, plus the stylesheet-level globals.
+//!
+//! # Conceptual behavior
+//!
+//! `xsltStylesheetCreate` allocates a zero-initialized `_xsltStylesheet`
+//! and seeds the default decimal format at the head of the chain
+//! (upstream `xsltNewStylesheetInternal`, xslt.c). Parsing hands the
+//! document to the compiler module; teardown frees imports first, then
+//! templates, keys, aliases, attribute sets, strip/preserve rules,
+//! decimal formats, the internal document, and the structure itself.
+//!
+//! # Ownership & safety invariants
+//!
+//! The stylesheet owns its style documents and every compiled definition;
+//! `xsltFreeStylesheet` tears down the whole graph (atlas/OWNERSHIP_ATLAS.md
+//! section 4). `xsltGetStylesheetDoc` returns a borrowed pointer (never
+//! free); `xsltSetStylesheetDoc` transfers document ownership into the
+//! stylesheet, freeing any previously held document. The returned
+//! `xsltStylesheetCreate` pointer is caller-owned and must be freed
+//! exactly once with `xsltFreeStylesheet`.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): the stylesheet lifecycle decisions
+//! (default decimal format, omit/standalone/indent defaults of -1) sit
+//! inside the byte-identical xsltproc epoch (1.1.26, 2009, through
+//! 1.1.45). R-000140 covered the eight `_xslt*` ABI mirrors; the default
+//! decimal-format seeding predates the numbering module port (R-000166).
+//!
+//! # Deliberate oddities
+//! - `omitXmlDeclaration`/`standalone`/`indent` default to -1 (unset),
+//!   matching upstream `xsltNewStylesheetInternal`; the serialization
+//!   module treats -1 distinctly from 0.
+//! - The heavy lifting lives in `super::compiler`; this module is the ABI
+//!   facade — an intentional module split.
+//!
+//! # Proving courts
+//!
+//! XSLT, CLI-XSLTPROC, EXSLT, ORACLE-IDENTITY, PREPROCESSOR-SURFACE,
+//! BUILD-CONFIG-SCRIPT, HEADER-COMPILE (stylesheets compile against the
+//! public headers), and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Defaulting the decimal format fields to zero instead of seeding the
+//!   default format breaks format-number without an explicit
+//!   xsl:decimal-format (R-000166).
+//! - Freeing the internal document before the definitions that borrow it
+//!   reintroduces the R-000103/R-000109 double-free family.
+//! - Inlining the compiler here would duplicate the compile pipeline and
+//!   break the import/priority ordering guarantees.
+//!
 //! Implements stylesheet creation, parsing, and destruction.
 //!
 //! # Architecture

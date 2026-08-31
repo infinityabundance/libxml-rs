@@ -1,0 +1,25 @@
+{
+ "module": "abi/exports_xslt_apply",
+ "upstream": [
+  "transform.c"
+ ],
+ "export_samples": [
+  "xsltApplyTemplates",
+  "xsltProcessOneNode",
+  "xsltApplyOneTemplate",
+  "xsltApplyImports",
+  "xsltCallTemplate",
+  "xsltApplyAttributeSet"
+ ],
+ "subsystems": [
+  "xslt-transform-ctxt",
+  "xslt-transform-exec",
+  "xslt-output",
+  "xslt-errors",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000166"
+ ],
+ "court_families": []
+}

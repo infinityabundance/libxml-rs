@@ -18,6 +18,66 @@
 //! back to the correct type. The pattern lifecycle functions in the
 //! `patterns` module handle the actual allocation, deallocation, and
 //! matching logic.
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `templates.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-TEMPLATES-C` under oracle/historical/src).
+//! Subsystem census: xslt-templates, xslt-priorities. ABI surface:
+//! `xsltAddTemplate`, `xsltLookupTemplate`, `xsltFreeTemplate`,
+//! `xsltFreeTemplates`, plus the matching entry points used by the
+//! transform engine.
+//!
+//! # Conceptual behavior
+//!
+//! Templates are inserted into the stylesheet list in priority order
+//! (highest first); equal priorities are ordered by import depth
+//! (last imported first), implementing XSLT 1.0 conflict resolution.
+//! Matching finds the highest-priority template whose pattern matches the
+//! node in the given mode; named templates are looked up by name;
+//! `xsl:apply-imports` resolves through the import chain (transform
+//! module). Default priorities come from the pattern AST per XSLT 1.0
+//! §5.5.
+//!
+//! # Ownership & safety invariants
+//!
+//! Template content nodes are owned by the stylesheet document and must
+//! never be freed by `xsltFreeTemplate` (R-000103: the original
+//! implementation double-freed them with `xsltFreeStylesheet`); only the
+//! heap-copied name/mode strings and the compiled pattern are freed here.
+//! The `match` slot is a pointer-punning reuse of the `_xsltTemplate`
+//! layout (R-000140 mirror) — always cast back before use.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000103 (Phase 8) corrected the content ownership to match upstream.
+//! R-000140 covered the `_xslt*` ABI mirrors. E-008 (atlas/
+//! SEMANTIC_EPOCHS.md): template selection output is frozen in the
+//! byte-identical xsltproc epoch (1.1.26, 2009, through 1.1.45). The
+//! import-depth tiebreak is carried in the candidate `position` field
+//! (see imports module).
+//!
+//! # Deliberate oddities
+//!
+//! - Upstream `_xsltTemplate` has no flags field; the candidate derives
+//!   HAS_MATCH/HAS_NAME/HAS_MODE/HAS_PRIORITY from the compiled fields
+//!   (annotated in `xsltAddTemplate`).
+//! - Priority ties use `f64::EPSILON` comparison on the stored priority
+//!   (f32 upstream), a faithful tolerance for cross-layout priorities.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (apply-templates/match corpus), XSLT-001, the in-crate
+//! template tests, and `cargo test`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Freeing template content in `xsltFreeTemplate` reintroduces the
+//!   R-000103 double-free; content belongs to the stylesheet document.
+//! - Sorting templates without the import-depth tiebreak breaks import
+//!   precedence (the last import wins on equal priority).
+//! - Matching by name only (ignoring mode) breaks mode-specific template
+//!   selection.
 
 use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;

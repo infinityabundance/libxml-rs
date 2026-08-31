@@ -3,6 +3,56 @@
 //! Produces `XmlToken` values from the input stack. The tokenizer handles
 //! low-level scanning: tags, comments, PIs, CDATA sections, character data,
 //! entity/character references, and the XML declaration.
+//!
+//! # Upstream contract
+//!
+//! Mirrors the lexical scanning of upstream parser.c and parserInternals.c
+//! (SRC-LIBXML2-2.15.0, oracle tree `oracle/historical/src/libxml2-2.15.0/`).
+//! Parity target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Produces `XmlToken` values from the input stack: tags, comments, PIs, CDATA
+//! sections, character data, entity/character references and the XML
+//! declaration. Structural errors are recorded into an error queue at their
+//! exact detection points with upstream positions, then drained in order by the
+//! parser (`record_error` / `record_error_at` / `take_errors`).
+//!
+//! # Ownership & safety invariants
+//!
+//! SAFETY: the tokenizer borrows the InputBuffer/InputStack owned by the
+//! parser context and never allocates C objects. Recorded errors own their
+//! message and str1-3 buffers. Tokens own their byte vectors; positions are
+//! byte offsets into the current input.
+//!
+//! # Historical quirks & epochs
+//!
+//! Error positions are epoch-pinned: the 2.12.x error-handling rework (commit
+//! c6083a32) changed how far the tokenizer may consume past an error before it
+//! is reported, and R-000163 fixed carets that pointed one byte past the
+//! upstream position. E-002 (single diagnostic) and E-005 (exit codes) both
+//! originate in the same 2.12/2.13 parser rework era.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: StartTag carries `attr_start`/`attr_end` byte offsets
+//! so the '<' in entity error caret lands on the '&' (R-000121) and namespace
+//! diagnostics land at the tag end (R-000166); the error queue exists because
+//! the tokenizer runs ahead of the parser.
+//!
+//! # Proving courts
+//!
+//! Exercised by the PARSER court family, the ERROR-001 data-ABI probe (48
+//! cases, byte-identical), TREE-001, CLI-XMLLINT-0033/0034 and `cargo test
+//! --lib`. Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A naive report-at-current-position simplification would break the caret
+//! contract that ERROR-001 pins byte-for-byte. Do not drop the attr_start /
+//! attr_end offsets — the R-000121 and R-000166 carets depend on them. Do not
+//! move structural validation into the parser: the tokenizer must record
+//! errors before the parser advances (R-000163).
 
 use crate::xml::parser::input::{InputBuffer, InputStack};
 use std::os::raw::c_int;

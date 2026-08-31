@@ -27,6 +27,61 @@
 //!
 //! Complete — all error functions are implemented.
 //! Variadic message formatting will be enhanced in Phase 2+.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream error.c (SRC-LIBXML2-2.15.0-ERROR-C, oracle tree
+//! `oracle/historical/src/libxml2-2.15.0/error.c`): xmlRaiseError /
+//! xmlVRaiseError routing, xmlFormatError, xmlGenericErrorDefaultFunc,
+//! xmlGetLastError / xmlCtxtGetLastError / xmlResetLastError, xmlCopyError
+//! and the legacy xmlParserError / xmlParserWarning SAX handlers.
+//!
+//! # Conceptual behavior
+//!
+//! Two-tier error system: structured errors (xmlStructuredErrorFunc with the
+//! full xmlError) and generic errors (printf-style fragments). The 11.1-M/K
+//! rework routes each raise through ONE channel: a structured handler, else
+//! the custom SAX channel (channel(data, msg) once), else the legacy default
+//! streaming the xmlFormatError fragments (file/line, domain, level, message,
+//! source window, caret) as 6 variadic calls (R-000161).
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: the thread-local last error owns its file/str1-3 copies;
+//! raise_error_streamed copies transient CStrings (R-000163: dangling
+//! pointers were the bug). The exported xmlLastError mirror is synced under
+//! lock (R-000170). SAFETY: the variadic xmlGenericErrorDefaultFunc and
+//! xmlParserError legacy handlers are x86_64 SysV inline-asm va_list shims —
+//! stable Rust cannot define variadic extern fns.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-005: fatal parser errors are reported twice from 2.13.0 (attr-markup-
+//! entity); the xmlFormatError fragment stream and the 80-column source
+//! window cap are 2.15 semantics (xmlParserInputGetWindow, caret clamp).
+//! R-000163 pinned all XML_ERR_* 64-96 constants to upstream numbering
+//! (SPACE_REQUIRED 65, NAME_REQUIRED 68, GT_REQUIRED 73, TAG_NAME_MISMATCH
+//! 76, TAG_NOT_FINISHED 77 — not the synthetic renumbering).
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: warnings only bump nbWarnings while other levels
+//! update errNo / nbErrors / wellFormed per xmlCtxtVErr; the source window
+//! replicates the 80-char cap, continuation-byte skip, UTF-8 forward scan and
+//! the 2.15 caret clamp (col >= n maps to size-1).
+//!
+//! # Proving courts
+//!
+//! ERROR and CALLBACK court families; ERROR-001 (48 deterministic malformed
+//! inputs x 4 passes, byte-identical), GLOBALS-THREADING, DATA-GLOBALS-001,
+//! and `cargo test --lib` (ASan-clean).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is one generic call plus a direct stderr write
+//! — a counting handler would observe 1 call instead of the 6 xmlFormatError
+//! fragments the oracle emits (R-000161). Do not route errors to stderr when a
+//! handler is installed. Never renumber the XML_ERR_* constants (R-000163).
 
 use core::ffi::c_void;
 use core::ptr;

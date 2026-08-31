@@ -1,0 +1,25 @@
+{
+ "module": "xml/xpath/exports",
+ "upstream": [
+  "xpath.c",
+  "xpathInternals.h"
+ ],
+ "export_samples": [
+  "xmlXPathNewString",
+  "xmlXPathNewValueTree",
+  "xmlXPathNewNodeSetList",
+  "xmlXPathWrapString",
+  "xmlXPathWrapCString",
+  "xmlXPathWrapNodeSet"
+ ],
+ "subsystems": [
+  "xpath",
+  "xpath-internals"
+ ],
+ "residuals": [],
+ "court_families": [
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER"
+ ]
+}

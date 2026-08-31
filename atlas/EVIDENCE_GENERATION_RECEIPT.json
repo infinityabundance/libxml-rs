@@ -1,8 +1,8 @@
 {
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
- "mode": "check",
- "candidate_git_head": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
+ "mode": "generate",
+ "candidate_git_head": "a33f3289cd63bf2061ee86dad6c6156825f78c93",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -21,14 +21,14 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
-  "candidate SONAME libxml2": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
-  "candidate SONAME libxslt": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
-  "candidate SONAME libexslt": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
+  "candidate DSO": "609c8f079262b376e5055bd527c81a009e117a621c1651dbd81aeb1ccd128b00",
+  "candidate SONAME libxml2": "609c8f079262b376e5055bd527c81a009e117a621c1651dbd81aeb1ccd128b00",
+  "candidate SONAME libxslt": "609c8f079262b376e5055bd527c81a009e117a621c1651dbd81aeb1ccd128b00",
+  "candidate SONAME libexslt": "609c8f079262b376e5055bd527c81a009e117a621c1651dbd81aeb1ccd128b00",
   "candidate headers": null,
   "residual ledger JSON (hand-maintained)": {
    "files": 1,
-   "aggregate_sha256": "6fb657701c42884e033dd25ea7735ef5601b4d500351e25779e1309045f6a247"
+   "aggregate_sha256": "7b2f66cd1a4f50836c8cd697e8bf75aa3fe63e2e3679d9bbf9efea8c6c50b5aa"
   },
   "symbol court index": {
    "files": 1,
@@ -99,7 +99,7 @@
    "ok": true,
    "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/RESIDUAL_LEDGER.md\n",
    "hashes": {
-    "atlas/RESIDUAL_LEDGER.md": "a8468353157e6300f2a26ff23ce7794926b973dab940e7d57d13356d190ce316"
+    "atlas/RESIDUAL_LEDGER.md": "4509ccb447e2451406e3653bebd3f3f6f6eecf310b5cd00e0cf0b83591c072b2"
    }
   }
  ],

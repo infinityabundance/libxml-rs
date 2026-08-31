@@ -3,10 +3,76 @@
 //! Defines error domains, error levels, error handler types, and the
 //! public API for reporting and retrieving XSLT errors.
 //!
-//! # Phase 8 status
+//! # Upstream contract
 //!
-//! Constants and function types are fully defined. Functions are stubbed
-//! and will be implemented as part of Phase 8.
+//! Parity target: upstream libxslt `xsltutils.c` + `xsltInternals.h`
+//! (1.1.45; `SRC-LIBXSLT-1.1.42-XSLTUTILS-C` under oracle/historical/src).
+//! The observable surface is `xsltTransformError` (with its
+//! `xsltPrintErrorContext` context line), `xsltSetTransformErrorFunc`,
+//! `xsltSetGenericDebugFunc`/`xsltGenericDebug`, `xsltGetLastError`, and
+//! the `XSLT_ERR_*` domain/level constants from xslt.h 1.1.45.
+//!
+//! # Conceptual behavior
+//!
+//! Error reporting follows upstream routing: `xsltTransformError` moves
+//! the transform context out of the OK state (error or stopped), prints
+//! the `xsltPrintErrorContext` context line (one of `error`,
+//! `compilation error`, `runtime error`, each optionally with file/line/
+//! element), and emits the message verbatim — messages carry their own
+//! trailing newline and the function is variadic upstream, so callers
+//! format before calling (the candidate never expands `%s`/`%d`
+//! placeholders). With a registered per-context handler the message is
+//! routed there; otherwise it goes to stderr.
+//!
+//! # Ownership & safety invariants
+//!
+//! - `LAST_XSLT_ERROR` is a mutex-guarded thread-safe copy of the last raw
+//!   message; `xsltGetLastError` returns a heap copy the caller frees with
+//!   libc::free (matching the documented `caller frees` contract for
+//!   `xsltGetLastError`).
+//! - Handler slots (`error`/`errctx`) are borrowed user-data, never
+//!   dereferenced by the library — per atlas/OWNERSHIP_ATLAS.md section 6,
+//!   the caller keeps the context alive.
+//! - `XSLT_GENERIC_DEBUG`/`XSLT_GENERIC_DEBUG_CONTEXT` are process-global
+//!   statics (upstream `xsltGenericDebug` globals); callers must not race
+//!   them (R-000171 slot-race lesson applied to the debug pair).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): error output participates in the
+//! byte-identical xsltproc epoch (1.1.26, 2009, through 1.1.45), so the
+//! context-line wording is frozen. R-000161 fixed error routing parity for
+//! the generic/structured handler chain (xmlFormatError fragment
+//! streaming, 6 calls per raise) and the default variadic stderr printers
+//! `xmlGenericError`/`xsltGenericError`; the candidate `xsltGenericDebug`
+//! writes through fd 2 with the upstream NULL-context suppression.
+//! R-000140 covered the `_xslt*` ABI mirrors.
+//!
+//! # Deliberate oddities
+//!
+//! - The variadic upstream signature is reduced to a pre-formatted
+//!   message (an intentional, documented divergence — see the
+//!   `xsltTransformError` docs); the emitted bytes match the oracle.
+//! - `xsltSetGenericDebugFunc` keeps the upstream NULL-context
+//!   suppression quirk: a NULL handler with a NULL context suppresses
+//!   debug output.
+//!
+//! # Proving courts
+//!
+//! ERROR-001 (error-family differential probe; R-000161), CLI-XSLTPROC
+//! (stderr byte-compare on failing stylesheets), XSLT-001, and the
+//! in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Replacing the context line with a plain `error:` prefix breaks
+//!   stderr byte-parity for compilation and runtime errors (the
+//!   `xsltPrintErrorContext` forms are oracle-verified).
+//! - Buffering the last-error message with the error state would drop the
+//!   frozen `state` transition (OK → ERROR/STOPPED) that the transform
+//!   loop checks to stop execution.
+//! - Writing debug output unconditionally would break the upstream
+//!   NULL-context suppression contract exercised by the CLI corpus.
 
 use crate::abi::structs::*;
 use std::os::raw::c_int;

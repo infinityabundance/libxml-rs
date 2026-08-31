@@ -25,6 +25,57 @@
 //!
 //! CHVALID-* differential tests compare against the oracle DSO for the whole
 //! BMP + representative supplementary-plane code points.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `chvalid.c` / `xmlunicode.c` / `chvalid.h`
+//! (`SRC-LIBXML2-2.15.0-CHVALID-C` et al., parity target libxml2 2.15.3
+//! oracle): `xmlCharInRange`, the exported `xmlIs*` predicates and the
+//! `xmlIsPubidChar_tab` data table.
+//!
+//! # Conceptual behavior
+//!
+//! Implements the upstream Q-macro semantics verbatim (each `xmlIs*Q`
+//! expansion is listed above): sub-0x100 code points are answered from
+//! tables/linear tests, larger code points from the generated range
+//! groups via binary search. `xmlIsLetter` (parserInternals.c) and
+//! `xmlIsBlankNode` (tree.c) complete the surface.
+//!
+//! # Ownership & safety invariants
+//!
+//! The tables are immutable `static` data (extracted from upstream
+//! `codegen/ranges.inc`); `xmlCharInRange` only reads its group argument
+//! (SAFETY: NULL group returns 0, valid group must cover
+//! nbShortRange/nbLongRange entries). Nothing here allocates.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000135: the seven char-class tables were extracted verbatim from
+//! upstream ranges.inc by tools/archaeology/gen_chvalid_tables.py
+//! (sha256-bound, oracle sha256 e7575963…) and the DATA-GLOBALS-001 court
+//! fingerprints FNV-1a hashes of all nine `xmlIs*` functions over the BMP
+//! — the tables are stable across the 2.7.8 → 2.15.3 oracle span.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlIsPubidChar` only accepts < 0x100 (per the Q-macro); the Latin-1
+//! linear cases in `xmlIsBaseChar` etc. are kept exactly as upstream
+//! encodes them rather than merged into the range groups.
+//!
+//! # Proving courts
+//!
+//! DATA-GLOBALS-001 (tools/abi/data_globals_probe.py + committed C probe)
+//! compiles the probe against the system libxml2 and the candidate DSO and
+//! requires byte-identical output; CHVALID-* differential tests cover the
+//! whole BMP; cargo test runs the unit assertions.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not regenerate the tables from Unicode data files: upstream tables
+//! carry historical drift (e.g. ideographs bounded at 0x9fa5, the
+//! pubid table) that byte-parity requires. Do not replace the binary
+//! search with a hash set: the group ranges are what the C ABI exposes
+//! through `xmlChRangeGroup`.
 
 use crate::abi::structs::{_xmlNode, xmlChRangeGroup};
 use crate::xml::unicode_tables::*;

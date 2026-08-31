@@ -1,0 +1,20 @@
+{
+ "module": "xml/c14n/mod",
+ "upstream": [
+  "c14n.c"
+ ],
+ "export_samples": [
+  "xmlC14NDocDumpMemory",
+  "xmlC14NExecute",
+  "xmlC14NDocSaveTo"
+ ],
+ "subsystems": [
+  "c14n"
+ ],
+ "residuals": [
+  "R-000166"
+ ],
+ "court_families": [
+  "C14N"
+ ]
+}

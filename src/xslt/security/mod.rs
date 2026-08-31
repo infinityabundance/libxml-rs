@@ -32,6 +32,25 @@
 //! Earlier revisions of this module implemented a divergent int allow/deny
 //! model (`xsltSetSecurityPrefs(sec, option, value: c_int)`); the module was
 //! reimplemented to the upstream contract (R-000125, closed 11.1-G/H).
+//!
+//! # Proving courts
+//!
+//! XSLT-001 (xslt-family differential probe exercises `xsltSecurityAllow`,
+//! `xsltSecurityForbid`, `xsltSetCtxtSecurityPrefs`), DSO-LOADER (R-000160
+//! trivial-body exports), the callback round-trip unit tests in this
+//! module, and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Reverting to an int allow/deny model (the pre-R-000125 design) is
+//!   ABI-incompatible with downstream consumers that register callbacks;
+//!   the callback slots are the upstream contract.
+//! - Special-casing WRITE_FILE into its own slot (instead of the
+//!   createFile quirk) breaks `xsltGetSecurityPrefs` round-trips and the
+//!   differential probe.
+//! - Making the default-prefs state per-transform instead of global would
+//!   break `xsltSetDefaultSecurityPrefs`/`xsltGetDefaultSecurityPrefs`
+//!   semantics.
 
 #![allow(
     clippy::missing_inline_in_public_items,
@@ -164,6 +183,10 @@ pub unsafe extern "C" fn xsltSetSecurityPrefs(
     match option {
         XSLT_SECPREF_READ_FILE => prefs.readFile = func,
         // UPSTREAM-PARITY: WRITE_FILE writes createFile (upstream quirk).
+        // Verified against oracle/historical/src/libxslt-1.1.42/libxslt/
+        // security.c: xsltSetSecurityPrefs case XSLT_SECPREF_WRITE_FILE
+        // stores func in sec->createFile; xsltGetSecurityPrefs reads it
+        // back from the same slot. A separate writeNet slot also exists.
         XSLT_SECPREF_WRITE_FILE => prefs.createFile = func,
         XSLT_SECPREF_CREATE_DIRECTORY => prefs.createDir = func,
         XSLT_SECPREF_READ_NETWORK => prefs.readNet = func,

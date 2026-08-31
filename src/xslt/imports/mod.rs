@@ -17,6 +17,68 @@
 //! The `_xsltStylesheet` chain: `style->imports` lists imported
 //! stylesheets; each imported stylesheet has `parent` pointing back to the
 //! importer.
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `imports.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-IMPORTS-C` under oracle/historical/src). Subsystem
+//! census: xslt-imports. Behavior is governed by XSLT 1.0 import
+//! precedence rules (atlas lore keeps `xsl:apply-imports` corner cases
+//! as an UNRESOLVED item pending oracle probing).
+//!
+//! # Conceptual behavior
+//!
+//! Imports are processed before any other top-level element: each
+//! `xsl:import href` is recursively parsed into a child stylesheet linked
+//! into `style->imports` (children of the importing stylesheet, in import
+//! order — later imports nearer the head). `xsl:include` splices the
+//! included stylesheet's definitions at the include point with equal
+//! precedence. Template/key/variable resolution walks this tree, so
+//! import depth decides conflicts: deeper import (closer to the main
+//! stylesheet) wins on equal priority.
+//!
+//! # Ownership & safety invariants
+//!
+//! Imported stylesheets are owned by the importing stylesheet's `imports`
+//! chain and freed by `xsltFreeStylesheet` via `xsltFreeImports` before
+//! the parent definitions (children first, R-000103 ordering). Each
+//! imported stylesheet owns its own style document. `parent`/`next`
+//! pointers are owned by the chain; `get_element_ns`/`get_element_name`
+//! return borrowed strings.
+//!
+//! # Historical quirks & epochs
+//!
+//! The import tree has been the resolution model since the libxslt 1.1
+//! series (2004+; atlas/HISTORY.md) and sits inside the E-008 frozen
+//! epoch (2009 → 1.1.45; atlas/SEMANTIC_EPOCHS.md): import precedence
+//! behavior is byte-identical across all oracle versions. The compiler
+//! module records the depth in the candidate `position` field (R-000140
+//! layout), which the templates and transform modules read for conflict
+//! resolution.
+//!
+//! # Deliberate oddities
+//!
+//! - The candidate tracks import depth as an integer on the stylesheet
+//!   (carried into template `position`), whereas upstream derives it from
+//!   the tree shape at lookup time — a documented storage divergence with
+//!   identical resolution results.
+//! - Import-list head placement (later imports nearer the head) mirrors
+//!   upstream `xsltParseStylesheetImport` insertion.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (multi-stylesheet import corpus), XSLT-001, HEADER-COMPILE
+//! (xsltParseStylesheet* surface), and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Flattening imports into one definition list breaks the precedence
+//!   ordering — template conflicts, key resolution and apply-imports all
+//!   depend on the import tree (XSLT 1.0 conflict-resolution rules).
+//! - Making later imports lower-precedence (a naive reading of import
+//!   order) inverts the oracle: the last import wins on ties.
+//! - Freeing imported stylesheet documents with the parent would
+//!   double-free (each imported stylesheet owns its doc).
 
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;

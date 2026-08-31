@@ -1,5 +1,67 @@
 //! XSLT parameter management (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `params.c` + `variables.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-PARAMS-C` / `SRC-LIBXSLT-1.1.42-VARIABLES-C` under
+//! oracle/historical/src). The ABI surface is the `params` argument of
+//! `xsltApplyStylesheet`/`xsltApplyStylesheetUser` and the internal
+//! `xsltParseStylesheetParams` / `xsltParseStylesheetParam` pair, plus
+//! `xsltEvalUserParams` semantics from variables.c.
+//!
+//! # Conceptual behavior
+//!
+//! The `params` argument is a NULL-terminated array of `(name, value)`
+//! string pairs. The name may be a QName or `{uri}name`; the value is an
+//! XPath expression that is evaluated later against the source document
+//! (xsltEvalUserParams semantics). Each parameter becomes a global
+//! variable flagged `XSLT_VAR_PARAM`, prepended to the stylesheet global
+//! list so `xsltInitGlobalVariables` processes it in the same pass.
+//!
+//! # Ownership & safety invariants
+//!
+//! Parsed parameters are `_xsltStackElem` values owned by the stylesheet
+//! variable list (freed by `xsltFreeStylesheet` via `xsltFreeGlobalVariables`
+//! on the context). Caller-provided names/values are duplicated or carried
+//! in the `select` slot; the `XSLT_VAR_INTERNAL` flag marks caller-created
+//! elements whose strings the free path may release (see variables
+//! module). Input pointers must be valid NUL-terminated strings for the
+//! duration of the call.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000111 (Phase 9): the params array was wrongly parsed as single
+//! `name=value` strings; the fix restored the upstream `(name, value)`
+//! pair form with `{uri}name` namespace support. R-000117 covered local
+//! variables/params visibility to XPath evaluation; R-000140 covered the
+//! `_xslt*` ABI mirrors. E-008 (atlas/SEMANTIC_EPOCHS.md): the parameter
+//! plumbing is part of the byte-identical xsltproc epoch (1.1.26, 2009,
+//! through 1.1.45).
+//!
+//! # Deliberate oddities
+//!
+//! - Caller params are prepended to the global list (upstream
+//!   `xsltParseStylesheetParam` insertion), an intentional storage choice
+//!   that keeps evaluation order identical.
+//! - A caller param without a value pair terminates the array (upstream
+//!   contract).
+//!
+//! # Proving courts
+//!
+//! test_parse_params_array_pairs, xslt::parameters::tests, CLI-XSLTPROC
+//! (params corpus stylesheet), XSLT-001, and the in-crate `cargo test`
+//! suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Re-parsing the array as `name=value` single strings reintroduces
+//!   R-000111: names would swallow the value text and values would never
+//!   evaluate as XPath.
+//! - Evaluating param values eagerly at parse time breaks expressions
+//!   that depend on the document (evaluation happens against the source
+//!   document at transform start).
+//! - Dropping the `{uri}name` form breaks namespaced parameters.
+//!
 //! Parameters allow passing values from the caller into the stylesheet.
 //! Global parameters are set via `xsltApplyStylesheet`'s params array.
 //! Local parameters are passed via `<xsl:with-param>`.

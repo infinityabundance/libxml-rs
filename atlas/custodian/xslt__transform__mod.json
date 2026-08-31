@@ -1,0 +1,36 @@
+{
+ "module": "xslt/transform/mod",
+ "upstream": [
+  "transform.c"
+ ],
+ "export_samples": [
+  "xsltSetXIncludeDefault",
+  "xsltGetXIncludeDefault",
+  "xsltNewTransformContext",
+  "xsltFreeTransformContext",
+  "xsltApplyStylesheet",
+  "xsltApplyStylesheetUser"
+ ],
+ "subsystems": [
+  "xslt-transform-ctxt",
+  "xslt-transform-exec",
+  "xslt-output",
+  "xslt-errors",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000104",
+  "R-000107",
+  "R-000108",
+  "R-000113",
+  "R-000115",
+  "R-000116",
+  "R-000117",
+  "R-000140",
+  "R-000158",
+  "R-000159",
+  "R-000162",
+  "R-000167"
+ ],
+ "court_families": []
+}

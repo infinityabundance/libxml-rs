@@ -11,6 +11,57 @@
 //! # Courts
 //!
 //! XPATH-EVAL-*
+//!
+//! # Upstream contract
+//!
+//! Mirrors the evaluation core of upstream `xpath.c`
+//! (`SRC-LIBXML2-2.15.0-XPATH-C`, parity target libxml2 2.15.3 oracle):
+//! xmlXPathEvalExpr semantics for location paths, predicates, operators,
+//! type conversions and comparison rules.
+//!
+//! # Conceptual behavior
+//!
+//! Walks the AST with an explicit recursion guard (`push_recursion` /
+//! `pop_recursion`). Absolute paths start at the document node (the
+//! `_xmlDoc` cast to `_xmlNode`, type 9), NOT at the root element — the
+//! R-000102 fix that aligns `/` with XPath 1.0. Predicates are evaluated
+//! per-step with live context position/size; node-sets are deduplicated
+//! in document order.
+//!
+//! # Ownership & safety invariants
+//!
+//! Evaluation borrows the tree and the context: node-sets hold borrowed
+//! `_xmlNode` pointers that stay valid while the document lives; the
+//! engine never frees tree nodes. Values returned to the C ABI are
+//! converted in exports.rs and owned by the `_xmlXPathObject`. Context
+//! mutation is confined to the evaluation call (no global state).
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000102: absolute paths originally evaluated from the root element
+//! (candidate bug) and were fixed to the document node. R-000159:
+//! `//book[position() <= 2]` matched one extra node until the predicate
+//! context-size semantics were aligned with the oracle. Both were sealed
+//! during the 11.1 XPath closure against the 2.15.3 oracle.
+//!
+//! # Deliberate oddities
+//!
+//! The engine evaluates predicates eagerly per step (upstream
+//! xmlXPathCompOpEval style) rather than collecting then filtering —
+//! position()/last() depend on that order, so it is deliberate.
+//!
+//! # Proving courts
+//!
+//! XPATH-EVAL-* and the XPATH differential probes compare evaluation
+//! results byte-identical against the oracle; the XSLT courts
+//! (CLI-XSLTPROC-*) run compiled templates through this engine.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not defer predicate evaluation to a post-filter pass: position() /
+//! last() are order-sensitive (R-000159). Do not drop the recursion
+//! guard, and do not evaluate absolute paths from the root element
+//! (R-000102) — both are observable through xmlXPathEval results.
 
 use crate::abi::structs::_xmlNode;
 use crate::xml::xpath::ast::{BinaryOp, Expr, Step};

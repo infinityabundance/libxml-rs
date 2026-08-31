@@ -22,6 +22,61 @@
 //!
 //! Upstream version format: major * 10000 + minor * 100 + micro
 //! Example: 2.15.3 → 21503
+//!
+//! # Upstream contract
+//!
+//! Version reporting per upstream `globals.c` (`xmlLibxmlVersion`,
+//! `xmlParserVersion`, `xmlCheckVersion`) and `parser.c`; the libxslt version
+//! surface per `xslt.c`/`xslt.h`. The parity target is libxml2 2.15.3 /
+//! libxslt 1.1.45 — the system oracle DSOs.
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the runtime version-reporting functions: numeric
+//! (major*10000 + minor*100 + micro) and string forms, plus
+//! `xmlCheckVersion`/`xsltCheckVersion` gatekeeping. The versioned symbols
+//! exported as DATA live in `data_globals.rs`; this module supplies the
+//! pure-Rust computation and the internal (non-exported) string helpers.
+//!
+//! # Ownership & safety invariants
+//!
+//! Returned version strings are static NUL-terminated byte slices — the caller
+//! must never free them (borrowed/static contract). The numeric constants are
+//! compile-time; nothing here allocates or transfers ownership.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000167 (11.1-S): `xsltLibxsltVersion` was exported as a function (symbol
+//! type T) while upstream 1.1.45 declares it `XSLTPUBVAR const int` (symbol
+//! type R) — a consumer reading the value per the header contract got code
+//! bytes; all four version symbols now match the oracle nm -D types. R-000133:
+//! `xmlCheckVersion` was declared-but-unexported and had to be implemented.
+//! QUIRK-0003/LORE-0004 record that the NEWS file lagged releases in the
+//! 2.7-2.9 era, so version identity must come from git tags, not NEWS.
+//!
+//! # Deliberate oddities
+//!
+//! `xmlParserVersion` is the git-version string `21503-GITv2.15.3` (the
+//! oracles own `--version` output, per SEMANTIC_EPOCHS section 1) rather than
+//! a plain `2.15.3` — deliberate parity with the oracle DSO. The
+//! candidate-only `xsltLibxsltVersionString` helper exists internally but is
+//! deliberately not exported (upstream has no such symbol).
+//!
+//! # Proving courts
+//!
+//! The DSO-LOADER court verifies symbol-type parity (R vs T vs D) against the
+//! oracle for the version data symbols (R-000167); ABI-DATA, GLOBAL-STATE and
+//! PARSER families cover the version entry points; the ORACLE-IDENTITY court
+//! family fingerprints the candidate binary against the oracle version output.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to export the version values as plain
+//! functions again — R-000167 showed the header declares them as data, so any
+//! C consumer reading `xsltLibxsltVersion` per the header contract would read
+//! code bytes instead of the int. The symbol type must match the oracle DSO
+//! exactly; the version string must stay the git-version form or the
+//! version-dependent courts would fail.
 
 #![allow(non_upper_case_globals)]
 

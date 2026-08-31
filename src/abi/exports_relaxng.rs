@@ -36,6 +36,56 @@
 //! - `xmlRelaxNGDump` / `xmlRelaxNGDumpTree` render the parsed grammar in a
 //!   readable form; upstream's exact debug format is a libxml2-internal
 //!   artifact and is not replicated byte-for-byte.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `relaxng.c` (libxml2 2.15.3,
+//! SRC-LIBXML2-2.15.0-RELAXNG-C) with the `relaxng.h` signatures; R-000165
+//! (11.1-O) closed the relaxng export gaps (e.g. `xmlRelaxNGValidCtxtClearErrors`,
+//! `xmlRelaxParserSetIncLImit`).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the RELAX NG entry points not already exported by
+//! the internal engine in `src/xml/relaxng/mod.rs`: dump/tree rendering,
+//! parser/validation error-callback registration and the streaming validation
+//! entry points, using the opaque-pointer convention documented above.
+//!
+//! # Ownership & safety invariants
+//!
+//! `xmlRelaxNGPtr`/`xmlRelaxNGParserCtxtPtr`/`xmlRelaxNGValidCtxtPtr` are
+//! caller-owned: schemas freed with `xmlRelaxNGFree`, contexts with
+//! `xmlRelaxNGFreeParserCtxt`/`xmlRelaxNGFreeValidCtxt`. The error-callback
+//! side tables are keyed by context address and live exactly as long as the
+//! owning context (the engines own free functions are the only releasers).
+//!
+//! # Historical quirks & epochs
+//!
+//! RELAX NG matured in the 2.6 `validation_era` (HISTORY.md) and the ABI has
+//! been stable since; R-000165 (11.1-O) added the missing relaxng symbols so
+//! the oracle DSO export set is complete.
+//!
+//! # Deliberate oddities
+//!
+//! The eager schema parse in the context constructors (upstream parses lazily
+//! at `xmlRelaxNGParse`) is a deliberate divergence documented in the header
+//! above, as is `xmlRelaxNGDump`/`xmlRelaxNGDumpTree` not replicating
+//! upstreams internal debug format byte-for-byte.
+//!
+//! # Proving courts
+//!
+//! The RELAXNG court family, the CLI-XMLLINT relaxng cases and the
+//! DSO-LOADER/HEADER-COMPILE courts cover this module; the relaxng unit tests
+//! run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to make `xmlRelaxNGSetParserErrors` a stored
+//! no-op because the engine reports internally — the error callbacks are the
+//! observable contract for C consumers validating documents (the RELAXNG
+//! courts drive them), so the side tables must stay. Another shortcut —
+//! freeing schema objects eagerly when the parser context dies — would break
+//! the callers valid-ctxt reuse of a parsed schema.
 
 #![allow(
     missing_docs,

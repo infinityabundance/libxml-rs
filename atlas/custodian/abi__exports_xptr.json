@@ -1,0 +1,28 @@
+{
+ "module": "abi/exports_xptr",
+ "upstream": [
+  "xpointer.c",
+  "xpath.c"
+ ],
+ "export_samples": [
+  "xmlXPtrLocationSetCreate",
+  "xmlXPtrFreeLocationSet",
+  "xmlXPtrLocationSetAdd",
+  "xmlXPtrLocationSetMerge",
+  "xmlXPtrLocationSetDel",
+  "xmlXPtrLocationSetRemove"
+ ],
+ "subsystems": [
+  "xpath",
+  "xpath-internals",
+  "xpointer"
+ ],
+ "residuals": [
+  "R-000166"
+ ],
+ "court_families": [
+  "XINCLUDE",
+  "XPATH",
+  "XPOINTER"
+ ]
+}

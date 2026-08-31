@@ -1,0 +1,33 @@
+{
+ "module": "abi/exports_xslt_avt",
+ "upstream": [
+  "xsltutils.c",
+  "attributes.c"
+ ],
+ "export_samples": [
+  "xsltAttrListTemplateProcess",
+  "xsltAttrTemplateProcess",
+  "xsltAttrTemplateValueProcessNode",
+  "xsltAttrTemplateValueProcess",
+  "xsltEvalAVT",
+  "xsltEvalAttrValueTemplate"
+ ],
+ "subsystems": [
+  "xslt-lifecycle",
+  "xslt-parameters",
+  "xslt-rvt",
+  "xslt-sorting",
+  "xslt-attribute-sets",
+  "xslt-decimal-formats",
+  "xslt-output",
+  "xslt-profiling",
+  "xslt-errors",
+  "xslt-global-state",
+  "xslt-debugger",
+  "xslt-exports"
+ ],
+ "residuals": [
+  "R-000160"
+ ],
+ "court_families": []
+}

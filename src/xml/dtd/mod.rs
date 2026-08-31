@@ -6,6 +6,60 @@
 //! This module provides the foundational types and functions for DTD
 //! validation, used by the validation, RELAX NG, XML Schema, and
 //! Schematron modules.
+//!
+//! # Upstream contract
+//!
+//! Mirrors the DTD declaration machinery of upstream valid.c and parser.c
+//! (SRC-LIBXML2-2.15.0, oracle tree `oracle/historical/src/libxml2-2.15.0/`):
+//! xmlCreateIntSubset, xmlNewDtd, xmlAddElementDecl, xmlAddAttributeDecl,
+//! xmlAddEntity, xmlAddNotationDecl, xmlGetDtdElementDesc and the DTD hash
+//! tables. Parity target: the system libxml2 2.15.3 oracle.
+//!
+//! # Conceptual behavior
+//!
+//! Internal subsets, external subsets, element declarations, attribute
+//! declarations, default attributes, notations and content models. The DTD
+//! node joins doc->children before the first element (xmlCreateIntSubset
+//! semantics, R-000164); declaration hash tables are created lazily by the
+//! xmlAdd* functions.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: the DTD is owned by the document; declarations are owned by the
+//! DTD hash tables; xmlFreeDtd frees only non-declaration children and runs
+//! the child walk before the hash-table frees (double-free fix, R-000164).
+//! SAFETY: `_xmlElement` must keep the upstream 104-byte layout (R-000139) or
+//! every xmlMalloc(sizeof(_xmlElement)) under-allocates.
+//!
+//! # Historical quirks & epochs
+//!
+//! R-000139 (Phase 11.1-I) rewrote the Rust `_xmlElement` mirror from 56 to
+//! 104 bytes after the RUST-MIRROR-ABI court caught the drift; R-000164
+//! (11.1-N) fixed the internalSubset path (xmlNewDtd to xmlCreateIntSubset),
+//! the element-decl type_ carrying XML_ELEMENT_DECL, ATTLISTs for undeclared
+//! elements creating UNDEFINED placeholders, and the attribute hash keyed
+//! (name,prefix,elem) as upstream.
+//!
+//! # Deliberate oddities
+//!
+//! Deliberate oddities: the DTD internal subset is written as part of
+//! doc->children (not a side structure); element declarations store the
+//! element type in etype while type_ holds XML_ELEMENT_DECL — matching
+//! upstream field semantics exactly.
+//!
+//! # Proving courts
+//!
+//! DTD, PARSER, RELAXNG and XSD court families; TREE-001 (DTD node chain,
+//! decl trees, hash order), RUST-MIRROR-ABI (struct layout), header-compile
+//! 595/595 and `cargo test --lib`.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is freeing declaration nodes from the DTD child
+//! list in addition to the hash tables — the exact double free R-000164
+//! fixed. Do not eagerly create the hash tables: laziness matches
+//! xmlGetDtdElementDesc semantics and TREE-001 fingerprints. Do not key the
+//! attribute table (elem,name): upstream is (name,prefix,elem).
 
 use core::ffi::c_void;
 use core::ptr;

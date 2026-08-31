@@ -1,0 +1,23 @@
+{
+ "module": "abi/exports_relaxng",
+ "upstream": [
+  "relaxng.c"
+ ],
+ "export_samples": [
+  "xmlRelaxNGDump",
+  "xmlRelaxNGDumpTree",
+  "xmlRelaxNGNewDocParserCtxt",
+  "xmlRelaxNGSetParserErrors",
+  "xmlRelaxNGGetParserErrors",
+  "xmlRelaxNGSetParserStructuredErrors"
+ ],
+ "subsystems": [
+  "relaxng"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": [
+  "RELAXNG"
+ ]
+}

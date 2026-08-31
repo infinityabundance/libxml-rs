@@ -13,6 +13,57 @@
 //!
 //! The caller is responsible for stripping the `#` from the URI fragment;
 //! this module receives only the fragment content.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `xpointer.c` / `xpointer.h`
+//! (`SRC-LIBXML2-2.15.0-XPOINTER-C`, parity target libxml2 2.15.3 oracle)
+//! implementing the W3C-XPTR-1.0 framework: shorthand pointers, the
+//! `element()` scheme (with child-axis positions `id/N/M`), and the
+//! `xmlXPtrEval` / `xmlXPtrEvalNodeSet` C ABI entry points that XInclude
+//! uses for `xpointer` attributes.
+//!
+//! # Conceptual behavior
+//!
+//! Evaluates an XPointer fragment against a document: a scheme-based
+//! pointer (`scheme(data)`) is parsed and dispatched, and a bare name
+//! falls back to shorthand semantics (element with that ID). The
+//! `element(id/N/M)` form walks the child axis 1-indexed, per the XPointer
+//! element() scheme. The XPath/XPointer context adapter converts between
+//! this module and the xpath engine.
+//!
+//! # Ownership & safety invariants
+//!
+//! `doc` is borrowed for the evaluation; results are borrowed node
+//! pointers into that document (never freed here). The caller owns the
+//! document and the fragment string. The context adapter allocates
+//! XPath objects that are freed before returning.
+//!
+//! # Historical quirks & epochs
+//!
+//! XPointer had a burst of CVE-2016-* fixes in the 2016 epoch
+//! (SEC-0009: commits 9ab01a27, c1d1f712, 2016-06-28) that hardened the
+//! element()/child-axis path this module mirrors; behavior targets the
+//! 2.15.3 oracle.
+//!
+//! # Deliberate oddities
+//!
+//! The `#`-stripping contract is deliberate: upstream callers pass the
+//! raw fragment after `#`, and xmlXPtrEval operates on the fragment
+//! content — the candidate keeps the split explicit at the boundary.
+//!
+//! # Proving courts
+//!
+//! The XPOINTER court family (incl. XInclude xpointer cases) compares
+//! resolution byte-identical against the oracle; XINCLUDE differential
+//! probes exercise xmlXPtrEvalNodeSet end-to-end.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not restrict xptr_eval to shorthand IDs only: the element() scheme
+//! with child positions is part of the XPointer framework and XInclude
+//! depends on it. Do not strip the `#` inside the module — callers that
+//! pass a full fragment would silently break.
 
 use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode};
 use crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_ID;

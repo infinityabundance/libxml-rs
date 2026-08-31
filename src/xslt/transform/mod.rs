@@ -1,5 +1,80 @@
 //! XSLT transformation engine (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `transform.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-TRANSFORM-C` under oracle/historical/src). Subsystem
+//! census: xslt-transform-ctxt, xslt-transform-exec, xslt-output,
+//! xslt-errors, xslt-exports. ABI surface: `xsltNewTransformContext`/
+//! `xsltFreeTransformContext`, `xsltApplyStylesheet` and variants,
+//! `xsltApplyStylesheetUser`/`Stacked`, the `xsltMaxDepth`/`xsltMaxVars`
+//! globals, and `xsltSetXIncludeDefault`/`xsltGetXIncludeDefault`.
+//!
+//! # Conceptual behavior
+//!
+//! `xsltApplyStylesheet` creates (or reuses) a transform context, seeds
+//! the XPath context, initializes global variables and key tables,
+//! applies the root template, and drives instruction execution: each
+//! instruction builds the result tree through the context `insert`
+//! pointer, with `node`/`nodeList` tracking the source node and
+//! `contextSize`/`proximityPosition` tracking the XPath context.
+//! `XSLT_MAX_DEPTH`/`xsltMaxDepth` bound recursion; the context state
+//! (OK/ERROR/STOPPED) gates every loop.
+//!
+//! # Ownership & safety invariants
+//!
+//! - Source document: borrowed (caller keeps it).
+//! - Result document: fresh, caller-owned (`xmlFreeDoc`;
+//!   `xsltFreeTransformResult` alias); version/encoding strings are
+//!   heap-copied (R-000104) so `free_doc` never frees borrowed literals.
+//! - RVT documents: owned by the context doc lists (variables/documents
+//!   modules), freed at teardown after the XPath context (R-000109).
+//! - The variable stack is context-owned; `process_call_template` pops
+//!   back to the saved depth, never a fixed count (R-000158).
+//! - All entry points are `unsafe`; pointers must come from the matching
+//!   constructor/owner (atlas/OWNERSHIP_ATLAS.md section 4).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): xsltproc basic/num/empty output is
+//! byte-identical from libxslt 1.1.26 (2009) through 1.1.45 — the engine
+//! targets a fully frozen epoch. Residual fixes anchored here: R-000104
+//! (result version/encoding double-free), R-000107 (XPath core functions
+//! registration), R-000108 (AVT evaluation), R-000113 (boolean
+//! conversion), R-000115 (sort wiring), R-000158 (with-param snapshot),
+//! R-000159 (position() context), R-000162 (callback bridge), R-000167
+//! (version symbol types).
+//!
+//! # Deliberate oddities
+//!
+//! - The default parser options for loaded documents are exactly
+//!   XSLT_PARSE_OPTIONS (NOENT|DTDLOAD|DTDATTR|NOCDATA = 16398),
+//!   matching transform.c `xsltNewTransformContext`.
+//! - The per-context depth/vars limits are copied from the process-wide
+//!   `xsltMaxDepth`/`xsltMaxVars` globals at context creation, matching
+//!   upstream.
+//! - Context position/size state is maintained on both the C ABI
+//!   `_xmlXPathContext` and the internal Rust XPathContext (`extra`
+//!   slot) — a dual-bookkeeping bridge (R-000159).
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC-0001..0057 (differential xsltproc corpus, byte-identical
+//! receipts), XSLT-001 (xslt-family probe), DSO-LOADER, HIST-EPOCH-0001..
+//! 0008 (E-008), and the in-crate `cargo test` suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Fixed-count variable pops instead of pop-to-saved-depth break
+//!   xsl:call-template with defaulted parameters (R-000158).
+//! - Treating position() as a function of the node alone breaks
+//!   `//book[position() <= 2]` (R-000159); the predicate loops must set
+//!   and restore proximity position.
+//! - Evaluating AVTs once at compile time breaks context-dependent
+//!   attribute values (R-000108).
+//! - Iterating with-param lists while pushing variables corrupts the
+//!   list (xsltPushVariable rewires `next`); snapshot first (R-000158).
+//!
 //! Executes compiled stylesheets against source documents:
 //! - `xsltNewTransformContext` / `xsltFreeTransformContext`
 //! - `xsltApplyStylesheet` and variants
@@ -1633,7 +1708,14 @@ pub(crate) unsafe fn process_value_of(ctxt: *mut _xsltTransformContext, inst: *m
     let strv = xmlXPathCastToString(obj);
     xmlXPathFreeObject(obj);
     if !strv.is_null() {
-        append_text_node(ctxt, strv);
+        // UPSTREAM-PARITY (transform.c xsltValueOf 1.1.45): the string value
+        // is copied into the result only when it is non-empty
+        // (`if (value[0] != 0)`); an empty value-of must NOT create an empty
+        // text node, otherwise an otherwise-empty element would serialize
+        // as `<out></out>` instead of the oracle's `<out/>`.
+        if *strv != 0 {
+            append_text_node(ctxt, strv);
+        }
         libc::free(strv as *mut libc::c_void);
     }
 }
@@ -1678,10 +1760,15 @@ pub(crate) unsafe fn process_copy_of(ctxt: *mut _xsltTransformContext, inst: *mu
             }
         }
     } else {
-        // Atomic value: copy as text.
+        // Atomic value: copy as text. UPSTREAM-PARITY (transform.c
+        // xsltCopyOf 1.1.45): the cast string is appended only when
+        // non-empty (`if (value[0] != 0)`); an empty atomic copy-of must
+        // not create an empty text node (same rule as xsltValueOf).
         let strv = xmlXPathCastToString(obj);
         if !strv.is_null() {
-            append_text_node(ctxt, strv);
+            if *strv != 0 {
+                append_text_node(ctxt, strv);
+            }
             libc::free(strv as *mut libc::c_void);
         }
     }

@@ -1,0 +1,24 @@
+{
+ "module": "abi/exports_schema",
+ "upstream": [
+  "xmlschemas.c",
+  "xmlschemastypes.c"
+ ],
+ "export_samples": [
+  "xmlSchemaInitTypes",
+  "xmlSchemaGetPredefinedType",
+  "xmlSchemaGetBuiltInType",
+  "xmlSchemaGetBuiltInListSimpleTypeItemType",
+  "xmlSchemaIsBuiltInTypeFacet",
+  "xmlSchemaWhiteSpaceReplace"
+ ],
+ "subsystems": [
+  "xsd",
+  "xsd-datatypes"
+ ],
+ "residuals": [
+  "R-000165",
+  "R-000168"
+ ],
+ "court_families": []
+}

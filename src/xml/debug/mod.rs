@@ -2,8 +2,58 @@
 //!
 //! UPSTREAM-PARITY: Corresponds to `debugXML.c` / `debugXML.h` in libxml2.
 //!
-//! libxml2's debug APIs for printing tree structure, XPath expressions, etc.
+//! The libxml2 debug APIs for printing tree structure, XPath expressions, etc.
 //! These are used by `xmllint --debug` and other diagnostic tools.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream `debugXML.c` / `debugXML.h`
+//! (`SRC-LIBXML2-2.15.0-DEBUGXML-C`, parity target libxml2 2.15.3 oracle):
+//! `xmlDebugDumpNode`, `xmlDebugDumpNodeList`, `xmlDebugDumpOneNode`,
+//! `xmlDebugDumpAttrList`, `xmlDebugDumpString` and the `xmllint --debug`
+//! tree dump format.
+//!
+//! # Conceptual behavior
+//!
+//! Implements the recursive debug dumper: nodes are printed with type,
+//! name, content, attributes, namespaces, line numbers and children at
+//! increasing indentation (`MAX_DEPTH` guard), plus the XPath expression
+//! and string dumps used by xmllint diagnostics.
+//!
+//! # Ownership & safety invariants
+//!
+//! The dump functions borrow the tree — they never free or detach nodes;
+//! output goes to the caller-provided FILE* (or a buffer) that the caller
+//! owns. Namespace strings are read via their href (bounded scans), never
+//! stored.
+//!
+//! # Historical quirks & epochs
+//!
+//! The dump format is one of the most stable surfaces: the debug-simple /
+//! debug-dtd / debug-nodes / debug-ns matrix cases are byte-identical
+//! across the whole 2.7.8 → 2.15.3 span (SEMANTIC_EPOCHS.md stable cases).
+//! One deliberate epoch join: entity content children dump as `TEXT compact`
+//! since 2.13.0 (E-004, commit 8d04f0ee 2024-03-11, R-000119) — the
+//! candidate matches the 2.13+ epoch, i.e. the current oracle.
+//!
+//! # Deliberate oddities
+//!
+//! The `TEXT compact` marker is reproduced exactly (including the
+//! 14/15-byte compact threshold that is unchanged in every tested version),
+//! rather than normalized to plain `TEXT`.
+//!
+//! # Proving courts
+//!
+//! The xmllint --debug CLI differential courts and the debug-* matrix cases
+//! compare dumps byte-identical against each built oracle (2.7.8 through
+//! 2.15.3); cargo test covers the unit dump suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! Do not normalize the dump format (e.g. always printing `TEXT` or
+//! collapsing attributes): xmllint --debug output is a byte-exact parity
+//! target and downstream tooling parses it. Do not drop the compact-text
+//! threshold logic — R-000119/E-004 depend on it.
 
 use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode};
 use core::ffi::{c_char, c_int, c_void};

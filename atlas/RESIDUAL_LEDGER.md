@@ -895,6 +895,34 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-31 (discovered while sealing 11.1-X: after the R-000170 fix the parallel suite surfaced flaky handler-slot assertion failures); FIXED 2026-08-31 (fixed with the handler-pair lock and test serialization; 100/100 parallel-suite runs clean)
 
+## Phase 11.1-Z Residuals
+
+### R-000172: xsl:value-of / xsl:copy-of atomic casts append an empty text node when the cast string is empty; empty result elements serialize as <out></out> instead of the oracle <out/> (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-Z)
+- **Component:** src/xslt/transform/mod.rs
+- **Surface:** xsltValueOf / xsltCopyOf result construction
+- **Oracle versions:** libxslt 1.1.45 (system)
+- **Root cause:** The candidate cast the XPath result to string and appended a text node unconditionally. Upstream xsltValueOf/xsltCopyOf (transform.c 1.1.45) guard with `if (value[0] != 0)` — an empty cast result must not create a text node, otherwise an otherwise-empty element serializes as <out></out> rather than the oracle's <out/>.
+- **Fix:** 11.1-Z: process_value_of and the copy-of atomic path now skip append_text_node when the first byte of the cast string is NUL, matching upstream's `if (value[0] != 0)` guard. New regression case CLI-XSLTPROC-0020 (byte-identical vs the oracle).
+- **Regression courts:** CLI-XSLTPROC-0020.
+- **Evidence:** ['oracle/historical/src/libxslt-1.1.42/libxslt/transform.c (xsltValueOf, xsltCopyOf)']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-31 (discovered during 11.2 custodian commentary audit); FIXED 2026-08-31 (fixed in 11.1-Z/11.2; CLI-XSLTPROC-0020 byte-identical)
+
+### R-000173: XPath child axis includes the DTD node when the source document has a DOCTYPE; /root matches the doctype name and string(/root) returns the DTD's empty value (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-Z)
+- **Component:** src/xml/xpath/axes.rs
+- **Surface:** XPath child axis traversal
+- **Oracle versions:** libxml2 2.15.3 (system)
+- **Root cause:** child_axis walked doc->children including the XML_DTD_NODE that heads the list. Upstream xmlXPathNextChild/xmlXPathNextChildElement (xpath.c) either start at the root element (xmlDocGetRootElement for name tests) or skip XML_DTD_NODE while walking; the XPath 1.0 child axis of the document contains only element/text/comment/PI nodes.
+- **Fix:** 11.1-Z: child_axis now skips XML_DTD_NODE (type 14) before applying the node test. count(/root) returns 1 (not 2) and string(/root) returns the element text (not the DTD's empty value) on DOCTYPE documents. New regression case CLI-XSLTPROC-0021 (byte-identical vs the oracle).
+- **Regression courts:** CLI-XSLTPROC-0021.
+- **Evidence:** ['oracle/historical/src/libxml2-2.15.0/xpath.c (xmlXPathNextChild, xmlXPathNextChildElement)']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-31 (discovered during 11.2 custodian commentary audit); FIXED 2026-08-31 (fixed in 11.1-Z/11.2; CLI-XSLTPROC-0021 byte-identical)
+
 ## Classification Legend
 
 - `CANDIDATE_BUG` — see classification policy in §45/§71

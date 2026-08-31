@@ -1,0 +1,15 @@
+{
+ "module": "xml/encoding/mod",
+ "upstream": [
+  "encoding.c"
+ ],
+ "export_samples": [],
+ "subsystems": [
+  "encoding"
+ ],
+ "residuals": [
+  "R-000129",
+  "R-000157"
+ ],
+ "court_families": []
+}

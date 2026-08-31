@@ -1,0 +1,19 @@
+{
+ "module": "xml/automata/mod",
+ "upstream": [
+  "xmlautomata.c"
+ ],
+ "export_samples": [
+  "xmlNewAutomata",
+  "xmlFreeAutomata",
+  "xmlAutomataNewState",
+  "xmlAutomataGetInitState",
+  "xmlAutomataNewEpsilon",
+  "xmlAutomataNewTransition"
+ ],
+ "subsystems": [
+  "automata"
+ ],
+ "residuals": [],
+ "court_families": []
+}

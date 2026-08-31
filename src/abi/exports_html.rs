@@ -34,6 +34,62 @@
 //! (`crate::xml::html::free_parser_ctxt`), so the context struct mirrors the
 //! internal `HtmlParserCtxt` field layout through `filename`/`encoding`
 //! (the only fields that function touches) before appending ABI state.
+//!
+//! # Upstream contract
+//!
+//! Parity target is upstream `HTMLparser.c` and `HTMLtree.c` (libxml2 2.15.3)
+//! with the `HTMLparser.h`/`HTMLtree.h`/`SAX2.h` signatures; the 57 `html*`
+//! entry points mirror the oracle DSO export set (R-000165 closed the html
+//! gaps in 11.1-X).
+//!
+//! # Conceptual behavior
+//!
+//! This module implements the HTML subsystem ABI: parser contexts and the
+//! Read/Parse families, entity lookup and meta-encoding, tree construction and
+//! serialization, and the element auto-close/omission rule tables. The
+//! document-parsing entry points wrap the internal `src/xml/html/mod.rs`
+//! engine that also powers `xmllint --html`.
+//!
+//! # Ownership & safety invariants
+//!
+//! HTML docs/contexts are caller-owned (freed with `htmlFreeDoc`/
+//! `htmlFreeParserCtxt`); strings returned by entity/meta lookups are static or
+//! doc-owned — borrowed, never freed by the caller. Contexts created here are
+//! freed by `crate::xml::html::free_parser_ctxt`, which touches only the fields
+//! this module guarantees to lay out first.
+//!
+//! # Historical quirks & epochs
+//!
+//! E-007 (SEMANTIC_EPOCHS): HTML serialization changed in 2.15.0 — six
+//! `xmlOutputBufferWriteString(buf, \n)` calls were removed from the
+//! HTMLtree.c dump path during the serializer rework (`0d81d6f8` et al.), so
+//! `xmllint --html` output became single-line; the candidate targets that
+//! epoch. SEC-0008 records CVE-2015-8242 (commit `8fb4a770`, 2015-11-20, HTML
+//! parser push-mode overread). The html tag/entity tables have been ABI-stable
+//! since the 2.6 era.
+//!
+//! # Deliberate oddities
+//!
+//! `htmlElementAllowedHere` returns 1 unconditionally and `htmlInitAutoClose`/
+//! `htmlDefaultSAXHandlerInit`/`htmlParseCharRef` are no-ops — all in the
+//! R-000138 documented-no-op set because upstreams own 2.15 bodies are
+//! constant/empty. The `htmlParserCtxt` type is opaque here (`*mut c_void`)
+//! with no `_htmlParserCtxt` mirror — deliberate, the internal context struct
+//! is the real storage.
+//!
+//! # Proving courts
+//!
+//! The CLI-XMLLINT HTML cases (the `html-dump` epoch case in
+//! SEMANTIC_EPOCHS) and the DSO-LOADER/HEADER-COMPILE courts cover this
+//! module; the html unit tests run under cargo test.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! A tempting simplification is to emit formatted (newline-separated) HTML
+//! because it is easier to read — that is the pre-2.15 epoch behavior (E-007)
+//! and would fail the `html-dump` oracle comparison against the 2.15.3 system.
+//! Another shortcut, dropping the auto-close rule tables, would break
+//! `htmlAutoCloseTag` consumers that rely on the exact upstream element lists.
 
 #![allow(
     missing_docs,

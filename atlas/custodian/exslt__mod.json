@@ -1,0 +1,18 @@
+{
+ "module": "exslt/mod",
+ "upstream": [],
+ "export_samples": [
+  "exsltRegisterAll",
+  "exsltCommonRegister",
+  "exsltMathRegister",
+  "exsltSetsRegister",
+  "exsltFuncRegister",
+  "exsltStrRegister"
+ ],
+ "subsystems": [],
+ "residuals": [
+  "R-000112",
+  "R-000168"
+ ],
+ "court_families": []
+}

@@ -1,0 +1,36 @@
+{
+ "module": "abi/data_globals",
+ "upstream": [
+  "globals.c",
+  "SAX2.c",
+  "chvalid.c"
+ ],
+ "export_samples": [
+  "xmlGenericErrorDefaultFuncV",
+  "xsltGenericErrorDefaultFuncV",
+  "xmlKeepBlanksDefault",
+  "xmlLineNumbersDefault",
+  "xmlSubstituteEntitiesDefault",
+  "xmlPedanticParserDefault"
+ ],
+ "subsystems": [
+  "sax2",
+  "encoding",
+  "globals"
+ ],
+ "residuals": [
+  "R-000135",
+  "R-000161",
+  "R-000162",
+  "R-000163",
+  "R-000167",
+  "R-000170",
+  "R-000171"
+ ],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "THREADING"
+ ]
+}

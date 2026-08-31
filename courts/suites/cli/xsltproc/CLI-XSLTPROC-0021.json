@@ -1,0 +1,29 @@
+{
+ "case_id": "CLI-XSLTPROC-0021",
+ "surface": "cli-xsltproc",
+ "purpose": "XPath child axis must exclude the DTD node when the source document has a DOCTYPE (R-000173: /root must select only the root element, never the doctype; string(/root) must return the element text)",
+ "oracle_profile": "libxslt-1.1.45",
+ "inputs": {
+  "argv": [
+   "xslt/dtdpath.xsl",
+   "xslt/dtddoc.xml"
+  ],
+  "document": "xslt/dtddoc.xml"
+ },
+ "observables": [
+  "exit_status",
+  "stdout_hash",
+  "stderr_hash"
+ ],
+ "normalization": [],
+ "provenance": [
+  "residual-R-000173",
+  "differential"
+ ],
+ "tags": [
+  "differential",
+  "xsltproc",
+  "xpath",
+  "dtd"
+ ]
+}

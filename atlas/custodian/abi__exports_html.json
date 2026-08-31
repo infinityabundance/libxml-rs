@@ -1,0 +1,23 @@
+{
+ "module": "abi/exports_html",
+ "upstream": [
+  "HTMLparser.c",
+  "HTMLtree.c"
+ ],
+ "export_samples": [
+  "htmlTagLookup",
+  "htmlEntityLookup",
+  "htmlEntityValueLookup",
+  "htmlAutoCloseTag",
+  "htmlIsAutoClosed",
+  "htmlIsScriptAttribute"
+ ],
+ "subsystems": [
+  "html-parser",
+  "html-tree"
+ ],
+ "residuals": [
+  "R-000165"
+ ],
+ "court_families": []
+}

@@ -22,8 +22,57 @@
 //! - `<let>`, `<param>`, `<diagnostics>`, `<diagnostic>`, `<dir>`, `<span>`, `<emph>`,
 //!   `<p>`, `<caption>` parsing
 //!
-//! Deviations from the ISO Schematron specification that match libxml2's
-//! behavior are intentional.
+//! Deviations from the ISO Schematron specification that match upstream
+//! libxml2 behavior are intentional.
+//!
+//! # Upstream contract
+//!
+//! Mirrors upstream schematron.c (SRC-LIBXML2-2.15.0-SCHEMATRON-C, oracle
+//! tree `oracle/historical/src/libxml2-2.15.0/schematron.c`): xmlSchematron
+//! parse/valid contexts, rule compilation and pattern evaluation. Parity
+//! target: the system libxml2 2.15.3 oracle ISO Schematron subset
+//! (Schematron 1.x style).
+//!
+//! # Conceptual behavior
+//!
+//! ISO Schematron validation: schema parsing, assert/report pattern
+//! validation, XPath context matching via rule context attributes, abstract
+//! rules and extends inheritance, phases with active pattern references,
+//! namespace prefix mappings, diagnostics with name/value-of expansion and
+//! include support.
+//!
+//! # Ownership & safety invariants
+//!
+//! Ownership: schemas own their rule/pattern tree (xmlSchematronFree); parser
+//! and valid contexts own their state (xmlSchematronFreeParserCtxt /
+//! xmlSchematronFreeValidCtxt); the validated document is borrowed. SAFETY:
+//! compiled XPath expressions are owned by the schema and freed with it.
+//!
+//! # Historical quirks & epochs
+//!
+//! Schematron joined libxml2 in the 2.6 validation era (2003-2004,
+//! atlas/HISTORY.md 1.5); the implementation targets the oracle 1.x-style
+//! subset, not the full ISO/IEC 19757-3 surface.
+//!
+//! # Deliberate oddities
+//!
+//! Deviations from ISO Schematron that match upstream libxml2 behavior are
+//! intentional; the exported entry points (xmlSchematronNewParserCtxt,
+//! xmlSchematronNewMemParserCtxt, xmlSchematronFree,
+//! xmlSchematronFreeParserCtxt, xmlSchematronNewValidCtxt,
+//! xmlSchematronFreeValidCtxt) follow upstream signatures.
+//!
+//! # Proving courts
+//!
+//! SCHEMATRON court family; header-compile 595/595; dso-loader 25/25;
+//! `cargo test --lib`. Receipts under courts/receipts/phase-11.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! The tempting simplification is implementing the full ISO Schematron
+//! standard — the oracle subset behavior would diverge. Do not drop the
+//! abstract-rule/extends machinery: it is part of the oracle observable
+//! validation output.
 
 #![allow(
     missing_docs,

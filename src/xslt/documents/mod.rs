@@ -1,5 +1,70 @@
 //! XSLT document() function support (§33, §85 Phase 8).
 //!
+//! # Upstream contract
+//!
+//! Parity target: upstream libxslt `documents.c` (1.1.45;
+//! `SRC-LIBXSLT-1.1.42-DOCUMENTS-C` under oracle/historical/src). Subsystem
+//! census: xslt-documents, xslt-loader-hooks. The ABI surface is
+//! `xsltSetLoaderFunc` / `xsltDefaultLoader` and the internal
+//! `xsltLoadDocument` used by the document() XPath function.
+//!
+//! # Conceptual behavior
+//!
+//! Document loading resolves the requested URI against the source
+//! document base, consults the per-context cache, invokes the registered
+//! global loader (or the default file loader), parses the result, and
+//! stores it in the cache keyed by the requested URI. The cache doubles as
+//! the RVT ownership list: `xsltRegisterRVT` inserts entries with a NULL
+//! URI so URI lookups never match them.
+//!
+//! # Ownership & safety invariants
+//!
+//! - `xsltFreeDocCache` owns every cached `_xmlDoc` (freed with
+//!   `xmlFreeDoc` semantics at context teardown) and every entry + URI
+//!   string (libc::free).
+//! - RVT documents registered via `xsltRegisterRVT` transfer ownership to
+//!   the cache; they are freed exactly once at teardown, after the XPath
+//!   context (R-000109 ordering).
+//! - Source documents are borrowed (never cached, never freed here).
+//! - `XSLT_LOADER` is a process-wide static, mutated only by
+//!   `xsltSetLoaderFunc` (upstream documents.c `xsltLoader` global).
+//!
+//! # Historical quirks & epochs
+//!
+//! E-008 (atlas/SEMANTIC_EPOCHS.md): transform output is frozen since
+//! libxslt 1.1.26 (2009); document() resolution/caching behavior is part
+//! of that stable epoch. R-000109 (RTF double-free, fixed in 11.1-X)
+//! introduced the RVT-in-docCache reuse; R-000140 covered the `_xslt*` ABI
+//! mirror layout. The loader hook is registered as a single global,
+//! matching upstream documents.c `xsltSetLoaderFunc`.
+//!
+//! # Deliberate oddities
+//!
+//! - The candidate reuses the `docCache` list (the upstream
+//!   `xsltTransformCachePtr` `cache` slot) as the RVT ownership list — a
+//!   documented divergence annotated at `xsltRegisterRVT`.
+//! - `xsltDefaultLoader` currently returns NULL after validating the URI:
+//!   the default path falls through to `xmlReadFile`, an intentional
+//!   internal simplification that keeps the observable loader contract.
+//!
+//! # Proving courts
+//!
+//! CLI-XSLTPROC (document()/multi-document corpus), DSO-LOADER
+//! (xsltSetLoaderFunc export), XSLT-001, and the in-crate `cargo test`
+//! suites.
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Dropping the per-URI cache would reload documents per call,
+//!   breaking node identity across `document()` calls (upstream caches in
+//!   `docCache`).
+//! - Freeing cached docs at `xsltApplyStylesheet` return would double-free
+//!   RVTs and break `exsl:node-set` results (R-000109 lesson: context
+//!   teardown owns them).
+//! - Ignoring the registered loader would break custom entity/document
+//!   loaders — the R-000162 lesson that the loader hook must actually be
+//!   consulted.
+//!
 //! The `document()` function loads external XML documents during a
 //! transformation. Documents are cached per transform context so repeated
 //! loads of the same URI reuse the same document.
@@ -8,7 +73,7 @@
 //!
 //! Upstream libxslt (documents.c) maintains a document cache on the
 //! transform context (`docCache` hash). `xsltLoadDocument` resolves the
-//! URI relative to the source document's base, loads it through the
+//! URI relative to the source document base, loads it through the
 //! configured loader (default: file/network), and caches the result.
 //!
 //! The loader function can be overridden with `xsltSetLoaderFunc`.

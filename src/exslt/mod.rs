@@ -35,6 +35,74 @@
 //! # Phase 9 status
 //!
 //! Complete: all seven modules implemented and registered.
+//!
+//! # Upstream contract
+//!
+//! Parity target: upstream libexslt (the EXSLT support library shipped
+//! inside the libxslt distribution) 1.1.45, with per-module sources
+//! `SRC-LIBXSLT-1.1.42-libexslt/<module>.c` (exslt.c, common.c, date.c,
+//! dynamic.c, functions.c, math.c, saxon.c, sets.c, strings.c) under
+//! `oracle/historical/src/libxslt-1.1.42/libexslt/`. EXSLT 1.0 semantics per
+//! the EXSLT-COMMON/MATH/SETS/STRINGS/DYNAMIC/DATES standards registry
+//! (atlas/SOURCES.md). The C ABI surface is the per-module registration
+//! functions (`exsltCommonRegister`, `exsltMathRegister`, ...), `exsltRegisterAll`,
+//! and the version data symbols — closed in R-000165/R-000167 and verified
+//! by DSO-LOADER.
+//!
+//! # Conceptual behavior
+//!
+//! Upstream requires an explicit `exsltRegisterAll()` call (usually from
+//! the host application; `xsltproc` calls it at startup) before EXSLT
+//! functions are available. The candidate mirrors that model with a
+//! process-wide registry keyed by full QName; each new transform context
+//! copies the registered functions into its XPath context (§31
+//! integration).
+//!
+//! # Ownership & safety invariants
+//!
+//! The registry owns its entries. Registered closures are `Box::leak`-ed
+//! (see the `register` function below): they live for the process lifetime
+//! because the registry is never cleared — a deliberate, bounded leak. The
+//! leaked references are `Send + Sync`; lookups clone the reference out of
+//! the mutex-guarded map, so no entry is ever invalidated while in use.
+//!
+//! # Historical quirks & epochs
+//!
+//! EXSLT is part of the libxslt 1.1 series (since 1.1.0, 2004-12-15;
+//! atlas/HISTORY.md section 2). E-008 (atlas/SEMANTIC_EPOCHS.md) shows the
+//! XSLT/xsltproc output epoch frozen since 2009, which includes the EXSLT
+//! function results exercised by the xsltproc corpus. R-000112 fixed the
+//! dates module no-argument defaults; R-000165 added the missing per-module
+//! registration exports. R-000168 (platform surface) remains OPEN and
+//! touches this module and src/exslt/dates.
+//!
+//! # Deliberate oddities
+//!
+//! - `exsltCryptoRegister` is a deliberate no-op export: the candidate has
+//!   no crypto module and upstream returns void.
+//! - The `*XpathCtxtRegister` variants register globally (the registry is
+//!   process-wide) and return 0, an intentional divergence from upstream
+//!   per-context registration.
+//! - saxon has no candidate module of its own beyond the registry entries;
+//!   `exsltSaxonRegister` still exists (upstream exslt.c calls it from
+//!   `exsltRegisterAll`).
+//!
+//! # Proving courts
+//!
+//! EXSLT, CLI-XSLTPROC (exslt-using corpus stylesheets), DSO-LOADER
+//! (per-module registration exports, R-000165), and the in-crate `cargo
+//! test` suites (e.g. test_register_all_populates).
+//!
+//! # Tempting simplifications that would break parity
+//!
+//! - Making the registry per-transform instead of process-wide would break
+//!   the upstream registration model (`exsltRegisterAll` before
+//!   `xsltApplyStylesheet`) and the ABI registration functions.
+//! - Replacing the leak with scoped lifetimes would either require
+//!   invalidating live lookups or copying every function per call; the
+//!   leak is the parity-preserving choice.
+//! - Dropping the marker registrations (`func:function` et al.) would
+//!   break `function-available` and `element-available` reporting.
 
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;

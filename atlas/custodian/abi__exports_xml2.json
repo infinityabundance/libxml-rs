@@ -1,0 +1,53 @@
+{
+ "module": "abi/exports_xml2",
+ "upstream": [
+  "globals.c",
+  "parser.c",
+  "threads.c",
+  "encoding.c",
+  "xmlmemory.c",
+  "xmlstring.c"
+ ],
+ "export_samples": [
+  "xmlInitParser",
+  "xmlSAXDefaultVersion",
+  "xmlSAXVersion",
+  "xmlHasFeature",
+  "xmlCleanupParser",
+  "xmlNewMutex"
+ ],
+ "subsystems": [
+  "strings",
+  "memory",
+  "namespaces",
+  "xml-parser",
+  "push-parser",
+  "sax1",
+  "encoding",
+  "globals",
+  "threads",
+  "legacy"
+ ],
+ "residuals": [
+  "R-000116",
+  "R-000117",
+  "R-000132",
+  "R-000133",
+  "R-000135",
+  "R-000136",
+  "R-000138",
+  "R-000157",
+  "R-000161",
+  "R-000162",
+  "R-000163",
+  "R-000164",
+  "R-000165"
+ ],
+ "court_families": [
+  "ABI-DATA",
+  "ALLOCATOR",
+  "GLOBAL-STATE",
+  "PARSER",
+  "THREADING"
+ ]
+}
