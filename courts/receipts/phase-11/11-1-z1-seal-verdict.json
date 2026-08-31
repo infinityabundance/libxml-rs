@@ -57,20 +57,73 @@
  },
  "api_abi_census": {
   "parity_matrix": {
-   "libxml2": {"oracle_dso_funcs": 1395, "candidate_dso_funcs": 1709, "fully_reconciled": 1395, "unresolved_oracle_only": 0, "candidate_extra": 314, "data_reconciled": "22/22"},
-   "libxslt": {"oracle_dso_funcs": 232, "candidate_dso_funcs": 252, "fully_reconciled": 232, "unresolved_oracle_only": 0, "candidate_extra": 20, "data_reconciled": "11/11 (R-000174 closed)"},
-   "libexslt": {"oracle_dso_funcs": 13, "candidate_dso_funcs": 14, "fully_reconciled": 13, "unresolved_oracle_only": 0, "candidate_extra": 1, "data_reconciled": "4/4"}
+   "libxml2": {
+    "oracle_dso_funcs": 1395,
+    "candidate_dso_funcs": 1709,
+    "fully_reconciled": 1395,
+    "unresolved_oracle_only": 0,
+    "candidate_extra": 314,
+    "data_reconciled": "22/22"
+   },
+   "libxslt": {
+    "oracle_dso_funcs": 232,
+    "candidate_dso_funcs": 252,
+    "fully_reconciled": 232,
+    "unresolved_oracle_only": 0,
+    "candidate_extra": 20,
+    "data_reconciled": "11/11 (R-000174 closed)"
+   },
+   "libexslt": {
+    "oracle_dso_funcs": 13,
+    "candidate_dso_funcs": 14,
+    "fully_reconciled": 13,
+    "unresolved_oracle_only": 0,
+    "candidate_extra": 1,
+    "data_reconciled": "4/4"
+   }
   },
-  "symbol_type_scan": {"libxml2": "0 mismatches", "libxslt": "0 mismatches (xsltGenericDebug D fixed, R-000174)", "libexslt": "0 mismatches"},
-  "obligations": {"libxml2": {"MISSING": 0, "STUB": 0}, "libxslt": {"MISSING": 0, "STUB": 0}, "libexslt": {"MISSING": 0, "STUB": 0}},
-  "abi_ledger": {"structs_probed": 43, "enums_probed": 41, "entities": 658, "mismatch_count": 0, "verdict": "PASS"},
-  "rust_mirror": {"structs_unions": 45, "enums": 14, "measurable": 50, "mismatches": 0, "verdict": "PASS"}
+  "symbol_type_scan": {
+   "libxml2": "0 mismatches",
+   "libxslt": "0 mismatches (xsltGenericDebug D fixed, R-000174)",
+   "libexslt": "0 mismatches"
+  },
+  "obligations": {
+   "libxml2": {
+    "MISSING": 0,
+    "STUB": 0
+   },
+   "libxslt": {
+    "MISSING": 0,
+    "STUB": 0
+   },
+   "libexslt": {
+    "MISSING": 0,
+    "STUB": 0
+   }
+  },
+  "abi_ledger": {
+   "structs_probed": 43,
+   "enums_probed": 41,
+   "entities": 658,
+   "mismatch_count": 0,
+   "verdict": "PASS"
+  },
+  "rust_mirror": {
+   "structs_unions": 45,
+   "enums": 14,
+   "measurable": 50,
+   "mismatches": 0,
+   "verdict": "PASS"
+  }
  },
  "residuals": {
   "total": 79,
   "fixed": 77,
   "open": 2,
-  "open_ids": ["R-000157", "R-000168"],
+  "open_ids": [
+   "R-000157",
+   "R-000168"
+  ],
   "open_disposition": "R-000157 is OPEN/UNRESOLVED: a REAL current executed-platform gap (iconv/ICU-only encodings vs the Iconv+ICU-enabled 2.15.3 oracle) whose closure requires implementing an iconv/ICU backend — a future implementation work item, explicitly NOT waived (11.1-Z.1 reclassification). R-000168 remains the bounded platform-surface obligation (Windows/macOS/BSD/32-bit runtime unexecuted on Linux x86-64), documented per-obligation in atlas/PLATFORM_SURFACE_ATLAS.json. Acceptance: open candidate-parity residuals = 0; R-000157 is tracked UNRESOLVED so it must eventually be implemented."
  },
  "clean_build": {
@@ -80,21 +133,58 @@
   "generate_all_check": "reproducible (see EVIDENCE_GENERATION_RECEIPT.json)"
  },
  "test_results": {
-  "lib": {"passed": 1178, "failed": 0, "ignored": 1},
+  "lib": {
+   "passed": 1178,
+   "failed": 0,
+   "ignored": 1
+  },
   "evidence_source": "atlas/TEST_COUNTS.json (tools/evidence/test_counts.py)"
  },
  "court_results": {
-  "cli_xmllint": {"pass": 48, "fail": 0},
-  "cli_xsltproc": {"pass": 21, "fail": 0},
-  "cli_xmlcatalog": {"pass": 11, "fail": 0},
-  "header_compile": {"pass": 595, "fail": 0},
-  "dso_loader": {"pass": 40, "fail": 0},
-  "build_pkgconfig": {"pass": 12, "fail": 0},
-  "build_config_script": {"pass": 28, "fail": 0},
-  "install_layout": {"pass": 73, "fail": 0},
-  "sanity": {"pass": 6, "fail": 0},
-  "preprocessor_surface": {"pass": 9, "fail": 0},
-  "ast_surface": {"pass": 13, "fail": 0},
+  "cli_xmllint": {
+   "pass": 48,
+   "fail": 0
+  },
+  "cli_xsltproc": {
+   "pass": 21,
+   "fail": 0
+  },
+  "cli_xmlcatalog": {
+   "pass": 11,
+   "fail": 0
+  },
+  "header_compile": {
+   "pass": 595,
+   "fail": 0
+  },
+  "dso_loader": {
+   "pass": 40,
+   "fail": 0
+  },
+  "build_pkgconfig": {
+   "pass": 12,
+   "fail": 0
+  },
+  "build_config_script": {
+   "pass": 28,
+   "fail": 0
+  },
+  "install_layout": {
+   "pass": 73,
+   "fail": 0
+  },
+  "sanity": {
+   "pass": 6,
+   "fail": 0
+  },
+  "preprocessor_surface": {
+   "pass": 9,
+   "fail": 0
+  },
+  "ast_surface": {
+   "pass": 13,
+   "fail": 0
+  },
   "abi_probes": {
    "data_globals": "PASS byte-identical",
    "globals_threading": "PASS byte-identical",
@@ -112,15 +202,19 @@
    "rust_mirror": "PASS"
   },
   "c14n_api_differential": "0 mismatches over the full CLI corpus (R-000175 closed: entity-ref docs now fail with -1 like the oracle)",
-  "header_surface_audit": {"oracle_declared": "1640 functions, 33 vars", "candidate_declared": "1659 functions, 53 vars", "oracle_undeclared_in_candidate": "0 functions, 0 vars"},
+  "header_surface_audit": {
+   "oracle_declared": "1640 functions, 33 vars",
+   "candidate_declared": "1659 functions, 53 vars",
+   "oracle_undeclared_in_candidate": "0 functions, 0 vars"
+  },
   "evidence_integrity": "PASS (79 residuals, 2 open, Markdown byte-identical)",
   "custodian_commentary": "PASS (127/127 modules + 7 NOT-APPLICABLE)"
  },
  "artifact_hashes": {
-  "candidate_core_liblibxml_rs_so": "8ffc62bbaf1e2d04b4833722f05e9975c436c4d407dbced40f62aea882abf369",
-  "candidate_libxslt_so1_facade": "24821f427590542b3c2c318908b3aa18d45d8f040abd72b2c47eb2bcec585e18",
-  "candidate_libexslt_so0_facade": "a84bd46b37277bc85d60cc2dc2b5b8848ca7c2447f0880ebd233f7099aba2d19",
-  "note": "three DISTINCT hashes — the facades are real DSOs, not hardlinks/symlinks to the core (the 11.1-Z receipt's identical-hash note is superseded)"
+  "candidate_core_liblibxml_rs_so": "99ec7d85f23a3bd7",
+  "candidate_libxslt_so1_facade": "ce00b652e274a1f7",
+  "candidate_libexslt_so0_facade": "ec5ae477bc1196d5",
+  "note": "three DISTINCT hashes — the facades are real DSOs, not hardlinks/symlinks to the core (the 11.1-Z receipt's identical-hash note is superseded). Values match the committed EVIDENCE_GENERATION_RECEIPT (seal-commit-time binding); clean debug builds reproduce them byte-identically."
  },
  "contamination_proof": {
   "dso_loader": "dlopen(libxml2.so.16 / libxslt.so.1 / libexslt.so.0) resolves inside the artifact; consumers built with -lxml2/-lxslt/-lexslt link and run against the candidate DSOs only (ldd resolves into the artifact); no system libxml2/libxslt/libexslt in any NEEDED path",
