@@ -409,6 +409,39 @@ pub type xmlOutputWriteCallback =
 /// Returns 0 on success, -1 on error.
 pub type xmlOutputCloseCallback = unsafe extern "C" fn(context: *mut c_void) -> c_int;
 
+/// Progress callback for incremental regex execution (upstream xmlregexp.h).
+///
+/// ```c
+/// typedef void (*xmlRegExecCallbacks)(xmlRegExecCtxtPtr exec,
+///                                     const xmlChar *token,
+///                                     void *transdata, void *inputdata);
+/// ```
+///
+/// Invoked by the automata when a transition with attached data fires; the
+/// candidate's NFA engine retains the callback for ABI parity but does not
+/// currently invoke it (no transition-data concept — documented divergence,
+/// residual R-000176).
+pub type xmlRegExecCallbacks = unsafe extern "C" fn(
+    exec: *mut c_void,
+    token: *const crate::abi::types::xmlChar,
+    transdata: *mut c_void,
+    inputdata: *mut c_void,
+);
+
+/// Visibility callback for `xmlC14NExecute` (upstream c14n.h).
+///
+/// ```c
+/// typedef int (*xmlC14NIsVisibleCallback)(void *user_data, xmlNode *node,
+///                                         xmlNode *parent);
+/// ```
+///
+/// Returns non-zero when `node` must be included in the canonical output.
+pub type xmlC14NIsVisibleCallback = unsafe extern "C" fn(
+    user_data: *mut c_void,
+    node: *mut crate::abi::structs::_xmlNode,
+    parent: *mut crate::abi::structs::_xmlNode,
+) -> c_int;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // XPath Callbacks
 // ═══════════════════════════════════════════════════════════════════════════════

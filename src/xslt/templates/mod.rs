@@ -105,23 +105,29 @@ pub const XSLT_TEMPLATE_HAS_PRIORITY: c_int = 1 << 3;
 
 // ── Template list management ─────────────────────────────────────────────
 
-/// Add a template to a stylesheet's template list.
+/// Add a template to a stylesheet (upstream pattern.c `xsltAddTemplate`:
+/// `(style, cur, name, nameURI)` — R-000176, the candidate previously
+/// dropped the name/nameURI arguments and only handled match templates).
 ///
-/// Templates are inserted in priority order (highest priority first).
-/// When two templates have equal priority, the one with the higher import
-/// depth (i.e. the one that was imported last) is placed first, matching
-/// XSLT's import precedence rules.
+/// Named templates (`name != NULL`) are registered in the stylesheet's
+/// `namedTemplates` hash keyed by `(name, nameURI)` (upstream
+/// `xmlHashAdd2`); match templates (`name == NULL`) are inserted into the
+/// priority-ordered `templates` list (highest priority first, ties broken
+/// by import depth).
 ///
-/// Returns 0 on success, -1 on error (null pointer).
+/// Returns 0 on success, -1 on error (null pointer or hash failure).
 ///
 /// # Safety
 ///
-/// `style` and `templ` must be valid, non-null pointers to their
-/// respective structs, allocated via the libxml allocator.
+/// `style`, `templ` and `name`/`nameURI` (when non-NULL) must be valid,
+/// non-null pointers to their respective types, allocated via the libxml
+/// allocator.
 #[no_mangle]
 pub unsafe extern "C" fn xsltAddTemplate(
     style: *mut _xsltStylesheet,
     templ: *mut _xsltTemplate,
+    name: *const xmlChar,
+    name_uri: *const xmlChar,
 ) -> c_int {
     if style.is_null() || templ.is_null() {
         return -1;
@@ -135,8 +141,29 @@ pub unsafe extern "C" fn xsltAddTemplate(
     // = name non-null, HAS_MODE = mode non-null, HAS_PRIORITY = priority
     // != XSLT_PAT_NO_PRIORITY.
 
-    // Insert into the linked list in priority order (highest first).
-    // Ties are broken by import depth (stored in `position`; deeper wins).
+    // Named template: register in the namedTemplates hash (upstream
+    // pattern.c xsltAddTemplate, xmlHashAdd2 keyed by (name, nameURI)).
+    if !name.is_null() {
+        unsafe {
+            if (*style).namedTemplates.is_null() {
+                (*style).namedTemplates = crate::xml::hash::hash_create(10) as *mut c_void;
+            }
+            let res = crate::xml::hash::hash_add_entry2(
+                (*style).namedTemplates as *mut crate::xml::hash::HashTable,
+                name,
+                name_uri,
+                templ as *mut c_void,
+            );
+            if res != 0 {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    // Match template: insert into the linked list in priority order
+    // (highest first). Ties are broken by import depth (stored in
+    // `position`; deeper wins).
     let priority = (*templ).priority as f64;
     let depth = (*templ).position;
 

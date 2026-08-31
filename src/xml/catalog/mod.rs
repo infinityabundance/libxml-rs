@@ -765,6 +765,12 @@ pub(crate) fn init() {
 /// Clean up the catalog subsystem.
 ///
 /// Clears all catalog entries and resets state.
+/// Whether the catalog subsystem has been initialized (upstream
+/// `xmlCatalogInitialized`, used by `xmlCatalogConvert`).
+pub(crate) fn is_initialized() -> bool {
+    CATALOG_STATE.read().initialized
+}
+
 pub(crate) fn cleanup() {
     let mut state = CATALOG_STATE.write();
     state.clear();

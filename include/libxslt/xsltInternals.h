@@ -234,12 +234,16 @@ typedef struct _xsltElemPreComp xsltElemPreComp;
 typedef xsltElemPreComp *xsltElemPreCompPtr;
 
 typedef void (*xsltTransformFunction) (xsltTransformContextPtr ctxt,
-	                               xmlNodePtr node,
+		                               xmlNodePtr node,
 				       xmlNodePtr inst,
 			               xsltElemPreCompPtr comp);
 
+/* upstream xsltInternals.h: stylesheet-compile-time precompute hook */
+typedef void (*xsltPreComputeFunction) (xsltStylesheetPtr style,
+				        xmlNodePtr inst);
+
 typedef void (*xsltSortFunc) (xsltTransformContextPtr ctxt, xmlNodePtr *sorts,
-			      int nbsorts);
+				      int nbsorts);
 
 typedef enum {
     XSLT_FUNC_COPY=1,

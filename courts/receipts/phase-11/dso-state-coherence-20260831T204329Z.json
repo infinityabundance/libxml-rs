@@ -1,0 +1,23 @@
+{
+ "court": "DSO-STATE-COHERENCE",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T204329Z",
+ "schema": "dso-state-coherence-1",
+ "probe": "courts/suites/data-abi/dso-state-coherence-probe.c",
+ "oracle_observations": {
+  "loader_observed_main_parse": true,
+  "allocator_observed": true,
+  "reg_observed": true,
+  "dereg_observed": true,
+  "loader_observed_transform": true
+ },
+ "candidate_observations": {
+  "loader_observed_main_parse": true,
+  "allocator_observed": true,
+  "reg_observed": true,
+  "dereg_observed": true,
+  "loader_observed_transform": true
+ },
+ "candidate_output": "loader_observed_main_parse=1\nallocator_observed=1\nreg_observed=1\ndereg_observed=1\nloader_observed_transform=1\n",
+ "verdict": "PASS"
+}

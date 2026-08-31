@@ -9,7 +9,7 @@
     "doxygen_functions": 1374,
     "clang_ast_functions": 1403,
     "system_dso_functions": 1400,
-    "candidate_dso_functions": 1979,
+    "candidate_dso_functions": 1983,
     "installed_headers": 46
    },
    "functions": {
@@ -2364,7 +2364,11 @@
      "xmlNewGlobalNs",
      "xmlParseNamespace",
      "xmlParseQuotedString",
+     "xmlParserErrorV",
      "xmlParserHandleReference",
+     "xmlParserValidityErrorV",
+     "xmlParserValidityWarningV",
+     "xmlParserWarningV",
      "xmlRaiseError",
      "xmlReallocZero",
      "xmlRegexpIsDeterministic",

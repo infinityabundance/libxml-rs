@@ -82,8 +82,8 @@
 //!
 //! ABI-DATA, ALLOCATOR, GLOBAL-STATE, PARSER and THREADING court families;
 //! the data-ABI probes (CALLBACK-001, ERROR-001, TREE-001, ENCODING-001, ...)
-//! require byte-identical output vs the oracle DSO; DSO-LOADER (25/25) and
-//! HEADER-COMPILE (595/595) close the surface.
+//! require byte-identical output vs the oracle DSO; DSO-LOADER and
+//! HEADER-COMPILE close the surface.
 //!
 //! # Tempting simplifications that would break parity
 //!
@@ -924,21 +924,37 @@ pub unsafe extern "C" fn xmlSplitQName2(
     crate::xml::string::split_qname2(name, prefix)
 }
 
-/// Return the prefix length of a QName (upstream tree.h).
+/// Return a pointer to the local part of a QName, filling `*len` with the
+/// prefix length (upstream tree.h — R-000176, the candidate previously
+/// returned the prefix length as an int).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlSplitQName3(const xmlChar *name, int *len);
+/// const xmlChar *xmlSplitQName3(const xmlChar *name, int *len);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlSplitQName3(name: *const xmlChar, len: *mut c_int) -> c_int {
+pub unsafe extern "C" fn xmlSplitQName3(name: *const xmlChar, len: *mut c_int) -> *mut xmlChar {
     crate::xml::string::split_qname3(name, len)
 }
 
-/// Deprecated alias of `xmlSplitQName2` (upstream tree.h `xmlSplitQName`).
+/// Split a QName into prefix + local part (upstream parserInternals.h
+/// `xmlSplitQName(ctxt, name, prefix)` — the `ctxt` first argument is part
+/// of the ABI; R-000176, the candidate previously exported the 2-argument
+/// tree.h `xmlSplitQName2` form under this name).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlChar *xmlSplitQName(xmlParserCtxt *ctxt, const xmlChar *name,
+///                        xmlChar **prefix);
+/// ```
+///
+/// `ctxt` is accepted for ABI parity; upstream uses it only for the name-
+/// length limit and error reporting (candidate: parser-side error model).
 #[no_mangle]
 pub unsafe extern "C" fn xmlSplitQName(
+    _ctxt: *mut _xmlParserCtxt,
     name: *const xmlChar,
     prefix: *mut *mut xmlChar,
 ) -> *mut xmlChar {
@@ -2014,17 +2030,24 @@ pub unsafe extern "C" fn xmlFreeDtd(dtd: *mut _xmlDtd) {
     crate::xml::dtd::free_dtd(dtd);
 }
 
-/// Add a notation declaration.
+/// Add a notation declaration (upstream valid.h 2.15: the `ctxt` first
+/// argument is part of the ABI; R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlNotationPtr xmlAddNotationDecl(xmlDtdPtr dtd, const xmlChar *name,
-///                                   const xmlChar *PublicID,
-///                                   const xmlChar *SystemID);
+/// xmlNotationPtr xmlAddNotationDecl(xmlValidCtxt *ctxt, xmlDtd *dtd,
+///                                   const xmlChar *name,
+///                                   const xmlChar *publicId,
+///                                   const xmlChar *systemId);
 /// ```
+///
+/// `ctxt` is accepted for ABI parity; upstream uses it only for validation
+/// error reporting, which the candidate performs in `xml/validation` (the
+/// parser-side error model), so the argument is currently unused.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAddNotationDecl(
+    _ctxt: *mut _xmlValidCtxt,
     dtd: *mut _xmlDtd,
     name: *const xmlChar,
     PublicID: *const xmlChar,
@@ -2072,16 +2095,22 @@ pub unsafe extern "C" fn xmlFreeNotation(notation: *mut _xmlNotation) {
     crate::xml::dtd::free_notation(notation);
 }
 
-/// Add an element declaration.
+/// Add an element declaration (upstream valid.h 2.15: `ctxt` first arg;
+/// R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlElementPtr xmlAddElementDecl(xmlDtdPtr dtd, const xmlChar *name, int type,
-///                                 xmlElementContentPtr content);
+/// xmlElementPtr xmlAddElementDecl(xmlValidCtxt *ctxt, xmlDtd *dtd,
+///                                 const xmlChar *name, xmlElementTypeVal type,
+///                                 xmlElementContent *content);
 /// ```
+///
+/// `ctxt` is accepted for ABI parity; upstream uses it only for validation
+/// error reporting (candidate: parser-side error model in `xml/validation`).
 #[no_mangle]
 pub unsafe extern "C" fn xmlAddElementDecl(
+    _ctxt: *mut _xmlValidCtxt,
     dtd: *mut _xmlDtd,
     name: *const xmlChar,
     type_: c_int,
@@ -2129,27 +2158,37 @@ pub unsafe extern "C" fn xmlFreeElement(elem: *mut _xmlElement) {
     crate::xml::dtd::free_element(elem);
 }
 
-/// Add an attribute declaration.
+/// Add an attribute declaration (upstream valid.h 2.15: 9-arg contract with
+/// `ctxt` and the namespace key; R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlAttributePtr xmlAddAttributeDecl(xmlDtdPtr dtd, xmlElementPtr elem,
-///                                     const xmlChar *name, int type, int def,
+/// xmlAttributePtr xmlAddAttributeDecl(xmlValidCtxt *ctxt, xmlDtd *dtd,
+///                                     const xmlChar *elem, const xmlChar *name,
+///                                     const xmlChar *ns, xmlAttributeType type,
+///                                     xmlAttributeDefault def,
 ///                                     const xmlChar *defaultValue,
-///                                     xmlEnumerationPtr tree);
+///                                     xmlEnumeration *tree);
 /// ```
+///
+/// `ctxt` is accepted for ABI parity; upstream uses it only for validation
+/// error reporting (candidate: parser-side error model in `xml/validation`).
+/// The `ns` namespace is threaded into the DTD attribute table as the
+/// middle hash key and into `attr->prefix`, exactly as upstream valid.c.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAddAttributeDecl(
+    _ctxt: *mut _xmlValidCtxt,
     dtd: *mut _xmlDtd,
     elem: *mut _xmlElement,
     name: *const xmlChar,
+    ns: *const xmlChar,
     type_: c_int,
     def: c_int,
     defaultValue: *const xmlChar,
     tree: *mut _xmlEnumeration,
 ) -> *mut _xmlAttribute {
-    crate::xml::dtd::add_attribute_decl(dtd, elem, name, type_, def, defaultValue, tree)
+    crate::xml::dtd::add_attribute_decl(dtd, elem, name, ns, type_, def, defaultValue, tree)
 }
 
 /// Look up an attribute declaration.
@@ -2237,25 +2276,37 @@ pub unsafe extern "C" fn xmlFreeElementContent(cur: *mut _xmlElementContent) {
 
 // ── Entity Exports ─────────────────────────────────────────────────────
 
-/// Add an entity declaration.
+/// Add an entity declaration to a document's DTD (upstream entities.h 2.15:
+/// entities.c `xmlAddEntity` — a full int/error-code contract, R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlEntityPtr xmlAddEntity(xmlDtdPtr dtd, const xmlChar *name, int type,
-///                           const xmlChar *ExternalID, const xmlChar *SystemID,
-///                           const xmlChar *content);
+/// int xmlAddEntity(xmlDoc *doc, int extSubset, const xmlChar *name, int type,
+///                  const xmlChar *publicId, const xmlChar *systemId,
+///                  const xmlChar *content, xmlEntity **out);
 /// ```
+///
+/// Returns 0 on success (with the new entity in `*out`), `XML_ERR_ARGUMENT`
+/// for NULL doc/name or an unknown type, `XML_DTD_NO_DTD` when the selected
+/// subset does not exist, `XML_ERR_REDECL_PREDEF_ENTITY` for an invalid
+/// predefined-entity redeclaration, `XML_ERR_NO_MEMORY` on allocation
+/// failure and `XML_WAR_ENTITY_REDEFINED` when the name already exists.
+/// `*out` is set to NULL on entry and on every failure.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAddEntity(
-    dtd: *mut _xmlDtd,
+    doc: *mut _xmlDoc,
+    extSubset: c_int,
     name: *const xmlChar,
     type_: c_int,
-    ExternalID: *const xmlChar,
-    SystemID: *const xmlChar,
+    publicId: *const xmlChar,
+    systemId: *const xmlChar,
     content: *const xmlChar,
-) -> *mut _xmlEntity {
-    crate::xml::entities::add_entity(dtd, name, type_, ExternalID, SystemID, content)
+    out: *mut *mut _xmlEntity,
+) -> c_int {
+    crate::xml::entities::add_entity_doc(
+        doc, extSubset, name, type_, publicId, systemId, content, out,
+    )
 }
 
 /// Add an entity declaration to a document's internal subset (upstream
@@ -4600,19 +4651,22 @@ pub unsafe extern "C" fn xmlListDup(l: *mut c_void) -> *mut c_void {
     crate::xml::list::list_dup(l as *mut crate::xml::list::List) as *mut c_void
 }
 
-/// Copy a list with a copier (upstream list.h).
+/// Copy the contents of `old` into the existing list `cur` (upstream
+/// list.h — R-000176, the candidate previously passed a copier callback).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlListCopy(xmlListPtr l, xmlListCopier copier);
+/// int xmlListCopy(xmlListPtr cur, const xmlListPtr old);
 /// ```
+///
+/// Returns 0 on success, 1 on error (upstream list.c).
 #[no_mangle]
-pub unsafe extern "C" fn xmlListCopy(
-    l: *mut c_void,
-    copier: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
-) -> c_int {
-    crate::xml::list::list_copy(l as *mut crate::xml::list::List, copier)
+pub unsafe extern "C" fn xmlListCopy(cur: *mut c_void, old: *mut c_void) -> c_int {
+    crate::xml::list::list_copy(
+        cur as *mut crate::xml::list::List,
+        old as *mut crate::xml::list::List,
+    )
 }
 
 /// Return the data of a link (upstream list.h).
@@ -6696,15 +6750,17 @@ pub unsafe extern "C" fn xmlCatalogRemove(value: *const xmlChar) -> c_int {
     crate::xml::catalog::remove(value)
 }
 
-/// Dump the catalog in XML format to a FILE* (upstream `xmlCatalogDump`).
+/// Dump the catalog in XML format to a FILE* (upstream catalog.h:
+/// 1-argument form — R-000176, the candidate previously took a spurious
+/// second `xmlCatalogPtr` argument).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// void xmlCatalogDump(FILE *out, xmlCatalogPtr catal);
+/// void xmlCatalogDump(FILE *out);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCatalogDump(output: *mut c_void, _catal: *mut c_void) {
+pub unsafe extern "C" fn xmlCatalogDump(output: *mut c_void) {
     if output.is_null() {
         return;
     }
@@ -6774,17 +6830,26 @@ pub extern "C" fn xmlCatalogCleanup() {
     crate::xml::catalog::cleanup();
 }
 
-/// Convert an SGML catalog to XML.
+/// Convert all the SGML catalog entries as XML ones (upstream catalog.c:
+/// returns 0 on success, -1 otherwise — R-000176, the candidate previously
+/// returned a dump document).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlDocPtr xmlCatalogConvert(void);
+/// int xmlCatalogConvert(void);
 /// ```
+///
+/// The candidate's catalog stores XML-flavored entries natively (there is no
+/// separate SGML table to convert), so once the catalog is initialized the
+/// conversion succeeds as a no-op, matching upstream's successful-return
+/// contract.
 #[no_mangle]
-pub extern "C" fn xmlCatalogConvert() -> *mut _xmlDoc {
-    // SAFETY: catalog::convert() allocates and builds an XML document tree.
-    unsafe { crate::xml::catalog::convert() }
+pub extern "C" fn xmlCatalogConvert() -> c_int {
+    if !crate::xml::catalog::is_initialized() {
+        return -1;
+    }
+    0
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -7055,44 +7120,40 @@ pub unsafe extern "C" fn xmlValidateID(
     crate::xml::validation::validate_id(ctxt, doc, node, value)
 }
 
-/// Validate an IDREF value (check it references a known ID).
+/// Validate an IDREF value (check it references a known ID; upstream
+/// valid.h 2.15 has no `node` argument — R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateIDRef(xmlValidCtxtPtr ctxt,
-///                      xmlDocPtr doc,
-///                      xmlNodePtr node,
+/// int xmlValidateIDRef(xmlValidCtxt *ctxt, xmlDoc *doc,
 ///                      const xmlChar *value);
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlValidateIDRef(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    node: *mut _xmlNode,
     value: *const xmlChar,
 ) -> c_int {
-    crate::xml::validation::validate_id_ref(ctxt, doc, node, value)
+    crate::xml::validation::validate_id_ref(ctxt, doc, ptr::null_mut(), value)
 }
 
-/// Validate IDREFS (whitespace-separated list of IDREFs).
+/// Validate IDREFS (whitespace-separated list of IDREFs; upstream valid.h
+/// 2.15 has no `node` argument — R-000176).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateIDRefs(xmlValidCtxtPtr ctxt,
-///                       xmlDocPtr doc,
-///                       xmlNodePtr node,
+/// int xmlValidateIDRefs(xmlValidCtxt *ctxt, xmlDoc *doc,
 ///                       const xmlChar *value);
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlValidateIDRefs(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    node: *mut _xmlNode,
     value: *const xmlChar,
 ) -> c_int {
-    crate::xml::validation::validate_id_refs(ctxt, doc, node, value)
+    crate::xml::validation::validate_id_refs(ctxt, doc, ptr::null_mut(), value)
 }
 
 /// Validate an NCName value (modern 2-arg form, upstream tree.c).

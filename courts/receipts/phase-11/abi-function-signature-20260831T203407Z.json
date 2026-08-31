@@ -1,0 +1,396 @@
+{
+ "court": "ABI-FUNCTION-SIGNATURE",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T203407Z",
+ "schema": "function-signature-court-1",
+ "planes": {
+  "oracle": "system headers via clang AST",
+  "candidate_headers": "include/ via clang AST",
+  "rust": "src/ extern \"C\" fn extraction"
+ },
+ "asm_shims_classified": [
+  "xmlGenericErrorDefaultFunc",
+  "xmlParserError",
+  "xmlParserValidityError",
+  "xmlParserValidityWarning",
+  "xmlParserWarning",
+  "xmlStrPrintf",
+  "xsltGenericErrorDefaultFunc",
+  "xsltTransformError"
+ ],
+ "oracle_internal_globals_classified": [
+  "__xmlGenericError",
+  "__xmlGenericErrorContext",
+  "__xmlLastError",
+  "__xmlOutputBufferCreateFilename",
+  "__xmlOutputBufferCreateFilenameValue",
+  "__xmlParserInputBufferCreateFilename",
+  "__xmlParserInputBufferCreateFilenameValue",
+  "__xmlStructuredError",
+  "__xmlStructuredErrorContext"
+ ],
+ "oracle_not_exported_classified": {
+  "xslHandleDebugger": "XSLT debugger interface not implemented (residual R-000176)"
+ },
+ "data_exports_excluded": [
+  "exsltLibexsltVersion",
+  "exsltLibraryVersion",
+  "exsltLibxmlVersion",
+  "exsltLibxsltVersion",
+  "xmlBufferAllocScheme",
+  "xmlCharEncodingHandlers",
+  "xmlDebugEntities",
+  "xmlDefaultBufferSize",
+  "xmlDefaultSAXHandler",
+  "xmlDefaultSAXLocator",
+  "xmlDeregisterNodeDefaultValue",
+  "xmlDoValidityCheckingDefaultValue",
+  "xmlEntityValue",
+  "xmlFree",
+  "xmlGenericError",
+  "xmlGenericErrorContext",
+  "xmlIndentTreeOutput",
+  "xmlKeepBlanksDefaultValue",
+  "xmlLastError",
+  "xmlLineNumbersDefaultValue",
+  "xmlLoadExtDtdDefaultValue",
+  "xmlMalloc",
+  "xmlMallocAtomic",
+  "xmlMemStrdup",
+  "xmlOldXMLWDcompatibility",
+  "xmlOutputBufferCreateFilenameDefault",
+  "xmlParserDebugEntities",
+  "xmlParserInputBufferCreateFilenameDefault",
+  "xmlParserVersion",
+  "xmlPedanticParserDefaultValue",
+  "xmlRealloc",
+  "xmlRegisterNodeDefaultValue",
+  "xmlSaveDebug",
+  "xmlSaveNoEmptyTags",
+  "xmlStringComment",
+  "xmlStringText",
+  "xmlStringTextLen",
+  "xmlStringTextNoenc",
+  "xmlStructuredError",
+  "xmlStructuredErrorContext",
+  "xmlSubstituteEntitiesDefaultValue",
+  "xmlTreeDebug",
+  "xmlTreeIndentString",
+  "xmlXPathNAN",
+  "xmlXPathNINF",
+  "xmlXPathNInf",
+  "xmlXPathNaN",
+  "xmlXPathPINF",
+  "xmlXPathPInf",
+  "xslDebugStatus",
+  "xsltDocDefaultLoader",
+  "xsltEngineVersion",
+  "xsltExtMarker",
+  "xsltGenericDebug",
+  "xsltGenericDebugContext",
+  "xsltGenericError",
+  "xsltGenericErrorContext",
+  "xsltLibxmlVersion",
+  "xsltLibxsltVersion"
+ ],
+ "summary": {
+  "compared": 3246,
+  "ok": 3245,
+  "findings": 38,
+  "classified": 10
+ },
+ "classified": [
+  {
+   "symbol": "__xmlGenericError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlGenericErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlLastError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "xslHandleDebugger",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-not-exported",
+   "detail": "XSLT debugger interface not implemented (residual R-000176)"
+  }
+ ],
+ "findings": [
+  {
+   "symbol": "xsltCheckExtPrefix",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltStylesheetPtr, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltCheckExtURI",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltStylesheetPtr, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltDebugDumpExtensions",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(FILE *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltExtElementLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltTransformFunction(xsltTransformContextPtr, const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltExtModuleElementLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltTransformFunction(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltExtModuleElementPreComputeLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltPreComputeFunction(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltExtModuleFunctionLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlXPathFunction(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltExtModuleTopLevelLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltTopLevelFunction(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltFreeCtxtExts",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltTransformContextPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltFreeExts",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltStylesheetPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltGetExtData",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void *(xsltTransformContextPtr, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltGetExtInfo",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlHashTablePtr(xsltStylesheetPtr, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltInitCtxtExts",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltTransformContextPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltInitElemPreComp",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltElemPreCompPtr, xsltStylesheetPtr, xmlNodePtr, xsltTransformFunction, xsltElemPreCompDeallocator) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltInitGlobals",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void() [header extensions.h]"
+  },
+  {
+   "symbol": "xsltNewElemPreComp",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltElemPreCompPtr(xsltStylesheetPtr, xmlNodePtr, xsltTransformFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltPreComputeExtModuleElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltElemPreCompPtr(xsltStylesheetPtr, xmlNodePtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterAllElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltTransformContextPtr) [header transform.h]"
+  },
+  {
+   "symbol": "xsltRegisterAllExtras",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void() [header extra.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltTransformContextPtr, const xmlChar *, const xmlChar *, xsltTransformFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtFunction",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltTransformContextPtr, const xmlChar *, const xmlChar *, xmlXPathFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtModule",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, xsltExtInitFunction, xsltExtShutdownFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *, xsltPreComputeFunction, xsltTransformFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleFull",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, xsltExtInitFunction, xsltExtShutdownFunction, xsltStyleExtInitFunction, xsltStyleExtShutdownFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleFunction",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *, xmlXPathFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleTopLevel",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *, xsltTopLevelFunction) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtPrefix",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(xsltStylesheetPtr, const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltRegisterExtras",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltTransformContextPtr) [header extra.h]"
+  },
+  {
+   "symbol": "xsltRegisterTestModule",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void() [header extensions.h]"
+  },
+  {
+   "symbol": "xsltShutdownCtxtExts",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltTransformContextPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltShutdownExts",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xsltStylesheetPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltStyleGetExtData",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void *(xsltStylesheetPtr, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltUnregisterExtModule",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltUnregisterExtModuleElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltUnregisterExtModuleFunction",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltUnregisterExtModuleTopLevel",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: int(const xmlChar *, const xmlChar *) [header extensions.h]"
+  },
+  {
+   "symbol": "xsltXPathGetTransformContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xsltTransformContextPtr(xmlXPathParserContextPtr) [header extensions.h]"
+  },
+  {
+   "symbol": "xmlListCopy",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlList *(('pointer', 1)) vs Rust Option<unsafe extern \"C\" fn(*mut c_void) -> *mut c_void>(('fnptr', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  }
+ ],
+ "verdict": "FAIL"
+}

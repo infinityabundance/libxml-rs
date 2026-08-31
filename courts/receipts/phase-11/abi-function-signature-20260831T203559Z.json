@@ -1,0 +1,166 @@
+{
+ "court": "ABI-FUNCTION-SIGNATURE",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T203559Z",
+ "schema": "function-signature-court-1",
+ "planes": {
+  "oracle": "system headers via clang AST",
+  "candidate_headers": "include/ via clang AST",
+  "rust": "src/ extern \"C\" fn extraction"
+ },
+ "asm_shims_classified": [
+  "xmlGenericErrorDefaultFunc",
+  "xmlParserError",
+  "xmlParserValidityError",
+  "xmlParserValidityWarning",
+  "xmlParserWarning",
+  "xmlStrPrintf",
+  "xsltGenericErrorDefaultFunc",
+  "xsltTransformError"
+ ],
+ "oracle_internal_globals_classified": [
+  "__xmlGenericError",
+  "__xmlGenericErrorContext",
+  "__xmlLastError",
+  "__xmlOutputBufferCreateFilename",
+  "__xmlOutputBufferCreateFilenameValue",
+  "__xmlParserInputBufferCreateFilename",
+  "__xmlParserInputBufferCreateFilenameValue",
+  "__xmlStructuredError",
+  "__xmlStructuredErrorContext"
+ ],
+ "oracle_not_exported_classified": {
+  "xslHandleDebugger": "XSLT debugger interface not implemented (residual R-000176)"
+ },
+ "data_exports_excluded": [
+  "exsltLibexsltVersion",
+  "exsltLibraryVersion",
+  "exsltLibxmlVersion",
+  "exsltLibxsltVersion",
+  "xmlBufferAllocScheme",
+  "xmlCharEncodingHandlers",
+  "xmlDebugEntities",
+  "xmlDefaultBufferSize",
+  "xmlDefaultSAXHandler",
+  "xmlDefaultSAXLocator",
+  "xmlDeregisterNodeDefaultValue",
+  "xmlDoValidityCheckingDefaultValue",
+  "xmlEntityValue",
+  "xmlFree",
+  "xmlGenericError",
+  "xmlGenericErrorContext",
+  "xmlIndentTreeOutput",
+  "xmlKeepBlanksDefaultValue",
+  "xmlLastError",
+  "xmlLineNumbersDefaultValue",
+  "xmlLoadExtDtdDefaultValue",
+  "xmlMalloc",
+  "xmlMallocAtomic",
+  "xmlMemStrdup",
+  "xmlOldXMLWDcompatibility",
+  "xmlOutputBufferCreateFilenameDefault",
+  "xmlParserDebugEntities",
+  "xmlParserInputBufferCreateFilenameDefault",
+  "xmlParserVersion",
+  "xmlPedanticParserDefaultValue",
+  "xmlRealloc",
+  "xmlRegisterNodeDefaultValue",
+  "xmlSaveDebug",
+  "xmlSaveNoEmptyTags",
+  "xmlStringComment",
+  "xmlStringText",
+  "xmlStringTextLen",
+  "xmlStringTextNoenc",
+  "xmlStructuredError",
+  "xmlStructuredErrorContext",
+  "xmlSubstituteEntitiesDefaultValue",
+  "xmlTreeDebug",
+  "xmlTreeIndentString",
+  "xmlXPathNAN",
+  "xmlXPathNINF",
+  "xmlXPathNInf",
+  "xmlXPathNaN",
+  "xmlXPathPINF",
+  "xmlXPathPInf",
+  "xslDebugStatus",
+  "xsltDocDefaultLoader",
+  "xsltEngineVersion",
+  "xsltExtMarker",
+  "xsltGenericDebug",
+  "xsltGenericDebugContext",
+  "xsltGenericError",
+  "xsltGenericErrorContext",
+  "xsltLibxmlVersion",
+  "xsltLibxsltVersion"
+ ],
+ "summary": {
+  "compared": 3319,
+  "ok": 3319,
+  "findings": 0,
+  "classified": 10
+ },
+ "classified": [
+  {
+   "symbol": "__xmlGenericError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlGenericErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlLastError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredError",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "__xmlStructuredErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-internal-indirection",
+   "detail": "globals.h DLL-import backing name; candidate exports the public name"
+  },
+  {
+   "symbol": "xslHandleDebugger",
+   "plane": "oracle-vs-candidate",
+   "kind": "oracle-not-exported",
+   "detail": "XSLT debugger interface not implemented (residual R-000176)"
+  }
+ ],
+ "findings": [],
+ "verdict": "PASS"
+}

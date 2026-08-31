@@ -1,8 +1,8 @@
 {
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
- "mode": "generate",
- "candidate_git_head": "be03688004e664e525196fc714a1a88c4c897c95",
+ "mode": "check",
+ "candidate_git_head": "5f0ab2eaed89f4e2a6793822d6539c2b85216dde",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -24,12 +24,12 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "99ec7d85f23a3bd71c1fcb3dbcba00ef8dd02b9a0a20e5b4cca0925c287f59a2",
-  "candidate SONAME libxml2": "99ec7d85f23a3bd71c1fcb3dbcba00ef8dd02b9a0a20e5b4cca0925c287f59a2",
-  "candidate SONAME libxslt": "ce00b652e274a1f7505d3c4d0765821218ac96de0fb2dc9d8673a5c2a5d57a36",
-  "candidate SONAME libexslt": "ec5ae477bc1196d5a7ccb5ad5a98340e147bfc811e2a20191bc67547837a541f",
-  "candidate headers": "43bd55202ec4ca80be7bf6676c244089ed46ad80bd681ac6acff04a3163346dd",
-  "residual ledger JSON (hand-maintained)": "323cca08d47fb15a0e32fde6a23991828289920d65a110cb211c8932b1986553",
+  "candidate DSO": "1af8b414418f5f44c371908d29242798cdeb6e525db940d86a6cb4a6cc5e031b",
+  "candidate SONAME libxml2": "1af8b414418f5f44c371908d29242798cdeb6e525db940d86a6cb4a6cc5e031b",
+  "candidate SONAME libxslt": "3327e26b302d3dbbb16f4bff3094b4bf5d8306937faa7685b4a78638fef4f0f6",
+  "candidate SONAME libexslt": "033c70943a91e4628896a3e870717205095b6d5583a749fc62dfc4a1265582b0",
+  "candidate headers": "459777a0f70a96643e161fadea9f9229d3c2da866abc7f0b4f2e15d4892305d2",
+  "residual ledger JSON (hand-maintained)": "34d064e2aad97c33ebbb8344573f59fd1202b3e2195b5f0957ed79c9b6f2b300",
   "symbol court index": "e76ffb6c88db37c542b9036c42de3f305f3a8d39d6492dc5e8ebb0dad9767b9c"
  },
  "steps": [
@@ -38,8 +38,8 @@
    "ok": true,
    "detail": "xmlDoValidityCheckingDefaultValue\n    ast-only fn: __xmlFree\n    ast-only fn: __xmlGenericError\n    ast-only fn: __xmlGenericErrorContext\n    ast-only fn: __xmlGetWarningsDefaultValue\n═══ libxslt ═══\n  functions: dox=235 ast=231 dso=232\n  dox-only functions: 8 ast-only: 4\n  candidate DSO vs system: missing 0, extra 19\n  headers: dox 22 installed 22\n    dox-only fn: xsltCleanupSourceDoc\n    dox-only fn: xsltCopyNamespace\n    dox-only fn: xsltCopyNamespaceList\n    dox-only fn: xsltFreeNamespaceAliasHashes\n    dox-only fn: xsltGetNamespace\n    dox-only fn: xsltGetPlainNamespace\n    ast-only fn: xslAddCall\n    ast-only fn: xslDropCall\n    ast-only fn: xsltSetDebuggerCallbacks\n    ast-only fn: xsltSetDebuggerStatus\nreconciliation -> /mnt/1tb_kingston/libxml-rs/atlas/SURFACE_RECONCILIATION.json\n",
    "hashes": {
-    "atlas/SURFACE_RECONCILIATION.json": "ebc55b72f96b9f423da390bb331d46b7f9f91bb391456a906d27d6af2b87b2ab",
-    "atlas/SURFACE_RECONCILIATION.md": "11785392da1120e27180a775402920052b5c5cd870f2013893b57665df89374f"
+    "atlas/SURFACE_RECONCILIATION.json": "3d4dc0e5e4441a2ea847a35d20bf8140a4207dccfdd2175cff2e487c1737258a",
+    "atlas/SURFACE_RECONCILIATION.md": "cb05cc9c045355a63de2db3fbc1d7a9d493db3c4b8262ea9d5127b221bc61ea5"
    }
   },
   {
@@ -47,10 +47,10 @@
    "ok": true,
    "detail": "wrote PARITY_MATRIX.json/.md, API_PARITY_LEDGER.json/.md, DOXYGEN_SURFACE_ATLAS.json/.md\n",
    "hashes": {
-    "atlas/PARITY_MATRIX.json": "6144d7bc9da17432d9716b6f407160f8f8c69f63f14038cafac6792059466cd5",
-    "atlas/PARITY_MATRIX.md": "43ce1ae024ceacb8cd9ff81a6778ff3149f709d9c9191f477f573cec69476756",
-    "atlas/API_PARITY_LEDGER.json": "128ed98892cff2e93bea7ede2325d8ad6df9ab46ce7d513bf5baefe803ae1eb5",
-    "atlas/API_PARITY_LEDGER.md": "ff6d5a16b807f5c05595a3b12f61f8fca6800e9e46979715141098670c6befac",
+    "atlas/PARITY_MATRIX.json": "ccf5b6d497186996ce8ce9c287711bf5a663bf3e55f2846ecf41f926788feae8",
+    "atlas/PARITY_MATRIX.md": "2212ae13204af07f24250326c33cce26a958909912b881e2d8e2597a2812852e",
+    "atlas/API_PARITY_LEDGER.json": "5082c68e7790d0592f573ba49178bed71ab7423181dd663e6f0723b3110b6b2d",
+    "atlas/API_PARITY_LEDGER.md": "cae067968dff8203a5621c35d0b2225e5511a632360643ee949d9100931f13b4",
     "atlas/DOXYGEN_SURFACE_ATLAS.json": "71826ee43fb10aa3eb0481f4b6f5f0efe173879fffe338a48daa75918797b15e",
     "atlas/DOXYGEN_SURFACE_ATLAS.md": "8f525f5a5426c11924ab6ff44117ff329cc3311bf886941290cbdcde7b820222"
    }
@@ -78,8 +78,8 @@
    "ok": true,
    "detail": "libxml2: funcs=1400 data=22\n    INTENTIONAL_NOOP: 23\n    IMPLEMENTED_UNVERIFIED: 1114\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
    "hashes": {
-    "atlas/PARITY_OBLIGATIONS.json": "032b816f633778984939b54c316a30e8cd12e3db51d026e6d416068e7901b073",
-    "atlas/PARITY_OBLIGATIONS.md": "edea67805c81c920a9fe2fa0f77a9f91e01244f3d2aca15abe4ec5968f92faba"
+    "atlas/PARITY_OBLIGATIONS.json": "3558cefd4845287f993f7e459ad77a0845d020180f5ffe9a0613e61751656a55",
+    "atlas/PARITY_OBLIGATIONS.md": "a08bc35faa0e3593f02cdb2b34a685d6bfba052384c3b5c3c427c476bd82b6f5"
    }
   },
   {
@@ -96,7 +96,7 @@
    "ok": true,
    "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/RESIDUAL_LEDGER.md\n",
    "hashes": {
-    "atlas/RESIDUAL_LEDGER.md": "4825c5c7ddaf586b55d45003f3837bfead5c2665b1922fc7c14f426b769042f0"
+    "atlas/RESIDUAL_LEDGER.md": "ad897ebff811672e218d5931e25993bd2c716f835fdee13ace8896762c8faefd"
    }
   }
  ],

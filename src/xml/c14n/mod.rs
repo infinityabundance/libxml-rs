@@ -26,6 +26,7 @@ use core::ptr;
 use std::collections::HashSet;
 use std::os::raw::{c_char, c_int};
 
+use crate::abi::callbacks::xmlC14NIsVisibleCallback;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -155,6 +156,11 @@ pub struct C14nContext {
     /// callback): when present, only nodes whose pointer is in this set are
     /// visible. NULL (None) means the whole document is visible.
     visible_set: Option<HashSet<*mut c_void>>,
+    /// Upstream `xmlC14NExecute`'s visibility callback (c14n.c
+    /// `xmlC14NIsVisible`): when present it decides node visibility directly
+    /// (R-000176 — the candidate previously mis-implemented xmlC14NExecute's
+    /// whole register layout; the callback now lives here).
+    visibility_callback: Option<(xmlC14NIsVisibleCallback, *mut c_void)>,
     /// Set when a node that canonical XML cannot process is encountered
     /// (upstream c14n.c xmlC14NErrInvalidNode: XML_ENTITY_REF_NODE /
     /// XML_ENTITY_NODE / XML_NAMESPACE_DECL return -1 "processing node"
@@ -201,6 +207,7 @@ impl C14nContext {
             pos: 0, // XMLC14N_BEFORE_DOCUMENT_ELEMENT
             parent_is_doc: true,
             visible_set,
+            visibility_callback: None,
             invalid_node: false,
         };
         // Push the initial (document-level) namespace scope, which contains
@@ -215,9 +222,41 @@ impl C14nContext {
         ctx
     }
 
+    /// Create a C14N context driven by an `xmlC14NExecute` visibility
+    /// callback (upstream `ctx->isVisibleCallback` / `ctx->userData`).
+    ///
+    /// # SAFETY
+    ///
+    /// - `doc` must be a valid pointer to an `_xmlDoc` or NULL.
+    /// - `callback`/`user_data` come from the C caller and must stay valid
+    ///   for the walk.
+    pub unsafe fn with_visibility_callback(
+        doc: *mut _xmlDoc,
+        mode: C14nMode,
+        inclusive_ns_prefixes: Option<HashSet<String>>,
+        callback: xmlC14NIsVisibleCallback,
+        user_data: *mut c_void,
+    ) -> Self {
+        let mut ctx = C14nContext::with_visible_set(doc, mode, inclusive_ns_prefixes, None);
+        ctx.visibility_callback = Some((callback, user_data));
+        ctx
+    }
+
     /// Upstream `xmlC14NIsVisible(ctx, node, parent)`: whether a node is in
-    /// the visible node-set. Without a subset every node is visible.
+    /// the visible node-set. Without a subset every node is visible. When an
+    /// `xmlC14NExecute` visibility callback is installed it is consulted
+    /// first (upstream `xmlC14NIsVisible` calls `ctx->isVisibleCallback`).
     fn is_visible_node<T>(&self, node: *mut T) -> bool {
+        if let Some((cb, user_data)) = self.visibility_callback {
+            let parent = if node.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe { (*(node as *mut _xmlNode)).parent }
+            };
+            // SAFETY: the C caller provided the callback and data; per the
+            // C contract both stay valid for the walk.
+            return unsafe { cb(user_data, node as *mut _xmlNode, parent) } != 0;
+        }
         match &self.visible_set {
             None => true,
             Some(set) => !node.is_null() && set.contains(&(node as *mut c_void)),
@@ -1827,6 +1866,91 @@ pub unsafe fn c14n_execute(
     ret
 }
 
+/// Canonicalize a document to an `xmlOutputBuffer` with an optional
+/// `xmlC14NExecute` visibility callback (upstream c14n.c `xmlC14NExecute`:
+/// `is_visible_callback == NULL` → the whole document is visible;
+/// otherwise the callback decides node inclusion; the output goes to
+/// `buf` via `xmlOutputBufferWrite`).
+///
+/// # SAFETY
+///
+/// - `doc`, `output` must be valid pointers (or NULL where the upstream C
+///   contract allows), obtained from the matching constructor/owner and not
+///   yet freed.
+/// - `callback`/`user_data` must stay valid for the walk when non-NULL.
+pub unsafe fn c14n_execute_visibility(
+    doc: *mut _xmlDoc,
+    mode: C14nMode,
+    inclusive_ns_prefixes: *const xmlChar,
+    with_comments: c_int,
+    is_visible_callback: Option<crate::abi::callbacks::xmlC14NIsVisibleCallback>,
+    user_data: *mut c_void,
+    output: *mut _xmlOutputBuffer,
+) -> c_int {
+    if doc.is_null() || output.is_null() {
+        return -1;
+    }
+
+    // Determine effective mode
+    let effective_mode = if with_comments != 0 {
+        match mode {
+            C14nMode::XML_C14N_1_0 => C14nMode::XML_C14N_1_0_WITH_COMMENTS,
+            C14nMode::XML_C14N_EXCLUSIVE_1_0 => C14nMode::XML_C14N_EXCLUSIVE_1_0_WITH_COMMENTS,
+            C14nMode::XML_C14N_1_1 => C14nMode::XML_C14N_1_1_WITH_COMMENTS,
+            _ => mode,
+        }
+    } else {
+        mode
+    };
+
+    // Parse inclusive namespace prefixes
+    let inclusive_set = parse_inclusive_prefixes(inclusive_ns_prefixes);
+
+    let mut ctx = match is_visible_callback {
+        Some(cb) => {
+            C14nContext::with_visibility_callback(doc, effective_mode, inclusive_set, cb, user_data)
+        }
+        None => C14nContext::new(doc, effective_mode, inclusive_set),
+    };
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NCheckForRelativeNamespaces): the
+    // relative-namespace-URI check applies in every mode, inclusive and
+    // exclusive (R-000166).
+    if doc_has_relative_ns(doc) {
+        return -1;
+    }
+
+    // Create output buffer
+    let buf = io::buf_create(-1);
+    if buf.is_null() {
+        return -1;
+    }
+
+    // Walk the document (upstream xmlC14NProcessNodeList).
+    c14n_walk_document(doc, &mut ctx, buf);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): an unexpanded entity
+    // reference fails the canonicalization with -1 (R-000175).
+    if ctx.invalid_node {
+        io::buf_free(buf);
+        return -1;
+    }
+
+    let content = io::buf_content(buf);
+    let len = io::buf_length(buf);
+    if content.is_null() || len < 0 {
+        io::buf_free(buf);
+        return -1;
+    }
+
+    // Write the canonical output to the caller's xmlOutputBuffer (upstream
+    // xmlC14NProcessNode writes directly via xmlOutputBufferWrite).
+    let ret = crate::abi::exports_xml2::xmlOutputBufferWrite(output, len, content as *const c_char);
+
+    io::buf_free(buf);
+    ret
+}
+
 /// Canonicalize a document and save to an output buffer.
 ///
 /// # SAFETY
@@ -2194,33 +2318,49 @@ unsafe fn node_set_to_array(nodes: *mut _xmlNodeSet) -> Vec<*mut _xmlNode> {
 ///
 /// # UPSTREAM-PARITY
 ///
+/// Canonicalize a document with a caller-supplied visibility callback
+/// (upstream c14n.h / c14n.c `xmlC14NExecute`).
+///
+/// # UPSTREAM-PARITY
+///
 /// ```c
-/// int xmlC14NExecute(
-///     xmlDocPtr doc,
-///     int mode,
-///     xmlChar **inclusive_ns_prefixes,
-///     int with_comments,
-///     xmlC14NIOWriteCallback callback,
-///     void *callback_data
-/// );
+/// int xmlC14NExecute(xmlDoc *doc,
+///                    xmlC14NIsVisibleCallback is_visible_callback,
+///                    void *user_data,
+///                    int mode, /* a xmlC14NMode */
+///                    xmlChar **inclusive_ns_prefixes,
+///                    int with_comments,
+///                    xmlOutputBuffer *buf);
 /// ```
+///
+/// R-000176: the pre-11.1-Z.2 candidate exported a 6-argument form with a
+/// completely different register layout (doc, mode, prefixes, with_comments,
+/// write-callback, data) that misread every argument a C caller passes.
+/// This now mirrors the oracle exactly: `is_visible_callback` decides node
+/// visibility (NULL means the whole document is visible, upstream
+/// `xmlC14NIsVisible`), and the canonical output is written to `buf` via
+/// `xmlOutputBufferWrite`. Returns 0 on success, -1 on error.
 ///
 /// # SAFETY
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc` or NULL.
-/// - `callback` must be a valid function pointer or NULL.
+/// - `is_visible_callback` may be NULL; when non-NULL it and `user_data`
+///   must stay valid for the walk.
+/// - `buf` must be a valid pointer to an `_xmlOutputBuffer` or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlC14NExecute(
     doc: *mut _xmlDoc,
+    is_visible_callback: Option<crate::abi::callbacks::xmlC14NIsVisibleCallback>,
+    user_data: *mut c_void,
     mode: c_int,
     inclusive_ns_prefixes: *mut *mut xmlChar,
     with_comments: c_int,
-    callback: Option<
-        unsafe extern "C" fn(ctx: *mut c_void, data: *const c_char, len: c_int) -> c_int,
-    >,
-    callback_data: *mut c_void,
+    output: *mut _xmlOutputBuffer,
 ) -> c_int {
     // SAFETY: Delegates to the safe internal implementation.
+    if doc.is_null() || output.is_null() {
+        return -1;
+    }
 
     let c14n_mode = match mode {
         0 => C14nMode::XML_C14N_1_0,
@@ -2264,13 +2404,14 @@ pub unsafe extern "C" fn xmlC14NExecute(
     };
 
     unsafe {
-        c14n_execute(
+        c14n_execute_visibility(
             doc,
             c14n_mode,
             joined_prefixes,
             with_comments,
-            callback,
-            callback_data,
+            is_visible_callback,
+            user_data,
+            output,
         )
     }
 }
@@ -3294,38 +3435,37 @@ mod tests {
         unsafe {
             let doc = create_simple_doc();
 
-            let output_vec = Box::into_raw(Box::new(Vec::<u8>::new()));
-
-            unsafe extern "C" fn test_callback(
-                ctx: *mut c_void,
-                data: *const c_char,
-                len: c_int,
-            ) -> c_int {
-                let slice = unsafe { core::slice::from_raw_parts(data as *const u8, len as usize) };
-                let output = unsafe { &mut *(ctx as *mut Vec<u8>) };
-                output.extend_from_slice(slice);
-                len
-            }
+            // The oracle 7-argument contract (R-000176): no visibility
+            // callback → whole document; output goes to an xmlOutputBuffer.
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+            let output = io::output_buffer_create_buffer(buf, ptr::null_mut());
+            assert!(!output.is_null());
 
             let ret = xmlC14NExecute(
                 doc,
-                0, // XML_C14N_1_0
-                ptr::null_mut(),
-                0,
-                Some(
-                    test_callback
-                        as unsafe extern "C" fn(*mut c_void, *const c_char, c_int) -> c_int,
-                ),
-                output_vec as *mut c_void,
+                None,            // is_visible_callback
+                ptr::null_mut(), // user_data
+                0,               // XML_C14N_1_0
+                ptr::null_mut(), // inclusive_ns_prefixes
+                0,               // with_comments
+                output,
             );
 
             assert!(ret >= 0, "xmlC14NExecute should succeed");
-            let output = Box::from_raw(output_vec);
-            let output_str = String::from_utf8_lossy(&output);
+            // The write lands in the output buffer's internal buffer and is
+            // flushed to the target buffer on close (upstream flush model).
+            io::output_buffer_close(output);
+            let content = io::buf_content(buf);
+            let len = io::buf_length(buf);
+            let s = {
+                let slice = core::slice::from_raw_parts(content, len as usize);
+                String::from_utf8_lossy(slice).to_string()
+            };
             assert!(
-                output_str.contains("<root>"),
+                s.contains("<root>"),
                 "C ABI execute should produce canonical output, got: {}",
-                output_str
+                s
             );
 
             tree::free_doc(doc);

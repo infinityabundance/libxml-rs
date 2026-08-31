@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**2 open residuals:** R-000157, R-000168
+**3 open residuals:** R-000157, R-000168, R-000177
 
 ## Phase 0 Residuals
 
@@ -949,9 +949,37 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-31 (discovered by the 11.1-Z.1 broad C14N API differential (dclent.xml)); FIXED 2026-08-31 (fixed in 11.1-Z.1; entity-ref nodes fail the dump with -1 like the oracle; regression test + 0-mismatch corpus differential)
 
+## Phase 11.1-Z.2 Residuals
+
+### R-000176: Function-signature ABI plane: the allocator hooks and 20+ exported functions had C prototypes diverging from the 2.15.3 oracle (missing args, wrong returns, shifted register layouts) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-Z.2)
+- **Component:** src/abi/allocator.rs, src/abi/exports_xml2.rs, src/abi/exports_automata.rs, src/abi/exports_xslt.rs, src/abi/exports_xslt_compile.rs, src/abi/exports_xslt_ext.rs, src/abi/exports_xslt_vars.rs, src/abi/callbacks.rs, src/abi/types.rs, src/xml/entities/mod.rs, src/xml/dtd/mod.rs, src/xml/c14n/mod.rs, src/xml/automata/mod.rs, src/xml/regex/mod.rs, src/xml/xpath/exports.rs, src/xml/errors/mod.rs, src/xml/string.rs, src/xml/list/mod.rs, src/xml/reader/mod.rs, src/xml/schematron/mod.rs, src/xslt/templates/mod.rs, src/xslt/documents/mod.rs, tools/abi/function_signature_court.py, include/libxml/tree.h, include/libxml/uri.h, include/libxml/debugXML.h, include/libxml/xmlreader.h, include/libxml/xmlwriter.h, include/libxml/xmlregexp.h, include/libxslt/extensions.h, include/libxslt/documents.h, include/libxslt/xsltInternals.h
+- **Surface:** xmlMemSetup/xmlMemGet/xmlGcMemSetup/xmlGcMemGet (xmlmemory.h); xmlAddAttributeDecl/xmlAddElementDecl/xmlAddNotationDecl/xmlAddEntity/xmlValidateIDRef/xmlValidateIDRefs/xmlSplitQName/xmlSplitQName3 (valid.h/entities.h/parserInternals.h); xmlC14NExecute (c14n.h); xmlAutomataCompile/xmlAutomataNewCountTrans/xmlAutomataNewOnceTrans (xmlautomata.h); xmlCatalogConvert/xmlCatalogDump (catalog.h); xmlListCopy (list.h); xmlRegNewExecCtxt/xmlRegExecPushString/xmlRegexpPrint (xmlregexp.h); xmlSchematronNewValidCtxt (schematron.h); xmlXPathValuePush/xmlXPathNodeSetDel/xmlXPathNodeSetRemove (xpath.h); xmlMemoryDump (xmlmemory.h); xsltAddTemplate/xsltGetUTF8CharZ/xsltSetCtxtLocaleHandlers/xsltRegisterExtElement/xsltRegisterExtModuleElement/xsltRegisterExtModuleFunction/xsltRegisterExtModuleTopLevel/xsltExtElementLookup/xsltExtModuleElementLookup/xsltExtModuleElementPreComputeLookup/xsltExtModuleFunctionLookup/xsltExtModuleTopLevelLookup/xsltSetLoaderFunc/xsltInitElemPreComp/xsltNewElemPreComp (libxslt); xmlParserError/xmlParserWarning/xmlParserValidityError/xmlParserValidityWarning/xsltTransformError/xmlStrPrintf (variadic shims)
+- **Oracle versions:** libxml2 2.15.3, libxslt 1.1.45 (system)
+- **Root cause:** The exported surface was built against an older header snapshot without a function-level mirror. The worst instance was xmlGcMemSetup/xmlGcMemGet: the header (correctly mirroring the oracle) declares five arguments including mallocAtomicFunc and an int return, but the Rust exports took four arguments, omitted mallocAtomicFunc and returned nothing — on x86-64 SysV a C caller's RDX (mallocAtomic) was read as realloc and RCX (realloc) as strdup, installing the wrong callbacks. xmlC14NExecute's entire register layout was shifted (7 oracle args vs 6 candidate), xmlAutomataNewCountTrans/xmlAutomataNewOnceTrans swapped min/max with data, and the allocator state itself had two sources of truth (an internal ALLOCATOR RwLock consulted by the *Impl bodies vs the five exported xmlMalloc-family variables). A function-signature court now compares oracle header, candidate header and actual Rust extern "C" signature for every export.
+- **Observable residual:** A C consumer calling the pre-fix signatures would misread arguments and receive wrong callbacks/returns; after the fix the three planes match (ABI-FUNCTION-SIGNATURE 3319 compared, 0 findings).
+- **Fix:** 11.1-Z.2: (1) allocator merged to the upstream single-source-of-truth model — the five exported function-pointer variables ARE the state; xmlMemSetup/xmlGcMemSetup validate NULLs (return -1), assign the variables (xmlGcMemSetup assigns xmlMallocAtomic = mallocAtomicFunc), xmlMemGet/xmlGcMemGet read them through NULL-tolerant outputs and return 0; the *Impl bodies are indirections through the variables so every internal allocation observes the override; the ALLOCATOR RwLock was removed. (2) Every remaining real signature mismatch fixed to the 2.15.3 oracle (list in surface). (3) Candidate header drift fixed to the oracle (xmlTextWriter* int returns, xmlDebugDumpNode depth arg, xmlParseURIReference/URIUnescapeString returns, xmlNewTextReaderFilename 1-arg, xslt function-pointer typedefs). (4) Variadic shims: the four legacy SAX v1 handlers became x86-64 asm shims formatting the varargs (upstream xmlVFormatLegacyError); xmlStrPrintf/xsltTransformError classified as shims.
+- **Phase 11 triangulation:** ABI-FUNCTION-SIGNATURE court (tools/abi/function_signature_court.py): oracle-vs-candidate-vs-Rust prototype mirror, PASS at 3319 compared / 0 findings. ALLOCATOR-HOOK differential court: xmlMemSetup/get, Gc variant, direct variable assignment and NULL rejection are byte-identical with the oracle.
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-31 (discovered by the 11.1-Z.2 review (xmlGcMemSetup class) and quantified by the new ABI-FUNCTION-SIGNATURE court (207 findings at first run)); FIXED 2026-08-31 (fixed in 11.1-Z.2; court PASS at 3319 compared / 0 findings; ALLOCATOR-HOOK differential byte-identical with the oracle)
+
+### R-000177: Cross-DSO state partitioning: the whole-archive libxslt/libexslt facades carry private copies of the entire libxml2 core, so hooks/globals installed through one DSO are not observed by the others (OPEN)
+
+- **Status:** OPEN
+- **Component:** tools/packaging/facade-gen.sh, tools/packaging/linker-wrapper.sh, courts/suites/data-abi/dso-state-coherence-probe.c, tools/abi/dso_state_coherence_probe.py, build.rs
+- **Surface:** three-DSO packaging (tools/packaging/facade-gen.sh, linker-wrapper.sh); every libxml2 hook/global read from within libxslt/libexslt: allocator hooks (xmlMemSetup/direct variable assignment), xmlRegisterNodeDefault/xmlDeregisterNodeDefault, xmlSetExternalEntityLoader, parser globals (xmlKeepBlanksDefault etc.), error handlers
+- **Oracle versions:** libxml2 2.15.3, libxslt 1.1.45 (system)
+- **Root cause:** Cargo emits one cdylib (the core, also installed as libxml2.so.16 via the symlink chain). The libxslt/libexslt DSOs are whole-archive re-links of the same staticlib with version-script localization (local: *), so every non-xslt/exslt symbol resolves to a private copy inside the facade — including all Rust statics (the allocator variables, hook globals, parser globals, error state). Upstream libxslt.so.1 leaves the libxml2 symbols undefined and resolves them into the single libxml2.so.16 instance, so hooks/globals are shared. The candidate's facades are ELF-correct (SONAME, NEEDED chain, export surface, consumer link+run) but state-partitioned. Thin re-export facades were tested and cannot work: with the symbols undefined the consumer static link fails (modern ld refuses a U entry as a definition), and the core cannot satisfy the facades' references to the crate's mangled internal symbols (xmlMallocImpl etc. are not exported). Fixing this requires splitting the crate so the xslt/exslt code references only exported core symbols — a Phase-13-scale restructuring, out of scope for 11.1-Z.2.
+- **Observable residual:** A C consumer that installs an allocator/entity loader/node callbacks or changes a parser global through -lxml2 and then runs an XSLT transform through -lxslt does not see those hooks fire inside the transform (the DSO-STATE-COHERENCE court pins the exact profile: transform-phase allocator/register/deregister/loader observations all 0, keepBlanks not shared — 56-byte result vs the oracle's 41). Transforms themselves work: documents built through -lxml2 are consumed correctly by -lxslt (shared struct layouts); only cross-DSO state is partitioned.
+- **Phase 11 triangulation:** DSO-STATE-COHERENCE court (courts/suites/data-abi/dso-state-coherence-probe.c): every hook observation is True for the oracle (shared instance) and False for the candidate facades; the documented-partition profile is asserted so any silent architectural change is caught. The three-DSO ELF contract (SONAMEs, NEEDED chains, per-DSO export surfaces, consumer link+run) is verified by the DSO-LOADER court.
+- **Evidence:** ['courts/suites/data-abi/dso-state-coherence-probe.c', 'tools/abi/dso_state_coherence_probe.py', 'courts/receipts/phase-11/dso-state-coherence-*.json']
+- **Classification:** DOCUMENTED_DIVERGENCE
+
 ## Classification Legend
 
 - `CANDIDATE_BUG` — see classification policy in §45/§71
+- `DOCUMENTED_DIVERGENCE` — see classification policy in §45/§71
 - `INTENTIONAL_SAFE_DIVERGENCE` — see classification policy in §45/§71
 - `ORACLE_BUG` — see classification policy in §45/§71
 - `UNRESOLVED` — see classification policy in §45/§71

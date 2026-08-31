@@ -68,6 +68,7 @@ typedef xmlDocPtr (*xsltDocLoaderFunc) (const xmlChar *URI,
  * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
  */
 XSLTPUBVAR xsltDocLoaderFunc xsltDocDefaultLoader;
+XSLTPUBFUN void XSLTCALL xsltSetLoaderFunc(xsltDocLoaderFunc f);
 XSLTPUBFUN xsltDocumentPtr XSLTCALL xsltFindDocument (xsltTransformContextPtr ctxt, xmlDocPtr doc);
 XSLTPUBFUN void XSLTCALL xsltFreeDocuments (xsltTransformContextPtr ctxt);
 XSLTPUBFUN void XSLTCALL xsltFreeStyleDocuments (xsltStylesheetPtr style);

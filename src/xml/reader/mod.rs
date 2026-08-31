@@ -4499,29 +4499,16 @@ pub unsafe extern "C" fn xmlReaderForDoc(
     unsafe { xmlReaderForMemory(cur as *const c_char, len, URL, encoding, options) }
 }
 
-/// `xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI, const char *encoding, int options)`.
+/// `xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI)` — upstream
+/// xmlreader.c: creates a reader over the file, no encoding/options
+/// (R-000176: the candidate previously exported a 3-argument extension).
 ///
 /// # SAFETY
 ///
-///
-/// - `URI`, `encoding` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `URI` must point to a valid NUL-terminated string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlNewTextReaderFilename(
-    URI: *const c_char,
-    encoding: *const c_char,
-    options: c_int,
-) -> *mut XmlTextReader {
-    unsafe { xmlReaderForFile(URI, encoding, options) }
+pub unsafe extern "C" fn xmlNewTextReaderFilename(URI: *const c_char) -> *mut XmlTextReader {
+    unsafe { xmlReaderForFile(URI, ptr::null(), 0) }
 }
 
 /// Rebuild a reader in place (upstream `xmlReaderNew*` reuse contract).

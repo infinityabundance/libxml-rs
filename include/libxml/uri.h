@@ -36,10 +36,11 @@ struct _xmlURI {
 
 XMLPUBFUN xmlURIPtr xmlParseURI(const char *str);
 XMLPUBFUN xmlURIPtr xmlParseURIRaw(const char *str, int raw);
-XMLPUBFUN xmlURIPtr xmlParseURIReference(xmlURIPtr uri, const char *str);
+XMLPUBFUN int
+		xmlParseURIReference(xmlURIPtr uri, const char *str);
 XMLPUBFUN void xmlFreeURI(xmlURIPtr uri);
 XMLPUBFUN xmlChar *xmlSaveUri(xmlURIPtr uri);
-XMLPUBFUN int xmlURIUnescapeString(const char *str, int len, char *target);
+XMLPUBFUN char *xmlURIUnescapeString(const char *str, int len, char *target);
 XMLPUBFUN char *xmlURIEscapeStr(const char *str, const char *list);
 XMLPUBFUN int xmlNormalizeURIPath(char *path);
 

@@ -41,5 +41,7 @@
  "residuals": [
   "R-000166"
  ],
- "court_families": []
+ "court_families": [
+  "DSO-STATE-COHERENCE"
+ ]
 }

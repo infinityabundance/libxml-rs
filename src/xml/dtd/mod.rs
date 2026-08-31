@@ -1090,10 +1090,12 @@ unsafe fn copy_enumeration(tree: *mut _xmlEnumeration) -> *mut _xmlEnumeration {
 /// - `dtd` must be a valid pointer to an _xmlDtd, or NULL.
 /// - `name` must be a valid null-terminated string.
 /// - `elem`, `defaultValue`, `tree` may be NULL.
+#[allow(clippy::too_many_arguments)]
 pub unsafe fn add_attribute_decl(
     dtd: *mut _xmlDtd,
     elem: *mut _xmlElement,
     name: *const xmlChar,
+    ns: *const xmlChar,
     type_: c_int,
     def: c_int,
     defaultValue: *const xmlChar,
@@ -1118,13 +1120,11 @@ pub unsafe fn add_attribute_decl(
 
         // Check if attribute already exists for this element
         // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl): the attribute table
-        // is keyed by (name, prefix, elem).
-        let existing = hash::hash_lookup3(
-            d.attributes as *mut hash::HashTable,
-            name,
-            ptr::null(),
-            elem_name,
-        );
+        // is keyed by (name, ns, elem) — xmlHashAdd3/xmlHashLookup3 with the
+        // namespace as the middle key (R-000176: the pre-2.10 candidate
+        // signature dropped the ns key).
+        let existing =
+            hash::hash_lookup3(d.attributes as *mut hash::HashTable, name, ns, elem_name);
         if !existing.is_null() {
             return existing as *mut _xmlAttribute;
         }
@@ -1145,15 +1145,21 @@ pub unsafe fn add_attribute_decl(
         (*attr).def = def;
         (*attr).defaultValue = string::xml_strdup(defaultValue);
         (*attr).tree = tree; // Takes ownership of the enumeration tree
-        (*attr).prefix = ptr::null_mut();
+                             // UPSTREAM-PARITY (valid.c xmlAddAttributeDecl): `prefix` mirrors the
+                             // ns argument; NULL ns leaves it NULL.
+        (*attr).prefix = if ns.is_null() {
+            ptr::null_mut()
+        } else {
+            string::xml_strdup(ns)
+        };
         (*attr).elem = string::xml_strdup(elem_name);
 
         // Add to DTD's attribute hash table (keyed by attribute name,
-        // prefix, element name — upstream xmlHashAdd3).
+        // namespace, element name — upstream xmlHashAdd3).
         let ret = hash::hash_add_entry3(
             d.attributes as *mut hash::HashTable,
             name,
-            ptr::null(),
+            ns,
             elem_name,
             attr as *mut c_void,
         );
@@ -1167,6 +1173,9 @@ pub unsafe fn add_attribute_decl(
             }
             if !(*attr).elem.is_null() {
                 allocator::xmlFreeImpl((*attr).elem as *mut c_void);
+            }
+            if !(*attr).prefix.is_null() {
+                allocator::xmlFreeImpl((*attr).prefix as *mut c_void);
             }
             allocator::xmlFreeImpl(attr as *mut c_void);
             // Don't free tree - caller still owns it on failure
@@ -1915,6 +1924,7 @@ mod tests {
                 dtd,
                 elem,
                 attr_name,
+                ptr::null(),
                 XML_ATTRIBUTE_CDATA as c_int,
                 XML_ATTRIBUTE_IMPLIED as c_int,
                 ptr::null(),
@@ -1956,6 +1966,7 @@ mod tests {
                 dtd,
                 elem,
                 attr_name,
+                ptr::null(),
                 XML_ATTRIBUTE_CDATA as c_int,
                 XML_ATTRIBUTE_FIXED as c_int,
                 default_val,
@@ -2000,6 +2011,7 @@ mod tests {
                 dtd,
                 elem,
                 attr_name,
+                ptr::null(),
                 XML_ATTRIBUTE_ENUMERATION as c_int,
                 XML_ATTRIBUTE_REQUIRED as c_int,
                 ptr::null(),
@@ -2020,6 +2032,7 @@ mod tests {
                 ptr::null_mut(),
                 ptr::null_mut(),
                 c_str(b"test"),
+                ptr::null(),
                 XML_ATTRIBUTE_CDATA as c_int,
                 XML_ATTRIBUTE_IMPLIED as c_int,
                 ptr::null(),
@@ -2047,6 +2060,7 @@ mod tests {
                 dtd,
                 elem,
                 attr_name,
+                ptr::null(),
                 XML_ATTRIBUTE_ID as c_int,
                 XML_ATTRIBUTE_IMPLIED as c_int,
                 default_val,

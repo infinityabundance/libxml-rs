@@ -59,7 +59,7 @@
 //! # Proving courts
 //!
 //! The CLI-XSLTPROC court cases and the XSLT court family cover the AVT
-//! evaluation paths; DSO-LOADER (25/25) and HEADER-COMPILE (595/595) resolve
+//! evaluation paths; DSO-LOADER and HEADER-COMPILE resolve
 //! the exports; the avt/namespace unit tests run under cargo test.
 //!
 //! # Tempting simplifications that would break parity

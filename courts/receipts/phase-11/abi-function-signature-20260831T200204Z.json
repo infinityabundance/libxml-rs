@@ -1,0 +1,1443 @@
+{
+ "court": "ABI-FUNCTION-SIGNATURE",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T200204Z",
+ "schema": "function-signature-court-1",
+ "planes": {
+  "oracle": "system headers via clang AST",
+  "candidate_headers": "include/ via clang AST",
+  "rust": "src/ extern \"C\" fn extraction"
+ },
+ "asm_shims_classified": [
+  "xmlGenericErrorDefaultFunc",
+  "xsltGenericErrorDefaultFunc"
+ ],
+ "data_exports_excluded": [
+  "exsltLibexsltVersion",
+  "exsltLibraryVersion",
+  "exsltLibxmlVersion",
+  "exsltLibxsltVersion",
+  "xmlBufferAllocScheme",
+  "xmlCharEncodingHandlers",
+  "xmlDebugEntities",
+  "xmlDefaultBufferSize",
+  "xmlDefaultSAXHandler",
+  "xmlDefaultSAXLocator",
+  "xmlDeregisterNodeDefaultValue",
+  "xmlDoValidityCheckingDefaultValue",
+  "xmlEntityValue",
+  "xmlFree",
+  "xmlGenericError",
+  "xmlGenericErrorContext",
+  "xmlIndentTreeOutput",
+  "xmlKeepBlanksDefaultValue",
+  "xmlLastError",
+  "xmlLineNumbersDefaultValue",
+  "xmlLoadExtDtdDefaultValue",
+  "xmlMalloc",
+  "xmlMallocAtomic",
+  "xmlMemStrdup",
+  "xmlOldXMLWDcompatibility",
+  "xmlOutputBufferCreateFilenameDefault",
+  "xmlParserDebugEntities",
+  "xmlParserInputBufferCreateFilenameDefault",
+  "xmlParserVersion",
+  "xmlPedanticParserDefaultValue",
+  "xmlRealloc",
+  "xmlRegisterNodeDefaultValue",
+  "xmlSaveDebug",
+  "xmlSaveNoEmptyTags",
+  "xmlStringComment",
+  "xmlStringText",
+  "xmlStringTextLen",
+  "xmlStringTextNoenc",
+  "xmlStructuredError",
+  "xmlStructuredErrorContext",
+  "xmlSubstituteEntitiesDefaultValue",
+  "xmlTreeDebug",
+  "xmlTreeIndentString",
+  "xmlXPathNAN",
+  "xmlXPathNINF",
+  "xmlXPathNInf",
+  "xmlXPathNaN",
+  "xmlXPathPINF",
+  "xmlXPathPInf",
+  "xslDebugStatus",
+  "xsltDocDefaultLoader",
+  "xsltEngineVersion",
+  "xsltExtMarker",
+  "xsltGenericDebug",
+  "xsltGenericDebugContext",
+  "xsltGenericError",
+  "xsltGenericErrorContext",
+  "xsltLibxmlVersion",
+  "xsltLibxsltVersion"
+ ],
+ "summary": {
+  "compared": 3325,
+  "ok": 3128,
+  "findings": 207
+ },
+ "findings": [
+  {
+   "symbol": "__xmlGenericError",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlGenericErrorFunc *()"
+  },
+  {
+   "symbol": "__xmlGenericErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void **()"
+  },
+  {
+   "symbol": "__xmlLastError",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: const xmlError *()"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlOutputBuffer *(const char *, xmlCharEncodingHandler *, int)"
+  },
+  {
+   "symbol": "__xmlOutputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlOutputBufferCreateFilenameFunc *()"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlParserInputBuffer *(const char *, xmlCharEncoding)"
+  },
+  {
+   "symbol": "__xmlParserInputBufferCreateFilenameValue",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlParserInputBufferCreateFilenameFunc *()"
+  },
+  {
+   "symbol": "__xmlStructuredError",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: xmlStructuredErrorFunc *()"
+  },
+  {
+   "symbol": "__xmlStructuredErrorContext",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void **()"
+  },
+  {
+   "symbol": "xmlDebugDumpNode",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle void(FILE *, xmlNode *, int) vs candidate void(FILE *, xmlNodePtr)"
+  },
+  {
+   "symbol": "xmlDebugDumpNodeList",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle void(FILE *, xmlNode *, int) vs candidate void(FILE *, xmlNodePtr)"
+  },
+  {
+   "symbol": "xmlNewTextReaderFilename",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle xmlTextReader *(const char *) vs candidate xmlTextReaderPtr(const char *, const char *, int)"
+  },
+  {
+   "symbol": "xmlParseURIReference",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlURI *, const char *) vs candidate xmlURIPtr(xmlURIPtr, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterEndAttribute",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndCDATA",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndComment",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTD",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDAttlist",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndDocument",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterEndPI",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterFullEndElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterStartAttribute",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartAttributeNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartCDATA",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterStartComment",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *) vs candidate xmlChar *(xmlTextWriterPtr)"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTD",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDAttlist",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartDocument",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, const char *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const char *, const char *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartElementNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterStartPI",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteAttribute",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteAttributeNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteBase64",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, int, int) vs candidate xmlChar *(xmlTextWriterPtr, const char *, int, int)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteBinHex",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, int, int) vs candidate xmlChar *(xmlTextWriterPtr, const char *, int, int)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteCDATA",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteComment",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTD",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDAttlist",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDExternalEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDExternalEntityContents",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDInternalEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDNotation",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteElementNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatAttribute",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatAttributeNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatCDATA",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatComment",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTD",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDAttlist",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatDTDInternalEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatElementNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatPI",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatRaw",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteFormatString",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *) vs candidate xmlChar *(xmlTextWriterPtr, const char *)"
+  },
+  {
+   "symbol": "xmlTextWriterWritePI",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteRaw",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteRawLen",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, int) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, int)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteString",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatAttribute",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatAttributeNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatCDATA",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatComment",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTD",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDAttlist",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDInternalEntity",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, int, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, int, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatElementNS",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const xmlChar *, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatPI",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const xmlChar *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const xmlChar *, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatRaw",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatString",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xmlTextWriter *, const char *, struct __va_list_tag *) vs candidate xmlChar *(xmlTextWriterPtr, const char *, struct __va_list_tag *)"
+  },
+  {
+   "symbol": "xmlURIUnescapeString",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle char *(const char *, int, char *) vs candidate int(const char *, int, char *)"
+  },
+  {
+   "symbol": "xslHandleDebugger",
+   "plane": "oracle-vs-candidate",
+   "kind": "missing-in-candidate-header",
+   "detail": "oracle: void(xmlNodePtr, xmlNodePtr, xsltTemplatePtr, xsltTransformContextPtr)"
+  },
+  {
+   "symbol": "xsltExtElementLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle xsltTransformFunction(xsltTransformContextPtr, const xmlChar *, const xmlChar *) vs candidate void *(xsltTransformContextPtr, const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xsltExtModuleElementLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle xsltTransformFunction(const xmlChar *, const xmlChar *) vs candidate void *(const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xsltExtModuleElementPreComputeLookup",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle xsltPreComputeFunction(const xmlChar *, const xmlChar *) vs candidate void *(const xmlChar *, const xmlChar *)"
+  },
+  {
+   "symbol": "xsltRegisterExtElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(xsltTransformContextPtr, const xmlChar *, const xmlChar *, xsltTransformFunction) vs candidate int(xsltTransformContextPtr, const xmlChar *, const xmlChar *, void *)"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleElement",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle int(const xmlChar *, const xmlChar *, xsltPreComputeFunction, xsltTransformFunction) vs candidate int(const xmlChar *, const xmlChar *, void *, void *)"
+  },
+  {
+   "symbol": "xsltSetLoaderFunc",
+   "plane": "oracle-vs-candidate",
+   "kind": "prototype-drift",
+   "detail": "oracle void(xsltDocLoaderFunc) vs candidate void(void *)"
+  },
+  {
+   "symbol": "xmlAddAttributeDecl",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 9 (xmlValidCtxt *, xmlDtd *, const xmlChar *, const xmlChar *, const xmlChar *, xmlAttributeType, xmlAttributeDefault, const xmlChar *, xmlEnumeration *) vs Rust 7 (*mut _xmlDtd, *mut _xmlElement, *const xmlChar, c_int, c_int, *const xmlChar, *mut _xmlEnumeration)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlAddElementDecl",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 5 (xmlValidCtxt *, xmlDtd *, const xmlChar *, xmlElementTypeVal, xmlElementContent *) vs Rust 4 (*mut _xmlDtd, *const xmlChar, c_int, *mut _xmlElementContent)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlAddEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust *mut _xmlEntity(('pointer', 1)); arg count 8 (xmlDoc *, int, const xmlChar *, int, const xmlChar *, const xmlChar *, const xmlChar *, xmlEntity **) vs Rust 6 (*mut _xmlDtd, *const xmlChar, c_int, *const xmlChar, *const xmlChar, *const xmlChar)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlAddNotationDecl",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 5 (xmlValidCtxt *, xmlDtd *, const xmlChar *, const xmlChar *, const xmlChar *) vs Rust 4 (*mut _xmlDtd, *const xmlChar, *const xmlChar, *const xmlChar)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlAutomataCompile",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return struct _xmlRegexp *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/automata/mod.rs"
+  },
+  {
+   "symbol": "xmlAutomataNewCountTrans",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 4 int(('int', 0)) vs Rust *mut core::ffi::c_void(('pointer', 1)); arg 6 void *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/automata/mod.rs"
+  },
+  {
+   "symbol": "xmlAutomataNewOnceTrans",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 4 int(('int', 0)) vs Rust *mut core::ffi::c_void(('pointer', 1)); arg 6 void *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/automata/mod.rs"
+  },
+  {
+   "symbol": "xmlC14NExecute",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 7 (xmlDoc *, xmlC14NIsVisibleCallback, void *, int, xmlChar **, int, xmlOutputBuffer *) vs Rust 6 (*mut _xmlDoc, c_int, *mut *mut xmlChar, c_int, Option<\n        unsafe extern \"C\" fn(ctx: *mut c_void, data: *const c_char, len: c_int) -> c_int,\n    >, *mut c_void)",
+   "rust_path": "src/xml/c14n/mod.rs"
+  },
+  {
+   "symbol": "xmlCatalogConvert",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust *mut _xmlDoc(('pointer', 1))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlCatalogDump",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 1 (FILE *) vs Rust 2 (*mut c_void, *mut c_void)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlCharEncNewCustomHandler",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 3 xmlCharEncConvCtxtDtor(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlCharEncConvCtxtDtor>(('other', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlCreateCharEncodingHandler",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 2 xmlCharEncConvImpl(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlCharEncConvImpl>(('other', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlCtxtSetCharEncConvImpl",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlCharEncConvImpl(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlCharEncConvImpl>(('other', 0))",
+   "rust_path": "src/abi/exports_parserint.rs"
+  },
+  {
+   "symbol": "xmlCtxtSetResourceLoader",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlResourceLoader(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlResourceLoader>(('other', 0))",
+   "rust_path": "src/abi/exports_parserint.rs"
+  },
+  {
+   "symbol": "xmlDebugDumpNode",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 2 (FILE *, xmlNodePtr) vs Rust 3 (*mut _IO_FILE, *mut _xmlNode, c_int)",
+   "rust_path": "src/xml/debug/mod.rs"
+  },
+  {
+   "symbol": "xmlDebugDumpNodeList",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 2 (FILE *, xmlNodePtr) vs Rust 3 (*mut _IO_FILE, *mut _xmlNode, c_int)",
+   "rust_path": "src/xml/debug/mod.rs"
+  },
+  {
+   "symbol": "xmlGcMemGet",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust ()(('void', 0)); arg count 5 (xmlFreeFunc *, xmlMallocFunc *, xmlMallocFunc *, xmlReallocFunc *, xmlStrdupFunc *) vs Rust 4 (*mut Option<xmlFreeFunc>, *mut Option<xmlMallocFunc>, *mut Option<xmlReallocFunc>, *mut Option<xmlStrdupFunc>)",
+   "rust_path": "src/abi/allocator.rs"
+  },
+  {
+   "symbol": "xmlGcMemSetup",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust ()(('void', 0)); arg count 5 (xmlFreeFunc, xmlMallocFunc, xmlMallocFunc, xmlReallocFunc, xmlStrdupFunc) vs Rust 4 (Option<xmlFreeFunc>, Option<xmlMallocFunc>, Option<xmlReallocFunc>, Option<xmlStrdupFunc>)",
+   "rust_path": "src/abi/allocator.rs"
+  },
+  {
+   "symbol": "xmlListCopy",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlList *(('pointer', 1)) vs Rust Option<unsafe extern \"C\" fn(*mut c_void) -> *mut c_void>(('fnptr', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlMemGet",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust ()(('void', 0))",
+   "rust_path": "src/abi/allocator.rs"
+  },
+  {
+   "symbol": "xmlMemSetup",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust ()(('void', 0))",
+   "rust_path": "src/abi/allocator.rs"
+  },
+  {
+   "symbol": "xmlMemoryDump",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/allocator.rs"
+  },
+  {
+   "symbol": "xmlNewInputFromIO",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlInputReadCallback(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlInputReadCallback>(('other', 0)); arg 2 xmlInputCloseCallback(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlInputCloseCallback>(('other', 0))",
+   "rust_path": "src/abi/exports_parserint.rs"
+  },
+  {
+   "symbol": "xmlNodeSetContent",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/exports_tree.rs"
+  },
+  {
+   "symbol": "xmlParseURIReference",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlURIPtr(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlParserError",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "variadic True vs Rust False",
+   "rust_path": "src/xml/errors/mod.rs"
+  },
+  {
+   "symbol": "xmlParserValidityError",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "variadic True vs Rust False",
+   "rust_path": "src/xml/errors/mod.rs"
+  },
+  {
+   "symbol": "xmlParserValidityWarning",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "variadic True vs Rust False",
+   "rust_path": "src/xml/errors/mod.rs"
+  },
+  {
+   "symbol": "xmlParserWarning",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "variadic True vs Rust False",
+   "rust_path": "src/xml/errors/mod.rs"
+  },
+  {
+   "symbol": "xmlPatternCompileSafe",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 4 xmlPattern **(('pointer', 2)) vs Rust *mut xmlPatternPtr(('pointer', 1))",
+   "rust_path": "src/abi/exports_automata.rs"
+  },
+  {
+   "symbol": "xmlRegExecPushString",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlRegExecCtxt *, const xmlChar *, void *) vs Rust 2 (*mut RegExecCtxt, *const xmlChar)",
+   "rust_path": "src/xml/regex/mod.rs"
+  },
+  {
+   "symbol": "xmlRegNewExecCtxt",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlRegexp *, xmlRegExecCallbacks, void *) vs Rust 2 (*mut XmlRegexp, *mut c_void)",
+   "rust_path": "src/xml/regex/mod.rs"
+  },
+  {
+   "symbol": "xmlRegexpPrint",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 2 (FILE *, xmlRegexp *) vs Rust 1 (*const XmlRegexp)",
+   "rust_path": "src/xml/regex/mod.rs"
+  },
+  {
+   "symbol": "xmlRelaxNGSetResourceLoader",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlResourceLoader(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlResourceLoader>(('other', 0))",
+   "rust_path": "src/abi/exports_relaxng.rs"
+  },
+  {
+   "symbol": "xmlSchemaSetResourceLoader",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlResourceLoader(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlResourceLoader>(('other', 0))",
+   "rust_path": "src/abi/exports_schema.rs"
+  },
+  {
+   "symbol": "xmlSchematronNewValidCtxt",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 2 (xmlSchematronPtr, int) vs Rust 1 (*mut c_void)",
+   "rust_path": "src/xml/schematron/mod.rs"
+  },
+  {
+   "symbol": "xmlSetListDoc",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/exports_misc.rs"
+  },
+  {
+   "symbol": "xmlSetTreeDoc",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/exports_tree.rs"
+  },
+  {
+   "symbol": "xmlSplitQName",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlParserCtxt *, const xmlChar *, xmlChar **) vs Rust 2 (*const xmlChar, *mut *mut xmlChar)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlSplitQName3",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return const xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlStrPrintf",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlChar *, int, const char *) vs Rust 0 (); variadic True vs Rust False",
+   "rust_path": "src/abi/exports_string.rs"
+  },
+  {
+   "symbol": "xmlTextReaderSetResourceLoader",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlResourceLoader(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlResourceLoader>(('other', 0))",
+   "rust_path": "src/xml/reader/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndAttribute",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndCDATA",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndComment",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTD",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDAttlist",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndDTDEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndDocument",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterEndPI",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterFullEndElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartAttribute",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartAttributeNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartCDATA",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartComment",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTD",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDAttlist",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartDTDEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartDocument",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartElementNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterStartPI",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteAttribute",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteAttributeNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteBase64",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteBinHex",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteCDATA",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteComment",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTD",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDAttlist",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDExternalEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDExternalEntityContents",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDInternalEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteDTDNotation",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteElementNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWritePI",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteRaw",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteRawLen",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteString",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatAttribute",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatAttributeNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatCDATA",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatComment",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTD",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDAttlist",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatDTDInternalEntity",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatElementNS",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatPI",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatRaw",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlTextWriterWriteVFormatString",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlChar *(('pointer', 1)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/writer/mod.rs"
+  },
+  {
+   "symbol": "xmlURIUnescapeString",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust *mut c_char(('pointer', 1))",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlValidateIDRef",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlValidCtxtPtr, xmlDocPtr, const xmlChar *) vs Rust 4 (*mut _xmlValidCtxt, *mut _xmlDoc, *mut _xmlNode, *const xmlChar)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlValidateIDRefs",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 3 (xmlValidCtxtPtr, xmlDocPtr, const xmlChar *) vs Rust 4 (*mut _xmlValidCtxt, *mut _xmlDoc, *mut _xmlNode, *const xmlChar)",
+   "rust_path": "src/abi/exports_xml2.rs"
+  },
+  {
+   "symbol": "xmlXIncludeSetResourceLoader",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xmlResourceLoader(('fnptr', 0)) vs Rust Option<crate::abi::callbacks::xmlResourceLoader>(('other', 0))",
+   "rust_path": "src/abi/exports_schema.rs"
+  },
+  {
+   "symbol": "xmlXPathNodeSetDel",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/xpath/exports.rs"
+  },
+  {
+   "symbol": "xmlXPathNodeSetRemove",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0))",
+   "rust_path": "src/xml/xpath/exports.rs"
+  },
+  {
+   "symbol": "xmlXPathValuePush",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust *mut _xmlXPathObject(('pointer', 1))",
+   "rust_path": "src/xml/xpath/exports.rs"
+  },
+  {
+   "symbol": "xsltAddTemplate",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg count 4 (xsltStylesheetPtr, xsltTemplatePtr, const xmlChar *, const xmlChar *) vs Rust 2 (*mut _xsltStylesheet, *mut _xsltTemplate)",
+   "rust_path": "src/xslt/templates/mod.rs"
+  },
+  {
+   "symbol": "xsltExtModuleFunctionLookup",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xmlXPathFunction(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt_ext.rs"
+  },
+  {
+   "symbol": "xsltExtModuleTopLevelLookup",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return xsltTopLevelFunction(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt_ext.rs"
+  },
+  {
+   "symbol": "xsltGetUTF8CharZ",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return int(('int', 0)) vs Rust c_uint(('uint', 0))",
+   "rust_path": "src/abi/exports_xslt.rs"
+  },
+  {
+   "symbol": "xsltInitElemPreComp",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 3 xsltTransformFunction(('fnptr', 0)) vs Rust crate::abi::exports_xslt_compile::xsltTransformFunction(('other', 0)); arg 4 xsltElemPreCompDeallocator(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt_vars.rs"
+  },
+  {
+   "symbol": "xsltNewElemPreComp",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 2 xsltTransformFunction(('fnptr', 0)) vs Rust crate::abi::exports_xslt_compile::xsltTransformFunction(('other', 0))",
+   "rust_path": "src/abi/exports_xslt_vars.rs"
+  },
+  {
+   "symbol": "xsltRegisterExtElement",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 3 void *(('pointer', 1)) vs Rust Option<\n        unsafe extern \"C\" fn(*mut c_void, *mut c_void, *mut _xmlNode, *mut c_void, *mut _xmlNode),\n    >(('fnptr', 0))",
+   "rust_path": "src/xslt/extensions/mod.rs"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleFunction",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 2 xmlXPathFunction(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt_ext.rs"
+  },
+  {
+   "symbol": "xsltRegisterExtModuleTopLevel",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 2 xsltTopLevelFunction(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt_ext.rs"
+  },
+  {
+   "symbol": "xsltSetCtxtLocaleHandlers",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 1 xsltNewLocaleFunc(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1)); arg 2 xsltFreeLocaleFunc(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1)); arg 3 xsltGenSortKeyFunc(('fnptr', 0)) vs Rust *mut c_void(('pointer', 1))",
+   "rust_path": "src/abi/exports_xslt.rs"
+  },
+  {
+   "symbol": "xsltSetLoaderFunc",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "arg 0 void *(('pointer', 1)) vs Rust Option<\n        unsafe extern \"C\" fn(\n            *mut c_void,\n            *const c_char,\n            *const c_char,\n            *const c_char,\n            c_int,\n        ) -> *mut _xmlParserInput,\n    >(('fnptr', 0))",
+   "rust_path": "src/xslt/documents/mod.rs"
+  },
+  {
+   "symbol": "xsltTransformError",
+   "plane": "candidate-vs-rust",
+   "kind": "signature-mismatch",
+   "detail": "return void(('void', 0)) vs Rust c_int(('int', 0)); arg count 4 (xsltTransformContextPtr, xsltStylesheetPtr, xmlNodePtr, const char *) vs Rust 0 (); variadic True vs Rust False",
+   "rust_path": "src/abi/exports_xslt_util.rs"
+  }
+ ],
+ "verdict": "FAIL"
+}

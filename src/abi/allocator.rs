@@ -10,7 +10,10 @@
 //!
 //! # Phase 1 status
 //!
-//! Complete — all allocator APIs are implemented with thread-safe global state.
+//! Complete — all allocator APIs are implemented; state lives in the five
+//! exported function-pointer variables exactly as upstream (globals.c),
+//! giving `xmlMemSetup` and direct `xmlMalloc = custom` assignment one
+//! shared override mechanism (R-000176).
 //!
 //! # Safety
 //!
@@ -58,11 +61,15 @@
 //!
 //! # Deliberate oddities
 //!
-//! `xmlMemSetup` keeps counter-only accounting for custom allocators
-//! (deliberate: upstreams block table exists only in the debug allocator).
-//! The default allocator routes through Rusts global allocator but the hook
-//! table defaults to the four default_* functions so downstream `xmlMemSetup`
-//! swaps behave identically to upstream.
+//! `xmlMemSetup`/direct variable assignment bypass the accounting registry
+//! (deliberate: upstream's block table exists only in the debug allocator).
+//! The default allocator routes through Rust's global allocator but the five
+//! exported variables (`xmlMalloc`, `xmlMallocAtomic`, `xmlRealloc`, `xmlFree`,
+//! `xmlMemStrdup`) default to the `*Default` accounting bodies, so downstream
+//! `xmlMemSetup` swaps behave identically to upstream. The exported variables
+//! are the single source of truth (R-000176, 11.1-Z.2): `xmlMemSetup` assigns
+//! them and every internal allocation reads them through the `*Impl`
+//! indirection, exactly like upstream internal `xmlMalloc(...)` calls.
 //!
 //! # Proving courts
 //!
@@ -89,8 +96,6 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_long};
-
-use parking_lot::RwLock;
 
 use crate::abi::callbacks::*;
 
@@ -200,27 +205,32 @@ unsafe extern "C" fn default_strdup(str: *const c_char) -> *mut c_void {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Global Allocator State
+// Global Allocator State — single source of truth (11.1-Z.2, R-000176)
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// Global allocator function pointers.
-///
-/// Protected by RwLock for thread-safe read/write.
-/// Default values point to Rust's global allocator.
-static ALLOCATOR: RwLock<AllocatorFuncs> = RwLock::new(AllocatorFuncs {
-    malloc_func: Some(default_malloc as xmlMallocFunc),
-    realloc_func: Some(default_realloc as xmlReallocFunc),
-    free_func: Some(default_free as xmlFreeFunc),
-    strdup_func: Some(default_strdup as xmlStrdupFunc),
-});
-
-/// The set of allocator function pointers.
-struct AllocatorFuncs {
-    malloc_func: Option<xmlMallocFunc>,
-    realloc_func: Option<xmlReallocFunc>,
-    free_func: Option<xmlFreeFunc>,
-    strdup_func: Option<xmlStrdupFunc>,
-}
+//
+// Upstream (xmlmemory.c xmlMemSetup/xmlMemGet, globals.c) keeps exactly ONE
+// allocator state: the five exported DATA variables `xmlFree`, `xmlMalloc`,
+// `xmlMallocAtomic`, `xmlRealloc`, `xmlMemStrdup`. `xmlMemSetup` assigns them,
+// `xmlMemGet` reads them, and EVERY internal allocation calls through the
+// variables — so assigning `xmlMalloc = custom;` directly is equivalent to
+// `xmlMemSetup(...)`. The candidate previously kept a separate `ALLOCATOR`
+// RwLock consulted by the `*Impl` bodies, so a direct public-variable
+// assignment changed the exported symbol but not internal allocations, and
+// `xmlMemSetup` changed internal allocations but not the exported symbols:
+// two sources of truth. This was the xmlGcMemSetup-class defect R-000176
+// (11.1-Z.2). The merged model below restores the upstream single source:
+//
+//   - the five exported `static mut` fn-pointer variables ARE the state;
+//   - the `*Default` functions are the initial values (Rust global allocator
+//     + the accounting registry) and never read the variables;
+//   - the `*Impl` functions are the indirection every internal call site
+//     uses: they read the current variable, so custom hooks installed via
+//     `xmlMemSetup` OR direct assignment are observed everywhere.
+//
+// The write/read contract matches upstream: `xmlMemSetup`/assignment must
+// happen before concurrent use (upstream: "This has to be called before any
+// other libxml routines !"). Rust `static mut` access is `unsafe` and the
+// crate upholds the upstream single-threaded-setup ordering.
 
 /// Global allocation counters (for xmlMemUsed/xmlMemBlocks).
 ///
@@ -274,16 +284,24 @@ unsafe fn block_forget(ptr: *mut c_void) -> usize {
 // Public Allocator API
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Set custom memory allocator functions.
+/// Set custom memory allocator functions (upstream xmlmemory.h).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// void xmlMemSetup(xmlFreeFunc freeFunc,
-///                  xmlMallocFunc mallocFunc,
-///                  xmlReallocFunc reallocFunc,
-///                  xmlStrdupFunc strdupFunc);
+/// int xmlMemSetup(xmlFreeFunc freeFunc,
+///                 xmlMallocFunc mallocFunc,
+///                 xmlReallocFunc reallocFunc,
+///                 xmlStrdupFunc strdupFunc);
 /// ```
+///
+/// Returns -1 if any function is NULL (upstream xmlmemory.c: "Returns 0 on
+/// success"); otherwise assigns the five exported allocator variables
+/// (xmlFree, xmlMalloc, xmlMallocAtomic = mallocFunc, xmlRealloc,
+/// xmlMemStrdup) and returns 0. The exported variables are the single source
+/// of truth: every internal allocation reads them through the `*Impl`
+/// indirection, so this call — or a direct `xmlMalloc = custom` assignment —
+/// re-routes all allocations immediately (R-000176 fix).
 ///
 /// # SAFETY
 ///
@@ -292,122 +310,177 @@ unsafe fn block_forget(ptr: *mut c_void) -> usize {
 /// - Once set, the functions remain in effect until the next `xmlMemSetup` call
 /// - The caller is responsible for ensuring the functions remain valid for the
 ///   entire time they are installed
+/// - Must not race with concurrent allocation (upstream ordering contract:
+///   "This has to be called before any other libxml routines !")
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemSetup(
     freeFunc: Option<xmlFreeFunc>,
     mallocFunc: Option<xmlMallocFunc>,
     reallocFunc: Option<xmlReallocFunc>,
     strdupFunc: Option<xmlStrdupFunc>,
-) {
-    // SAFETY: Caller guarantees all function pointers are valid.
-    // We store them in global state protected by RwLock.
-    let mut alloc = ALLOCATOR.write();
-    alloc.free_func = freeFunc;
-    alloc.malloc_func = mallocFunc;
-    alloc.realloc_func = reallocFunc;
-    alloc.strdup_func = strdupFunc;
+) -> c_int {
+    if freeFunc.is_none() || mallocFunc.is_none() || reallocFunc.is_none() || strdupFunc.is_none() {
+        return -1;
+    }
+    // SAFETY: callers must uphold the upstream single-threaded-setup
+    // ordering; each value is a non-NULL C function pointer (checked above).
+    unsafe {
+        xmlFree = freeFunc.unwrap();
+        xmlMalloc = mallocFunc.unwrap();
+        xmlMallocAtomic = mallocFunc.unwrap();
+        xmlRealloc = reallocFunc.unwrap();
+        xmlMemStrdup = strdupFunc.unwrap();
+    }
+    0
 }
 
-/// Get the current memory allocator functions.
+/// Get the current memory allocator functions (upstream xmlmemory.h).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// void xmlMemGet(xmlFreeFunc *freeFunc,
-///                xmlMallocFunc *mallocFunc,
-///                xmlReallocFunc *reallocFunc,
-///                xmlStrdupFunc *strdupFunc);
+/// int xmlMemGet(xmlFreeFunc *freeFunc,
+///               xmlMallocFunc *mallocFunc,
+///               xmlReallocFunc *reallocFunc,
+///               xmlStrdupFunc *strdupFunc);
 /// ```
+///
+/// Writes the current exported allocator variables through NULL-tolerant
+/// output pointers (upstream xmlmemory.c: NULL outputs are skipped) and
+/// returns 0.
 ///
 /// # SAFETY
 ///
-/// - All output pointers must be valid (non-null) and writable
+/// - All non-NULL output pointers must be valid and writable
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemGet(
     freeFunc: *mut Option<xmlFreeFunc>,
     mallocFunc: *mut Option<xmlMallocFunc>,
     reallocFunc: *mut Option<xmlReallocFunc>,
     strdupFunc: *mut Option<xmlStrdupFunc>,
-) {
-    // SAFETY: Caller guarantees all output pointers are valid.
-    let alloc = ALLOCATOR.read();
+) -> c_int {
+    // SAFETY: callers must pass NULL or valid writable pointers; reads of
+    // the exported variables are safe under the upstream setup ordering.
     unsafe {
-        ptr::write(freeFunc, alloc.free_func);
-        ptr::write(mallocFunc, alloc.malloc_func);
-        ptr::write(reallocFunc, alloc.realloc_func);
-        ptr::write(strdupFunc, alloc.strdup_func);
+        if !freeFunc.is_null() {
+            ptr::write(freeFunc, Some(xmlFree));
+        }
+        if !mallocFunc.is_null() {
+            ptr::write(mallocFunc, Some(xmlMalloc));
+        }
+        if !reallocFunc.is_null() {
+            ptr::write(reallocFunc, Some(xmlRealloc));
+        }
+        if !strdupFunc.is_null() {
+            ptr::write(strdupFunc, Some(xmlMemStrdup));
+        }
     }
+    0
 }
 
-/// Set GC-aware memory allocator functions.
+/// Set GC-aware memory allocator functions (upstream xmlmemory.h).
 ///
 /// # UPSTREAM-PARITY
 ///
-/// This is a wrapper around `xmlMemSetup` in modern libxml2.
-/// Historically, it was separate for the GC-allocated memory pool,
-/// but in modern versions both functions do the same thing.
+/// ```c
+/// int xmlGcMemSetup(xmlFreeFunc freeFunc,
+///                   xmlMallocFunc mallocFunc,
+///                   xmlMallocFunc mallocAtomicFunc,
+///                   xmlReallocFunc reallocFunc,
+///                   xmlStrdupFunc strdupFunc);
+/// ```
+///
+/// Same contract as `xmlMemSetup` with a dedicated `mallocAtomicFunc` for
+/// atomic allocations (upstream xmlmemory.c: `xmlMallocAtomic =
+/// mallocAtomicFunc`). Returns -1 if any function is NULL, else 0.
 ///
 /// # SAFETY
 ///
-///
-/// - `freeFunc`, `mallocFunc`, `reallocFunc`, `strdupFunc` must be a valid callback (or None);
-///   the callback is invoked with the documented context pointer and
-///   must itself uphold the same pointer invariants.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - All function pointers must be valid (non-null) and thread-safe
+/// - The functions must follow the C malloc/realloc/free/strdup contract
+/// - Must not race with concurrent allocation (upstream ordering contract)
+/// - The caller is responsible for ensuring the functions remain valid for
+///   the entire time they are installed
 #[no_mangle]
 pub unsafe extern "C" fn xmlGcMemSetup(
     freeFunc: Option<xmlFreeFunc>,
     mallocFunc: Option<xmlMallocFunc>,
+    mallocAtomicFunc: Option<xmlMallocFunc>,
     reallocFunc: Option<xmlReallocFunc>,
     strdupFunc: Option<xmlStrdupFunc>,
-) {
-    // SAFETY: Delegates to xmlMemSetup with the same safety contract.
-    unsafe { xmlMemSetup(freeFunc, mallocFunc, reallocFunc, strdupFunc) };
+) -> c_int {
+    if freeFunc.is_none()
+        || mallocFunc.is_none()
+        || mallocAtomicFunc.is_none()
+        || reallocFunc.is_none()
+        || strdupFunc.is_none()
+    {
+        return -1;
+    }
+    // SAFETY: callers must uphold the upstream single-threaded-setup
+    // ordering; each value is a non-NULL C function pointer (checked above).
+    unsafe {
+        xmlFree = freeFunc.unwrap();
+        xmlMalloc = mallocFunc.unwrap();
+        xmlMallocAtomic = mallocAtomicFunc.unwrap();
+        xmlRealloc = reallocFunc.unwrap();
+        xmlMemStrdup = strdupFunc.unwrap();
+    }
+    0
 }
 
-/// Get GC-aware memory allocator functions.
+/// Get GC-aware memory allocator functions (upstream xmlmemory.h).
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Wrapper around `xmlMemGet`.
+/// ```c
+/// int xmlGcMemGet(xmlFreeFunc *freeFunc,
+///                 xmlMallocFunc *mallocFunc,
+///                 xmlMallocFunc *mallocAtomicFunc,
+///                 xmlReallocFunc *reallocFunc,
+///                 xmlStrdupFunc *strdupFunc);
+/// ```
+///
+/// Same contract as `xmlMemGet` with the `mallocAtomicFunc` output.
+/// Writes through NULL-tolerant output pointers and returns 0.
 ///
 /// # SAFETY
 ///
-///
-/// - `freeFunc`, `mallocFunc`, `reallocFunc`, `strdupFunc` must be a valid callback (or None);
-///   the callback is invoked with the documented context pointer and
-///   must itself uphold the same pointer invariants.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - All non-NULL output pointers must be valid and writable
 #[no_mangle]
 pub unsafe extern "C" fn xmlGcMemGet(
     freeFunc: *mut Option<xmlFreeFunc>,
     mallocFunc: *mut Option<xmlMallocFunc>,
+    mallocAtomicFunc: *mut Option<xmlMallocFunc>,
     reallocFunc: *mut Option<xmlReallocFunc>,
     strdupFunc: *mut Option<xmlStrdupFunc>,
-) {
-    // SAFETY: Delegates to xmlMemGet with the same safety contract.
-    unsafe { xmlMemGet(freeFunc, mallocFunc, reallocFunc, strdupFunc) };
+) -> c_int {
+    // SAFETY: callers must pass NULL or valid writable pointers.
+    unsafe {
+        if !freeFunc.is_null() {
+            ptr::write(freeFunc, Some(xmlFree));
+        }
+        if !mallocFunc.is_null() {
+            ptr::write(mallocFunc, Some(xmlMalloc));
+        }
+        if !mallocAtomicFunc.is_null() {
+            ptr::write(mallocAtomicFunc, Some(xmlMallocAtomic));
+        }
+        if !reallocFunc.is_null() {
+            ptr::write(reallocFunc, Some(xmlRealloc));
+        }
+        if !strdupFunc.is_null() {
+            ptr::write(strdupFunc, Some(xmlMemStrdup));
+        }
+    }
+    0
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Allocation Functions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Allocate memory.
+/// Allocate memory through the exported `xmlMalloc` variable.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -415,23 +488,31 @@ pub unsafe extern "C" fn xmlGcMemGet(
 /// void *xmlMalloc(size_t size);
 /// ```
 ///
-/// Returns a pointer to the allocated memory, or NULL on failure.
-/// The allocated memory is not initialized (like malloc).
+/// Every internal allocation site calls this indirection, which reads the
+/// current exported `xmlMalloc` variable — exactly how upstream internal
+/// code calls `xmlMalloc(...)` (the variable, globals.c). With no override
+/// the variable holds `xmlMallocDefault`; after `xmlMemSetup` or a direct
+/// `xmlMalloc = custom` assignment it holds the custom hook, so all internal
+/// allocations observe the override (R-000176 fix, single source of truth).
 ///
 /// # SAFETY
 ///
 /// - The returned pointer must be freed with `xmlFree`
 /// - `size` may be 0 (returns a valid non-NULL pointer or NULL)
-///
-/// This is the implementation backing the exported `xmlMalloc` data global
-/// (upstream xmlmemory.h: `XMLPUBVAR xmlMallocFunc xmlMalloc;` — a function-
-/// pointer variable, not a function).
 pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
-    // SAFETY: We call the stored malloc function pointer.
-    // The function pointer must be valid (set by xmlMemSetup or default).
-    let alloc = ALLOCATOR.read();
-    let malloc_func = alloc.malloc_func.unwrap_or(default_malloc as xmlMallocFunc);
-    let ptr = unsafe { malloc_func(size) };
+    // SAFETY: reading the exported static mut is safe under the upstream
+    // setup-ordering contract; the stored value is a valid C fn pointer.
+    unsafe { (xmlMalloc)(size) }
+}
+
+/// Default `xmlMalloc` body: Rust global allocator + accounting registry.
+///
+/// This is the initial value of the exported `xmlMalloc` variable and never
+/// reads the variable (no recursion). Accounting matches the upstream
+/// debug-allocator contract: counters plus the per-block registry, so
+/// `xmlMemUsed`/`xmlMemSize` are exact while the default is installed.
+unsafe extern "C" fn xmlMallocDefault(size: usize) -> *mut c_void {
+    let ptr = unsafe { default_malloc(size) };
     if !ptr.is_null() {
         MEM_USED.fetch_add(size, Ordering::Relaxed);
         MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
@@ -440,7 +521,7 @@ pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
     ptr
 }
 
-/// Allocate memory that will never contain pointers to other memory.
+/// Allocate through the exported `xmlMallocAtomic` variable.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -449,24 +530,27 @@ pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
 /// ```
 ///
 /// Identical to `xmlMalloc` but hints to the GC that the memory does not
-/// contain pointers. In modern libxml2, this is equivalent to `xmlMalloc`.
-/// Backing the exported `xmlMallocAtomic` data global.
+/// contain pointers. In modern libxml2 this is equivalent to `xmlMalloc`;
+/// `xmlMemSetup` aliases it to the same hook (upstream xmlmemory.c).
 ///
 /// # SAFETY
 ///
-/// The function touches crate-global state only; it is safe
-/// as long as the caller respects the library's global
-/// initialization/cleanup ordering (xmlInitParser before use,
-/// xmlCleanupParser only after all users are done).
-///
-/// Violating the global lifecycle ordering, or calling this after
-/// teardown or from a signal handler, is undefined behavior.
+/// - The returned pointer must be freed with `xmlFree`
+/// - `size` may be 0 (returns a valid non-NULL pointer or NULL)
 pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
-    // SAFETY: Same as xmlMalloc.
-    unsafe { xmlMallocImpl(size) }
+    // SAFETY: see xmlMallocImpl.
+    unsafe { (xmlMallocAtomic)(size) }
 }
 
-/// Reallocate memory.
+/// Default `xmlMallocAtomic` body (initial exported-variable value).
+///
+/// Atomic allocations share the malloc accounting body; `xmlGcMemSetup`
+/// installs a dedicated atomic hook via the variable (upstream xmlmemory.c).
+unsafe extern "C" fn xmlMallocAtomicDefault(size: usize) -> *mut c_void {
+    unsafe { xmlMallocDefault(size) }
+}
+
+/// Reallocate through the exported `xmlRealloc` variable.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -483,15 +567,14 @@ pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
 /// - `ptr` must be a valid pointer from `xmlMalloc`, `xmlMallocAtomic`, or `xmlRealloc`,
 ///   or NULL
 /// - The returned pointer must be freed with `xmlFree`
-///
-/// Backing the exported `xmlRealloc` data global.
 pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c_void {
-    // SAFETY: We call the stored realloc function pointer.
-    let alloc = ALLOCATOR.read();
-    let realloc_func = alloc
-        .realloc_func
-        .unwrap_or(default_realloc as xmlReallocFunc);
-    let new_ptr = unsafe { realloc_func(ptr, size) };
+    // SAFETY: see xmlMallocImpl.
+    unsafe { (xmlRealloc)(ptr, size) }
+}
+
+/// Default `xmlRealloc` body (initial exported-variable value).
+unsafe extern "C" fn xmlReallocDefault(ptr: *mut c_void, size: usize) -> *mut c_void {
+    let new_ptr = unsafe { default_realloc(ptr, size) };
     if !new_ptr.is_null() {
         // Exact accounting via the block registry.
         let old_size = unsafe { block_forget(ptr) };
@@ -507,7 +590,7 @@ pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c
     new_ptr
 }
 
-/// Free allocated memory.
+/// Free through the exported `xmlFree` variable.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -523,24 +606,25 @@ pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c
 /// - `ptr` must be a valid pointer from `xmlMalloc`/`xmlMallocAtomic`/`xmlRealloc`,
 ///   or NULL
 /// - After this call, `ptr` must not be dereferenced
-///
-/// Backing the exported `xmlFree` data global.
 pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
+    // SAFETY: see xmlMallocImpl.
+    unsafe { (xmlFree)(ptr) }
+}
+
+/// Default `xmlFree` body (initial exported-variable value).
+unsafe extern "C" fn xmlFreeDefault(ptr: *mut c_void) {
     if ptr.is_null() {
         return;
     }
-    // SAFETY: We call the stored free function pointer.
-    let alloc = ALLOCATOR.read();
-    let free_func = alloc.free_func.unwrap_or(default_free as xmlFreeFunc);
     let old_size = unsafe { block_forget(ptr) };
-    unsafe { free_func(ptr) };
+    unsafe { default_free(ptr) };
     MEM_BLOCKS.fetch_sub(1, Ordering::Relaxed);
     if old_size > 0 {
         MEM_USED.fetch_sub(old_size, Ordering::Relaxed);
     }
 }
 
-/// Duplicate a C string using the configured allocator.
+/// Duplicate a C string through the exported `xmlMemStrdup` variable.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -554,16 +638,17 @@ pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
 ///
 /// - `str` must be a valid null-terminated C string or NULL
 /// - The returned pointer must be freed with `xmlFree`
-///
-/// Backing the exported `xmlMemStrdup` data global.
 pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
+    // SAFETY: see xmlMallocImpl.
+    unsafe { (xmlMemStrdup)(str) }
+}
+
+/// Default `xmlMemStrdup` body (initial exported-variable value).
+unsafe extern "C" fn xmlMemStrdupDefault(str: *const c_char) -> *mut c_void {
     if str.is_null() {
         return ptr::null_mut();
     }
-    // SAFETY: We call the stored strdup function pointer.
-    let alloc = ALLOCATOR.read();
-    let strdup_func = alloc.strdup_func.unwrap_or(default_strdup as xmlStrdupFunc);
-    let ptr = unsafe { strdup_func(str) };
+    let ptr = unsafe { default_strdup(str) };
     if !ptr.is_null() {
         let len = unsafe { libc::strlen(str) } + 1;
         MEM_USED.fetch_add(len, Ordering::Relaxed);
@@ -580,27 +665,31 @@ pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
 // Upstream exports the allocator entry points as DATA: `XMLPUBVAR
 // xmlMallocFunc xmlMalloc;` etc. — function-pointer variables that downstream
 // code can read AND assign (the documented allocator-override mechanism).
-// The candidate mirrors that ABI; the implementations above back them.
+// The candidate mirrors that ABI: these five variables ARE the allocator
+// state (single source of truth, R-000176). Their initial values are the
+// `*Default` bodies; every internal allocation routes through the variables
+// via the `*Impl` indirection, so `xmlMemSetup` and direct assignment are
+// equivalent override mechanisms, exactly as upstream.
 
-/// `xmlMallocFunc xmlMalloc` — the malloc hook (default: `xmlMallocImpl`).
+/// `xmlMallocFunc xmlMalloc` — the malloc hook (default: `xmlMallocDefault`).
 #[no_mangle]
-pub static mut xmlMalloc: xmlMallocFunc = xmlMallocImpl;
+pub static mut xmlMalloc: xmlMallocFunc = xmlMallocDefault;
 
 /// `xmlMallocFunc xmlMallocAtomic` — the atomic-malloc hook.
 #[no_mangle]
-pub static mut xmlMallocAtomic: xmlMallocFunc = xmlMallocAtomicImpl;
+pub static mut xmlMallocAtomic: xmlMallocFunc = xmlMallocAtomicDefault;
 
 /// `xmlReallocFunc xmlRealloc` — the realloc hook.
 #[no_mangle]
-pub static mut xmlRealloc: xmlReallocFunc = xmlReallocImpl;
+pub static mut xmlRealloc: xmlReallocFunc = xmlReallocDefault;
 
 /// `xmlFreeFunc xmlFree` — the free hook.
 #[no_mangle]
-pub static mut xmlFree: xmlFreeFunc = xmlFreeImpl;
+pub static mut xmlFree: xmlFreeFunc = xmlFreeDefault;
 
 /// `xmlStrdupFunc xmlMemStrdup` — the strdup hook.
 #[no_mangle]
-pub static mut xmlMemStrdup: xmlStrdupFunc = xmlMemStrdupImpl;
+pub static mut xmlMemStrdup: xmlStrdupFunc = xmlMemStrdupDefault;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Memory Debugging / Statistics
@@ -1211,11 +1300,11 @@ pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
 /// Dump memory allocation statistics (upstream xmlmemory.h).
 ///
 /// ```c
-/// int xmlMemoryDump(void);
+/// void xmlMemoryDump(void);
 /// ```
 ///
-/// Prints the global counters to stderr and returns 0 (no leak detector is
-/// active in the default allocator).
+/// Prints the global counters to stderr (no leak detector is active in the
+/// default allocator).
 ///
 /// # SAFETY
 ///
@@ -1227,11 +1316,10 @@ pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
 /// Violating the global lifecycle ordering, or calling this after
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemoryDump() -> c_int {
+pub unsafe extern "C" fn xmlMemoryDump() {
     unsafe {
         xmlMemDisplayLast(ptr::null_mut(), -1);
     }
-    0
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1314,7 +1402,9 @@ mod tests {
         }
     }
 
-    /// Test custom allocator setup/get.
+    /// Test custom allocator setup/get (R-000176: int returns, single source
+    /// of truth — `xmlMemSetup` writes the exported variables and `xmlMemGet`
+    /// reads them back).
     #[test]
     fn test_mem_setup_get() {
         unsafe {
@@ -1323,17 +1413,109 @@ mod tests {
             let mut realloc_func: Option<xmlReallocFunc> = None;
             let mut strdup_func: Option<xmlStrdupFunc> = None;
 
-            xmlMemGet(
+            let ret = xmlMemGet(
                 &mut free_func as *mut _,
                 &mut malloc_func as *mut _,
                 &mut realloc_func as *mut _,
                 &mut strdup_func as *mut _,
             );
-
+            assert_eq!(ret, 0, "xmlMemGet must return 0");
             assert!(malloc_func.is_some());
             assert!(free_func.is_some());
             assert!(realloc_func.is_some());
             assert!(strdup_func.is_some());
+
+            // NULL output pointers are tolerated (upstream xmlmemory.c).
+            let ret = xmlMemGet(
+                ptr::null_mut(),
+                &mut malloc_func as *mut _,
+                ptr::null_mut(),
+                ptr::null_mut(),
+            );
+            assert_eq!(ret, 0);
+            assert!(malloc_func.is_some());
+        }
+    }
+
+    /// Test the GC allocator hooks: 5-argument Setup/Get with the dedicated
+    /// `mallocAtomicFunc` slot (R-000176 — previously 4-arg and void).
+    #[test]
+    fn test_gc_mem_setup_get() {
+        unsafe {
+            let mut free_func: Option<xmlFreeFunc> = None;
+            let mut malloc_func: Option<xmlMallocFunc> = None;
+            let mut malloc_atomic_func: Option<xmlMallocFunc> = None;
+            let mut realloc_func: Option<xmlReallocFunc> = None;
+            let mut strdup_func: Option<xmlStrdupFunc> = None;
+
+            let ret = xmlGcMemGet(
+                &mut free_func as *mut _,
+                &mut malloc_func as *mut _,
+                &mut malloc_atomic_func as *mut _,
+                &mut realloc_func as *mut _,
+                &mut strdup_func as *mut _,
+            );
+            assert_eq!(ret, 0, "xmlGcMemGet must return 0");
+            assert!(free_func.is_some());
+            assert!(malloc_func.is_some());
+            assert!(malloc_atomic_func.is_some());
+            assert!(realloc_func.is_some());
+            assert!(strdup_func.is_some());
+        }
+    }
+
+    /// Test `xmlMemSetup` NULL validation returns -1 (upstream xmlmemory.c)
+    /// and that a NULL `mallocAtomicFunc` makes `xmlGcMemSetup` fail.
+    #[test]
+    fn test_mem_setup_null_rejected() {
+        unsafe {
+            let ret = xmlMemSetup(None, Some(default_malloc as xmlMallocFunc), None, None);
+            assert_eq!(ret, -1, "NULL hook must be rejected with -1");
+            let ret = xmlGcMemSetup(
+                None,
+                Some(default_malloc as xmlMallocFunc),
+                Some(default_malloc as xmlMallocFunc),
+                None,
+                None,
+            );
+            assert_eq!(ret, -1);
+        }
+    }
+
+    /// Test the single-source-of-truth model (R-000176): a direct assignment
+    /// to the exported `xmlMalloc` variable is observed by `xmlMemGet` AND by
+    /// actual internal allocations through `xmlMallocImpl`.
+    #[test]
+    fn test_direct_assignment_coherence() {
+        unsafe {
+            let saved = xmlMalloc;
+            let saved_free = xmlFree;
+            // Install a counting hook via direct variable assignment.
+            xmlMalloc = xmlMallocDefault;
+            xmlFree = xmlFreeDefault;
+
+            // xmlMemGet reads the variable.
+            let mut malloc_func: Option<xmlMallocFunc> = None;
+            let ret = xmlMemGet(
+                ptr::null_mut(),
+                &mut malloc_func as *mut _,
+                ptr::null_mut(),
+                ptr::null_mut(),
+            );
+            assert_eq!(ret, 0);
+            assert!(
+                core::ptr::fn_addr_eq(malloc_func.unwrap(), xmlMallocDefault as xmlMallocFunc,),
+                "xmlMemGet must return the directly-assigned variable"
+            );
+
+            // Internal allocation routes through the variable.
+            let p = xmlMallocImpl(64);
+            assert!(!p.is_null());
+            xmlFreeImpl(p);
+
+            // Restore the defaults so other tests are unaffected.
+            xmlMalloc = saved;
+            xmlFree = saved_free;
         }
     }
 

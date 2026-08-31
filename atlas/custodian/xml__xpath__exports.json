@@ -16,7 +16,9 @@
   "xpath",
   "xpath-internals"
  ],
- "residuals": [],
+ "residuals": [
+  "R-000176"
+ ],
  "court_families": [
   "XINCLUDE",
   "XPATH",

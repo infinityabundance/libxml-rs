@@ -16,8 +16,8 @@ extern "C" {
 #endif
 
 XMLPUBFUN void xmlDebugDumpDocument(FILE *output, xmlDocPtr doc);
-XMLPUBFUN void xmlDebugDumpNode(FILE *output, xmlNodePtr node);
-XMLPUBFUN void xmlDebugDumpNodeList(FILE *output, xmlNodePtr node);
+XMLPUBFUN void xmlDebugDumpNode(FILE *output, xmlNodePtr node, int depth);
+XMLPUBFUN void xmlDebugDumpNodeList(FILE *output, xmlNodePtr node, int depth);
 
 
 /* [11.1-S] begin: oracle-extracted declarations

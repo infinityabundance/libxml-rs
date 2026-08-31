@@ -56,8 +56,8 @@
 //!
 //! # Proving courts
 //!
-//! The HIST-SURFACE-EPOCH court family plus the DSO-LOADER (25/25) and
-//! HEADER-COMPILE (595/595) courts cover this module; the dict/hash unit tests
+//! The HIST-SURFACE-EPOCH court family plus the DSO-LOADER and
+//! HEADER-COMPILE courts cover this module; the dict/hash unit tests
 //! in `src/xml/dictionary` and `src/xml/hash` run under cargo test.
 //!
 //! # Tempting simplifications that would break parity

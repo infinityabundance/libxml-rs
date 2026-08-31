@@ -26,8 +26,11 @@
   "R-000140"
  ],
  "court_families": [
+  "ABI-SYMBOL",
   "BUILD-CONFIG-SCRIPT",
+  "BUILD-PKGCONFIG",
   "CLI-XSLTPROC",
+  "DSO-LOADER",
   "EXSLT",
   "ORACLE-IDENTITY",
   "XSLT"

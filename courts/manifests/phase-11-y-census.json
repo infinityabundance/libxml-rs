@@ -295,6 +295,30 @@
    "receipt": "courts/receipts/phase-11/custodian-commentary-*.json",
    "result": "PASS",
    "note": "11.2: every compatibility-sensitive module carries the seven commentary dimensions (upstream contract, conceptual behavior, ownership/safety, historical epochs, deliberate oddities, proving courts, tempting simplifications); 127/127 modules + 7 generated/exempt"
+  },
+  "ABI-FUNCTION-SIGNATURE": {
+   "runner": "tools/abi/function_signature_court.py",
+   "receipt": "courts/receipts/phase-11/abi-function-signature-20260831T203925Z.json",
+   "result": "PASS",
+   "note": "three-way prototype mirror (oracle header / candidate header / Rust extern) — 3319 compared, 0 findings (R-000176)"
+  },
+  "ALLOCATOR-HOOK": {
+   "runner": "tools/abi/allocator_hook_probe.py",
+   "receipt": "courts/receipts/phase-11/allocator-hook-20260831T204205Z.json",
+   "result": "PASS",
+   "note": "differential allocator-hook probe byte-identical with the oracle (single source of truth, R-000176)"
+  },
+  "DSO-STATE-COHERENCE": {
+   "runner": "tools/abi/dso_state_coherence_probe.py",
+   "receipt": "courts/receipts/phase-11/dso-state-coherence-20260831T205019Z.json",
+   "result": "PASS",
+   "note": "documented-divergence mode (R-000177): pins the whole-archive facade partition profile (transform hooks not shared, keepBlanks partitioned)"
+  },
+  "CUSTODIAN-COMMENTARY-DRIFT": {
+   "runner": "tools/evidence/custodian_commentary_drift.py",
+   "receipt": "courts/receipts/phase-11/custodian-commentary-drift-20260831T205546Z.json",
+   "result": "PASS",
+   "note": "reference-drift court: residual/court/epoch/receipt references resolve; no embedded mutable counts; export/unsafe/SAFETY coverage census"
   }
  }
 }

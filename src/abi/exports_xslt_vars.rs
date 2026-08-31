@@ -1003,7 +1003,7 @@ pub unsafe extern "C" fn xsltNewElemPreComp(
     if comp.is_null() {
         return ptr::null_mut();
     }
-    xsltInitElemPreComp(comp, style, inst, function, ptr::null_mut());
+    xsltInitElemPreComp(comp, style, inst, function, None);
     comp
 }
 
@@ -1023,7 +1023,7 @@ pub unsafe extern "C" fn xsltInitElemPreComp(
     style: *mut _xsltStylesheet,
     inst: *mut _xmlNode,
     function: crate::abi::exports_xslt_compile::xsltTransformFunction,
-    _freeFunc: *mut c_void,
+    _freeFunc: Option<crate::abi::exports_xslt_compile::xsltElemPreCompDeallocator>,
 ) {
     if comp.is_null() {
         return;

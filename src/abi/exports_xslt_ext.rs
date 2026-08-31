@@ -54,7 +54,7 @@
 //!
 //! # Proving courts
 //!
-//! The EXSLT court family, the DSO-LOADER (25/25) and HEADER-COMPILE (595/595)
+//! The EXSLT court family, the DSO-LOADER and HEADER-COMPILE
 //! courts and the callback-family probes (CALLBACK-001) cover this module;
 //! the extension unit tests run under cargo test.
 //!
@@ -232,8 +232,8 @@ pub unsafe extern "C" fn xsltRegisterExtModuleFull(
 pub unsafe extern "C" fn xsltRegisterExtModuleElement(
     name: *const xmlChar,
     URI: *const xmlChar,
-    precomp: *mut c_void,
-    transform: *mut c_void,
+    precomp: Option<crate::abi::exports_xslt_compile::xsltPreComputeFunction>,
+    transform: Option<crate::abi::exports_xslt_compile::xsltTransformFunction>,
 ) -> c_int {
     let Some(key) = ext_key(name, URI) else {
         return -1;
@@ -241,8 +241,8 @@ pub unsafe extern "C" fn xsltRegisterExtModuleElement(
     EXT_ELEMENTS.write().insert(
         key,
         ExtElement {
-            precomp: precomp as usize,
-            transform: transform as usize,
+            precomp: precomp.map_or(0, |f| f as usize),
+            transform: transform.map_or(0, |f| f as usize),
         },
     );
     0
@@ -261,12 +261,14 @@ pub unsafe extern "C" fn xsltRegisterExtModuleElement(
 pub unsafe extern "C" fn xsltRegisterExtModuleFunction(
     name: *const xmlChar,
     URI: *const xmlChar,
-    function: *mut c_void,
+    function: Option<crate::abi::exports_xslt_compile::xmlXPathFunction>,
 ) -> c_int {
     let Some(key) = ext_key(name, URI) else {
         return -1;
     };
-    EXT_FUNCTIONS.write().insert(key, function as usize);
+    EXT_FUNCTIONS
+        .write()
+        .insert(key, function.map_or(0, |f| f as usize));
     0
 }
 
@@ -283,12 +285,14 @@ pub unsafe extern "C" fn xsltRegisterExtModuleFunction(
 pub unsafe extern "C" fn xsltRegisterExtModuleTopLevel(
     name: *const xmlChar,
     URI: *const xmlChar,
-    function: *mut c_void,
+    function: Option<xsltTopLevelFunction>,
 ) -> c_int {
     let Some(key) = ext_key(name, URI) else {
         return -1;
     };
-    EXT_TOPLEVELS.write().insert(key, function as usize);
+    EXT_TOPLEVELS
+        .write()
+        .insert(key, function.map_or(0, |f| f as usize));
     0
 }
 
@@ -530,23 +534,33 @@ pub unsafe extern "C" fn xsltExtElementLookup(
     ctxt: *mut _xsltTransformContext,
     name: *const xmlChar,
     URI: *const xmlChar,
-) -> *mut c_void {
+) -> Option<crate::abi::exports_xslt_compile::xsltTransformFunction> {
     if ctxt.is_null() || name.is_null() || URI.is_null() {
-        return ptr::null_mut();
+        return None;
     }
     // Per-context registrations (xsltRegisterExtElement).
     let found = crate::xslt::extensions::xsltFindExtElement(ctxt, name, URI);
     if !found.is_null() {
-        return found;
+        return Some(unsafe {
+            core::mem::transmute::<
+                *mut c_void,
+                crate::abi::exports_xslt_compile::xsltTransformFunction,
+            >(found)
+        });
     }
-    let Some(key) = ext_key(name, URI) else {
-        return ptr::null_mut();
-    };
+    let key = ext_key(name, URI)?;
     EXT_ELEMENTS
         .read()
         .get(&key)
-        .map(|e| e.transform as *mut c_void)
-        .unwrap_or(ptr::null_mut())
+        .and_then(|e| {
+            if e.transform == 0 {
+                None
+            } else {
+                Some(unsafe {
+                    core::mem::transmute::<usize, crate::abi::exports_xslt_compile::xsltTransformFunction>(e.transform)
+                })
+            }
+        })
 }
 
 /// `xsltExtModuleElementLookup` (extensions.c): global element lookup.
@@ -561,15 +575,20 @@ pub unsafe extern "C" fn xsltExtElementLookup(
 pub unsafe extern "C" fn xsltExtModuleElementLookup(
     name: *const xmlChar,
     URI: *const xmlChar,
-) -> *mut c_void {
-    let Some(key) = ext_key(name, URI) else {
-        return ptr::null_mut();
-    };
+) -> Option<crate::abi::exports_xslt_compile::xsltTransformFunction> {
+    let key = ext_key(name, URI)?;
     EXT_ELEMENTS
         .read()
         .get(&key)
-        .map(|e| e.transform as *mut c_void)
-        .unwrap_or(ptr::null_mut())
+        .and_then(|e| {
+            if e.transform == 0 {
+                None
+            } else {
+                Some(unsafe {
+                    core::mem::transmute::<usize, crate::abi::exports_xslt_compile::xsltTransformFunction>(e.transform)
+                })
+            }
+        })
 }
 
 /// `xsltExtModuleFunctionLookup` (extensions.c): global function lookup.
@@ -584,16 +603,17 @@ pub unsafe extern "C" fn xsltExtModuleElementLookup(
 pub unsafe extern "C" fn xsltExtModuleFunctionLookup(
     name: *const xmlChar,
     URI: *const xmlChar,
-) -> *mut c_void {
-    let Some(key) = ext_key(name, URI) else {
-        return ptr::null_mut();
-    };
-    EXT_FUNCTIONS
-        .read()
-        .get(&key)
-        .copied()
-        .map(|p| p as *mut c_void)
-        .unwrap_or(ptr::null_mut())
+) -> Option<crate::abi::exports_xslt_compile::xmlXPathFunction> {
+    let key = ext_key(name, URI)?;
+    EXT_FUNCTIONS.read().get(&key).copied().and_then(|p| {
+        if p == 0 {
+            None
+        } else {
+            Some(unsafe {
+                core::mem::transmute::<usize, crate::abi::exports_xslt_compile::xmlXPathFunction>(p)
+            })
+        }
+    })
 }
 
 /// `xsltExtModuleElementPreComputeLookup` (extensions.c).
@@ -608,15 +628,20 @@ pub unsafe extern "C" fn xsltExtModuleFunctionLookup(
 pub unsafe extern "C" fn xsltExtModuleElementPreComputeLookup(
     name: *const xmlChar,
     URI: *const xmlChar,
-) -> *mut c_void {
-    let Some(key) = ext_key(name, URI) else {
-        return ptr::null_mut();
-    };
-    EXT_ELEMENTS
-        .read()
-        .get(&key)
-        .map(|e| e.precomp as *mut c_void)
-        .unwrap_or(ptr::null_mut())
+) -> Option<crate::abi::exports_xslt_compile::xsltPreComputeFunction> {
+    let key = ext_key(name, URI)?;
+    EXT_ELEMENTS.read().get(&key).and_then(|e| {
+        if e.precomp == 0 {
+            None
+        } else {
+            Some(unsafe {
+                core::mem::transmute::<
+                    usize,
+                    crate::abi::exports_xslt_compile::xsltPreComputeFunction,
+                >(e.precomp)
+            })
+        }
+    })
 }
 
 /// `xsltExtModuleTopLevelLookup` (extensions.c).
@@ -631,16 +656,15 @@ pub unsafe extern "C" fn xsltExtModuleElementPreComputeLookup(
 pub unsafe extern "C" fn xsltExtModuleTopLevelLookup(
     name: *const xmlChar,
     URI: *const xmlChar,
-) -> *mut c_void {
-    let Some(key) = ext_key(name, URI) else {
-        return ptr::null_mut();
-    };
-    EXT_TOPLEVELS
-        .read()
-        .get(&key)
-        .copied()
-        .map(|p| p as *mut c_void)
-        .unwrap_or(ptr::null_mut())
+) -> Option<xsltTopLevelFunction> {
+    let key = ext_key(name, URI)?;
+    EXT_TOPLEVELS.read().get(&key).copied().and_then(|p| {
+        if p == 0 {
+            None
+        } else {
+            Some(unsafe { core::mem::transmute::<usize, xsltTopLevelFunction>(p) })
+        }
+    })
 }
 
 /// `xsltInitCtxtExts` (extensions.c): call the init function of every module

@@ -128,7 +128,7 @@ const fn has_uri_scheme(uri: &[u8]) -> bool {
 /// format via `xmlFormatError`" in `xmlVRaiseError`).
 fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
     let ptr = cb as usize;
-    ptr == crate::xml::errors::xmlParserError as errorSAXFunc as usize
+    ptr == crate::xml::errors::XML_PARSER_ERROR_SAX1 as errorSAXFunc as usize
         || ptr == crate::xml::sax::default::default_sax_handler::error as errorSAXFunc as usize
 }
 
@@ -136,7 +136,7 @@ fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
 #[allow(dead_code)]
 fn is_legacy_warning_handler(cb: warningSAXFunc) -> bool {
     let ptr = cb as usize;
-    ptr == crate::xml::errors::xmlParserWarning as warningSAXFunc as usize
+    ptr == crate::xml::errors::XML_PARSER_WARNING_SAX1 as errorSAXFunc as usize
         || ptr == crate::xml::sax::default::default_sax_handler::warning as warningSAXFunc as usize
 }
 #[allow(dead_code)]
@@ -1064,7 +1064,14 @@ impl XmlParser {
                     .map(|s| Self::vec_to_cstr_null(s))
                     .unwrap_or(ptr::null());
                 crate::xml::dtd::add_attribute_decl(
-                    dtd, elem_decl, attr_cstr, atype, def, dv, tree,
+                    dtd,
+                    elem_decl,
+                    attr_cstr,
+                    ptr::null(),
+                    atype,
+                    def,
+                    dv,
+                    tree,
                 );
                 if !dv.is_null() {
                     crate::abi::allocator::xmlFreeImpl(dv as *mut c_void);

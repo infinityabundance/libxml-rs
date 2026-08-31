@@ -38,6 +38,8 @@ ALLOWED_TRANSITIONS = {("OPEN", "FIXED")}
 ALLOWED_CLASSIFICATIONS = {
     "CANDIDATE_BUG", "ORACLE_BUG", "VERSION_DIFFERENCE",
     "INTENTIONAL_SAFE_DIVERGENCE", "UNRESOLVED",
+    # 11.1-Z.2: bounded divergence accepted with a permanent court pinning it
+    "DOCUMENTED_DIVERGENCE",
 }
 
 # Court families defined by Phase 11.1-Y (11.1 sealing criteria) plus suites
@@ -54,6 +56,10 @@ COURT_FAMILIES = {
     "CLI-XMLLINT", "CLI-XMLCATALOG", "CLI-XSLTPROC", "HIST-SURFACE-EPOCH",
     "HIST-BEHAVIOR-EPOCH", "ORACLE-IDENTITY", "ORACLE-CONTAMINATION",
     "EVIDENCE-INTEGRITY", "CUSTODIAN-COMMENTARY",
+    # 11.1-Z.2: function-signature ABI plane, allocator-hook differential,
+    # cross-DSO state-coherence (documented divergence) and commentary drift
+    "ABI-FUNCTION-SIGNATURE", "ALLOCATOR-HOOK", "DSO-STATE-COHERENCE",
+    "CUSTODIAN-COMMENTARY-DRIFT",
 }
 
 

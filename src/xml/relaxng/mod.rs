@@ -63,7 +63,7 @@
 //!
 //! # Proving courts
 //!
-//! RELAXNG court family; the data-ABI header-compile court (595/595) compiles
+//! RELAXNG court family; the data-ABI header-compile court compiles
 //! every relaxng.h declaration against the DSO; dso-loader 25/25; `cargo test
 //! --lib` exercises the validator.
 //!

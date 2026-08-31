@@ -37,11 +37,15 @@
   "R-000165",
   "R-000166",
   "R-000167",
-  "R-000168"
+  "R-000168",
+  "R-000176"
  ],
  "court_families": [
+  "ABI-SYMBOL",
   "BUILD-CONFIG-SCRIPT",
+  "BUILD-PKGCONFIG",
   "CLI-XSLTPROC",
+  "DSO-LOADER",
   "EXSLT",
   "ORACLE-IDENTITY",
   "XSLT"

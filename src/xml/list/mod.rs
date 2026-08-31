@@ -308,56 +308,28 @@ pub unsafe fn list_dup(l: *mut List) -> *mut List {
     new_ptr
 }
 
-/// Copy a list with a data copier (upstream list.c `xmlListCopy`): each
-/// node's data is copied through `copier` (returns a fresh pointer or
-/// NULL on failure). The result replaces the target list `l`'s content.
-/// Returns 0 on success, -1 on error.
+/// Copy the contents of `old` into the existing list `cur` (upstream
+/// list.c `xmlListCopy`): walks `old`'s links and inserts each data pointer
+/// into `cur` using `cur`'s comparator. Returns 0 on success, 1 on error;
+/// on insertion failure the target list is deleted (upstream behavior).
 ///
 /// # SAFETY
 ///
-/// - `l` must be a valid list pointer or NULL.
-/// - `copier` must be a valid copier function.
-pub unsafe fn list_copy(
-    l: *mut List,
-    copier: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
-) -> c_int {
-    if l.is_null() {
-        return -1;
+/// - `cur`, `old` must be valid list pointers or NULL.
+pub unsafe fn list_copy(cur: *mut List, old: *mut List) -> c_int {
+    if old.is_null() || cur.is_null() {
+        return 1;
     }
-    let copier = match copier {
-        Some(c) => c,
-        None => return -1,
-    };
-    let list = unsafe { &*l };
-    let new_list = Box::new(List {
-        front: ptr::null_mut(),
-        back: ptr::null_mut(),
-        count: 0,
-        deallocator: list.deallocator,
-        comparator: list.comparator,
-    });
-    let new_ptr = Box::into_raw(new_list);
-    let mut cur = list.front;
-    while !cur.is_null() {
-        // SAFETY: cur is valid; copier must return a fresh copy or NULL.
-        let copied = unsafe { copier((*cur).data) };
-        if copied.is_null() {
-            unsafe { list_delete(new_ptr) };
-            return -1;
+    let mut lk = unsafe { (*old).front };
+    while !lk.is_null() {
+        // SAFETY: lk is valid; the data pointer is shared (shallow copy,
+        // upstream inserts lk->data verbatim).
+        let data = unsafe { (*lk).data };
+        if unsafe { list_insert(cur, data) } != 0 {
+            unsafe { list_delete(cur) };
+            return 1;
         }
-        if unsafe { list_push_back(new_ptr, copied) } != 0 {
-            unsafe { list_delete(new_ptr) };
-            return -1;
-        }
-        cur = unsafe { (*cur).next };
-    }
-    // Replace `l`'s content with the copy (upstream copies INTO `l`).
-    unsafe {
-        list_clear(l);
-        let dst = &mut *l;
-        let src = &mut *new_ptr;
-        core::mem::swap(dst, src);
-        list_delete(new_ptr);
+        lk = unsafe { (*lk).next };
     }
     0
 }

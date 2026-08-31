@@ -3801,15 +3801,10 @@ unsafe fn validate_check_mixed(
 ) -> c_int {
     unsafe {
         let mut plen: c_int = 0;
-        let has_colon = string::split_qname3(qname, &mut plen) != 0;
         // upstream xmlSplitQName3 returns the local-name pointer (NULL when
-        // the qname has no colon); the candidate's split_qname3 returns the
-        // prefix length, so the local part is qname + plen + 1.
-        let local = if has_colon {
-            qname.add(plen as usize + 1)
-        } else {
-            ptr::null()
-        };
+        // the qname has no colon) and fills *plen with the prefix length;
+        // the candidate's split_qname3 mirrors that contract (R-000176).
+        let local = string::split_qname3(qname, &mut plen);
         let mut cur = cont;
         if local.is_null() {
             while !cur.is_null() {

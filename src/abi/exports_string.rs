@@ -59,7 +59,7 @@
 //!
 //! # Proving courts
 //!
-//! The DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts plus the string
+//! The DSO-LOADER and HEADER-COMPILE courts plus the string
 //! unit tests under cargo test cover this module; the ENCODING-001 probe
 //! exercises the UTF-8 helpers against the oracle.
 //!

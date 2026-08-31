@@ -73,8 +73,8 @@
 //!
 //! # Proving courts
 //!
-//! The PARSER court family plus the DSO-LOADER (25/25) and HEADER-COMPILE
-//! (595/595) courts cover this module; the TREE-001 probe exercises the
+//! The PARSER court family plus the DSO-LOADER and HEADER-COMPILE
+//! courts cover this module; the TREE-001 probe exercises the
 //! structures these primitives build; the parse-helper unit tests run under
 //! cargo test.
 //!

@@ -71,7 +71,7 @@
 //!
 //! ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING court families;
 //! DATA-GLOBALS-001 differential probe (byte-identical), GLOBALS-THREADING
-//! probe, DSO-LOADER (25/25), and `cargo test --lib` (100/100 parallel runs
+//! probe, DSO-LOADER, and `cargo test --lib` (100/100 parallel runs
 //! clean after R-000170/R-000171).
 //!
 //! # Tempting simplifications that would break parity

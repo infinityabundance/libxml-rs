@@ -12,7 +12,7 @@ silently dropped.
 | Doxygen inventory | 1374 |
 | Clang AST atlas | 1403 |
 | System DSO (`nm -D`) | 1400 |
-| Candidate DSO | 1979 |
+| Candidate DSO | 1983 |
 | Installed headers | 46 |
 
 ### Function agreement
@@ -38,7 +38,7 @@ silently dropped.
 
 - system DSO functions not in Doxygen: 26
 - candidate missing vs system: 0
-- candidate extra vs system: 579
+- candidate extra vs system: 583
 - candidate globals missing vs system: 0
 
 ### Header agreement

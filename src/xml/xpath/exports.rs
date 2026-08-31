@@ -821,15 +821,16 @@ pub unsafe extern "C" fn xmlXPathNodeSetAddNs(
     xmlXPathNodeSetAddUnique(cur, ns_node)
 }
 
-/// `int xmlXPathNodeSetDel(xmlNodeSetPtr cur, xmlNodePtr val)`.
+/// `void xmlXPathNodeSetDel(xmlNodeSetPtr cur, xmlNodePtr val)` (upstream
+/// xpath.h — R-000176, the candidate previously returned an int).
 ///
 /// # SAFETY
 ///
 /// - `cur` must be a valid node set or NULL; `val` a valid node or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNodeSetDel(cur: *mut _xmlNodeSet, val: *mut _xmlNode) -> c_int {
+pub unsafe extern "C" fn xmlXPathNodeSetDel(cur: *mut _xmlNodeSet, val: *mut _xmlNode) {
     if cur.is_null() || val.is_null() {
-        return -1;
+        return;
     }
     unsafe {
         let nr = (*cur).nodeNr;
@@ -851,23 +852,23 @@ pub unsafe extern "C" fn xmlXPathNodeSetDel(cur: *mut _xmlNodeSet, val: *mut _xm
             (*cur).nodeNr -= 1;
         }
     }
-    0
 }
 
-/// `int xmlXPathNodeSetRemove(xmlNodeSetPtr cur, int val)` — remove by index.
+/// `void xmlXPathNodeSetRemove(xmlNodeSetPtr cur, int val)` — remove by
+/// index (upstream xpath.h — R-000176).
 ///
 /// # SAFETY
 ///
 /// - `cur` must be a valid node set or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNodeSetRemove(cur: *mut _xmlNodeSet, val: c_int) -> c_int {
+pub unsafe extern "C" fn xmlXPathNodeSetRemove(cur: *mut _xmlNodeSet, val: c_int) {
     if cur.is_null() || val < 0 {
-        return -1;
+        return;
     }
     unsafe {
         let nr = (*cur).nodeNr;
         if val >= nr {
-            return -1;
+            return;
         }
         let tab = (*cur).nodeTab;
         let vi = val as usize;
@@ -876,7 +877,6 @@ pub unsafe extern "C" fn xmlXPathNodeSetRemove(cur: *mut _xmlNodeSet, val: c_int
         }
         (*cur).nodeNr -= 1;
     }
-    0
 }
 
 /// `void xmlXPathNodeSetSort(xmlNodeSetPtr set)` — sort in document order
@@ -1566,7 +1566,10 @@ static XML_XPATH_XML_NS: XmlXPathXmlNs = XmlXPathXmlNs(crate::abi::structs::_xml
 // Value stack operators (upstream xmlXPathValuePush/Pop + typed Pop*)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// `xmlXPathObjectPtr xmlXPathValuePush(xmlXPathParserContextPtr ctxt, xmlXPathObjectPtr value)`.
+/// `int xmlXPathValuePush(xmlXPathParserContextPtr ctxt, xmlXPathObjectPtr
+/// value)` — returns the stack slot index of the pushed value (upstream
+/// xpath.c `return (ctxt->valueNr++)`), -1 on NULL arguments. R-000176: the
+/// candidate previously returned the pushed value pointer.
 ///
 /// # SAFETY
 ///
@@ -1575,8 +1578,16 @@ static XML_XPATH_XML_NS: XmlXPathXmlNs = XmlXPathXmlNs(crate::abi::structs::_xml
 pub unsafe extern "C" fn xmlXPathValuePush(
     ctxt: *mut c_void,
     value: *mut _xmlXPathObject,
-) -> *mut _xmlXPathObject {
-    value_push(pc_from(ctxt), value)
+) -> c_int {
+    if ctxt.is_null() || value.is_null() {
+        return -1;
+    }
+    let pc = pc_from(ctxt);
+    // SAFETY: pc is non-NULL here; the slot index is the pre-increment
+    // value_nr (upstream `return (ctxt->valueNr++)`).
+    let idx = unsafe { (*pc).value_nr };
+    value_push(pc, value);
+    idx
 }
 
 /// `xmlXPathObjectPtr xmlXPathValuePop(xmlXPathParserContextPtr ctxt)`.

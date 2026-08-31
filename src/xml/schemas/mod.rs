@@ -56,8 +56,8 @@
 //!
 //! # Proving courts
 //!
-//! Exercised by the XSD court family, the header-compile court (595/595), the
-//! dso-loader court (25/25) and `cargo test --lib`. Receipts under
+//! Exercised by the XSD court family, the header-compile court, the
+//! dso-loader court and `cargo test --lib`. Receipts under
 //! courts/receipts/phase-11.
 //!
 //! # Tempting simplifications that would break parity

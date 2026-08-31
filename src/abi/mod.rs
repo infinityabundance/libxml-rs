@@ -65,9 +65,9 @@
 //!
 //! # Proving courts
 //!
-//! The DSO-LOADER court loads every exported symbol from the built DSO
-//! (25/25), the HEADER-COMPILE court compiles every public header against it
-//! (595/595), and the data-ABI family courts (DATA-GLOBALS-001, CALLBACK-001,
+//! The DSO-LOADER court loads every exported symbol from the built DSO;
+//! the HEADER-COMPILE court compiles every public header against it;
+//! and the data-ABI family courts (DATA-GLOBALS-001, CALLBACK-001,
 //! ERROR-001, TREE-001, READER-001, WRITER-001, ENCODING-001, ...) require
 //! byte-identical output vs the oracle.
 //!

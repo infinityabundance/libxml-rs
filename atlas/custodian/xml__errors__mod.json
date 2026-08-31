@@ -5,9 +5,11 @@
  ],
  "export_samples": [
   "xmlParserError",
+  "xmlParserErrorV",
   "xmlParserWarning",
+  "xmlParserWarningV",
   "xmlParserValidityError",
-  "xmlParserValidityWarning"
+  "xmlParserValidityErrorV"
  ],
  "subsystems": [
   "errors"
@@ -17,7 +19,8 @@
   "R-000161",
   "R-000163",
   "R-000168",
-  "R-000171"
+  "R-000171",
+  "R-000176"
  ],
  "court_families": [
   "CALLBACK",

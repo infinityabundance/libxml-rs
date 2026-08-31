@@ -153,9 +153,7 @@ XMLPUBFUN xmlTextReaderPtr xmlReaderForIO(xmlInputReadCallback ioread,
                                           const char *encoding,
                                           int options);
 XMLPUBFUN xmlTextReaderPtr xmlReaderWalker(xmlDocPtr doc);
-XMLPUBFUN xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI,
-                                                    const char *encoding,
-                                                    int options);
+XMLPUBFUN xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI);
 XMLPUBFUN int xmlReaderNewDoc(xmlTextReaderPtr reader,
                               const xmlChar *cur,
                               const char *URL,

@@ -8,7 +8,7 @@ courts (atlas/SYMBOL_COURT_INDEX.json).
 
 ## libxml2 — oracle `/usr/lib/libxml2.so.16`
 
-oracle functions: 1400, oracle data: 22, candidate functions: 1714
+oracle functions: 1400, oracle data: 22, candidate functions: 1718
 
 | overall status | count |
 |---|---|

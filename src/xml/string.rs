@@ -337,30 +337,32 @@ pub unsafe fn split_qname2(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *
     }
 }
 
-/// Split a QName returning the prefix length (upstream tree.c
-/// `xmlSplitQName3`): returns the length of the prefix (before ':'), or 0
-/// when there is no prefix. `name` must not start with ':'.
+/// Split a QName returning the local-name pointer (upstream tree.c
+/// `xmlSplitQName3`): returns a pointer to the local part after the ':' and
+/// fills `*len` with the prefix length, or NULL when the name has no prefix
+/// (or NULL arguments). R-000176: the candidate previously returned the
+/// prefix length as an int.
 ///
 /// # Safety
 ///
 /// - `name` must be a valid null-terminated string or NULL.
-pub unsafe fn split_qname3(name: *const xmlChar, len: *mut c_int) -> c_int {
+pub unsafe fn split_qname3(name: *const xmlChar, len: *mut c_int) -> *mut xmlChar {
     if name.is_null() || len.is_null() {
-        return 0;
+        return ptr::null_mut();
     }
     unsafe {
         if *name == b':' as xmlChar {
-            return 0;
+            return ptr::null_mut();
         }
         let mut l: usize = 0;
         while *name.add(l) != 0 && *name.add(l) != b':' as xmlChar {
             l += 1;
         }
         if *name.add(l) == 0 {
-            return 0;
+            return ptr::null_mut();
         }
         *len = l as c_int;
-        l as c_int
+        name.add(l + 1) as *mut xmlChar
     }
 }
 

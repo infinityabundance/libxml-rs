@@ -526,10 +526,10 @@ XMLPUBFUN xmlAttrPtr xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlC
 XMLPUBFUN xmlChar *xmlGetProp(const xmlNode *node, const xmlChar *name);
 XMLPUBFUN xmlChar *xmlNodeGetContent(const xmlNode *cur);
 XMLPUBFUN xmlChar *xmlNodeGetBase(const xmlDoc *doc, const xmlNode *cur);
-XMLPUBFUN void xmlNodeSetContent(xmlNodePtr cur, const xmlChar *content);
+XMLPUBFUN int xmlNodeSetContent(xmlNodePtr cur, const xmlChar *content);
 XMLPUBFUN void xmlNodeSetName(xmlNodePtr cur, const xmlChar *name);
-XMLPUBFUN void xmlSetTreeDoc(xmlNodePtr tree, xmlDocPtr doc);
-XMLPUBFUN void xmlSetListDoc(xmlNodePtr list, xmlDocPtr doc);
+XMLPUBFUN int xmlSetTreeDoc(xmlNodePtr tree, xmlDocPtr doc);
+XMLPUBFUN int xmlSetListDoc(xmlNodePtr list, xmlDocPtr doc);
 XMLPUBFUN xmlAttrPtr xmlHasProp(const xmlNode *node, const xmlChar *name);
 XMLPUBFUN xmlNodePtr xmlDocCopyNode(const xmlNodePtr node, xmlDocPtr doc, int extended);
 XMLPUBFUN xmlNodePtr xmlCopyNodeList(const xmlNodePtr node);

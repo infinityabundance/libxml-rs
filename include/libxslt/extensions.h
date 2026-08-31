@@ -22,9 +22,8 @@ XMLPUBFUN int xsltRegisterExtFunction(xsltTransformContextPtr ctxt,
                                        xmlXPathFunction f);
 XMLPUBFUN int xsltRegisterExtElement(xsltTransformContextPtr ctxt,
                                       const xmlChar *name, const xmlChar *NS_uri,
-                                      void *f);
+                                      xsltTransformFunction f);
 XMLPUBFUN void exsltRegisterAll(void);
-XMLPUBFUN void xsltSetLoaderFunc(void *loader);
 
 /* Extension-module registry (extensions.h 1.1.45). */
 typedef void *(*xsltExtInitFunction)(xsltTransformContextPtr ctxt,
@@ -46,7 +45,8 @@ XMLPUBFUN int xsltRegisterExtModuleFull(const xmlChar *URI,
                                         xsltStyleExtInitFunction styleInitFunc,
                                         xsltStyleExtShutdownFunction styleShutdownFunc);
 XMLPUBFUN int xsltRegisterExtModuleElement(const xmlChar *name, const xmlChar *URI,
-                                           void *precomp, void *transform);
+                                           xsltPreComputeFunction precomp,
+                                           xsltTransformFunction transform);
 XMLPUBFUN int xsltRegisterExtModuleFunction(const xmlChar *name, const xmlChar *URI,
                                             xmlXPathFunction function);
 XMLPUBFUN int xsltRegisterExtModuleTopLevel(const xmlChar *name, const xmlChar *URI,
@@ -59,12 +59,12 @@ XMLPUBFUN int xsltRegisterExtPrefix(xsltStylesheetPtr style, const xmlChar *pref
                                     const xmlChar *URI);
 XMLPUBFUN int xsltCheckExtPrefix(xsltStylesheetPtr style, const xmlChar *prefix);
 XMLPUBFUN int xsltCheckExtURI(xsltStylesheetPtr style, const xmlChar *URI);
-XMLPUBFUN void *xsltExtElementLookup(xsltTransformContextPtr ctxt,
+XMLPUBFUN xsltTransformFunction xsltExtElementLookup(xsltTransformContextPtr ctxt,
                                      const xmlChar *name, const xmlChar *URI);
-XMLPUBFUN void *xsltExtModuleElementLookup(const xmlChar *name, const xmlChar *URI);
+XMLPUBFUN xsltTransformFunction xsltExtModuleElementLookup(const xmlChar *name, const xmlChar *URI);
 XMLPUBFUN xmlXPathFunction xsltExtModuleFunctionLookup(const xmlChar *name,
                                                        const xmlChar *URI);
-XMLPUBFUN void *xsltExtModuleElementPreComputeLookup(const xmlChar *name,
+XMLPUBFUN xsltPreComputeFunction xsltExtModuleElementPreComputeLookup(const xmlChar *name,
                                                      const xmlChar *URI);
 XMLPUBFUN xsltTopLevelFunction xsltExtModuleTopLevelLookup(const xmlChar *name,
                                                            const xmlChar *URI);

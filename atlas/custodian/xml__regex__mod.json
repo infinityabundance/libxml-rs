@@ -14,6 +14,8 @@
  "subsystems": [
   "regex"
  ],
- "residuals": [],
+ "residuals": [
+  "R-000176"
+ ],
  "court_families": []
 }

@@ -20,7 +20,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int};
 
 use crate::abi::structs::*;
 
@@ -259,7 +259,9 @@ static mut XSLT_DEBUGGER_ADD: *const c_void = ptr::null();
 static mut XSLT_DEBUGGER_DROP: *const c_void = ptr::null();
 
 /// `xsltSetCtxtLocaleHandlers(ctxt, newLocale, freeLocale, genSortKey)` —
-/// set the locale handlers on a transform context (upstream xsltutils.c).
+/// set the locale handlers on a transform context (upstream xsltutils.c;
+/// typed callback parameters — R-000176, the candidate previously used
+/// bare `void *`).
 ///
 /// # SAFETY
 ///
@@ -269,23 +271,24 @@ static mut XSLT_DEBUGGER_DROP: *const c_void = ptr::null();
 #[no_mangle]
 pub unsafe extern "C" fn xsltSetCtxtLocaleHandlers(
     ctxt: *mut _xsltTransformContext,
-    new_locale: *mut c_void,
-    free_locale: *mut c_void,
-    gen_sort_key: *mut c_void,
+    new_locale: Option<crate::abi::exports_xslt_compile::xsltNewLocaleFunc>,
+    free_locale: Option<crate::abi::exports_xslt_compile::xsltFreeLocaleFunc>,
+    gen_sort_key: Option<crate::abi::exports_xslt_compile::xsltGenSortKeyFunc>,
 ) {
     if ctxt.is_null() {
         return;
     }
     unsafe {
-        (*ctxt).newLocale = new_locale;
-        (*ctxt).freeLocale = free_locale;
-        (*ctxt).genSortKey = gen_sort_key;
+        (*ctxt).newLocale = new_locale.map_or(ptr::null_mut(), |f| f as *mut c_void);
+        (*ctxt).freeLocale = free_locale.map_or(ptr::null_mut(), |f| f as *mut c_void);
+        (*ctxt).genSortKey = gen_sort_key.map_or(ptr::null_mut(), |f| f as *mut c_void);
     }
 }
 
-/// `unsigned int xsltGetUTF8CharZ(const unsigned char *utf, int *len)` —
-/// decode one UTF-8 code point; returns the code point or -1 on error
-/// (upstream xsltutils.c; the `Z` variant does not tolerate NULs).
+/// `int xsltGetUTF8CharZ(const unsigned char *utf, int *len)` — decode one
+/// UTF-8 code point; returns the code point or -1 on error (upstream
+/// xsltutils.c; the `Z` variant does not tolerate NULs). R-000176: the
+/// candidate previously returned `unsigned` with -1 encoded as `UINT_MAX`.
 ///
 /// # SAFETY
 ///
@@ -293,48 +296,48 @@ pub unsafe extern "C" fn xsltSetCtxtLocaleHandlers(
 ///   sequences); `len` must be a valid out-pointer. Both may be NULL, in
 ///   which case the function returns -1 and leaves `len` untouched.
 #[no_mangle]
-pub unsafe extern "C" fn xsltGetUTF8CharZ(utf: *const u8, len: *mut c_int) -> c_uint {
+pub unsafe extern "C" fn xsltGetUTF8CharZ(utf: *const u8, len: *mut c_int) -> c_int {
     unsafe {
         if utf.is_null() || len.is_null() {
             if !len.is_null() {
                 *len = 0;
             }
-            return u32::MAX as c_uint; // -1 as unsigned
+            return -1;
         }
         let c0 = *utf;
         if c0 & 0x80 == 0 {
             *len = 1;
-            return c0 as c_uint;
+            return c0 as c_int;
         }
         if *utf.add(1) & 0xC0 != 0x80 {
             *len = 0;
-            return u32::MAX as c_uint;
+            return -1;
         }
         if c0 & 0xE0 == 0xE0 {
             if *utf.add(2) & 0xC0 != 0x80 {
                 *len = 0;
-                return u32::MAX as c_uint;
+                return -1;
             }
             if c0 & 0xF0 == 0xF0 {
                 if c0 & 0xF8 != 0xF0 || *utf.add(3) & 0xC0 != 0x80 {
                     *len = 0;
-                    return u32::MAX as c_uint;
+                    return -1;
                 }
                 *len = 4;
                 let c = (((c0 & 0x7) as u32) << 18)
                     | (((*utf.add(1) & 0x3F) as u32) << 12)
                     | (((*utf.add(2) & 0x3F) as u32) << 6)
                     | ((*utf.add(3) & 0x3F) as u32);
-                return c;
+                return c as c_int;
             }
             *len = 3;
             let c = (((c0 & 0xF) as u32) << 12)
                 | (((*utf.add(1) & 0x3F) as u32) << 6)
                 | ((*utf.add(2) & 0x3F) as u32);
-            return c;
+            return c as c_int;
         }
         *len = 2;
 
-        (((c0 & 0x1F) as u32) << 6) | ((*utf.add(1) & 0x3F) as u32)
+        ((((c0 & 0x1F) as u32) << 6) | ((*utf.add(1) & 0x3F) as u32)) as c_int
     }
 }

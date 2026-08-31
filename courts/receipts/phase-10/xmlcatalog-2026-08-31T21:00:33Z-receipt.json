@@ -1,0 +1,239 @@
+{
+  "receipt_id": "CLI-XMLCATALOG-10-2026-08-31T21:00:33Z",
+  "phase": "10",
+  "tool": "xmlcatalog",
+  "timestamp": "2026-08-31T21:00:33Z",
+  "candidate_commit": "5f0ab2eaed89f4e2a6793822d6539c2b85216dde",
+  "oracle_identity": "Usage : /usr/bin/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\nUnknown option --version",
+  "oracle_binary": "/usr/bin/xmlcatalog",
+  "candidate_binary": "/mnt/1tb_kingston/libxml-rs/target/debug/xmlcatalog",
+  "normalization": "argv0 path normalized to TOOL (tools echo their own invocation path); all other bytes compared raw",
+  "cases": [
+    {
+      "case_id": "CLI-XMLCATALOG-0001",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_created_sha": "MISSING",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_created_sha": "MISSING",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0002",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "97bb48969d230634d345505968fbbffb99db662aecefb8fac44c603d57e2abe7",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "97bb48969d230634d345505968fbbffb99db662aecefb8fac44c603d57e2abe7",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "4",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0003",
+      "verdict": "PASS",
+      "oracle_exit": [
+        1
+      ],
+      "oracle_stdout_sha": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        1
+      ],
+      "candidate_stdout_sha": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0004",
+      "verdict": "PASS",
+      "oracle_exit": [
+        1
+      ],
+      "oracle_stdout_sha": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+      "oracle_stderr_sha": "b880d949ce870ada090f5d29e5518ba67843998de1d8776a4e53c039506506f8",
+      "candidate_exit": [
+        1
+      ],
+      "candidate_stdout_sha": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+      "candidate_stderr_sha": "b880d949ce870ada090f5d29e5518ba67843998de1d8776a4e53c039506506f8",
+      "expected_present": true,
+      "expected_exit": "1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0005",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0006",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        0
+      ],
+      "oracle_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_created_sha": "70fcc6d430f1b90c54bafc8b7d505cc282d259ef929b13341c900368950fb4e2",
+      "candidate_exit": [
+        0,
+        0,
+        0
+      ],
+      "candidate_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_created_sha": "70fcc6d430f1b90c54bafc8b7d505cc282d259ef929b13341c900368950fb4e2",
+      "expected_present": true,
+      "expected_exit": "0 0 0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0007",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        1
+      ],
+      "oracle_stdout_sha": "d0b24c789685fa91be2b726ca2e15ac4cfd3b1143d5add9817328978dc09a61d",
+      "oracle_stderr_sha": "afd5948245723f153dface0a52cc307fdf8cb34297ff0c85216919e224121f53",
+      "candidate_exit": [
+        0,
+        0,
+        1
+      ],
+      "candidate_stdout_sha": "d0b24c789685fa91be2b726ca2e15ac4cfd3b1143d5add9817328978dc09a61d",
+      "candidate_stderr_sha": "afd5948245723f153dface0a52cc307fdf8cb34297ff0c85216919e224121f53",
+      "expected_present": true,
+      "expected_exit": "0 0 1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0008",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        1
+      ],
+      "oracle_stdout_sha": "d0b24c789685fa91be2b726ca2e15ac4cfd3b1143d5add9817328978dc09a61d",
+      "oracle_stderr_sha": "afd5948245723f153dface0a52cc307fdf8cb34297ff0c85216919e224121f53",
+      "candidate_exit": [
+        0,
+        0,
+        1
+      ],
+      "candidate_stdout_sha": "d0b24c789685fa91be2b726ca2e15ac4cfd3b1143d5add9817328978dc09a61d",
+      "candidate_stderr_sha": "afd5948245723f153dface0a52cc307fdf8cb34297ff0c85216919e224121f53",
+      "expected_present": true,
+      "expected_exit": "0 0 1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0009",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "oracle_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "candidate_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0 0 0 0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0010",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        0
+      ],
+      "oracle_stdout_sha": "d808cdf145fec0afe1a550993930dc433d1d8db2fb3620e58a0ac2b6ba9c86f4",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0,
+        0,
+        0
+      ],
+      "candidate_stdout_sha": "d808cdf145fec0afe1a550993930dc433d1d8db2fb3620e58a0ac2b6ba9c86f4",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0 0 0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLCATALOG-0011",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "oracle_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_created_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_exit": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "candidate_stdout_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_created_sha": "4ac20909f5e55b0cb0fae87be9ba6ecf5efe358e94a4671c7e3214d93f5c1d18",
+      "expected_present": true,
+      "expected_exit": "0 0 0 0",
+      "expected_match": true
+    }
+  ],
+  "totals": {
+    "pass": 11,
+    "fail": 0
+  },
+  "verdict": "PASS"
+}

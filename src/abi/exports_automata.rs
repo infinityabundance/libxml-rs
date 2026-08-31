@@ -89,7 +89,7 @@
 //! # Proving courts
 //!
 //! The RELAXNG/automata probes and the DSO-LOADER court (25/25 symbols load)
-//! plus HEADER-COMPILE (595/595) exercise this module; the data-ABI family
+//! plus HEADER-COMPILE exercise this module; the data-ABI family
 //! probes require byte-identical behavior on the supported paths.
 //!
 //! # Tempting simplifications that would break parity
@@ -329,9 +329,9 @@ pub unsafe extern "C" fn xmlAutomataNewCountTrans2(
         from,
         target,
         value.as_ptr() as *const c_char,
-        data,
         min,
         max,
+        data,
     );
     target
 }
@@ -395,9 +395,9 @@ pub unsafe extern "C" fn xmlAutomataNewOnceTrans2(
         from,
         target,
         value.as_ptr() as *const c_char,
-        data,
         min,
         max,
+        data,
     );
     target
 }
@@ -452,7 +452,7 @@ pub unsafe extern "C" fn xmlRegExecPushString2(
         return -1;
     }
     if value2.is_null() || value.is_null() {
-        let ret = xmlRegExecPushString(exec, value);
+        let ret = xmlRegExecPushString(exec, value, _data);
         EXEC_STATE
             .lock()
             .insert(exec as usize, ExecState { last_ret: ret });
@@ -465,7 +465,7 @@ pub unsafe extern "C" fn xmlRegExecPushString2(
     buf.push(b'|');
     buf.extend_from_slice(unsafe { core::slice::from_raw_parts(value2, lenn) });
     buf.push(0);
-    let ret = xmlRegExecPushString(exec, buf.as_ptr());
+    let ret = xmlRegExecPushString(exec, buf.as_ptr(), _data);
     EXEC_STATE
         .lock()
         .insert(exec as usize, ExecState { last_ret: ret });

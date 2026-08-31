@@ -72,7 +72,7 @@
 //! The ERROR-001 differential probe (`courts/suites/data-abi/error-family-
 //! probe.c`) verifies every error code/level/message byte-identical against
 //! the oracle DSO (48/48 cases); the RUST-MIRROR-ABI court checks enum
-//! discriminants; the header-compile court (571/571) compiles every public
+//! discriminants; the header-compile court compiles every public
 //! header against the candidate DSO.
 //!
 //! # Tempting simplifications that would break parity
@@ -525,6 +525,9 @@ pub const XML_ERR_RESOURCE_LIMIT: c_int = 114;
 pub const XML_ERR_CONDSEC_INVALID_KEYWORD: c_int = 95;
 pub const XML_ERR_VERSION_MISSING: c_int = 96;
 pub const XML_ERR_ARGUMENT: c_int = 115;
+pub const XML_ERR_REDECL_PREDEF_ENTITY: c_int = 117; /* entities.c xmlAddEntity */
+pub const XML_WAR_ENTITY_REDEFINED: c_int = 107; /* entities.c xmlAddEntity */
+pub const XML_DTD_NO_DTD: c_int = 522; /* entities.c xmlAddEntity */
 pub const XML_IO_ENOENT: c_int = 1524;
 // Removed: duplicate of XML_ERR_NAME_TOO_LONG at line 414
 

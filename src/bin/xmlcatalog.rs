@@ -171,7 +171,7 @@ unsafe fn free_cstr(p: *mut c_char) {
 unsafe fn dump_catalog() {
     let fp = libc::fdopen(1, c"w".as_ptr() as *const c_char);
     if !fp.is_null() {
-        xmlCatalogDump(fp as *mut c_void, ptr::null_mut());
+        xmlCatalogDump(fp as *mut c_void);
         // Flush so the output is not delayed past subsequent shell prompts.
         libc::fflush(fp);
     }

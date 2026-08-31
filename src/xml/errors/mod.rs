@@ -85,9 +85,9 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_uint};
 
-use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
+use crate::abi::callbacks::{errorSAXFunc, xmlGenericErrorFunc, xmlStructuredErrorFunc};
 use crate::abi::structs::_xmlError;
 use crate::abi::types::xmlErrorLevel::*;
 use crate::abi::types::*;
@@ -516,6 +516,89 @@ unsafe fn emit_legacy_message(level: &str, msg: *const c_char) {
     } else {
         // Upstream default (xmlGenericErrorDefaultFunc): stderr.
         let _ = libc::write(2, full.as_ptr() as *const libc::c_void, full.len());
+    }
+}
+
+/// System V AMD64 `__va_list_tag` (24 bytes) — same layout as the writer's
+/// shims and `data_globals.rs`.
+#[cfg(target_arch = "x86_64")]
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct VaListTag {
+    gp_offset: c_uint,
+    fp_offset: c_uint,
+    overflow_arg_area: *mut c_void,
+    reg_save_area: *mut c_void,
+}
+
+#[cfg(target_arch = "x86_64")]
+unsafe extern "C" {
+    fn vsnprintf(s: *mut c_char, n: usize, format: *const c_char, ap: *mut VaListTag) -> c_int;
+}
+
+/// Format `msg` with the caller's varargs and emit `level + ": "` + the
+/// formatted text through the generic channel (upstream error.c
+/// `xmlVFormatLegacyError`: `xmlGenericError(ctx, "%s: ", level)` then the
+/// `xmlStrVASPrintf`-formatted message).
+#[cfg(target_arch = "x86_64")]
+unsafe fn emit_legacy_message_v(level: &str, msg: *const c_char, ap: *mut VaListTag) -> c_int {
+    if msg.is_null() {
+        return 0;
+    }
+    let mut buf = [0 as c_char; 4096];
+    let n = unsafe { vsnprintf(buf.as_mut_ptr(), buf.len(), msg, ap) };
+    let n = n.clamp(0, buf.len() as c_int - 1) as usize;
+    buf[n] = 0;
+    unsafe { emit_legacy_message(level, buf.as_ptr()) };
+    0
+}
+
+/// x86_64 SysV variadic shim: captures the register save area exactly like
+/// `va_start` (2 fixed args → `gp_offset` 16), builds the va_list at
+/// rsp+176, passes it as the 3rd argument (rdx) to `receiver`, then restores
+/// the stack and returns. Same technique as `xmlStrPrintf`
+/// (exports_string.rs) and `xsltTransformError` (exports_xslt_util.rs).
+///
+/// Layout: reg_save_area = rsp+0 (6 GP + 8 SSE slots, 176 bytes); the
+/// va_list struct lives at rsp+176; overflow varargs are above the return
+/// address; a 240-byte frame keeps the `call` 16-aligned and the overflow
+/// area at rsp+256 (= entry_rsp + 8); the alignment push is popped before
+/// `ret`.
+#[cfg(target_arch = "x86_64")]
+unsafe fn legacy_shim(
+    receiver: unsafe extern "C" fn(*mut c_void, *const c_char, *mut VaListTag) -> c_int,
+) -> c_int {
+    unsafe {
+        core::arch::asm!(
+            "sub rsp, 240",
+            "mov [rsp+0], rdi",
+            "mov [rsp+8], rsi",
+            "mov [rsp+16], rdx",
+            "mov [rsp+24], rcx",
+            "mov [rsp+32], r8",
+            "mov [rsp+40], r9",
+            "movaps [rsp+48], xmm0",
+            "movaps [rsp+64], xmm1",
+            "movaps [rsp+80], xmm2",
+            "movaps [rsp+96], xmm3",
+            "movaps [rsp+112], xmm4",
+            "movaps [rsp+128], xmm5",
+            "movaps [rsp+144], xmm6",
+            "movaps [rsp+160], xmm7",
+            "mov dword ptr [rsp+176], 16",
+            "mov dword ptr [rsp+180], 48",
+            "lea rax, [rsp+256]",
+            "mov [rsp+184], rax",
+            "lea rax, [rsp]",
+            "mov [rsp+192], rax",
+            "lea rdx, [rsp+176]",
+            "call {receiver}",
+            "add rsp, 240",
+            "add rsp, 8",
+            "ret",
+            receiver = in(reg) receiver as usize,
+            options(noreturn),
+        );
     }
 }
 
@@ -965,95 +1048,168 @@ unsafe fn raise_error_streamed_x86_64(
     }
 }
 
-/// Default SAX v1 error handler — `void xmlParserError(void *ctx, const char *msg, ...)`.
+/// Default SAX v1 error handler — upstream `void xmlParserError(void *ctx,
+/// const char *msg, ...)`. Variadic x86_64 SysV shim (11.1-Z.2, R-000176:
+/// the previous fixed-arity body silently dropped the varargs; upstream
+/// error.c formats them via `xmlVFormatLegacyError`).
+///
+/// 2 fixed args (ctx=rdi, msg=rsi) → `gp_offset` 16; the va_list pointer is
+/// passed as the 3rd arg (rdx) to the `xmlParserErrorV` receiver.
 ///
 /// # SAFETY
 ///
 /// - `ctx` may be NULL (unused by the candidate's legacy path).
-/// - `msg` must be a valid NUL-terminated C string or NULL.
+/// - `msg` must be a valid NUL-terminated printf format string.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserError(ctx: *mut c_void, msg: *const c_char) {
-    let _ = ctx;
-    unsafe { emit_legacy_message("error", msg) };
+pub unsafe extern "C" fn xmlParserError() -> c_int {
+    unsafe { legacy_shim(xmlParserErrorV) }
 }
 
-/// Default SAX v1 warning handler — `void xmlParserWarning(void *ctx, const char *msg, ...)`.
+/// Variadic receiver for the `xmlParserError` shim: formats `msg` with the
+/// caller's varargs and emits `"error: "` + formatted text through the
+/// generic channel (upstream error.c `xmlVFormatLegacyError`).
+///
+/// # Safety
+///
+/// - `msg` must be a valid NUL-terminated printf format string, `ap` a
+///   valid va_list matching the format, `ctx` may be NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserErrorV(
+    ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    let _ = ctx;
+    unsafe { emit_legacy_message_v("error", msg, ap) }
+}
+
+/// Default SAX v1 warning handler — upstream `void xmlParserWarning(void
+/// *ctx, const char *msg, ...)`. Variadic shim as `xmlParserError`.
 ///
 /// # SAFETY
 ///
-/// - `ctx` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// - `msg` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `ctx` may be NULL (unused by the candidate's legacy path).
+/// - `msg` must be a valid NUL-terminated printf format string.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserWarning(ctx: *mut c_void, msg: *const c_char) {
-    let _ = ctx;
-    unsafe { emit_legacy_message("warning", msg) };
+pub unsafe extern "C" fn xmlParserWarning() -> c_int {
+    unsafe { legacy_shim(xmlParserWarningV) }
 }
 
-/// Default validity error handler — `void xmlParserValidityError(void *ctx, const char *msg, ...)`.
+/// Variadic receiver for the `xmlParserWarning` shim.
+///
+/// # Safety
+///
+/// - `msg` must be a valid NUL-terminated printf format string, `ap` a
+///   valid va_list matching the format, `ctx` may be NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserWarningV(
+    ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    let _ = ctx;
+    unsafe { emit_legacy_message_v("warning", msg, ap) }
+}
+
+/// Default validity error handler — upstream `void
+/// xmlParserValidityError(void *ctx, const char *msg, ...)`. Variadic shim
+/// as `xmlParserError`.
 ///
 /// # SAFETY
 ///
-/// - `ctx` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// - `msg` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `ctx` may be NULL (unused by the candidate's legacy path).
+/// - `msg` must be a valid NUL-terminated printf format string.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserValidityError(ctx: *mut c_void, msg: *const c_char) {
-    let _ = ctx;
-    unsafe { emit_legacy_message("validity error", msg) };
+pub unsafe extern "C" fn xmlParserValidityError() -> c_int {
+    unsafe { legacy_shim(xmlParserValidityErrorV) }
 }
 
-/// Default validity warning handler — `void xmlParserValidityWarning(void *ctx, const char *msg, ...)`.
+/// Variadic receiver for the `xmlParserValidityError` shim.
+///
+/// # Safety
+///
+/// - `msg` must be a valid NUL-terminated printf format string, `ap` a
+///   valid va_list matching the format, `ctx` may be NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserValidityErrorV(
+    ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    let _ = ctx;
+    unsafe { emit_legacy_message_v("validity error", msg, ap) }
+}
+
+/// Default validity warning handler — upstream `void
+/// xmlParserValidityWarning(void *ctx, const char *msg, ...)`. Variadic
+/// shim as `xmlParserError`.
 ///
 /// # SAFETY
 ///
-/// - `ctx` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// - `msg` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `ctx` may be NULL (unused by the candidate's legacy path).
+/// - `msg` must be a valid NUL-terminated printf format string.
+#[cfg(target_arch = "x86_64")]
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserValidityWarning(ctx: *mut c_void, msg: *const c_char) {
-    let _ = ctx;
-    unsafe { emit_legacy_message("validity warning", msg) };
+pub unsafe extern "C" fn xmlParserValidityWarning() -> c_int {
+    unsafe { legacy_shim(xmlParserValidityWarningV) }
 }
+
+/// Variadic receiver for the `xmlParserValidityWarning` shim.
+///
+/// # Safety
+///
+/// - `msg` must be a valid NUL-terminated printf format string, `ap` a
+///   valid va_list matching the format, `ctx` may be NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlParserValidityWarningV(
+    ctx: *mut c_void,
+    msg: *const c_char,
+    ap: *mut VaListTag,
+) -> c_int {
+    let _ = ctx;
+    unsafe { emit_legacy_message_v("validity warning", msg, ap) }
+}
+
+/// The variadic `xmlParserError` shim, transmuted to the fixed-arity SAX v1
+/// callback type. The shim's declared arity is a Rust-side fiction (stable
+/// Rust cannot express `c_variadic`); the ABI is a plain code pointer and
+/// the C variadic call contract is preserved (11.1-Z.2, R-000176).
+pub const XML_PARSER_ERROR_SAX1: errorSAXFunc = unsafe {
+    // SAFETY: shim and SAX callback are both plain code pointers (same ABI);
+    // the declared arity difference is the documented shim fiction.
+    core::mem::transmute::<unsafe extern "C" fn() -> c_int, errorSAXFunc>(xmlParserError)
+};
+
+/// The variadic `xmlParserWarning` shim as the SAX v1 callback type.
+pub const XML_PARSER_WARNING_SAX1: errorSAXFunc = unsafe {
+    // SAFETY: see XML_PARSER_ERROR_SAX1.
+    core::mem::transmute::<unsafe extern "C" fn() -> c_int, errorSAXFunc>(xmlParserWarning)
+};
+
+/// The variadic `xmlParserValidityError` shim as the validation callback
+/// type (`xmlValidityErrorFunc`-compatible fixed-arity pointer).
+pub const XML_PARSER_VALIDITY_ERROR_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
+    // SAFETY: see XML_PARSER_ERROR_SAX1.
+    unsafe {
+        core::mem::transmute::<
+            unsafe extern "C" fn() -> c_int,
+            unsafe extern "C" fn(*mut c_void, *const c_char),
+        >(xmlParserValidityError)
+    };
+
+/// The variadic `xmlParserValidityWarning` shim as the validation callback
+/// type.
+pub const XML_PARSER_VALIDITY_WARNING_SAX1: unsafe extern "C" fn(*mut c_void, *const c_char) =
+    // SAFETY: see XML_PARSER_ERROR_SAX1.
+    unsafe {
+        core::mem::transmute::<
+            unsafe extern "C" fn() -> c_int,
+            unsafe extern "C" fn(*mut c_void, *const c_char),
+        >(xmlParserValidityWarning)
+    };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Tests

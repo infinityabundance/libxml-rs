@@ -64,7 +64,7 @@
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
    "oracle_functions": 1400,
    "oracle_data": 22,
-   "candidate_functions": 1714,
+   "candidate_functions": 1718,
    "counts": {
     "MISSING": 0,
     "STUB": 0,

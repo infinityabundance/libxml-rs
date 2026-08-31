@@ -59,7 +59,7 @@
 //! # Proving courts
 //!
 //! The OWNERSHIP, PARSER and TREE-STRUCTURE court families plus the
-//! DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts exercise this
+//! DSO-LOADER and HEADER-COMPILE courts exercise this
 //! module; the data-ABI probes require byte-identical output on the exercised
 //! paths.
 //!
@@ -548,10 +548,10 @@ pub unsafe extern "C" fn xmlSetFeature(
         let val = unsafe { *(value as *const c_int) };
         if c.validate == 0 && val != 0 {
             if c.vctxt.warning.is_none() {
-                c.vctxt.warning = Some(crate::xml::errors::xmlParserValidityWarning);
+                c.vctxt.warning = Some(crate::xml::errors::XML_PARSER_VALIDITY_WARNING_SAX1);
             }
             if c.vctxt.error.is_none() {
-                c.vctxt.error = Some(crate::xml::errors::xmlParserValidityError);
+                c.vctxt.error = Some(crate::xml::errors::XML_PARSER_VALIDITY_ERROR_SAX1);
             }
             c.vctxt.valid = 0;
         }

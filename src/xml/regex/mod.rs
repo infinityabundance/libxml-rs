@@ -71,7 +71,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::types::xmlChar;
@@ -1622,7 +1622,8 @@ pub const unsafe extern "C" fn xmlRegexpIsDeterministic(compiled: *const XmlRege
     unsafe { (*compiled).is_deterministic }
 }
 
-/// Print a compiled regex for debugging.
+/// Print a compiled regex for debugging (upstream xmlregexp.h: FILE* first
+/// argument — R-000176, the candidate previously dropped it).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -1632,93 +1633,113 @@ pub const unsafe extern "C" fn xmlRegexpIsDeterministic(compiled: *const XmlRege
 ///
 /// # SAFETY
 ///
-/// - `compiled` must be a valid pointer to an XmlRegexp, or NULL.
+/// - `output` must be a valid FILE* or NULL (stderr is used)
+/// - `compiled` must be a valid pointer to an XmlRegexp, or NULL
 #[no_mangle]
-pub unsafe extern "C" fn xmlRegexpPrint(compiled: *const XmlRegexp) {
+pub unsafe extern "C" fn xmlRegexpPrint(output: *mut c_void, compiled: *const XmlRegexp) {
+    let mut msg = String::new();
     if compiled.is_null() {
-        eprintln!("(null regex)");
-        return;
-    }
-
-    let regex = unsafe { &*compiled };
-    let pattern_str = if regex.pattern.is_null() {
-        "(null)"
+        msg.push_str("(null regex)\n");
     } else {
-        let len = xml_strlen(regex.pattern);
-        let slice = unsafe { core::slice::from_raw_parts(regex.pattern, len) };
-        core::str::from_utf8(slice).unwrap_or("(invalid utf-8)")
-    };
+        let regex = unsafe { &*compiled };
+        let pattern_str = if regex.pattern.is_null() {
+            "(null)".to_string()
+        } else {
+            let len = xml_strlen(regex.pattern);
+            let slice = unsafe { core::slice::from_raw_parts(regex.pattern, len) };
+            core::str::from_utf8(slice)
+                .unwrap_or("(invalid utf-8)")
+                .to_string()
+        };
+        msg.push_str(&format!("Regex: /{}/\n", pattern_str));
+        msg.push_str(&format!("  deterministic: {}\n", regex.is_deterministic));
 
-    eprintln!("Regex: /{}/", pattern_str);
-    eprintln!("  deterministic: {}", regex.is_deterministic);
-
-    if let Some(ref nfa) = regex.nfa {
-        eprintln!("  states: {}", nfa.states.len());
-        eprintln!("  start state: {}", nfa.start);
-        for (i, state) in nfa.states.iter().enumerate() {
-            eprint!("    state[{}]: ", i);
-            if state.is_accept {
-                eprint!("(accept) ");
-            }
-            for (j, (cond, target)) in state.transitions.iter().enumerate() {
-                if j > 0 {
-                    eprint!(", ");
+        if let Some(ref nfa) = regex.nfa {
+            msg.push_str(&format!("  states: {}\n", nfa.states.len()));
+            msg.push_str(&format!("  start state: {}\n", nfa.start));
+            for (i, state) in nfa.states.iter().enumerate() {
+                msg.push_str(&format!("    state[{}]: ", i));
+                if state.is_accept {
+                    msg.push_str("(accept) ");
                 }
-                match cond {
-                    Transition::Epsilon => eprint!("ε->{}", target),
-                    Transition::Char(c) => {
-                        if *c >= 0x20 && *c <= 0x7e {
-                            eprint!("'{}'->{}", *c as char, target);
-                        } else {
-                            eprint!("0x{:02x}->{}", c, target);
-                        }
+                for (j, (cond, target)) in state.transitions.iter().enumerate() {
+                    if j > 0 {
+                        msg.push_str(", ");
                     }
-                    Transition::Range(lo, hi) => {
-                        eprint!("[{:02x}-{:02x}]->{}", lo, hi, target);
-                    }
-                    Transition::Set(chars) => {
-                        eprint!("{{");
-                        for (k, c) in chars.iter().enumerate() {
-                            if k > 0 {
-                                eprint!(",");
+                    match cond {
+                        Transition::Epsilon => msg.push_str(&format!("ε->{}", target)),
+                        Transition::Char(c) => {
+                            if *c >= 0x20 && *c <= 0x7e {
+                                msg.push_str(&format!("'{}'->{}", *c as char, target));
+                            } else {
+                                msg.push_str(&format!("0x{:02x}->{}", c, target));
                             }
-                            eprint!("0x{:02x}", c);
                         }
-                        eprint!("}}->{}", target);
-                    }
-                    Transition::NotRange(lo, hi) => {
-                        eprint!("[^{:02x}-{:02x}]->{}", lo, hi, target);
-                    }
-                    Transition::NotSet(chars) => {
-                        eprint!("^{{");
-                        for (k, c) in chars.iter().enumerate() {
-                            if k > 0 {
-                                eprint!(",");
+                        Transition::Range(lo, hi) => {
+                            msg.push_str(&format!("[{:02x}-{:02x}]->{}", lo, hi, target));
+                        }
+                        Transition::Set(chars) => {
+                            msg.push('{');
+                            for (k, c) in chars.iter().enumerate() {
+                                if k > 0 {
+                                    msg.push(',');
+                                }
+                                msg.push_str(&format!("0x{:02x}", c));
                             }
-                            eprint!("0x{:02x}", c);
+                            msg.push_str("}->");
+                            msg.push_str(&target.to_string());
                         }
-                        eprint!("}}->{}", target);
+                        Transition::NotRange(lo, hi) => {
+                            msg.push_str(&format!("[^{:02x}-{:02x}]->{}", lo, hi, target));
+                        }
+                        Transition::NotSet(chars) => {
+                            msg.push_str("^{{");
+                            for (k, c) in chars.iter().enumerate() {
+                                if k > 0 {
+                                    msg.push(',');
+                                }
+                                msg.push_str(&format!("0x{:02x}", c));
+                            }
+                            msg.push_str("}}->");
+                            msg.push_str(&target.to_string());
+                        }
+                        Transition::Wildcard => msg.push_str(&format!(".*->{}", target)),
+                        Transition::Predefined(class) => {
+                            let name = match class {
+                                PredefinedClass::Digit => "\\d",
+                                PredefinedClass::NotDigit => "\\D",
+                                PredefinedClass::Space => "\\s",
+                                PredefinedClass::NotSpace => "\\S",
+                                PredefinedClass::Word => "\\w",
+                                PredefinedClass::NotWord => "\\W",
+                            };
+                            msg.push_str(&format!("{}->{}", name, target));
+                        }
+                        Transition::Anchor(at) => match at {
+                            AnchorType::Start => msg.push_str(&format!("^->{}", target)),
+                            AnchorType::End => msg.push_str(&format!("$->{}", target)),
+                        },
                     }
-                    Transition::Wildcard => eprint!(".*->{}", target),
-                    Transition::Predefined(class) => {
-                        let name = match class {
-                            PredefinedClass::Digit => "\\d",
-                            PredefinedClass::NotDigit => "\\D",
-                            PredefinedClass::Space => "\\s",
-                            PredefinedClass::NotSpace => "\\S",
-                            PredefinedClass::Word => "\\w",
-                            PredefinedClass::NotWord => "\\W",
-                        };
-                        eprint!("{}->{}", name, target);
-                    }
-                    Transition::Anchor(at) => match at {
-                        AnchorType::Start => eprint!("^->{}", target),
-                        AnchorType::End => eprint!("$->{}", target),
-                    },
                 }
+                msg.push('\n');
             }
-            eprintln!();
         }
+    }
+    unsafe {
+        let out = if output.is_null() {
+            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
+        } else {
+            output
+        };
+        if out.is_null() {
+            return;
+        }
+        libc::fwrite(
+            msg.as_ptr() as *const c_void,
+            1,
+            msg.len(),
+            out as *mut libc::FILE,
+        );
     }
 }
 
@@ -1767,6 +1788,12 @@ pub struct RegExecCtxt {
     current_states: Vec<usize>,
     /// Whether we've started matching.
     started: bool,
+    /// Progress callback (upstream xmlRegExecCallbacks; retained for ABI
+    /// parity — the candidate NFA engine has no transition-data concept, so
+    /// it is not invoked; documented divergence, R-000176).
+    callback: Option<crate::abi::callbacks::xmlRegExecCallbacks>,
+    /// Opaque context for the callback (upstream `exec->data`).
+    data: *mut c_void,
 }
 
 /// Create an incremental regex execution context.
@@ -1774,16 +1801,22 @@ pub struct RegExecCtxt {
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlRegExecCtxtPtr xmlRegNewExecCtxt(xmlRegexpPtr compiled, void *data);
+/// xmlRegExecCtxtPtr xmlRegNewExecCtxt(xmlRegexpPtr compiled,
+///                                     xmlRegExecCallbacks callback,
+///                                     void *data);
 /// ```
 ///
 /// # SAFETY
 ///
 /// - `compiled` must be a valid pointer to an XmlRegexp, or NULL.
+/// - `callback` may be NULL; when non-NULL it is retained in the context
+///   (upstream invokes it on transitions with attached data — not wired in
+///   the candidate NFA engine, R-000176).
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegNewExecCtxt(
     compiled: *mut XmlRegexp,
-    _data: *mut c_void,
+    callback: Option<crate::abi::callbacks::xmlRegExecCallbacks>,
+    data: *mut c_void,
 ) -> *mut RegExecCtxt {
     if compiled.is_null() {
         return ptr::null_mut();
@@ -1801,6 +1834,8 @@ pub unsafe extern "C" fn xmlRegNewExecCtxt(
         // would try to drop the old (garbage) value for fields with Drop.
         core::ptr::write(&mut (*ctxt).current_states, Vec::new());
         (*ctxt).started = false;
+        (*ctxt).callback = callback;
+        (*ctxt).data = data;
     }
 
     ctxt
@@ -1811,7 +1846,8 @@ pub unsafe extern "C" fn xmlRegNewExecCtxt(
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlRegExecPushString(xmlRegExecCtxtPtr ctxt, const xmlChar *value);
+/// int xmlRegExecPushString(xmlRegExecCtxtPtr ctxt, const xmlChar *value,
+///                          void *data);
 /// ```
 ///
 /// Returns 1 if the pushed data completes a match, 0 if more data is needed,
@@ -1821,10 +1857,13 @@ pub unsafe extern "C" fn xmlRegNewExecCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a RegExecCtxt, or NULL.
 /// - `value` must be a valid null-terminated xmlChar string, or NULL.
+/// - `data` is the per-push token data passed to the progress callback
+///   (retained for ABI parity; not invoked, R-000176).
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegExecPushString(
     ctxt: *mut RegExecCtxt,
     value: *const xmlChar,
+    _data: *mut c_void,
 ) -> c_int {
     if ctxt.is_null() {
         return REGEXP_ERROR;
@@ -2259,10 +2298,10 @@ mod tests {
     fn test_incremental_empty_input() {
         let compiled = compile(b"a*");
         assert!(!compiled.is_null());
-        let ctxt = unsafe { xmlRegNewExecCtxt(compiled, ptr::null_mut()) };
+        let ctxt = unsafe { xmlRegNewExecCtxt(compiled, None, ptr::null_mut()) };
         assert!(!ctxt.is_null());
         // Push empty string should not match a* (no input yet)
-        let ret = unsafe { xmlRegExecPushString(ctxt, ptr::null_mut()) };
+        let ret = unsafe { xmlRegExecPushString(ctxt, ptr::null_mut(), ptr::null_mut()) };
         // NULL terminates input — a* matches empty
         assert_eq!(ret, REGEXP_MATCH);
         unsafe { xmlRegFreeExecCtxt(ctxt) };
@@ -2273,10 +2312,10 @@ mod tests {
     fn test_incremental_simple_match() {
         let compiled = compile(b"abc");
         assert!(!compiled.is_null());
-        let ctxt = unsafe { xmlRegNewExecCtxt(compiled, ptr::null_mut()) };
+        let ctxt = unsafe { xmlRegNewExecCtxt(compiled, None, ptr::null_mut()) };
         assert!(!ctxt.is_null());
         let val = to_xml_str(b"abc");
-        let ret = unsafe { xmlRegExecPushString(ctxt, val) };
+        let ret = unsafe { xmlRegExecPushString(ctxt, val, ptr::null_mut()) };
         assert_eq!(ret, REGEXP_MATCH);
         unsafe { xmlRegFreeExecCtxt(ctxt) };
         unsafe { xmlRegFreeRegexp(compiled) };
@@ -2312,7 +2351,7 @@ mod tests {
     fn test_print() {
         let compiled = compile(b"hello");
         assert!(!compiled.is_null());
-        unsafe { xmlRegexpPrint(compiled) };
+        unsafe { xmlRegexpPrint(ptr::null_mut(), compiled) };
         unsafe { xmlRegFreeRegexp(compiled) };
     }
 }

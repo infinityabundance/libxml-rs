@@ -39,6 +39,20 @@
 //! not yet present (first `--lib`-only build), the symlink fallback keeps the
 //! names resolvable to the core until a full build produces the facades.
 //!
+//! DISTRIBUTION CONTRACT (11.1-Z.2, R-000177): the full Git repository
+//! (with `.cargo/config.toml` and `tools/packaging/`) is the C-custodian
+//! distribution — it builds the real three-DSO contract above. The crates.io
+//! package excludes `tools/` and `.cargo/` (see `Cargo.toml` `exclude`), so a
+//! published-crate build uses the default linker and the symlink fallback:
+//! every SONAME name resolves to the single core `liblibxml_rs.so` instance.
+//! The whole-archive facades are the only consumer-linkable construction
+//! (thin re-export facades fail the consumer static link and the core cannot
+//! satisfy the facades' references to the crate's internal symbols), which
+//! carries a documented bounded divergence: the facades hold private copies
+//! of the core state, so hooks/globals installed through one DSO are not
+//! observed by the others. The DSO-STATE-COHERENCE court pins this exact
+//! partition profile; the DSO-LOADER court verifies the ELF identities.
+//!
 //! The layout mirrors the upstream libtool installation (see
 //! `oracle/historical/prefix/*/oracle-manifest.json` and the `lib/*.la` files):
 //!

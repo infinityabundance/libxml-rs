@@ -70,7 +70,7 @@
 //!
 //! # Proving courts
 //!
-//! The DSO-LOADER (25/25) and HEADER-COMPILE (595/595) courts plus the uri
+//! The DSO-LOADER and HEADER-COMPILE courts plus the uri
 //! unit suite (`src/xml/uri/mod.rs`, 69 tests per R-000132) and the data-ABI
 //! probes cover this module.
 //!

@@ -86,7 +86,7 @@
 //! compilation relies on it.
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
-use crate::xml::regex::{xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp};
+use crate::xml::regex::{xmlRegFreeRegexp, xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp};
 use core::ffi::c_int;
 use core::ptr;
 
@@ -100,8 +100,6 @@ pub type XmlAutomataPtr = *mut XmlAutomata;
 #[derive(Debug)]
 #[repr(C)]
 pub struct XmlAutomata {
-    /// Compiled regex, set by xmlAutomataCompile.
-    regexp: Option<Box<XmlRegexp>>,
     /// List of all states.
     states: Vec<*mut XmlAutomataState>,
     /// The initial state.
@@ -169,7 +167,6 @@ pub unsafe extern "C" fn xmlNewAutomata() -> XmlAutomataPtr {
         return ptr::null_mut();
     }
     unsafe {
-        core::ptr::write(&mut (*am).regexp, None as Option<Box<XmlRegexp>>);
         core::ptr::write(&mut (*am).states, Vec::new());
         (*am).init_state = None;
         (*am).error = 0;
@@ -210,8 +207,9 @@ pub unsafe extern "C" fn xmlFreeAutomata(am: XmlAutomataPtr) {
         }
         // Drop the states Vec
         core::ptr::drop_in_place(&mut (*am).states);
-        // Drop the compiled regexp if any
-        let _ = (*am).regexp.take();
+        // Note: since 11.1-Z.2 (R-000176) the compiled regexp is returned
+        // caller-owned by xmlAutomataCompile (upstream 2.15 xmlregexp.c), so
+        // the automata no longer owns or frees it.
         xmlFreeImpl(am as *mut core::ffi::c_void);
     }
 }
@@ -404,13 +402,15 @@ pub unsafe extern "C" fn xmlAutomataNewTransition(
     from
 }
 
-/// Add a counted transition (with min/max bounds).
+/// Add a counted transition with min/max bounds (upstream xmlautomata.h:
+/// `(am, from, to, token, min, max, data)` — the candidate previously
+/// swapped `min`/`max` with `data`, misreading five registers; R-000176).
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewCountTrans()`
 ///
 /// # SAFETY
 ///
-/// - `am`, `from`, `to`, `token`, `_data` must be valid pointers (or NULL
+/// - `am`, `from`, `to`, `token`, `data` must be valid pointers (or NULL
 ///   where the upstream C contract allows), obtained from the
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
@@ -428,9 +428,9 @@ pub unsafe extern "C" fn xmlAutomataNewCountTrans(
     from: XmlAutomataStatePtr,
     to: XmlAutomataStatePtr,
     token: *const core::ffi::c_char,
-    _data: *mut core::ffi::c_void,
     min: c_int,
     max: c_int,
+    _data: *mut core::ffi::c_void,
 ) -> XmlAutomataStatePtr {
     if am.is_null() || from.is_null() || to.is_null() {
         return ptr::null_mut();
@@ -456,13 +456,14 @@ pub unsafe extern "C" fn xmlAutomataNewCountTrans(
     from
 }
 
-/// Add a "once" transition (consumes exactly once within bounds).
+/// Add a "once" transition (consumes exactly once within bounds; upstream
+/// order `(am, from, to, token, min, max, data)` — R-000176).
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewOnceTrans()`
 ///
 /// # SAFETY
 ///
-/// - `am`, `from`, `to`, `token`, `_data` must be valid pointers (or NULL
+/// - `am`, `from`, `to`, `token`, `data` must be valid pointers (or NULL
 ///   where the upstream C contract allows), obtained from the
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
@@ -480,9 +481,9 @@ pub unsafe extern "C" fn xmlAutomataNewOnceTrans(
     from: XmlAutomataStatePtr,
     to: XmlAutomataStatePtr,
     token: *const core::ffi::c_char,
-    _data: *mut core::ffi::c_void,
     min: c_int,
     max: c_int,
+    _data: *mut core::ffi::c_void,
 ) -> XmlAutomataStatePtr {
     if am.is_null() || from.is_null() || to.is_null() {
         return ptr::null_mut();
@@ -669,12 +670,15 @@ pub const unsafe extern "C" fn xmlAutomataNewCounter(
     0
 }
 
-/// Compile the automata into a regex.
+/// Compile the automata into a regex (upstream xmlregexp.c 2.15:
+/// caller-owned `xmlRegexp *` return — R-000176, the candidate previously
+/// returned an int error code and boxed the regexp into the automata).
 ///
 /// UPSTREAM-PARITY: `xmlAutomataCompile()`
 ///
 /// This builds a regex pattern string from the automata's state machine and
-/// compiles it using the regex engine.
+/// compiles it using the regex engine. The returned regexp is owned by the
+/// caller (free with `xmlRegFreeRegexp`), exactly as upstream.
 ///
 /// # SAFETY
 ///
@@ -691,9 +695,9 @@ pub const unsafe extern "C" fn xmlAutomataNewCounter(
 /// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
 /// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
+pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> *mut XmlRegexp {
     if am.is_null() {
-        return -1;
+        return ptr::null_mut();
     }
     unsafe {
         // Build a regex pattern from the automata transitions.
@@ -702,15 +706,14 @@ pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
         let mut pattern = Vec::new();
         let init = match (*am).init_state {
             Some(s) => s,
-            None => return 0, // Empty automata — nothing to compile
+            None => return ptr::null_mut(), // Empty automata — nothing to compile
         };
 
         // Walk the state machine to build a pattern.
-        // For now, build a simple pattern from the transition chain.
         build_pattern_from_automata(init, &mut pattern);
 
         if pattern.is_empty() {
-            return 0;
+            return ptr::null_mut();
         }
 
         // Compile the pattern
@@ -718,11 +721,10 @@ pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
         let compiled = xmlRegexpCompile(pattern.as_ptr());
         if compiled.is_null() {
             (*am).error = -1;
-            return -1;
+            return ptr::null_mut();
         }
 
-        (*am).regexp = Some(Box::from_raw(compiled));
-        0
+        compiled
     }
 }
 
@@ -786,7 +788,15 @@ unsafe fn build_pattern_from_automata(state: XmlAutomataStatePtr, pattern: &mut 
 
 /// Check if the compiled automata is deterministic.
 ///
-/// UPSTREAM-PARITY: `xmlAutomataIsDeterministic()`
+/// Report whether the automata's language is deterministic (upstream
+/// xmlregexp.c 2.15 `xmlAutomataIsDeterminist` — computed on the automata,
+/// independent of a stored compiled regexp; the candidate compiles a
+/// throwaway regexp and checks its determinism).
+///
+/// UPSTREAM-PARITY: `xmlAutomataIsDeterminist()`
+///
+/// Returns 1 if deterministic, 0 if not, -1 for a NULL automata (upstream
+/// xmlregexp.c: `if (am == NULL) return(-1);`).
 ///
 /// # SAFETY
 ///
@@ -805,13 +815,18 @@ unsafe fn build_pattern_from_automata(state: XmlAutomataStatePtr, pattern: &mut 
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataIsDeterministic(am: XmlAutomataPtr) -> c_int {
     if am.is_null() {
-        return 0;
+        return -1;
     }
     unsafe {
-        match &(*am).regexp {
-            Some(regexp) => xmlRegexpIsDeterministic(&**regexp as *const XmlRegexp),
-            None => 1, // Not compiled yet — assume deterministic
+        let compiled = xmlAutomataCompile(am);
+        if compiled.is_null() {
+            // No accepting path — the (empty) language is trivially
+            // deterministic.
+            return 1;
         }
+        let ret = xmlRegexpIsDeterministic(compiled as *const XmlRegexp);
+        xmlRegFreeRegexp(compiled);
+        ret
     }
 }
 
@@ -838,7 +853,7 @@ mod tests {
         unsafe {
             xmlFreeAutomata(ptr::null_mut());
             assert!(xmlAutomataGetInitState(ptr::null_mut()).is_null());
-            assert_eq!(xmlAutomataCompile(ptr::null_mut()), -1);
+            assert!(xmlAutomataCompile(ptr::null_mut()).is_null());
         }
     }
 
@@ -888,7 +903,7 @@ mod tests {
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
             let token = c"a".as_ptr() as *const core::ffi::c_char;
-            let result = xmlAutomataNewCountTrans(am, s1, s2, token, ptr::null_mut(), 1, 5);
+            let result = xmlAutomataNewCountTrans(am, s1, s2, token, 1, 5, ptr::null_mut());
             assert!(!result.is_null());
             xmlFreeAutomata(am);
         }
@@ -913,7 +928,7 @@ mod tests {
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
             let token = c"x".as_ptr() as *const core::ffi::c_char;
-            let result = xmlAutomataNewOnceTrans(am, s1, s2, token, ptr::null_mut(), 0, 1);
+            let result = xmlAutomataNewOnceTrans(am, s1, s2, token, 0, 1, ptr::null_mut());
             assert!(!result.is_null());
             xmlFreeAutomata(am);
         }
@@ -939,7 +954,9 @@ mod tests {
         unsafe {
             let am = xmlNewAutomata();
             let result = xmlAutomataCompile(am);
-            assert_eq!(result, 0);
+            // No accepting path — NULL (upstream xmlRegEpxFromParse has no
+            // final-state path to compile).
+            assert!(result.is_null());
             xmlFreeAutomata(am);
         }
     }
@@ -1006,7 +1023,10 @@ mod tests {
             xmlAutomataNewTransition(am, s1, s2, token_a, ptr::null_mut());
             xmlAutomataNewTransition(am, s2, s3, token_b, ptr::null_mut());
             let result = xmlAutomataCompile(am);
-            assert_eq!(result, 0);
+            // Caller-owned regexp (upstream 2.15): the chain compiles to a
+            // non-NULL regexp.
+            assert!(!result.is_null());
+            xmlRegFreeRegexp(result);
             xmlFreeAutomata(am);
         }
     }

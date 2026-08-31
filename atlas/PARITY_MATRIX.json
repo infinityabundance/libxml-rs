@@ -14,10 +14,10 @@
      "oracle_headers": 1408,
      "oracle_dso": 1395,
      "candidate_headers": 1396,
-     "candidate_dso": 1709,
+     "candidate_dso": 1713,
      "fully_reconciled": 1395,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 314
+     "candidate_extra": 318
     },
     "exported_data": {
      "oracle_doxygen": 625,

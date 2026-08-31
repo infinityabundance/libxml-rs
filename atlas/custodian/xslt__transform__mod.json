@@ -33,5 +33,7 @@
   "R-000167",
   "R-000172"
  ],
- "court_families": []
+ "court_families": [
+  "DSO-STATE-COHERENCE"
+ ]
 }

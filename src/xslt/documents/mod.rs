@@ -152,46 +152,24 @@ pub const unsafe extern "C" fn xsltDefaultLoader(
 }
 
 /// Global loader function (set via xsltSetLoaderFunc).
-static mut XSLT_LOADER: Option<
-    unsafe extern "C" fn(
-        *mut c_void,
-        *const c_char,
-        *const c_char,
-        *const c_char,
-        c_int,
-    ) -> *mut _xmlParserInput,
-> = None;
+static mut XSLT_LOADER: Option<crate::abi::exports_xslt_compile::xsltDocLoaderFunc> = None;
 
-/// Set the global XSLT loader function.
+/// Set the global XSLT document loader function (upstream documents.h
+/// `xsltSetLoaderFunc(xsltDocLoaderFunc f)` — R-000176, the candidate
+/// previously used a different 5-argument callback contract).
 ///
 /// # SAFETY
 ///
 /// - `loader` must be a valid function pointer or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xsltSetLoaderFunc(
-    loader: Option<
-        unsafe extern "C" fn(
-            *mut c_void,
-            *const c_char,
-            *const c_char,
-            *const c_char,
-            c_int,
-        ) -> *mut _xmlParserInput,
-    >,
+    loader: Option<crate::abi::exports_xslt_compile::xsltDocLoaderFunc>,
 ) {
     XSLT_LOADER = loader;
 }
 
 /// Get the current global loader function.
-pub fn xsltGetLoaderFunc() -> Option<
-    unsafe extern "C" fn(
-        *mut c_void,
-        *const c_char,
-        *const c_char,
-        *const c_char,
-        c_int,
-    ) -> *mut _xmlParserInput,
-> {
+pub fn xsltGetLoaderFunc() -> Option<crate::abi::exports_xslt_compile::xsltDocLoaderFunc> {
     // SAFETY: only mutated by xsltSetLoaderFunc; safe to read here.
     unsafe { XSLT_LOADER }
 }
@@ -248,29 +226,38 @@ pub unsafe fn xsltLoadDocument(
     doc
 }
 
-/// Load a document via the configured loader.
-///
-/// Uses the global loader function if set; otherwise parses the URI as a
-/// local file. Returns a parsed document or NULL on failure.
+/// Load a document via the configured loader (upstream documents.c
+/// `xsltLoadDocument`: the loader is invoked with `(URI, dict, options,
+/// ctxt, XSLT_LOAD_DOCUMENT)` and returns the parsed document). With no
+/// loader configured, the URI is parsed as a local file (upstream default).
 ///
 /// # SAFETY
 ///
 /// - All pointers must be valid.
 unsafe fn load_via_loader(ctxt: *mut _xsltTransformContext, uri: *mut xmlChar) -> *mut _xmlDoc {
-    // If a custom loader is configured, invoke it.
+    // If a custom loader is configured, invoke it with the upstream
+    // xsltDocLoaderFunc contract.
     let loader = xsltGetLoaderFunc();
     if let Some(loader_fn) = loader {
-        let input = loader_fn(
+        let dict = if ctxt.is_null() {
+            ptr::null_mut()
+        } else {
+            (*ctxt).dict
+        };
+        let options = if ctxt.is_null() {
+            0
+        } else {
+            (*ctxt).parserOptions
+        };
+        let doc = loader_fn(
+            uri as *const xmlChar,
+            dict,
+            options,
             ctxt as *mut c_void,
-            ptr::null(), // style
-            uri as *const c_char,
-            ptr::null(), // ns
-            0,           // secondary
+            2, // XSLT_LOAD_DOCUMENT
         );
-        if !input.is_null() {
-            // The loader returned a parser input; we currently cannot feed
-            // it into a document without a parser context, so free it.
-            crate::xml::parser::helpers::free_parser_input(input);
+        if !doc.is_null() {
+            return doc;
         }
     }
     // Default: parse the URI as a file path.

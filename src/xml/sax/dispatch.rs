@@ -783,9 +783,9 @@ pub unsafe fn xmlSAX2InitDefaultSAXHandler(sax: *mut _xmlSAXHandler) {
         // slots. The parser's raise path (state.rs set_error) recognises them
         // as legacy and streams the xmlFormatError fragments through the
         // generic channel instead of invoking them directly.
-        h.warning = Some(crate::xml::errors::xmlParserWarning as warningSAXFunc);
-        h.error = Some(crate::xml::errors::xmlParserError as errorSAXFunc);
-        h.fatalError = Some(crate::xml::errors::xmlParserError as errorSAXFunc);
+        h.warning = Some(crate::xml::errors::XML_PARSER_WARNING_SAX1);
+        h.error = Some(crate::xml::errors::XML_PARSER_ERROR_SAX1);
+        h.fatalError = Some(crate::xml::errors::XML_PARSER_ERROR_SAX1);
         h.getParameterEntity = Some(dflt::getParameterEntity as getParameterEntitySAXFunc);
         h.cdataBlock = Some(dflt::cdataBlock as cdataBlockSAXFunc);
         h.externalSubset = Some(dflt::externalSubset as externalSubsetSAXFunc);

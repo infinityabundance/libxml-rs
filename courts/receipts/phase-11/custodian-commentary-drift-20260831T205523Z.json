@@ -1,0 +1,6003 @@
+{
+ "court": "CUSTODIAN-COMMENTARY-DRIFT",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T205523Z",
+ "schema": "custodian-commentary-drift-1",
+ "checks": {
+  "A-mutable-count": "no (N/N) court-verdict counts embedded in source",
+  "B-residual-unresolved": "every R-\\d{6} resolves in the residual ledger",
+  "C-court-unresolved": "every court/probe/casefile ID is known",
+  "D-receipt-path-unresolved": "every courts/receipts mention exists",
+  "E-epoch-unresolved": "every E-\\d{3} resolves in the epochs atlas"
+ },
+ "modules_total": 134,
+ "findings": [],
+ "summary": {
+  "A-mutable-count": 0,
+  "B-residual-unresolved": 0,
+  "C-court-unresolved": 0,
+  "D-receipt-path-unresolved": 0,
+  "E-epoch-unresolved": 0
+ },
+ "coverage_census": {
+  "exports": {
+   "total": 1856,
+   "documented": 1856,
+   "undocumented": []
+  },
+  "unsafe_fns": {
+   "total": 1811,
+   "documented": 3,
+   "undocumented": [
+    "default_malloc",
+    "default_realloc",
+    "default_free",
+    "default_strdup",
+    "xmlMemSetup",
+    "xmlMemGet",
+    "xmlGcMemSetup",
+    "xmlGcMemGet",
+    "xmlMallocImpl",
+    "xmlMallocDefault",
+    "xmlMallocAtomicImpl",
+    "xmlMallocAtomicDefault",
+    "xmlReallocImpl",
+    "xmlReallocDefault",
+    "xmlFreeImpl",
+    "xmlFreeDefault",
+    "xmlMemStrdupImpl",
+    "xmlMemStrdupDefault",
+    "xmlMemDisplay",
+    "xmlMemShow",
+    "xmlMallocZero",
+    "xmlMallocAtomicZero",
+    "xmlReallocZero",
+    "xmlMemMalloc",
+    "xmlMemFree",
+    "xmlMemRealloc",
+    "xmlMemoryStrdup",
+    "xmlMallocLoc",
+    "xmlMallocAtomicLoc",
+    "xmlReallocLoc",
+    "xmlMemStrdupLoc",
+    "xmlMemSize",
+    "xmlMemDisplayLast",
+    "xmlMemoryDump",
+    "xmlGenericErrorDefaultFuncV",
+    "xmlGenericErrorDefaultFunc",
+    "xsltGenericErrorDefaultFuncV",
+    "xsltGenericErrorDefaultFunc",
+    "xsltGenericDebugDefaultFunc",
+    "xmlKeepBlanksDefault",
+    "xmlLineNumbersDefault",
+    "xmlSubstituteEntitiesDefault",
+    "xmlPedanticParserDefault",
+    "xmlRegisterNodeDefault",
+    "xmlDeregisterNodeDefault",
+    "__xmlIndentTreeOutput",
+    "__xmlSaveNoEmptyTags",
+    "__xmlTreeIndentString",
+    "xmlThrDefDoValidityCheckingDefaultValue",
+    "xmlThrDefGetWarningsDefaultValue",
+    "xmlThrDefLoadExtDtdDefaultValue",
+    "xmlThrDefPedanticParserDefaultValue",
+    "xmlThrDefLineNumbersDefaultValue",
+    "xmlThrDefKeepBlanksDefaultValue",
+    "xmlThrDefSubstituteEntitiesDefaultValue",
+    "xmlThrDefParserDebugEntities",
+    "xmlThrDefIndentTreeOutput",
+    "xmlThrDefTreeIndentString",
+    "xmlThrDefSaveNoEmptyTags",
+    "xmlThrDefRegisterNodeDefault",
+    "xmlThrDefDeregisterNodeDefault",
+    "xmlThrDefSetGenericErrorFunc",
+    "xmlThrDefSetStructuredErrorFunc",
+    "xmlThrDefDefaultBufferSize",
+    "xmlThrDefBufferAllocScheme",
+    "xmlThrDefParserInputBufferCreateFilenameDefault",
+    "xmlThrDefOutputBufferCreateFilenameDefault",
+    "__xmlBufferAllocScheme",
+    "__xmlDefaultBufferSize",
+    "__xmlDeregisterNodeDefaultValue",
+    "__xmlDoValidityCheckingDefaultValue",
+    "__xmlGenericError",
+    "__xmlGenericErrorContext",
+    "__xmlGetWarningsDefaultValue",
+    "__xmlKeepBlanksDefaultValue",
+    "__xmlLineNumbersDefaultValue",
+    "__xmlLoadExtDtdDefaultValue",
+    "__xmlOutputBufferCreateFilenameValue",
+    "__xmlParserDebugEntities",
+    "__xmlParserInputBufferCreateFilenameValue",
+    "__xmlParserVersion",
+    "__xmlPedanticParserDefaultValue",
+    "__xmlRegisterNodeDefaultValue",
+    "__xmlStructuredError",
+    "__xmlStructuredErrorContext",
+    "__xmlSubstituteEntitiesDefaultValue",
+    "xmlAutomataIsDeterminist",
+    "xmlAutomataNewTransition2",
+    "xmlAutomataNewNegTrans",
+    "xmlAutomataNewCountTrans2",
+    "xmlAutomataNewOnceTrans2",
+    "xmlRegExecPushString2",
+    "xmlRegExecNextValues",
+    "xmlRegExecErrInfo",
+    "xmlRegexpIsDeterminist",
+    "xmlRegisterCharEncodingHandler",
+    "xmlPatterncompile",
+    "xmlPatternCompileSafe",
+    "xmlPatternMatch",
+    "xmlFreePattern",
+    "xmlFreePatternList",
+    "xmlPatternStreamable",
+    "xmlPatternMaxDepth",
+    "xmlPatternMinDepth",
+    "xmlPatternFromRoot",
+    "xmlPatternGetStreamCtxt",
+    "xmlFreeStreamCtxt",
+    "xmlStreamPush",
+    "xmlStreamPushAttr",
+    "xmlStreamPushNode",
+    "xmlStreamPop",
+    "xmlStreamWantsAnyNode",
+    "xmlBufContent",
+    "xmlBufEnd",
+    "xmlBufGetNodeContent",
+    "xmlBufNodeDump",
+    "xmlBufShrink",
+    "xmlBufUse",
+    "xmlBufferCCat",
+    "xmlBufferDump",
+    "xmlBufferResize",
+    "xmlBufferWriteCHAR",
+    "xmlBufferWriteChar",
+    "xmlBufferWriteQuotedString",
+    "xmlCharStrdup",
+    "xmlCharStrndup",
+    "collect_entry",
+    "xmlHashAdd",
+    "xmlHashAdd2",
+    "xmlHashAdd3",
+    "xmlHashCopySafe",
+    "xmlHashDefaultDeallocator",
+    "xmlHashQLookup",
+    "xmlHashQLookup2",
+    "xmlHashQLookup3",
+    "xmlHashScan3",
+    "xmlHashScanFull3",
+    "xmlDictReference",
+    "xmlDictQLookup",
+    "xmlDictOwns",
+    "xmlDictCleanup",
+    "htmlTagLookup",
+    "htmlEntityLookup",
+    "htmlEntityValueLookup",
+    "htmlAutoCloseTag",
+    "htmlIsAutoClosed",
+    "htmlIsScriptAttribute",
+    "htmlElementAllowedHere",
+    "htmlElementStatusHere",
+    "htmlAttrAllowed",
+    "htmlNodeStatus",
+    "htmlEncodeEntities",
+    "htmlDecodeEntities",
+    "htmlIsBooleanAttr",
+    "htmlHandleOmittedElem",
+    "htmlInitAutoClose",
+    "htmlDefaultSAXHandlerInit",
+    "htmlParseEntityRef",
+    "htmlParseCharRef",
+    "htmlNewSAXParserCtxt",
+    "htmlNewParserCtxt",
+    "htmlCreateMemoryParserCtxt",
+    "htmlCreatePushParserCtxt",
+    "htmlCtxtReset",
+    "htmlCtxtUseOptions",
+    "htmlParseDocument",
+    "htmlParseChunk",
+    "htmlCtxtParseDocument",
+    "htmlCtxtReadMemory",
+    "htmlCtxtReadDoc",
+    "htmlCtxtReadFile",
+    "htmlCtxtReadFd",
+    "htmlCtxtReadIO",
+    "htmlReadMemory",
+    "htmlReadDoc",
+    "htmlReadFile",
+    "htmlReadFd",
+    "htmlReadIO",
+    "htmlSAXParseDoc",
+    "htmlSAXParseFile",
+    "htmlParseElement",
+    "htmlNewDocNoDtD",
+    "htmlNewDoc",
+    "htmlGetMetaEncoding",
+    "htmlSetMetaEncoding",
+    "htmlNodeDump",
+    "htmlNodeDumpFile",
+    "htmlNodeDumpFileFormat",
+    "htmlNodeDumpOutput",
+    "htmlNodeDumpFormatOutput",
+    "htmlDocContentDumpOutput",
+    "htmlDocContentDumpFormatOutput",
+    "htmlDocDumpMemoryFormat",
+    "htmlDocDumpMemory",
+    "htmlDocDump",
+    "htmlSaveFileFormat",
+    "htmlSaveFile",
+    "htmlSaveFileEnc",
+    "htmlCtxtSetOptions",
+    "htmlUTF8ToHtml",
+    "xmlGetFeaturesList",
+    "xmlGetFeature",
+    "xmlSetFeature",
+    "xmlGetGlobalState",
+    "xmlGetLastChild",
+    "xmlGetNoNsProp",
+    "xmlGetNodePath",
+    "xmlGetPredefinedEntity",
+    "xmlGetUTF8Char",
+    "xmlSetEntityReferenceFunc",
+    "xmlSetListDoc",
+    "xmlModuleOpen",
+    "xmlModuleSymbol",
+    "xmlModuleClose",
+    "xmlModuleFree",
+    "xmlUCSIsBlock",
+    "xmlUCSIsCat",
+    "xmlValidNormalizeAttributeValue",
+    "xmlValidCtxtNormalizeAttributeValue",
+    "xmlValidGetPotentialChildren",
+    "xmlValidGetValidElements",
+    "__xmlDefaultSAXHandler",
+    "__xmlDefaultSAXLocator",
+    "__xmlLastError",
+    "__xmlParserInputBufferCreateFilename",
+    "xmlFormatError",
+    "xmlNewCharRef",
+    "xmlNewDocText",
+    "xmlNewDocTextLen",
+    "xmlNewDocComment",
+    "xmlNewDocPI",
+    "xmlNewDocElementContent",
+    "xmlNodeBufGetContent",
+    "xmlNodeGetAttrValue",
+    "xmlSprintfElementContent",
+    "xmlSnprintfElementContent",
+    "xmlUpgradeOldNs",
+    "xmlNanoFTPInit",
+    "xmlNanoFTPCleanup",
+    "xmlNanoFTPNewCtxt",
+    "xmlNanoFTPFreeCtxt",
+    "xmlNanoFTPConnectTo",
+    "xmlNanoFTPOpen",
+    "xmlNanoFTPConnect",
+    "xmlNanoFTPClose",
+    "xmlNanoFTPQuit",
+    "xmlNanoFTPScanProxy",
+    "xmlNanoFTPProxy",
+    "xmlNanoFTPUpdateURL",
+    "xmlNanoFTPGetResponse",
+    "xmlNanoFTPCheckResponse",
+    "xmlNanoFTPCwd",
+    "xmlNanoFTPDele",
+    "xmlNanoFTPGetConnection",
+    "xmlNanoFTPCloseConnection",
+    "xmlNanoFTPList",
+    "xmlNanoFTPGetSocket",
+    "xmlNanoFTPGet",
+    "xmlNanoFTPRead",
+    "xmlNanoHTTPInit",
+    "xmlNanoHTTPCleanup",
+    "xmlNanoHTTPScanProxy",
+    "xmlNanoHTTPOpen",
+    "xmlNanoHTTPOpenRedir",
+    "xmlNanoHTTPMethod",
+    "xmlNanoHTTPMethodRedir",
+    "xmlNanoHTTPRead",
+    "xmlNanoHTTPClose",
+    "xmlNanoHTTPReturnCode",
+    "xmlNanoHTTPAuthHeader",
+    "xmlNanoHTTPContentLength",
+    "xmlNanoHTTPRedir",
+    "xmlNanoHTTPEncoding",
+    "xmlNanoHTTPMimeType",
+    "xmlNanoHTTPFetch",
+    "xmlNanoHTTPSave",
+    "xmlIOHTTPMatch",
+    "xmlIOHTTPOpen",
+    "xmlIOHTTPOpenW",
+    "xmlIOHTTPRead",
+    "xmlIOHTTPClose",
+    "xmlIOFTPMatch",
+    "xmlIOFTPOpen",
+    "xmlIOFTPRead",
+    "xmlIOFTPClose",
+    "xmlNewParserCtxt",
+    "xmlNewSAXParserCtxt",
+    "xmlInitParserCtxt",
+    "xmlClearParserCtxt",
+    "xmlCtxtReset",
+    "xmlCtxtResetPush",
+    "xmlCtxtSetOptions",
+    "xmlCtxtSetErrorHandler",
+    "xmlCtxtSetMaxAmplification",
+    "xmlCtxtGetLastError",
+    "xmlCtxtResetLastError",
+    "xmlCtxtErrMemory",
+    "xmlStopParser",
+    "xmlByteConsumed",
+    "xmlParserGetDirectory",
+    "xmlCheckFilename",
+    "xmlIsXHTML",
+    "xmlCreateMemoryParserCtxt",
+    "xmlCreatePushParserCtxt",
+    "xmlCreateIOParserCtxt",
+    "xmlCreateURLParserCtxt",
+    "xmlCreateEntityParserCtxt",
+    "xmlCtxtReadDoc",
+    "xmlCtxtReadFile",
+    "xmlCtxtReadMemory",
+    "xmlCtxtReadFd",
+    "xmlCtxtReadIO",
+    "xmlCtxtParseDocument",
+    "xmlAllocParserInputBuffer",
+    "xmlParserInputBufferGrow",
+    "xmlParserInputBufferPush",
+    "xmlParserInputBufferRead",
+    "xmlParserInputRead",
+    "xmlParserInputGrow",
+    "xmlParserInputShrink",
+    "xmlNewInputStream",
+    "xmlNewIOInputStream",
+    "xmlNewStringInputStream",
+    "xmlSetupParserForBuffer",
+    "xmlPushInput",
+    "xmlPopInput",
+    "xmlSwitchEncoding",
+    "xmlSwitchEncodingName",
+    "xmlSwitchInputEncoding",
+    "xmlSwitchToEncoding",
+    "xmlInitNodeInfoSeq",
+    "xmlClearNodeInfoSeq",
+    "xmlParserFindNodeInfoIndex",
+    "xmlParserFindNodeInfo",
+    "xmlParserAddNodeInfo",
+    "xmlRegisterInputCallbacks",
+    "xmlRegisterDefaultInputCallbacks",
+    "xmlPopInputCallbacks",
+    "xmlCleanupInputCallbacks",
+    "xmlRegisterOutputCallbacks",
+    "xmlRegisterDefaultOutputCallbacks",
+    "xmlRegisterHTTPPostCallbacks",
+    "xmlPopOutputCallbacks",
+    "xmlCleanupOutputCallbacks",
+    "default_external_entity_loader",
+    "xmlSetExternalEntityLoader",
+    "xmlGetExternalEntityLoader",
+    "xmlNoNetExternalEntityLoader",
+    "xmlLoadExternalEntity",
+    "xmlCheckHTTPInput",
+    "xmlFileMatch",
+    "xmlFileOpen",
+    "xmlFileRead",
+    "xmlFileClose",
+    "xmlCurrentChar",
+    "xmlNextChar",
+    "xmlSkipBlankChars",
+    "xmlScanName",
+    "xmlDecodeEntities",
+    "xmlDetectCharEncoding",
+    "xmlCharEncFirstLine",
+    "xmlIsMainThread",
+    "xmlParserPrintFileInfo",
+    "xmlParserPrintFileContext",
+    "xmlHandleEntity",
+    "xmlSAXParseDTD",
+    "xmlIOParseDTD",
+    "xmlSAXParseEntity",
+    "xmlC14NDocSave",
+    "xmlNamespaceParseNCName",
+    "xmlNamespaceParseQName",
+    "xmlNamespaceParseNSDef",
+    "xmlParseNamespace",
+    "xmlParseQuotedString",
+    "xmlParseName",
+    "xmlParseNmtoken",
+    "xmlParseCharRef",
+    "xmlParseEntityRef",
+    "xmlParseEntityValue",
+    "xmlParseAttValue",
+    "xmlParseSystemLiteral",
+    "xmlParsePubidLiteral",
+    "xmlParseExternalID",
+    "xmlParsePITarget",
+    "xmlParsePI",
+    "xmlParseComment",
+    "xmlParseCharData",
+    "xmlParseCDSect",
+    "xmlParseReference",
+    "xmlParserHandleReference",
+    "xmlParsePEReference",
+    "xmlParserHandlePEReference",
+    "xmlParseNotationDecl",
+    "xmlParseEntityDecl",
+    "xmlParseDefaultDecl",
+    "xmlParseAttributeType",
+    "xmlParseNotationType",
+    "xmlParseEnumerationType",
+    "xmlParseEnumeratedType",
+    "xmlParseAttributeListDecl",
+    "xmlParseElementMixedContentDecl",
+    "xmlParseElementChildrenContentDecl",
+    "xmlParseElementContentDecl",
+    "xmlParseElementDecl",
+    "xmlParseMarkupDecl",
+    "xmlParseVersionNum",
+    "xmlParseVersionInfo",
+    "xmlParseEncName",
+    "xmlParseEncodingDecl",
+    "xmlParseSDDecl",
+    "xmlParseXMLDecl",
+    "xmlParseTextDecl",
+    "xmlParseExternalSubset",
+    "xmlParseDocTypeDecl",
+    "xmlParseAttribute",
+    "xmlParseStartTag",
+    "xmlParseEndTag",
+    "xmlParseElement",
+    "xmlParseContent",
+    "xmlParseMisc",
+    "xmlParseCtxtExternalEntity",
+    "xmlParseExternalEntity",
+    "xmlParseBalancedChunkMemory",
+    "xmlParseBalancedChunkMemoryRecover",
+    "xmlParseInNodeContext",
+    "xmlParseDTD",
+    "xmlParseEntity",
+    "xmlParseExtParsedEnt",
+    "pi_fd_read",
+    "pi_fd_close",
+    "pi_file_read",
+    "xmlParserInputBufferCreateFd",
+    "xmlParserInputBufferCreateFile",
+    "xmlParserInputBufferCreateStatic",
+    "pi_default_input_buffer_create_filename",
+    "xmlParserInputBufferCreateFilenameDefault",
+    "xmlCtxtGetVersion",
+    "xmlCtxtGetStandalone",
+    "xmlCtxtGetOptions",
+    "xmlCtxtGetPrivate",
+    "xmlCtxtSetPrivate",
+    "xmlCtxtGetCatalogs",
+    "xmlCtxtSetCatalogs",
+    "xmlCtxtGetDict",
+    "xmlCtxtSetDict",
+    "xmlCtxtGetSaxHandler",
+    "xmlCtxtSetSaxHandler",
+    "xmlCtxtIsHtml",
+    "xmlCtxtIsStopped",
+    "xmlCtxtIsInSubset",
+    "xmlCtxtGetValidCtxt",
+    "xmlCtxtGetUserData",
+    "xmlCtxtGetNode",
+    "xmlCtxtGetDocTypeDecl",
+    "xmlCtxtGetInputPosition",
+    "xmlCtxtGetInputWindow",
+    "xmlCtxtGetStatus",
+    "xmlCtxtGetDeclaredEncoding",
+    "xmlCtxtGetDocument",
+    "xmlCtxtSetCharEncConvImpl",
+    "xmlCtxtSetResourceLoader",
+    "xmlCtxtPushInput",
+    "xmlCtxtPopInput",
+    "xmlCtxtValidateDtd",
+    "xmlCtxtValidateDocument",
+    "xmlCtxtParseDtd",
+    "xmlCtxtParseContent",
+    "xmlNewInputFromMemory",
+    "xmlNewInputFromString",
+    "xmlNewInputFromFd",
+    "xmlNewInputFromIO",
+    "xmlNewInputFromUrl",
+    "xmlInputSetEncodingHandler",
+    "xmlRelaxNGInitTypes",
+    "xmlRelaxNGCleanupTypes",
+    "xmlRelaxNGDump",
+    "xmlRelaxNGDumpTree",
+    "xmlRelaxNGNewDocParserCtxt",
+    "xmlRelaxNGSetParserErrors",
+    "xmlRelaxNGGetParserErrors",
+    "xmlRelaxNGSetParserStructuredErrors",
+    "xmlRelaxNGSetValidErrors",
+    "xmlRelaxNGGetValidErrors",
+    "xmlRelaxNGSetValidStructuredErrors",
+    "xmlRelaxNGValidatePushElement",
+    "xmlRelaxNGValidatePushCData",
+    "xmlRelaxNGValidatePopElement",
+    "xmlRelaxParserSetFlag",
+    "xmlRelaxParserSetIncLImit",
+    "xmlRelaxNGSetResourceLoader",
+    "xmlRelaxNGValidCtxtClearErrors",
+    "xmlSchemaGetPredefinedType",
+    "xmlSchemaGetBuiltInListSimpleTypeItemType",
+    "xmlSchemaIsBuiltInTypeFacet",
+    "xmlSchemaWhiteSpaceReplace",
+    "xmlSchemaCollapseString",
+    "xmlSchemaNewStringValue",
+    "xmlSchemaNewNOTATIONValue",
+    "xmlSchemaNewQNameValue",
+    "xmlSchemaCopyValue",
+    "xmlSchemaFreeValue",
+    "xmlSchemaGetValType",
+    "xmlSchemaValueGetNext",
+    "xmlSchemaValueGetAsString",
+    "xmlSchemaValueGetAsBoolean",
+    "xmlSchemaValueAppend",
+    "xmlSchemaGetCanonValue",
+    "xmlSchemaGetCanonValueWhtsp",
+    "xmlSchemaFreeFacet",
+    "xmlSchemaGetFacetValueAsULong",
+    "xmlSchemaCheckFacet",
+    "xmlSchemaValidateFacet",
+    "xmlSchemaValidateFacetWhtsp",
+    "xmlSchemaValidateLengthFacet",
+    "xmlSchemaValidateLengthFacetWhtsp",
+    "xmlSchemaValidateListSimpleTypeFacet",
+    "xmlSchemaValidatePredefinedType",
+    "xmlSchemaValPredefTypeNode",
+    "xmlSchemaValPredefTypeNodeNoNorm",
+    "xmlSchemaCompareValues",
+    "xmlSchemaCompareValuesWhtsp",
+    "xmlSchemaFreeType",
+    "xmlSchemaFreeWildcard",
+    "xmlSchemaNewDocParserCtxt",
+    "xmlSchemaSetParserErrors",
+    "xmlSchemaSetParserStructuredErrors",
+    "xmlSchemaGetParserErrors",
+    "xmlSchemaSetValidErrors",
+    "xmlSchemaGetValidErrors",
+    "xmlSchemaSetValidStructuredErrors",
+    "xmlSchemaSetValidOptions",
+    "xmlSchemaValidCtxtGetOptions",
+    "xmlSchemaValidCtxtGetParserCtxt",
+    "xmlSchemaValidateSetFilename",
+    "xmlSchemaValidateSetLocator",
+    "xmlSchemaIsValid",
+    "xmlSchemaValidateFile",
+    "xmlSchemaValidateOneElement",
+    "xmlSchemaValidateStream",
+    "xmlSchemaSAXPlug",
+    "xmlSchemaSAXUnplug",
+    "xmlSchemaDump",
+    "xmlSchematronNewDocParserCtxt",
+    "xmlSchematronSetValidStructuredErrors",
+    "xmlSchemaSetResourceLoader",
+    "xmlXIncludeSetResourceLoader",
+    "xmlShellPrintXPathError",
+    "xmlShellPrintNode",
+    "xmlShellPrintXPathResult",
+    "xmlShellList",
+    "xmlShellBase",
+    "xmlShellDir",
+    "xmlShellCat",
+    "xmlShellLoad",
+    "xmlShellWrite",
+    "xmlShellSave",
+    "shell_valid_error",
+    "xmlShellValidate",
+    "xmlShellDu",
+    "xmlShellPwd",
+    "xmlShell",
+    "xmlStrVPrintf",
+    "xmlStrPrintf",
+    "xmlStrstr",
+    "xmlStrcasestr",
+    "xmlStringCurrentChar",
+    "xmlStringLenDecodeEntities",
+    "xmlStringDecodeEntities",
+    "xmlStringLenGetNodeList",
+    "xmlUTF8Charcmp",
+    "xmlUTF8Strsize",
+    "xmlUTF8Strndup",
+    "xmlUTF8Strpos",
+    "xmlUTF8Strloc",
+    "xmlUTF8Strsub",
+    "xmlFreeNs",
+    "xmlFreeNsList",
+    "xmlFreeProp",
+    "xmlFreePropList",
+    "xmlNewNodeEatName",
+    "xmlNewDocNode",
+    "xmlNewDocNodeEatName",
+    "xmlNewDocRawNode",
+    "xmlNewDocFragment",
+    "xmlNewProp",
+    "xmlNewNsProp",
+    "xmlNewNsPropEatName",
+    "xmlNewDocProp",
+    "xmlNewReference",
+    "xmlNewTextChild",
+    "xmlNewTextLen",
+    "xmlNodeSetContent",
+    "xmlNodeSetContentLen",
+    "xmlNodeAddContent",
+    "xmlNodeAddContentLen",
+    "xmlNodeGetContent",
+    "xmlNodeSetLang",
+    "xmlNodeGetLang",
+    "xmlNodeSetSpacePreserve",
+    "xmlNodeGetSpacePreserve",
+    "xmlNodeSetName",
+    "xmlNodeSetBase",
+    "xmlNodeGetBaseSafe",
+    "xmlNodeGetBase",
+    "xmlNodeIsText",
+    "xmlSetTreeDoc",
+    "xmlAddNextSibling",
+    "xmlAddPrevSibling",
+    "xmlAddChildList",
+    "xmlReplaceNode",
+    "xmlGetNsListSafe",
+    "xmlReconciliateNs",
+    "xmlGetCompressMode",
+    "xmlSetCompressMode",
+    "xmlDOMWrapNewCtxt",
+    "xmlDOMWrapFreeCtxt",
+    "xmlDOMWrapRemoveNode",
+    "xmlDOMWrapReconcileNamespaces",
+    "xmlDOMWrapAdoptNode",
+    "xmlDOMWrapCloneNode",
+    "xmlCreateEntitiesTable",
+    "free_entity_wrapper",
+    "xmlFreeEntitiesTable",
+    "xmlNewEntityInputStream",
+    "xmlCreateEnumeration",
+    "xmlFreeEnumeration",
+    "xmlFreeDocElementContent",
+    "free_attribute_table_entry",
+    "xmlFreeAttributeTable",
+    "free_element_table_entry",
+    "xmlFreeElementTable",
+    "free_notation_table_entry",
+    "xmlFreeNotationTable",
+    "writer_push_write_cb",
+    "writer_push_close_cb",
+    "xmlNewTextWriterPushParser",
+    "xmlNewGlobalNs",
+    "xmlCopyCharMultiByte",
+    "xmlCopyChar",
+    "xmlNodeListGetString",
+    "xmlNodeListGetRawString",
+    "xmlStringGetNodeList",
+    "xmlCopyNamespace",
+    "xmlCopyNamespaceList",
+    "xmlCopyProp",
+    "xmlCopyPropList",
+    "xmlCopyNodeList",
+    "xmlDocCopyNode",
+    "xmlDocCopyNodeList",
+    "xmlCopyEnumeration",
+    "xmlCopyDocElementContent",
+    "xmlCopyDtd",
+    "free_notation_wrapper",
+    "free_element_wrapper",
+    "free_attribute_wrapper",
+    "free_entity_wrapper",
+    "copy_element_cb",
+    "copy_attribute_cb",
+    "copy_notation_cb",
+    "copy_entity_cb",
+    "xmlCopyElementTable",
+    "xmlCopyAttributeTable",
+    "xmlCopyNotationTable",
+    "xmlCopyEntitiesTable",
+    "xmlDumpElementDecl",
+    "xmlDumpAttributeDecl",
+    "xmlDumpEntityDecl",
+    "xmlDumpNotationDecl",
+    "dump_element_decl_cb",
+    "dump_attribute_decl_cb",
+    "dump_entity_decl_cb",
+    "dump_notation_decl_cb",
+    "xmlDumpElementTable",
+    "xmlDumpAttributeTable",
+    "xmlDumpNotationTable",
+    "xmlDumpEntitiesTable",
+    "xmlAttrSerializeTxtContent",
+    "xmlNodeDumpOutput",
+    "xmlElemDump",
+    "xmlDocFormatDump",
+    "xmlDocDumpFormatMemoryEnc",
+    "xmlDocDumpMemoryEnc",
+    "dump_entity_callback",
+    "xmlDebugDumpEntities",
+    "xmlDebugDumpDTD",
+    "xmlDebugCheckDocument",
+    "xmlBuildURISafe",
+    "xmlBuildURI",
+    "xmlBuildRelativeURISafe",
+    "xmlBuildRelativeURI",
+    "xmlCanonicPath",
+    "xmlPathToURI",
+    "xmlPrintURI",
+    "xmlURIEscape",
+    "xmlNormalizeWindowsPath",
+    "xmlCheckLanguageID",
+    "xmlParseURISafe",
+    "xmlXIncludeNewContext",
+    "xmlXIncludeFreeContext",
+    "xmlXIncludeProcessNode",
+    "xmlXIncludeProcessTree",
+    "xmlXIncludeProcessTreeFlags",
+    "xmlXIncludeProcessTreeFlagsData",
+    "xmlXIncludeProcessFlagsData",
+    "xmlXIncludeSetFlags",
+    "xmlXIncludeSetErrorHandler",
+    "xmlXIncludeGetLastError",
+    "xlinkGetDefaultHandler",
+    "xlinkSetDefaultHandler",
+    "xlinkGetDefaultDetect",
+    "xlinkSetDefaultDetect",
+    "xlinkIsLink",
+    "xmlInitParser",
+    "xmlInitGlobals",
+    "xmlInitializeGlobalState",
+    "xmlSAXVersion",
+    "xmlCleanupGlobals",
+    "xmlCleanupParser",
+    "xmlFreeMutex",
+    "xmlMutexLock",
+    "xmlMutexUnlock",
+    "xmlFreeRMutex",
+    "xmlRMutexLock",
+    "xmlRMutexUnlock",
+    "xmlInitThreads",
+    "xmlCleanupThreads",
+    "xmlLockLibrary",
+    "xmlUnlockLibrary",
+    "xmlSetGenericErrorFunc",
+    "xmlSetStructuredErrorFunc",
+    "xmlCopyError",
+    "xmlResetError",
+    "xmlRaiseError",
+    "xmlStrdup",
+    "xmlStrndup",
+    "xmlStrlen",
+    "xmlStrchr",
+    "xmlStrcmp",
+    "xmlStrncmp",
+    "xmlStrcasecmp",
+    "xmlStrncasecmp",
+    "xmlStrEqual",
+    "xmlBuildQName",
+    "xmlSplitQName2",
+    "xmlSplitQName3",
+    "xmlSplitQName",
+    "xmlUTF8Strlen",
+    "xmlUTF8Size",
+    "xmlCheckUTF8",
+    "xmlStrQEqual",
+    "xmlStrcat",
+    "xmlStrncat",
+    "xmlStrncatNew",
+    "xmlStrcpy",
+    "xmlStrncpy",
+    "xmlStrsub",
+    "xmlNewDoc",
+    "xmlFreeDoc",
+    "xmlGetDocCompressMode",
+    "xmlSetDocCompressMode",
+    "xmlNewNode",
+    "xmlFreeNode",
+    "xmlFreeNodeList",
+    "xmlUnlinkNode",
+    "xmlSAX2InitDefaultSAXHandler",
+    "xmlSAX2InitHtmlDefaultSAXHandler",
+    "xmlAddChild",
+    "xmlAddSibling",
+    "xmlNewChild",
+    "xmlDocSetRootElement",
+    "xmlCopyNode",
+    "xmlCopyDoc",
+    "xmlNewText",
+    "xmlNewComment",
+    "xmlNewPI",
+    "xmlNewCDataBlock",
+    "xmlNewNs",
+    "xmlSetNs",
+    "xmlGetNsList",
+    "xmlSearchNs",
+    "xmlSearchNsByHref",
+    "xmlSetProp",
+    "xmlGetProp",
+    "xmlGetNsProp",
+    "xmlSetNsProp",
+    "xmlRemoveProp",
+    "xmlHasProp",
+    "xmlHasNsProp",
+    "xmlUnsetProp",
+    "xmlUnsetNsProp",
+    "xmlFirstElementChild",
+    "xmlLastElementChild",
+    "xmlNextElementSibling",
+    "xmlPreviousElementSibling",
+    "xmlChildElementCount",
+    "xmlTextConcat",
+    "xmlTextMerge",
+    "xmlNewDtd",
+    "xmlNewEntity",
+    "xmlGetDocEntity",
+    "xmlGetParameterEntity",
+    "xmlCreateIntSubset",
+    "xmlFreeDtd",
+    "xmlAddNotationDecl",
+    "xmlGetNotationDecl",
+    "xmlCopyNotation",
+    "xmlFreeNotation",
+    "xmlAddElementDecl",
+    "xmlGetElementDecl",
+    "xmlCopyElement",
+    "xmlFreeElement",
+    "xmlAddAttributeDecl",
+    "xmlGetAttributeDecl",
+    "xmlCopyAttribute",
+    "xmlFreeAttribute",
+    "xmlNewElementContent",
+    "xmlCopyElementContent",
+    "xmlFreeElementContent",
+    "xmlAddEntity",
+    "xmlAddDocEntity",
+    "xmlAddDtdEntity",
+    "xmlGetDtdEntity",
+    "xmlGetEntity",
+    "xmlCopyEntity",
+    "xmlFreeEntity",
+    "xmlEncodeEntitiesReentrant",
+    "xmlEncodeSpecialChars",
+    "xmlEncodeEntities",
+    "xmlNodeDump",
+    "xmlDocDump",
+    "xmlDocDumpFormatMemory",
+    "xmlDocDumpMemory",
+    "xmlSaveFile",
+    "xmlSaveFileEnc",
+    "xmlSaveFormatFile",
+    "xmlSaveFormatFileEnc",
+    "xmlReadDoc",
+    "xmlReadFile",
+    "xmlRecoverDoc",
+    "xmlRecoverFile",
+    "xmlRecoverMemory",
+    "xmlReadMemory",
+    "xmlLoadCatalogs",
+    "xmlLoadCatalog",
+    "xmlReadFd",
+    "xmlReadIO",
+    "xmlSAXParseDoc",
+    "xmlSAXParseDocWithData",
+    "xmlSAXParseFileWithData",
+    "xmlSAXParseMemoryWithData",
+    "xmlSAXParseFile",
+    "xmlSAXParseMemory",
+    "xmlSAXUserParseFile",
+    "xmlSAXUserParseMemory",
+    "xmlParseDoc",
+    "xmlParseFile",
+    "xmlParseMemory",
+    "xmlCreateFileParserCtxt",
+    "xmlCreateDocParserCtxt",
+    "xmlParseDocument",
+    "xmlFreeParserCtxt",
+    "xmlCtxtUseOptions",
+    "xmlParseChunk",
+    "xmlParserInputBufferCreateMem",
+    "xmlParserInputBufferCreateFilename",
+    "xmlParserInputBufferCreateIO",
+    "xmlFreeParserInputBuffer",
+    "xmlNewInputFromFile",
+    "xmlFreeInputStream",
+    "xmlOutputBufferCreateFilename",
+    "xmlOutputBufferCreateFd",
+    "xmlOutputBufferCreateIO",
+    "xmlOutputBufferClose",
+    "xmlOutputBufferFlush",
+    "xmlOutputBufferWrite",
+    "xmlOutputBufferWriteString",
+    "xmlAllocOutputBuffer",
+    "xmlOutputBufferCreateBuffer",
+    "xmlOutputBufferCreateFile",
+    "xmlOutputBufferGetContent",
+    "xmlOutputBufferGetSize",
+    "xmlOutputBufferWriteEscape",
+    "xmlOutputBufferCreateFilenameDefault",
+    "__xmlOutputBufferCreateFilename",
+    "xmlDictLookup",
+    "xmlDictExists",
+    "xmlHashAddEntry",
+    "xmlHashAddEntry2",
+    "xmlHashAddEntry3",
+    "xmlHashUpdateEntry",
+    "xmlHashUpdateEntry2",
+    "xmlHashUpdateEntry3",
+    "xmlHashLookup",
+    "xmlHashLookup2",
+    "xmlHashLookup3",
+    "xmlHashRemoveEntry",
+    "xmlHashRemoveEntry2",
+    "xmlHashRemoveEntry3",
+    "xmlListEnd",
+    "xmlListReverseSearch",
+    "xmlListReverseWalk",
+    "xmlListDup",
+    "xmlListCopy",
+    "xmlLinkGetData",
+    "xmlBufferAdd",
+    "xmlBufferAddHead",
+    "xmlBufferCat",
+    "xmlIsolat1ToUTF8",
+    "xmlUTF8ToIsolat1",
+    "xmlCharEncInput",
+    "xmlCharEncOutput",
+    "xmlParseURI",
+    "xmlParseURIRaw",
+    "xmlFreeURI",
+    "xmlSaveUri",
+    "xmlParseURIReference",
+    "xmlNormalizeURIPath",
+    "xmlURIEscapeStr",
+    "xmlURIUnescapeString",
+    "xmlXPathNewContext",
+    "xmlXPathFreeContext",
+    "xmlXPathEvalExpression",
+    "xmlXPathEval",
+    "xmlXPathFreeObject",
+    "xmlXPathObjectCopy",
+    "xmlXPathCastToString",
+    "xmlXPathCastStringToNumber",
+    "xmlXPathCmpNodes",
+    "xmlXPathNodeSetCreate",
+    "xmlXPathFreeNodeSet",
+    "xmlXPathCompile",
+    "xmlXPathFreeCompExpr",
+    "xmlXPathRegisterNs",
+    "xmlXPathRegisterFunc",
+    "xmlXPathRegisterFuncNS",
+    "xmlXPathRegisterVariable",
+    "xmlXPathNewNodeSet",
+    "xmlXPathNewCString",
+    "xmlXPtrEval",
+    "xmlXIncludeProcess",
+    "xmlXIncludeProcessFlags",
+    "xmlCatalogResolvePublic",
+    "xmlCatalogResolveSystem",
+    "xmlCatalogResolveURI",
+    "xmlCatalogAdd",
+    "xmlCatalogRemove",
+    "xmlCatalogDump",
+    "xmlCatalogSave",
+    "htmlParseFile",
+    "htmlParseMemory",
+    "htmlParseDoc",
+    "htmlCreateFileParserCtxt",
+    "xmlNewValidCtxt",
+    "xmlFreeValidCtxt",
+    "xmlSetValidErrors",
+    "xmlValidateDocument",
+    "xmlValidateDocumentFinal",
+    "xmlValidateElement",
+    "xmlValidateAttributeDecl",
+    "xmlValidateAttributeValue",
+    "xmlValidateNotationUse",
+    "xmlValidateID",
+    "xmlValidateIDRef",
+    "xmlValidateIDRefs",
+    "xmlValidateNCName",
+    "xmlValidateQName",
+    "xmlValidateName",
+    "xmlValidateNMToken",
+    "xmlValidateNameValue",
+    "xmlValidateNamesValue",
+    "xmlValidateNmtokenValue",
+    "xmlValidateNmtokensValue",
+    "xmlValidateElementDecl",
+    "xmlValidateNotationDecl",
+    "xmlValidateOneAttribute",
+    "xmlValidateOneElement",
+    "xmlValidateOneNamespace",
+    "xmlValidatePushElement",
+    "xmlValidatePushCData",
+    "xmlValidatePopElement",
+    "xmlValidBuildContentModel",
+    "xmlAddID",
+    "xmlRemoveID",
+    "xmlAddRef",
+    "xmlRemoveRef",
+    "xmlAddIDSafe",
+    "xmlFreeIDTable",
+    "xmlFreeRefTable",
+    "xmlGetID",
+    "xmlGetRefs",
+    "xmlIsID",
+    "xmlIsRef",
+    "xmlGetDtdElementDesc",
+    "xmlGetDtdAttrDesc",
+    "xmlGetDtdQElementDesc",
+    "xmlGetDtdQAttrDesc",
+    "xmlGetDtdNotationDesc",
+    "xmlValidateRoot",
+    "xmlValidateContent",
+    "xmlIsMixedElement",
+    "xmlIsEmptyElement",
+    "xmlValidateDtd",
+    "xmlValidateDtdFinal",
+    "xmlValidateEnumeration",
+    "xmlSAX2StartDocument",
+    "xmlSAX2EndDocument",
+    "xmlSAX2StartElementNs",
+    "xmlSAX2EndElementNs",
+    "xmlSAX2Characters",
+    "xmlSAX2IgnorableWhitespace",
+    "xmlSAX2Comment",
+    "xmlSAX2ProcessingInstruction",
+    "xmlSAX2CDataBlock",
+    "xmlSAX2InternalSubset",
+    "xmlSAX2ExternalSubset",
+    "xmlSAX2EntityDecl",
+    "xmlSAX2AttributeDecl",
+    "xmlSAX2ElementDecl",
+    "xmlSAX2NotationDecl",
+    "xmlSAX2UnparsedEntityDecl",
+    "xmlSAX2ResolveEntity",
+    "xmlSAX2IsStandalone",
+    "xmlSAX2HasInternalSubset",
+    "xmlSAX2HasExternalSubset",
+    "xmlSAX2GetEntity",
+    "xmlSAX2GetParameterEntity",
+    "xmlSAX2GetLineNumber",
+    "xmlSAX2GetColumnNumber",
+    "xmlSAX2GetPublicId",
+    "xmlSAX2GetSystemId",
+    "xmlSAX2StartElement",
+    "xmlSAX2EndElement",
+    "xmlSAX2SetDocumentLocator",
+    "xmlSAX2Reference",
+    "xmlXPtrLocationSetCreate",
+    "xmlXPtrFreeLocationSet",
+    "xmlXPtrLocationSetAdd",
+    "xmlXPtrLocationSetMerge",
+    "xmlXPtrLocationSetDel",
+    "xmlXPtrLocationSetRemove",
+    "xmlXPtrWrapLocationSet",
+    "xmlXPtrNewRange",
+    "xmlXPtrNewRangePoints",
+    "xmlXPtrNewRangePointNode",
+    "xmlXPtrNewRangeNodePoint",
+    "xmlXPtrNewRangeNodes",
+    "xmlXPtrNewCollapsedRange",
+    "xmlXPtrNewRangeNodeObject",
+    "xmlXPtrNewLocationSetNodes",
+    "xmlXPtrNewLocationSetNodeSet",
+    "xmlXPtrNewContext",
+    "xmlXPtrRangeToFunction",
+    "xmlXPtrBuildNodeList",
+    "xsltSetCtxtLocaleHandlers",
+    "xsltGetUTF8CharZ",
+    "xsltApplyTemplates",
+    "xsltProcessOneNode",
+    "xsltApplyOneTemplate",
+    "xsltApplyImports",
+    "xsltCallTemplate",
+    "xsltApplyAttributeSet",
+    "xsltResolveStylesheetAttributeSet",
+    "xsltFreeAttributeSetsHashes",
+    "xsltTemplateProcess",
+    "xsltNextImport",
+    "xsltGetTemplate",
+    "xsltCleanupTemplates",
+    "xsltFreeTemplateHashes",
+    "xsltApplyStripSpaces",
+    "xsltNeedElemSpaceHandling",
+    "xsltFindElemSpaceHandling",
+    "xsltCompilePattern",
+    "xsltCompMatchClearCache",
+    "xsltFreeCompMatchList",
+    "xsltTestCompMatchList",
+    "xsltAttrListTemplateProcess",
+    "xsltAttrTemplateProcess",
+    "xsltAttrTemplateValueProcessNode",
+    "xsltAttrTemplateValueProcess",
+    "xsltEvalAVT",
+    "xsltEvalAttrValueTemplate",
+    "xsltEvalStaticAttrValueTemplate",
+    "xsltEvalTemplateString",
+    "xsltFreeAVTList",
+    "xsltGetCNsProp",
+    "xsltGetNsProp",
+    "xsltGetNamespace",
+    "xsltGetPlainNamespace",
+    "xsltGetSpecialNamespace",
+    "xsltCopyNamespace",
+    "xsltCopyNamespaceList",
+    "xsltNamespaceAlias",
+    "xsltFreeNamespaceAliasHashes",
+    "xsltCopyTextString",
+    "xsltIsBlank",
+    "xsltSplitQName",
+    "xsltGetQNameURI",
+    "xsltGetQNameURI2",
+    "xsltGetUTF8Char",
+    "xsltNewStylesheet",
+    "xsltParseStylesheetProcess",
+    "xsltParseStylesheetUser",
+    "xsltParseStylesheetImportedDoc",
+    "xsltParseStylesheetImport",
+    "xsltParseStylesheetInclude",
+    "xsltParseStylesheetOutput",
+    "xsltParseStylesheetAttributeSet",
+    "xsltParseGlobalVariable",
+    "xsltParseGlobalParam",
+    "xsltParseTemplateContent",
+    "xsltCompileAttr",
+    "xslt_free_elem_pre_comp",
+    "xsltDocumentComp",
+    "xsltPreComputeExtModuleElement",
+    "xsltFreeStylePreComps",
+    "xsltStylePreCompute",
+    "xsltNormalizeCompSteps",
+    "xsltNewStyleDocument",
+    "xsltLoadStyleDocument",
+    "xsltFreeStyleDocuments",
+    "xsltInitGlobals",
+    "xsltUninit",
+    "xsltFreeExts",
+    "xsltShutdownExts",
+    "xsltDebugDumpExtensions",
+    "xsltAttribute",
+    "xsltElement",
+    "xsltText",
+    "xsltComment",
+    "xsltProcessingInstruction",
+    "xsltCopy",
+    "xsltCopyOf",
+    "xsltValueOf",
+    "xsltNumber",
+    "xsltChoose",
+    "xsltIf",
+    "xsltForEach",
+    "xsltMessage",
+    "xsltNumberFormat",
+    "xsltFormatNumberConversion",
+    "xsltDecimalFormatGetByName",
+    "xsltDecimalFormatGetByQName",
+    "xsltSort",
+    "xsltDefaultSortFunction",
+    "xsltDoSortFunction",
+    "xsltDocumentSortFunction",
+    "xsltComputeSortResult",
+    "xsltSetSortFunc",
+    "xsltSetCtxtSortFunc",
+    "xsltDocumentElem",
+    "xsltDebug",
+    "xsltRegisterExtModule",
+    "xsltRegisterExtModuleFull",
+    "xsltRegisterExtModuleElement",
+    "xsltRegisterExtModuleFunction",
+    "xsltRegisterExtModuleTopLevel",
+    "xsltUnregisterExtModule",
+    "xsltUnregisterExtModuleElement",
+    "xsltUnregisterExtModuleFunction",
+    "xsltUnregisterExtModuleTopLevel",
+    "xsltRegisterExtPrefix",
+    "xsltCheckExtPrefix",
+    "xsltCheckExtURI",
+    "xsltExtElementLookup",
+    "xsltExtModuleElementLookup",
+    "xsltExtModuleFunctionLookup",
+    "xsltExtModuleElementPreComputeLookup",
+    "xsltExtModuleTopLevelLookup",
+    "xsltInitCtxtExts",
+    "xsltShutdownCtxtExts",
+    "xsltFreeCtxtExts",
+    "xsltGetExtData",
+    "xsltStyleGetExtData",
+    "xsltStyleStylesheetLevelGetExtData",
+    "xsltGetExtInfo",
+    "xsltRegisterAllExtras",
+    "xsltRegisterExtras",
+    "xsltRegisterAllElement",
+    "xsltRegisterTestModule",
+    "xsltDocumentFunction",
+    "xsltKeyFunction",
+    "xsltUnparsedEntityURIFunction",
+    "xsltFormatNumberFunction",
+    "xsltGenerateIdFunction",
+    "xsltSystemPropertyFunction",
+    "xsltElementAvailableFunction",
+    "xsltFunctionAvailableFunction",
+    "xslt_current_function",
+    "xsltFunctionNodeSet",
+    "xsltEvalXPathPredicate",
+    "xsltEvalXPathStringNs",
+    "xsltEvalXPathString",
+    "xsltXPathCompileFlags",
+    "xsltXPathCompile",
+    "xsltXPathFunctionLookup",
+    "xsltXPathVariableLookup",
+    "xsltXPathGetTransformContext",
+    "xsltRegisterAllFunctions",
+    "xsltSecurityAllow",
+    "xsltSecurityForbid",
+    "xsltSetCtxtSecurityPrefs",
+    "xsltCheckRead",
+    "xsltCheckWrite",
+    "xsltSetCtxtParseOptions",
+    "xsltSetGenericErrorFunc",
+    "xsltTransformError",
+    "xsltTransformErrorV",
+    "xsltPrintErrorContext",
+    "xsltTimestamp",
+    "xsltCalibrateAdjust",
+    "xsltNewLocale",
+    "xsltFreeLocale",
+    "xsltFreeLocales",
+    "xsltLocaleStrcmp",
+    "xsltStrxfrm",
+    "xsltGetDebuggerStatus",
+    "xsltDebugGetDefaultTrace",
+    "xsltDebugSetDefaultTrace",
+    "xsltSaveProfiling",
+    "xsltProfileStylesheet",
+    "xsltGetProfileInformation",
+    "xsltSaveResultTo",
+    "xsltNewDocument",
+    "xsltLoadDocument",
+    "xsltFindDocument",
+    "xsltFreeDocuments",
+    "xsltVariableLookup",
+    "xsltEvalGlobalVariables",
+    "xsltEvalUserParams",
+    "xsltEvalOneUserParam",
+    "xsltQuoteUserParams",
+    "xsltQuoteOneUserParam",
+    "xsltParseStylesheetCallerParam",
+    "xsltParseStylesheetParam",
+    "xsltParseStylesheetVariable",
+    "xsltFreeGlobalVariables",
+    "xsltLocalVariablePush",
+    "xsltLocalVariablePop",
+    "xsltAddStackElemList",
+    "xsltFreeStackElemList",
+    "xsltCreateRVT",
+    "xsltRegisterLocalRVT",
+    "xsltRegisterPersistRVT",
+    "xsltRegisterTmpRVT",
+    "xsltReleaseRVT",
+    "xsltFlagRVTs",
+    "xsltFreeRVTs",
+    "xsltAddKey",
+    "xsltInitCtxtKeys",
+    "xsltInitCtxtKey",
+    "xsltInitAllDocKeys",
+    "xsltGetKey",
+    "xsltFreeKeys",
+    "xsltFreeDocumentKeys",
+    "xsltNewElemPreComp",
+    "xsltInitElemPreComp",
+    "xsltAllocateExtra",
+    "xsltAllocateExtraCtxt",
+    "xsltExtensionInstructionResultRegister",
+    "xsltExtensionInstructionResultFinalize",
+    "xmlCheckVersion",
+    "capture_validity_msg",
+    "xslt_security_forbid",
+    "xmlNewAutomata",
+    "xmlFreeAutomata",
+    "xmlAutomataNewState",
+    "xmlAutomataSetFinalState",
+    "xmlAutomataGetInitState",
+    "xmlAutomataNewEpsilon",
+    "xmlAutomataNewTransition",
+    "xmlAutomataNewCountTrans",
+    "xmlAutomataNewOnceTrans",
+    "xmlAutomataNewAllTrans",
+    "xmlAutomataNewCountedTrans",
+    "xmlAutomataNewCounterTrans",
+    "xmlAutomataNewCounter",
+    "xmlAutomataCompile",
+    "xmlAutomataIsDeterministic",
+    "xmlC14NDocDumpMemory",
+    "xmlC14NExecute",
+    "xmlC14NDocSaveTo",
+    "test_callback",
+    "xmlNewCatalog",
+    "xmlFreeCatalog",
+    "xmlLoadACatalog",
+    "xmlLoadSGMLSuperCatalog",
+    "xmlConvertSGMLCatalog",
+    "xmlACatalogAdd",
+    "xmlACatalogRemove",
+    "xmlACatalogResolve",
+    "xmlACatalogResolveSystem",
+    "xmlACatalogResolvePublic",
+    "xmlACatalogResolveURI",
+    "xmlCatalogIsEmpty",
+    "xmlACatalogDump",
+    "xmlInitializeCatalog",
+    "xmlCatalogDumpDoc",
+    "xmlCatalogSetDebug",
+    "xmlCatalogSetDefaultPrefer",
+    "xmlCatalogResolve",
+    "xmlCatalogGetSystem",
+    "xmlCatalogGetPublic",
+    "xmlParseCatalogFile",
+    "xmlCatalogAddLocal",
+    "xmlCatalogFreeLocal",
+    "xmlCatalogLocalResolve",
+    "xmlCatalogLocalResolveURI",
+    "xmlCharInRange",
+    "xmlIsBaseChar",
+    "xmlIsBlank",
+    "xmlIsChar",
+    "xmlIsCombining",
+    "xmlIsDigit",
+    "xmlIsExtender",
+    "xmlIsIdeographic",
+    "xmlIsPubidChar",
+    "xmlIsLetter",
+    "xmlIsBlankNode",
+    "xmlBoolToText",
+    "xmlDebugDumpString",
+    "xmlDebugDumpAttr",
+    "xmlDebugDumpAttrList",
+    "xmlDebugDumpOneNode",
+    "dump_elemscan_cb",
+    "dump_entityscan_cb",
+    "xmlDebugDumpNode",
+    "xmlDebugDumpNodeList",
+    "xmlDebugDumpDocument",
+    "xmlDebugDumpDocumentHead",
+    "xmlLsCountNode",
+    "xmlLsOneNode",
+    "copy_elem_cb",
+    "copy_attr_cb",
+    "copy_ent_cb",
+    "copy_notation_cb",
+    "notation_deallocator",
+    "element_deallocator",
+    "attribute_deallocator",
+    "entity_deallocator",
+    "utf8_input_func",
+    "utf8_output_func",
+    "utf16le_input_func",
+    "utf16le_output_func",
+    "utf16be_input_func",
+    "utf16be_output_func",
+    "latin1_input_func",
+    "latin1_output_func",
+    "ascii_input_func",
+    "ascii_output_func",
+    "entity_deallocator",
+    "xmlParserError",
+    "xmlParserErrorV",
+    "xmlParserWarning",
+    "xmlParserWarningV",
+    "xmlParserValidityError",
+    "xmlParserValidityErrorV",
+    "xmlParserValidityWarning",
+    "xmlParserValidityWarningV",
+    "dummy_handler",
+    "file_read_callback",
+    "file_close_callback",
+    "file_write_callback",
+    "file_close_output_callback",
+    "buffer_write_callback",
+    "file_write",
+    "file_flush",
+    "test_read",
+    "test_close",
+    "int_compare",
+    "xmlNewTextReader",
+    "xmlReaderForFile",
+    "xmlReaderForMemory",
+    "xmlReaderForFd",
+    "xmlReaderForIO",
+    "xmlTextReaderRead",
+    "xmlTextReaderNext",
+    "xmlTextReaderNextSibling",
+    "xmlTextReaderPrev",
+    "xmlTextReaderMoveToElement",
+    "xmlTextReaderMoveToAttribute",
+    "xmlTextReaderMoveToAttributeNo",
+    "xmlTextReaderMoveToFirstAttribute",
+    "xmlTextReaderMoveToNextAttribute",
+    "xmlTextReaderAttributeCount",
+    "xmlTextReaderDepth",
+    "xmlTextReaderNodeType",
+    "xmlTextReaderName",
+    "xmlTextReaderValue",
+    "xmlTextReaderConstName",
+    "xmlTextReaderConstValue",
+    "xmlTextReaderBaseUri",
+    "xmlTextReaderLocalName",
+    "xmlTextReaderNamespaceUri",
+    "xmlTextReaderPrefix",
+    "xmlTextReaderHasValue",
+    "xmlTextReaderHasAttributes",
+    "xmlTextReaderIsEmptyElement",
+    "xmlTextReaderReadState",
+    "xmlTextReaderGetAttribute",
+    "xmlTextReaderGetAttributeNo",
+    "xmlTextReaderGetAttributeNs",
+    "xmlTextReaderLookupNamespace",
+    "xmlTextReaderGetParserProp",
+    "xmlTextReaderSetParserProp",
+    "xmlFreeTextReader",
+    "xmlTextReaderSetup",
+    "xmlTextReaderCurrentDoc",
+    "xmlTextReaderClose",
+    "xmlTextReaderCurrentNode",
+    "xmlTextReaderExpand",
+    "xmlTextReaderGetParserLineNumber",
+    "xmlTextReaderGetParserColumnNumber",
+    "xmlTextReaderIsValid",
+    "xmlTextReaderNormalization",
+    "xmlTextReaderReadAttributeValue",
+    "xmlTextReaderReadString",
+    "xmlTextReaderReadInnerXml",
+    "xmlTextReaderReadOuterXml",
+    "xmlTextReaderStandalone",
+    "xmlTextReaderXmlLang",
+    "xmlReaderForDoc",
+    "xmlNewTextReaderFilename",
+    "xmlReaderNewDoc",
+    "xmlReaderNewFile",
+    "xmlReaderNewMemory",
+    "xmlReaderNewFd",
+    "xmlReaderNewIO",
+    "xmlReaderWalker",
+    "xmlReaderNewWalker",
+    "xmlTextReaderByteConsumed",
+    "xmlTextReaderConstBaseUri",
+    "xmlTextReaderConstEncoding",
+    "xmlTextReaderConstLocalName",
+    "xmlTextReaderConstNamespaceUri",
+    "xmlTextReaderConstPrefix",
+    "xmlTextReaderConstString",
+    "xmlTextReaderConstXmlLang",
+    "xmlTextReaderConstXmlVersion",
+    "xmlTextReaderQuoteChar",
+    "xmlTextReaderIsDefault",
+    "xmlTextReaderIsNamespaceDecl",
+    "xmlTextReaderMoveToAttributeNs",
+    "xmlTextReaderPreserve",
+    "xmlTextReaderPreservePattern",
+    "xmlTextReaderSetErrorHandler",
+    "xmlTextReaderGetErrorHandler",
+    "xmlTextReaderSetStructuredErrorHandler",
+    "xmlTextReaderSetResourceLoader",
+    "xmlTextReaderGetLastError",
+    "xmlTextReaderLocatorBaseURI",
+    "xmlTextReaderLocatorLineNumber",
+    "xmlTextReaderGetRemainder",
+    "xmlTextReaderSetMaxAmplification",
+    "xmlTextReaderSchemaValidate",
+    "xmlTextReaderSchemaValidateCtxt",
+    "xmlTextReaderSetSchema",
+    "xmlTextReaderRelaxNGValidate",
+    "xmlTextReaderRelaxNGValidateCtxt",
+    "xmlTextReaderRelaxNGSetSchema",
+    "xmlRegexpCompile",
+    "xmlRegexpExec",
+    "xmlRegexpIsDeterministic",
+    "xmlRegexpPrint",
+    "xmlRegFreeRegexp",
+    "xmlRegNewExecCtxt",
+    "xmlRegExecPushString",
+    "xmlRegFreeExecCtxt",
+    "xmlRelaxNGNewParserCtxt",
+    "xmlRelaxNGNewMemParserCtxt",
+    "xmlRelaxNGParse",
+    "xmlRelaxNGFree",
+    "xmlRelaxNGFreeParserCtxt",
+    "xmlRelaxNGNewValidCtxt",
+    "xmlRelaxNGFreeValidCtxt",
+    "xmlRelaxNGValidateDoc",
+    "xmlRelaxNGValidateFullElement",
+    "xmlSaveToFd",
+    "xmlSaveToFilename",
+    "xmlSaveToBuffer",
+    "xmlSaveToIO",
+    "xmlSaveDoc",
+    "xmlSaveTree",
+    "xmlSaveFlush",
+    "xmlSaveClose",
+    "xmlSaveFinish",
+    "xmlSaveSetIndentString",
+    "xmlSaveSetEscape",
+    "xmlSaveSetAttrEscape",
+    "xmlSaveFormatFileTo",
+    "xmlSaveFileTo",
+    "startDocument",
+    "endDocument",
+    "startElementNs",
+    "endElementNs",
+    "characters",
+    "ignorableWhitespace",
+    "comment",
+    "processingInstruction",
+    "cdataBlock",
+    "internalSubset",
+    "externalSubset",
+    "entityDecl",
+    "attributeDecl",
+    "elementDecl",
+    "notationDecl",
+    "unparsedEntityDecl",
+    "resolveEntity",
+    "isStandalone",
+    "hasInternalSubset",
+    "hasExternalSubset",
+    "getEntity",
+    "getParameterEntity",
+    "setDocumentLocator",
+    "getPublicId",
+    "getSystemId",
+    "getLineNumber",
+    "getColumnNumber",
+    "reference",
+    "warning",
+    "error",
+    "fatalError",
+    "xmlSchemaNewParserCtxt",
+    "xmlSchemaNewMemParserCtxt",
+    "xmlSchemaParse",
+    "xmlSchemaFree",
+    "xmlSchemaValidateDoc",
+    "xmlSchemaFreeParserCtxt",
+    "xmlSchemaFreeValidCtxt",
+    "xmlSchemaNewValidCtxt",
+    "xmlSchematronNewParserCtxt",
+    "xmlSchematronNewMemParserCtxt",
+    "xmlSchematronParse",
+    "xmlSchematronFree",
+    "xmlSchematronFreeParserCtxt",
+    "xmlSchematronNewValidCtxt",
+    "xmlSchematronFreeValidCtxt",
+    "xmlSchematronValidateDoc",
+    "xmlSchematronSetParserErrors",
+    "xmlSchematronGetParserErrors",
+    "xmlSchematronSetValidErrors",
+    "xmlSchematronGetValidErrors",
+    "xmlSchematronSetValidOptions",
+    "xmlSchematronValidCtxtGetOptions",
+    "xmlSchematronIsValid",
+    "xmlSchematronValidateOneElement",
+    "free_notation_wrapper",
+    "free_element_wrapper",
+    "free_attribute_wrapper",
+    "free_entity_wrapper",
+    "dump_notation_decl_cb",
+    "dump_element_decl_cb",
+    "dump_attribute_decl_cb",
+    "dump_entity_decl_cb",
+    "free_id_entry",
+    "free_ref_list_entry",
+    "free_ref_table_entry",
+    "xmlFreeTextWriter",
+    "xmlNewTextWriter",
+    "xmlNewTextWriterFilename",
+    "xmlNewTextWriterMemory",
+    "xmlNewTextWriterDoc",
+    "xmlNewTextWriterTree",
+    "xmlTextWriterStartDocument",
+    "xmlTextWriterEndDocument",
+    "xmlTextWriterStartElement",
+    "xmlTextWriterEndElement",
+    "xmlTextWriterStartElementNS",
+    "xmlTextWriterWriteElement",
+    "xmlTextWriterWriteElementNS",
+    "xmlTextWriterFullEndElement",
+    "xmlTextWriterWriteAttribute",
+    "xmlTextWriterWriteAttributeNS",
+    "xmlTextWriterStartAttribute",
+    "xmlTextWriterStartAttributeNS",
+    "xmlTextWriterEndAttribute",
+    "xmlTextWriterWriteString",
+    "xmlTextWriterWriteRaw",
+    "xmlTextWriterWriteRawLen",
+    "xmlTextWriterWriteBase64",
+    "xmlTextWriterWriteBinHex",
+    "xmlTextWriterWriteCDATA",
+    "xmlTextWriterStartCDATA",
+    "xmlTextWriterEndCDATA",
+    "xmlTextWriterWriteComment",
+    "xmlTextWriterStartComment",
+    "xmlTextWriterEndComment",
+    "xmlTextWriterWritePI",
+    "xmlTextWriterStartPI",
+    "xmlTextWriterEndPI",
+    "xmlTextWriterWriteDTD",
+    "xmlTextWriterWriteDTDElement",
+    "xmlTextWriterWriteDTDAttribute",
+    "xmlTextWriterWriteDTDEntity",
+    "xmlTextWriterWriteDTDInternalEntity",
+    "xmlTextWriterWriteDTDExternalEntity",
+    "xmlTextWriterWriteDTDExternalEntityContents",
+    "xmlTextWriterWriteDTDNotation",
+    "xmlTextWriterStartDTD",
+    "xmlTextWriterEndDTD",
+    "xmlTextWriterStartDTDElement",
+    "xmlTextWriterEndDTDElement",
+    "xmlTextWriterStartDTDAttribute",
+    "xmlTextWriterEndDTDAttribute",
+    "xmlTextWriterStartDTDEntity",
+    "xmlTextWriterEndDTDEntity",
+    "xmlTextWriterStartDTDAttlist",
+    "xmlTextWriterEndDTDAttlist",
+    "xmlTextWriterWriteDTDAttlist",
+    "xmlTextWriterFlush",
+    "xmlTextWriterSetIndent",
+    "xmlTextWriterSetIndentString",
+    "xmlTextWriterSetQuoteChar",
+    "xmlTextWriterClose",
+    "xmlTextWriterWriteVFormatRaw",
+    "xmlTextWriterWriteVFormatString",
+    "xmlTextWriterWriteVFormatComment",
+    "xmlTextWriterWriteVFormatCDATA",
+    "xmlTextWriterWriteVFormatPI",
+    "xmlTextWriterWriteVFormatElement",
+    "xmlTextWriterWriteVFormatElementNS",
+    "xmlTextWriterWriteVFormatAttribute",
+    "xmlTextWriterWriteVFormatAttributeNS",
+    "xmlTextWriterWriteVFormatDTD",
+    "xmlTextWriterWriteVFormatDTDElement",
+    "xmlTextWriterWriteVFormatDTDAttlist",
+    "xmlTextWriterWriteVFormatDTDInternalEntity",
+    "dummy_var_lookup",
+    "dummy_func_lookup",
+    "xmlXPathNewString",
+    "xmlXPathNewValueTree",
+    "xmlXPathNewNodeSetList",
+    "xmlXPathWrapString",
+    "xmlXPathWrapCString",
+    "xmlXPathWrapNodeSet",
+    "xmlXPathWrapExternal",
+    "xmlXPathFreeNodeSetList",
+    "xmlXPathConvertBoolean",
+    "xmlXPathConvertNumber",
+    "xmlXPathConvertString",
+    "xmlXPathCastToBoolean",
+    "xmlXPathCastToNumber",
+    "xmlXPathCastBooleanToNumber",
+    "xmlXPathCastBooleanToString",
+    "xmlXPathCastNodeSetToBoolean",
+    "xmlXPathCastNodeSetToNumber",
+    "xmlXPathCastNodeSetToString",
+    "xmlXPathCastNodeToNumber",
+    "xmlXPathCastNodeToString",
+    "xmlXPathCastNumberToBoolean",
+    "xmlXPathCastNumberToString",
+    "xmlXPathCastStringToBoolean",
+    "xmlXPathIsNaN",
+    "xmlXPathIsInf",
+    "xmlXPathStringEvalNumber",
+    "xmlXPathIsNodeType",
+    "xmlXPathInit",
+    "xmlXPathErr",
+    "xmlXPatherror",
+    "xmlXPathNodeSetContains",
+    "xmlXPathNodeSetAdd",
+    "xmlXPathNodeSetAddUnique",
+    "xmlXPathNodeSetAddNs",
+    "xmlXPathNodeSetDel",
+    "xmlXPathNodeSetRemove",
+    "xmlXPathNodeSetSort",
+    "xmlXPathNodeSetMerge",
+    "xmlXPathDifference",
+    "xmlXPathIntersection",
+    "xmlXPathDistinct",
+    "xmlXPathDistinctSorted",
+    "xmlXPathHasSameNodes",
+    "xmlXPathLeading",
+    "xmlXPathLeadingSorted",
+    "xmlXPathTrailing",
+    "xmlXPathTrailingSorted",
+    "xmlXPathNodeLeading",
+    "xmlXPathNodeLeadingSorted",
+    "xmlXPathNodeTrailing",
+    "xmlXPathNodeTrailingSorted",
+    "xmlXPathNodeSetFreeNs",
+    "xmlXPathOrderDocElems",
+    "xmlXPathValuePush",
+    "xmlXPathValuePop",
+    "xmlXPathPopBoolean",
+    "xmlXPathPopExternal",
+    "xmlXPathPopNodeSet",
+    "xmlXPathPopNumber",
+    "xmlXPathPopString",
+    "xmlXPathAddValues",
+    "xmlXPathSubValues",
+    "xmlXPathMultValues",
+    "xmlXPathDivValues",
+    "xmlXPathModValues",
+    "xmlXPathValueFlipSign",
+    "xmlXPathEqualValues",
+    "xmlXPathNotEqualValues",
+    "xmlXPathCompareValues",
+    "xmlXPathNewParserContext",
+    "xmlXPathFreeParserContext",
+    "xmlXPathParseNCName",
+    "xmlXPathParseName",
+    "xmlXPathRoot",
+    "xmlXPathEvalExpr",
+    "xmlXPathEvalPredicate",
+    "xmlXPathEvaluatePredicateResult",
+    "xmlXPathNextSelf",
+    "xmlXPathNextChild",
+    "xmlXPathNextDescendant",
+    "xmlXPathNextDescendantOrSelf",
+    "xmlXPathNextParent",
+    "xmlXPathNextAncestor",
+    "xmlXPathNextAncestorOrSelf",
+    "xmlXPathNextFollowingSibling",
+    "xmlXPathNextPrecedingSibling",
+    "xmlXPathNextFollowing",
+    "xmlXPathNextPreceding",
+    "xmlXPathNextNamespace",
+    "xmlXPathNextAttribute",
+    "xmlXPathBooleanFunction",
+    "xmlXPathNotFunction",
+    "xmlXPathTrueFunction",
+    "xmlXPathFalseFunction",
+    "xmlXPathLangFunction",
+    "xmlXPathNumberFunction",
+    "xmlXPathSumFunction",
+    "xmlXPathFloorFunction",
+    "xmlXPathCeilingFunction",
+    "xmlXPathRoundFunction",
+    "xmlXPathLastFunction",
+    "xmlXPathPositionFunction",
+    "xmlXPathCountFunction",
+    "xmlXPathIdFunction",
+    "xmlXPathLocalNameFunction",
+    "xmlXPathNamespaceURIFunction",
+    "xmlXPathStringFunction",
+    "xmlXPathStringLengthFunction",
+    "xmlXPathConcatFunction",
+    "xmlXPathContainsFunction",
+    "xmlXPathStartsWithFunction",
+    "xmlXPathSubstringFunction",
+    "xmlXPathSubstringBeforeFunction",
+    "xmlXPathSubstringAfterFunction",
+    "xmlXPathNormalizeFunction",
+    "xmlXPathTranslateFunction",
+    "xmlXPathRegisterAllFunctions",
+    "xmlXPathFunctionLookup",
+    "xmlXPathFunctionLookupNS",
+    "xmlXPathCtxtCompile",
+    "xmlXPathCompiledEval",
+    "xmlXPathCompiledEvalToBoolean",
+    "xmlXPathSetContextNode",
+    "xmlXPathNodeEval",
+    "xmlXPathContextSetCache",
+    "xmlXPathRegisterFuncLookup",
+    "xmlXPathRegisterVariableLookup",
+    "xmlXPathRegisterVariableNS",
+    "xmlXPathVariableLookup",
+    "xmlXPathVariableLookupNS",
+    "xmlXPathNsLookup",
+    "xmlXPathRegisteredFuncsCleanup",
+    "xmlXPathRegisteredVariablesCleanup",
+    "xmlXPathRegisteredNsCleanup",
+    "xmlXPathSetErrorHandler",
+    "xmlXPathDebugDumpObject",
+    "xmlXPathDebugDumpCompExpr",
+    "xmlXPtrEval",
+    "xmlXPtrEvalNodeSet",
+    "xsltDefaultLoader",
+    "xsltSetLoaderFunc",
+    "xsltSetGenericDebugFunc",
+    "xsltRegisterExtFunction",
+    "xsltRegisterExtElement",
+    "xsltNewSecurityPrefs",
+    "xsltFreeSecurityPrefs",
+    "xsltSetSecurityPrefs",
+    "xsltGetSecurityPrefs",
+    "xsltSetDefaultSecurityPrefs",
+    "xsltGetDefaultSecurityPrefs",
+    "forbid",
+    "xsltSaveResultToString",
+    "xsltSaveResultToFile",
+    "xsltSaveResultToFilename",
+    "xsltSaveResultToFd",
+    "xsltStylesheetCreate",
+    "xsltFreeStylesheet",
+    "xsltParseStylesheetDoc",
+    "xsltParseStylesheetFile",
+    "xsltLoadStylesheetPI",
+    "xsltParseStylesheetMemory",
+    "xsltGetStylesheetDoc",
+    "xsltSetStylesheetDoc",
+    "xsltAddTemplate",
+    "xsltFreeTemplate",
+    "xsltFreeTemplates",
+    "xsltFindTemplate",
+    "xsltLookupTemplate",
+    "xsltDefaultPriorityFromNode",
+    "xsltInitTemplateLookup",
+    "xsltSetXIncludeDefault",
+    "xsltGetXIncludeDefault",
+    "xsltNewTransformContext",
+    "xsltFreeTransformContext",
+    "xsltApplyStylesheet",
+    "xsltApplyStylesheetUser",
+    "xsltApplyStylesheetStacked",
+    "xsltFreeTransformResult",
+    "xsltRunStylesheetUser",
+    "xsltRunStylesheet"
+   ]
+  },
+  "unsafe_blocks": {
+   "total": 5233,
+   "safety_commented": 1737,
+   "unsafety_commented": 3496
+  }
+ },
+ "coverage_per_module": [
+  {
+   "module": "src/abi/allocator.rs",
+   "exports": {
+    "total": 22,
+    "documented": 22,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 34,
+    "documented": 0,
+    "undocumented": [
+     "default_malloc",
+     "default_realloc",
+     "default_free",
+     "default_strdup",
+     "xmlMemSetup",
+     "xmlMemGet",
+     "xmlGcMemSetup",
+     "xmlGcMemGet",
+     "xmlMallocImpl",
+     "xmlMallocDefault",
+     "xmlMallocAtomicImpl",
+     "xmlMallocAtomicDefault",
+     "xmlReallocImpl",
+     "xmlReallocDefault",
+     "xmlFreeImpl",
+     "xmlFreeDefault",
+     "xmlMemStrdupImpl",
+     "xmlMemStrdupDefault",
+     "xmlMemDisplay",
+     "xmlMemShow",
+     "xmlMallocZero",
+     "xmlMallocAtomicZero",
+     "xmlReallocZero",
+     "xmlMemMalloc",
+     "xmlMemFree",
+     "xmlMemRealloc",
+     "xmlMemoryStrdup",
+     "xmlMallocLoc",
+     "xmlMallocAtomicLoc",
+     "xmlReallocLoc",
+     "xmlMemStrdupLoc",
+     "xmlMemSize",
+     "xmlMemDisplayLast",
+     "xmlMemoryDump"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 56,
+    "safety_commented": 36
+   }
+  },
+  {
+   "module": "src/abi/callbacks.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/constants.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/data_globals.rs",
+   "exports": {
+    "total": 49,
+    "documented": 49,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 52,
+    "documented": 0,
+    "undocumented": [
+     "xmlGenericErrorDefaultFuncV",
+     "xmlGenericErrorDefaultFunc",
+     "xsltGenericErrorDefaultFuncV",
+     "xsltGenericErrorDefaultFunc",
+     "xsltGenericDebugDefaultFunc",
+     "xmlKeepBlanksDefault",
+     "xmlLineNumbersDefault",
+     "xmlSubstituteEntitiesDefault",
+     "xmlPedanticParserDefault",
+     "xmlRegisterNodeDefault",
+     "xmlDeregisterNodeDefault",
+     "__xmlIndentTreeOutput",
+     "__xmlSaveNoEmptyTags",
+     "__xmlTreeIndentString",
+     "xmlThrDefDoValidityCheckingDefaultValue",
+     "xmlThrDefGetWarningsDefaultValue",
+     "xmlThrDefLoadExtDtdDefaultValue",
+     "xmlThrDefPedanticParserDefaultValue",
+     "xmlThrDefLineNumbersDefaultValue",
+     "xmlThrDefKeepBlanksDefaultValue",
+     "xmlThrDefSubstituteEntitiesDefaultValue",
+     "xmlThrDefParserDebugEntities",
+     "xmlThrDefIndentTreeOutput",
+     "xmlThrDefTreeIndentString",
+     "xmlThrDefSaveNoEmptyTags",
+     "xmlThrDefRegisterNodeDefault",
+     "xmlThrDefDeregisterNodeDefault",
+     "xmlThrDefSetGenericErrorFunc",
+     "xmlThrDefSetStructuredErrorFunc",
+     "xmlThrDefDefaultBufferSize",
+     "xmlThrDefBufferAllocScheme",
+     "xmlThrDefParserInputBufferCreateFilenameDefault",
+     "xmlThrDefOutputBufferCreateFilenameDefault",
+     "__xmlBufferAllocScheme",
+     "__xmlDefaultBufferSize",
+     "__xmlDeregisterNodeDefaultValue",
+     "__xmlDoValidityCheckingDefaultValue",
+     "__xmlGenericError",
+     "__xmlGenericErrorContext",
+     "__xmlGetWarningsDefaultValue",
+     "__xmlKeepBlanksDefaultValue",
+     "__xmlLineNumbersDefaultValue",
+     "__xmlLoadExtDtdDefaultValue",
+     "__xmlOutputBufferCreateFilenameValue",
+     "__xmlParserDebugEntities",
+     "__xmlParserInputBufferCreateFilenameValue",
+     "__xmlParserVersion",
+     "__xmlPedanticParserDefaultValue",
+     "__xmlRegisterNodeDefaultValue",
+     "__xmlStructuredError",
+     "__xmlStructuredErrorContext",
+     "__xmlSubstituteEntitiesDefaultValue"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "safety_commented": 32
+   }
+  },
+  {
+   "module": "src/abi/exports_automata.rs",
+   "exports": {
+    "total": 25,
+    "documented": 25,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 27,
+    "documented": 1,
+    "undocumented": [
+     "xmlAutomataIsDeterminist",
+     "xmlAutomataNewTransition2",
+     "xmlAutomataNewNegTrans",
+     "xmlAutomataNewCountTrans2",
+     "xmlAutomataNewOnceTrans2",
+     "xmlRegExecPushString2",
+     "xmlRegExecNextValues",
+     "xmlRegExecErrInfo",
+     "xmlRegexpIsDeterminist",
+     "xmlRegisterCharEncodingHandler",
+     "xmlPatterncompile",
+     "xmlPatternCompileSafe",
+     "xmlPatternMatch",
+     "xmlFreePattern",
+     "xmlFreePatternList",
+     "xmlPatternStreamable",
+     "xmlPatternMaxDepth",
+     "xmlPatternMinDepth",
+     "xmlPatternFromRoot",
+     "xmlPatternGetStreamCtxt",
+     "xmlFreeStreamCtxt",
+     "xmlStreamPush",
+     "xmlStreamPushAttr",
+     "xmlStreamPushNode",
+     "xmlStreamPop",
+     "xmlStreamWantsAnyNode"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "safety_commented": 5
+   }
+  },
+  {
+   "module": "src/abi/exports_buffer.rs",
+   "exports": {
+    "total": 13,
+    "documented": 13,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 0,
+    "undocumented": [
+     "xmlBufContent",
+     "xmlBufEnd",
+     "xmlBufGetNodeContent",
+     "xmlBufNodeDump",
+     "xmlBufShrink",
+     "xmlBufUse",
+     "xmlBufferCCat",
+     "xmlBufferDump",
+     "xmlBufferResize",
+     "xmlBufferWriteCHAR",
+     "xmlBufferWriteChar",
+     "xmlBufferWriteQuotedString",
+     "xmlCharStrdup",
+     "xmlCharStrndup"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "safety_commented": 14
+   }
+  },
+  {
+   "module": "src/abi/exports_hash.rs",
+   "exports": {
+    "total": 13,
+    "documented": 13,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 0,
+    "undocumented": [
+     "collect_entry",
+     "xmlHashAdd",
+     "xmlHashAdd2",
+     "xmlHashAdd3",
+     "xmlHashCopySafe",
+     "xmlHashDefaultDeallocator",
+     "xmlHashQLookup",
+     "xmlHashQLookup2",
+     "xmlHashQLookup3",
+     "xmlHashScan3",
+     "xmlHashScanFull3",
+     "xmlDictReference",
+     "xmlDictQLookup",
+     "xmlDictOwns",
+     "xmlDictCleanup"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 36,
+    "safety_commented": 8
+   }
+  },
+  {
+   "module": "src/abi/exports_html.rs",
+   "exports": {
+    "total": 51,
+    "documented": 51,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 59,
+    "documented": 0,
+    "undocumented": [
+     "htmlTagLookup",
+     "htmlEntityLookup",
+     "htmlEntityValueLookup",
+     "htmlAutoCloseTag",
+     "htmlIsAutoClosed",
+     "htmlIsScriptAttribute",
+     "htmlElementAllowedHere",
+     "htmlElementStatusHere",
+     "htmlAttrAllowed",
+     "htmlNodeStatus",
+     "htmlEncodeEntities",
+     "htmlDecodeEntities",
+     "htmlIsBooleanAttr",
+     "htmlHandleOmittedElem",
+     "htmlInitAutoClose",
+     "htmlDefaultSAXHandlerInit",
+     "htmlParseEntityRef",
+     "htmlParseCharRef",
+     "htmlNewSAXParserCtxt",
+     "htmlNewParserCtxt",
+     "htmlCreateMemoryParserCtxt",
+     "htmlCreatePushParserCtxt",
+     "htmlCtxtReset",
+     "htmlCtxtUseOptions",
+     "htmlParseDocument",
+     "htmlParseChunk",
+     "htmlCtxtParseDocument",
+     "htmlCtxtReadMemory",
+     "htmlCtxtReadDoc",
+     "htmlCtxtReadFile",
+     "htmlCtxtReadFd",
+     "htmlCtxtReadIO",
+     "htmlReadMemory",
+     "htmlReadDoc",
+     "htmlReadFile",
+     "htmlReadFd",
+     "htmlReadIO",
+     "htmlSAXParseDoc",
+     "htmlSAXParseFile",
+     "htmlParseElement",
+     "htmlNewDocNoDtD",
+     "htmlNewDoc",
+     "htmlGetMetaEncoding",
+     "htmlSetMetaEncoding",
+     "htmlNodeDump",
+     "htmlNodeDumpFile",
+     "htmlNodeDumpFileFormat",
+     "htmlNodeDumpOutput",
+     "htmlNodeDumpFormatOutput",
+     "htmlDocContentDumpOutput",
+     "htmlDocContentDumpFormatOutput",
+     "htmlDocDumpMemoryFormat",
+     "htmlDocDumpMemory",
+     "htmlDocDump",
+     "htmlSaveFileFormat",
+     "htmlSaveFile",
+     "htmlSaveFileEnc",
+     "htmlCtxtSetOptions",
+     "htmlUTF8ToHtml"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 176,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/abi/exports_misc.rs",
+   "exports": {
+    "total": 35,
+    "documented": 35,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 38,
+    "documented": 1,
+    "undocumented": [
+     "xmlGetFeaturesList",
+     "xmlGetFeature",
+     "xmlSetFeature",
+     "xmlGetGlobalState",
+     "xmlGetLastChild",
+     "xmlGetNoNsProp",
+     "xmlGetNodePath",
+     "xmlGetPredefinedEntity",
+     "xmlGetUTF8Char",
+     "xmlSetEntityReferenceFunc",
+     "xmlSetListDoc",
+     "xmlModuleOpen",
+     "xmlModuleSymbol",
+     "xmlModuleClose",
+     "xmlModuleFree",
+     "xmlUCSIsBlock",
+     "xmlUCSIsCat",
+     "xmlValidNormalizeAttributeValue",
+     "xmlValidCtxtNormalizeAttributeValue",
+     "xmlValidGetPotentialChildren",
+     "xmlValidGetValidElements",
+     "__xmlDefaultSAXHandler",
+     "__xmlDefaultSAXLocator",
+     "__xmlLastError",
+     "__xmlParserInputBufferCreateFilename",
+     "xmlFormatError",
+     "xmlNewCharRef",
+     "xmlNewDocText",
+     "xmlNewDocTextLen",
+     "xmlNewDocComment",
+     "xmlNewDocPI",
+     "xmlNewDocElementContent",
+     "xmlNodeBufGetContent",
+     "xmlNodeGetAttrValue",
+     "xmlSprintfElementContent",
+     "xmlSnprintfElementContent",
+     "xmlUpgradeOldNs"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 170,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_nano.rs",
+   "exports": {
+    "total": 47,
+    "documented": 47,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 48,
+    "documented": 0,
+    "undocumented": [
+     "xmlNanoFTPInit",
+     "xmlNanoFTPCleanup",
+     "xmlNanoFTPNewCtxt",
+     "xmlNanoFTPFreeCtxt",
+     "xmlNanoFTPConnectTo",
+     "xmlNanoFTPOpen",
+     "xmlNanoFTPConnect",
+     "xmlNanoFTPClose",
+     "xmlNanoFTPQuit",
+     "xmlNanoFTPScanProxy",
+     "xmlNanoFTPProxy",
+     "xmlNanoFTPUpdateURL",
+     "xmlNanoFTPGetResponse",
+     "xmlNanoFTPCheckResponse",
+     "xmlNanoFTPCwd",
+     "xmlNanoFTPDele",
+     "xmlNanoFTPGetConnection",
+     "xmlNanoFTPCloseConnection",
+     "xmlNanoFTPList",
+     "xmlNanoFTPGetSocket",
+     "xmlNanoFTPGet",
+     "xmlNanoFTPRead",
+     "xmlNanoHTTPInit",
+     "xmlNanoHTTPCleanup",
+     "xmlNanoHTTPScanProxy",
+     "xmlNanoHTTPOpen",
+     "xmlNanoHTTPOpenRedir",
+     "xmlNanoHTTPMethod",
+     "xmlNanoHTTPMethodRedir",
+     "xmlNanoHTTPRead",
+     "xmlNanoHTTPClose",
+     "xmlNanoHTTPReturnCode",
+     "xmlNanoHTTPAuthHeader",
+     "xmlNanoHTTPContentLength",
+     "xmlNanoHTTPRedir",
+     "xmlNanoHTTPEncoding",
+     "xmlNanoHTTPMimeType",
+     "xmlNanoHTTPFetch",
+     "xmlNanoHTTPSave",
+     "xmlIOHTTPMatch",
+     "xmlIOHTTPOpen",
+     "xmlIOHTTPOpenW",
+     "xmlIOHTTPRead",
+     "xmlIOHTTPClose",
+     "xmlIOFTPMatch",
+     "xmlIOFTPOpen",
+     "xmlIOFTPRead",
+     "xmlIOFTPClose"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_parser.rs",
+   "exports": {
+    "total": 79,
+    "documented": 79,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 84,
+    "documented": 0,
+    "undocumented": [
+     "xmlNewParserCtxt",
+     "xmlNewSAXParserCtxt",
+     "xmlInitParserCtxt",
+     "xmlClearParserCtxt",
+     "xmlCtxtReset",
+     "xmlCtxtResetPush",
+     "xmlCtxtSetOptions",
+     "xmlCtxtSetErrorHandler",
+     "xmlCtxtSetMaxAmplification",
+     "xmlCtxtGetLastError",
+     "xmlCtxtResetLastError",
+     "xmlCtxtErrMemory",
+     "xmlStopParser",
+     "xmlByteConsumed",
+     "xmlParserGetDirectory",
+     "xmlCheckFilename",
+     "xmlIsXHTML",
+     "xmlCreateMemoryParserCtxt",
+     "xmlCreatePushParserCtxt",
+     "xmlCreateIOParserCtxt",
+     "xmlCreateURLParserCtxt",
+     "xmlCreateEntityParserCtxt",
+     "xmlCtxtReadDoc",
+     "xmlCtxtReadFile",
+     "xmlCtxtReadMemory",
+     "xmlCtxtReadFd",
+     "xmlCtxtReadIO",
+     "xmlCtxtParseDocument",
+     "xmlAllocParserInputBuffer",
+     "xmlParserInputBufferGrow",
+     "xmlParserInputBufferPush",
+     "xmlParserInputBufferRead",
+     "xmlParserInputRead",
+     "xmlParserInputGrow",
+     "xmlParserInputShrink",
+     "xmlNewInputStream",
+     "xmlNewIOInputStream",
+     "xmlNewStringInputStream",
+     "xmlSetupParserForBuffer",
+     "xmlPushInput",
+     "xmlPopInput",
+     "xmlSwitchEncoding",
+     "xmlSwitchEncodingName",
+     "xmlSwitchInputEncoding",
+     "xmlSwitchToEncoding",
+     "xmlInitNodeInfoSeq",
+     "xmlClearNodeInfoSeq",
+     "xmlParserFindNodeInfoIndex",
+     "xmlParserFindNodeInfo",
+     "xmlParserAddNodeInfo",
+     "xmlRegisterInputCallbacks",
+     "xmlRegisterDefaultInputCallbacks",
+     "xmlPopInputCallbacks",
+     "xmlCleanupInputCallbacks",
+     "xmlRegisterOutputCallbacks",
+     "xmlRegisterDefaultOutputCallbacks",
+     "xmlRegisterHTTPPostCallbacks",
+     "xmlPopOutputCallbacks",
+     "xmlCleanupOutputCallbacks",
+     "default_external_entity_loader",
+     "xmlSetExternalEntityLoader",
+     "xmlGetExternalEntityLoader",
+     "xmlNoNetExternalEntityLoader",
+     "xmlLoadExternalEntity",
+     "xmlCheckHTTPInput",
+     "xmlFileMatch",
+     "xmlFileOpen",
+     "xmlFileRead",
+     "xmlFileClose",
+     "xmlCurrentChar",
+     "xmlNextChar",
+     "xmlSkipBlankChars",
+     "xmlScanName",
+     "xmlDecodeEntities",
+     "xmlDetectCharEncoding",
+     "xmlCharEncFirstLine",
+     "xmlIsMainThread",
+     "xmlParserPrintFileInfo",
+     "xmlParserPrintFileContext",
+     "xmlHandleEntity",
+     "xmlSAXParseDTD",
+     "xmlIOParseDTD",
+     "xmlSAXParseEntity",
+     "xmlC14NDocSave"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 89,
+    "safety_commented": 29
+   }
+  },
+  {
+   "module": "src/abi/exports_parserint.rs",
+   "exports": {
+    "total": 99,
+    "documented": 99,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 104,
+    "documented": 0,
+    "undocumented": [
+     "xmlNamespaceParseNCName",
+     "xmlNamespaceParseQName",
+     "xmlNamespaceParseNSDef",
+     "xmlParseNamespace",
+     "xmlParseQuotedString",
+     "xmlParseName",
+     "xmlParseNmtoken",
+     "xmlParseCharRef",
+     "xmlParseEntityRef",
+     "xmlParseEntityValue",
+     "xmlParseAttValue",
+     "xmlParseSystemLiteral",
+     "xmlParsePubidLiteral",
+     "xmlParseExternalID",
+     "xmlParsePITarget",
+     "xmlParsePI",
+     "xmlParseComment",
+     "xmlParseCharData",
+     "xmlParseCDSect",
+     "xmlParseReference",
+     "xmlParserHandleReference",
+     "xmlParsePEReference",
+     "xmlParserHandlePEReference",
+     "xmlParseNotationDecl",
+     "xmlParseEntityDecl",
+     "xmlParseDefaultDecl",
+     "xmlParseAttributeType",
+     "xmlParseNotationType",
+     "xmlParseEnumerationType",
+     "xmlParseEnumeratedType",
+     "xmlParseAttributeListDecl",
+     "xmlParseElementMixedContentDecl",
+     "xmlParseElementChildrenContentDecl",
+     "xmlParseElementContentDecl",
+     "xmlParseElementDecl",
+     "xmlParseMarkupDecl",
+     "xmlParseVersionNum",
+     "xmlParseVersionInfo",
+     "xmlParseEncName",
+     "xmlParseEncodingDecl",
+     "xmlParseSDDecl",
+     "xmlParseXMLDecl",
+     "xmlParseTextDecl",
+     "xmlParseExternalSubset",
+     "xmlParseDocTypeDecl",
+     "xmlParseAttribute",
+     "xmlParseStartTag",
+     "xmlParseEndTag",
+     "xmlParseElement",
+     "xmlParseContent",
+     "xmlParseMisc",
+     "xmlParseCtxtExternalEntity",
+     "xmlParseExternalEntity",
+     "xmlParseBalancedChunkMemory",
+     "xmlParseBalancedChunkMemoryRecover",
+     "xmlParseInNodeContext",
+     "xmlParseDTD",
+     "xmlParseEntity",
+     "xmlParseExtParsedEnt",
+     "pi_fd_read",
+     "pi_fd_close",
+     "pi_file_read",
+     "xmlParserInputBufferCreateFd",
+     "xmlParserInputBufferCreateFile",
+     "xmlParserInputBufferCreateStatic",
+     "pi_default_input_buffer_create_filename",
+     "xmlParserInputBufferCreateFilenameDefault",
+     "xmlCtxtGetVersion",
+     "xmlCtxtGetStandalone",
+     "xmlCtxtGetOptions",
+     "xmlCtxtGetPrivate",
+     "xmlCtxtSetPrivate",
+     "xmlCtxtGetCatalogs",
+     "xmlCtxtSetCatalogs",
+     "xmlCtxtGetDict",
+     "xmlCtxtSetDict",
+     "xmlCtxtGetSaxHandler",
+     "xmlCtxtSetSaxHandler",
+     "xmlCtxtIsHtml",
+     "xmlCtxtIsStopped",
+     "xmlCtxtIsInSubset",
+     "xmlCtxtGetValidCtxt",
+     "xmlCtxtGetUserData",
+     "xmlCtxtGetNode",
+     "xmlCtxtGetDocTypeDecl",
+     "xmlCtxtGetInputPosition",
+     "xmlCtxtGetInputWindow",
+     "xmlCtxtGetStatus",
+     "xmlCtxtGetDeclaredEncoding",
+     "xmlCtxtGetDocument",
+     "xmlCtxtSetCharEncConvImpl",
+     "xmlCtxtSetResourceLoader",
+     "xmlCtxtPushInput",
+     "xmlCtxtPopInput",
+     "xmlCtxtValidateDtd",
+     "xmlCtxtValidateDocument",
+     "xmlCtxtParseDtd",
+     "xmlCtxtParseContent",
+     "xmlNewInputFromMemory",
+     "xmlNewInputFromString",
+     "xmlNewInputFromFd",
+     "xmlNewInputFromIO",
+     "xmlNewInputFromUrl",
+     "xmlInputSetEncodingHandler"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 172,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_relaxng.rs",
+   "exports": {
+    "total": 15,
+    "documented": 15,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 18,
+    "documented": 0,
+    "undocumented": [
+     "xmlRelaxNGInitTypes",
+     "xmlRelaxNGCleanupTypes",
+     "xmlRelaxNGDump",
+     "xmlRelaxNGDumpTree",
+     "xmlRelaxNGNewDocParserCtxt",
+     "xmlRelaxNGSetParserErrors",
+     "xmlRelaxNGGetParserErrors",
+     "xmlRelaxNGSetParserStructuredErrors",
+     "xmlRelaxNGSetValidErrors",
+     "xmlRelaxNGGetValidErrors",
+     "xmlRelaxNGSetValidStructuredErrors",
+     "xmlRelaxNGValidatePushElement",
+     "xmlRelaxNGValidatePushCData",
+     "xmlRelaxNGValidatePopElement",
+     "xmlRelaxParserSetFlag",
+     "xmlRelaxParserSetIncLImit",
+     "xmlRelaxNGSetResourceLoader",
+     "xmlRelaxNGValidCtxtClearErrors"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "safety_commented": 19
+   }
+  },
+  {
+   "module": "src/abi/exports_schema.rs",
+   "exports": {
+    "total": 56,
+    "documented": 56,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 55,
+    "documented": 0,
+    "undocumented": [
+     "xmlSchemaGetPredefinedType",
+     "xmlSchemaGetBuiltInListSimpleTypeItemType",
+     "xmlSchemaIsBuiltInTypeFacet",
+     "xmlSchemaWhiteSpaceReplace",
+     "xmlSchemaCollapseString",
+     "xmlSchemaNewStringValue",
+     "xmlSchemaNewNOTATIONValue",
+     "xmlSchemaNewQNameValue",
+     "xmlSchemaCopyValue",
+     "xmlSchemaFreeValue",
+     "xmlSchemaGetValType",
+     "xmlSchemaValueGetNext",
+     "xmlSchemaValueGetAsString",
+     "xmlSchemaValueGetAsBoolean",
+     "xmlSchemaValueAppend",
+     "xmlSchemaGetCanonValue",
+     "xmlSchemaGetCanonValueWhtsp",
+     "xmlSchemaFreeFacet",
+     "xmlSchemaGetFacetValueAsULong",
+     "xmlSchemaCheckFacet",
+     "xmlSchemaValidateFacet",
+     "xmlSchemaValidateFacetWhtsp",
+     "xmlSchemaValidateLengthFacet",
+     "xmlSchemaValidateLengthFacetWhtsp",
+     "xmlSchemaValidateListSimpleTypeFacet",
+     "xmlSchemaValidatePredefinedType",
+     "xmlSchemaValPredefTypeNode",
+     "xmlSchemaValPredefTypeNodeNoNorm",
+     "xmlSchemaCompareValues",
+     "xmlSchemaCompareValuesWhtsp",
+     "xmlSchemaFreeType",
+     "xmlSchemaFreeWildcard",
+     "xmlSchemaNewDocParserCtxt",
+     "xmlSchemaSetParserErrors",
+     "xmlSchemaSetParserStructuredErrors",
+     "xmlSchemaGetParserErrors",
+     "xmlSchemaSetValidErrors",
+     "xmlSchemaGetValidErrors",
+     "xmlSchemaSetValidStructuredErrors",
+     "xmlSchemaSetValidOptions",
+     "xmlSchemaValidCtxtGetOptions",
+     "xmlSchemaValidCtxtGetParserCtxt",
+     "xmlSchemaValidateSetFilename",
+     "xmlSchemaValidateSetLocator",
+     "xmlSchemaIsValid",
+     "xmlSchemaValidateFile",
+     "xmlSchemaValidateOneElement",
+     "xmlSchemaValidateStream",
+     "xmlSchemaSAXPlug",
+     "xmlSchemaSAXUnplug",
+     "xmlSchemaDump",
+     "xmlSchematronNewDocParserCtxt",
+     "xmlSchematronSetValidStructuredErrors",
+     "xmlSchemaSetResourceLoader",
+     "xmlXIncludeSetResourceLoader"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 122,
+    "safety_commented": 118
+   }
+  },
+  {
+   "module": "src/abi/exports_shell.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 0,
+    "undocumented": [
+     "xmlShellPrintXPathError",
+     "xmlShellPrintNode",
+     "xmlShellPrintXPathResult",
+     "xmlShellList",
+     "xmlShellBase",
+     "xmlShellDir",
+     "xmlShellCat",
+     "xmlShellLoad",
+     "xmlShellWrite",
+     "xmlShellSave",
+     "shell_valid_error",
+     "xmlShellValidate",
+     "xmlShellDu",
+     "xmlShellPwd",
+     "xmlShell"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 151,
+    "safety_commented": 8
+   }
+  },
+  {
+   "module": "src/abi/exports_string.rs",
+   "exports": {
+    "total": 12,
+    "documented": 12,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 0,
+    "undocumented": [
+     "xmlStrVPrintf",
+     "xmlStrPrintf",
+     "xmlStrstr",
+     "xmlStrcasestr",
+     "xmlStringCurrentChar",
+     "xmlStringLenDecodeEntities",
+     "xmlStringDecodeEntities",
+     "xmlStringLenGetNodeList",
+     "xmlUTF8Charcmp",
+     "xmlUTF8Strsize",
+     "xmlUTF8Strndup",
+     "xmlUTF8Strpos",
+     "xmlUTF8Strloc",
+     "xmlUTF8Strsub"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "safety_commented": 17
+   }
+  },
+  {
+   "module": "src/abi/exports_tree.rs",
+   "exports": {
+    "total": 54,
+    "documented": 54,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 62,
+    "documented": 0,
+    "undocumented": [
+     "xmlFreeNs",
+     "xmlFreeNsList",
+     "xmlFreeProp",
+     "xmlFreePropList",
+     "xmlNewNodeEatName",
+     "xmlNewDocNode",
+     "xmlNewDocNodeEatName",
+     "xmlNewDocRawNode",
+     "xmlNewDocFragment",
+     "xmlNewProp",
+     "xmlNewNsProp",
+     "xmlNewNsPropEatName",
+     "xmlNewDocProp",
+     "xmlNewReference",
+     "xmlNewTextChild",
+     "xmlNewTextLen",
+     "xmlNodeSetContent",
+     "xmlNodeSetContentLen",
+     "xmlNodeAddContent",
+     "xmlNodeAddContentLen",
+     "xmlNodeGetContent",
+     "xmlNodeSetLang",
+     "xmlNodeGetLang",
+     "xmlNodeSetSpacePreserve",
+     "xmlNodeGetSpacePreserve",
+     "xmlNodeSetName",
+     "xmlNodeSetBase",
+     "xmlNodeGetBaseSafe",
+     "xmlNodeGetBase",
+     "xmlNodeIsText",
+     "xmlSetTreeDoc",
+     "xmlAddNextSibling",
+     "xmlAddPrevSibling",
+     "xmlAddChildList",
+     "xmlReplaceNode",
+     "xmlGetNsListSafe",
+     "xmlReconciliateNs",
+     "xmlGetCompressMode",
+     "xmlSetCompressMode",
+     "xmlDOMWrapNewCtxt",
+     "xmlDOMWrapFreeCtxt",
+     "xmlDOMWrapRemoveNode",
+     "xmlDOMWrapReconcileNamespaces",
+     "xmlDOMWrapAdoptNode",
+     "xmlDOMWrapCloneNode",
+     "xmlCreateEntitiesTable",
+     "free_entity_wrapper",
+     "xmlFreeEntitiesTable",
+     "xmlNewEntityInputStream",
+     "xmlCreateEnumeration",
+     "xmlFreeEnumeration",
+     "xmlFreeDocElementContent",
+     "free_attribute_table_entry",
+     "xmlFreeAttributeTable",
+     "free_element_table_entry",
+     "xmlFreeElementTable",
+     "free_notation_table_entry",
+     "xmlFreeNotationTable",
+     "writer_push_write_cb",
+     "writer_push_close_cb",
+     "xmlNewTextWriterPushParser",
+     "xmlNewGlobalNs"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 356,
+    "safety_commented": 60
+   }
+  },
+  {
+   "module": "src/abi/exports_treedump.rs",
+   "exports": {
+    "total": 36,
+    "documented": 36,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 49,
+    "documented": 0,
+    "undocumented": [
+     "xmlCopyCharMultiByte",
+     "xmlCopyChar",
+     "xmlNodeListGetString",
+     "xmlNodeListGetRawString",
+     "xmlStringGetNodeList",
+     "xmlCopyNamespace",
+     "xmlCopyNamespaceList",
+     "xmlCopyProp",
+     "xmlCopyPropList",
+     "xmlCopyNodeList",
+     "xmlDocCopyNode",
+     "xmlDocCopyNodeList",
+     "xmlCopyEnumeration",
+     "xmlCopyDocElementContent",
+     "xmlCopyDtd",
+     "free_notation_wrapper",
+     "free_element_wrapper",
+     "free_attribute_wrapper",
+     "free_entity_wrapper",
+     "copy_element_cb",
+     "copy_attribute_cb",
+     "copy_notation_cb",
+     "copy_entity_cb",
+     "xmlCopyElementTable",
+     "xmlCopyAttributeTable",
+     "xmlCopyNotationTable",
+     "xmlCopyEntitiesTable",
+     "xmlDumpElementDecl",
+     "xmlDumpAttributeDecl",
+     "xmlDumpEntityDecl",
+     "xmlDumpNotationDecl",
+     "dump_element_decl_cb",
+     "dump_attribute_decl_cb",
+     "dump_entity_decl_cb",
+     "dump_notation_decl_cb",
+     "xmlDumpElementTable",
+     "xmlDumpAttributeTable",
+     "xmlDumpNotationTable",
+     "xmlDumpEntitiesTable",
+     "xmlAttrSerializeTxtContent",
+     "xmlNodeDumpOutput",
+     "xmlElemDump",
+     "xmlDocFormatDump",
+     "xmlDocDumpFormatMemoryEnc",
+     "xmlDocDumpMemoryEnc",
+     "dump_entity_callback",
+     "xmlDebugDumpEntities",
+     "xmlDebugDumpDTD",
+     "xmlDebugCheckDocument"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 128,
+    "safety_commented": 50
+   }
+  },
+  {
+   "module": "src/abi/exports_uri.rs",
+   "exports": {
+    "total": 11,
+    "documented": 11,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 11,
+    "documented": 0,
+    "undocumented": [
+     "xmlBuildURISafe",
+     "xmlBuildURI",
+     "xmlBuildRelativeURISafe",
+     "xmlBuildRelativeURI",
+     "xmlCanonicPath",
+     "xmlPathToURI",
+     "xmlPrintURI",
+     "xmlURIEscape",
+     "xmlNormalizeWindowsPath",
+     "xmlCheckLanguageID",
+     "xmlParseURISafe"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 37,
+    "safety_commented": 12
+   }
+  },
+  {
+   "module": "src/abi/exports_xinclude.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 0,
+    "undocumented": [
+     "xmlXIncludeNewContext",
+     "xmlXIncludeFreeContext",
+     "xmlXIncludeProcessNode",
+     "xmlXIncludeProcessTree",
+     "xmlXIncludeProcessTreeFlags",
+     "xmlXIncludeProcessTreeFlagsData",
+     "xmlXIncludeProcessFlagsData",
+     "xmlXIncludeSetFlags",
+     "xmlXIncludeSetErrorHandler",
+     "xmlXIncludeGetLastError"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 31,
+    "safety_commented": 23
+   }
+  },
+  {
+   "module": "src/abi/exports_xlink.rs",
+   "exports": {
+    "total": 5,
+    "documented": 5,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 5,
+    "documented": 0,
+    "undocumented": [
+     "xlinkGetDefaultHandler",
+     "xlinkSetDefaultHandler",
+     "xlinkGetDefaultDetect",
+     "xlinkSetDefaultDetect",
+     "xlinkIsLink"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "safety_commented": 5
+   }
+  },
+  {
+   "module": "src/abi/exports_xml2.rs",
+   "exports": {
+    "total": 381,
+    "documented": 381,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 322,
+    "documented": 0,
+    "undocumented": [
+     "xmlInitParser",
+     "xmlInitGlobals",
+     "xmlInitializeGlobalState",
+     "xmlSAXVersion",
+     "xmlCleanupGlobals",
+     "xmlCleanupParser",
+     "xmlFreeMutex",
+     "xmlMutexLock",
+     "xmlMutexUnlock",
+     "xmlFreeRMutex",
+     "xmlRMutexLock",
+     "xmlRMutexUnlock",
+     "xmlInitThreads",
+     "xmlCleanupThreads",
+     "xmlLockLibrary",
+     "xmlUnlockLibrary",
+     "xmlSetGenericErrorFunc",
+     "xmlSetStructuredErrorFunc",
+     "xmlCopyError",
+     "xmlResetError",
+     "xmlRaiseError",
+     "xmlStrdup",
+     "xmlStrndup",
+     "xmlStrlen",
+     "xmlStrchr",
+     "xmlStrcmp",
+     "xmlStrncmp",
+     "xmlStrcasecmp",
+     "xmlStrncasecmp",
+     "xmlStrEqual",
+     "xmlBuildQName",
+     "xmlSplitQName2",
+     "xmlSplitQName3",
+     "xmlSplitQName",
+     "xmlUTF8Strlen",
+     "xmlUTF8Size",
+     "xmlCheckUTF8",
+     "xmlStrQEqual",
+     "xmlStrcat",
+     "xmlStrncat",
+     "xmlStrncatNew",
+     "xmlStrcpy",
+     "xmlStrncpy",
+     "xmlStrsub",
+     "xmlNewDoc",
+     "xmlFreeDoc",
+     "xmlGetDocCompressMode",
+     "xmlSetDocCompressMode",
+     "xmlNewNode",
+     "xmlFreeNode",
+     "xmlFreeNodeList",
+     "xmlUnlinkNode",
+     "xmlSAX2InitDefaultSAXHandler",
+     "xmlSAX2InitHtmlDefaultSAXHandler",
+     "xmlAddChild",
+     "xmlAddSibling",
+     "xmlNewChild",
+     "xmlDocSetRootElement",
+     "xmlCopyNode",
+     "xmlCopyDoc",
+     "xmlNewText",
+     "xmlNewComment",
+     "xmlNewPI",
+     "xmlNewCDataBlock",
+     "xmlNewNs",
+     "xmlSetNs",
+     "xmlGetNsList",
+     "xmlSearchNs",
+     "xmlSearchNsByHref",
+     "xmlSetProp",
+     "xmlGetProp",
+     "xmlGetNsProp",
+     "xmlSetNsProp",
+     "xmlRemoveProp",
+     "xmlHasProp",
+     "xmlHasNsProp",
+     "xmlUnsetProp",
+     "xmlUnsetNsProp",
+     "xmlFirstElementChild",
+     "xmlLastElementChild",
+     "xmlNextElementSibling",
+     "xmlPreviousElementSibling",
+     "xmlChildElementCount",
+     "xmlTextConcat",
+     "xmlTextMerge",
+     "xmlNewDtd",
+     "xmlNewEntity",
+     "xmlGetDocEntity",
+     "xmlGetParameterEntity",
+     "xmlCreateIntSubset",
+     "xmlFreeDtd",
+     "xmlAddNotationDecl",
+     "xmlGetNotationDecl",
+     "xmlCopyNotation",
+     "xmlFreeNotation",
+     "xmlAddElementDecl",
+     "xmlGetElementDecl",
+     "xmlCopyElement",
+     "xmlFreeElement",
+     "xmlAddAttributeDecl",
+     "xmlGetAttributeDecl",
+     "xmlCopyAttribute",
+     "xmlFreeAttribute",
+     "xmlNewElementContent",
+     "xmlCopyElementContent",
+     "xmlFreeElementContent",
+     "xmlAddEntity",
+     "xmlAddDocEntity",
+     "xmlAddDtdEntity",
+     "xmlGetDtdEntity",
+     "xmlGetEntity",
+     "xmlCopyEntity",
+     "xmlFreeEntity",
+     "xmlEncodeEntitiesReentrant",
+     "xmlEncodeSpecialChars",
+     "xmlEncodeEntities",
+     "xmlNodeDump",
+     "xmlDocDump",
+     "xmlDocDumpFormatMemory",
+     "xmlDocDumpMemory",
+     "xmlSaveFile",
+     "xmlSaveFileEnc",
+     "xmlSaveFormatFile",
+     "xmlSaveFormatFileEnc",
+     "xmlReadDoc",
+     "xmlReadFile",
+     "xmlRecoverDoc",
+     "xmlRecoverFile",
+     "xmlRecoverMemory",
+     "xmlReadMemory",
+     "xmlLoadCatalogs",
+     "xmlLoadCatalog",
+     "xmlReadFd",
+     "xmlReadIO",
+     "xmlSAXParseDoc",
+     "xmlSAXParseDocWithData",
+     "xmlSAXParseFileWithData",
+     "xmlSAXParseMemoryWithData",
+     "xmlSAXParseFile",
+     "xmlSAXParseMemory",
+     "xmlSAXUserParseFile",
+     "xmlSAXUserParseMemory",
+     "xmlParseDoc",
+     "xmlParseFile",
+     "xmlParseMemory",
+     "xmlCreateFileParserCtxt",
+     "xmlCreateDocParserCtxt",
+     "xmlParseDocument",
+     "xmlFreeParserCtxt",
+     "xmlCtxtUseOptions",
+     "xmlParseChunk",
+     "xmlParserInputBufferCreateMem",
+     "xmlParserInputBufferCreateFilename",
+     "xmlParserInputBufferCreateIO",
+     "xmlFreeParserInputBuffer",
+     "xmlNewInputFromFile",
+     "xmlFreeInputStream",
+     "xmlOutputBufferCreateFilename",
+     "xmlOutputBufferCreateFd",
+     "xmlOutputBufferCreateIO",
+     "xmlOutputBufferClose",
+     "xmlOutputBufferFlush",
+     "xmlOutputBufferWrite",
+     "xmlOutputBufferWriteString",
+     "xmlAllocOutputBuffer",
+     "xmlOutputBufferCreateBuffer",
+     "xmlOutputBufferCreateFile",
+     "xmlOutputBufferGetContent",
+     "xmlOutputBufferGetSize",
+     "xmlOutputBufferWriteEscape",
+     "xmlOutputBufferCreateFilenameDefault",
+     "__xmlOutputBufferCreateFilename",
+     "xmlDictLookup",
+     "xmlDictExists",
+     "xmlHashAddEntry",
+     "xmlHashAddEntry2",
+     "xmlHashAddEntry3",
+     "xmlHashUpdateEntry",
+     "xmlHashUpdateEntry2",
+     "xmlHashUpdateEntry3",
+     "xmlHashLookup",
+     "xmlHashLookup2",
+     "xmlHashLookup3",
+     "xmlHashRemoveEntry",
+     "xmlHashRemoveEntry2",
+     "xmlHashRemoveEntry3",
+     "xmlListEnd",
+     "xmlListReverseSearch",
+     "xmlListReverseWalk",
+     "xmlListDup",
+     "xmlListCopy",
+     "xmlLinkGetData",
+     "xmlBufferAdd",
+     "xmlBufferAddHead",
+     "xmlBufferCat",
+     "xmlIsolat1ToUTF8",
+     "xmlUTF8ToIsolat1",
+     "xmlCharEncInput",
+     "xmlCharEncOutput",
+     "xmlParseURI",
+     "xmlParseURIRaw",
+     "xmlFreeURI",
+     "xmlSaveUri",
+     "xmlParseURIReference",
+     "xmlNormalizeURIPath",
+     "xmlURIEscapeStr",
+     "xmlURIUnescapeString",
+     "xmlXPathNewContext",
+     "xmlXPathFreeContext",
+     "xmlXPathEvalExpression",
+     "xmlXPathEval",
+     "xmlXPathFreeObject",
+     "xmlXPathObjectCopy",
+     "xmlXPathCastToString",
+     "xmlXPathCastStringToNumber",
+     "xmlXPathCmpNodes",
+     "xmlXPathNodeSetCreate",
+     "xmlXPathFreeNodeSet",
+     "xmlXPathCompile",
+     "xmlXPathFreeCompExpr",
+     "xmlXPathRegisterNs",
+     "xmlXPathRegisterFunc",
+     "xmlXPathRegisterFuncNS",
+     "xmlXPathRegisterVariable",
+     "xmlXPathNewNodeSet",
+     "xmlXPathNewCString",
+     "xmlXPtrEval",
+     "xmlXIncludeProcess",
+     "xmlXIncludeProcessFlags",
+     "xmlCatalogResolvePublic",
+     "xmlCatalogResolveSystem",
+     "xmlCatalogResolveURI",
+     "xmlCatalogAdd",
+     "xmlCatalogRemove",
+     "xmlCatalogDump",
+     "xmlCatalogSave",
+     "htmlParseFile",
+     "htmlParseMemory",
+     "htmlParseDoc",
+     "htmlCreateFileParserCtxt",
+     "xmlNewValidCtxt",
+     "xmlFreeValidCtxt",
+     "xmlSetValidErrors",
+     "xmlValidateDocument",
+     "xmlValidateDocumentFinal",
+     "xmlValidateElement",
+     "xmlValidateAttributeDecl",
+     "xmlValidateAttributeValue",
+     "xmlValidateNotationUse",
+     "xmlValidateID",
+     "xmlValidateIDRef",
+     "xmlValidateIDRefs",
+     "xmlValidateNCName",
+     "xmlValidateQName",
+     "xmlValidateName",
+     "xmlValidateNMToken",
+     "xmlValidateNameValue",
+     "xmlValidateNamesValue",
+     "xmlValidateNmtokenValue",
+     "xmlValidateNmtokensValue",
+     "xmlValidateElementDecl",
+     "xmlValidateNotationDecl",
+     "xmlValidateOneAttribute",
+     "xmlValidateOneElement",
+     "xmlValidateOneNamespace",
+     "xmlValidatePushElement",
+     "xmlValidatePushCData",
+     "xmlValidatePopElement",
+     "xmlValidBuildContentModel",
+     "xmlAddID",
+     "xmlRemoveID",
+     "xmlAddRef",
+     "xmlRemoveRef",
+     "xmlAddIDSafe",
+     "xmlFreeIDTable",
+     "xmlFreeRefTable",
+     "xmlGetID",
+     "xmlGetRefs",
+     "xmlIsID",
+     "xmlIsRef",
+     "xmlGetDtdElementDesc",
+     "xmlGetDtdAttrDesc",
+     "xmlGetDtdQElementDesc",
+     "xmlGetDtdQAttrDesc",
+     "xmlGetDtdNotationDesc",
+     "xmlValidateRoot",
+     "xmlValidateContent",
+     "xmlIsMixedElement",
+     "xmlIsEmptyElement",
+     "xmlValidateDtd",
+     "xmlValidateDtdFinal",
+     "xmlValidateEnumeration",
+     "xmlSAX2StartDocument",
+     "xmlSAX2EndDocument",
+     "xmlSAX2StartElementNs",
+     "xmlSAX2EndElementNs",
+     "xmlSAX2Characters",
+     "xmlSAX2IgnorableWhitespace",
+     "xmlSAX2Comment",
+     "xmlSAX2ProcessingInstruction",
+     "xmlSAX2CDataBlock",
+     "xmlSAX2InternalSubset",
+     "xmlSAX2ExternalSubset",
+     "xmlSAX2EntityDecl",
+     "xmlSAX2AttributeDecl",
+     "xmlSAX2ElementDecl",
+     "xmlSAX2NotationDecl",
+     "xmlSAX2UnparsedEntityDecl",
+     "xmlSAX2ResolveEntity",
+     "xmlSAX2IsStandalone",
+     "xmlSAX2HasInternalSubset",
+     "xmlSAX2HasExternalSubset",
+     "xmlSAX2GetEntity",
+     "xmlSAX2GetParameterEntity",
+     "xmlSAX2GetLineNumber",
+     "xmlSAX2GetColumnNumber",
+     "xmlSAX2GetPublicId",
+     "xmlSAX2GetSystemId",
+     "xmlSAX2StartElement",
+     "xmlSAX2EndElement",
+     "xmlSAX2SetDocumentLocator",
+     "xmlSAX2Reference"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 108,
+    "safety_commented": 25
+   }
+  },
+  {
+   "module": "src/abi/exports_xptr.rs",
+   "exports": {
+    "total": 19,
+    "documented": 19,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 19,
+    "documented": 0,
+    "undocumented": [
+     "xmlXPtrLocationSetCreate",
+     "xmlXPtrFreeLocationSet",
+     "xmlXPtrLocationSetAdd",
+     "xmlXPtrLocationSetMerge",
+     "xmlXPtrLocationSetDel",
+     "xmlXPtrLocationSetRemove",
+     "xmlXPtrWrapLocationSet",
+     "xmlXPtrNewRange",
+     "xmlXPtrNewRangePoints",
+     "xmlXPtrNewRangePointNode",
+     "xmlXPtrNewRangeNodePoint",
+     "xmlXPtrNewRangeNodes",
+     "xmlXPtrNewCollapsedRange",
+     "xmlXPtrNewRangeNodeObject",
+     "xmlXPtrNewLocationSetNodes",
+     "xmlXPtrNewLocationSetNodeSet",
+     "xmlXPtrNewContext",
+     "xmlXPtrRangeToFunction",
+     "xmlXPtrBuildNodeList"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt.rs",
+   "exports": {
+    "total": 7,
+    "documented": 7,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 0,
+    "undocumented": [
+     "xsltSetCtxtLocaleHandlers",
+     "xsltGetUTF8CharZ"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_apply.rs",
+   "exports": {
+    "total": 17,
+    "documented": 17,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 20,
+    "documented": 0,
+    "undocumented": [
+     "xsltApplyTemplates",
+     "xsltProcessOneNode",
+     "xsltApplyOneTemplate",
+     "xsltApplyImports",
+     "xsltCallTemplate",
+     "xsltApplyAttributeSet",
+     "xsltResolveStylesheetAttributeSet",
+     "xsltFreeAttributeSetsHashes",
+     "xsltTemplateProcess",
+     "xsltNextImport",
+     "xsltGetTemplate",
+     "xsltCleanupTemplates",
+     "xsltFreeTemplateHashes",
+     "xsltApplyStripSpaces",
+     "xsltNeedElemSpaceHandling",
+     "xsltFindElemSpaceHandling",
+     "xsltCompilePattern",
+     "xsltCompMatchClearCache",
+     "xsltFreeCompMatchList",
+     "xsltTestCompMatchList"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_avt.rs",
+   "exports": {
+    "total": 23,
+    "documented": 23,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 24,
+    "documented": 0,
+    "undocumented": [
+     "xsltAttrListTemplateProcess",
+     "xsltAttrTemplateProcess",
+     "xsltAttrTemplateValueProcessNode",
+     "xsltAttrTemplateValueProcess",
+     "xsltEvalAVT",
+     "xsltEvalAttrValueTemplate",
+     "xsltEvalStaticAttrValueTemplate",
+     "xsltEvalTemplateString",
+     "xsltFreeAVTList",
+     "xsltGetCNsProp",
+     "xsltGetNsProp",
+     "xsltGetNamespace",
+     "xsltGetPlainNamespace",
+     "xsltGetSpecialNamespace",
+     "xsltCopyNamespace",
+     "xsltCopyNamespaceList",
+     "xsltNamespaceAlias",
+     "xsltFreeNamespaceAliasHashes",
+     "xsltCopyTextString",
+     "xsltIsBlank",
+     "xsltSplitQName",
+     "xsltGetQNameURI",
+     "xsltGetQNameURI2",
+     "xsltGetUTF8Char"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_compile.rs",
+   "exports": {
+    "total": 23,
+    "documented": 23,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 26,
+    "documented": 0,
+    "undocumented": [
+     "xsltNewStylesheet",
+     "xsltParseStylesheetProcess",
+     "xsltParseStylesheetUser",
+     "xsltParseStylesheetImportedDoc",
+     "xsltParseStylesheetImport",
+     "xsltParseStylesheetInclude",
+     "xsltParseStylesheetOutput",
+     "xsltParseStylesheetAttributeSet",
+     "xsltParseGlobalVariable",
+     "xsltParseGlobalParam",
+     "xsltParseTemplateContent",
+     "xsltCompileAttr",
+     "xslt_free_elem_pre_comp",
+     "xsltDocumentComp",
+     "xsltPreComputeExtModuleElement",
+     "xsltFreeStylePreComps",
+     "xsltStylePreCompute",
+     "xsltNormalizeCompSteps",
+     "xsltNewStyleDocument",
+     "xsltLoadStyleDocument",
+     "xsltFreeStyleDocuments",
+     "xsltInitGlobals",
+     "xsltUninit",
+     "xsltFreeExts",
+     "xsltShutdownExts",
+     "xsltDebugDumpExtensions"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_exec.rs",
+   "exports": {
+    "total": 26,
+    "documented": 26,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 26,
+    "documented": 0,
+    "undocumented": [
+     "xsltAttribute",
+     "xsltElement",
+     "xsltText",
+     "xsltComment",
+     "xsltProcessingInstruction",
+     "xsltCopy",
+     "xsltCopyOf",
+     "xsltValueOf",
+     "xsltNumber",
+     "xsltChoose",
+     "xsltIf",
+     "xsltForEach",
+     "xsltMessage",
+     "xsltNumberFormat",
+     "xsltFormatNumberConversion",
+     "xsltDecimalFormatGetByName",
+     "xsltDecimalFormatGetByQName",
+     "xsltSort",
+     "xsltDefaultSortFunction",
+     "xsltDoSortFunction",
+     "xsltDocumentSortFunction",
+     "xsltComputeSortResult",
+     "xsltSetSortFunc",
+     "xsltSetCtxtSortFunc",
+     "xsltDocumentElem",
+     "xsltDebug"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_ext.rs",
+   "exports": {
+    "total": 27,
+    "documented": 27,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 28,
+    "documented": 0,
+    "undocumented": [
+     "xsltRegisterExtModule",
+     "xsltRegisterExtModuleFull",
+     "xsltRegisterExtModuleElement",
+     "xsltRegisterExtModuleFunction",
+     "xsltRegisterExtModuleTopLevel",
+     "xsltUnregisterExtModule",
+     "xsltUnregisterExtModuleElement",
+     "xsltUnregisterExtModuleFunction",
+     "xsltUnregisterExtModuleTopLevel",
+     "xsltRegisterExtPrefix",
+     "xsltCheckExtPrefix",
+     "xsltCheckExtURI",
+     "xsltExtElementLookup",
+     "xsltExtModuleElementLookup",
+     "xsltExtModuleFunctionLookup",
+     "xsltExtModuleElementPreComputeLookup",
+     "xsltExtModuleTopLevelLookup",
+     "xsltInitCtxtExts",
+     "xsltShutdownCtxtExts",
+     "xsltFreeCtxtExts",
+     "xsltGetExtData",
+     "xsltStyleGetExtData",
+     "xsltStyleStylesheetLevelGetExtData",
+     "xsltGetExtInfo",
+     "xsltRegisterAllExtras",
+     "xsltRegisterExtras",
+     "xsltRegisterAllElement",
+     "xsltRegisterTestModule"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 12,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_functions.rs",
+   "exports": {
+    "total": 18,
+    "documented": 18,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 19,
+    "documented": 0,
+    "undocumented": [
+     "xsltDocumentFunction",
+     "xsltKeyFunction",
+     "xsltUnparsedEntityURIFunction",
+     "xsltFormatNumberFunction",
+     "xsltGenerateIdFunction",
+     "xsltSystemPropertyFunction",
+     "xsltElementAvailableFunction",
+     "xsltFunctionAvailableFunction",
+     "xslt_current_function",
+     "xsltFunctionNodeSet",
+     "xsltEvalXPathPredicate",
+     "xsltEvalXPathStringNs",
+     "xsltEvalXPathString",
+     "xsltXPathCompileFlags",
+     "xsltXPathCompile",
+     "xsltXPathFunctionLookup",
+     "xsltXPathVariableLookup",
+     "xsltXPathGetTransformContext",
+     "xsltRegisterAllFunctions"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 22,
+    "safety_commented": 4
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_internals.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_util.rs",
+   "exports": {
+    "total": 22,
+    "documented": 22,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 28,
+    "documented": 0,
+    "undocumented": [
+     "xsltSecurityAllow",
+     "xsltSecurityForbid",
+     "xsltSetCtxtSecurityPrefs",
+     "xsltCheckRead",
+     "xsltCheckWrite",
+     "xsltSetCtxtParseOptions",
+     "xsltSetGenericErrorFunc",
+     "xsltTransformError",
+     "xsltTransformErrorV",
+     "xsltPrintErrorContext",
+     "xsltTimestamp",
+     "xsltCalibrateAdjust",
+     "xsltNewLocale",
+     "xsltFreeLocale",
+     "xsltFreeLocales",
+     "xsltLocaleStrcmp",
+     "xsltStrxfrm",
+     "xsltGetDebuggerStatus",
+     "xsltDebugGetDefaultTrace",
+     "xsltDebugSetDefaultTrace",
+     "xsltSaveProfiling",
+     "xsltProfileStylesheet",
+     "xsltGetProfileInformation",
+     "xsltSaveResultTo",
+     "xsltNewDocument",
+     "xsltLoadDocument",
+     "xsltFindDocument",
+     "xsltFreeDocuments"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_vars.rs",
+   "exports": {
+    "total": 33,
+    "documented": 33,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 34,
+    "documented": 0,
+    "undocumented": [
+     "xsltVariableLookup",
+     "xsltEvalGlobalVariables",
+     "xsltEvalUserParams",
+     "xsltEvalOneUserParam",
+     "xsltQuoteUserParams",
+     "xsltQuoteOneUserParam",
+     "xsltParseStylesheetCallerParam",
+     "xsltParseStylesheetParam",
+     "xsltParseStylesheetVariable",
+     "xsltFreeGlobalVariables",
+     "xsltLocalVariablePush",
+     "xsltLocalVariablePop",
+     "xsltAddStackElemList",
+     "xsltFreeStackElemList",
+     "xsltCreateRVT",
+     "xsltRegisterLocalRVT",
+     "xsltRegisterPersistRVT",
+     "xsltRegisterTmpRVT",
+     "xsltReleaseRVT",
+     "xsltFlagRVTs",
+     "xsltFreeRVTs",
+     "xsltAddKey",
+     "xsltInitCtxtKeys",
+     "xsltInitCtxtKey",
+     "xsltInitAllDocKeys",
+     "xsltGetKey",
+     "xsltFreeKeys",
+     "xsltFreeDocumentKeys",
+     "xsltNewElemPreComp",
+     "xsltInitElemPreComp",
+     "xsltAllocateExtra",
+     "xsltAllocateExtraCtxt",
+     "xsltExtensionInstructionResultRegister",
+     "xsltExtensionInstructionResultFinalize"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/ownership.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/structs.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/types.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/ucs_blocks.rs",
+   "exports": {
+    "total": 128,
+    "documented": 128,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/ucs_cat.rs",
+   "exports": {
+    "total": 35,
+    "documented": 35,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/abi/versioning.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "xmlCheckVersion"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/bin/xmlcatalog.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/bin/xmllint.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "capture_validity_msg"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/bin/xsltproc.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "xslt_security_forbid"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 29,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/compatibility/historical/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/compatibility/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/compatibility/platform/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/compatibility/profiles/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/compatibility/quirks/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/common/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/dates/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/dynamic/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "safety_commented": 5
+   }
+  },
+  {
+   "module": "src/exslt/functions/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/math/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/mod.rs",
+   "exports": {
+    "total": 13,
+    "documented": 13,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/saxon/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "safety_commented": 6
+   }
+  },
+  {
+   "module": "src/exslt/sets/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/exslt/strings/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 7,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/internal/globals.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/internal/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/lib.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/automata/mod.rs",
+   "exports": {
+    "total": 13,
+    "documented": 13,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 0,
+    "undocumented": [
+     "xmlNewAutomata",
+     "xmlFreeAutomata",
+     "xmlAutomataNewState",
+     "xmlAutomataSetFinalState",
+     "xmlAutomataGetInitState",
+     "xmlAutomataNewEpsilon",
+     "xmlAutomataNewTransition",
+     "xmlAutomataNewCountTrans",
+     "xmlAutomataNewOnceTrans",
+     "xmlAutomataNewAllTrans",
+     "xmlAutomataNewCountedTrans",
+     "xmlAutomataNewCounterTrans",
+     "xmlAutomataNewCounter",
+     "xmlAutomataCompile",
+     "xmlAutomataIsDeterministic"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 32,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/xml/c14n/mod.rs",
+   "exports": {
+    "total": 3,
+    "documented": 3,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 0,
+    "undocumented": [
+     "xmlC14NDocDumpMemory",
+     "xmlC14NExecute",
+     "xmlC14NDocSaveTo",
+     "test_callback"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 135,
+    "safety_commented": 25
+   }
+  },
+  {
+   "module": "src/xml/catalog/mod.rs",
+   "exports": {
+    "total": 25,
+    "documented": 25,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 25,
+    "documented": 0,
+    "undocumented": [
+     "xmlNewCatalog",
+     "xmlFreeCatalog",
+     "xmlLoadACatalog",
+     "xmlLoadSGMLSuperCatalog",
+     "xmlConvertSGMLCatalog",
+     "xmlACatalogAdd",
+     "xmlACatalogRemove",
+     "xmlACatalogResolve",
+     "xmlACatalogResolveSystem",
+     "xmlACatalogResolvePublic",
+     "xmlACatalogResolveURI",
+     "xmlCatalogIsEmpty",
+     "xmlACatalogDump",
+     "xmlInitializeCatalog",
+     "xmlCatalogDumpDoc",
+     "xmlCatalogSetDebug",
+     "xmlCatalogSetDefaultPrefer",
+     "xmlCatalogResolve",
+     "xmlCatalogGetSystem",
+     "xmlCatalogGetPublic",
+     "xmlParseCatalogFile",
+     "xmlCatalogAddLocal",
+     "xmlCatalogFreeLocal",
+     "xmlCatalogLocalResolve",
+     "xmlCatalogLocalResolveURI"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 54,
+    "safety_commented": 27
+   }
+  },
+  {
+   "module": "src/xml/chvalid.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 11,
+    "documented": 0,
+    "undocumented": [
+     "xmlCharInRange",
+     "xmlIsBaseChar",
+     "xmlIsBlank",
+     "xmlIsChar",
+     "xmlIsCombining",
+     "xmlIsDigit",
+     "xmlIsExtender",
+     "xmlIsIdeographic",
+     "xmlIsPubidChar",
+     "xmlIsLetter",
+     "xmlIsBlankNode"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "safety_commented": 7
+   }
+  },
+  {
+   "module": "src/xml/debug/mod.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 13,
+    "documented": 0,
+    "undocumented": [
+     "xmlBoolToText",
+     "xmlDebugDumpString",
+     "xmlDebugDumpAttr",
+     "xmlDebugDumpAttrList",
+     "xmlDebugDumpOneNode",
+     "dump_elemscan_cb",
+     "dump_entityscan_cb",
+     "xmlDebugDumpNode",
+     "xmlDebugDumpNodeList",
+     "xmlDebugDumpDocument",
+     "xmlDebugDumpDocumentHead",
+     "xmlLsCountNode",
+     "xmlLsOneNode"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "safety_commented": 4
+   }
+  },
+  {
+   "module": "src/xml/dictionary/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 26,
+    "safety_commented": 10
+   }
+  },
+  {
+   "module": "src/xml/dtd/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "copy_elem_cb",
+     "copy_attr_cb",
+     "copy_ent_cb",
+     "copy_notation_cb",
+     "notation_deallocator",
+     "element_deallocator",
+     "attribute_deallocator",
+     "entity_deallocator"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 75,
+    "safety_commented": 24
+   }
+  },
+  {
+   "module": "src/xml/encoding/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 0,
+    "undocumented": [
+     "utf8_input_func",
+     "utf8_output_func",
+     "utf16le_input_func",
+     "utf16le_output_func",
+     "utf16be_input_func",
+     "utf16be_output_func",
+     "latin1_input_func",
+     "latin1_output_func",
+     "ascii_input_func",
+     "ascii_output_func"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/entities/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "entity_deallocator"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 38,
+    "safety_commented": 7
+   }
+  },
+  {
+   "module": "src/xml/errors/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "xmlParserError",
+     "xmlParserErrorV",
+     "xmlParserWarning",
+     "xmlParserWarningV",
+     "xmlParserValidityError",
+     "xmlParserValidityErrorV",
+     "xmlParserValidityWarning",
+     "xmlParserValidityWarningV"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 40,
+    "safety_commented": 25
+   }
+  },
+  {
+   "module": "src/xml/globals/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "dummy_handler"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 34,
+    "safety_commented": 28
+   }
+  },
+  {
+   "module": "src/xml/hash/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 28,
+    "safety_commented": 11
+   }
+  },
+  {
+   "module": "src/xml/html/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 125,
+    "safety_commented": 13
+   }
+  },
+  {
+   "module": "src/xml/io/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 9,
+    "documented": 0,
+    "undocumented": [
+     "file_read_callback",
+     "file_close_callback",
+     "file_write_callback",
+     "file_close_output_callback",
+     "buffer_write_callback",
+     "file_write",
+     "file_flush",
+     "test_read",
+     "test_close"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 175,
+    "safety_commented": 7
+   }
+  },
+  {
+   "module": "src/xml/list/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "int_compare"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 115,
+    "safety_commented": 65
+   }
+  },
+  {
+   "module": "src/xml/memory/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/namespaces/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/debug_test.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/helpers.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "safety_commented": 24
+   }
+  },
+  {
+   "module": "src/xml/parser/input.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/xml/parser/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/state.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 98,
+    "safety_commented": 7
+   }
+  },
+  {
+   "module": "src/xml/parser/tests.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 13,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/tokenizer.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/reader/mod.rs",
+   "exports": {
+    "total": 81,
+    "documented": 81,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 90,
+    "documented": 0,
+    "undocumented": [
+     "xmlNewTextReader",
+     "xmlReaderForFile",
+     "xmlReaderForMemory",
+     "xmlReaderForFd",
+     "xmlReaderForIO",
+     "xmlTextReaderRead",
+     "xmlTextReaderNext",
+     "xmlTextReaderNextSibling",
+     "xmlTextReaderPrev",
+     "xmlTextReaderMoveToElement",
+     "xmlTextReaderMoveToAttribute",
+     "xmlTextReaderMoveToAttributeNo",
+     "xmlTextReaderMoveToFirstAttribute",
+     "xmlTextReaderMoveToNextAttribute",
+     "xmlTextReaderAttributeCount",
+     "xmlTextReaderDepth",
+     "xmlTextReaderNodeType",
+     "xmlTextReaderName",
+     "xmlTextReaderValue",
+     "xmlTextReaderConstName",
+     "xmlTextReaderConstValue",
+     "xmlTextReaderBaseUri",
+     "xmlTextReaderLocalName",
+     "xmlTextReaderNamespaceUri",
+     "xmlTextReaderPrefix",
+     "xmlTextReaderHasValue",
+     "xmlTextReaderHasAttributes",
+     "xmlTextReaderIsEmptyElement",
+     "xmlTextReaderReadState",
+     "xmlTextReaderGetAttribute",
+     "xmlTextReaderGetAttributeNo",
+     "xmlTextReaderGetAttributeNs",
+     "xmlTextReaderLookupNamespace",
+     "xmlTextReaderGetParserProp",
+     "xmlTextReaderSetParserProp",
+     "xmlFreeTextReader",
+     "xmlTextReaderSetup",
+     "xmlTextReaderCurrentDoc",
+     "xmlTextReaderClose",
+     "xmlTextReaderCurrentNode",
+     "xmlTextReaderExpand",
+     "xmlTextReaderGetParserLineNumber",
+     "xmlTextReaderGetParserColumnNumber",
+     "xmlTextReaderIsValid",
+     "xmlTextReaderNormalization",
+     "xmlTextReaderReadAttributeValue",
+     "xmlTextReaderReadString",
+     "xmlTextReaderReadInnerXml",
+     "xmlTextReaderReadOuterXml",
+     "xmlTextReaderStandalone",
+     "xmlTextReaderXmlLang",
+     "xmlReaderForDoc",
+     "xmlNewTextReaderFilename",
+     "xmlReaderNewDoc",
+     "xmlReaderNewFile",
+     "xmlReaderNewMemory",
+     "xmlReaderNewFd",
+     "xmlReaderNewIO",
+     "xmlReaderWalker",
+     "xmlReaderNewWalker",
+     "xmlTextReaderByteConsumed",
+     "xmlTextReaderConstBaseUri",
+     "xmlTextReaderConstEncoding",
+     "xmlTextReaderConstLocalName",
+     "xmlTextReaderConstNamespaceUri",
+     "xmlTextReaderConstPrefix",
+     "xmlTextReaderConstString",
+     "xmlTextReaderConstXmlLang",
+     "xmlTextReaderConstXmlVersion",
+     "xmlTextReaderQuoteChar",
+     "xmlTextReaderIsDefault",
+     "xmlTextReaderIsNamespaceDecl",
+     "xmlTextReaderMoveToAttributeNs",
+     "xmlTextReaderPreserve",
+     "xmlTextReaderPreservePattern",
+     "xmlTextReaderSetErrorHandler",
+     "xmlTextReaderGetErrorHandler",
+     "xmlTextReaderSetStructuredErrorHandler",
+     "xmlTextReaderSetResourceLoader",
+     "xmlTextReaderGetLastError",
+     "xmlTextReaderLocatorBaseURI",
+     "xmlTextReaderLocatorLineNumber",
+     "xmlTextReaderGetRemainder",
+     "xmlTextReaderSetMaxAmplification",
+     "xmlTextReaderSchemaValidate",
+     "xmlTextReaderSchemaValidateCtxt",
+     "xmlTextReaderSetSchema",
+     "xmlTextReaderRelaxNGValidate",
+     "xmlTextReaderRelaxNGValidateCtxt",
+     "xmlTextReaderRelaxNGSetSchema"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 363,
+    "safety_commented": 248
+   }
+  },
+  {
+   "module": "src/xml/regex/mod.rs",
+   "exports": {
+    "total": 7,
+    "documented": 7,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "xmlRegexpCompile",
+     "xmlRegexpExec",
+     "xmlRegexpIsDeterministic",
+     "xmlRegexpPrint",
+     "xmlRegFreeRegexp",
+     "xmlRegNewExecCtxt",
+     "xmlRegExecPushString",
+     "xmlRegFreeExecCtxt"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 37,
+    "safety_commented": 8
+   }
+  },
+  {
+   "module": "src/xml/relaxng/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 9,
+    "documented": 0,
+    "undocumented": [
+     "xmlRelaxNGNewParserCtxt",
+     "xmlRelaxNGNewMemParserCtxt",
+     "xmlRelaxNGParse",
+     "xmlRelaxNGFree",
+     "xmlRelaxNGFreeParserCtxt",
+     "xmlRelaxNGNewValidCtxt",
+     "xmlRelaxNGFreeValidCtxt",
+     "xmlRelaxNGValidateDoc",
+     "xmlRelaxNGValidateFullElement"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 147,
+    "safety_commented": 46
+   }
+  },
+  {
+   "module": "src/xml/save.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 0,
+    "undocumented": [
+     "xmlSaveToFd",
+     "xmlSaveToFilename",
+     "xmlSaveToBuffer",
+     "xmlSaveToIO",
+     "xmlSaveDoc",
+     "xmlSaveTree",
+     "xmlSaveFlush",
+     "xmlSaveClose",
+     "xmlSaveFinish",
+     "xmlSaveSetIndentString",
+     "xmlSaveSetEscape",
+     "xmlSaveSetAttrEscape",
+     "xmlSaveFormatFileTo",
+     "xmlSaveFileTo"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "safety_commented": 14
+   }
+  },
+  {
+   "module": "src/xml/sax/default.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 31,
+    "documented": 0,
+    "undocumented": [
+     "startDocument",
+     "endDocument",
+     "startElementNs",
+     "endElementNs",
+     "characters",
+     "ignorableWhitespace",
+     "comment",
+     "processingInstruction",
+     "cdataBlock",
+     "internalSubset",
+     "externalSubset",
+     "entityDecl",
+     "attributeDecl",
+     "elementDecl",
+     "notationDecl",
+     "unparsedEntityDecl",
+     "resolveEntity",
+     "isStandalone",
+     "hasInternalSubset",
+     "hasExternalSubset",
+     "getEntity",
+     "getParameterEntity",
+     "setDocumentLocator",
+     "getPublicId",
+     "getSystemId",
+     "getLineNumber",
+     "getColumnNumber",
+     "reference",
+     "warning",
+     "error",
+     "fatalError"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 46,
+    "safety_commented": 42
+   }
+  },
+  {
+   "module": "src/xml/sax/dispatch.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "safety_commented": 33
+   }
+  },
+  {
+   "module": "src/xml/sax/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/schemas/mod.rs",
+   "exports": {
+    "total": 7,
+    "documented": 7,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "xmlSchemaNewParserCtxt",
+     "xmlSchemaNewMemParserCtxt",
+     "xmlSchemaParse",
+     "xmlSchemaFree",
+     "xmlSchemaValidateDoc",
+     "xmlSchemaFreeParserCtxt",
+     "xmlSchemaFreeValidCtxt",
+     "xmlSchemaNewValidCtxt"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 66,
+    "safety_commented": 44
+   }
+  },
+  {
+   "module": "src/xml/schematron/mod.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 16,
+    "documented": 0,
+    "undocumented": [
+     "xmlSchematronNewParserCtxt",
+     "xmlSchematronNewMemParserCtxt",
+     "xmlSchematronParse",
+     "xmlSchematronFree",
+     "xmlSchematronFreeParserCtxt",
+     "xmlSchematronNewValidCtxt",
+     "xmlSchematronFreeValidCtxt",
+     "xmlSchematronValidateDoc",
+     "xmlSchematronSetParserErrors",
+     "xmlSchematronGetParserErrors",
+     "xmlSchematronSetValidErrors",
+     "xmlSchematronGetValidErrors",
+     "xmlSchematronSetValidOptions",
+     "xmlSchematronValidCtxtGetOptions",
+     "xmlSchematronIsValid",
+     "xmlSchematronValidateOneElement"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 97,
+    "safety_commented": 29
+   }
+  },
+  {
+   "module": "src/xml/string.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 16,
+    "safety_commented": 9
+   }
+  },
+  {
+   "module": "src/xml/threads/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "safety_commented": 4
+   }
+  },
+  {
+   "module": "src/xml/tree/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "free_notation_wrapper",
+     "free_element_wrapper",
+     "free_attribute_wrapper",
+     "free_entity_wrapper",
+     "dump_notation_decl_cb",
+     "dump_element_decl_cb",
+     "dump_attribute_decl_cb",
+     "dump_entity_decl_cb"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 260,
+    "safety_commented": 114
+   }
+  },
+  {
+   "module": "src/xml/unicode_tables.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/uri/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "safety_commented": 12
+   }
+  },
+  {
+   "module": "src/xml/validation/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 1,
+    "undocumented": [
+     "free_id_entry",
+     "free_ref_list_entry",
+     "free_ref_table_entry"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 147,
+    "safety_commented": 60
+   }
+  },
+  {
+   "module": "src/xml/writer/mod.rs",
+   "exports": {
+    "total": 68,
+    "documented": 68,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 70,
+    "documented": 0,
+    "undocumented": [
+     "xmlFreeTextWriter",
+     "xmlNewTextWriter",
+     "xmlNewTextWriterFilename",
+     "xmlNewTextWriterMemory",
+     "xmlNewTextWriterDoc",
+     "xmlNewTextWriterTree",
+     "xmlTextWriterStartDocument",
+     "xmlTextWriterEndDocument",
+     "xmlTextWriterStartElement",
+     "xmlTextWriterEndElement",
+     "xmlTextWriterStartElementNS",
+     "xmlTextWriterWriteElement",
+     "xmlTextWriterWriteElementNS",
+     "xmlTextWriterFullEndElement",
+     "xmlTextWriterWriteAttribute",
+     "xmlTextWriterWriteAttributeNS",
+     "xmlTextWriterStartAttribute",
+     "xmlTextWriterStartAttributeNS",
+     "xmlTextWriterEndAttribute",
+     "xmlTextWriterWriteString",
+     "xmlTextWriterWriteRaw",
+     "xmlTextWriterWriteRawLen",
+     "xmlTextWriterWriteBase64",
+     "xmlTextWriterWriteBinHex",
+     "xmlTextWriterWriteCDATA",
+     "xmlTextWriterStartCDATA",
+     "xmlTextWriterEndCDATA",
+     "xmlTextWriterWriteComment",
+     "xmlTextWriterStartComment",
+     "xmlTextWriterEndComment",
+     "xmlTextWriterWritePI",
+     "xmlTextWriterStartPI",
+     "xmlTextWriterEndPI",
+     "xmlTextWriterWriteDTD",
+     "xmlTextWriterWriteDTDElement",
+     "xmlTextWriterWriteDTDAttribute",
+     "xmlTextWriterWriteDTDEntity",
+     "xmlTextWriterWriteDTDInternalEntity",
+     "xmlTextWriterWriteDTDExternalEntity",
+     "xmlTextWriterWriteDTDExternalEntityContents",
+     "xmlTextWriterWriteDTDNotation",
+     "xmlTextWriterStartDTD",
+     "xmlTextWriterEndDTD",
+     "xmlTextWriterStartDTDElement",
+     "xmlTextWriterEndDTDElement",
+     "xmlTextWriterStartDTDAttribute",
+     "xmlTextWriterEndDTDAttribute",
+     "xmlTextWriterStartDTDEntity",
+     "xmlTextWriterEndDTDEntity",
+     "xmlTextWriterStartDTDAttlist",
+     "xmlTextWriterEndDTDAttlist",
+     "xmlTextWriterWriteDTDAttlist",
+     "xmlTextWriterFlush",
+     "xmlTextWriterSetIndent",
+     "xmlTextWriterSetIndentString",
+     "xmlTextWriterSetQuoteChar",
+     "xmlTextWriterClose",
+     "xmlTextWriterWriteVFormatRaw",
+     "xmlTextWriterWriteVFormatString",
+     "xmlTextWriterWriteVFormatComment",
+     "xmlTextWriterWriteVFormatCDATA",
+     "xmlTextWriterWriteVFormatPI",
+     "xmlTextWriterWriteVFormatElement",
+     "xmlTextWriterWriteVFormatElementNS",
+     "xmlTextWriterWriteVFormatAttribute",
+     "xmlTextWriterWriteVFormatAttributeNS",
+     "xmlTextWriterWriteVFormatDTD",
+     "xmlTextWriterWriteVFormatDTDElement",
+     "xmlTextWriterWriteVFormatDTDAttlist",
+     "xmlTextWriterWriteVFormatDTDInternalEntity"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 152,
+    "safety_commented": 105
+   }
+  },
+  {
+   "module": "src/xml/xinclude/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 136,
+    "safety_commented": 54
+   }
+  },
+  {
+   "module": "src/xml/xpath/ast.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/axes.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/context.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 0,
+    "undocumented": [
+     "dummy_var_lookup",
+     "dummy_func_lookup"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "safety_commented": 4
+   }
+  },
+  {
+   "module": "src/xml/xpath/eval.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/xml/xpath/exports.rs",
+   "exports": {
+    "total": 132,
+    "documented": 132,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 137,
+    "documented": 0,
+    "undocumented": [
+     "xmlXPathNewString",
+     "xmlXPathNewValueTree",
+     "xmlXPathNewNodeSetList",
+     "xmlXPathWrapString",
+     "xmlXPathWrapCString",
+     "xmlXPathWrapNodeSet",
+     "xmlXPathWrapExternal",
+     "xmlXPathFreeNodeSetList",
+     "xmlXPathConvertBoolean",
+     "xmlXPathConvertNumber",
+     "xmlXPathConvertString",
+     "xmlXPathCastToBoolean",
+     "xmlXPathCastToNumber",
+     "xmlXPathCastBooleanToNumber",
+     "xmlXPathCastBooleanToString",
+     "xmlXPathCastNodeSetToBoolean",
+     "xmlXPathCastNodeSetToNumber",
+     "xmlXPathCastNodeSetToString",
+     "xmlXPathCastNodeToNumber",
+     "xmlXPathCastNodeToString",
+     "xmlXPathCastNumberToBoolean",
+     "xmlXPathCastNumberToString",
+     "xmlXPathCastStringToBoolean",
+     "xmlXPathIsNaN",
+     "xmlXPathIsInf",
+     "xmlXPathStringEvalNumber",
+     "xmlXPathIsNodeType",
+     "xmlXPathInit",
+     "xmlXPathErr",
+     "xmlXPatherror",
+     "xmlXPathNodeSetContains",
+     "xmlXPathNodeSetAdd",
+     "xmlXPathNodeSetAddUnique",
+     "xmlXPathNodeSetAddNs",
+     "xmlXPathNodeSetDel",
+     "xmlXPathNodeSetRemove",
+     "xmlXPathNodeSetSort",
+     "xmlXPathNodeSetMerge",
+     "xmlXPathDifference",
+     "xmlXPathIntersection",
+     "xmlXPathDistinct",
+     "xmlXPathDistinctSorted",
+     "xmlXPathHasSameNodes",
+     "xmlXPathLeading",
+     "xmlXPathLeadingSorted",
+     "xmlXPathTrailing",
+     "xmlXPathTrailingSorted",
+     "xmlXPathNodeLeading",
+     "xmlXPathNodeLeadingSorted",
+     "xmlXPathNodeTrailing",
+     "xmlXPathNodeTrailingSorted",
+     "xmlXPathNodeSetFreeNs",
+     "xmlXPathOrderDocElems",
+     "xmlXPathValuePush",
+     "xmlXPathValuePop",
+     "xmlXPathPopBoolean",
+     "xmlXPathPopExternal",
+     "xmlXPathPopNodeSet",
+     "xmlXPathPopNumber",
+     "xmlXPathPopString",
+     "xmlXPathAddValues",
+     "xmlXPathSubValues",
+     "xmlXPathMultValues",
+     "xmlXPathDivValues",
+     "xmlXPathModValues",
+     "xmlXPathValueFlipSign",
+     "xmlXPathEqualValues",
+     "xmlXPathNotEqualValues",
+     "xmlXPathCompareValues",
+     "xmlXPathNewParserContext",
+     "xmlXPathFreeParserContext",
+     "xmlXPathParseNCName",
+     "xmlXPathParseName",
+     "xmlXPathRoot",
+     "xmlXPathEvalExpr",
+     "xmlXPathEvalPredicate",
+     "xmlXPathEvaluatePredicateResult",
+     "xmlXPathNextSelf",
+     "xmlXPathNextChild",
+     "xmlXPathNextDescendant",
+     "xmlXPathNextDescendantOrSelf",
+     "xmlXPathNextParent",
+     "xmlXPathNextAncestor",
+     "xmlXPathNextAncestorOrSelf",
+     "xmlXPathNextFollowingSibling",
+     "xmlXPathNextPrecedingSibling",
+     "xmlXPathNextFollowing",
+     "xmlXPathNextPreceding",
+     "xmlXPathNextNamespace",
+     "xmlXPathNextAttribute",
+     "xmlXPathBooleanFunction",
+     "xmlXPathNotFunction",
+     "xmlXPathTrueFunction",
+     "xmlXPathFalseFunction",
+     "xmlXPathLangFunction",
+     "xmlXPathNumberFunction",
+     "xmlXPathSumFunction",
+     "xmlXPathFloorFunction",
+     "xmlXPathCeilingFunction",
+     "xmlXPathRoundFunction",
+     "xmlXPathLastFunction",
+     "xmlXPathPositionFunction",
+     "xmlXPathCountFunction",
+     "xmlXPathIdFunction",
+     "xmlXPathLocalNameFunction",
+     "xmlXPathNamespaceURIFunction",
+     "xmlXPathStringFunction",
+     "xmlXPathStringLengthFunction",
+     "xmlXPathConcatFunction",
+     "xmlXPathContainsFunction",
+     "xmlXPathStartsWithFunction",
+     "xmlXPathSubstringFunction",
+     "xmlXPathSubstringBeforeFunction",
+     "xmlXPathSubstringAfterFunction",
+     "xmlXPathNormalizeFunction",
+     "xmlXPathTranslateFunction",
+     "xmlXPathRegisterAllFunctions",
+     "xmlXPathFunctionLookup",
+     "xmlXPathFunctionLookupNS",
+     "xmlXPathCtxtCompile",
+     "xmlXPathCompiledEval",
+     "xmlXPathCompiledEvalToBoolean",
+     "xmlXPathSetContextNode",
+     "xmlXPathNodeEval",
+     "xmlXPathContextSetCache",
+     "xmlXPathRegisterFuncLookup",
+     "xmlXPathRegisterVariableLookup",
+     "xmlXPathRegisterVariableNS",
+     "xmlXPathVariableLookup",
+     "xmlXPathVariableLookupNS",
+     "xmlXPathNsLookup",
+     "xmlXPathRegisteredFuncsCleanup",
+     "xmlXPathRegisteredVariablesCleanup",
+     "xmlXPathRegisteredNsCleanup",
+     "xmlXPathSetErrorHandler",
+     "xmlXPathDebugDumpObject",
+     "xmlXPathDebugDumpCompExpr"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 184,
+    "safety_commented": 79
+   }
+  },
+  {
+   "module": "src/xml/xpath/functions.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/lexer.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser_context.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "safety_commented": 27
+   }
+  },
+  {
+   "module": "src/xml/xpath/types.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/xml/xpointer/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 0,
+    "undocumented": [
+     "xmlXPtrEval",
+     "xmlXPtrEvalNodeSet"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 62,
+    "safety_commented": 7
+   }
+  },
+  {
+   "module": "src/xslt/attributes/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/compiler/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 44,
+    "safety_commented": 3
+   }
+  },
+  {
+   "module": "src/xslt/documents/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 0,
+    "undocumented": [
+     "xsltDefaultLoader",
+     "xsltSetLoaderFunc"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/xslt/errors/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 0,
+    "undocumented": [
+     "xsltSetGenericDebugFunc"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 14,
+    "safety_commented": 8
+   }
+  },
+  {
+   "module": "src/xslt/extensions/mod.rs",
+   "exports": {
+    "total": 2,
+    "documented": 2,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 0,
+    "undocumented": [
+     "xsltRegisterExtFunction",
+     "xsltRegisterExtElement"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/imports/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/keys/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/namespace_alias/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/numbering/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 28,
+    "safety_commented": 2
+   }
+  },
+  {
+   "module": "src/xslt/parameters/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/xslt/patterns/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/security/mod.rs",
+   "exports": {
+    "total": 6,
+    "documented": 6,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 7,
+    "documented": 0,
+    "undocumented": [
+     "xsltNewSecurityPrefs",
+     "xsltFreeSecurityPrefs",
+     "xsltSetSecurityPrefs",
+     "xsltGetSecurityPrefs",
+     "xsltSetDefaultSecurityPrefs",
+     "xsltGetDefaultSecurityPrefs",
+     "forbid"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/serialization/mod.rs",
+   "exports": {
+    "total": 4,
+    "documented": 4,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 0,
+    "undocumented": [
+     "xsltSaveResultToString",
+     "xsltSaveResultToFile",
+     "xsltSaveResultToFilename",
+     "xsltSaveResultToFd"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 8,
+    "safety_commented": 1
+   }
+  },
+  {
+   "module": "src/xslt/sorting/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/stylesheet/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 0,
+    "undocumented": [
+     "xsltStylesheetCreate",
+     "xsltFreeStylesheet",
+     "xsltParseStylesheetDoc",
+     "xsltParseStylesheetFile",
+     "xsltLoadStylesheetPI",
+     "xsltParseStylesheetMemory",
+     "xsltGetStylesheetDoc",
+     "xsltSetStylesheetDoc"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/templates/mod.rs",
+   "exports": {
+    "total": 5,
+    "documented": 5,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 7,
+    "documented": 0,
+    "undocumented": [
+     "xsltAddTemplate",
+     "xsltFreeTemplate",
+     "xsltFreeTemplates",
+     "xsltFindTemplate",
+     "xsltLookupTemplate",
+     "xsltDefaultPriorityFromNode",
+     "xsltInitTemplateLookup"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/transform/mod.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 0,
+    "undocumented": [
+     "xsltSetXIncludeDefault",
+     "xsltGetXIncludeDefault",
+     "xsltNewTransformContext",
+     "xsltFreeTransformContext",
+     "xsltApplyStylesheet",
+     "xsltApplyStylesheetUser",
+     "xsltApplyStylesheetStacked",
+     "xsltFreeTransformResult",
+     "xsltRunStylesheetUser",
+     "xsltRunStylesheet"
+    ]
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "safety_commented": 6
+   }
+  },
+  {
+   "module": "src/xslt/variables/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "safety_commented": 0
+   }
+  },
+  {
+   "module": "src/xslt/whitespace/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "safety_commented": 0
+   }
+  }
+ ],
+ "verdict": "PASS"
+}

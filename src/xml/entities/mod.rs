@@ -60,8 +60,9 @@
 //! NONET oracle behavior depends on it (SD-004).
 
 use core::ffi::c_void;
+use core::mem::size_of;
 use core::ptr;
-use std::os::raw::{c_int, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::abi::allocator;
 use crate::abi::structs::*;
@@ -97,11 +98,15 @@ pub const XML_ENTITY_CONTENT_EXPANSION_MAX: c_uint = 1_000_000;
 ///
 /// # UPSTREAM-PARITY
 ///
-/// ```c
-/// xmlEntityPtr xmlAddEntity(xmlDtdPtr dtd, const xmlChar *name, int type,
-///                           const xmlChar *ExternalID, const xmlChar *SystemID,
-///                           const xmlChar *content);
-/// ```
+/// Add an entity declaration to a DTD's hash table (DTD-level helper).
+///
+/// # UPSTREAM-PARITY
+///
+/// This is the historical tree.c `xmlAddEntity` core (dtd-level add) and
+/// backs the candidate's `xmlAddDocEntity`/`xmlAddDtdEntity` and the parser
+/// entity-declaration path. The exported `xmlAddEntity` (entities.h, 2.15)
+/// is the document-level `add_entity_doc` with the int/error-code contract
+/// (R-000176).
 ///
 /// Adds an entity to the appropriate hash table in the DTD based on the
 /// entity type (general entities go to `entities`, parameter entities to
@@ -199,6 +204,212 @@ pub unsafe fn add_entity(
         }
 
         entity
+    }
+}
+
+/// Add an entity to a document's DTD (upstream entities.c `xmlAddEntity`, 2.15).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// int xmlAddEntity(xmlDoc *doc, int extSubset, const xmlChar *name, int type,
+///                  const xmlChar *publicId, const xmlChar *systemId,
+///                  const xmlChar *content, xmlEntity **out);
+/// ```
+///
+/// Mirrors the upstream control flow exactly (entities.c 2.15.0):
+///
+/// - `*out` is set to NULL on entry (upstream line: `if (out != NULL)
+///   *out = NULL;`);
+/// - NULL `doc`/`name` → `XML_ERR_ARGUMENT`;
+/// - missing DTD (extSubset selects the external subset, else internal) →
+///   `XML_DTD_NO_DTD`;
+/// - a predefined entity (lt/gt/amp/apos/quot) may only be redeclared with
+///   the exact replacement-content form upstream accepts (XML 1.0 §4.6),
+///   otherwise → `XML_ERR_REDECL_PREDEF_ENTITY`;
+/// - an unknown entity type → `XML_ERR_ARGUMENT`;
+/// - allocation failure → `XML_ERR_NO_MEMORY`;
+/// - a name already present in the selected table → `XML_WAR_ENTITY_REDEFINED`
+///   (the freshly created entity is freed);
+/// - success → `*out = entity` and returns 0.
+///
+/// The entity is created without going through the exported hooks, exactly
+/// as upstream `xmlCreateEntity` allocates directly with `xmlMalloc`.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid `_xmlDoc` pointer (or NULL), `name` a valid
+///   NUL-terminated string, `publicId`/`systemId`/`content` NUL-terminated
+///   or NULL, and `out` a writable `xmlEntity*` slot or NULL.
+#[allow(clippy::too_many_arguments)]
+pub unsafe fn add_entity_doc(
+    doc: *mut _xmlDoc,
+    ext_subset: c_int,
+    name: *const xmlChar,
+    etype: c_int,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+    content: *const xmlChar,
+    out: *mut *mut _xmlEntity,
+) -> c_int {
+    use crate::abi::types::{
+        XML_DTD_NO_DTD, XML_ERR_ARGUMENT, XML_ERR_NO_MEMORY, XML_ERR_REDECL_PREDEF_ENTITY,
+        XML_WAR_ENTITY_REDEFINED,
+    };
+    unsafe {
+        if !out.is_null() {
+            *out = ptr::null_mut();
+        }
+        if doc.is_null() || name.is_null() {
+            return XML_ERR_ARGUMENT;
+        }
+        let dtd = if ext_subset != 0 {
+            (*doc).extSubset
+        } else {
+            (*doc).intSubset
+        };
+        if dtd.is_null() {
+            return XML_DTD_NO_DTD;
+        }
+
+        // Select the table by entity type (upstream switch), creating it
+        // lazily with the candidate's dictionary-backed hash (hash_create).
+        let general = etype == XML_INTERNAL_GENERAL_ENTITY as c_int
+            || etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
+            || etype == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int;
+        let parameter = etype == XML_INTERNAL_PARAMETER_ENTITY as c_int
+            || etype == XML_EXTERNAL_PARAMETER_ENTITY as c_int;
+        let table_field: *mut hash::HashTable = if general {
+            // XML 1.0 §4.6 predefined-entity redeclaration check.
+            let predef = lookup_predefined_entity(name);
+            if !predef.is_null() {
+                let mut valid = 0;
+                if etype == XML_INTERNAL_GENERAL_ENTITY as c_int && !content.is_null() {
+                    let c = *(*predef).content;
+                    if (*content == c)
+                        && (*(content.add(1)) == 0)
+                        && (c == b'>' || c == b'\'' || c == b'"')
+                    {
+                        valid = 1;
+                    } else if (*content == b'&') && (*(content.add(1)) == b'#') {
+                        if *(content.add(2)) == b'x' as xmlChar {
+                            let hex = b"0123456789ABCDEF";
+                            let mut ref_: [u8; 3] = [0, 0, b';'];
+                            ref_[0] = hex[(c / 16 % 16) as usize];
+                            ref_[1] = hex[(c % 16) as usize];
+                            if libc::strcasecmp(
+                                content.add(3) as *const c_char,
+                                ref_.as_ptr() as *const c_char,
+                            ) == 0
+                            {
+                                valid = 1;
+                            }
+                        } else {
+                            let mut ref_: [u8; 3] = [0, 0, b';'];
+                            ref_[0] = b'0' + c / 10 % 10;
+                            ref_[1] = b'0' + c % 10;
+                            if libc::strcmp(
+                                content.add(2) as *const c_char,
+                                ref_.as_ptr() as *const c_char,
+                            ) == 0
+                            {
+                                valid = 1;
+                            }
+                        }
+                    }
+                }
+                if valid == 0 {
+                    return XML_ERR_REDECL_PREDEF_ENTITY;
+                }
+            }
+            if (*dtd).entities.is_null() {
+                (*dtd).entities = hash::hash_create(8) as *mut c_void;
+            }
+            (*dtd).entities as *mut hash::HashTable
+        } else if parameter {
+            if (*dtd).pentities.is_null() {
+                (*dtd).pentities = hash::hash_create(8) as *mut c_void;
+            }
+            (*dtd).pentities as *mut hash::HashTable
+        } else {
+            return XML_ERR_ARGUMENT;
+        };
+
+        // Upstream xmlCreateEntity: allocate zeroed, fill fields, strdup.
+        let entity = allocator::xmlMallocZero(size_of::<_xmlEntity>() as usize) as *mut _xmlEntity;
+        if entity.is_null() {
+            return XML_ERR_NO_MEMORY;
+        }
+        (*entity).doc = doc;
+        (*entity).type_ = XML_ENTITY_DECL as c_int;
+        (*entity).etype = etype;
+        (*entity).name = string::xml_strdup(name);
+        if (*entity).name.is_null() {
+            free_entity_internal(entity, false);
+            return XML_ERR_NO_MEMORY;
+        }
+        if !public_id.is_null() {
+            (*entity).ExternalID = string::xml_strdup(public_id);
+            if (*entity).ExternalID.is_null() {
+                free_entity_internal(entity, false);
+                return XML_ERR_NO_MEMORY;
+            }
+        }
+        if !system_id.is_null() {
+            (*entity).SystemID = string::xml_strdup(system_id);
+            if (*entity).SystemID.is_null() {
+                free_entity_internal(entity, false);
+                return XML_ERR_NO_MEMORY;
+            }
+        }
+        if !content.is_null() {
+            (*entity).length = string::xml_strlen(content) as c_int;
+            (*entity).content = string::xml_strdup(content);
+            if (*entity).content.is_null() {
+                free_entity_internal(entity, false);
+                return XML_ERR_NO_MEMORY;
+            }
+        } else {
+            (*entity).length = 0;
+            (*entity).content = ptr::null_mut();
+        }
+        (*entity).URI = ptr::null();
+        (*entity).orig = ptr::null_mut();
+        (*entity).flags = 0;
+        (*entity).expandedSize = 0;
+        (*entity).nexte = ptr::null_mut();
+        (*entity).owner = 0;
+
+        // Upstream xmlHashAdd on the selected table: a name already present
+        // frees the fresh entity and reports the redefinition warning; any
+        // other add failure is treated as OOM (upstream res < 0).
+        let existing = hash::hash_lookup(table_field, name);
+        if !existing.is_null() {
+            free_entity_internal(entity, false);
+            return XML_WAR_ENTITY_REDEFINED;
+        }
+        let res = hash::hash_add_entry(table_field, name, entity as *mut c_void);
+        if res != 0 {
+            free_entity_internal(entity, false);
+            return XML_ERR_NO_MEMORY;
+        }
+
+        // Link it to the DTD (upstream "Link it to the DTD" block).
+        (*entity).parent = dtd;
+        (*entity).doc = (*dtd).doc;
+        if (*dtd).last.is_null() {
+            (*dtd).children = entity as *mut _xmlNode;
+            (*dtd).last = entity as *mut _xmlNode;
+        } else {
+            (*(*dtd).last).next = entity as *mut _xmlNode;
+            (*entity).prev = (*dtd).last;
+            (*dtd).last = entity as *mut _xmlNode;
+        }
+
+        if !out.is_null() {
+            *out = entity;
+        }
+        0
     }
 }
 

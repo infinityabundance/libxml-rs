@@ -1642,19 +1642,25 @@ pub unsafe extern "C" fn xmlSchematronFreeParserCtxt(ctxt: *mut c_void) {
     }
 }
 
-/// Create a new Schematron validation context.
+/// Create a new Schematron validation context (upstream schematron.h:
+/// `(xmlSchematron *, int options)` — R-000176, the candidate previously
+/// dropped the options argument).
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// xmlSchematronValidCtxtPtr xmlSchematronNewValidCtxt(xmlSchematronPtr schema);
+/// xmlSchematronValidCtxtPtr xmlSchematronNewValidCtxt(xmlSchematronPtr schema,
+///                                                     int options);
 /// ```
 ///
 /// # SAFETY
 ///
 /// - `schema` must be a valid pointer to a schema, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchematronNewValidCtxt(schema: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn xmlSchematronNewValidCtxt(
+    schema: *mut c_void,
+    _options: c_int,
+) -> *mut c_void {
     let mut ctxt = SchematronValidCtxt::new();
 
     if !schema.is_null() {
@@ -2767,7 +2773,7 @@ mod tests {
         let schema = unsafe { xmlSchematronNewParserCtxt(ptr::null()) };
         assert!(!schema.is_null());
 
-        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema) };
+        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema, 0) };
         assert!(!valid_ctxt.is_null());
 
         unsafe { xmlSchematronFreeValidCtxt(valid_ctxt) };
@@ -2826,7 +2832,7 @@ mod tests {
         let schema = unsafe { xmlSchematronParse(ctxt) };
         assert!(!schema.is_null());
 
-        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema) };
+        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema, 0) };
         assert!(!valid_ctxt.is_null());
 
         let doc = unsafe {
@@ -2873,7 +2879,7 @@ mod tests {
         let schema = unsafe { xmlSchematronParse(ctxt) };
         assert!(!schema.is_null());
 
-        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema) };
+        let valid_ctxt = unsafe { xmlSchematronNewValidCtxt(schema, 0) };
         assert!(!valid_ctxt.is_null());
 
         let doc = unsafe {

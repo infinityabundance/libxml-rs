@@ -57,8 +57,8 @@
 //! # Proving courts
 //!
 //! The CLI-XSLTPROC, EXSLT and XSLT court families, the ERROR-001 probe
-//! (error routing byte-identical) and DSO-LOADER (25/25) / HEADER-COMPILE
-//! (595/595) cover this module; the util unit tests run under cargo test.
+//! (error routing byte-identical) and DSO-LOADER / HEADER-COMPILE
+//! cover this module; the util unit tests run under cargo test.
 //!
 //! # Tempting simplifications that would break parity
 //!

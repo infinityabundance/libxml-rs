@@ -825,7 +825,7 @@ unsafe fn validate_schematron(schema_path: &str, doc: *mut _xmlDoc) -> c_int {
         libxml_rs::xml::schematron::xmlSchematronFreeParserCtxt(pctxt);
         return 5;
     }
-    let vctxt = libxml_rs::xml::schematron::xmlSchematronNewValidCtxt(schema);
+    let vctxt = libxml_rs::xml::schematron::xmlSchematronNewValidCtxt(schema, 0);
     if vctxt.is_null() {
         libxml_rs::xml::schematron::xmlSchematronFree(schema);
         libxml_rs::xml::schematron::xmlSchematronFreeParserCtxt(pctxt);

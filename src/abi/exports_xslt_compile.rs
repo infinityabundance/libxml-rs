@@ -85,8 +85,8 @@
 //! # Proving courts
 //!
 //! The BUILD-CONFIG-SCRIPT, CLI-XSLTPROC, EXSLT, ORACLE-IDENTITY and
-//! PREPROCESSOR-SURFACE court families plus DSO-LOADER (25/25) and
-//! HEADER-COMPILE (595/595) cover this module; the compiler unit tests run
+//! PREPROCESSOR-SURFACE court families plus DSO-LOADER and
+//! HEADER-COMPILE cover this module; the compiler unit tests run
 //! under cargo test.
 //!
 //! # Tempting simplifications that would break parity
@@ -164,8 +164,35 @@ pub type xsltTransformFunction = unsafe extern "C" fn(
     comp: *mut c_void,
 );
 
-/// `xsltElemPreCompDeallocator` (xsltInternals.h): deallocates a precomp.
+/// `xsltElemPreCompDeallocator` (xsltInternals.h): frees a precomp.
 pub type xsltElemPreCompDeallocator = unsafe extern "C" fn(comp: *mut c_void);
+
+/// `xmlXPathFunction` (xpath.h): an XPath extension function callback.
+pub type xmlXPathFunction = unsafe extern "C" fn(
+    ctxt: *mut crate::xml::xpath::parser_context::XmlXPathParserContext,
+    nargs: c_int,
+) -> *mut crate::abi::structs::_xmlXPathObject;
+
+/// `xsltNewLocaleFunc` (xsltutils.h): allocate a locale object.
+pub type xsltNewLocaleFunc =
+    unsafe extern "C" fn(lang: *const xmlChar, lower_first: c_int) -> *mut c_void;
+
+/// `xsltFreeLocaleFunc` (xsltutils.h): free a locale object.
+pub type xsltFreeLocaleFunc = unsafe extern "C" fn(locale: *mut c_void);
+
+/// `xsltGenSortKeyFunc` (xsltutils.h): generate a sort key for a locale.
+pub type xsltGenSortKeyFunc =
+    unsafe extern "C" fn(locale: *mut c_void, lang: *const xmlChar) -> *mut xmlChar;
+
+/// `xsltDocLoaderFunc` (documents.h): the document loader callback —
+/// returns the loaded document (owned by the engine), NULL on error.
+pub type xsltDocLoaderFunc = unsafe extern "C" fn(
+    URI: *const xmlChar,
+    dict: *mut c_void, /* xmlDictPtr (opaque) */
+    options: c_int,
+    ctxt: *mut c_void,
+    kind: c_int, /* xsltLoadType */
+) -> *mut crate::abi::structs::_xmlDoc;
 
 /// `xsltPreComputeFunction` (extensions.h): precomputation callback of an
 /// extension element.
@@ -400,28 +427,21 @@ unsafe fn xslt_check_read(
 }
 
 /// `xsltDocDefaultLoader` (documents.c) for the candidate engine: if a
-/// global loader function is registered it is invoked (the returned
-/// parser input cannot be fed into a document by this engine and is
-/// freed, matching `src/xslt/documents` `load_via_loader`); otherwise the
+/// global loader function is registered it is invoked with the upstream
+/// `xsltDocLoaderFunc` contract and its document is returned; otherwise the
 /// URI is parsed as a file. Returns a parsed document or NULL.
 unsafe fn xslt_doc_default_loader(
     uri: *const xmlChar,
-    _dict: *mut c_void,
+    dict: *mut c_void,
     options: c_int,
     ctxt: *mut c_void,
-    _type: c_int,
+    kind: c_int,
 ) -> *mut _xmlDoc {
     let loader = crate::xslt::documents::xsltGetLoaderFunc();
     if let Some(loader_fn) = loader {
-        let input = loader_fn(
-            ctxt,
-            ptr::null(), // base URL
-            uri as *const c_char,
-            ptr::null(), // ns
-            0,           // secondary
-        );
-        if !input.is_null() {
-            crate::xml::parser::helpers::free_parser_input(input);
+        let doc = loader_fn(uri, dict, options, ctxt, kind);
+        if !doc.is_null() {
+            return doc;
         }
     }
     xmlReadFile(uri as *const c_char, ptr::null(), options)
