@@ -9,7 +9,7 @@
   "project": "libxml-rs",
   "crate": "libxml-rs",
   "version": "0.1.0-alpha.31",
-  "git_head": "SEAL_COMMIT_PLACEHOLDER",
+  "git_head": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
   "manifest_commit": "9a6bff35f45a7692e3cca14e43324e408acb2091 (0.1.0-alpha.31 release of 11.1-X seal + 11.1-Y census)",
   "language": "Rust (edition 2021)",
   "dsos": {

@@ -14,8 +14,8 @@
     "HIST-EPOCH-0007",
     "HIST-EPOCH-0008"
   ],
-  "execution_commit": "e5f24662",
-  "seal_commit": "e5f24662",
+  "execution_commit": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
+  "seal_commit": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
   "command": "oracle/historical/run_matrix.sh all && tools/evidence/matrix_receipt.py gen",
   "environment": {
     "host": "linux (glibc era-compatible build host)",

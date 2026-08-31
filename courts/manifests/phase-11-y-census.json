@@ -3,7 +3,7 @@
  "title": "11.1-Y required court families census",
  "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0).",
  "date": "2026-08-31",
- "candidate_commit": "e5f24662813f9254a10839720f35c455d80d96d2",
+ "candidate_commit": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
  "verdict": "PASS",
  "families": {
   "DOXYGEN-SURFACE": {
