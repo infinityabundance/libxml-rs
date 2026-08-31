@@ -3,7 +3,7 @@
  "title": "11.1-Y required court families census",
  "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0). 11.1-Z.1 amendment: PREPROCESSOR-SURFACE and AST-SURFACE now point at the real condition-lattice / Clang-AST machinery (dedicated courts), not the config-script / header-compile courts. 11.1-Z.3 amendment: ALLOCATOR-DEFAULT-001 (libc default-allocator differential, R-000178) added; ABI-FUNCTION-SIGNATURE hardened fail-closed/oracle-isolated with SOURCE_PROTOTYPE + MACHINE_ABI fingerprints; CUSTODIAN-COMMENTARY-DRIFT now verdict-gates on zero unaccounted safety sites (proof scopes) + rustdoc gate.",
  "date": "2026-08-31",
- "candidate_commit": "PENDING-Z3-SEAL",
+ "candidate_commit": "7a8d63464555fe759943943df2273398759525ab",
  "verdict": "PASS",
  "families": {
   "DOXYGEN-SURFACE": {

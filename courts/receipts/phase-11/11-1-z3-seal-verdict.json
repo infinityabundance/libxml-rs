@@ -1,0 +1,102 @@
+{
+ "schema": "phase-seal-verdict-1",
+ "receipt_id": "PHASE-11-1-Z3-SEAL-VERDICT",
+ "phase": "11.1-Z.3",
+ "title": "Phase 11.1-Z.3 amendment — allocator-UB fix (libc default) + fail-closed oracle-isolated signature court with two fingerprints + safety proof scopes + rustdoc gate (supersedes 11-1-z2-seal-verdict.json for the amended contract)",
+ "date": "2026-08-31",
+ "generator": "manual + generated evidence (see sources)",
+ "supersedes": "11-1-z2-seal-verdict.json (PHASE-11-1-Z2-SEAL-VERDICT, sealed at 1c35e4e1; its 3319-compared count and unsafe-commentary census are superseded by the fail-closed two-fingerprint court and the proof-scope census below)",
+ "candidate": {
+  "project": "libxml-rs",
+  "crate": "libxml-rs",
+  "version": "0.1.0-alpha.36",
+  "git_head": "7a8d63464555fe759943943df2273398759525ab",
+  "language": "Rust (edition 2021)",
+  "dsos": {
+   "libxml2": "target/debug/libxml2.so.16 -> lib/libxml2.so.16 -> libxml2.so.16.1.3 -> ../liblibxml_rs.so (combined core, SONAME libxml2.so.16)",
+   "libxslt": "target/debug/libxslt.so.1 -> lib/libxslt.so.1 -> libxslt.so.1.1.45 (REAL whole-archive facade DSO, SONAME libxslt.so.1)",
+   "libexslt": "target/debug/libexslt.so.0 -> lib/libexslt.so.0 -> libexslt.so.0.8.25 (REAL whole-archive facade DSO, SONAME libexslt.so.0)"
+  },
+  "soname_abi": "libxml2.so.16 / libxslt.so.1 / libexslt.so.0 (three distinct ELF DSOs; verified per-object by readelf -d)",
+  "elf_contract": {
+   "core_soname": "libxml2.so.16",
+   "libxslt_soname": "libxslt.so.1",
+   "libxslt_needed": "libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "libexslt_soname": "libexslt.so.0",
+   "libexslt_needed": "libxslt.so.1, libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "upstream_reference": "readelf -d /usr/lib/libxslt.so.1 -> NEEDED libxml2.so.16, libm.so.6, libc.so.6; /usr/lib/libexslt.so.0 -> NEEDED libxslt.so.1, libxml2.so.16, libm.so.6, libc.so.6",
+   "facade_surfaces": "libxslt facade exports xslt* + xslDebugStatus (version script, namespace-scoped); libexslt facade exports exslt*; neither leaks the combined core (court-verified)",
+   "mechanism": "build.rs + .cargo/config.toml custom linker (tools/packaging/linker-wrapper.sh) -> tools/packaging/facade-gen.sh re-links the whole core from liblibxml_rs.a with --whole-archive, per-facade -Wl,-soname, version-script export filtering, and --no-as-needed -l: NEEDED entries; idempotent + flock-serialized; symlink fallback on non-Linux/cross/published-crate builds (documented distribution contract: the full repository is the C drop-in distribution; crates.io is the Rust-consumption artifact)",
+   "state_coherence": "DOCUMENTED DIVERGENCE (R-000177), pinned by the DSO-STATE-COHERENCE court and deliberately carried OPEN as the Phase-12 architectural target: a machine-enforced DSO boundary lint so src/xslt + the libxslt ABI layer call ONLY a sanctioned libxml2 public-ABI gateway, libxslt.so.1 owns XSLT state and resolves XML operations through libxml2.so.16 (libexslt.so.0 -> libxslt.so.1 + libxml2.so.16), still one Cargo crate. The whole-archive facades are the only consumer-linkable construction today (thin re-export facades fail the consumer static link and the core cannot satisfy references to mangled internals); the court pins the exact partition profile (transform-phase allocator/register/deregister/loader unobserved, keepBlanks 56 vs oracle 41) so any silent architectural change is caught."
+  }
+ },
+ "tools": {
+  "rustc": "1.98.0 (88d9e12ae 2026-08-18)",
+  "cargo": "1.98.0 (797e8a9bc 2026-08-05)",
+  "gcc": "gcc (GCC) 16.2.1 20260810",
+  "python": "Python 3.14.7",
+  "git": "git version 2.55.0",
+  "nm": "GNU nm (GNU Binutils) 2.47",
+  "readelf": "GNU readelf (GNU Binutils) 2.47",
+  "clang": "clang version 22.1.8"
+ },
+ "amendment_scope": [
+  "1. DEFAULT-ALLOCATOR UB FIX (R-000178): the pre-Z.3 default allocator routed through Rust's std::alloc with fabricated Layouts — default_free deallocated every pointer with Layout::from_size_align_unchecked(1,1) and default_realloc passed the requested NEW size as the OLD allocation layout; both are invalid-layout UB under the Rust allocator contract. The default is now plain libc malloc/realloc/free/strdup (upstream 2.15.0 globals.c defaults: xmlFree=free, xmlMalloc=malloc, xmlMallocAtomic=malloc, xmlRealloc=realloc, xmlMemStrdup=xmlPosixStrdup), untracked exactly like the oracle (xmlMemUsed/xmlMemBlocks/xmlMemSize == 0 under the default, byte-identical), with the debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants) keeping the registry + counters exactly like upstream's MEMHDR debug allocator (verified byte-identical). xmlMemDisplay/xmlMemDisplayLast/xmlMemShow/xmlMemoryDump are upstream-faithful no-ops (2.15.0 removed the feature); xmlMallocAtomicLoc no longer zeroes (upstream xmlMallocAtomicLoc -> xmlMemMalloc is a plain allocation). NEW ALLOCATOR-DEFAULT-001 differential court: many sizes, zero-size, grow/shrink realloc, realloc-to-zero (glibc frees+returns NULL), realloc/malloc failure (SIZE_MAX), strdup/NULL handling, free(NULL), direct exported-variable calls, 100k alloc/free churn, xmlMemSize/xmlMemUsed/xmlMemBlocks exactness, no-op display entry points — byte-identical SHA-256 with the oracle. The valgrind memory-safety sweep is not executable in this environment (valgrind 3.25.1 SIGILLs inside the dynamic loader on every binary including /bin/true — a toolchain incompatibility, recorded as unavailable in the receipt).",
+  "2. ABI-FUNCTION-SIGNATURE HARDENED (fail-closed + oracle-isolated + two fingerprints): the oracle plane compiles with ONLY /usr/include/libxml2 + the default system paths and the candidate plane with ONLY repo include/ — the previous court passed candidate -I paths into the oracle parse, so nested #include <libxml/tree.h> could resolve from the candidate tree (oracle contamination). Every resolved include origin is recorded (clang -H) and cross-universe resolution is a finding. A header clang cannot parse is a finding (the old court silently dropped unparseable headers — it never measured namespaces.h/transformInternals.h, which upstream only includes after a prerequisite; they are now parsed through a documented wrapper). A candidate-declared function without a measured Rust extern \"C\" fn is a finding unless classified (DATA / ASM shim / macro-generated shim / candidate-header auxiliary). Full accounting: 71/71 oracle + 73/73 candidate headers parsed, 0 failed, 0 include-origin findings, 0 unmeasured, silent_omissions = 0. Two fingerprints per symbol: SOURCE_PROTOTYPE_FINGERPRINT (canonical/desugared base type, pointer depth, pointee const/restrict, typedef identity, FULL function-pointer signature — a (void*)->void callback can no longer compare equal to an (xmlNodePtr,int)->int callback, variadic, arg count, return type, calling convention) compared oracle-vs-candidate, and MACHINE_ABI_FINGERPRINT (ABI class, width, SIGNEDNESS, pointer depth, struct-by-value identity, callback ABI, variadic; size_t==usize==c_ulong at the machine level) compared oracle-vs-candidate AND candidate-vs-Rust. Result: 3259 compared, 0 findings.",
+  "3. SIGNATURE-DRIFT CLOSURE (25+ real candidate divergences the old lossy normalization could not see): signedness/width (xmlBufferGrow/xmlBufferShrink int->unsigned int incl. oracle buf.c semantics, xmlDictSize unsigned int->int, xmlDictSetLimit/xmlDictGetUsage unsigned int->size_t, xmlOutputBufferGetSize int->size_t with oracle 0-on-error semantics), wrong returns (xmlXPathCastBooleanToNumber int->double, xmlCheckVersion int->void, xmlInitThreads int->void), wrong arity (xmlValidateAttributeDecl 4->3 args; the 4th xmlNodePtr elem did not exist upstream), wrong fn-pointer typedefs (xsltPreComputeFunction was void(*)(style,inst) instead of xsltElemPreCompPtr(*)(style,inst,xsltTransformFunction); xsltTopLevelFunction carried a phantom void* data arg — both fixed in headers + Rust types), an invented xmlTextReaderGetAttributeIndex API (not in the oracle header/source; removed from the candidate header), pointee identity drifts (xmlListFront void*->xmlLink*, xmlXPathCompile/xmlXPathFreeCompExpr void*->xmlXPathCompExpr*, xsltGetExtInfo void*->xmlHashTablePtr, htmlCreateFileParserCtxt void*->htmlParserCtxt*, char vs xmlChar on xmlURIEscapeStr/xmlOutputBufferGetContent/xmlXPathNewCString), const drifts (xmlGetNsList/xmlGetParameterEntity/xmlGetLastError/xmlBufferContent), enum-vs-int spelling (xmlBufferSetAllocationScheme/xmlValidateAttributeValue now use the enum typedefs), and the xmlAttributeTable/xmlElementTable/xmlEntitiesTable/xmlNotationTable typedef identities (aliased to struct _xmlHashTable exactly like the oracle). xmlBuffer.h declarations moved into tree.h positions matching the oracle.",
+  "4. SAFETY PROOF SCOPES (11.2 goal demonstrated): CUSTODIAN-COMMENTARY-DRIFT now GATES the verdict on zero unaccounted safety sites. The census classifies every unsafe block as local-proof (SAFETY comment in the block window), enclosing-proof-scope (the enclosing fn's doc documents a # Safety contract, or an explicit // SAFETY-SCOPE: <ID> marker), classified-generated (macro-generated code, or modules carrying a module-level SAFETY-SCOPE marker — the mechanical export-registry modules), or unaccounted (verdict gate: 0). Result: 5235/5235 unsafe blocks accounted (local 2514, enclosing-proof-scope 2720, classified-generated 1) and 1811/1811 unsafe functions accounted (1795 documented + 16 scope-covered). The rustdoc gate (RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps --all-features) is now part of the receipt and passes; 10 pre-existing rustdoc defects (broken intra-doc links, unescaped #[no_mangle], an unclosed HTML tag, a bare-URL lint) were fixed.",
+  "5. xslHandleDebugger CLASSIFICATION CORRECTED: reclassified from the old 'residual R-000176' label (R-000176 is FIXED) to HEADER_DECLARED_ORACLE_DSO_ABSENT — declared in the oracle transform.h but NOT exported by the system libxslt.so.1 (verified: nm -D has no such symbol, only xsltGetDebuggerStatus); current-oracle requirement N/A. xsltCleanupSourceDoc (transformInternals.h) is likewise oracle-DSO-absent and classified the same way.",
+  "6. DOCUMENTATION TRUTH: README/Cargo.toml counts regenerated (1183 tests, 79 FIXED / 3 OPEN, 82 residuals, alpha.36); the Y census adds ALLOCATOR-DEFAULT; R-000131's narrative sealed to the Z.3 state (default = untracked libc, debug surface = tracked registry, display fns = no-ops); R-000177 reframed as the Phase-12 machine-enforced DSO-boundary-lint target."
+ ],
+ "oracle_identity": {
+  "libxml2": "2.15.3 (system /usr/lib/libxml2.so.16, xmllint 21503-GITv2.15.3)",
+  "libxslt": "1.1.45 (system /usr/lib/libxslt.so.1, xsltproc 10145-GITv1.1.45)",
+  "libexslt": "0.8.25 (system /usr/lib/libexslt.so.0, 825-GITv1.1.45)",
+  "xmllint_features": "Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib"
+ },
+ "courts_11_1_z3": {
+  "ALLOCATOR-DEFAULT-001": "tools/abi/allocator_default_probe.py + courts/suites/data-abi/allocator-default-probe.c — oracle/candidate outputs byte-identical (SHA-256 466b3537...); covers sizes, zero-size, grow/shrink realloc, realloc-to-zero, realloc/malloc failure, strdup, free(NULL), direct exported-variable calls, 100k churn, xmlMemSize/xmlMemUsed/xmlMemBlocks exactness, no-op displays; valgrind sweep recorded unavailable (loader SIGILL)",
+  "ALLOCATOR-HOOK-001": "byte-identical (e6eec027...) — hook swap semantics unchanged by the libc default",
+  "ABI-FUNCTION-SIGNATURE-001": "fail-closed + oracle-isolated; 71/71 + 73/73 headers parsed, 0 include-origin findings; oracle fn decls 1648, candidate 1656, Rust measured 2097; compared 3259, ok 3259, findings 0, silent_omissions 0; SOURCE_PROTOTYPE + MACHINE_ABI fingerprints",
+  "DSO-STATE-COHERENCE": "PASS — partition profile pinned (hook_partition=True, blanks_partition=True), R-000177 carried open as the Phase-12 target",
+  "CUSTODIAN-COMMENTARY-DRIFT": "verdict gates: reference drift A-E 0 findings; unsafe blocks unaccounted 0 (local 2514 / enclosing-scope 2720 / generated 1 of 5235); unsafe fns unaccounted 0 (1795 documented + 16 scope-covered of 1811); rustdoc exit 0"
+ },
+ "battery": {
+  "cargo_test_lib": "1183 passed, 0 failed, 1 ignored",
+  "cargo_fmt_check": "PASS (0 diffs)",
+  "cargo_clippy_all_targets_all_features_Dwarnings": "PASS (exit 0)",
+  "rustdoc_Dwarnings": "PASS (RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps --all-features, exit 0)",
+  "generate_all_check": "reproducible (see EVIDENCE_GENERATION_RECEIPT.json)",
+  "cli_courts": "xmllint 48/48, xmlcatalog 11/11, xsltproc 21/21",
+  "suite_courts": "ast-surface 13/13, build-config-script 28/28, build-pkgconfig 12/12, dso-loader 40/40, header-compile 595/595, install-layout 73/73, preprocessor-surface 9/9, sanity 6/6: all PASS",
+  "data_abi_probes": "ALLOCATOR-DEFAULT, ALLOCATOR-HOOK, DSO-STATE-COHERENCE, callback, catalog, c14n-api, data-globals, encoding, error, globals-threading, ns-binding, reader, save, security-limits, tree-structure, writer, xpath, xslt: all byte-identical / PASS (c14n-api and ns-binding verified by direct compile-and-diff: 0 diff lines)",
+  "rust_mirror": "45 structs/unions + 14 enums; measurable=50 mismatches=0 PASS",
+  "register_globals": "GLOBALS-THREADING-001 (20 symbols) + CALLBACK-001 (24 symbols) registered PASS",
+  "custodian_commentary": "127/127 modules fully documented, 7 NOT-APPLICABLE, PASS",
+  "evidence_integrity": "PASS (82 residuals, 3 open, Markdown byte-identical)"
+ },
+ "artifact_hashes": {
+  "candidate_core_liblibxml_rs_so": "106bf4b4f332f5e5e1d16ef889cc6200a667f27bb1b61237f1d8344b2b08505c",
+  "candidate_libxslt_so_1_1_45": "c912bda4e27cad4a9bbc0cec6b8c169e13ee1e97c557ece8badb0a0c5a0c617c",
+  "candidate_libexslt_so_0_8_25": "2e41cabeff9c6c761f5cefefb3447db80c6ea4988b060706dc6503502ddcce65",
+  "note": "three DISTINCT hashes — the facades are real DSOs, not hardlinks/symlinks to the core. Captured on the seal-commit tree (7a8d6346); two independent clean `cargo clean -p libxml-rs && cargo build` runs reproduce them byte-identically (determinism verified at Z.2 and re-verified here)."
+ },
+ "residuals": {
+  "total": 82,
+  "fixed": 79,
+  "open": 3,
+  "open_ids": [
+   "R-000157",
+   "R-000168",
+   "R-000177"
+  ],
+  "open_disposition": "R-000157 is OPEN/UNRESOLVED: a REAL current executed-platform gap (iconv/ICU-only encodings vs the Iconv+ICU-enabled 2.15.3 oracle) whose closure requires implementing an iconv/ICU backend — a future implementation work item, explicitly NOT waived. R-000168 is the bounded unexecuted-platform evidence obligation (Windows/macOS/BSD/32-bit runtime), documented per-obligation in atlas/PLATFORM_SURFACE_ATLAS.json. R-000177 is the documented cross-DSO state partitioning of the whole-archive facades, pinned by the DSO-STATE-COHERENCE court and carried as the deliberately-open Phase-12 architectural target (machine-enforced DSO boundary lint). CORRECTED ACCEPTANCE: surface/evidence completeness is sealed for the executed platform; one known current implementation residual (R-000157) and the unexecuted-platform evidence obligation (R-000168) remain open and are explicitly deferred, and one bounded packaging divergence (R-000177) is accepted and court-pinned. There is no claim that open candidate-parity residuals = 0 — R-000157 is a genuine current executed-platform implementation gap."
+ },
+ "test_results": {
+  "lib": {
+   "passed": 1183,
+   "failed": 0,
+   "ignored": 1
+  }
+ }
+}
