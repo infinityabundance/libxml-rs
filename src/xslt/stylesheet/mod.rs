@@ -71,6 +71,10 @@ pub unsafe extern "C" fn xsltStylesheetCreate() -> *mut _xsltStylesheet {
     (*style).omitXmlDeclaration = -1;
     (*style).standalone = -1;
     (*style).indent = -1;
+    // UPSTREAM-PARITY (xslt.c xsltNewStylesheetInternal): every stylesheet
+    // carries the default decimal format at the head of the chain.
+    (*style).decimalFormat =
+        crate::abi::exports_xslt_compile::xslt_new_decimal_format(ptr::null(), ptr::null_mut());
     style
 }
 

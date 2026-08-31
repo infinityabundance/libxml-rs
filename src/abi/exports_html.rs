@@ -3903,3 +3903,118 @@ pub unsafe extern "C" fn htmlSaveFileEnc(
 ) -> c_int {
     unsafe { htmlSaveFileFormat(filename, cur, encoding, 1) }
 }
+
+/// Set the options on an HTML parser context, clearing unset options
+/// (upstream HTMLparser.c `htmlCtxtSetOptions` — the 2.14+ variant with
+/// keepMask 0). Returns the set of unknown/unimplemented options.
+///
+/// # SAFETY
+///
+/// `ctxt` must be a valid HTML parser context or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn htmlCtxtSetOptions(ctxt: *mut c_void, options: c_int) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    let c = ctxt as *mut HtmlOpaqueCtxt;
+    unsafe {
+        (*c).options = options & HTML_OPTIONS_ALL_MASK;
+    }
+    options & !HTML_OPTIONS_ALL_MASK & !crate::abi::types::XML_PARSE_NOENT
+}
+
+/// Take a block of UTF-8 chars and convert it to ASCII + HTML entities
+/// (upstream HTMLparser.c `htmlUTF8ToHtml`; deprecated internal helper).
+///
+/// Returns the number of bytes written or an xmlCharEncError code
+/// (XML_ENC_ERR_INTERNAL on NULL args, XML_ENC_ERR_SUCCESS for NULL input).
+///
+/// # SAFETY
+///
+/// `out`/`in` must be valid buffers for `*outlen`/`*inlen` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn htmlUTF8ToHtml(
+    out: *mut u8,
+    outlen: *mut c_int,
+    input: *const u8,
+    inlen: *mut c_int,
+) -> c_int {
+    // xmlCharEncError values (encoding.h).
+    const XML_ENC_ERR_INTERNAL: c_int = -1;
+    const XML_ENC_ERR_SUCCESS: c_int = 0;
+    const XML_ENC_ERR_SPACE: c_int = -2;
+    unsafe {
+        if out.is_null() || outlen.is_null() || inlen.is_null() {
+            return XML_ENC_ERR_INTERNAL;
+        }
+        if input.is_null() {
+            *outlen = 0;
+            *inlen = 0;
+            return XML_ENC_ERR_SUCCESS;
+        }
+        let mut in_pos: usize = 0;
+        let mut out_pos: usize = 0;
+        let in_end = *inlen as usize;
+        let out_cap = *outlen as usize;
+        let mut ret = XML_ENC_ERR_SPACE;
+        while in_pos < in_end {
+            let d = *input.add(in_pos);
+            if d < 0x80 {
+                if out_pos >= out_cap {
+                    break;
+                }
+                *out.add(out_pos) = d;
+                out_pos += 1;
+                in_pos += 1;
+                continue;
+            }
+            let (mut c, seqlen) = if d < 0xE0 {
+                ((d & 0x1F) as u32, 2usize)
+            } else if d < 0xF0 {
+                ((d & 0x0F) as u32, 3usize)
+            } else {
+                ((d & 0x07) as u32, 4usize)
+            };
+            if in_end - in_pos < seqlen {
+                break;
+            }
+            for i in 1..seqlen {
+                let dd = *input.add(in_pos + i);
+                c = (c << 6) | ((dd & 0x3F) as u32);
+            }
+            let ent = htmlEntityValueLookup(c);
+            let mut nbuf = [0u8; 16];
+            let cp: *const u8;
+            let mut owned_len: usize = 0;
+            if ent.is_null() {
+                let s = format!("#{}", c);
+                let bytes = s.as_bytes();
+                nbuf[..bytes.len()].copy_from_slice(bytes);
+                cp = nbuf.as_ptr();
+                owned_len = bytes.len();
+            } else {
+                cp = (*ent).name as *const u8;
+                let mut l = 0;
+                while *cp.add(l) != 0 {
+                    l += 1;
+                }
+                owned_len = l;
+            }
+            let len = owned_len;
+            if out_cap - out_pos < len + 2 {
+                break;
+            }
+            *out.add(out_pos) = b'&';
+            out_pos += 1;
+            core::ptr::copy_nonoverlapping(cp, out.add(out_pos), len);
+            out_pos += len;
+            *out.add(out_pos) = b';';
+            out_pos += 1;
+            in_pos += seqlen;
+        }
+        ret = out_pos as c_int;
+        *outlen = out_pos as c_int;
+        *inlen = in_pos as c_int;
+        ret
+    }
+}

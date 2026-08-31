@@ -1,0 +1,126 @@
+error
+xsltFormatNumberConversion : error in format string '#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '##,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '###.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00%', using default
+error
+xsltFormatNumberConversion : error in format string '0.00‰', using default
+error
+xsltFormatNumberConversion : error in format string '0.0%', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00;-#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00;(#,##0.00)', using default
+error
+xsltFormatNumberConversion : error in format string '0.00;-0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00;(0.00)', using default
+error
+xsltFormatNumberConversion : error in format string '0.00;0.00-', using default
+error
+xsltFormatNumberConversion : error in format string '0.00;0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0;(0)', using default
+error
+xsltFormatNumberConversion : error in format string '0;(0)', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '$#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string ''$'#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00 USD', using default
+error
+xsltFormatNumberConversion : error in format string '''0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.############', using default
+error
+xsltFormatNumberConversion : error in format string '0.##########', using default
+error
+xsltFormatNumberConversion : error in format string '0.000000000', using default
+error
+xsltFormatNumberConversion : error in format string '0.000000000', using default
+error
+xsltFormatNumberConversion : Invalid format (0-length)
+error
+xsltFormatNumberConversion : error in format string '#,##0', using default
+error
+xsltFormatNumberConversion : error in format string '0.000000000', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.##0', using default
+error
+xsltFormatNumberConversion : error in format string '#0#', using default
+error
+xsltFormatNumberConversion : error in format string '0.0.0', using default
+error
+xsltFormatNumberConversion : error in format string '00000.00000', using default
+error
+xsltFormatNumberConversion : error in format string '##,##0', using default
+error
+xsltFormatNumberConversion : error in format string '0,000', using default
+error
+xsltFormatNumberConversion : error in format string '0,0', using default
+error
+xsltFormatNumberConversion : error in format string '0.#0', using default
+error
+xsltFormatNumberConversion : error in format string '0.0#', using default
+error
+xsltFormatNumberConversion : error in format string '0.5#', using default
+error
+xsltFormatNumberConversion : error in format string '#.5#', using default
+error
+xsltFormatNumberConversion : error in format string '€0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,##0.00;(#,##0.00)', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0000000000000.000000', using default
+error
+xsltFormatNumberConversion : error in format string '0.###', using default
+error
+xsltFormatNumberConversion : error in format string '0.00#', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '0.00', using default
+error
+xsltFormatNumberConversion : error in format string '00.00', using default
+error
+xsltFormatNumberConversion : error in format string '00.00', using default
+error
+xsltFormatNumberConversion : error in format string '#,#', using default
+error
+xsltFormatNumberConversion : error in format string ',0;(,0)', using default

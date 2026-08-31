@@ -37,7 +37,12 @@
 //!   readable form; upstream's exact debug format is a libxml2-internal
 //!   artifact and is not replicated byte-for-byte.
 
-#![allow(missing_docs, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
 
 use core::ffi::c_void;
 use core::ptr;
@@ -89,6 +94,9 @@ struct ParserCtxtState {
     serror: Option<xmlStructuredErrorFunc>,
     serror_ctx: SendPtr,
     parse_flags: c_int,
+    resource_loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    resource_ctxt: SendPtr,
+    inc_limit: c_int,
 }
 
 /// Error-callback state attached to a RELAX NG validation context.
@@ -99,6 +107,7 @@ struct ValidCtxtState {
     ctx: SendPtr,
     serror: Option<xmlStructuredErrorFunc>,
     serror_ctx: SendPtr,
+    err_no: c_int,
 }
 
 static PARSER_CTXT_STATE: Lazy<Mutex<HashMap<usize, ParserCtxtState>>> =
@@ -183,7 +192,11 @@ fn format_name_class(nc: &RelaxNgNameClass) -> String {
             .collect::<Vec<_>>()
             .join(" | "),
         RelaxNgNameClass::Except(positive, negative) => {
-            format!("{} - {}", format_name_class(positive), format_name_class(negative))
+            format!(
+                "{} - {}",
+                format_name_class(positive),
+                format_name_class(negative)
+            )
         }
     }
 }
@@ -843,4 +856,63 @@ pub unsafe extern "C" fn xmlRelaxParserSetFlag(ctxt: *mut c_void, flag: c_int) -
     let state = map.entry(ctxt as usize).or_default();
     state.parse_flags = if flag == 0 { 0 } else { flag };
     0
+}
+
+/// Set the incremental-compile limit on a RELAX NG parser context
+/// (upstream relaxng.c `xmlRelaxParserSetIncLImit`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid parser context pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlRelaxParserSetIncLImit(ctxt: *mut c_void, limit: c_int) -> c_int {
+    if ctxt.is_null() || limit < 0 {
+        return -1;
+    }
+    let mut map = PARSER_CTXT_STATE.lock();
+    map.entry(ctxt as usize).or_default().inc_limit = limit;
+    0
+}
+
+/// Install a custom resource loader on a RELAX NG parser context
+/// (upstream relaxng.c `xmlRelaxNGSetResourceLoader`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid parser context pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlRelaxNGSetResourceLoader(
+    ctxt: *mut c_void,
+    loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    vctxt: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    let mut map = PARSER_CTXT_STATE.lock();
+    let state = map.entry(ctxt as usize).or_default();
+    state.resource_loader = loader;
+    state.resource_ctxt = SendPtr(vctxt);
+}
+
+/// Clear the error state of a RELAX NG validation context
+/// (upstream relaxng.c `xmlRelaxNGValidCtxtClearErrors`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid validation context pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlRelaxNGValidCtxtClearErrors(ctxt: *mut c_void) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        let vc = &mut *(ctxt as *mut RelaxNgValidCtxt);
+        vc.errors.clear();
+        vc.nb_errors = 0;
+    }
+    let mut map = VALID_CTXT_STATE.lock();
+    let state = map.entry(ctxt as usize).or_default();
+    state.err = None;
+    state.err_no = 0; // XML_RELAXNG_OK
 }

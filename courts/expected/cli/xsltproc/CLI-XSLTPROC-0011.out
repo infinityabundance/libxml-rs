@@ -1,0 +1,11 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Lib</title>
+</head>
+<body>
+<p id="b1">Rust Programming</p>
+<p id="b2">XML in Practice</p>
+<p id="b3">XSLT Cookbook</p>
+</body>
+</html>

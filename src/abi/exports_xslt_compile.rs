@@ -363,11 +363,12 @@ unsafe fn xslt_doc_default_loader(
 
 /// `xsltNewDecimalFormat` (xslt.c): create a decimal format with the
 /// default values. `name`/`nsUri` are borrowed (not owned).
-unsafe fn xslt_new_decimal_format(
+pub(crate) unsafe fn xslt_new_decimal_format(
     nsUri: *const xmlChar,
     name: *mut xmlChar,
 ) -> *mut _xsltDecimalFormat {
-    let self_ = xmlMallocImpl(core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
+    let self_ =
+        xmlMallocImpl(core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
     if !self_.is_null() {
         ptr::write_bytes(
             self_ as *mut u8,
@@ -2053,7 +2054,12 @@ pub unsafe extern "C" fn xsltStylePreCompute(style: *mut _xsltStylesheet, inst: 
             xslt_check_instruction_element(style, inst);
             // xsltApplyTemplatesComp — lazy in this engine.
         } else if is_xslt_name(inst, b"with-param") {
-            xslt_check_parent_element(style, inst, b"apply-templates", b"call-template\0".as_ptr() as *const u8);
+            xslt_check_parent_element(
+                style,
+                inst,
+                b"apply-templates",
+                b"call-template\0".as_ptr() as *const u8,
+            );
             // xsltWithParamComp — lazy.
         } else if is_xslt_name(inst, b"value-of") {
             xslt_check_instruction_element(style, inst);
@@ -2090,7 +2096,12 @@ pub unsafe extern "C" fn xsltStylePreCompute(style: *mut _xsltStylesheet, inst: 
         } else if is_xslt_name(inst, b"text") {
             xslt_check_instruction_element(style, inst);
         } else if is_xslt_name(inst, b"sort") {
-            xslt_check_parent_element(style, inst, b"apply-templates", b"for-each\0".as_ptr() as *const u8);
+            xslt_check_parent_element(
+                style,
+                inst,
+                b"apply-templates",
+                b"for-each\0".as_ptr() as *const u8,
+            );
         } else if is_xslt_name(inst, b"comment") {
             xslt_check_instruction_element(style, inst);
         } else if is_xslt_name(inst, b"number") {

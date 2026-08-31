@@ -260,6 +260,14 @@ unsafe fn parser_input_from_buf(buf: *mut _xmlParserInputBuffer) -> *mut _xmlPar
     input
 }
 
+/// `pub(crate)` wrapper of [`parser_input_from_buf`] for the sibling
+/// xmlNewInputFrom* family (11.1-X R-000165 closure).
+pub(crate) unsafe fn parser_input_from_buf_pub(
+    buf: *mut _xmlParserInputBuffer,
+) -> *mut _xmlParserInput {
+    unsafe { parser_input_from_buf(buf) }
+}
+
 /// Materialise an `InputBuffer` (owned copy) from a raw `_xmlParserInput`,
 /// so the data survives the caller's input lifetime.
 ///
@@ -494,11 +502,9 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
         c.inputNr = 0;
         c.input = ptr::null_mut();
 
-        // Free the stored InputBuffer (leaked in setup_parser_input).
-        if !c._private.is_null() {
-            let _ = Box::from_raw(c._private as *mut InputBuffer);
-            c._private = ptr::null_mut();
-        }
+        // Free the stored InputBuffer (stashed by setup_parser_input; the
+        // side table keeps ctxt._private application data — 11.1-X).
+        helpers::free_stashed_input_buffer(ctxt);
 
         // Node stack (array only; nodes are owned by the doc).
         if !c.nodeTab.is_null() {
@@ -2305,9 +2311,8 @@ pub unsafe extern "C" fn xmlCheckHTTPInput(
                 if len >= 7
                     && libc::strncasecmp(filename, b"http://\0".as_ptr() as *const c_char, 7) == 0
                 {
-                    if !(*ret).buf.is_null() {
-                        io::input_buffer_free((*ret).buf);
-                    }
+                    // free_parser_input now frees the owned buffer (upstream
+                    // xmlFreeInputStream semantics); no separate buf free.
                     helpers::free_parser_input(ret);
                     return ptr::null_mut();
                 }
@@ -3445,14 +3450,9 @@ pub unsafe extern "C" fn xmlC14NDocSave(
         if output.is_null() {
             return -1;
         }
-        let node_tab = if nodes.is_null() {
-            ptr::null_mut()
-        } else {
-            (*nodes).nodeTab
-        };
         let ret = crate::xml::c14n::xmlC14NDocSaveTo(
             doc,
-            node_tab,
+            nodes,
             mode,
             inclusive_ns_prefixes,
             with_comments,

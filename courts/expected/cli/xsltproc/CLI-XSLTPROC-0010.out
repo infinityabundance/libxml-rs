@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<out>
+  <msg>hello world!</msg>
+  <msg>hello Rust Programming?</msg>
+</out>

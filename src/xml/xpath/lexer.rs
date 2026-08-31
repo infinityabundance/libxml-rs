@@ -268,22 +268,78 @@ impl Lexer {
         }
     }
 
-    /// Read a number literal.
+    /// Read a numeric literal — a faithful port of upstream xpath.c
+    /// `xmlXPathCompNumber` (R-000166). The oracle accumulates digits
+    /// directly (`ret = ret * 10 + d`), caps the fraction at MAX_FRAC=20
+    /// digits after any leading zeros, and applies the exponent with
+    /// `pow(10.0, exp)` — which underflows to 0 for exponents below the
+    /// smallest subnormal (e.g. `5e-324`). Rust's correctly-rounded
+    /// `strtod`-style parse differs in those edge cases, so the accumulation
+    /// is reproduced exactly.
     fn read_number(&mut self) -> f64 {
-        let start = self.pos;
-        // Integer part
-        while self.ch != 0 && self.ch.is_ascii_digit() {
-            self.advance();
+        let input = &self.input;
+        let len = input.len();
+        let mut cur = self.pos;
+
+        // Integer part.
+        let mut ret = 0.0f64;
+        while cur < len && input[cur].is_ascii_digit() {
+            ret = ret * 10.0 + (input[cur] - b'0') as f64;
+            cur += 1;
         }
-        // Fractional part
-        if self.ch == b'.' && self.peek().is_ascii_digit() {
-            self.advance(); // consume '.'
-            while self.ch != 0 && self.ch.is_ascii_digit() {
-                self.advance();
+
+        // Fractional part (upstream consumes a trailing '.' even without
+        // digits, so `5.` is a single number literal).
+        let mut frac: i32 = 0;
+        if cur < len && input[cur] == b'.' {
+            cur += 1;
+            while cur < len && input[cur] == b'0' {
+                frac += 1;
+                cur += 1;
+            }
+            let max = frac + 20; // MAX_FRAC
+            let mut fraction = 0.0f64;
+            while cur < len && input[cur].is_ascii_digit() && frac < max {
+                let v = (input[cur] - b'0') as f64;
+                fraction = fraction * 10.0 + v;
+                frac += 1;
+                cur += 1;
+            }
+            fraction /= 10f64.powf(frac as f64);
+            ret += fraction;
+            while cur < len && input[cur].is_ascii_digit() {
+                cur += 1;
             }
         }
-        let s = String::from_utf8_lossy(&self.input[start..self.pos]).to_string();
-        s.parse::<f64>().unwrap_or(0.0)
+
+        // Exponent part (upstream xmlXPathCompNumber consumes 'e'/'E'
+        // unconditionally, then an optional sign, then digits — greedily
+        // even when malformed).
+        let mut exponent: i32 = 0;
+        let mut is_exponent_negative = false;
+        if cur < len && (input[cur] == b'e' || input[cur] == b'E') {
+            cur += 1;
+            if cur < len && input[cur] == b'-' {
+                is_exponent_negative = true;
+                cur += 1;
+            } else if cur < len && input[cur] == b'+' {
+                cur += 1;
+            }
+            while cur < len && input[cur].is_ascii_digit() {
+                if exponent < 1000000 {
+                    exponent = exponent * 10 + (input[cur] - b'0') as i32;
+                }
+                cur += 1;
+            }
+        }
+        if is_exponent_negative {
+            exponent = -exponent;
+        }
+        ret *= 10f64.powf(exponent as f64);
+
+        self.pos = cur;
+        self.ch = if cur < len { input[cur] } else { 0 };
+        ret
     }
 
     /// Read a string literal.

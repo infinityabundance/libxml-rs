@@ -1688,6 +1688,228 @@ pub unsafe extern "C" fn xmlSchematronValidateDoc(ctxt: *mut c_void, doc: *mut _
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Schematron callback/option side state (11.1-X R-000165 closure)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream stores the error callbacks and options inside the parser/valid
+// contexts; the candidate's engine structs have no such fields, so the
+// state lives in side tables keyed by context address (same pattern as
+// exports_relaxng). These entry points are declared by upstream schematron.h
+// but NOT exported by the oracle DSO; the candidate exports them so the
+// drop-in headers are fully satisfied (header-compile court allowlist).
+
+/// `xmlSchematronValidityErrorFunc` — printf-style callback (msg only).
+pub type SchematronValidityErrorFunc = unsafe extern "C" fn(ctx: *mut c_void, msg: *const c_char);
+
+/// `xmlSchematronValidityWarningFunc` — printf-style callback (msg only).
+pub type SchematronValidityWarningFunc = unsafe extern "C" fn(ctx: *mut c_void, msg: *const c_char);
+
+struct SchematronSendPtr(*mut c_void);
+unsafe impl Send for SchematronSendPtr {}
+unsafe impl Sync for SchematronSendPtr {}
+impl Clone for SchematronSendPtr {
+    fn clone(&self) -> Self {
+        SchematronSendPtr(self.0)
+    }
+}
+impl Copy for SchematronSendPtr {}
+impl Default for SchematronSendPtr {
+    fn default() -> Self {
+        SchematronSendPtr(core::ptr::null_mut())
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+struct SchematronParserState {
+    err: Option<SchematronValidityErrorFunc>,
+    warn: Option<SchematronValidityWarningFunc>,
+    ctx: SchematronSendPtr,
+}
+
+#[derive(Clone, Copy, Default)]
+struct SchematronValidState {
+    err: Option<SchematronValidityErrorFunc>,
+    warn: Option<SchematronValidityWarningFunc>,
+    ctx: SchematronSendPtr,
+    options: c_int,
+}
+
+static SCHEMATRON_PARSER_STATE: once_cell::sync::Lazy<
+    parking_lot::Mutex<std::collections::HashMap<usize, SchematronParserState>>,
+> = once_cell::sync::Lazy::new(Default::default);
+
+static SCHEMATRON_VALID_STATE: once_cell::sync::Lazy<
+    parking_lot::Mutex<std::collections::HashMap<usize, SchematronValidState>>,
+> = once_cell::sync::Lazy::new(Default::default);
+
+/// Set the parser error callbacks (upstream schematron.c
+/// `xmlSchematronSetParserErrors`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronSetParserErrors(
+    ctxt: *mut c_void,
+    err: Option<SchematronValidityErrorFunc>,
+    warn: Option<SchematronValidityWarningFunc>,
+    ctx: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    let mut map = SCHEMATRON_PARSER_STATE.lock();
+    let st = map.entry(ctxt as usize).or_default();
+    st.err = err;
+    st.warn = warn;
+    st.ctx = SchematronSendPtr(ctx);
+}
+
+/// Get the parser error callbacks (upstream `xmlSchematronGetParserErrors`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronGetParserErrors(
+    ctxt: *mut c_void,
+    err: *mut Option<SchematronValidityErrorFunc>,
+    warn: *mut Option<SchematronValidityWarningFunc>,
+    ctx: *mut *mut c_void,
+) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    let map = SCHEMATRON_PARSER_STATE.lock();
+    let st = map.get(&(ctxt as usize)).copied().unwrap_or_default();
+    if !err.is_null() {
+        *err = st.err;
+    }
+    if !warn.is_null() {
+        *warn = st.warn;
+    }
+    if !ctx.is_null() {
+        *ctx = st.ctx.0;
+    }
+    0
+}
+
+/// Set the validation error callbacks (upstream `xmlSchematronSetValidErrors`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronSetValidErrors(
+    ctxt: *mut c_void,
+    err: Option<SchematronValidityErrorFunc>,
+    warn: Option<SchematronValidityWarningFunc>,
+    ctx: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    let mut map = SCHEMATRON_VALID_STATE.lock();
+    let st = map.entry(ctxt as usize).or_default();
+    st.err = err;
+    st.warn = warn;
+    st.ctx = SchematronSendPtr(ctx);
+}
+
+/// Get the validation error callbacks (upstream `xmlSchematronGetValidErrors`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronGetValidErrors(
+    ctxt: *mut c_void,
+    err: *mut Option<SchematronValidityErrorFunc>,
+    warn: *mut Option<SchematronValidityWarningFunc>,
+    ctx: *mut *mut c_void,
+) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    let map = SCHEMATRON_VALID_STATE.lock();
+    let st = map.get(&(ctxt as usize)).copied().unwrap_or_default();
+    if !err.is_null() {
+        *err = st.err;
+    }
+    if !warn.is_null() {
+        *warn = st.warn;
+    }
+    if !ctx.is_null() {
+        *ctx = st.ctx.0;
+    }
+    0
+}
+
+/// Set the validation options (upstream `xmlSchematronSetValidOptions`);
+/// returns the old options.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronSetValidOptions(ctxt: *mut c_void, options: c_int) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    let mut map = SCHEMATRON_VALID_STATE.lock();
+    let st = map.entry(ctxt as usize).or_default();
+    let old = st.options;
+    st.options = options;
+    old
+}
+
+/// Get the validation options (upstream `xmlSchematronValidCtxtGetOptions`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronValidCtxtGetOptions(ctxt: *mut c_void) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    SCHEMATRON_VALID_STATE
+        .lock()
+        .get(&(ctxt as usize))
+        .map_or(0, |st| st.options)
+}
+
+/// 1 if the last validation was valid, 0 otherwise (upstream
+/// `xmlSchematronIsValid`).
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronIsValid(ctxt: *mut c_void) -> c_int {
+    if ctxt.is_null() {
+        return 0;
+    }
+    unsafe {
+        let vc = &*(ctxt as *const SchematronValidCtxt);
+        if vc.nb_errors > 0 {
+            0
+        } else {
+            1
+        }
+    }
+}
+
+/// Validate a single element against the schema (upstream
+/// `xmlSchematronValidateOneElement`); 0 if valid, -1 on error.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchematronValidateOneElement(
+    ctxt: *mut c_void,
+    elem: *mut _xmlNode,
+) -> c_int {
+    if ctxt.is_null() || elem.is_null() {
+        return -1;
+    }
+    unsafe {
+        let valid_ctxt = &mut *(ctxt as *mut SchematronValidCtxt);
+        let schema = match &valid_ctxt.schema {
+            Some(s) => s,
+            None => return -1,
+        };
+        let doc = (*elem).doc;
+        if doc.is_null() {
+            return -1;
+        }
+        // The engine validates whole documents; validate the doc containing
+        // the element and report validity.
+        let mut temp_ctxt = SchematronValidCtxt::new();
+        temp_ctxt.active_phase = valid_ctxt.active_phase.clone();
+        let valid = schematron_validate_doc(schema, doc, &mut temp_ctxt);
+        if !valid {
+            valid_ctxt.errors = temp_ctxt.errors;
+            valid_ctxt.nb_errors = temp_ctxt.nb_errors;
+        }
+        if valid {
+            0
+        } else {
+            -1
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════════
 

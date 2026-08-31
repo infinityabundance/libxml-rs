@@ -1,0 +1,23 @@
+{
+ "schema": "cli-court-receipt-1",
+ "case_id": "CLI-XSLTPROC-0006",
+ "tool": "xsltproc",
+ "oracle": "/usr/bin/xsltproc",
+ "candidate": "/mnt/1tb_kingston/libxml-rs/target/debug/xsltproc",
+ "candidate_commit": "5786e2986c174d2aabb273e19949182e98a26fbe",
+ "timestamp": "2026-08-31T06:48:08.546939+00:00",
+ "observations": {
+  "oracle": {
+   "exit_status": 0,
+   "stdout_hash": "51693d2daaf358718f35641c4a4b2ae6e9bdc9e80258aaba77b2f30f8fa87e48",
+   "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+   "exit_status": 0,
+   "stdout_hash": "51693d2daaf358718f35641c4a4b2ae6e9bdc9e80258aaba77b2f30f8fa87e48",
+   "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ },
+ "residuals": [],
+ "verdict": "PASS"
+}

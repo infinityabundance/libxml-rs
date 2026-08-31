@@ -5,14 +5,14 @@
   "oracle_profile": "libxslt-1.1.45",
   "inputs": {
     "argv": [
-      "--param",
-      "who",
-      "'World'",
-      "--param",
-      "times",
-      "2",
-      "params.xsl",
-      "doc.xml"
+      "xslt/--param",
+      "xslt/who",
+      "xslt/'World'",
+      "xslt/--param",
+      "xslt/times",
+      "xslt/2",
+      "xslt/params.xsl",
+      "xslt/doc.xml"
     ],
     "document": "xslt/doc.xml"
   },

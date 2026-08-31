@@ -317,6 +317,11 @@ pub const XML_PARSE_HUGE: c_int = 1 << 19;
 pub const XML_PARSE_OLDSAX: c_int = 1 << 20;
 pub const XML_PARSE_IGNORE_ENC: c_int = 1 << 21;
 pub const XML_PARSE_BIG_LINES: c_int = 1 << 22;
+pub const XML_PARSE_NO_XXE: c_int = 1 << 23;
+pub const XML_PARSE_UNZIP: c_int = 1 << 24;
+pub const XML_PARSE_NO_SYS_CATALOG: c_int = 1 << 25;
+pub const XML_PARSE_CATALOG_PI: c_int = 1 << 26;
+pub const XML_PARSE_SKIP_IDS: c_int = 1 << 27;
 
 // ── Error domains ───────────────────────────────────────────────────────
 //
@@ -457,6 +462,7 @@ pub const XML_ERR_RESOURCE_LIMIT: c_int = 114;
 pub const XML_ERR_CONDSEC_INVALID_KEYWORD: c_int = 95;
 pub const XML_ERR_VERSION_MISSING: c_int = 96;
 pub const XML_ERR_ARGUMENT: c_int = 115;
+pub const XML_IO_ENOENT: c_int = 1524;
 // Removed: duplicate of XML_ERR_NAME_TOO_LONG at line 414
 
 // ── Parser limits ──────────────────────────────────────────────────────

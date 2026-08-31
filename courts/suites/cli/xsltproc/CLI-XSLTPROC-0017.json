@@ -1,0 +1,28 @@
+{
+  "case_id": "CLI-XSLTPROC-0017",
+  "surface": "cli-xsltproc",
+  "purpose": "format-number(): classic ASCII default format \u2014 grouping, negative patterns, percent/permille, quotes, malformed-picture fallback, NaN/Infinity, zero-padding",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/fmt-default.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-1-x-format-number"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "format-number"
+  ]
+}

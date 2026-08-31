@@ -1,0 +1,38 @@
+{
+  "court": "DSO-LOADER",
+  "phase": "11.1-T",
+  "timestamp": "2026-08-31T06:33:53Z",
+  "artifact": "/mnt/1tb_kingston/libxml-rs/target/debug",
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "soname": "libxml2.so.16",
+  "cases": [
+    {"item":"probe:build","status":"PASS"},
+    {"item":"probe:run:top-level-LD_LIBRARY_PATH","status":"PASS"},
+    {"item":"probe:run:top-level-LD_LIBRARY_PATH:loaded-object-in-artifact","status":"PASS"},
+    {"item":"probe:run:lib-LD_LIBRARY_PATH","status":"PASS"},
+    {"item":"probe:run:lib-LD_LIBRARY_PATH:loaded-object-in-artifact","status":"PASS"},
+    {"item":"elf:soname=libxml2.so.16","status":"PASS"},
+    {"item":"elf:no-hidden-libxml2-dep","status":"PASS"},
+    {"item":"consumer:NEEDED=libxml2.so.16","status":"PASS"},
+    {"item":"consumer:ldd-resolves-into-artifact","status":"PASS"},
+    {"item":"symtype:xmlReadMemory=T","status":"PASS"},
+    {"item":"symtype:xmlNewDoc=T","status":"PASS"},
+    {"item":"symtype:xmlParserVersion=D","status":"PASS"},
+    {"item":"symtype:__xmlGenericError=T","status":"PASS"},
+    {"item":"symtype:__xmlLastError=T","status":"PASS"},
+    {"item":"symtype:xsltApplyStylesheet=T","status":"PASS"},
+    {"item":"symtype:xsltLibxmlVersion=R","status":"PASS"},
+    {"item":"symtype:xsltLibxsltVersion=R","status":"PASS"},
+    {"item":"symtype:xsltEngineVersion=D","status":"PASS"},
+    {"item":"symtype:exsltRegisterAll=T","status":"PASS"},
+    {"item":"symtype:exsltLibexsltVersion=R","status":"PASS"},
+    {"item":"symtype:exsltLibxmlVersion=R","status":"PASS"},
+    {"item":"symtype:exsltLibxsltVersion=R","status":"PASS"},
+    {"item":"symtype:exsltLibraryVersion=D","status":"PASS"},
+    {"item":"symtype:xmlXPathEval=T","status":"PASS"},
+    {"item":"static:libxml2.a-link-and-run","status":"PASS"}
+  ],
+  "summary": { "passed": 25, "failed": 0 },
+  "failures": {
+  }
+}

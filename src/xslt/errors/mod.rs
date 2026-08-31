@@ -10,6 +10,7 @@
 
 use crate::abi::structs::*;
 use std::os::raw::c_int;
+use std::ptr;
 
 // ── Error domains ─────────────────────────────────────────────────────────
 //
@@ -195,17 +196,23 @@ pub fn xsltSetTransformErrorFunc(
 
 /// Report an XSLT error.
 ///
-/// Logs an error message associated with the given transform context,
-/// stylesheet, and instruction node. The message is a printf-style format
-/// string followed by variadic arguments. The variadic arguments are not
-/// expanded (matching the safe subset); the raw message is recorded.
+/// Faithful port of upstream xsltutils.c `xsltTransformError`: the
+/// transform context is moved to the error state, the error context line
+/// is printed (upstream `xsltPrintErrorContext`), and the message is
+/// emitted verbatim through the registered handler or stderr. Messages
+/// carry their own trailing newline, exactly as upstream's do — no
+/// newline is added here.
+///
+/// The upstream signature is variadic (`const char *msg, ...`); the
+/// candidate's callers format the message before calling (a `%s`/`%d`
+/// placeholder is never expanded by this function).
 ///
 /// # Parameters
 ///
 /// * `ctxt`  — The transform context (may be null).
 /// * `style` — The stylesheet (may be null).
 /// * `inst`  — The instruction node that triggered the error (may be null).
-/// * `msg`   — The printf-style format string.
+/// * `msg`   — The message, NUL-terminated, typically ending in `\n`.
 pub fn xsltTransformError(
     ctxt: *mut _xsltTransformContext,
     style: *mut _xsltStylesheet,
@@ -220,50 +227,129 @@ pub fn xsltTransformError(
         unsafe { core::slice::from_raw_parts(msg as *const u8, libc::strlen(msg) as usize) };
     let text = String::from_utf8_lossy(bytes).into_owned();
 
-    // Record the last error.
+    // Record the last error (the raw message, as upstream stores the
+    // formatted message).
     if let Ok(mut last) = LAST_XSLT_ERROR.lock() {
         *last = Some(text.clone().into_bytes());
     }
 
-    // Build the prefix: "file:line: " when the instruction node provides it.
-    let mut prefix = String::new();
-    if !inst.is_null() {
-        // SAFETY: inst must be a valid node.
-        let node = unsafe { &*inst };
-        // SAFETY: node.doc must be valid while the node is alive.
-        let doc = unsafe { &*node.doc };
-        if !doc.URL.is_null() {
-            // SAFETY: URL must be a valid NUL-terminated string.
-            let url = unsafe {
-                core::slice::from_raw_parts(
-                    doc.URL as *const u8,
-                    libc::strlen(doc.URL as *const libc::c_char) as usize,
-                )
-            };
-            prefix.push_str(&String::from_utf8_lossy(url));
-            prefix.push(':');
-            prefix.push_str(&node.line.to_string());
-            prefix.push_str(": ");
-        }
-    }
-
-    // Invoke the per-context handler if one is registered.
+    // UPSTREAM-PARITY (xsltutils.c xsltTransformError): an error moves the
+    // transform context out of the OK state.
     if !ctxt.is_null() {
         // SAFETY: ctxt must be a valid _xsltTransformContext.
+        let ctx = unsafe { &mut *ctxt };
+        if ctx.state == crate::xslt::transform::XSLT_STATE_OK {
+            ctx.state = crate::xslt::transform::XSLT_STATE_ERROR;
+        }
+        let mut node = inst;
+        if node.is_null() {
+            node = ctx.inst;
+        }
+        // Build the context line (xsltPrintErrorContext) and the full
+        // message, then emit through the handler if one is registered.
+        let context_line = print_error_context(ctxt, style, node);
+        let full = format!("{}{}", context_line, text);
+        let mut cmsg = full.into_bytes();
+        let msg_len = cmsg.len();
+        cmsg.push(0);
         let ctx = unsafe { &*ctxt };
         if let Some(handler) = ctx.error {
-            let full = format!("{}{}", prefix, text);
-            let mut cmsg = full.into_bytes();
-            cmsg.push(0);
             unsafe { handler(ctx.errctx, cmsg.as_ptr() as *const std::os::raw::c_char) };
             return;
         }
+        let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg_len) };
+        return;
     }
 
-    // Default: write to stderr.
-    let full = format!("{}{}\n", prefix, text);
-    let _ = unsafe { libc::write(2, full.as_ptr() as *const libc::c_void, full.len()) };
+    // No transform context: compile-time errors and standalone messages.
+    // (Upstream xsltPrintErrorContext is still invoked with NULL ctxt and
+    // the given style/node.)
+    let context_line = print_error_context(ptr::null_mut(), style, inst);
+    let full = format!("{}{}", context_line, text);
+    let mut cmsg = full.into_bytes();
+    let msg_len = cmsg.len();
+    cmsg.push(0);
+    let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg_len) };
     let _ = style;
+}
+
+/// Build the error context line printed before an XSLT error message
+/// (upstream xsltutils.c `xsltPrintErrorContext`). The line is one of:
+///
+/// ```text
+/// error\n
+/// error: file F\n
+/// error: file F line N\n
+/// error: file F element E\n
+/// error: file F line N element E\n
+/// error: element E\n
+/// compilation error ... / runtime error ...
+/// ```
+fn print_error_context(
+    ctxt: *mut _xsltTransformContext,
+    style: *mut _xsltStylesheet,
+    node: *mut _xmlNode,
+) -> String {
+    let mut line = 0i64;
+    let mut file: *const std::os::raw::c_char = ptr::null();
+    let mut name: *const std::os::raw::c_char = ptr::null();
+
+    if !node.is_null() {
+        // SAFETY: node must be valid.
+        let node_ref = unsafe { &*node };
+        if node_ref.type_ == crate::abi::types::xmlElementType::XML_DOCUMENT_NODE as c_int
+            || node_ref.type_ == crate::abi::types::xmlElementType::XML_HTML_DOCUMENT_NODE as c_int
+        {
+            let doc = node as *mut crate::abi::structs::_xmlDoc;
+            // SAFETY: doc->URL is a valid NUL-terminated string or NULL.
+            file = unsafe { (*doc).URL } as *const std::os::raw::c_char;
+        } else {
+            line = unsafe { crate::abi::exports_xml2::xmlGetLineNo(node) as i64 };
+            // SAFETY: node->doc must be valid while the node is alive.
+            let doc = unsafe { (*node_ref).doc };
+            if !doc.is_null() {
+                file = unsafe { (*doc).URL } as *const std::os::raw::c_char;
+            }
+            name = node_ref.name as *const std::os::raw::c_char;
+        }
+    }
+
+    let errtype = if !ctxt.is_null() {
+        "runtime error"
+    } else if !style.is_null() {
+        "compilation error"
+    } else {
+        "error"
+    };
+
+    let s = |p: *const std::os::raw::c_char| -> String {
+        if p.is_null() {
+            String::new()
+        } else {
+            unsafe { std::ffi::CStr::from_ptr(p).to_string_lossy().into_owned() }
+        }
+    };
+    let file_s = s(file);
+    let name_s = s(name);
+    let has_file = !file.is_null();
+    let has_name = !name.is_null();
+
+    if has_file && line != 0 && has_name {
+        format!(
+            "{}: file {} line {} element {}\n",
+            errtype, file_s, line, name_s
+        )
+    } else if has_file && has_name {
+        format!("{}: file {} element {}\n", errtype, file_s, name_s)
+    } else if has_file && line != 0 {
+        format!("{}: file {} line {}\n", errtype, file_s, line)
+    } else if has_file {
+        format!("{}: file {}\n", errtype, file_s)
+    } else if has_name {
+        format!("{}: element {}\n", errtype, name_s)
+    } else {
+        format!("{}\n", errtype)
+    }
 }
 
 /// Get the last XSLT error message as a NUL-terminated heap string.

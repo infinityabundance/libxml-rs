@@ -2258,6 +2258,17 @@ unsafe fn parser_input_get_window(
     }
 }
 
+/// `pub(crate)` wrapper of [`parser_input_get_window`] for sibling export
+/// modules (xmlCtxtGetInputWindow, 11.1-X R-000165 closure).
+pub(crate) unsafe fn parser_input_get_window_pub(
+    input: *mut _xmlParserInput,
+    start_out: *mut *const xmlChar,
+    size_in_out: *mut c_int,
+    offset_out: *mut c_int,
+) {
+    unsafe { parser_input_get_window(input, start_out, size_in_out, offset_out) };
+}
+
 /// Print the source context around an input position (upstream error.c
 /// `xmlParserPrintFileContextInternal`).
 unsafe fn print_file_context(

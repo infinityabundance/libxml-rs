@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<catalog>
+  <book id="b1">Rust Programming<author>Klabnik</author></book>
+  <book id="b2">XML in Practice<author>Smith</author></book>
+  <book id="b3">XSLT Cookbook<author>Jones</author></book>
+  <count>3</count>
+</catalog>

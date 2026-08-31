@@ -163,8 +163,8 @@ for hdr in "${PUBLIC_HEADERS[@]}"; do
             | sed 's/[ (]//g' | sort -u)
     while read -r fn; do
         [ -z "$fn" ] && continue
-        if ! echo "$dso_symbols" | grep -qx "$fn"; then
-            if printf '%s\n' "${RESIDUAL_SYMS[@]}" | grep -qx "$fn"; then
+        if ! printf '%s\n' "$dso_symbols" | grep -x "$fn" >/dev/null; then
+            if printf '%s\n' "${RESIDUAL_SYMS[@]}" | grep -x "$fn" >/dev/null; then
                 residual_syms=$((residual_syms+1))
                 residual_list="${residual_list}${hdr}:${fn} "
             else

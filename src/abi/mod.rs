@@ -42,6 +42,7 @@ pub mod exports_tree;
 pub mod exports_treedump;
 pub mod exports_uri;
 pub mod exports_xinclude;
+pub mod exports_xlink;
 pub mod exports_xml2;
 pub mod exports_xptr;
 pub mod exports_xslt;

@@ -21,6 +21,7 @@ mod debug_test {
                 attributes,
                 attr_end,
                 attr_start,
+                end_pos: _,
                 empty,
                 unterminated,
             } => {
@@ -58,6 +59,45 @@ mod debug_test {
         assert!(matches!(token, XmlToken::EndTag { .. }));
     }
 
+    /// Regression court (11.1-X R-000165): `ctxt._private` is application
+    /// data (upstream `xmlCtxtSetPrivate`/`xmlCtxtGetPrivate`). The internal
+    /// parse-input stash lives in a side table, so setting the private field
+    /// and freeing the context must never free the application's pointer as
+    /// an `InputBuffer` (previously a double-free/UB).
+    #[test]
+    fn test_ctxt_private_is_application_data() {
+        unsafe {
+            let ctxt = helpers::create_parser_ctxt();
+            assert!(!ctxt.is_null());
+            // A stack marker that is NOT a Box<InputBuffer>.
+            let marker: usize = 0x1234_5678;
+            crate::abi::exports_parserint::xmlCtxtSetPrivate(
+                ctxt,
+                marker as *mut core::ffi::c_void,
+            );
+            assert_eq!(
+                crate::abi::exports_parserint::xmlCtxtGetPrivate(ctxt) as usize,
+                marker
+            );
+            // Freeing must not interpret the marker as an internal buffer.
+            helpers::free_parser_ctxt(ctxt);
+
+            // And with a stashed parse input present, private stays intact:
+            let ctxt = helpers::create_parser_ctxt();
+            let input = helpers::input_from_memory(b"<a/>\0".as_ptr() as *const i8, 5);
+            helpers::setup_parser_input(ctxt, input);
+            crate::abi::exports_parserint::xmlCtxtSetPrivate(
+                ctxt,
+                marker as *mut core::ffi::c_void,
+            );
+            assert_eq!(
+                crate::abi::exports_parserint::xmlCtxtGetPrivate(ctxt) as usize,
+                marker
+            );
+            helpers::free_parser_ctxt(ctxt);
+        }
+    }
+
     #[test]
     fn test_tokenizer_complex() {
         let data = b"<?xml version=\"1.0\"?>\n<root id=\"123\"/>\n";
@@ -75,6 +115,7 @@ mod debug_test {
                 attributes,
                 attr_end,
                 attr_start,
+                end_pos: _,
                 empty,
                 unterminated,
             } => {
@@ -122,10 +163,10 @@ mod debug_test {
                 crate::abi::types::XML_SAX2_MAGIC as u32
             );
 
-            // Take ownership of the InputBuffer and create XmlParser directly
-            let input_buf_ptr = (*ctxt)._private as *mut InputBuffer;
+            // Take ownership of the stashed InputBuffer and create XmlParser
+            // directly (the stash side table, not ctxt._private — 11.1-X).
+            let input_buf_ptr = helpers::take_stashed_input_buffer(ctxt);
             assert!(!input_buf_ptr.is_null(), "input_buf_ptr is null");
-            (*ctxt)._private = ptr::null_mut();
             let input_buf = Box::from_raw(input_buf_ptr);
             let input_stack = InputStack::new(*input_buf);
 
@@ -168,8 +209,8 @@ mod debug_test {
             let input = helpers::input_from_memory(xml.as_ptr() as *const i8, xml.len() as i32);
             helpers::setup_parser_input(ctxt, input);
 
-            let input_buf_ptr = (*ctxt)._private as *mut InputBuffer;
-            (*ctxt)._private = ptr::null_mut();
+            let input_buf_ptr = helpers::take_stashed_input_buffer(ctxt);
+            assert!(!input_buf_ptr.is_null(), "input_buf_ptr is null");
             let input_buf = Box::from_raw(input_buf_ptr);
             let input_stack = InputStack::new(*input_buf);
 

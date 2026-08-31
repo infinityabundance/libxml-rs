@@ -235,8 +235,22 @@ pub(crate) mod default_sax_handler {
                     }
                     own = (*own).next;
                 }
-                if found.is_null() && !(*ctxt).node.is_null() {
-                    found = tree::search_ns(n.doc, (*ctxt).node, prefix);
+                if found.is_null() {
+                    // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): the
+                    // ancestor scope is the parser context's current node;
+                    // for the root element that is the document itself, so a
+                    // NULL ctxt->node falls back to the document (which
+                    // carries the materialized xml namespace and any
+                    // document-level declarations). Without this, xml:lang
+                    // on the root element would lose its binding (R-000166).
+                    let scope = if (*ctxt).node.is_null() {
+                        (*ctxt).myDoc as *mut _xmlNode
+                    } else {
+                        (*ctxt).node
+                    };
+                    if !scope.is_null() {
+                        found = tree::search_ns(n.doc, scope, prefix);
+                    }
                 }
                 found
             };

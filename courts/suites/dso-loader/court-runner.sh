@@ -18,8 +18,9 @@
 #      contains no libxml2/libxslt/libexslt (candidate independence);
 #   6. ldd of a consumer binary resolves libxml2.so.16 into the artifact;
 #   7. symbol-TYPE parity (nm T/D/B/R) for a curated surface against the
-#      oracle DSOs (R-000167 xsltLibxsltVersion divergence excluded here —
-#      it is tracked by the ledger);
+#      oracle DSOs (incl. the R-000167 version data symbols: xsltLibxsltVersion
+#      R, xsltEngineVersion D, exsltLibexsltVersion/exsltLibxmlVersion/
+#      exsltLibxsltVersion R, exsltLibraryVersion D);
 #   8. static linking through lib/libxml2.a runs without any shared object.
 #
 # Evidence: courts/receipts/phase-11/dso-loader-<ts>-receipt.json
@@ -130,7 +131,14 @@ for spec in \
     "__xmlGenericError:D:${ORACLE_XML}" \
     "__xmlLastError:B:${ORACLE_XML}" \
     "xsltApplyStylesheet:T:${ORACLE_XSLT}" \
+    "xsltLibxmlVersion:R:${ORACLE_XSLT}" \
+    "xsltLibxsltVersion:R:${ORACLE_XSLT}" \
+    "xsltEngineVersion:D:${ORACLE_XSLT}" \
     "exsltRegisterAll:T:${ORACLE_EXSLT}" \
+    "exsltLibexsltVersion:R:${ORACLE_EXSLT}" \
+    "exsltLibxmlVersion:R:${ORACLE_EXSLT}" \
+    "exsltLibxsltVersion:R:${ORACLE_EXSLT}" \
+    "exsltLibraryVersion:D:${ORACLE_EXSLT}" \
     "xmlXPathEval:T:${ORACLE_XML}"; do
     name="${spec%%:*}"; rest="${spec#*:}"; want="${rest%%:*}"; odso="${rest#*:}"
     t_cand="$(sym_type "$DSO" "$name")"
@@ -143,7 +151,7 @@ for spec in \
     fi
 done
 if [ "$type_mismatch" -eq 1 ]; then
-    record FAIL "symtype:summary" "see individual failures (R-000167 tracks xsltLibxsltVersion separately)"
+    record FAIL "symtype:summary" "see individual failures"
 fi
 
 # ── static linking through lib/libxml2.a ───────────────────────────────────── #

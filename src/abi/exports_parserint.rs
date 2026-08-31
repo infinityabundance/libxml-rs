@@ -4783,8 +4783,9 @@ pub unsafe extern "C" fn xmlParseCtxtExternalEntity(
             (*pi).id = 0;
             (*pi).parentConsumed = 0;
             (*pi).entity = ptr::null_mut();
-            // stash the box so it outlives the parse
-            (*ctxt)._private = boxed as *mut c_void;
+            // stash the box so it outlives the parse (side table; ctxt._private
+            // stays application data — 11.1-X)
+            crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
             pi
         };
 
@@ -4911,13 +4912,14 @@ pub unsafe extern "C" fn xmlParseBalancedChunkMemoryRecover(
 
         let slen = crate::abi::exports_xml2::xmlStrlen(string) as c_int;
         let input_buf = input_from_memory(string as *const c_char, slen);
-        // Keep the buffer alive via _private.
+        // Keep the buffer alive via the side table (ctxt._private stays
+        // application data — 11.1-X).
         let boxed = Box::into_raw(Box::new(input_buf));
-        (*ctxt)._private = boxed as *mut c_void;
+        crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
         let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
         if input.is_null() {
             let _ = Box::from_raw(boxed);
-            (*ctxt)._private = ptr::null_mut();
+            crate::xml::parser::helpers::free_stashed_input_buffer(ctxt);
             let ret = (*ctxt).errNo;
             free_parser_ctxt(ctxt);
             return if ret != 0 { ret } else { XML_ERR_NO_MEMORY };
@@ -4989,11 +4991,11 @@ pub unsafe extern "C" fn xmlParseInNodeContext(
 
         let input_buf = input_from_memory(data, datalen);
         let boxed = Box::into_raw(Box::new(input_buf));
-        (*ctxt)._private = boxed as *mut c_void;
+        crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
         let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
         if input.is_null() {
             let _ = Box::from_raw(boxed);
-            (*ctxt)._private = ptr::null_mut();
+            crate::xml::parser::helpers::free_stashed_input_buffer(ctxt);
             free_parser_ctxt(ctxt);
             return XML_ERR_NO_MEMORY;
         }
@@ -5079,7 +5081,7 @@ pub unsafe extern "C" fn xmlParseDTD(
         let input_buf = input_from_file(system_id as *const c_char);
         if let Ok(buf) = input_buf {
             let boxed = Box::into_raw(Box::new(buf));
-            (*ctxt)._private = boxed as *mut c_void;
+            crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
             let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
             if !input.is_null() {
                 (*boxed).populate_parser_input_without_filename(&mut *input);
@@ -5410,5 +5412,894 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateFilenameDefault(
         xmlParserInputBufferCreateFilenameValue =
             if func == Some(default_fn) { None } else { func };
         old.or(Some(default_fn))
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// xmlCtxt accessor / 2.14+ parser-API family (parser.h / parserInternals.h)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// R-000165 closure (11.1-X): the parser-context accessors and the 2.14+
+// input constructors ported from archaeology/libxml2-git (parser.c /
+// parserInternals.c 2.15.3). NULL contexts return NULL/0/-1 exactly like
+// upstream; every function is exported with the upstream name so the
+// header-compile court's declared-functions-exported check closes.
+
+/// Upstream `xmlCtxtIsCatastrophicError` — errNo in the catastrophic set.
+unsafe fn pi_ctxt_is_catastrophic(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return 1;
+    }
+    unsafe {
+        let e = (*ctxt).errNo;
+        if e == crate::abi::types::XML_ERR_NO_MEMORY
+            || e == crate::abi::types::XML_ERR_INTERNAL_ERROR
+            || e == crate::abi::types::XML_ERR_RESOURCE_LIMIT
+        {
+            1
+        } else {
+            0
+        }
+    }
+}
+
+/// `xmlCtxtGetVersion` — the XML version declared in the document.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetVersion(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
+    if ctxt.is_null() {
+        return ptr::null();
+    }
+    unsafe { (*ctxt).version as *const xmlChar }
+}
+
+/// `xmlCtxtGetStandalone` — standalone status (-1 unset, 0 no, 1 yes).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetStandalone(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    unsafe { (*ctxt).standalone }
+}
+
+/// `xmlCtxtGetOptions` — the parser options bitmask.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetOptions(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return 0;
+    }
+    unsafe { (*ctxt).options }
+}
+
+/// `xmlCtxtGetPrivate` — the private application data.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetPrivate(ctxt: *mut _xmlParserCtxt) -> *mut c_void {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*ctxt)._private }
+}
+
+/// `xmlCtxtSetPrivate` — set the private application data.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetPrivate(ctxt: *mut _xmlParserCtxt, priv_: *mut c_void) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe { (*ctxt)._private = priv_ };
+}
+
+/// `xmlCtxtGetCatalogs` — the local catalogs.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetCatalogs(ctxt: *mut _xmlParserCtxt) -> *mut c_void {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*ctxt).catalogs }
+}
+
+/// `xmlCtxtSetCatalogs` — set the local catalogs.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetCatalogs(ctxt: *mut _xmlParserCtxt, catalogs: *mut c_void) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe { (*ctxt).catalogs = catalogs };
+}
+
+/// `xmlCtxtGetDict` — the dictionary.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetDict(ctxt: *mut _xmlParserCtxt) -> *mut c_void {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*ctxt).dict }
+}
+
+/// `xmlCtxtSetDict` — replace the dictionary (old one freed, new referenced).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetDict(ctxt: *mut _xmlParserCtxt, dict: *mut c_void) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        if !(*ctxt).dict.is_null() {
+            crate::abi::exports_xml2::xmlDictFree((*ctxt).dict);
+        }
+        if !dict.is_null() {
+            crate::abi::exports_hash::xmlDictReference(dict);
+        }
+        (*ctxt).dict = dict;
+    }
+}
+
+/// `xmlCtxtGetSaxHandler` — the SAX handler struct (not a copy).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetSaxHandler(ctxt: *mut _xmlParserCtxt) -> *mut _xmlSAXHandler {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*ctxt).sax }
+}
+
+/// `xmlCtxtSetSaxHandler` — copy `sax` into the context's handler struct.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetSaxHandler(
+    ctxt: *mut _xmlParserCtxt,
+    sax: *const _xmlSAXHandler,
+) -> c_int {
+    if ctxt.is_null() || (*ctxt).sax.is_null() || sax.is_null() {
+        return -1;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(sax, (*ctxt).sax, 1);
+    }
+    0
+}
+
+/// `xmlCtxtIsHtml` — 1 if this is an HTML parser context.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtIsHtml(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return 0;
+    }
+    unsafe { (*ctxt).html }
+}
+
+/// `xmlCtxtIsStopped` — 1 if the parser is stopped (disableSAX != 0).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtIsStopped(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return 0;
+    }
+    unsafe {
+        if (*ctxt).disableSAX != 0 {
+            1
+        } else {
+            0
+        }
+    }
+}
+
+/// `xmlCtxtIsInSubset` — DTD subset status (0 none, 1 internal, 2 external).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtIsInSubset(ctxt: *mut _xmlParserCtxt) -> c_int {
+    if ctxt.is_null() {
+        return 0;
+    }
+    unsafe { (*ctxt).inSubset }
+}
+
+/// `xmlCtxtGetValidCtxt` — pointer to the validation context.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetValidCtxt(ctxt: *mut _xmlParserCtxt) -> *mut _xmlValidCtxt {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { core::ptr::addr_of_mut!((*ctxt).vctxt) }
+}
+
+/// `xmlCtxtGetUserData` — the user data.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetUserData(ctxt: *mut _xmlParserCtxt) -> *mut c_void {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe { (*ctxt).userData }
+}
+
+/// `xmlCtxtGetNode` — the current node or the document node.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetNode(ctxt: *mut _xmlParserCtxt) -> *mut _xmlNode {
+    if ctxt.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        if !(*ctxt).node.is_null() {
+            (*ctxt).node
+        } else {
+            (*ctxt).myDoc as *mut _xmlNode
+        }
+    }
+}
+
+/// `xmlCtxtGetDocTypeDecl` — doctype declaration data (SAX callbacks only).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetDocTypeDecl(
+    ctxt: *mut _xmlParserCtxt,
+    name: *mut *const xmlChar,
+    system_id: *mut *const xmlChar,
+    public_id: *mut *const xmlChar,
+) -> c_int {
+    if ctxt.is_null() {
+        return -1;
+    }
+    unsafe {
+        if !name.is_null() {
+            *name = (*ctxt).intSubName;
+        }
+        if !system_id.is_null() {
+            *system_id = (*ctxt).extSubURI as *const xmlChar;
+        }
+        if !public_id.is_null() {
+            *public_id = (*ctxt).extSubSystem as *const xmlChar;
+        }
+    }
+    0
+}
+
+/// `xmlCtxtGetInputPosition` — position of an input (outermost 0, innermost -1).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetInputPosition(
+    ctxt: *mut _xmlParserCtxt,
+    input_index: c_int,
+    filename: *mut *const c_char,
+    line: *mut c_int,
+    col: *mut c_int,
+    utf8_byte_pos: *mut c_ulong,
+) -> c_int {
+    unsafe {
+        if ctxt.is_null() {
+            return -1;
+        }
+        let mut idx = input_index;
+        if idx < 0 {
+            idx += (*ctxt).inputNr;
+            if idx < 0 {
+                return -1;
+            }
+        }
+        if idx >= (*ctxt).inputNr || (*ctxt).inputTab.is_null() {
+            return -1;
+        }
+        let input = *(*ctxt).inputTab.add(idx as usize);
+        if input.is_null() {
+            return -1;
+        }
+        if !filename.is_null() {
+            *filename = (*input).filename;
+        }
+        if !line.is_null() {
+            *line = (*input).line;
+        }
+        if !col.is_null() {
+            *col = (*input).col;
+        }
+        if !utf8_byte_pos.is_null() {
+            let consumed = (*input).consumed;
+            let mut pos: c_ulong = consumed;
+            if !(*input).cur.is_null() && !(*input).base.is_null() {
+                pos = pos.wrapping_add(((*input).cur as usize - (*input).base as usize) as c_ulong);
+            }
+            *utf8_byte_pos = pos;
+        }
+        0
+    }
+}
+
+/// `xmlCtxtGetInputWindow` — window into the input data (upstream
+/// xmlParserInputGetWindow; 80-char cap, UTF-8 aware).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetInputWindow(
+    ctxt: *mut _xmlParserCtxt,
+    input_index: c_int,
+    start_out: *mut *const xmlChar,
+    size_in_out: *mut c_int,
+    offset_out: *mut c_int,
+) -> c_int {
+    unsafe {
+        if ctxt.is_null() || start_out.is_null() || size_in_out.is_null() || offset_out.is_null() {
+            return -1;
+        }
+        let mut idx = input_index;
+        if idx < 0 {
+            idx += (*ctxt).inputNr;
+            if idx < 0 {
+                return -1;
+            }
+        }
+        if idx >= (*ctxt).inputNr || (*ctxt).inputTab.is_null() {
+            return -1;
+        }
+        let input = *(*ctxt).inputTab.add(idx as usize);
+        if input.is_null() {
+            return -1;
+        }
+        crate::abi::exports_misc::parser_input_get_window_pub(
+            input,
+            start_out,
+            size_in_out,
+            offset_out,
+        );
+        0
+    }
+}
+
+/// `xmlCtxtGetStatus` — XML_STATUS_* bitmask (well-formedness/validation).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetStatus(ctxt: *mut _xmlParserCtxt) -> c_int {
+    unsafe {
+        let mut bits: c_int = 0;
+        if pi_ctxt_is_catastrophic(ctxt) != 0 {
+            bits |= 1 << 3; // XML_STATUS_CATASTROPHIC_ERROR
+            bits |= 1 << 0; // XML_STATUS_NOT_WELL_FORMED
+            bits |= 1 << 1; // XML_STATUS_NOT_NS_WELL_FORMED
+            if !ctxt.is_null() && (*ctxt).validate != 0 {
+                bits |= 1 << 2; // XML_STATUS_DTD_VALIDATION_FAILED
+            }
+            return bits;
+        }
+        if (*ctxt).wellFormed == 0 {
+            bits |= 1 << 0;
+        }
+        if (*ctxt).nsWellFormed == 0 {
+            bits |= 1 << 1;
+        }
+        if (*ctxt).validate != 0 && (*ctxt).valid == 0 {
+            bits |= 1 << 2;
+        }
+        bits
+    }
+}
+
+/// `xmlCtxtGetDeclaredEncoding` — the encoding from the encoding declaration.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetDeclaredEncoding(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
+    if ctxt.is_null() {
+        return ptr::null();
+    }
+    unsafe { (*ctxt).encoding as *const xmlChar }
+}
+
+/// `xmlCtxtGetDocument` — take the parsed document (resets the context's).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtGetDocument(ctxt: *mut _xmlParserCtxt) -> *mut _xmlDoc {
+    unsafe {
+        if ctxt.is_null() {
+            return ptr::null_mut();
+        }
+        let doc: *mut _xmlDoc;
+        if (*ctxt).wellFormed != 0
+            || (((*ctxt).recovery != 0 || (*ctxt).html != 0) && pi_ctxt_is_catastrophic(ctxt) == 0)
+        {
+            doc = (*ctxt).myDoc;
+        } else {
+            if (*ctxt).errNo == crate::abi::types::XML_ERR_OK {
+                // xmlFatalErr(ctxt, XML_ERR_INTERNAL_ERROR, "unknown error")
+                (*ctxt).errNo = crate::abi::types::XML_ERR_INTERNAL_ERROR;
+            }
+            doc = ptr::null_mut();
+            if !(*ctxt).myDoc.is_null() {
+                crate::xml::tree::free_doc((*ctxt).myDoc);
+            }
+        }
+        (*ctxt).myDoc = ptr::null_mut();
+        doc
+    }
+}
+
+/// `xmlCtxtSetCharEncConvImpl` — install a custom encoding-conversion impl.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetCharEncConvImpl(
+    ctxt: *mut _xmlParserCtxt,
+    impl_: Option<crate::abi::callbacks::xmlCharEncConvImpl>,
+    vctxt: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        (*ctxt).convImpl = impl_;
+        (*ctxt).convCtxt = vctxt;
+    }
+}
+
+/// `xmlCtxtSetResourceLoader` — install a custom resource loader.
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtSetResourceLoader(
+    ctxt: *mut _xmlParserCtxt,
+    loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    vctxt: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        (*ctxt).resourceLoader = loader;
+        (*ctxt).resourceCtxt = vctxt;
+    }
+}
+
+/// `xmlCtxtPushInput` — push an input onto the stack (upstream parser.c).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtPushInput(
+    ctxt: *mut _xmlParserCtxt,
+    value: *mut _xmlParserInput,
+) -> c_int {
+    unsafe {
+        if ctxt.is_null() || value.is_null() {
+            return -1;
+        }
+        let max_depth = if (*ctxt).options & crate::abi::types::XML_PARSE_HUGE != 0 {
+            40
+        } else {
+            20
+        };
+        if (*ctxt).inputNr >= (*ctxt).inputMax {
+            let old_max = (*ctxt).inputMax;
+            let mut new_size = old_max * 2 + 5;
+            if new_size > max_depth {
+                new_size = max_depth;
+            }
+            if new_size <= old_max {
+                return -1;
+            }
+            let tmp = xmlReallocImpl(
+                (*ctxt).inputTab as *mut c_void,
+                (new_size as usize) * size_of::<*mut _xmlParserInput>(),
+            ) as *mut *mut _xmlParserInput;
+            if tmp.is_null() {
+                return -1;
+            }
+            (*ctxt).inputTab = tmp;
+            (*ctxt).inputMax = new_size;
+        }
+        *(*ctxt).inputTab.add((*ctxt).inputNr as usize) = value;
+        (*ctxt).input = value;
+        (*value).id = (*ctxt).input_id;
+        (*ctxt).input_id += 1;
+        let idx = (*ctxt).inputNr;
+        (*ctxt).inputNr += 1;
+        idx
+    }
+}
+
+/// `xmlCtxtPopInput` — pop the top input (returns it; caller owns it).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtPopInput(ctxt: *mut _xmlParserCtxt) -> *mut _xmlParserInput {
+    unsafe {
+        if ctxt.is_null() || (*ctxt).inputNr <= 0 {
+            return ptr::null_mut();
+        }
+        (*ctxt).inputNr -= 1;
+        if (*ctxt).inputNr > 0 {
+            (*ctxt).input = *(*ctxt).inputTab.add(((*ctxt).inputNr - 1) as usize);
+        } else {
+            (*ctxt).input = ptr::null_mut();
+        }
+        let ret = *(*ctxt).inputTab.add((*ctxt).inputNr as usize);
+        *(*ctxt).inputTab.add((*ctxt).inputNr as usize) = ptr::null_mut();
+        ret
+    }
+}
+
+/// `xmlCtxtValidateDtd` — validate a document against a DTD using the
+/// context's error handler (upstream valid.c).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtValidateDtd(
+    ctxt: *mut _xmlParserCtxt,
+    doc: *mut _xmlDoc,
+    dtd: *mut _xmlDtd,
+) -> c_int {
+    if ctxt.is_null() || (*ctxt).html != 0 {
+        return 0;
+    }
+    unsafe {
+        crate::abi::exports_parser::xmlCtxtReset(ctxt);
+        crate::xml::validation::validate_dtd(&mut (*ctxt).vctxt, doc, dtd)
+    }
+}
+
+/// `xmlCtxtValidateDocument` — validate a document using the context's
+/// error handler (upstream valid.c).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtValidateDocument(
+    ctxt: *mut _xmlParserCtxt,
+    doc: *mut _xmlDoc,
+) -> c_int {
+    if ctxt.is_null() || (*ctxt).html != 0 {
+        return 0;
+    }
+    unsafe {
+        crate::abi::exports_parser::xmlCtxtReset(ctxt);
+        crate::xml::validation::validate_document(&mut (*ctxt).vctxt, doc)
+    }
+}
+
+/// `xmlCtxtParseDtd` — parse a DTD from an input (input is consumed/freed).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtParseDtd(
+    ctxt: *mut _xmlParserCtxt,
+    input: *mut _xmlParserInput,
+    public_id: *const xmlChar,
+    system_id: *const xmlChar,
+) -> *mut _xmlDtd {
+    unsafe {
+        if ctxt.is_null() || input.is_null() {
+            crate::xml::parser::helpers::free_parser_input(input);
+            return ptr::null_mut();
+        }
+        if xmlCtxtPushInput(ctxt, input) < 0 {
+            crate::xml::parser::helpers::free_parser_input(input);
+            return ptr::null_mut();
+        }
+        let pub_id = if public_id.is_null() {
+            b"none\0".as_ptr() as *const xmlChar
+        } else {
+            public_id
+        };
+        let sys_id = if system_id.is_null() {
+            b"none\0".as_ptr() as *const xmlChar
+        } else {
+            system_id
+        };
+        (*ctxt).myDoc = crate::xml::tree::new_doc(b"1.0\0".as_ptr() as *const xmlChar);
+        if (*ctxt).myDoc.is_null() {
+            return ptr::null_mut();
+        }
+        (*(*ctxt).myDoc).properties = XML_DOC_INTERNAL as c_int;
+        (*(*ctxt).myDoc).extSubset = crate::xml::tree::new_dtd(
+            (*ctxt).myDoc,
+            b"none\0".as_ptr() as *const xmlChar,
+            pub_id,
+            sys_id,
+        );
+        if (*(*ctxt).myDoc).extSubset.is_null() {
+            crate::xml::tree::free_doc((*ctxt).myDoc);
+            (*ctxt).myDoc = ptr::null_mut();
+            return ptr::null_mut();
+        }
+        pi_parse_external_subset(ctxt, pub_id, sys_id);
+        let mut ret: *mut _xmlDtd = ptr::null_mut();
+        if (*ctxt).wellFormed != 0 {
+            ret = (*(*ctxt).myDoc).extSubset;
+            (*(*ctxt).myDoc).extSubset = ptr::null_mut();
+            if !ret.is_null() {
+                (*ret).doc = ptr::null_mut();
+                let mut tmp = (*ret).children;
+                while !tmp.is_null() {
+                    (*tmp).doc = ptr::null_mut();
+                    tmp = (*tmp).next;
+                }
+            }
+        }
+        if !(*ctxt).myDoc.is_null() {
+            crate::xml::tree::free_doc((*ctxt).myDoc);
+        }
+        (*ctxt).myDoc = ptr::null_mut();
+        ret
+    }
+}
+
+/// `xmlCtxtParseContent` — parse a well-balanced content sequence into a
+/// node list in the context of `node` (upstream parser.c; the input is
+/// consumed and freed).
+#[no_mangle]
+pub unsafe extern "C" fn xmlCtxtParseContent(
+    ctxt: *mut _xmlParserCtxt,
+    input: *mut _xmlParserInput,
+    node: *mut _xmlNode,
+    has_text_decl: c_int,
+) -> *mut _xmlNode {
+    unsafe {
+        if ctxt.is_null() || input.is_null() || node.is_null() {
+            crate::xml::parser::helpers::free_parser_input(input);
+            return ptr::null_mut();
+        }
+        let doc = (*node).doc;
+        if doc.is_null() {
+            crate::xml::parser::helpers::free_parser_input(input);
+            return ptr::null_mut();
+        }
+        let mut target = node;
+        match (*node).type_ {
+            t if t == xmlElementType::XML_ELEMENT_NODE as c_int
+                || t == xmlElementType::XML_DOCUMENT_NODE as c_int
+                || t == xmlElementType::XML_HTML_DOCUMENT_NODE as c_int => {}
+            t if t == xmlElementType::XML_ATTRIBUTE_NODE as c_int
+                || t == xmlElementType::XML_TEXT_NODE as c_int
+                || t == xmlElementType::XML_CDATA_SECTION_NODE as c_int
+                || t == xmlElementType::XML_ENTITY_REF_NODE as c_int
+                || t == xmlElementType::XML_PI_NODE as c_int
+                || t == xmlElementType::XML_COMMENT_NODE as c_int =>
+            {
+                let mut cur = (*node).parent;
+                while !cur.is_null() {
+                    let ct = (*cur).type_;
+                    if ct == xmlElementType::XML_ELEMENT_NODE as c_int
+                        || ct == xmlElementType::XML_DOCUMENT_NODE as c_int
+                        || ct == xmlElementType::XML_HTML_DOCUMENT_NODE as c_int
+                    {
+                        target = cur;
+                        break;
+                    }
+                    cur = (*cur).parent;
+                }
+            }
+            _ => {
+                crate::xml::parser::helpers::free_parser_input(input);
+                return ptr::null_mut();
+            }
+        }
+
+        crate::abi::exports_parser::xmlCtxtReset(ctxt);
+        let old_dict = (*ctxt).dict;
+        let old_options = (*ctxt).options;
+        let old_dict_names = (*ctxt).dictNames;
+        let old_load_subset = (*ctxt).loadsubset;
+        if !(*doc).dict.is_null() {
+            (*ctxt).dict = (*doc).dict;
+        } else {
+            (*ctxt).options |= crate::abi::types::XML_PARSE_NODICT;
+            (*ctxt).dictNames = 0;
+        }
+        (*ctxt).loadsubset |= crate::abi::constants::XML_SKIP_IDS;
+        (*ctxt).options |= crate::abi::types::XML_PARSE_SKIP_IDS;
+        (*ctxt).myDoc = doc;
+
+        let list = pi_parse_content_node_list(ctxt, input, has_text_decl);
+
+        (*ctxt).dict = old_dict;
+        (*ctxt).options = old_options;
+        (*ctxt).dictNames = old_dict_names;
+        (*ctxt).loadsubset = old_load_subset;
+        (*ctxt).myDoc = ptr::null_mut();
+        (*ctxt).node = ptr::null_mut();
+        crate::xml::parser::helpers::free_parser_input(input);
+        let _ = target;
+        list
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// xmlNewInputFrom* / xmlInputSetEncodingHandler (parser.h 2.14+ family)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// R-000165 closure: input-stream constructors ported from
+// parserInternals.c. The returned input OWNS its buffer and filename and
+// must be freed with xmlFreeInputStream (free_parser_input frees the
+// buffer via the xmlIO layer and the owned filename).
+
+/// Set the owned filename on a freshly built input (url may be NULL).
+unsafe fn pi_set_input_filename(input: *mut _xmlParserInput, url: *const c_char) {
+    if !url.is_null() {
+        (*input).filename = crate::xml::string::xml_strdup(url as *const crate::abi::types::xmlChar)
+            as *const c_char;
+    }
+}
+
+/// `xmlNewInputFromMemory` — new input reading from a memory area.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewInputFromMemory(
+    url: *const c_char,
+    mem: *const c_void,
+    size: usize,
+    _flags: c_int,
+) -> *mut _xmlParserInput {
+    unsafe {
+        if mem.is_null() {
+            return ptr::null_mut();
+        }
+        let buf = crate::xml::io::input_buffer_create_mem(
+            mem as *const c_char,
+            size as c_int,
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        );
+        if buf.is_null() {
+            return ptr::null_mut();
+        }
+        let input = crate::abi::exports_parser::parser_input_from_buf_pub(buf);
+        if input.is_null() {
+            return ptr::null_mut();
+        }
+        pi_set_input_filename(input, url);
+        input
+    }
+}
+
+/// `xmlNewInputFromString` — new input reading from a zero-terminated string.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewInputFromString(
+    url: *const c_char,
+    str: *const c_char,
+    _flags: c_int,
+) -> *mut _xmlParserInput {
+    unsafe {
+        if str.is_null() {
+            return ptr::null_mut();
+        }
+        let len = libc::strlen(str);
+        let buf = crate::xml::io::input_buffer_create_mem(
+            str,
+            len as c_int,
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        );
+        if buf.is_null() {
+            return ptr::null_mut();
+        }
+        let input = crate::abi::exports_parser::parser_input_from_buf_pub(buf);
+        if input.is_null() {
+            return ptr::null_mut();
+        }
+        pi_set_input_filename(input, url);
+        input
+    }
+}
+
+/// `xmlNewInputFromFd` — new input reading from a file descriptor
+/// (the fd is drained at creation; upstream closes it with the input — the
+/// candidate's read-at-creation pattern closes it after reading).
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewInputFromFd(
+    url: *const c_char,
+    fd: c_int,
+    _flags: c_int,
+) -> *mut _xmlParserInput {
+    unsafe {
+        if fd < 0 {
+            return ptr::null_mut();
+        }
+        let mut data: Vec<u8> = Vec::new();
+        let mut tmp = [0u8; 4096];
+        loop {
+            let n = libc::read(fd, tmp.as_mut_ptr() as *mut c_void, tmp.len());
+            if n <= 0 {
+                break;
+            }
+            data.extend_from_slice(&tmp[..n as usize]);
+        }
+        let buf = crate::xml::io::input_buffer_create_mem(
+            data.as_ptr() as *const c_char,
+            data.len() as c_int,
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        );
+        if buf.is_null() {
+            return ptr::null_mut();
+        }
+        let input = crate::abi::exports_parser::parser_input_from_buf_pub(buf);
+        if input.is_null() {
+            return ptr::null_mut();
+        }
+        pi_set_input_filename(input, url);
+        input
+    }
+}
+
+/// `xmlNewInputFromIO` — new input reading from I/O callbacks.
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewInputFromIO(
+    url: *const c_char,
+    io_read: Option<crate::abi::callbacks::xmlInputReadCallback>,
+    io_close: Option<crate::abi::callbacks::xmlInputCloseCallback>,
+    io_ctxt: *mut c_void,
+    _flags: c_int,
+) -> *mut _xmlParserInput {
+    unsafe {
+        let Some(read) = io_read else {
+            return ptr::null_mut();
+        };
+        // Drain the callback (candidate's read-at-creation pattern).
+        let mut data: Vec<u8> = Vec::new();
+        let mut tmp = [0u8; 4096];
+        loop {
+            let n = read(io_ctxt, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int);
+            if n <= 0 {
+                break;
+            }
+            data.extend_from_slice(&tmp[..n as usize]);
+        }
+        let buf = crate::xml::io::input_buffer_create_mem(
+            data.as_ptr() as *const c_char,
+            data.len() as c_int,
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        );
+        if buf.is_null() {
+            if let Some(close) = io_close {
+                close(io_ctxt);
+            }
+            return ptr::null_mut();
+        }
+        // Honor the close callback on buffer free (upstream contract).
+        (*buf).closecallback = io_close;
+        let input = crate::abi::exports_parser::parser_input_from_buf_pub(buf);
+        if input.is_null() {
+            return ptr::null_mut();
+        }
+        pi_set_input_filename(input, url);
+        input
+    }
+}
+
+/// `xmlNewInputFromUrl` — new input from a file/URL (2.14+; error code +
+/// out-param).
+#[no_mangle]
+pub unsafe extern "C" fn xmlNewInputFromUrl(
+    url: *const c_char,
+    _flags: c_int,
+    out: *mut *mut _xmlParserInput,
+) -> c_int {
+    unsafe {
+        if out.is_null() {
+            return crate::abi::types::XML_ERR_ARGUMENT;
+        }
+        *out = ptr::null_mut();
+        if url.is_null() {
+            return crate::abi::types::XML_ERR_ARGUMENT;
+        }
+        let buf = crate::xml::io::input_buffer_create_file(
+            url,
+            crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+        );
+        if buf.is_null() {
+            return crate::abi::types::XML_IO_ENOENT;
+        }
+        let input = crate::abi::exports_parser::parser_input_from_buf_pub(buf);
+        if input.is_null() {
+            return crate::abi::types::XML_ERR_NO_MEMORY;
+        }
+        pi_set_input_filename(input, url);
+        *out = input;
+        crate::abi::types::XML_ERR_OK
+    }
+}
+
+/// `xmlInputSetEncodingHandler` — attach an encoding handler to an input
+/// (upstream parserInternals.c; handler closed on error / UTF-8 pass).
+#[no_mangle]
+pub unsafe extern "C" fn xmlInputSetEncodingHandler(
+    input: *mut _xmlParserInput,
+    handler: *mut c_void,
+) -> c_int {
+    unsafe {
+        if input.is_null() || (*input).buf.is_null() {
+            if !handler.is_null() {
+                crate::abi::exports_xml2::xmlCharEncCloseFunc(handler);
+            }
+            return crate::abi::types::XML_ERR_ARGUMENT;
+        }
+        let in_ = (*input).buf;
+        let mut h = handler;
+        // UTF-8 requires no encoding handler.
+        if !h.is_null() {
+            let name = (*(h as *mut crate::abi::structs::_xmlCharEncodingHandler)).name;
+            if !name.is_null()
+                && crate::abi::exports_xml2::xmlStrcasecmp(
+                    name as *const crate::abi::types::xmlChar,
+                    b"UTF-8\0".as_ptr() as *const crate::abi::types::xmlChar,
+                ) == 0
+            {
+                crate::abi::exports_xml2::xmlCharEncCloseFunc(h);
+                h = ptr::null_mut();
+            }
+        }
+        if (*in_).encoder == h as *mut c_void {
+            return crate::abi::types::XML_ERR_OK;
+        }
+        if !(*in_).encoder.is_null() {
+            crate::abi::exports_xml2::xmlCharEncCloseFunc((*in_).encoder);
+            (*in_).encoder = h as *mut c_void;
+            return crate::abi::types::XML_ERR_OK;
+        }
+        (*in_).encoder = h as *mut c_void;
+        crate::abi::types::XML_ERR_OK
     }
 }

@@ -5,8 +5,8 @@
   "oracle_profile": "libxslt-1.1.45",
   "inputs": {
     "argv": [
-      "pred.xsl",
-      "doc.xml"
+      "xslt/pred.xsl",
+      "xslt/doc.xml"
     ],
     "document": "xslt/doc.xml"
   },

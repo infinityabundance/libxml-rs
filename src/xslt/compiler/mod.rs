@@ -24,9 +24,9 @@ use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
-use crate::xml::tree::{doc_get_root_element, get_prop};
+use crate::xml::tree::{doc_get_root_element, get_prop, search_ns};
 use std::ffi::c_void;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 use std::ptr;
 
 /// The XSLT namespace URI.
@@ -95,7 +95,11 @@ unsafe fn doc_URL(doc: *mut _xmlDoc) -> *const xmlChar {
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-pub(crate) unsafe fn compile_top_level(style: *mut _xsltStylesheet, root: *mut _xmlNode, depth: c_int) {
+pub(crate) unsafe fn compile_top_level(
+    style: *mut _xsltStylesheet,
+    root: *mut _xmlNode,
+    depth: c_int,
+) {
     // Process imports first (they must precede other elements).
     let mut child = (*root).children;
     while !child.is_null() {
@@ -561,7 +565,11 @@ pub(crate) unsafe fn add_template_to_style(style: *mut _xsltStylesheet, templ: *
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-pub(crate) unsafe fn compile_template(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
+pub(crate) unsafe fn compile_template(
+    style: *mut _xsltStylesheet,
+    inst: *mut _xmlNode,
+    depth: c_int,
+) {
     let templ = libc::calloc(1, core::mem::size_of::<_xsltTemplate>()) as *mut _xsltTemplate;
     if templ.is_null() {
         return;
@@ -683,35 +691,161 @@ pub(crate) unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNod
 
 /// Compile an `xsl:decimal-format` element.
 ///
+/// UPSTREAM-PARITY (xslt.c `xsltParseStylesheetDecimalFormat`):
+///
+/// - With no `name` attribute the **default** decimal format (the chain
+///   head, created by `xsltNewStylesheetInternal`) is customized in place.
+/// - With a `name` the QName is validated, its prefix resolved against the
+///   element's in-scope namespaces, an existing format with the same QName
+///   is rejected ("already exists" warning), and the new format is
+///   **appended** after the default.
+///
 /// # SAFETY
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
-    let fmt =
-        libc::calloc(1, core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
-    if fmt.is_null() {
+    if style.is_null() || inst.is_null() {
         return;
     }
-    // name (optional; NULL = default format).
     let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
-    if !name.is_null() {
-        (*fmt).name = name;
-    }
-    // Attribute characters.
-    set_fmt_char(fmt, b"decimal-separator\0", b".\0", 0);
-    set_fmt_char(fmt, b"grouping-separator\0", b",\0", 1);
-    set_fmt_char(fmt, b"infinity\0", b"Infinity\0", 2);
-    set_fmt_char(fmt, b"minus-sign\0", b"-\0", 3);
-    set_fmt_char(fmt, b"NaN\0", b"NaN\0", 4);
-    set_fmt_char(fmt, b"percent\0", b"%\0", 5);
-    set_fmt_char(fmt, b"per-mille\0", "‰".as_bytes(), 6);
-    set_fmt_char(fmt, b"zero-digit\0", b"0\0", 7);
-    set_fmt_char(fmt, b"digit\0", b"#\0", 8);
-    set_fmt_char(fmt, b"pattern-separator\0", b";\0", 9);
+    let mut fmt: *mut _xsltDecimalFormat;
+    let mut ns_uri: *const xmlChar = ptr::null();
 
-    // Prepend to the stylesheet's decimal format chain.
-    (*fmt).next = (*style).decimalFormat;
-    (*style).decimalFormat = fmt;
+    if name.is_null() {
+        // No name: customize the default format in place.
+        fmt = (*style).decimalFormat;
+        if fmt.is_null() {
+            return;
+        }
+    } else {
+        // Validate the QName (upstream xmlValidateQName).
+        let bytes = core::slice::from_raw_parts(
+            name as *const u8,
+            libc::strlen(name as *const libc::c_char),
+        );
+        let mut valid = !bytes.is_empty() && !bytes.iter().any(|b| b.is_ascii_whitespace());
+        let colon = bytes.iter().position(|&b| b == b':');
+        if let Some(idx) = colon {
+            if idx == 0 || idx + 1 >= bytes.len() || bytes[idx + 1..].contains(&b':') {
+                valid = false;
+            }
+        }
+        if !valid {
+            let msg = format!(
+                "xsl:decimal-format: Invalid QName '{}'\n",
+                String::from_utf8_lossy(bytes)
+            );
+            emit_compile_error(style, inst, msg.as_bytes());
+            (*style).warnings += 1;
+            libc::free(name as *mut libc::c_void);
+            return;
+        }
+        // Resolve the namespace URI for a prefixed QName.
+        let local_name: *mut xmlChar;
+        if let Some(idx) = colon {
+            let mut prefix_buf = bytes[..idx].to_vec();
+            prefix_buf.push(0);
+            let ns = search_ns((*inst).doc, inst, prefix_buf.as_ptr() as *const xmlChar);
+            if ns.is_null() {
+                // Upstream xsltGetQNameURI: unresolvable prefix -> warning.
+                let msg = format!(
+                    "xsl:decimal-format: Invalid QName '{}'\n",
+                    String::from_utf8_lossy(bytes)
+                );
+                emit_compile_error(style, inst, msg.as_bytes());
+                (*style).warnings += 1;
+                libc::free(name as *mut libc::c_void);
+                return;
+            }
+            ns_uri = (*ns).href;
+            let mut owned = bytes[idx + 1..].to_vec();
+            owned.push(0);
+            local_name = libc::malloc(owned.len()) as *mut xmlChar;
+            if local_name.is_null() {
+                libc::free(name as *mut libc::c_void);
+                return;
+            }
+            libc::memcpy(
+                local_name as *mut libc::c_void,
+                owned.as_ptr() as *const libc::c_void,
+                owned.len(),
+            );
+            libc::free(name as *mut libc::c_void);
+        } else {
+            local_name = name;
+        }
+        // Reject duplicate QNames (upstream "already exists" warning).
+        let existing =
+            crate::abi::exports_xslt_exec::xsltDecimalFormatGetByQName(style, ns_uri, local_name);
+        if !existing.is_null() {
+            let msg = format!(
+                "xsltParseStylestyleDecimalFormat: {} already exists\n",
+                String::from_utf8_lossy(unsafe {
+                    core::slice::from_raw_parts(
+                        local_name as *const u8,
+                        libc::strlen(local_name as *const libc::c_char),
+                    )
+                })
+            );
+            emit_compile_error(style, inst, msg.as_bytes());
+            (*style).warnings += 1;
+            libc::free(local_name as *mut libc::c_void);
+            return;
+        }
+        // Create the new format and append it after the default (upstream
+        // walks to the tail).
+        fmt =
+            libc::calloc(1, core::mem::size_of::<_xsltDecimalFormat>()) as *mut _xsltDecimalFormat;
+        if fmt.is_null() {
+            libc::free(local_name as *mut libc::c_void);
+            return;
+        }
+        (*fmt).name = local_name;
+        // Borrowed ns href (the stylesheet document owns it and outlives
+        // the format list; see xsltFreeStylesheet ordering).
+        (*fmt).nsUri = ns_uri;
+        let mut tail = (*style).decimalFormat;
+        while !tail.is_null() && !(*tail).next.is_null() {
+            tail = (*tail).next;
+        }
+        if !tail.is_null() {
+            (*tail).next = fmt;
+        } else {
+            (*style).decimalFormat = fmt;
+        }
+    }
+    // Attribute characters (applied to the default in place, or to the
+    // freshly created named format).
+    set_fmt_char(fmt, inst, b"decimal-separator\0", b".\0", 0);
+    set_fmt_char(fmt, inst, b"grouping-separator\0", b",\0", 1);
+    set_fmt_char(fmt, inst, b"infinity\0", b"Infinity\0", 2);
+    set_fmt_char(fmt, inst, b"minus-sign\0", b"-\0", 3);
+    set_fmt_char(fmt, inst, b"NaN\0", b"NaN\0", 4);
+    set_fmt_char(fmt, inst, b"percent\0", b"%\0", 5);
+    set_fmt_char(fmt, inst, b"per-mille\0", "‰".as_bytes(), 6);
+    set_fmt_char(fmt, inst, b"zero-digit\0", b"0\0", 7);
+    set_fmt_char(fmt, inst, b"digit\0", b"#\0", 8);
+    set_fmt_char(fmt, inst, b"pattern-separator\0", b";\0", 9);
+}
+
+/// Emit a stylesheet-compile error through the XSLT error machinery with
+/// upstream-identical observable output (message without a trailing
+/// newline; the error channel appends one).
+///
+/// # SAFETY
+///
+/// - `style`/`inst` may be NULL.
+unsafe fn emit_compile_error(style: *mut _xsltStylesheet, inst: *mut _xmlNode, msg: &[u8]) {
+    unsafe {
+        let mut buf = msg.to_vec();
+        buf.push(0);
+        crate::xslt::errors::xsltTransformError(
+            ptr::null_mut(),
+            style,
+            inst,
+            buf.as_ptr() as *const c_char,
+        );
+    }
 }
 
 /// Set a decimal format character from the instruction attributes or default.
@@ -721,31 +855,86 @@ pub(crate) unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *
 /// - All pointers must be valid.
 unsafe fn set_fmt_char(
     fmt: *mut _xsltDecimalFormat,
+    inst: *mut _xmlNode,
     attr_name: &[u8],
     default: &[u8],
     field: c_int,
 ) {
-    let mut attr = b"\0".to_vec();
     let mut full = attr_name.to_vec();
     full.push(0);
-    let val = get_prop(fmt as *mut _xmlNode, full.as_ptr() as *const xmlChar);
-    let _ = attr;
+    // UPSTREAM-PARITY: the character comes from the `xsl:decimal-format`
+    // instruction's attribute (xslt.c xsltParseStylesheetDecimalFormat), or
+    // the standard default when the attribute is absent.
+    let val = get_prop(inst, full.as_ptr() as *const xmlChar);
     let chosen = if !val.is_null() {
         val
     } else {
         alloc_str(default)
     };
+    // Free any previous value (the default format may be customized in
+    // place by a name-less xsl:decimal-format, exactly as upstream frees
+    // the old field before assigning).
     match field {
-        0 => (*fmt).decimalPoint = chosen,
-        1 => (*fmt).grouping = chosen,
-        2 => (*fmt).infinity = chosen,
-        3 => (*fmt).minusSign = chosen,
-        4 => (*fmt).noNumber = chosen,
-        5 => (*fmt).percent = chosen,
-        6 => (*fmt).permille = chosen,
-        7 => (*fmt).zeroDigit = chosen,
-        8 => (*fmt).digit = chosen,
-        _ => (*fmt).patternSeparator = chosen,
+        0 => {
+            if !(*fmt).decimalPoint.is_null() {
+                libc::free((*fmt).decimalPoint as *mut libc::c_void);
+            }
+            (*fmt).decimalPoint = chosen;
+        }
+        1 => {
+            if !(*fmt).grouping.is_null() {
+                libc::free((*fmt).grouping as *mut libc::c_void);
+            }
+            (*fmt).grouping = chosen;
+        }
+        2 => {
+            if !(*fmt).infinity.is_null() {
+                libc::free((*fmt).infinity as *mut libc::c_void);
+            }
+            (*fmt).infinity = chosen;
+        }
+        3 => {
+            if !(*fmt).minusSign.is_null() {
+                libc::free((*fmt).minusSign as *mut libc::c_void);
+            }
+            (*fmt).minusSign = chosen;
+        }
+        4 => {
+            if !(*fmt).noNumber.is_null() {
+                libc::free((*fmt).noNumber as *mut libc::c_void);
+            }
+            (*fmt).noNumber = chosen;
+        }
+        5 => {
+            if !(*fmt).percent.is_null() {
+                libc::free((*fmt).percent as *mut libc::c_void);
+            }
+            (*fmt).percent = chosen;
+        }
+        6 => {
+            if !(*fmt).permille.is_null() {
+                libc::free((*fmt).permille as *mut libc::c_void);
+            }
+            (*fmt).permille = chosen;
+        }
+        7 => {
+            if !(*fmt).zeroDigit.is_null() {
+                libc::free((*fmt).zeroDigit as *mut libc::c_void);
+            }
+            (*fmt).zeroDigit = chosen;
+        }
+        8 => {
+            if !(*fmt).digit.is_null() {
+                libc::free((*fmt).digit as *mut libc::c_void);
+            }
+            (*fmt).digit = chosen;
+        }
+        _ => {
+            if !(*fmt).patternSeparator.is_null() {
+                libc::free((*fmt).patternSeparator as *mut libc::c_void);
+            }
+            (*fmt).patternSeparator = chosen;
+        }
     }
 }
 

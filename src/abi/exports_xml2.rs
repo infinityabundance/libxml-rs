@@ -4869,6 +4869,126 @@ pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
     0
 }
 
+/// Convert a block of ISO-8859-1 bytes to UTF-8 (upstream encoding.c
+/// `xmlIsolat1ToUTF8`; R-000165 closure).
+///
+/// `*outlen`/`*inlen` are updated with the bytes produced/consumed; returns
+/// the number of bytes written or an xmlCharEncError code.
+///
+/// # SAFETY
+///
+/// `out`/`in` must be valid buffers for `*outlen`/`*inlen` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xmlIsolat1ToUTF8(
+    out: *mut u8,
+    outlen: *mut c_int,
+    input: *const u8,
+    inlen: *mut c_int,
+) -> c_int {
+    // xmlCharEncError (encoding.h): SUCCESS 0, INTERNAL -1, SPACE -2.
+    const XML_ENC_ERR_SPACE: c_int = -2;
+    const XML_ENC_ERR_INTERNAL: c_int = -1;
+    unsafe {
+        if out.is_null() || input.is_null() || outlen.is_null() || inlen.is_null() {
+            return XML_ENC_ERR_INTERNAL;
+        }
+        let outstart = out;
+        let instart = input;
+        let outend = out.add(*outlen as usize);
+        let inend = input.add(*inlen as usize);
+        let mut cur = input;
+        let mut o = out;
+        while cur < inend {
+            let c = *cur;
+            if c < 0x80 {
+                if o >= outend {
+                    break;
+                }
+                *o = c;
+                o = o.add(1);
+            } else {
+                if (outend as usize) - (o as usize) < 2 {
+                    break;
+                }
+                *o = (c >> 6) | 0xC0;
+                *o.add(1) = (c & 0x3F) | 0x80;
+                o = o.add(2);
+            }
+            cur = cur.add(1);
+        }
+        let mut ret = XML_ENC_ERR_SPACE;
+        if cur == inend {
+            ret = (o as usize - outstart as usize) as c_int;
+        }
+        *outlen = (o as usize - outstart as usize) as c_int;
+        *inlen = (cur as usize - instart as usize) as c_int;
+        ret
+    }
+}
+
+/// Convert a block of UTF-8 to ISO-8859-1 (upstream encoding.c
+/// `xmlUTF8ToIsolat1`; R-000165 closure).
+///
+/// # SAFETY
+///
+/// `out`/`in` must be valid buffers for `*outlen`/`*inlen` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xmlUTF8ToIsolat1(
+    out: *mut u8,
+    outlen: *mut c_int,
+    input: *const u8,
+    inlen: *mut c_int,
+) -> c_int {
+    const XML_ENC_ERR_SPACE: c_int = -2;
+    const XML_ENC_ERR_INTERNAL: c_int = -1;
+    const XML_ENC_ERR_INPUT: c_int = -3;
+    const XML_ENC_ERR_SUCCESS: c_int = 0;
+    unsafe {
+        if out.is_null() || outlen.is_null() || inlen.is_null() {
+            return XML_ENC_ERR_INTERNAL;
+        }
+        if input.is_null() {
+            *inlen = 0;
+            *outlen = 0;
+            return XML_ENC_ERR_SUCCESS;
+        }
+        let outstart = out;
+        let instart = input;
+        let outend = out.add(*outlen as usize);
+        let inend = input.add(*inlen as usize);
+        let mut cur = input;
+        let mut o = out;
+        let mut ret = XML_ENC_ERR_SPACE;
+        while cur < inend {
+            if o >= outend {
+                break;
+            }
+            let c = *cur;
+            if c < 0x80 {
+                *o = c;
+                o = o.add(1);
+            } else if c >= 0xC2 && c <= 0xC3 {
+                if (inend as usize) - (cur as usize) < 2 {
+                    break;
+                }
+                cur = cur.add(1);
+                *o = (c << 6) | (*cur & 0x3F);
+                o = o.add(1);
+            } else {
+                ret = XML_ENC_ERR_INPUT;
+                break;
+            }
+            cur = cur.add(1);
+        }
+        if ret != XML_ENC_ERR_INPUT {
+            ret = (o as usize - outstart as usize) as c_int;
+        }
+        *outlen = (o as usize - outstart as usize) as c_int;
+        *inlen = (cur as usize - instart as usize) as c_int;
+        ret
+    }
+}
+
 /// Return the name of a character encoding (upstream encoding.h).
 ///
 /// # UPSTREAM-PARITY
@@ -5874,43 +5994,23 @@ pub unsafe extern "C" fn xmlXPathCastToString(val: *mut _xmlXPathObject) -> *mut
 
 /// Convert an XPath number to its string representation (XPath 1.0 §4.2).
 ///
-/// Exposed as a helper; matches upstream `xmlXPathCastNumberToString`.
+/// Canonical implementation lives in `crate::xml::xpath::types::number_to_string`
+/// (a port of upstream `xmlXPathCastNumberToString` / `xmlXPathFormatNumber`,
+/// R-000166); this ABI helper delegates so every number→string conversion
+/// shares exactly one oracle-verified code path.
 pub fn xml_number_to_string(n: f64) -> String {
-    if n.is_nan() {
-        return "NaN".to_string();
-    }
-    if n.is_infinite() {
-        return if n > 0.0 {
-            "Infinity".to_string()
-        } else {
-            "-Infinity".to_string()
-        };
-    }
-    if n == 0.0 {
-        // Both +0 and -0 serialize as "0" per XPath 1.0.
-        return "0".to_string();
-    }
-    // Integer values serialize without a decimal point or exponent.
-    if n.fract() == 0.0 && n.abs() < 1e15 {
-        return format!("{:.0}", n);
-    }
-    // For other values, upstream uses %.15g-ish formatting with adjustments.
-    // Try to find the shortest representation that round-trips (%.17g then
-    // trim), which matches upstream's effective behavior for most inputs.
-    let mut s = format!("{:.15}", n);
-    // Trim trailing zeros and possible trailing dot.
-    if s.contains('.') {
-        while s.ends_with('0') {
-            s.pop();
-        }
-        if s.ends_with('.') {
-            s.pop();
-        }
-    }
-    if s == "-0" {
-        return "0".to_string();
-    }
-    s
+    crate::xml::xpath::types::number_to_string(n)
+}
+
+/// Port of upstream xpath.c `xmlXPathStringEvalNumber` (R-000166): see
+/// `crate::xml::xpath::types::string_bytes_to_number` — the oracle
+/// accumulates digits directly, caps the fraction at MAX_FRAC=20 digits
+/// after any leading zeros, applies the exponent with `pow(10.0, exp)`
+/// (underflowing to 0 below the smallest subnormal), accepts XML whitespace
+/// around the number, and returns NaN for anything else — including a
+/// leading '+'.
+fn xpath_string_eval_number(bytes: &[u8]) -> f64 {
+    crate::xml::xpath::types::string_bytes_to_number(bytes)
 }
 
 /// Cast a C string to a number per XPath 1.0 §4.2 conversion rules.
@@ -5927,102 +6027,26 @@ pub unsafe extern "C" fn xmlXPathCastStringToNumber(val: *const xmlChar) -> f64 
     }
     let len = libc::strlen(val as *const libc::c_char);
     let bytes = core::slice::from_raw_parts(val, len);
-    // Skip leading whitespace (XML whitespace per XPath 1.0).
-    let mut i = 0;
-    while i < bytes.len() && matches!(bytes[i], b' ' | b'\t' | b'\n' | b'\r') {
-        i += 1;
-    }
-    let s = &bytes[i..];
-    if s.is_empty() {
-        return f64::NAN;
-    }
-    // Parse an optional sign.
-    let (sign, rest) = match s[0] {
-        b'+' => (1.0f64, &s[1..]),
-        b'-' => (-1.0f64, &s[1..]),
-        _ => (1.0f64, s),
-    };
-    if rest.is_empty() {
-        return f64::NAN;
-    }
-    // Try full parse; if it fails (trailing junk), the value is NaN per spec.
-    // XPath 1.0: a string that does not conform to the Number production is NaN.
-    let num_str = core::str::from_utf8(rest);
-    match num_str {
-        Ok(s) => {
-            // Accept only valid Number productions: digits with optional
-            // fraction/exponent.
-            let valid = is_xpath_number(s);
-            if !valid {
-                f64::NAN
-            } else {
-                s.trim()
-                    .parse::<f64>()
-                    .map(|v| v * sign)
-                    .unwrap_or(f64::NAN)
-            }
-        }
-        Err(_) => f64::NAN,
-    }
-}
-
-/// Check whether a string conforms to the XPath 1.0 Number production.
-fn is_xpath_number(s: &str) -> bool {
-    let b = s.as_bytes();
-    if b.is_empty() {
-        return false;
-    }
-    let mut i = 0;
-    let mut saw_digit = false;
-    while i < b.len() && b[i].is_ascii_digit() {
-        saw_digit = true;
-        i += 1;
-    }
-    if i < b.len() && b[i] == b'.' {
-        i += 1;
-        while i < b.len() && b[i].is_ascii_digit() {
-            saw_digit = true;
-            i += 1;
-        }
-    }
-    if !saw_digit {
-        return false;
-    }
-    if i < b.len() && (b[i] == b'e' || b[i] == b'E') {
-        i += 1;
-        if i < b.len() && (b[i] == b'+' || b[i] == b'-') {
-            i += 1;
-        }
-        let mut saw_exp = false;
-        while i < b.len() && b[i].is_ascii_digit() {
-            saw_exp = true;
-            i += 1;
-        }
-        if !saw_exp {
-            return false;
-        }
-    }
-    i == b.len()
+    xpath_string_eval_number(bytes)
 }
 
 /// Compare two nodes in document order.
 ///
-/// Returns negative if `node1` precedes `node2`, positive if it follows,
-/// 0 if they are the same node.
+/// UPSTREAM-PARITY (xpath.c `xmlXPathCmpNodes`): returns **1** when
+/// `node1` precedes `node2` in document order, **-1** when `node1` follows
+/// `node2`, 0 for the same node, and -2 for NULL or cross-document
+/// comparisons. The sign convention was verified against the system oracle
+/// (libxml2 2.15.3): `xmlXPathCmpNodes(book1, book2)` returns 1.
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
 /// int xmlXPathCmpNodes(xmlNodePtr node1, xmlNodePtr node2);
 /// ```
-///
-/// Oracle behavior: uses ancestor comparison — if one node is an ancestor
-/// of the other, the ancestor comes first; otherwise the nearest common
-/// ancestor's child order determines the result.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xmlNode) -> c_int {
     if node1.is_null() || node2.is_null() {
-        return 0;
+        return -2;
     }
     if node1 == node2 {
         return 0;
@@ -6040,6 +6064,10 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
         chain2.push(n);
         n = (*n).parent as *mut _xmlNode;
     }
+    // Distinct documents (or entities) case.
+    if chain1[chain1.len() - 1] != chain2[chain2.len() - 1] {
+        return -2;
+    }
     // Find the nearest common ancestor.
     let mut i = chain1.len();
     let mut j = chain2.len();
@@ -6047,14 +6075,13 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
         i -= 1;
         j -= 1;
     }
-    if i == 0 && j == 0 {
-        return 0; // Same node (already handled) or disjoint trees treated as equal
-    }
+    // node1 is an ancestor of node2 -> node1 precedes it -> 1.
     if i == 0 {
-        return -1; // node1 is an ancestor of node2
+        return 1;
     }
+    // node2 is an ancestor of node1 -> node1 follows it -> -1.
     if j == 0 {
-        return 1; // node2 is an ancestor of node1
+        return -1;
     }
     // Compare sibling order at the divergence point.
     let mut a = chain1[i - 1];
@@ -6078,10 +6105,10 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
     };
     while !child.is_null() {
         if child == a {
-            return -1;
+            return 1; // a precedes b
         }
         if child == b {
-            return 1;
+            return -1; // b precedes a
         }
         child = (*child).next;
     }
@@ -7963,4 +7990,51 @@ pub unsafe extern "C" fn xmlSAX2SetDocumentLocator(
 #[no_mangle]
 pub unsafe extern "C" fn xmlSAX2Reference(ctx: *mut c_void, name: *const xmlChar) {
     crate::xml::sax::default::default_sax_handler::reference(ctx, name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::xml_number_to_string;
+
+    /// R-000166: number-to-string follows upstream xmlXPathFormatNumber —
+    /// verified byte-identical against the oracle (xsltproc) on the t4/n3
+    /// differential corpora. Cases here are exact doubles or
+    /// rounding-robust formats (parser-dependent literals are covered by the
+    /// differential corpora, not unit tests).
+    #[test]
+    fn test_xml_number_to_string_parity_cases() {
+        let cases: &[(f64, &str)] = &[
+            (1234567.891, "1234567.891"),
+            (0.1 + 0.2, "0.3"),
+            (1.0 / 3.0, "0.333333333333333"),
+            (1e20, "1e+20"),
+            (1e-5, "0.00001"),
+            (123456789012345678901234567890.0, "1.23456789012346e+29"),
+            (1e100, "1e+100"),
+            (-1e100, "-1e+100"),
+            (1.5e-100, "1.5e-100"),
+            (1e9, "1000000000"),
+            (0.00001, "0.00001"),
+            (9.99e-6, "9.99e-06"),
+            (2147483646.0, "2147483646"),
+            (2147483648.0, "2.147483648e+09"),
+            (-2147483647.0, "-2147483647"),
+            (-2147483649.0, "-2.147483649e+09"),
+            (0.5, "0.5"),
+            (1.0 / 7.0, "0.142857142857143"),
+            (2.675, "2.675"),
+            (3.141592653589793, "3.141592653589793"),
+            (-0.0, "0"),
+            (0.0, "0"),
+            (f64::INFINITY, "Infinity"),
+            (f64::NEG_INFINITY, "-Infinity"),
+            (f64::NAN, "NaN"),
+            (0.30000000000000004, "0.3"),
+            (2.2250738585072014e-308, "2.2250738585072e-308"),
+            (5e-324, "4.94065645841247e-324"),
+        ];
+        for (n, expected) in cases {
+            assert_eq!(&xml_number_to_string(*n), expected, "value: {}", n);
+        }
+    }
 }

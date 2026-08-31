@@ -364,7 +364,8 @@ pub unsafe extern "C" fn xsltRegisterExtPrefix(
             && libc::strcmp((*cur).prefix as *const c_char, prefix as *const c_char) == 0
         {
             // Re-registration with a different URI updates the mapping.
-            let new_uri = crate::abi::allocator::xmlMemStrdupImpl(URI as *const c_char) as *mut c_char;
+            let new_uri =
+                crate::abi::allocator::xmlMemStrdupImpl(URI as *const c_char) as *mut c_char;
             if new_uri.is_null() {
                 return -1;
             }
@@ -777,6 +778,25 @@ pub unsafe extern "C" fn xsltStyleGetExtData(
     );
     (*style).extInfos = entry as *mut c_void;
     data
+}
+
+/// `xsltStyleStylesheetLevelGetExtData` (extensions.c): the stylesheet-level
+/// extension data of a module — the same lookup/init-on-first-use logic as
+/// `xsltStyleGetExtData` (which upstream defines as a thin wrapper of this
+/// function).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// void *xsltStyleStylesheetLevelGetExtData(xsltStylesheetPtr style,
+///                                          const xmlChar *URI);
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn xsltStyleStylesheetLevelGetExtData(
+    style: *mut _xsltStylesheet,
+    URI: *const xmlChar,
+) -> *mut c_void {
+    unsafe { xsltStyleGetExtData(style, URI) }
 }
 
 /// `xsltGetExtInfo` (extensions.c): the stylesheet's extension-data list

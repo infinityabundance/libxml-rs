@@ -120,6 +120,8 @@ struct ParserState {
     ctx: usize,
     serror: Option<xmlStructuredErrorFunc>,
     sctx: usize,
+    resource_loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    resource_ctxt: usize,
 }
 
 /// State kept for a validation context (side registry).
@@ -2967,4 +2969,46 @@ pub unsafe extern "C" fn xmlSchematronSetValidStructuredErrors(
     let e = guard.entry(ctxt as usize).or_default();
     e.serror = serror;
     e.sctx = ctx as usize;
+}
+
+/// Install a custom resource loader on an XML Schema parser context
+/// (upstream xmlschemas.c `xmlSchemaSetResourceLoader`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid parser context pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlSchemaSetResourceLoader(
+    ctxt: *mut c_void,
+    loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    data: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    let mut map = PARSER_STATES.lock();
+    let st = map.entry(ctxt as usize).or_default();
+    st.resource_loader = loader;
+    st.resource_ctxt = data as usize;
+}
+
+/// Install a custom resource loader on an XInclude context
+/// (upstream xinclude.c `xmlXIncludeSetResourceLoader`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid XInclude context pointer or NULL.
+#[no_mangle]
+pub unsafe extern "C" fn xmlXIncludeSetResourceLoader(
+    ctxt: crate::abi::exports_xinclude::xmlXIncludeCtxtPtr,
+    loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    data: *mut c_void,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    let mut map = PARSER_STATES.lock();
+    let st = map.entry(ctxt as usize).or_default();
+    st.resource_loader = loader;
+    st.resource_ctxt = data as usize;
 }

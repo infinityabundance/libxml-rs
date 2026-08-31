@@ -1,0 +1,29 @@
+{
+  "case_id": "CLI-XSLTPROC-0015",
+  "surface": "cli-xsltproc",
+  "purpose": "format-number(): undeclared decimal format reports error and stops the transform (Stack usage error, exit 10)",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/fmt-err.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-1-x-format-number"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "format-number",
+    "error-path"
+  ]
+}

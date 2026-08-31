@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<out>
+  <b pos="1">Rust Programming</b>
+  <b pos="2">XML in Practice</b>
+  <smith>XML in Practice</smith>
+  <b3>XSLT Cookbook</b3>
+</out>

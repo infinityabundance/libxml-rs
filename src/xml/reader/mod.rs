@@ -605,7 +605,8 @@ impl XmlTextReader {
                     let plen =
                         libc::strlen(unsafe { (*ns).prefix } as *const libc::c_char) as usize;
                     let nlen = libc::strlen(name as *const libc::c_char) as usize;
-                    let p = crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1) as *mut xmlChar;
+                    let p =
+                        crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1) as *mut xmlChar;
                     if !p.is_null() {
                         libc::memcpy(
                             p as *mut libc::c_void,
@@ -1056,8 +1057,8 @@ impl XmlTextReader {
                         let plen = libc::strlen(unsafe { (*attr.ns).prefix } as *const libc::c_char)
                             as usize;
                         let nlen = libc::strlen(attr.name as *const libc::c_char) as usize;
-                        let p =
-                            crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1) as *mut xmlChar;
+                        let p = crate::abi::allocator::xmlMallocImpl(plen + 1 + nlen + 1)
+                            as *mut xmlChar;
                         if !p.is_null() {
                             libc::memcpy(
                                 p as *mut libc::c_void,
@@ -4965,6 +4966,26 @@ pub unsafe extern "C" fn xmlTextReaderSetStructuredErrorHandler(
     unsafe {
         (*reader).structured_handler = f;
         (*reader).structured_arg = arg;
+    }
+}
+
+/// `void xmlTextReaderSetResourceLoader(xmlTextReaderPtr reader,
+/// xmlResourceLoader loader, void *data)` — install a custom resource
+/// loader; stored on the reader and forwarded to its parser context
+/// (upstream xmlreader.c).
+#[no_mangle]
+pub unsafe extern "C" fn xmlTextReaderSetResourceLoader(
+    reader: *mut XmlTextReader,
+    loader: Option<crate::abi::callbacks::xmlResourceLoader>,
+    data: *mut c_void,
+) {
+    if reader.is_null() {
+        return;
+    }
+    unsafe {
+        if !(*reader).ctxt.is_null() {
+            crate::abi::exports_parserint::xmlCtxtSetResourceLoader((*reader).ctxt, loader, data);
+        }
     }
 }
 

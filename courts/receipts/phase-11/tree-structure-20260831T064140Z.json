@@ -1,0 +1,168 @@
+{
+ "court": "TREE-001",
+ "phase": "11.1-N",
+ "timestamp": "2026-08-31T06:41:40Z",
+ "probe": "courts/suites/data-abi/tree-structure-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "stdout_sha256": "6899e4a87a4aaa738062b48f4322b7d12aef5d1205cb421d0e260ba86293e778"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "ac8998dd528180d5e010281dce2a55d9286e0ca75c31cff3afb8295df8a7d126"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 512,
+ "mismatches": [
+  {
+   "line": 229,
+   "oracle": "stderr:t.xml:1: namespace warning : xmlns: URI u is not absolute\\n<a xmlns=\\\"u\\\"><b xmlns=\\\"\\\"><c/></b></a>\\n            ^\\n",
+   "candidate": "stderr:t.xml:1: namespace warning : xmlns: URI u is not absolute\\n<a xmlns=\\\"u\\\"><b xmlns=\\\"\\\"><c/></b></a>\\n            ^\\nt.xml:1: namespace error : xmlns:: Empty XML namespace is not allowed\\n<a xmlns=\\\"u\\\"><b xmlns=\\\"\\\"><c/></b></a>\\n                        ^\\n"
+  },
+  {
+   "line": 241,
+   "oracle": "    nsdef: [(null): t=18]",
+   "candidate": "   node type=1 name=c line=1 extra=0 doc=1 ns=(null) parent=b next=(null) prev=(null)"
+  },
+  {
+   "line": 242,
+   "oracle": "   node type=1 name=c line=1 extra=0 doc=1 ns=(null) parent=b next=(null) prev=(null)",
+   "candidate": "   link ok=1 children=0 last=(null)"
+  },
+  {
+   "line": 243,
+   "oracle": "   link ok=1 children=0 last=(null)",
+   "candidate": "--- xmlGetLineNo checks ---"
+  },
+  {
+   "line": 244,
+   "oracle": "--- xmlGetLineNo checks ---",
+   "candidate": "lineno a=1"
+  },
+  {
+   "line": 245,
+   "oracle": "lineno a=1",
+   "candidate": "--- api checks ---"
+  },
+  {
+   "line": 246,
+   "oracle": "--- api checks ---",
+   "candidate": "root=a"
+  },
+  {
+   "line": 247,
+   "oracle": "root=a",
+   "candidate": "firstElem=b lastElem=b"
+  },
+  {
+   "line": 248,
+   "oracle": "firstElem=b lastElem=b",
+   "candidate": "nextElem=(null) prevElem=(null)"
+  },
+  {
+   "line": 249,
+   "oracle": "nextElem=(null) prevElem=(null)",
+   "candidate": "base=t.xml"
+  },
+  {
+   "line": 250,
+   "oracle": "base=t.xml",
+   "candidate": "content=\"\""
+  },
+  {
+   "line": 251,
+   "oracle": "content=\"\"",
+   "candidate": "stderr:"
+  },
+  {
+   "line": 252,
+   "oracle": "stderr:",
+   "candidate": "=== case 7: <a><!--comment--><?pi data?><![CDATA[raw <>&]]></a> ==="
+  },
+  {
+   "line": 253,
+   "oracle": "=== case 7: <a><!--comment--><?pi data?><![CDATA[raw <>&]]></a> ===",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 254,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": " intSubset=(null) extSubset=(null) ids=(null) refs=(null) dict=set"
+  },
+  {
+   "line": 255,
+   "oracle": " intSubset=(null) extSubset=(null) ids=(null) refs=(null) dict=set",
+   "candidate": "node type=9 name=(null) doc=1 parent=(null) next=(null) prev=(null)"
+  },
+  {
+   "line": 256,
+   "oracle": "node type=9 name=(null) doc=1 parent=(null) next=(null) prev=(null)",
+   "candidate": "link ok=1 children=1 last=a"
+  },
+  {
+   "line": 257,
+   "oracle": "link ok=1 children=1 last=a",
+   "candidate": "  psvi=set"
+  },
+  {
+   "line": 258,
+   "oracle": "  psvi=set",
+   "candidate": " node type=1 name=a line=1 extra=0 doc=1 ns=(null) parent=(doc) next=(null) prev=(null)"
+  },
+  {
+   "line": 259,
+   "oracle": " node type=1 name=a line=1 extra=0 doc=1 ns=(null) parent=(doc) next=(null) prev=(null)",
+   "candidate": " link ok=1 children=3 last=(noname)"
+  },
+  {
+   "line": 260,
+   "oracle": " link ok=1 children=3 last=(noname)",
+   "candidate": "  node type=8 name=comment line=1 extra=0 doc=1 parent=a next=pi prev=(null)"
+  },
+  {
+   "line": 261,
+   "oracle": "  node type=8 name=comment line=1 extra=0 doc=1 parent=a next=pi prev=(null)",
+   "candidate": "  link ok=1 children=0 last=(null)"
+  },
+  {
+   "line": 262,
+   "oracle": "  link ok=1 children=0 last=(null)",
+   "candidate": "    content: \"comment\""
+  },
+  {
+   "line": 263,
+   "oracle": "    content: \"comment\"",
+   "candidate": "  node type=7 name=pi line=1 extra=0 doc=1 parent=a next=(noname) prev=comment"
+  },
+  {
+   "line": 264,
+   "oracle": "  node type=7 name=pi line=1 extra=0 doc=1 parent=a next=(noname) prev=comment",
+   "candidate": "  link ok=1 children=0 last=(null)"
+  },
+  {
+   "line": 265,
+   "oracle": "  link ok=1 children=0 last=(null)",
+   "candidate": "    content: \"data\""
+  },
+  {
+   "line": 266,
+   "oracle": "    content: \"data\"",
+   "candidate": "  node type=4 name=(null) line=1 extra=0 doc=1 parent=a next=(null) prev=pi"
+  },
+  {
+   "line": 267,
+   "oracle": "  node type=4 name=(null) line=1 extra=0 doc=1 parent=a next=(null) prev=pi",
+   "candidate": "  link ok=1 children=0 last=(null)"
+  },
+  {
+   "line": 268,
+   "oracle": "  link ok=1 children=0 last=(null)",
+   "candidate": "    content: \"raw <>&\""
+  },
+  {
+   "line": 269,
+   "oracle": "    content: \"raw <>&\"",
+   "candidate": "--- xmlGetLineNo checks ---"
+  }
+ ]
+}

@@ -33,7 +33,6 @@ use std::ptr;
 use libxml_rs::abi::exports_xml2::*;
 use libxml_rs::abi::structs::*;
 use libxml_rs::abi::types::*;
-use libxml_rs::abi::versioning::{xmlLibxmlVersionString, xsltLibxsltVersionString};
 use libxml_rs::xslt::serialization::xsltSaveResultToFile;
 use libxml_rs::xslt::stylesheet::{
     xsltFreeStylesheet, xsltParseStylesheetDoc, xsltParseStylesheetFile,
@@ -503,29 +502,35 @@ unsafe fn main_impl() {
                 }
             }
             "-V" | "-version" | "--version" => {
-                // UPSTREAM-PARITY: four-line version report.
-                let xml_v = unsafe { cstr_utf8(xmlLibxmlVersionString()) };
-                let xslt_v = unsafe { cstr_utf8(xsltLibxsltVersionString()) };
-                let exslt_v = xslt_v.clone();
+                // UPSTREAM-PARITY: four-line version report, byte-identical
+                // to the oracle. xsltproc.c reads the exported DATA symbols
+                // (xmlParserVersion, xsltEngineVersion, exsltLibraryVersion)
+                // and the compile-time LIBXML_VERSION/LIBXSLT_VERSION/
+                // LIBEXSLT_VERSION macros of the system libxslt/libexslt
+                // build (21501/10145/825). R-000167.
+                let xml_v = unsafe { cstr_utf8(libxml_rs::abi::data_globals::xmlParserVersion) };
+                let xslt_v = unsafe { cstr_utf8(libxml_rs::abi::data_globals::xsltEngineVersion) };
+                let exslt_v =
+                    unsafe { cstr_utf8(libxml_rs::abi::data_globals::exsltLibraryVersion) };
                 println!(
                     "Using libxml {}, libxslt {} and libexslt {}",
                     xml_v, xslt_v, exslt_v
                 );
                 println!(
                     "xsltproc was compiled against libxml {}, libxslt {} and libexslt {}",
-                    libxml_rs::abi::versioning::LIBXML2_VERSION_NUM,
-                    libxml_rs::abi::versioning::LIBXSLT_VERSION_NUM,
-                    libxml_rs::abi::versioning::LIBXSLT_VERSION_NUM
+                    libxml_rs::abi::data_globals::xsltLibxmlVersion,
+                    libxml_rs::abi::data_globals::xsltLibxsltVersion,
+                    libxml_rs::abi::data_globals::exsltLibexsltVersion
                 );
                 println!(
                     "libxslt {} was compiled against libxml {}",
-                    libxml_rs::abi::versioning::LIBXSLT_VERSION_NUM,
-                    libxml_rs::abi::versioning::LIBXML2_VERSION_NUM
+                    libxml_rs::abi::data_globals::xsltLibxsltVersion,
+                    libxml_rs::abi::data_globals::xsltLibxmlVersion
                 );
                 println!(
                     "libexslt {} was compiled against libxml {}",
-                    libxml_rs::abi::versioning::LIBXSLT_VERSION_NUM,
-                    libxml_rs::abi::versioning::LIBXML2_VERSION_NUM
+                    libxml_rs::abi::data_globals::exsltLibexsltVersion,
+                    libxml_rs::abi::data_globals::exsltLibxmlVersion
                 );
                 std::process::exit(0);
             }

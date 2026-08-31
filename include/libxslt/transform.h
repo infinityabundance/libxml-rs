@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 /* Top-level engine entry points (upstream xslt.h / transform.h) */
-XMLPUBFUN int xsltCheckVersion(int version);
 XMLPUBFUN void xsltInit(void);
 XMLPUBFUN void xsltCleanupGlobals(void);
 XMLPUBFUN xsltStylesheetPtr xsltParseStylesheetFile(const xmlChar *filename);

@@ -1,2 +1,4 @@
-warning: failed to load external entity "exsl.xsl"
-cannot parse exsl.xsl
+XPath error : Unregistered function: str:upper-case
+runtime error: file xslt/exsl.xsl line 17 element value-of
+XPath evaluation returned no result.
+no result for xslt/doc.xml

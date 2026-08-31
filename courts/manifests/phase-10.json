@@ -1,11 +1,11 @@
 {
   "tools": {
     "xmllint": {
-      "date": "2026-08-30T12:26:03Z",
-      "candidate_commit": "c07254c898aa2816a8585bdbe3afd376f5fac10b",
+      "date": "2026-08-31T14:23:16Z",
+      "candidate_commit": "6d56f14333bf1d3adbcaf9bf1a8ff44c39307eb0",
       "oracle_identity": "/usr/bin/xmllint: using libxml version 21503-GITv2.15.3\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib",
-      "pass": 32,
-      "fail": 2,
+      "pass": 34,
+      "fail": 0,
       "cases": {
         "CLI-XMLLINT-0001": "PASS",
         "CLI-XMLLINT-0002": "PASS",
@@ -39,19 +39,19 @@
         "CLI-XMLLINT-0030": "PASS",
         "CLI-XMLLINT-0031": "PASS",
         "CLI-XMLLINT-0032": "PASS",
-        "CLI-XMLLINT-0033": "FAIL",
-        "CLI-XMLLINT-0034": "FAIL"
+        "CLI-XMLLINT-0033": "PASS",
+        "CLI-XMLLINT-0034": "PASS"
       }
     },
     "xmlcatalog": {
-      "date": "2026-08-30T12:26:03Z",
-      "candidate_commit": "c07254c898aa2816a8585bdbe3afd376f5fac10b",
+      "date": "2026-08-31T14:23:16Z",
+      "candidate_commit": "6d56f14333bf1d3adbcaf9bf1a8ff44c39307eb0",
       "oracle_identity": "Usage : /usr/bin/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\nUnknown option --version",
-      "pass": 9,
-      "fail": 2,
+      "pass": 11,
+      "fail": 0,
       "cases": {
         "CLI-XMLCATALOG-0001": "PASS",
-        "CLI-XMLCATALOG-0002": "FAIL",
+        "CLI-XMLCATALOG-0002": "PASS",
         "CLI-XMLCATALOG-0003": "PASS",
         "CLI-XMLCATALOG-0004": "PASS",
         "CLI-XMLCATALOG-0005": "PASS",
@@ -59,7 +59,7 @@
         "CLI-XMLCATALOG-0007": "PASS",
         "CLI-XMLCATALOG-0008": "PASS",
         "CLI-XMLCATALOG-0009": "PASS",
-        "CLI-XMLCATALOG-0010": "FAIL",
+        "CLI-XMLCATALOG-0010": "PASS",
         "CLI-XMLCATALOG-0011": "PASS"
       }
     }

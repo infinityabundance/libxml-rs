@@ -17,13 +17,14 @@ by_id = {r["id"]: r for r in ledger["ledger"]}
 
 def close(r, fix, lesson, note, regression_courts=None, component=None):
     """Append a FIXED tail entry, set fix/lesson; keep prior OPEN history.
-    Idempotent: a residual already carrying a FIXED tail is left alone."""
-    if r.get("status") == "FIXED":
-        return
+    Idempotent: a residual already carrying a FIXED tail is left alone, and
+    a residual whose status is FIXED but whose tail was clobbered gets the
+    FIXED tail re-appended."""
     history = r.get("history")
     if not history:
         history = [{"status": "OPEN", "date": r.get("discovery_date")}]
-    history.append({"status": "FIXED", "date": DATE, "note": note})
+    if not history or history[-1].get("status") != "FIXED":
+        history.append({"status": "FIXED", "date": DATE, "note": note})
     r["history"] = history
     r["status"] = "FIXED"
     r["fix"] = fix
@@ -40,12 +41,14 @@ r["component"] = [c if c != "include/libxml/*" else "include/libxml" for c in r[
 
 r = by_id["R-000165"]
 # merge the three OPEN history entries into one (OPEN may have a single entry)
-merged_note = " | ".join(h.get("event") or h.get("note", "") for h in r["history"])
-r["history"] = [{"status": "OPEN", "date": "2026-08-30", "note": merged_note}]
+if r["history"] and r["history"][-1].get("status") == "OPEN":
+    merged_note = " | ".join(h.get("event") or h.get("note", "") for h in r["history"])
+    r["history"] = [{"status": "OPEN", "date": "2026-08-30", "note": merged_note}]
 
 r = by_id["R-000167"]
-merged_note = " | ".join(h.get("event") or h.get("note", "") for h in r["history"])
-r["history"] = [{"status": "OPEN", "date": "2026-08-30", "note": merged_note}]
+if r["history"] and r["history"][-1].get("status") == "OPEN":
+    merged_note = " | ".join(h.get("event") or h.get("note", "") for h in r["history"])
+    r["history"] = [{"status": "OPEN", "date": "2026-08-30", "note": merged_note}]
 
 r = by_id["R-000131"]
 r["history"] = [
@@ -158,6 +161,204 @@ close(
         "byte-identical (57/57 CLI courts PASS)",
     regression_courts=["CLI-XSLTPROC-0004"],
 )
+
+# ── 2b. 11.1-X closure of the R-000136/138/157/160/165/166/167/168 group ────
+
+close(
+    by_id["R-000136"],
+    fix="11.1-X: the 1158-discovery export census is closed. The candidate now "
+        "exports every oracle DSO symbol: libxml2 881/881, libxslt 201/201, "
+        "libexslt (parity ledger MISSING = 0 for all three projects, "
+        "atlas/PARITY_OBLIGATIONS.json). The remaining 16 STUB marks are "
+        "dispositioned separately (R-000138 deprecated no-ops, R-000160 trivial "
+        "libxslt bodies) and are not missing symbols: every STUB symbol is "
+        "exported with a body whose observable behaviour matches the oracle. "
+        "The dso-loader court loads every exported symbol from the built DSO "
+        "(25/25) and the header-compile court compiles every public header "
+        "against the DSO (595/595).",
+    lesson="MISSING=0 is a census property verified by a DSO loader, not by "
+        "counting source: a symbol exists as an export only when the loader "
+        "can resolve it from the built artifact.",
+    note="closed in 11.1-X; PARITY_OBLIGATIONS MISSING=0 (libxml2/libxslt/"
+        "libexslt); dso-loader 25/25, header-compile 595/595",
+    regression_courts=["DSO-LOADER", "HEADER-COMPILE"],
+)
+close(
+    by_id["R-000138"],
+    fix="11.1-X: the deprecated init/cleanup entry points are dispositioned as "
+        "intentional safe divergences with evidence: each one is exported and "
+        "its body reproduces the oracle's observable behaviour. Upstream bodies "
+        "are themselves empty or near-empty (xmlInitializeGlobalState, "
+        "xmlInitializeDict, xmlInitializePredefinedEntities, "
+        "xmlCleanupPredefinedEntities, xmlDefaultSAXHandlerInit, "
+        "xmlCheckThreadLocalStorage), so the candidate's no-op is the oracle's "
+        "behaviour, not a divergence. The PARITY_OBLIGATIONS STUB census "
+        "(15 libxml2 + 1 libexslt) records the export+body disposition for each "
+        "symbol; the remaining no-op set (htmlDefaultSAXHandlerInit, "
+        "htmlInitAutoClose, htmlParseCharRef, xmlFileMatch, "
+        "xmlParserInputRead, xmlDictCleanup, xmlRelaxNGCleanupTypes, "
+        "xmlSchemaCleanupTypes, xmlSprintfElementContent, xmlXPathInit, "
+        "xmlXPathRegisterAllFunctions) matches the corresponding upstream "
+        "empty/trivial bodies byte-for-byte in observable effect.",
+    lesson="A deprecated no-op is only a divergence when the oracle does "
+        "something; upstream's own empty bodies make the no-op the parity "
+        "target. Each STUB mark needs a disposition, not an implementation.",
+    note="dispositioned in 11.1-X: exported no-ops matching upstream's empty "
+        "bodies; PARITY_OBLIGATIONS STUB census with per-symbol disposition",
+    regression_courts=["DSO-LOADER", "HEADER-COMPILE"],
+)
+close(
+    by_id["R-000160"],
+    fix="11.1-X: the libxslt exports with literally-trivial upstream 1.1.45 "
+        "bodies are dispositioned as intentional safe divergences with "
+        "evidence: each exported symbol's body reproduces the upstream trivial "
+        "body's observable behaviour (verified against the system oracle "
+        "DSO via the dso-loader and the encoding-family probe; ENCODING-001 "
+        "byte-identical on the native set and all error paths).",
+    lesson="Trivial upstream bodies (return NULL / 0 / unchanged argument) are "
+        "their own parity target; the classification is the evidence, not an "
+        "implementation gap.",
+    note="dispositioned in 11.1-X: INTENTIONAL_SAFE_DIVERGENCE with per-symbol "
+        "evidence in PARITY_OBLIGATIONS",
+    regression_courts=["DSO-LOADER"],
+)
+close(
+    by_id["R-000165"],
+    fix="11.1-X: all 65 oracle-DSO exports absent at discovery are now "
+        "exported and verified: parser accessors (xmlCtxtGet*/Set*), input "
+        "constructors (xmlNewInputFrom*), the xlink surface (xlinkIsLink), "
+        "per-module EXSLT registration (exsltMathRegister et al.), "
+        "resource-loader setters (xmlSchemaSetResourceLoader), "
+        "html/encoding/relaxng/xsd/reader/xinclude gaps, and xslDebugStatus. "
+        "The subsystem census (atlas/SUBSYSTEM_CENSUS.json) enumerates the "
+        "symbols; the dso-loader court resolves each from the built DSO "
+        "(25/25) and the header-compile court compiles every public header "
+        "against it (595/595).",
+    lesson="An absent export is a compile-and-load contract, not a runtime "
+        "path: header-compile + dso-loader courts are the regression net for "
+        "the exported surface.",
+    note="fixed in 11.1-X; 65 symbols exported; dso-loader 25/25, "
+        "header-compile 595/595",
+    regression_courts=["DSO-LOADER", "HEADER-COMPILE"],
+)
+close(
+    by_id["R-000166"],
+    fix="11.1-X: all four standards divergence clusters are closed with "
+        "oracle-verified differential courts. (1) WFC diagnostics: '<' in "
+        "attribute values (XML_ERR_LT_IN_ATTRIBUTE, caret at the offending "
+        "'<', exit 4) and '--' in comments match the oracle byte-for-byte. "
+        "(2) Namespace-declaration errors: empty xmlns:p=\"\", xmlns:xml "
+        "wrong URI, XML ns as default, and undefined prefixes on elements and "
+        "attributes (XML_NS_ERR_UNDEFINED_NAMESPACE, caret at the tag end) "
+        "match, including the double-report on <a xmlns:p=\"\"><p:b/></a>; "
+        "ancestor-declared prefixes stay silent. (3) C14N: the relative-URI "
+        "rejection ('Failed to canonicalize', exit 6) now applies in BOTH "
+        "inclusive and exclusive modes; inclusive namespace propagation was "
+        "rebuilt as a faithful port of xmlC14NProcessNamespacesAxis + "
+        "xmlExcC14NProcessNamespacesAxis (ns_rendered prefix-scoped find, "
+        "rebinding chains, xmlns=\"\" undeclarations, the xml namespace never "
+        "rendered, lexicographic prefix sorting, document-level PI/comment "
+        "newlines, CR normalization); subset canonicalization now implements "
+        "the visibility node-set semantics (orphan xml:lang/xml:space "
+        "inheritance, xml:base fixup, invisible elements processed but not "
+        "rendered) and the C ABI signature of xmlC14NDocDumpMemory/"
+        "xmlC14NDocSaveTo/ xmlC14NDocSave was corrected to xmlNodeSet* "
+        "(upstream). (4) XSLT number formatting: format-number() is the "
+        "canonical numbers.c port (CLI-XSLTPROC-0014/0015/0017); value-of "
+        "full double precision is the xmlXPathFormatNumber port (integer "
+        "shortcut, 1e9/1e-5 scientific threshold, DBL_DIG=15 fraction "
+        "digits, e+NN/e-NN exponent form, trailing-zero trim); number parsing "
+        "(xmlXPathCompNumber literal lexer + xmlXPathStringEvalNumber "
+        "string-to-number) reproduces the oracle's digit accumulation, "
+        "MAX_FRAC=20 cap and pow(10,exp) underflow (5e-324 -> 0).",
+    lesson="Spec-vs-upstream-vs-candidate must be checked per area with "
+        "executable probes on both binaries; the closure needs three layers "
+        "(byte-identical CLI differential corpora, C-API probes against both "
+        "DSOs, and Rust regression tests pinning each observable).",
+    note="fixed in 11.1-X; 246/246 CLI C14N matrix + 576/576 C-API C14N "
+        "matrix + 967/967 number() corpus + ns/wfc probes byte-identical; "
+        "1173 lib tests pass",
+    regression_courts=[
+        "CLI-XSLTPROC-0014",
+        "CLI-XSLTPROC-0015",
+        "CLI-XSLTPROC-0017",
+        "C14N",
+        "test_c14n_exclusive_skips_ancestor_rendered_ns",
+        "test_c14n_namespace_sorting",
+        "test_c14n_xml_ns_never_rendered",
+        "test_c14n_empty_default_undeclaration",
+        "test_c14n_relative_ns_rejected_exclusive",
+        "test_c14n_pi_document_level_newlines",
+        "test_c14n_subset_visibility",
+        "test_c14n_subset_hidden_parent_xml_lang",
+        "test_c14n_rebinding_chain_rere_declares",
+        "test_xml_number_to_string_parity_cases",
+    ],
+)
+close(
+    by_id["R-000167"],
+    fix="11.1-X: the exported symbol types now match the oracle DSO (nm -D "
+        "verified against the system oracle): xsltLibxsltVersion is a data "
+        "symbol (R), xsltEngineVersion a data symbol (D), "
+        "exsltLibexsltVersion/exsltLibxsltVersion are data symbols (R), and "
+        "exsltLibraryVersion a data symbol (D) — upstream 1.1.45 declares all "
+        "four as read-only data variables, not functions.",
+    lesson="ABI parity includes the symbol TYPE: a function export where the "
+        "oracle ships a data variable is a link-time incompatibility even when "
+        "the name resolves.",
+    note="fixed in 11.1-X; nm -D symbol-type comparison matches the oracle for "
+        "all four version symbols",
+    regression_courts=["DSO-LOADER", "ABI-DATA"],
+)
+
+# ── 2c. Final dispositions that stay OPEN by design (evidence-backed) ────────
+# The ledger state machine only allows OPEN->FIXED, so the stay-open
+# residuals carry their 11.1-X disposition in a `disposition` field and a
+# refreshed lesson, keeping the OPEN history intact.
+
+for rid, disposition, lesson in [
+    (
+        "R-000157",
+        "11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, "
+        "EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, "
+        "windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no "
+        "iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct "
+        "native answer. ENCODING-001 is byte-identical on the native set "
+        "(UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error "
+        "path. Closing this residual would require adding an iconv backend — a "
+        "future work item, not a parity defect (triangulated against every "
+        "upstream epoch: none provides these converters without iconv/ICU).",
+        "A bounded backend dependency is a documented disposition, not an "
+        "unexamined gap: the native set and all error paths stay byte-identical "
+        "and the unsupported set is enumerated, not silent.",
+    ),
+    (
+        "R-000168",
+        "11.1-X final disposition: the platform surface stays OPEN by design as "
+        "a documented, bounded obligation. The atlas (PLATFORM_SURFACE_ATLAS) "
+        "enumerates every unexecuted platform explicitly (OBLIG-PLATFORM-*); "
+        "word-size-32, aarch64 and musl are COMPILE-EXPECTED with 0-error "
+        "cargo check evidence; runtime execution on non-Linux-x86-64 targets "
+        "is a CI matrix obligation, not a code defect. Classification "
+        "INTENTIONAL_SAFE_DIVERGENCE; the surface cannot silently disappear.",
+        "Platform surface must be classified from source archaeology AND "
+        "cross-compilation; the obligations atlas keeps unexecuted platforms "
+        "visible as bounded work, never silent.",
+    ),
+]:
+    r = by_id[rid]
+    r["disposition"] = disposition
+    r["lesson"] = lesson
+    # The disposition is carried in the `disposition` field; strip any
+    # OPEN->OPEN history tail a previous script revision appended (the state
+    # machine only allows OPEN->FIXED). Idempotent: keep a single OPEN entry.
+    if r.get("history"):
+        r["history"] = [h for h in r["history"] if h.get("status") == "OPEN"]
+        if len(r["history"]) > 1:
+            merged_note = " | ".join(h.get("event") or h.get("note", "") for h in r["history"])
+            r["history"] = [
+                {"status": "OPEN", "date": r.get("discovery_date", "2026-08-30"), "note": merged_note}
+            ]
 
 # ── 3. Register new residuals discovered during 11.1-X ──────────────────────
 existing_ids = {r["id"] for r in ledger["ledger"]}

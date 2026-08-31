@@ -74,9 +74,9 @@
 //!   2.16 archaeology no longer registers them and those seven functions are
 //!   not part of this export set.
 //! - The internal document-order comparator is a private port of upstream
-//!   `xmlXPathCmpNodes` with upstream return convention (1 if node1 < node2);
-//!   the local `crate::abi::exports_xml2::xmlXPathCmpNodes` uses the inverted
-//!   convention, which would break `xmlXPtrRangeCheckOrder`.
+//!   `xmlXPathCmpNodes` with upstream return convention (1 if node1 < node2),
+//!   kept for clarity; the public `crate::abi::exports_xml2::xmlXPathCmpNodes`
+//!   now follows the same upstream convention.
 
 #![allow(
     missing_docs,
@@ -769,8 +769,9 @@ pub unsafe extern "C" fn xmlXPtrLocationSetAdd(cur: xmlLocationSetPtr, val: *mut
         }
         // Grow locTab if needed.
         if (*cur).locMax == 0 {
-            let tab = xmlMallocImpl((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
-                as *mut *mut _xmlXPathObject;
+            let tab =
+                xmlMallocImpl((XML_RANGESET_DEFAULT as usize) * size_of::<*mut _xmlXPathObject>())
+                    as *mut *mut _xmlXPathObject;
             if tab.is_null() {
                 return;
             }

@@ -1,0 +1,28 @@
+{
+  "case_id": "CLI-XSLTPROC-0016",
+  "surface": "cli-xsltproc",
+  "purpose": "xsl:number: alphabetic (I) and decimal (1) formatting with for-each over books",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/num.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-1-x-format-number"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "numbering"
+  ]
+}

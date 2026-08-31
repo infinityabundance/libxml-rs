@@ -95,6 +95,14 @@ impl C14nMode {
             C14nMode::XML_C14N_EXCLUSIVE_1_0 | C14nMode::XML_C14N_EXCLUSIVE_1_0_WITH_COMMENTS
         )
     }
+
+    /// Returns true if this mode is C14N 1.0 (inclusive).
+    fn is_1_0(self) -> bool {
+        matches!(
+            self,
+            C14nMode::XML_C14N_1_0 | C14nMode::XML_C14N_1_0_WITH_COMMENTS
+        )
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -129,6 +137,24 @@ pub struct C14nContext {
     /// The document being canonicalized.
     #[allow(dead_code)]
     doc: *mut _xmlDoc,
+    /// Per-subtree stack of already-rendered (prefix, href) namespace pairs
+    /// (upstream c14n.c `ns_rendered` visible-ns stack). A namespace
+    /// binding is rendered at the topmost element where it is in effect;
+    /// descendants inherit it without re-declaring, and a fresh subtree
+    /// re-renders it (R-000166).
+    rendered_stack: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+    /// Position relative to the document element (upstream `ctx->pos`):
+    /// 0 = XMLC14N_BEFORE_DOCUMENT_ELEMENT, 1 = INSIDE, 2 = AFTER. PIs and
+    /// comments at the document level gain a trailing/leading newline
+    /// depending on this position (c14n.c xmlC14NProcessNode).
+    pos: u8,
+    /// Upstream `ctx->parent_is_doc`: whether the element being processed
+    /// is a direct child of the document (the document element).
+    parent_is_doc: bool,
+    /// Node-set for subset canonicalization (upstream's visibility
+    /// callback): when present, only nodes whose pointer is in this set are
+    /// visible. NULL (None) means the whole document is visible.
+    visible_set: Option<HashSet<*mut c_void>>,
 }
 
 impl C14nContext {
@@ -142,11 +168,33 @@ impl C14nContext {
         mode: C14nMode,
         inclusive_ns_prefixes: Option<HashSet<String>>,
     ) -> Self {
+        Self::with_visible_set(doc, mode, inclusive_ns_prefixes, None)
+    }
+
+    /// Create a new C14N context with an explicit visibility set.
+    ///
+    /// # SAFETY
+    ///
+    /// - `doc` must be a valid pointer to an `_xmlDoc` or NULL.
+    /// - `visible_set` holds node pointers; None means the whole document is
+    ///   visible (upstream `is_visible_callback == NULL`).
+    pub unsafe fn with_visible_set(
+        doc: *mut _xmlDoc,
+        mode: C14nMode,
+        inclusive_ns_prefixes: Option<HashSet<String>>,
+        visible_set: Option<HashSet<*mut c_void>>,
+    ) -> Self {
         let mut ctx = C14nContext {
             mode,
             ns_stack: Vec::new(),
             inclusive_ns_prefixes,
             doc,
+            rendered_stack: Vec::new(),
+            // Upstream xmlC14NNewCtx initialises the walk at the document
+            // level, before the document element (c14n.c lines 1773-1774).
+            pos: 0, // XMLC14N_BEFORE_DOCUMENT_ELEMENT
+            parent_is_doc: true,
+            visible_set,
         };
         // Push the initial (document-level) namespace scope, which contains
         // the implicit `xml` namespace.
@@ -158,6 +206,76 @@ impl C14nContext {
             rendered: false,
         }]);
         ctx
+    }
+
+    /// Upstream `xmlC14NIsVisible(ctx, node, parent)`: whether a node is in
+    /// the visible node-set. Without a subset every node is visible.
+    fn is_visible_node<T>(&self, node: *mut T) -> bool {
+        match &self.visible_set {
+            None => true,
+            Some(set) => !node.is_null() && set.contains(&(node as *mut c_void)),
+        }
+    }
+
+    /// Upstream `xmlC14NIsVisible(ctx, ns, cur)` for namespace nodes: the
+    /// callback checks node-set membership of a stack copy of the xmlNs
+    /// struct, which can never match — so with a subset, namespace nodes are
+    /// never visible (c14n.c xmlC14NIsNodeInNodeset).
+    fn is_visible_ns(&self) -> bool {
+        self.visible_set.is_none()
+    }
+
+    /// Enter a new rendered-namespace scope (element open).
+    fn push_rendered_scope(&mut self) {
+        self.rendered_stack.push(Vec::new());
+    }
+
+    /// Exit the current rendered-namespace scope (element close).
+    fn pop_rendered_scope(&mut self) {
+        self.rendered_stack.pop();
+    }
+
+    /// Upstream c14n.c `xmlC14NVisibleNsStackFind` / `xmlExcC14NVisibleNsStackFind`
+    /// (R-000166): whether the binding `(prefix, href)` counts as already
+    /// rendered. Entries are searched most-recent-first; the first entry whose
+    /// prefix matches decides by href equality (not exact-pair matching — a
+    /// re-declaration of the same prefix to a different URI is NOT rendered, a
+    /// re-declaration back to an older URI IS). `parent_frame_only` restricts
+    /// the search to the parent element's rendered frame (upstream's
+    /// `nsPrevStart` window, used by the inclusive axis and the exclusive
+    /// InclusiveNamespaces list); otherwise the whole stack is searched
+    /// (upstream `start = 0`, used by exclusive node/attribute namespaces).
+    ///
+    /// When no entry has the prefix at all, upstream returns `has_empty_ns`:
+    /// the empty namespace counts as already rendered (so `xmlns=""` is only
+    /// emitted when a non-empty default was rendered), everything else as not
+    /// rendered.
+    fn already_rendered(&self, prefix: &[u8], href: &[u8], parent_frame_only: bool) -> bool {
+        let len = self.rendered_stack.len();
+        let mut idx = len;
+        let min = if parent_frame_only {
+            len.saturating_sub(2)
+        } else {
+            0
+        };
+        while idx > min {
+            idx -= 1;
+            for (p, h) in self.rendered_stack[idx].iter().rev() {
+                if p == prefix {
+                    return h == href;
+                }
+            }
+        }
+        prefix.is_empty() && href.is_empty()
+    }
+
+    /// Mark the (prefix, href) pair in the current scope. Upstream adds every
+    /// processed in-scope namespace to `ns_rendered` regardless of whether it
+    /// was rendered, so this is called unconditionally for processed bindings.
+    fn mark_rendered_pair(&mut self, prefix: &[u8], href: &[u8]) {
+        if let Some(top) = self.rendered_stack.last_mut() {
+            top.push((prefix.to_vec(), href.to_vec()));
+        }
     }
 
     /// Enter a new namespace scope (depth + 1).
@@ -403,6 +521,54 @@ unsafe fn c14n_escape_attr(buf: *mut _xmlBuffer, text: *const xmlChar) {
     }
 }
 
+/// Escape comment content per C14N rules: carriage returns are rendered as
+/// `&#xD;`, everything else is copied (upstream `xmlC11NNormalizeComment`).
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `text` must be a valid pointer to a null-terminated xmlChar string.
+unsafe fn c14n_escape_comment(buf: *mut _xmlBuffer, text: *const xmlChar) {
+    if buf.is_null() || text.is_null() {
+        return;
+    }
+    let len = tree::xml_strlen(text);
+    let mut i: c_int = 0;
+    while i < len {
+        let ch = unsafe { *text.add(i as usize) };
+        if ch == 0x0D {
+            io::buf_add(buf, b"&#xD;" as *const u8, 5);
+        } else {
+            io::buf_add(buf, &ch as *const u8, 1);
+        }
+        i += 1;
+    }
+}
+
+/// Escape PI content per C14N rules: carriage returns are rendered as
+/// `&#xD;`, everything else is copied (upstream `xmlC11NNormalizePI`).
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `text` must be a valid pointer to a null-terminated xmlChar string.
+unsafe fn c14n_escape_pi(buf: *mut _xmlBuffer, text: *const xmlChar) {
+    if buf.is_null() || text.is_null() {
+        return;
+    }
+    let len = tree::xml_strlen(text);
+    let mut i: c_int = 0;
+    while i < len {
+        let ch = unsafe { *text.add(i as usize) };
+        if ch == 0x0D {
+            io::buf_add(buf, b"&#xD;" as *const u8, 5);
+        } else {
+            io::buf_add(buf, &ch as *const u8, 1);
+        }
+        i += 1;
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Namespace Collection
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -416,22 +582,111 @@ struct CollectedNs {
     href: *const xmlChar,
 }
 
+/// Whether a namespace is the implicit xml namespace (prefix `xml`, href
+/// `http://www.w3.org/XML/1998/namespace`) — upstream c14n.c
+/// `xmlC14NIsXmlNs`. Such namespaces are never rendered.
+///
+/// # SAFETY
+///
+/// - `ns` must be a valid reference to an `_xmlNs`.
+unsafe fn is_xml_ns_ref(ns: &_xmlNs) -> bool {
+    !ns.prefix.is_null()
+        && !ns.href.is_null()
+        && crate::abi::exports_xml2::xmlStrEqual(
+            ns.prefix,
+            XML_XML_PREFIX.as_ptr() as *const xmlChar,
+        ) != 0
+        && crate::abi::exports_xml2::xmlStrEqual(ns.href, XML_XML_NS_URI.as_ptr() as *const xmlChar)
+            != 0
+}
+
+/// Copy a NUL-terminated xmlChar string into a Vec (empty for NULL).
+///
+/// # SAFETY
+///
+/// - `p` must be NULL or a valid NUL-terminated xmlChar string.
+unsafe fn cstr_bytes(p: *const xmlChar) -> Vec<u8> {
+    if p.is_null() {
+        return Vec::new();
+    }
+    let mut l = 0usize;
+    while *p.add(l) != 0 {
+        l += 1;
+    }
+    core::slice::from_raw_parts(p, l).to_vec()
+}
+
+/// Upstream `xmlExcC14NProcessNamespacesAxis` per-namespace handling: skip
+/// the xml namespace and non-visible namespaces, resolve already-rendered
+/// against the visible-ns stack (adding to it when the element is visible,
+/// as upstream does), and collect when not already rendered.
+/// `parent_frame_only` selects the plain `xmlC14NVisibleNsStackFind` window
+/// (upstream `nsPrevStart`) versus the exclusive `start = 0` window.
+///
+/// # SAFETY
+///
+/// - `ns` must be NULL or a valid pointer to an `_xmlNs`.
+unsafe fn exc_push_ns(
+    ctx: &mut C14nContext,
+    collected: &mut Vec<CollectedNs>,
+    ns: *mut _xmlNs,
+    has_empty_ns: &mut bool,
+    parent_frame_only: bool,
+    visible: bool,
+) {
+    if ns.is_null() {
+        return;
+    }
+    let ns_ref = unsafe { &*ns };
+    if is_xml_ns_ref(ns_ref) {
+        return;
+    }
+    if !ctx.is_visible_ns() {
+        return;
+    }
+    let prefix_bytes = unsafe { cstr_bytes(ns_ref.prefix) };
+    let href_bytes = unsafe { cstr_bytes(ns_ref.href) };
+    let already = ctx.already_rendered(&prefix_bytes, &href_bytes, parent_frame_only);
+    if visible {
+        ctx.mark_rendered_pair(&prefix_bytes, &href_bytes);
+    }
+    if !already {
+        collected.push(CollectedNs {
+            prefix: ns_ref.prefix,
+            href: ns_ref.href,
+        });
+    }
+    if ns_ref.prefix.is_null() {
+        *has_empty_ns = true;
+    }
+}
+
 /// Collect visible namespace declarations for a node per inclusive/exclusive rules.
 ///
 /// For **inclusive** C14N:
-/// - All namespaces in scope for the node are included.
-/// - Namespaces inherited from ancestors are included.
-/// - Namespace undeclarations are emitted when needed.
+/// - All effective namespaces in scope for the node are included.
+/// - Bindings the parent element already rendered are not re-rendered.
+/// - `xmlns=""` undeclarations are emitted when declared.
 ///
 /// For **exclusive** C14N:
-/// - Only namespaces actually used by the node and its attributes are included.
-/// - If an inclusive-ns-prefix list is provided, those prefixes are always included.
+/// - Only namespaces visibly utilized by the node and its attributes are
+///   included, plus any prefixes in the InclusiveNamespaces PrefixList.
+/// - Bindings already rendered by an ancestor are not re-rendered.
+///
+/// This is a faithful port of upstream c14n.c `xmlC14NProcessNamespacesAxis`
+/// (inclusive) and `xmlExcC14NProcessNamespacesAxis` (exclusive), including
+/// the `ns_rendered` visible-ns stack semantics and the visibility callback
+/// gating for subset canonicalization (R-000166).
 ///
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an `_xmlNode` or NULL.
 /// - `ctx` must be a valid pointer to a `C14nContext`.
-unsafe fn c14n_collect_namespaces(node: *mut _xmlNode, ctx: &mut C14nContext) -> Vec<CollectedNs> {
+unsafe fn c14n_collect_namespaces(
+    node: *mut _xmlNode,
+    ctx: &mut C14nContext,
+    visible: bool,
+) -> Vec<CollectedNs> {
     if node.is_null() {
         return Vec::new();
     }
@@ -444,96 +699,117 @@ unsafe fn c14n_collect_namespaces(node: *mut _xmlNode, ctx: &mut C14nContext) ->
     let mut collected: Vec<CollectedNs> = Vec::new();
     let mut seen_prefixes: Vec<*const xmlChar> = Vec::new();
 
-    // NOTE: The `xml` namespace (prefix `xml`, URI `http://www.w3.org/XML/1998/namespace`)
-    // is always implicitly available per the XML Namespaces specification.
-    // Per C14N, it MUST NOT be explicitly declared in the output.
-    // See W3C Canonical XML 1.0 §2.4 and Exclusive XML Canonicalization §2.1.2.
-
     if ctx.mode.is_exclusive() {
         // ── Exclusive C14N namespace collection ──
         //
-        // Only include namespaces actually used by this node and its attributes,
-        // plus any prefixes in the inclusive-ns-prefixes list.
+        // Port of upstream xmlExcC14NProcessNamespacesAxis:
+        //   1. the InclusiveNamespaces PrefixList is processed first under
+        //      Canonical-XML rules (plain find, parent-frame window);
+        //   2. the element's own namespace, or — when the element has no
+        //      binding — the default namespace in scope (this is what
+        //      renders `xmlns=""` undeclarations);
+        //   3. attribute namespaces (exclusive find, whole-stack window);
+        //   4. the `xmlns=""` fallback for a visibly-utilized empty default.
+        let mut has_empty_ns = false;
+        let mut has_empty_ns_in_inclusive_list = false;
+        let mut has_visibly_utilized_empty_ns = false;
 
-        // Collect namespaces used by this node
-        let mut used_prefixes: Vec<*const xmlChar> = Vec::new();
-
-        // The node's own namespace
-        if !n.ns.is_null() {
-            let ns = unsafe { &*n.ns };
-            used_prefixes.push(ns.prefix);
+        // 1. InclusiveNamespaces PrefixList.
+        let inclusive_prefixes: Vec<String> = ctx
+            .inclusive_ns_prefixes
+            .clone()
+            .map(|s| s.into_iter().collect())
+            .unwrap_or_default();
+        for inc_prefix_str in &inclusive_prefixes {
+            let is_default = inc_prefix_str.is_empty() || inc_prefix_str == "#default";
+            if is_default {
+                has_empty_ns_in_inclusive_list = true;
+            }
+            let inc_prefix: *const xmlChar = if is_default {
+                ptr::null()
+            } else {
+                let c_str = format!("{}\0", inc_prefix_str);
+                c_str.as_ptr() as *const xmlChar
+            };
+            let ns = find_ns_declaration(node, inc_prefix);
+            exc_push_ns(
+                ctx,
+                &mut collected,
+                ns,
+                &mut has_empty_ns,
+                !is_default,
+                visible,
+            );
         }
 
-        // Namespaces used by attributes
+        // 2. The node's own namespace; when the element has no binding, the
+        //    default namespace in scope (upstream xmlSearchNs(cur->doc, cur,
+        //    NULL) with has_visibly_utilized_empty_ns = 1).
+        let node_ns = if n.ns.is_null() {
+            has_visibly_utilized_empty_ns = true;
+            find_ns_declaration(node, ptr::null())
+        } else {
+            n.ns
+        };
+        exc_push_ns(
+            ctx,
+            &mut collected,
+            node_ns,
+            &mut has_empty_ns,
+            false,
+            visible,
+        );
+
+        // 3. Attribute namespaces.
         let mut attr = n.properties;
         while !attr.is_null() {
             let a = unsafe { &*attr };
             if !a.ns.is_null() {
                 let ans = unsafe { &*a.ns };
-                if !ans.prefix.is_null()
-                    && !used_prefixes.iter().any(|p| unsafe {
-                        crate::abi::exports_xml2::xmlStrEqual(*p, ans.prefix) != 0
-                    })
-                {
-                    used_prefixes.push(ans.prefix);
+                if !is_xml_ns_ref(ans) && ctx.is_visible_ns() {
+                    exc_push_ns(ctx, &mut collected, a.ns, &mut has_empty_ns, false, visible);
+                } else if ans.prefix.is_null() && !ans.href.is_null() && *ans.href == 0 {
+                    // Upstream: an attribute bound to an empty default
+                    // namespace counts as a visibly utilized empty default.
+                    has_visibly_utilized_empty_ns = true;
                 }
             }
             attr = a.next;
         }
 
-        // For each used prefix, find the namespace declaration by walking
-        // up the ancestor chain
-        for &used_prefix in &used_prefixes {
-            let ns = find_ns_declaration(node, used_prefix);
-            if !ns.is_null() {
-                let ns_ref = unsafe { &*ns };
-                if !seen_prefixes.iter().any(|p| unsafe {
-                    crate::abi::exports_xml2::xmlStrEqual(*p, ns_ref.prefix) != 0
-                }) {
-                    collected.push(CollectedNs {
-                        prefix: ns_ref.prefix,
-                        href: ns_ref.href,
-                    });
-                    seen_prefixes.push(ns_ref.prefix);
-                }
+        // 4. Process xmlns="".
+        if visible
+            && has_visibly_utilized_empty_ns
+            && !has_empty_ns
+            && !has_empty_ns_in_inclusive_list
+        {
+            let empty_prefix: Vec<u8> = Vec::new();
+            let empty_href: Vec<u8> = Vec::new();
+            if !ctx.already_rendered(&empty_prefix, &empty_href, false) {
+                collected.push(CollectedNs {
+                    prefix: ptr::null(),
+                    href: ptr::null(),
+                });
             }
-        }
-
-        // Include inclusive namespace prefixes
-        if let Some(ref inclusive_set) = ctx.inclusive_ns_prefixes {
-            for inc_prefix_str in inclusive_set.iter() {
-                let inc_prefix = if inc_prefix_str.is_empty() {
-                    ptr::null()
-                } else {
-                    let c_str = format!("{}\0", inc_prefix_str);
-                    c_str.as_ptr() as *const xmlChar
-                };
-
-                if !seen_prefixes.iter().any(|p| {
-                    if inc_prefix.is_null() {
-                        p.is_null()
-                    } else {
-                        !p.is_null()
-                            && unsafe { crate::abi::exports_xml2::xmlStrEqual(*p, inc_prefix) != 0 }
-                    }
-                }) {
-                    let ns = find_ns_declaration(node, inc_prefix);
-                    if !ns.is_null() {
-                        let ns_ref = unsafe { &*ns };
-                        collected.push(CollectedNs {
-                            prefix: ns_ref.prefix,
-                            href: ns_ref.href,
-                        });
-                        seen_prefixes.push(ns_ref.prefix);
-                    }
-                }
+        } else if visible && !has_empty_ns && has_empty_ns_in_inclusive_list {
+            let empty_prefix: Vec<u8> = Vec::new();
+            let empty_href: Vec<u8> = Vec::new();
+            if !ctx.already_rendered(&empty_prefix, &empty_href, false) {
+                collected.push(CollectedNs {
+                    prefix: ptr::null(),
+                    href: ptr::null(),
+                });
             }
         }
     } else {
         // ── Inclusive C14N namespace collection ──
         //
-        // Collect ALL namespaces in scope for this node, walking up ancestors.
-
+        // Port of upstream xmlC14NProcessNamespacesAxis: walk the element
+        // and its ancestors, processing every effective (in-scope) namespace
+        // declaration (upstream's `xmlSearchNs(...) == ns` tmp check), skip
+        // the xml namespace and non-visible namespaces, and skip bindings
+        // already rendered by the parent (plain find, parent-frame window).
+        let mut has_empty_ns = false;
         let mut cur: *mut _xmlNode = node;
         while !cur.is_null() {
             let cur_node = unsafe { &*cur };
@@ -542,6 +818,8 @@ unsafe fn c14n_collect_namespaces(node: *mut _xmlNode, ctx: &mut C14nContext) ->
                 let ns = unsafe { &*ns_def };
                 let ns_prefix = ns.prefix;
 
+                // The effective binding for this prefix at `node` is the
+                // nearest declaration (upstream tmp == ns check).
                 if !seen_prefixes.iter().any(|p| {
                     if ns_prefix.is_null() && p.is_null() {
                         return true;
@@ -551,17 +829,62 @@ unsafe fn c14n_collect_namespaces(node: *mut _xmlNode, ctx: &mut C14nContext) ->
                     }
                     unsafe { crate::abi::exports_xml2::xmlStrEqual(*p, ns_prefix) != 0 }
                 }) {
-                    collected.push(CollectedNs {
-                        prefix: ns_prefix,
-                        href: ns.href,
-                    });
                     seen_prefixes.push(ns_prefix);
+                    // Skip the xml namespace (always implicitly in scope)
+                    // and non-visible namespaces (upstream tmp == ns &&
+                    // !xmlC14NIsXmlNs && xmlC14NIsVisible gates).
+                    if is_xml_ns_ref(ns) || !ctx.is_visible_ns() {
+                        ns_def = ns.next;
+                        continue;
+                    }
+                    let prefix_bytes = unsafe { cstr_bytes(ns_prefix) };
+                    let href_bytes = unsafe { cstr_bytes(ns.href) };
+                    let is_empty_ns = prefix_bytes.is_empty() && href_bytes.is_empty();
+                    let already = ctx.already_rendered(&prefix_bytes, &href_bytes, !is_empty_ns);
+                    if visible {
+                        ctx.mark_rendered_pair(&prefix_bytes, &href_bytes);
+                    }
+                    if !already {
+                        collected.push(CollectedNs {
+                            prefix: ns_prefix,
+                            href: ns.href,
+                        });
+                    }
+                    if ns_prefix.is_null() {
+                        has_empty_ns = true;
+                    }
                 }
                 ns_def = ns.next;
             }
             cur = cur_node.parent;
         }
+
+        // Upstream lines 625-641: emit xmlns="" when this element's axis
+        // has no default namespace node but a non-empty default namespace
+        // was already rendered (C14N 1.0 namespace-axis rule).
+        if visible && !has_empty_ns {
+            let empty_prefix: Vec<u8> = Vec::new();
+            let empty_href: Vec<u8> = Vec::new();
+            if !ctx.already_rendered(&empty_prefix, &empty_href, false) {
+                collected.push(CollectedNs {
+                    prefix: ptr::null(),
+                    href: ptr::null(),
+                });
+            }
+        }
     }
+
+    // Upstream renders namespaces in lexicographic prefix order (default
+    // namespace first) via the sorted xmlList (xmlC14NNsCompare).
+    collected.sort_by(|a, b| {
+        let (ap, bp) = (a.prefix, b.prefix);
+        match (ap.is_null(), bp.is_null()) {
+            (true, true) => std::cmp::Ordering::Equal,
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            (false, false) => unsafe { crate::abi::exports_xml2::xmlStrcmp(ap, bp) }.cmp(&0),
+        }
+    });
 
     collected
 }
@@ -636,10 +959,10 @@ unsafe fn c14n_serialize_namespaces(buf: *mut _xmlBuffer, ns_list: &[CollectedNs
 // Attribute Ordering (Canonical)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Compare two attribute pointers for canonical ordering.
-///
-/// Canonical ordering: lexicographic by namespace URI (with empty namespace
-/// coming first), then by local name.
+/// Compare two attribute pointers for canonical ordering — upstream c14n.c
+/// `xmlC14NAttrsCompare`: same-ns-pointer first, then attributes in the
+/// default namespace, then lexicographic by namespace URI, then by local
+/// name.
 ///
 /// Returns negative, zero, or positive.
 ///
@@ -647,62 +970,190 @@ unsafe fn c14n_serialize_namespaces(buf: *mut _xmlBuffer, ns_list: &[CollectedNs
 ///
 /// - `a` and `b` must be valid pointers to `_xmlAttr`.
 unsafe fn compare_attrs(a: *const _xmlAttr, b: *const _xmlAttr) -> std::cmp::Ordering {
+    if a == b {
+        return std::cmp::Ordering::Equal;
+    }
+    if a.is_null() {
+        return std::cmp::Ordering::Less;
+    }
+    if b.is_null() {
+        return std::cmp::Ordering::Greater;
+    }
     let attr_a = unsafe { &*a };
     let attr_b = unsafe { &*b };
 
-    // Get namespace URIs (empty string if no namespace)
-    let ns_uri_a = if !attr_a.ns.is_null() {
-        unsafe { &*attr_a.ns }.href
-    } else {
-        ptr::null()
-    };
-    let ns_uri_b = if !attr_b.ns.is_null() {
-        unsafe { &*attr_b.ns }.href
-    } else {
-        ptr::null()
-    };
+    if attr_a.ns == attr_b.ns {
+        return unsafe { crate::abi::exports_xml2::xmlStrcmp(attr_a.name, attr_b.name) }.cmp(&0);
+    }
 
-    // Namespace URI comparison: NULL (no namespace) sorts before any URI
-    if ns_uri_a.is_null() && !ns_uri_b.is_null() {
+    // Attributes in the default namespace are first because the default
+    // namespace is not applied to unqualified attributes.
+    if attr_a.ns.is_null() {
         return std::cmp::Ordering::Less;
     }
-    if !ns_uri_a.is_null() && ns_uri_b.is_null() {
+    if attr_b.ns.is_null() {
         return std::cmp::Ordering::Greater;
     }
-    if !ns_uri_a.is_null() && !ns_uri_b.is_null() {
-        let cmp = unsafe { crate::abi::exports_xml2::xmlStrcmp(ns_uri_a, ns_uri_b) };
-        if cmp != 0 {
-            return cmp.cmp(&0);
+    if unsafe { (*(attr_a.ns)).prefix.is_null() } {
+        return std::cmp::Ordering::Less;
+    }
+    if unsafe { (*(attr_b.ns)).prefix.is_null() } {
+        return std::cmp::Ordering::Greater;
+    }
+
+    let ret =
+        unsafe { crate::abi::exports_xml2::xmlStrcmp((*(attr_a.ns)).href, (*(attr_b.ns)).href) };
+    if ret != 0 {
+        return ret.cmp(&0);
+    }
+    unsafe { crate::abi::exports_xml2::xmlStrcmp(attr_a.name, attr_b.name) }.cmp(&0)
+}
+
+/// Whether an attribute is in the xml namespace (upstream `xmlC14NIsXmlAttr`).
+///
+/// # SAFETY
+///
+/// - `attr` must be a valid reference to an `_xmlAttr`.
+unsafe fn is_xml_attr_ref(attr: &_xmlAttr) -> bool {
+    !attr.ns.is_null() && unsafe { is_xml_ns_ref(&*attr.ns) }
+}
+
+/// Upstream `xmlC14NFindHiddenParentAttr`: walk up from `cur` while the node
+/// is NOT in the visible node-set, returning the nearest xml-namespace
+/// attribute with the given local name.
+///
+/// # SAFETY
+///
+/// - `cur` must be NULL or a valid pointer to an `_xmlNode`.
+unsafe fn find_hidden_parent_attr(
+    ctx: &C14nContext,
+    cur: *mut _xmlNode,
+    name: &[u8],
+) -> *mut _xmlAttr {
+    let mut cur = cur;
+    while !cur.is_null() && !ctx.is_visible_node(cur) {
+        let name_c = format!("{}\0", String::from_utf8_lossy(name));
+        let res = crate::xml::tree::has_ns_prop(
+            cur,
+            name_c.as_ptr() as *const xmlChar,
+            XML_XML_NS_URI.as_ptr() as *const xmlChar,
+        );
+        if !res.is_null() {
+            return res;
+        }
+        cur = unsafe { (*cur).parent };
+    }
+    ptr::null_mut()
+}
+
+/// Upstream `xmlC14NFixupBaseAttr`: resolve an xml:base value against the
+/// xml:base attributes of the hidden ancestors. Returns the resolved value
+/// (owned Vec), or None when the result is empty.
+///
+/// # SAFETY
+///
+/// - `base_attr` must be a valid pointer to an `_xmlAttr` with a parent.
+unsafe fn fixup_base_attr(ctx: &C14nContext, base_attr: *mut _xmlAttr) -> Option<Vec<u8>> {
+    let mut res: Vec<u8> = Vec::new();
+    let ba = unsafe { &*base_attr };
+    if !ba.children.is_null() {
+        let child = unsafe { &*ba.children };
+        if !child.content.is_null() {
+            let mut l = 0usize;
+            while *child.content.add(l) != 0 {
+                l += 1;
+            }
+            res = core::slice::from_raw_parts(child.content, l).to_vec();
         }
     }
 
-    // Local name comparison
-    let name_a = attr_a.name;
-    let name_b = attr_b.name;
-    if name_a.is_null() && name_b.is_null() {
-        return std::cmp::Ordering::Equal;
+    let mut cur = if ba.parent.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*ba.parent).parent }
+    };
+    while !cur.is_null() && !ctx.is_visible_node(cur) {
+        let tmp_c = b"base\0";
+        let attr = crate::xml::tree::has_ns_prop(
+            cur,
+            tmp_c.as_ptr() as *const xmlChar,
+            XML_XML_NS_URI.as_ptr() as *const xmlChar,
+        );
+        if !attr.is_null() {
+            let mut tmp_str: Vec<u8> = Vec::new();
+            let a = unsafe { &*attr };
+            if !a.children.is_null() {
+                let child = unsafe { &*a.children };
+                if !child.content.is_null() {
+                    let mut l = 0usize;
+                    while *child.content.add(l) != 0 {
+                        l += 1;
+                    }
+                    tmp_str = core::slice::from_raw_parts(child.content, l).to_vec();
+                }
+            }
+            // Force going "up" when the base ends in '.' or '..' (upstream
+            // appends '/').
+            let tl = tmp_str.len();
+            if tl > 1 && tmp_str[tl - 2] == b'.' {
+                tmp_str.push(b'/');
+            }
+            // Build the resolved URI.
+            let uri_c = format!("{}\0", String::from_utf8_lossy(&res));
+            let base_c = format!("{}\0", String::from_utf8_lossy(&tmp_str));
+            let built = crate::abi::exports_uri::xmlBuildURI(
+                uri_c.as_ptr() as *const c_char,
+                base_c.as_ptr() as *const c_char,
+            );
+            if built.is_null() {
+                return None;
+            }
+            let mut l = 0usize;
+            while *built.add(l) != 0 {
+                l += 1;
+            }
+            res = core::slice::from_raw_parts(built, l).to_vec();
+            crate::abi::allocator::xmlFreeImpl(built as *mut c_void);
+        }
+        cur = unsafe { (*cur).parent };
     }
-    if name_a.is_null() {
-        return std::cmp::Ordering::Less;
+
+    if res.is_empty() {
+        None
+    } else {
+        Some(res)
     }
-    if name_b.is_null() {
-        return std::cmp::Ordering::Greater;
-    }
-    let cmp = unsafe { crate::abi::exports_xml2::xmlStrcmp(name_a, name_b) };
-    cmp.cmp(&0)
 }
 
-/// Serialize attributes in canonical order.
+/// One attribute to serialize: the attribute node plus an optional value
+/// override (used for the fixed-up xml:base of hidden ancestors).
+struct AttrOut {
+    attr: *mut _xmlAttr,
+    base_value: Option<Vec<u8>>,
+}
+
+/// Serialize the attribute axis in canonical order — upstream c14n.c
+/// `xmlC14NProcessAttrsAxis`. The `xmlns:*` declarations are NOT included
+/// here; they are handled by `c14n_serialize_namespaces`.
 ///
-/// Attributes are sorted lexicographically by namespace URI then local name.
-/// The `xmlns:*` attributes are NOT included here — they are handled separately
-/// by `c14n_serialize_namespaces`.
+/// Mode-specific subset rules:
+/// - C14N 1.0: visible attributes, plus xml-namespace attributes imported
+///   from hidden ancestors of a visible orphan element.
+/// - Exclusive: visible attributes only.
+/// - C14N 1.1: visible attributes, plus the simple inheritable xml:lang /
+///   xml:space from hidden ancestors and a fixed-up xml:base.
 ///
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an `_xmlNode` or NULL.
+/// - `ctx` must be a valid pointer to a `C14nContext`.
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
-unsafe fn c14n_serialize_attributes(node: *mut _xmlNode, buf: *mut _xmlBuffer) {
+unsafe fn c14n_serialize_attributes(
+    node: *mut _xmlNode,
+    ctx: &mut C14nContext,
+    buf: *mut _xmlBuffer,
+    element_visible: bool,
+) {
     if node.is_null() || buf.is_null() {
         return;
     }
@@ -712,20 +1163,169 @@ unsafe fn c14n_serialize_attributes(node: *mut _xmlNode, buf: *mut _xmlBuffer) {
         return;
     }
 
-    // Collect attributes into a vector for sorting
-    let mut attrs: Vec<*mut _xmlAttr> = Vec::new();
+    // Collect attributes into a vector for canonical sorting.
+    let mut list: Vec<AttrOut> = Vec::new();
     let mut cur_attr = n.properties;
-    while !cur_attr.is_null() {
-        attrs.push(cur_attr);
-        cur_attr = unsafe { (*cur_attr).next };
+
+    if ctx.mode.is_1_0() {
+        // C14N 1.0: all visible attributes of the element.
+        while !cur_attr.is_null() {
+            if ctx.is_visible_node(cur_attr) {
+                list.push(AttrOut {
+                    attr: cur_attr,
+                    base_value: None,
+                });
+            }
+            cur_attr = unsafe { (*cur_attr).next };
+        }
+
+        // Orphan handling: a visible element whose parent is not in the
+        // node-set imports the xml-namespace attributes of its hidden
+        // ancestors (c14n.c lines 1165-1187).
+        if element_visible && !n.parent.is_null() && !ctx.is_visible_node(n.parent) {
+            let mut tmp = n.parent;
+            while !tmp.is_null() && unsafe { (*tmp).type_ == XML_ELEMENT_NODE as c_int } {
+                let mut attr = unsafe { (*tmp).properties };
+                while !attr.is_null() {
+                    let a = unsafe { &*attr };
+                    if unsafe { is_xml_attr_ref(a) } {
+                        let dup = list.iter().any(|o| unsafe {
+                            compare_attrs(o.attr, attr) == std::cmp::Ordering::Equal
+                        });
+                        if !dup {
+                            list.push(AttrOut {
+                                attr,
+                                base_value: None,
+                            });
+                        }
+                    }
+                    attr = unsafe { (*attr).next };
+                }
+                tmp = unsafe { (*tmp).parent };
+            }
+        }
+    } else if ctx.mode.is_exclusive() {
+        // Exclusive: visible attributes only; xml attributes of orphan
+        // nodes are not imported.
+        while !cur_attr.is_null() {
+            if ctx.is_visible_node(cur_attr) {
+                list.push(AttrOut {
+                    attr: cur_attr,
+                    base_value: None,
+                });
+            }
+            cur_attr = unsafe { (*cur_attr).next };
+        }
+    } else {
+        // C14N 1.1: visible attributes, with xml:lang / xml:space /
+        // xml:base handled specially (c14n.c lines 1238-1311).
+        let mut xml_lang_attr: *mut _xmlAttr = ptr::null_mut();
+        let mut xml_space_attr: *mut _xmlAttr = ptr::null_mut();
+        let mut xml_base_attr: *mut _xmlAttr = ptr::null_mut();
+
+        while !cur_attr.is_null() {
+            let a = unsafe { &*cur_attr };
+            if !element_visible || !unsafe { is_xml_attr_ref(a) } {
+                if ctx.is_visible_node(cur_attr) {
+                    list.push(AttrOut {
+                        attr: cur_attr,
+                        base_value: None,
+                    });
+                }
+            } else {
+                // Simple inheritable attributes and xml:base of the element
+                // itself are collected (visible or not); other xml-namespace
+                // attributes are ordinary visible attributes.
+                let mut matched = false;
+                if xml_lang_attr.is_null()
+                    && !a.name.is_null()
+                    && unsafe {
+                        crate::abi::exports_xml2::xmlStrEqual(
+                            a.name,
+                            b"lang\0".as_ptr() as *const xmlChar,
+                        ) != 0
+                    }
+                {
+                    xml_lang_attr = cur_attr;
+                    matched = true;
+                }
+                if !matched
+                    && xml_space_attr.is_null()
+                    && !a.name.is_null()
+                    && unsafe {
+                        crate::abi::exports_xml2::xmlStrEqual(
+                            a.name,
+                            b"space\0".as_ptr() as *const xmlChar,
+                        ) != 0
+                    }
+                {
+                    xml_space_attr = cur_attr;
+                    matched = true;
+                }
+                if !matched
+                    && xml_base_attr.is_null()
+                    && !a.name.is_null()
+                    && unsafe {
+                        crate::abi::exports_xml2::xmlStrEqual(
+                            a.name,
+                            b"base\0".as_ptr() as *const xmlChar,
+                        ) != 0
+                    }
+                {
+                    xml_base_attr = cur_attr;
+                    matched = true;
+                }
+                if !matched && ctx.is_visible_node(cur_attr) {
+                    list.push(AttrOut {
+                        attr: cur_attr,
+                        base_value: None,
+                    });
+                }
+            }
+            cur_attr = unsafe { (*cur_attr).next };
+        }
+
+        if element_visible {
+            // Simple inheritable attributes — nearest hidden ancestor.
+            if xml_lang_attr.is_null() {
+                xml_lang_attr = find_hidden_parent_attr(ctx, n.parent, b"lang");
+            }
+            if !xml_lang_attr.is_null() {
+                list.push(AttrOut {
+                    attr: xml_lang_attr,
+                    base_value: None,
+                });
+            }
+            if xml_space_attr.is_null() {
+                xml_space_attr = find_hidden_parent_attr(ctx, n.parent, b"space");
+            }
+            if !xml_space_attr.is_null() {
+                list.push(AttrOut {
+                    attr: xml_space_attr,
+                    base_value: None,
+                });
+            }
+            // xml:base — resolved against the hidden ancestors.
+            if xml_base_attr.is_null() {
+                xml_base_attr = find_hidden_parent_attr(ctx, n.parent, b"base");
+            }
+            if !xml_base_attr.is_null() {
+                if let Some(resolved) = fixup_base_attr(ctx, xml_base_attr) {
+                    list.push(AttrOut {
+                        attr: xml_base_attr,
+                        base_value: Some(resolved),
+                    });
+                }
+            }
+        }
     }
 
     // Sort attributes canonically
-    attrs.sort_by(|a, b| unsafe { compare_attrs(*a, *b) });
+    list.sort_by(|a, b| unsafe { compare_attrs(a.attr, b.attr) });
 
     // Serialize each attribute
-    for &attr in &attrs {
-        let a = unsafe { &*attr };
+    for out in &list {
+        let a = unsafe { &*out.attr };
 
         io::buf_ccat(buf, b' ');
 
@@ -743,8 +1343,13 @@ unsafe fn c14n_serialize_attributes(node: *mut _xmlNode, buf: *mut _xmlBuffer) {
 
         io::buf_add(buf, b"=\"" as *const u8, 2);
 
-        // Attribute value from child text node
-        if !a.children.is_null() {
+        // Attribute value: the fixed-up base value, or the child text node.
+        if let Some(ref value) = out.base_value {
+            if !value.is_empty() {
+                let value_c = format!("{}\0", String::from_utf8_lossy(value));
+                c14n_escape_attr(buf, value_c.as_ptr() as *const xmlChar);
+            }
+        } else if !a.children.is_null() {
             let child = unsafe { &*a.children };
             if child.type_ == XML_TEXT_NODE as c_int && !child.content.is_null() {
                 c14n_escape_attr(buf, child.content);
@@ -780,38 +1385,63 @@ unsafe fn c14n_serialize_node(node: *mut _xmlNode, ctx: &mut C14nContext, buf: *
             c14n_serialize_element(node, ctx, buf);
         }
         t if t == XML_TEXT_NODE as c_int => {
-            if !n.content.is_null() {
+            // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): text nodes are
+            // rendered only when they are in the visible node-set.
+            if ctx.is_visible_node(node) && !n.content.is_null() {
                 c14n_escape_text(buf, n.content, tree::xml_strlen(n.content));
             }
         }
         t if t == XML_CDATA_SECTION_NODE as c_int => {
             // C14N converts CDATA sections to text
-            if !n.content.is_null() {
+            if ctx.is_visible_node(node) && !n.content.is_null() {
                 c14n_escape_text(buf, n.content, tree::xml_strlen(n.content));
             }
         }
         t if t == XML_COMMENT_NODE as c_int => {
-            if ctx.mode.with_comments() {
+            if ctx.is_visible_node(node) && ctx.mode.with_comments() {
+                // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): comment
+                // children of the root node get a leading newline when they
+                // follow the document element and a trailing newline when
+                // they precede it.
+                if ctx.pos == 2 {
+                    io::buf_ccat(buf, b'\n');
+                }
                 io::buf_add(buf, b"<!--" as *const u8, 4);
                 if !n.content.is_null() {
-                    io::buf_cat(buf, n.content);
+                    c14n_escape_comment(buf, n.content);
                 }
                 io::buf_add(buf, b"-->" as *const u8, 3);
+                if ctx.pos == 0 {
+                    io::buf_ccat(buf, b'\n');
+                }
             }
         }
         t if t == XML_PI_NODE as c_int => {
-            io::buf_add(buf, b"<?" as *const u8, 2);
-            if !n.name.is_null() {
-                io::buf_cat(buf, n.name);
+            // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): PI children of
+            // the root node get a leading newline when they follow the
+            // document element and a trailing newline when they precede it.
+            if ctx.is_visible_node(node) {
+                if ctx.pos == 2 {
+                    io::buf_ccat(buf, b'\n');
+                }
+                io::buf_add(buf, b"<?" as *const u8, 2);
+                if !n.name.is_null() {
+                    io::buf_cat(buf, n.name);
+                }
+                if !n.content.is_null() && unsafe { *n.content != 0 } {
+                    io::buf_ccat(buf, b' ');
+                    c14n_escape_pi(buf, n.content);
+                }
+                io::buf_add(buf, b"?>" as *const u8, 2);
+                if ctx.pos == 0 {
+                    io::buf_ccat(buf, b'\n');
+                }
             }
-            if !n.content.is_null() && unsafe { *n.content != 0 } {
-                io::buf_ccat(buf, b' ');
-                io::buf_cat(buf, n.content);
-            }
-            io::buf_add(buf, b"?>" as *const u8, 2);
         }
         t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
             // Serialize children of the document node (skip XML declaration)
+            ctx.pos = 0; // XMLC14N_BEFORE_DOCUMENT_ELEMENT
+            ctx.parent_is_doc = true;
             let mut child = n.children;
             while !child.is_null() {
                 c14n_serialize_node(child, ctx, buf);
@@ -839,6 +1469,66 @@ unsafe fn c14n_serialize_node(node: *mut _xmlNode, ctx: &mut C14nContext, buf: *
     }
 }
 
+/// Check whether any element in the document declares a relative
+/// (scheme-less) namespace URI (upstream c14n.c
+/// `xmlC14NCheckForRelativeNamespaces`).
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`.
+unsafe fn doc_has_relative_ns(doc: *mut _xmlDoc) -> bool {
+    unsafe {
+        let mut stack: Vec<*mut _xmlNode> = Vec::new();
+        if !(*doc).children.is_null() {
+            stack.push((*doc).children);
+        }
+        while let Some(node) = stack.pop() {
+            let mut cur = node;
+            while !cur.is_null() {
+                let t = (*cur).type_;
+                if t == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int {
+                    let mut ns_def = (*cur).nsDef;
+                    while !ns_def.is_null() {
+                        let href = (*ns_def).href;
+                        if !href.is_null() && *href != 0 && !has_uri_scheme_bytes(href) {
+                            return true;
+                        }
+                        ns_def = (*ns_def).next;
+                    }
+                    if !(*cur).children.is_null() {
+                        stack.push((*cur).children);
+                    }
+                }
+                cur = (*cur).next;
+            }
+        }
+        false
+    }
+}
+
+/// Whether a NUL-terminated URI has a scheme (`scheme:` prefix) — upstream
+/// xmlParseURISafe's `scheme == NULL` check.
+unsafe fn has_uri_scheme_bytes(uri: *const xmlChar) -> bool {
+    unsafe {
+        let mut i: usize = 0;
+        while *uri.add(i) != 0 {
+            let c = *uri.add(i);
+            if c == b':' {
+                return i > 0;
+            }
+            if i == 0 {
+                if !c.is_ascii_alphabetic() {
+                    return false;
+                }
+            } else if !(c.is_ascii_alphanumeric() || c == b'+' || c == b'-' || c == b'.') {
+                return false;
+            }
+            i += 1;
+        }
+        false
+    }
+}
+
 /// Serialize an element node in canonical form.
 ///
 /// This handles namespace collection, attribute ordering, and recursive
@@ -855,49 +1545,32 @@ unsafe fn c14n_serialize_element(node: *mut _xmlNode, ctx: &mut C14nContext, buf
     }
 
     let n = unsafe { &*node };
+    let visible = ctx.is_visible_node(node);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NProcessElementNode): the document
+    // element moves the position state into the element; it is restored to
+    // AFTER_DOCUMENT_ELEMENT when the element closes (c14n.c lines
+    // 1420-1426 and 1470-1474). Both transitions happen only when the
+    // element is visible.
+    let parent_is_doc = ctx.parent_is_doc;
+    if visible && parent_is_doc {
+        ctx.parent_is_doc = false;
+        ctx.pos = 1; // XMLC14N_INSIDE_DOCUMENT_ELEMENT
+    }
 
     // Push a new namespace scope for this element
     ctx.push_scope();
+    // Push a rendered-namespace scope (upstream ns_rendered stack).
+    ctx.push_rendered_scope();
 
     // Collect namespaces for this element
-    let ns_list = c14n_collect_namespaces(node, ctx);
+    let ns_list = c14n_collect_namespaces(node, ctx, visible);
 
-    // Open element: `<`
-    io::buf_ccat(buf, b'<');
+    if visible {
+        // Open element: `<`
+        io::buf_ccat(buf, b'<');
 
-    // Write element name with optional namespace prefix
-    if !n.ns.is_null() {
-        let ns = unsafe { &*n.ns };
-        if !ns.prefix.is_null() {
-            io::buf_cat(buf, ns.prefix);
-            io::buf_ccat(buf, b':');
-        }
-    }
-    if !n.name.is_null() {
-        io::buf_cat(buf, n.name);
-    }
-
-    // Write namespace declarations
-    c14n_serialize_namespaces(buf, &ns_list);
-
-    // Write attributes in canonical order
-    c14n_serialize_attributes(node, buf);
-
-    if n.children.is_null() {
-        // Self-closing tag for empty elements
-        io::buf_add(buf, b"/>" as *const u8, 2);
-    } else {
-        io::buf_ccat(buf, b'>');
-
-        // Serialize children
-        let mut child = n.children;
-        while !child.is_null() {
-            c14n_serialize_node(child, ctx, buf);
-            child = unsafe { (*child).next };
-        }
-
-        // Close element: `</name>`
-        io::buf_add(buf, b"</" as *const u8, 2);
+        // Write element name with optional namespace prefix
         if !n.ns.is_null() {
             let ns = unsafe { &*n.ns };
             if !ns.prefix.is_null() {
@@ -908,11 +1581,74 @@ unsafe fn c14n_serialize_element(node: *mut _xmlNode, ctx: &mut C14nContext, buf
         if !n.name.is_null() {
             io::buf_cat(buf, n.name);
         }
-        io::buf_ccat(buf, b'>');
+
+        // Write namespace declarations
+        c14n_serialize_namespaces(buf, &ns_list);
+
+        // Write attributes in canonical order
+        c14n_serialize_attributes(node, ctx, buf, visible);
+
+        if n.children.is_null() {
+            // UPSTREAM-PARITY (c14n.c xmlC14NProcessElementNode): canonical
+            // form expands empty elements (`<name></name>`, never `<name/>`).
+            io::buf_ccat(buf, b'>');
+            io::buf_add(buf, b"</" as *const u8, 2);
+            if !n.ns.is_null() {
+                let ns = unsafe { &*n.ns };
+                if !ns.prefix.is_null() {
+                    io::buf_cat(buf, ns.prefix);
+                    io::buf_ccat(buf, b':');
+                }
+            }
+            if !n.name.is_null() {
+                io::buf_cat(buf, n.name);
+            }
+            io::buf_ccat(buf, b'>');
+        } else {
+            io::buf_ccat(buf, b'>');
+
+            // Serialize children
+            let mut child = n.children;
+            while !child.is_null() {
+                c14n_serialize_node(child, ctx, buf);
+                child = unsafe { (*child).next };
+            }
+
+            // Close element: `</name>`
+            io::buf_add(buf, b"</" as *const u8, 2);
+            if !n.ns.is_null() {
+                let ns = unsafe { &*n.ns };
+                if !ns.prefix.is_null() {
+                    io::buf_cat(buf, ns.prefix);
+                    io::buf_ccat(buf, b':');
+                }
+            }
+            if !n.name.is_null() {
+                io::buf_cat(buf, n.name);
+            }
+            io::buf_ccat(buf, b'>');
+        }
+    } else {
+        // Not in the node-set: still process the namespace and attribute
+        // axes (for the ns_rendered stack semantics) and the children, but
+        // write nothing (c14n.c xmlC14NProcessElementNode).
+        let mut child = n.children;
+        while !child.is_null() {
+            c14n_serialize_node(child, ctx, buf);
+            child = unsafe { (*child).next };
+        }
     }
 
     // Pop namespace scope
+    ctx.pop_rendered_scope();
     ctx.pop_scope();
+
+    // UPSTREAM-PARITY: after the document element closes, following root
+    // children are in the AFTER_DOCUMENT_ELEMENT position.
+    if visible && parent_is_doc {
+        ctx.parent_is_doc = true;
+        ctx.pos = 2; // XMLC14N_AFTER_DOCUMENT_ELEMENT
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -959,7 +1695,21 @@ pub unsafe fn c14n_doc_dump_memory(
     // Parse inclusive namespace prefixes
     let inclusive_set = parse_inclusive_prefixes(inclusive_ns_prefixes);
 
-    let mut ctx = C14nContext::new(doc, effective_mode, inclusive_set);
+    // Upstream xmlC14NDocDumpMemory passes an xmlNodeSet as the visibility
+    // callback data: nodes in the set are visible, everything else is
+    // processed but not rendered (c14n.c xmlC14NIsNodeInNodeset).
+    let visible_set = build_visible_set(nodes);
+
+    let mut ctx = C14nContext::with_visible_set(doc, effective_mode, inclusive_set, visible_set);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NCheckForRelativeNamespaces, called from
+    // xmlC14NProcessElementNode in BOTH inclusive and exclusive modes):
+    // canonicalization refuses documents that declare relative
+    // (scheme-less) namespace URIs — "Failed to canonicalize" and a
+    // negative return (R-000166).
+    if doc_has_relative_ns(doc) {
+        return -1;
+    }
 
     // Create output buffer
     let buf = io::buf_create(-1);
@@ -967,36 +1717,9 @@ pub unsafe fn c14n_doc_dump_memory(
         return -1;
     }
 
-    if nodes.is_null() {
-        // Canonicalize entire document
-        let doc_node = doc as *mut _xmlNode;
-        let d = unsafe { &*doc_node };
-        let mut child = d.children;
-        while !child.is_null() {
-            c14n_serialize_node(child, &mut ctx, buf);
-            child = unsafe { (*child).next };
-        }
-    } else {
-        // Canonicalize a subset of nodes in document order
-        // First, collect and sort nodes in document order
-        let mut node_vec: Vec<*mut _xmlNode> = Vec::new();
-        let mut i = 0;
-        loop {
-            let n = unsafe { *nodes.add(i) };
-            if n.is_null() {
-                break;
-            }
-            node_vec.push(n);
-            i += 1;
-        }
-
-        // Sort nodes in document order
-        node_vec.sort_by(|a, b| unsafe { cmp_document_order(*a, *b) });
-
-        for &n in &node_vec {
-            c14n_serialize_node(n, &mut ctx, buf);
-        }
-    }
+    // Walk the document; visibility decides what is rendered (upstream
+    // xmlC14NProcessNodeList over doc->children).
+    c14n_walk_document(doc, &mut ctx, buf);
 
     // Extract result string
     let content = io::buf_content(buf);
@@ -1059,7 +1782,17 @@ pub unsafe fn c14n_execute(
     // Parse inclusive namespace prefixes
     let inclusive_set = parse_inclusive_prefixes(inclusive_ns_prefixes);
 
+    // UPSTREAM-PARITY: xmlC14NExecute carries the visibility callback
+    // provided by the caller; the candidate's built-in wrappers always
+    // canonicalize the whole document (visible_set = None).
     let mut ctx = C14nContext::new(doc, effective_mode, inclusive_set);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NCheckForRelativeNamespaces): the
+    // relative-namespace-URI check applies in every mode, inclusive and
+    // exclusive (R-000166).
+    if doc_has_relative_ns(doc) {
+        return -1;
+    }
 
     // Create output buffer
     let buf = io::buf_create(-1);
@@ -1067,14 +1800,8 @@ pub unsafe fn c14n_execute(
         return -1;
     }
 
-    // Canonicalize entire document
-    let doc_node = doc as *mut _xmlNode;
-    let d = unsafe { &*doc_node };
-    let mut child = d.children;
-    while !child.is_null() {
-        c14n_serialize_node(child, &mut ctx, buf);
-        child = unsafe { (*child).next };
-    }
+    // Walk the document (upstream xmlC14NProcessNodeList).
+    c14n_walk_document(doc, &mut ctx, buf);
 
     // Call the callback with the result
     let content = io::buf_content(buf);
@@ -1124,7 +1851,18 @@ pub unsafe fn c14n_doc_save_to(
     // Parse inclusive namespace prefixes
     let inclusive_set = parse_inclusive_prefixes(inclusive_ns_prefixes);
 
-    let mut ctx = C14nContext::new(doc, effective_mode, inclusive_set);
+    // Upstream xmlC14NDocSaveTo passes the xmlNodeSet as the visibility
+    // callback data (c14n.c xmlC14NIsNodeInNodeset).
+    let visible_set = build_visible_set(nodes);
+
+    let mut ctx = C14nContext::with_visible_set(doc, effective_mode, inclusive_set, visible_set);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NCheckForRelativeNamespaces): the
+    // relative-namespace-URI check applies in every mode, inclusive and
+    // exclusive (R-000166).
+    if doc_has_relative_ns(doc) {
+        return -1;
+    }
 
     // Create buffer for serialization
     let buf = io::buf_create(-1);
@@ -1132,34 +1870,9 @@ pub unsafe fn c14n_doc_save_to(
         return -1;
     }
 
-    if nodes.is_null() {
-        // Canonicalize entire document
-        let doc_node = doc as *mut _xmlNode;
-        let d = unsafe { &*doc_node };
-        let mut child = d.children;
-        while !child.is_null() {
-            c14n_serialize_node(child, &mut ctx, buf);
-            child = unsafe { (*child).next };
-        }
-    } else {
-        // Canonicalize a subset of nodes in document order
-        let mut node_vec: Vec<*mut _xmlNode> = Vec::new();
-        let mut i = 0;
-        loop {
-            let n = unsafe { *nodes.add(i) };
-            if n.is_null() {
-                break;
-            }
-            node_vec.push(n);
-            i += 1;
-        }
-
-        node_vec.sort_by(|a, b| unsafe { cmp_document_order(*a, *b) });
-
-        for &n in &node_vec {
-            c14n_serialize_node(n, &mut ctx, buf);
-        }
-    }
+    // Walk the document; visibility decides what is rendered (upstream
+    // xmlC14NProcessNodeList).
+    c14n_walk_document(doc, &mut ctx, buf);
 
     // Write to output buffer
     let content = io::buf_content(buf);
@@ -1224,9 +1937,12 @@ fn parse_inclusive_prefixes(input: *const xmlChar) -> Option<HashSet<String>> {
 ///
 /// Returns negative if `a` comes before `b`, positive if `a` comes after `b`.
 ///
+/// Used by the unit tests to verify node-set ordering.
+///
 /// # SAFETY
 ///
 /// - `a` and `b` must be valid pointers to `_xmlNode`.
+#[cfg(test)]
 unsafe fn cmp_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> std::cmp::Ordering {
     if a == b {
         return std::cmp::Ordering::Equal;
@@ -1310,12 +2026,13 @@ unsafe fn cmp_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> std::cmp::Or
 /// # SAFETY
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc` or NULL.
-/// - `nodes` may be NULL (entire document) or a NULL-terminated array of `_xmlNode` pointers.
+/// - `nodes` may be NULL (entire document) or a valid `xmlNodeSet*` whose
+///   nodes form the subset to canonicalize (upstream signature).
 /// - `result` must be a valid pointer to a `xmlChar*` that will receive the result.
 #[no_mangle]
 pub unsafe extern "C" fn xmlC14NDocDumpMemory(
     doc: *mut _xmlDoc,
-    nodes: *mut *mut _xmlNode,
+    nodes: *mut _xmlNodeSet,
     mode: c_int,
     inclusive_ns_prefixes: *mut *mut xmlChar,
     with_comments: c_int,
@@ -1369,16 +2086,91 @@ pub unsafe extern "C" fn xmlC14NDocDumpMemory(
         ptr::null()
     };
 
-    unsafe {
+    // The node-set conversion is kept alive for the duration of the call
+    // and dropped afterwards (no leak).
+    let nodes_array = node_set_to_array(nodes);
+    let nodes_ptr = if nodes_array.is_empty() {
+        ptr::null_mut()
+    } else {
+        nodes_array.as_ptr() as *mut *mut _xmlNode
+    };
+    let ret = unsafe {
         c14n_doc_dump_memory(
             doc,
-            nodes,
+            nodes_ptr,
             c14n_mode,
             joined_prefixes,
             with_comments,
             result,
         )
+    };
+    drop(nodes_array);
+    ret
+}
+
+/// Build the visibility set from a NULL-terminated node array (subset
+/// argument of `xmlC14NDocDumpMemory` / `xmlC14NDocSaveTo`). None means the
+/// whole document is visible (upstream `nodes == NULL`).
+///
+/// # SAFETY
+///
+/// - `nodes` must be NULL or a valid NULL-terminated array of `_xmlNode`
+///   pointers.
+unsafe fn build_visible_set(nodes: *mut *mut _xmlNode) -> Option<HashSet<*mut c_void>> {
+    if nodes.is_null() {
+        return None;
     }
+    let mut set = HashSet::new();
+    let mut i = 0usize;
+    loop {
+        let n = unsafe { *nodes.add(i) };
+        if n.is_null() {
+            break;
+        }
+        set.insert(n as *mut c_void);
+        i += 1;
+    }
+    Some(set)
+}
+
+/// Walk the document children with the current context (upstream
+/// xmlC14NProcessNodeList over doc->children).
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`.
+/// - `ctx` must be a valid pointer to a `C14nContext`.
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+unsafe fn c14n_walk_document(doc: *mut _xmlDoc, ctx: &mut C14nContext, buf: *mut _xmlBuffer) {
+    let doc_node = doc as *mut _xmlNode;
+    let d = unsafe { &*doc_node };
+    let mut child = d.children;
+    while !child.is_null() {
+        c14n_serialize_node(child, ctx, buf);
+        child = unsafe { (*child).next };
+    }
+}
+
+/// Convert an upstream `xmlNodeSet*` (subset argument of
+/// `xmlC14NDocDumpMemory` / `xmlC14NDocSaveTo`) into a NULL-terminated
+/// node array used by the internal canonicalization walk. An empty Vec
+/// means NULL (whole document).
+///
+/// # SAFETY
+///
+/// - `nodes` must be NULL or a valid pointer to an `_xmlNodeSet`.
+unsafe fn node_set_to_array(nodes: *mut _xmlNodeSet) -> Vec<*mut _xmlNode> {
+    if nodes.is_null() {
+        return Vec::new();
+    }
+    let ns = unsafe { &*nodes };
+    let nr = if ns.nodeNr > 0 { ns.nodeNr as usize } else { 0 };
+    let mut vec: Vec<*mut _xmlNode> = Vec::with_capacity(nr + 1);
+    for i in 0..nr {
+        vec.push(unsafe { *ns.nodeTab.add(i) });
+    }
+    vec.push(ptr::null_mut());
+    vec
 }
 
 /// Canonicalize XML with a callback for output.
@@ -1488,7 +2280,7 @@ pub unsafe extern "C" fn xmlC14NExecute(
 #[no_mangle]
 pub unsafe extern "C" fn xmlC14NDocSaveTo(
     doc: *mut _xmlDoc,
-    nodes: *mut *mut _xmlNode,
+    nodes: *mut _xmlNodeSet,
     mode: c_int,
     inclusive_ns_prefixes: *mut *mut xmlChar,
     with_comments: c_int,
@@ -1542,7 +2334,16 @@ pub unsafe extern "C" fn xmlC14NDocSaveTo(
         .map(|v| v.as_ptr() as *const xmlChar)
         .unwrap_or(ptr::null());
 
-    unsafe { c14n_doc_save_to(doc, nodes, c14n_mode, joined_ptr, with_comments, output) }
+    let nodes_array = node_set_to_array(nodes);
+    let nodes_ptr = if nodes_array.is_empty() {
+        ptr::null_mut()
+    } else {
+        nodes_array.as_ptr() as *mut *mut _xmlNode
+    };
+    let ret =
+        unsafe { c14n_doc_save_to(doc, nodes_ptr, c14n_mode, joined_ptr, with_comments, output) };
+    drop(nodes_array);
+    ret
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1661,10 +2462,11 @@ mod tests {
             tree::doc_set_root_element(doc, root);
 
             let result = canonicalize_doc(doc, C14nMode::XML_C14N_1_0, 0);
-            // Empty element should be self-closing
+            // UPSTREAM-PARITY (C14N 1.0 §2.4): empty elements are rendered
+            // expanded (`<empty></empty>`), never self-closing. R-000166.
             assert!(
-                result.contains("<empty/>"),
-                "Empty element should be self-closing, got: {}",
+                result.contains("<empty></empty>"),
+                "Empty element should be expanded, got: {}",
                 result
             );
             tree::free_doc(doc);
@@ -2518,6 +3320,312 @@ mod tests {
 
             io::output_buffer_close(output);
             io::buf_free(buf);
+            tree::free_doc(doc);
+        }
+    }
+
+    // ── R-000166 regression tests (11.1-X C14N closure) ──
+
+    /// Build `<root xmlns:p="http://u/p"><p:one><p:two p:a="1"/></p:one></root>`.
+    unsafe fn build_nested_ns_doc() -> *mut _xmlDoc {
+        let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+        let ns = tree::new_ns(
+            ptr::null_mut(),
+            b"http://u/p\0" as *const u8 as *const xmlChar,
+            b"p\0" as *const u8 as *const xmlChar,
+        );
+        let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+        tree::doc_set_root_element(doc, root);
+        tree::new_ns(
+            root,
+            b"http://u/p\0" as *const u8 as *const xmlChar,
+            b"p\0" as *const u8 as *const xmlChar,
+        );
+        let one = tree::new_node(ns, b"one\0" as *const u8 as *const xmlChar);
+        tree::add_child(root, one);
+        let two = tree::new_node(ns, b"two\0" as *const u8 as *const xmlChar);
+        tree::add_child(one, two);
+        tree::set_prop(
+            two,
+            b"a\0" as *const u8 as *const xmlChar,
+            b"1\0" as *const u8 as *const xmlChar,
+        );
+        // Bind the attribute to the p namespace.
+        let attr = (*two).properties;
+        (*attr).ns = ns;
+        doc
+    }
+
+    #[test]
+    fn test_c14n_exclusive_skips_ancestor_rendered_ns() {
+        // R-000166: exclusive C14N must not re-declare a namespace already
+        // rendered by an ancestor (`xmlExcC14NProcessNamespacesAxis` with the
+        // ns_rendered stack).
+        unsafe {
+            let doc = build_nested_ns_doc();
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_EXCLUSIVE_1_0, 0);
+            assert_eq!(
+                out,
+                "<root><p:one xmlns:p=\"http://u/p\"><p:two p:a=\"1\"></p:two></p:one></root>"
+            );
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_namespace_sorting() {
+        // R-000166: namespaces render in lexicographic prefix order (upstream
+        // xmlC14NNsCompare) regardless of declaration order.
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            tree::new_ns(
+                root,
+                b"http://u/z\0" as *const u8 as *const xmlChar,
+                b"z\0" as *const u8 as *const xmlChar,
+            );
+            tree::new_ns(
+                root,
+                b"http://u/a\0" as *const u8 as *const xmlChar,
+                b"a\0" as *const u8 as *const xmlChar,
+            );
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_1_0, 0);
+            assert_eq!(
+                out,
+                "<root xmlns:a=\"http://u/a\" xmlns:z=\"http://u/z\"></root>"
+            );
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_xml_ns_never_rendered() {
+        // R-000166: the xml namespace is never rendered as xmlns:xml in
+        // exclusive C14N (`xmlC14NIsXmlNs`).
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            // Materialize the xml namespace like the parser does.
+            let xml_ns = tree::new_ns(
+                ptr::null_mut(),
+                b"http://www.w3.org/XML/1998/namespace\0" as *const u8 as *const xmlChar,
+                b"xml\0" as *const u8 as *const xmlChar,
+            );
+            (*doc).oldNs = xml_ns;
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_EXCLUSIVE_1_0, 0);
+            assert_eq!(out, "<root></root>");
+            assert!(!out.contains("xmlns:xml"));
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_empty_default_undeclaration() {
+        // R-000166: `<a xmlns="">` renders the empty default undeclaration
+        // in exclusive C14N (element with no binding resolves the default
+        // namespace in scope).
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            let d_ns = tree::new_ns(
+                ptr::null_mut(),
+                b"http://u/d\0" as *const u8 as *const xmlChar,
+                ptr::null(),
+            );
+            tree::new_ns(
+                root,
+                b"http://u/d\0" as *const u8 as *const xmlChar,
+                ptr::null(),
+            );
+            let a = tree::new_node(d_ns, b"a\0" as *const u8 as *const xmlChar);
+            tree::add_child(root, a);
+            // `a` carries xmlns="". Like the parser, an empty default
+            // namespace is not bound to the element (a.ns stays NULL), so
+            // exclusive C14N resolves it via the in-scope default search.
+            tree::new_ns(a, b"\0" as *const u8 as *const xmlChar, ptr::null());
+            (*a).ns = ptr::null_mut();
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_EXCLUSIVE_1_0, 0);
+            assert_eq!(out, "<root xmlns=\"http://u/d\"><a xmlns=\"\"></a></root>");
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_relative_ns_rejected_exclusive() {
+        // R-000166: the relative-namespace-URI rejection applies in exclusive
+        // mode too (xmlC14NCheckForRelativeNamespaces runs in
+        // xmlC14NProcessElementNode for every mode).
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            tree::new_ns(
+                root,
+                b"u\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let len = c14n_doc_dump_memory(
+                doc,
+                ptr::null_mut(),
+                C14nMode::XML_C14N_EXCLUSIVE_1_0,
+                ptr::null(),
+                0,
+                &mut result as *mut *mut xmlChar,
+            );
+            assert!(
+                len < 0,
+                "exclusive C14N must reject relative namespace URIs"
+            );
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_pi_document_level_newlines() {
+        // R-000166: PIs before the document element get a trailing newline,
+        // PIs after it a leading newline.
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let pi1 = tree::new_pi(b"one\0" as *const u8 as *const xmlChar, ptr::null());
+            tree::add_child(doc as *mut _xmlNode, pi1);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::add_child(doc as *mut _xmlNode, root);
+            let pi2 = tree::new_pi(b"three\0" as *const u8 as *const xmlChar, ptr::null());
+            tree::add_child(doc as *mut _xmlNode, pi2);
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_1_0, 0);
+            assert_eq!(out, "<?one?>\n<root></root>\n<?three?>");
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_subset_visibility() {
+        // R-000166: subset canonicalization renders only nodes in the set;
+        // the document element is still visited so invisible siblings are
+        // skipped.
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            let child = tree::new_node(ptr::null_mut(), b"child\0" as *const u8 as *const xmlChar);
+            tree::add_child(root, child);
+
+            let mut nodes: Vec<*mut _xmlNode> = vec![root, ptr::null_mut()];
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let len = c14n_doc_dump_memory(
+                doc,
+                nodes.as_mut_ptr(),
+                C14nMode::XML_C14N_1_0,
+                ptr::null(),
+                0,
+                &mut result as *mut *mut xmlChar,
+            );
+            assert!(len >= 0);
+            let s = {
+                let slice = core::slice::from_raw_parts(result, len as usize);
+                String::from_utf8_lossy(slice).to_string()
+            };
+            xmlFreeImpl(result as *mut c_void);
+            // Only `root` is in the set; `child` is processed but not rendered.
+            assert_eq!(s, "<root></root>");
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_subset_hidden_parent_xml_lang() {
+        // R-000166: C14N 1.0 imports xml-namespace attributes from hidden
+        // ancestors of a visible orphan element.
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let xml_ns = tree::new_ns(
+                ptr::null_mut(),
+                b"http://www.w3.org/XML/1998/namespace\0" as *const u8 as *const xmlChar,
+                b"xml\0" as *const u8 as *const xmlChar,
+            );
+            (*doc).oldNs = xml_ns;
+            let root = tree::new_node(ptr::null_mut(), b"root\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            tree::set_prop(
+                root,
+                b"lang\0" as *const u8 as *const xmlChar,
+                b"en\0" as *const u8 as *const xmlChar,
+            );
+            let lang_attr = (*root).properties;
+            (*lang_attr).ns = xml_ns;
+
+            let child = tree::new_node(ptr::null_mut(), b"a\0" as *const u8 as *const xmlChar);
+            tree::add_child(root, child);
+
+            let mut nodes: Vec<*mut _xmlNode> = vec![child, ptr::null_mut()];
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let len = c14n_doc_dump_memory(
+                doc,
+                nodes.as_mut_ptr(),
+                C14nMode::XML_C14N_1_0,
+                ptr::null(),
+                0,
+                &mut result as *mut *mut xmlChar,
+            );
+            assert!(len >= 0);
+            let s = {
+                let slice = core::slice::from_raw_parts(result, len as usize);
+                String::from_utf8_lossy(slice).to_string()
+            };
+            xmlFreeImpl(result as *mut c_void);
+            assert_eq!(s, "<a xml:lang=\"en\"></a>");
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_c14n_rebinding_chain_rere_declares() {
+        // R-000166: a prefix rebound away and back to an older URI IS
+        // re-rendered (prefix-scoped last-wins find semantics).
+        unsafe {
+            let doc = tree::new_doc(b"1.0\0" as *const u8 as *const xmlChar);
+            let ns1 = tree::new_ns(
+                ptr::null_mut(),
+                b"http://u/1\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+            let root = tree::new_node(ptr::null_mut(), b"a\0" as *const u8 as *const xmlChar);
+            tree::doc_set_root_element(doc, root);
+            tree::new_ns(
+                root,
+                b"http://u/1\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+            let b = tree::new_node(ns1, b"b\0" as *const u8 as *const xmlChar);
+            tree::add_child(root, b);
+            let ns2 = tree::new_ns(
+                ptr::null_mut(),
+                b"http://u/2\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+            tree::new_ns(
+                b,
+                b"http://u/2\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+            (*b).ns = ns2;
+            let c = tree::new_node(ns1, b"c\0" as *const u8 as *const xmlChar);
+            tree::add_child(b, c);
+            tree::new_ns(
+                c,
+                b"http://u/1\0" as *const u8 as *const xmlChar,
+                b"p\0" as *const u8 as *const xmlChar,
+            );
+
+            let out = canonicalize_doc(doc, C14nMode::XML_C14N_1_0, 0);
+            assert_eq!(
+                out,
+                "<a xmlns:p=\"http://u/1\"><p:b xmlns:p=\"http://u/2\"><p:c xmlns:p=\"http://u/1\"></p:c></p:b></a>"
+            );
             tree::free_doc(doc);
         }
     }

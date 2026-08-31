@@ -1,0 +1,28 @@
+{
+  "case_id": "CLI-XSLTPROC-0014",
+  "surface": "cli-xsltproc",
+  "purpose": "format-number(): grouping, digits, percent/permille, signs, NaN/Infinity, prefixes/suffixes, quotes, UTF-8, named decimal formats, malformed-picture fallback",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/fmt.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-1-x-format-number"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "format-number"
+  ]
+}

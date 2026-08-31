@@ -18,9 +18,908 @@
 //!
 //! Multiple tokens separated by punctuation (e.g. "1.1") produce
 //! hierarchical numbers (e.g. "1.2.3").
+//!
+//! This module also hosts the faithful port of upstream `format-number()`
+//! machinery (numbers.c 1.1.45): `xsltFormatNumberConversion` and the
+//! picture-parsing helpers it uses. Every ABI entry point that formats a
+//! number with a decimal-format picture (`xsltFormatNumberConversion`,
+//! `xsltFormatNumberFunction`, the internal XSLT evaluator's
+//! `format-number()`) delegates here so there is exactly one
+//! implementation of the JDK 1.1 DecimalFormat algorithm.
 
+use crate::abi::structs::{_xsltDecimalFormat, _xsltStylesheet};
 use crate::abi::types::*;
+use libc::{c_char, c_int};
 use std::ptr;
+
+/// The quote character that escapes literals in a decimal-format picture
+/// (upstream numbers.c SYMBOL_QUOTE).
+const SYMBOL_QUOTE: u8 = b'\'';
+
+/// Format information accumulated while parsing a decimal-format picture
+/// (upstream `_xsltFormatNumberInfo`).
+#[derive(Default, Clone, Copy)]
+struct FormatNumberInfo {
+    integer_hash: i32,
+    integer_digits: i32,
+    frac_digits: i32,
+    frac_hash: i32,
+    group: i32,
+    multiplier: i32,
+    add_decimal: bool,
+    is_multiplier_set: bool,
+    /// Mirrors upstream `_xsltFormatNumberInfo.is_negative_pattern` (set but
+    /// not read by `xsltFormatNumberConversion`; kept for fidelity).
+    #[allow(dead_code)]
+    is_negative_pattern: bool,
+}
+
+/// NUL-terminated default decimal-format characters (upstream
+/// `xsltNewDecimalFormat`, xslt.c). These are the fallback values used when
+/// `self` is NULL or a field is NULL — the same characters upstream's
+/// default `xsltDecimalFormat` carries.
+static DEF_DIGIT: [u8; 2] = *b"#\0";
+static DEF_PATTERN_SEP: [u8; 2] = *b";\0";
+static DEF_MINUS: [u8; 2] = *b"-\0";
+static DEF_INFINITY: [u8; 9] = *b"Infinity\0";
+static DEF_NAN: [u8; 4] = *b"NaN\0";
+static DEF_DECIMAL_POINT: [u8; 2] = *b".\0";
+static DEF_GROUPING: [u8; 2] = *b",\0";
+static DEF_PERCENT: [u8; 2] = *b"%\0";
+static DEF_PERMILLE: [u8; 4] = [0xE2, 0x80, 0xB0, 0]; // U+2030 ‰
+static DEF_ZERO_DIGIT: [u8; 2] = *b"0\0";
+static DEF_DIGIT_CHAR: [u8; 2] = *b"#\0";
+
+/// Resolve a decimal-format character as a NUL-terminated string: the
+/// format's field if non-NULL (with a non-NULL `self`), else the default.
+unsafe fn fmt_char(
+    fmt: *mut _xsltDecimalFormat,
+    get: unsafe fn(*mut _xsltDecimalFormat) -> *mut xmlChar,
+    default: &'static [u8],
+) -> *const xmlChar {
+    unsafe {
+        if fmt.is_null() {
+            return default.as_ptr() as *const xmlChar;
+        }
+        let p = get(fmt);
+        if p.is_null() {
+            default.as_ptr() as *const xmlChar
+        } else {
+            p
+        }
+    }
+}
+
+/// Compare the UTF-8 character at `cur` with the first UTF-8 character of
+/// the NUL-terminated string `s` (upstream `xsltUTF8Charcmp`).
+unsafe fn utf8_char_cmp(cur: *const xmlChar, s: *const xmlChar) -> bool {
+    unsafe {
+        if cur.is_null() || s.is_null() {
+            return false;
+        }
+        let n = crate::abi::exports_string::xmlUTF8Strsize(cur, 1);
+        if n < 1 {
+            return false;
+        }
+        libc::strncmp(cur as *const c_char, s as *const c_char, n as usize) == 0
+    }
+}
+
+/// Whether the UTF-8 character at `cur` is a picture "special" character
+/// (upstream IS_SPECIAL: zeroDigit, digit, decimalPoint, grouping,
+/// patternSeparator).
+unsafe fn is_special(
+    fmt: *mut _xsltDecimalFormat,
+    cur: *const xmlChar,
+    decimal_point: *const xmlChar,
+    grouping: *const xmlChar,
+    zero_digit: *const xmlChar,
+    digit: *const xmlChar,
+    pattern_sep: *const xmlChar,
+) -> bool {
+    unsafe {
+        utf8_char_cmp(cur, zero_digit)
+            || utf8_char_cmp(cur, digit)
+            || utf8_char_cmp(cur, decimal_point)
+            || utf8_char_cmp(cur, grouping)
+            || utf8_char_cmp(cur, pattern_sep)
+    }
+}
+
+/// Process the prefix/suffix of a decimal-format picture (upstream
+/// `xsltFormatNumberPreSuffix`, numbers.c); returns the length in **bytes**
+/// (excluding quote characters) or -1 on error. `format` is advanced past
+/// the consumed characters.
+unsafe fn pre_suffix(
+    fmt: *mut _xsltDecimalFormat,
+    format: &mut *const xmlChar,
+    info: &mut FormatNumberInfo,
+    decimal_point: *const xmlChar,
+    grouping: *const xmlChar,
+    zero_digit: *const xmlChar,
+    digit: *const xmlChar,
+    pattern_sep: *const xmlChar,
+    percent: *const xmlChar,
+    permille: *const xmlChar,
+) -> c_int {
+    unsafe {
+        let mut count: c_int = 0;
+        loop {
+            if **format == 0 {
+                return count;
+            }
+            // An escaped character (quoted) is counted but not interpreted.
+            if **format == SYMBOL_QUOTE {
+                *format = format.add(1);
+                if **format == 0 {
+                    return -1;
+                }
+            } else if is_special(
+                fmt,
+                *format,
+                decimal_point,
+                grouping,
+                zero_digit,
+                digit,
+                pattern_sep,
+            ) {
+                return count;
+            } else if utf8_char_cmp(*format, percent) {
+                if info.is_multiplier_set {
+                    return -1;
+                }
+                info.multiplier = 100;
+                info.is_multiplier_set = true;
+            } else if utf8_char_cmp(*format, permille) {
+                if info.is_multiplier_set {
+                    return -1;
+                }
+                info.multiplier = 1000;
+                info.is_multiplier_set = true;
+            }
+            let len = crate::abi::exports_string::xmlUTF8Strsize(*format, 1);
+            if len < 1 {
+                return -1;
+            }
+            count += len;
+            *format = format.add(len as usize);
+        }
+    }
+}
+
+/// Encode a Unicode code point as UTF-8 (upstream `xsltCopyCharMultiByte`).
+/// Returns the number of bytes written (0 for invalid code points).
+unsafe fn encode_utf8(out: &mut [u8], val: u32) -> usize {
+    unsafe {
+        if val < 0x80 {
+            out[0] = val as u8;
+            1
+        } else if val < 0x800 {
+            out[0] = ((val >> 6) | 0xC0) as u8;
+            out[1] = ((val & 0x3F) | 0x80) as u8;
+            2
+        } else if val < 0x10000 {
+            out[0] = ((val >> 12) | 0xE0) as u8;
+            out[1] = (((val >> 6) & 0x3F) | 0x80) as u8;
+            out[2] = ((val & 0x3F) | 0x80) as u8;
+            3
+        } else if val < 0x110000 {
+            out[0] = ((val >> 18) | 0xF0) as u8;
+            out[1] = (((val >> 12) & 0x3F) | 0x80) as u8;
+            out[2] = (((val >> 6) & 0x3F) | 0x80) as u8;
+            out[3] = ((val & 0x3F) | 0x80) as u8;
+            4
+        } else {
+            0
+        }
+    }
+}
+
+/// Decode the first UTF-8 character at `p` (upstream `xsltGetUTF8Char`);
+/// returns the code point, or -1 on error. `*len` receives the byte length
+/// of the character.
+unsafe fn get_utf8_char(p: *const xmlChar, len: &mut c_int) -> c_int {
+    unsafe { crate::abi::exports_misc::xmlGetUTF8Char(p as *const u8, len as *mut c_int) }
+}
+
+/// Append the decimal rendering of `number` (upstream
+/// `xsltNumberFormatDecimal`, numbers.c). `digit_zero` is the first byte of
+/// the zero-digit character; `grouping_char` is the grouping character's
+/// code point (0 disables grouping). Digits are rendered as
+/// `digit_zero + (int)fmod(number, 10)` encoded as UTF-8, exactly as
+/// upstream does (so a single-byte zero-digit above 0x7F yields the
+/// same-value code point, and a multi-byte zero-digit follows upstream's
+/// byte-arithmetic behavior).
+unsafe fn number_format_decimal(
+    out: &mut Vec<u8>,
+    mut number: f64,
+    digit_zero: u32,
+    width: c_int,
+    digits_per_group: c_int,
+    grouping_char: u32,
+) {
+    unsafe {
+        let mut stack: Vec<u8> = Vec::new();
+        let mut gbuf = [0u8; 4];
+        let g_len = if grouping_char != 0 {
+            encode_utf8(&mut gbuf, grouping_char)
+        } else {
+            0
+        };
+        let mut i: c_int = 0;
+        loop {
+            if i >= width && number.abs() < 1.0 {
+                break;
+            }
+            if i > 0 && grouping_char != 0 && digits_per_group > 0 && (i % digits_per_group) == 0 {
+                if g_len > 0 {
+                    stack.extend_from_slice(&gbuf[..g_len]);
+                }
+            }
+            let val = digit_zero as i32 + (number % 10.0) as i32;
+            let mut cb = [0u8; 4];
+            let clen = encode_utf8(&mut cb, val as u32);
+            if clen > 0 {
+                stack.extend_from_slice(&cb[..clen]);
+            }
+            number /= 10.0;
+            i += 1;
+        }
+        stack.reverse();
+        out.extend_from_slice(&stack);
+    }
+}
+
+/// Emit a transform error message through the XSLT error machinery with the
+/// same observable output upstream produces (message without a trailing
+/// newline; the error channel appends one).
+unsafe fn emit_transform_error(msg: &[u8]) {
+    unsafe {
+        let mut buf = msg.to_vec();
+        buf.push(0);
+        crate::xslt::errors::xsltTransformError(
+            ptr::null_mut(),
+            ptr::null_mut(),
+            ptr::null_mut(),
+            buf.as_ptr() as *const c_char,
+        );
+    }
+}
+
+/// Format a number with an XSLT decimal-format picture. Faithful port of
+/// upstream `xsltFormatNumberConversion` (numbers.c 1.1.45): the positive
+/// subpattern is parsed (prefix, integer `#`/`0` run, fraction `0`/`#`
+/// run, suffix), the negative subpattern (after `patternSeparator`) is
+/// applied for negative numbers, the multiplier from `%`/`permille` is
+/// applied, the number is rounded to the fraction width and the result is
+/// assembled with the decimal format's characters (grouping, decimal point,
+/// minus sign, infinity, NaN).
+///
+/// `self_` may be NULL: the standard default decimal format is substituted
+/// (upstream's own `xsltNewDecimalFormat` defaults).
+///
+/// On success `*result` receives an xmlMalloc'd NUL-terminated string
+/// (caller frees with `xmlFree`); returns XPATH_EXPRESSION_OK.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlXPathError
+/// xsltFormatNumberConversion(xsltDecimalFormatPtr self, xmlChar *format,
+///                            double number, xmlChar **result);
+/// ```
+///
+/// # SAFETY
+///
+/// - `format` must be a valid pointer or NULL (a NULL format is treated as
+///   an empty format, matching `xmlStrlen(NULL) == 0` upstream).
+/// - `result` must be a valid out-pointer.
+pub(crate) unsafe fn xslt_format_number_conversion(
+    self_: *mut _xsltDecimalFormat,
+    format: *const xmlChar,
+    number: f64,
+    result: *mut *mut xmlChar,
+) -> c_int {
+    unsafe {
+        let status: c_int = XPATH_EXPRESSION_OK as c_int;
+        let fmt = self_;
+        *result = ptr::null_mut();
+
+        let format_len = if format.is_null() {
+            0
+        } else {
+            libc::strlen(format as *const libc::c_char) as usize
+        };
+        if format_len == 0 {
+            emit_transform_error(b"xsltFormatNumberConversion : Invalid format (0-length)\n");
+        }
+        if number.is_nan() {
+            let no_number = fmt_char(fmt, |f| (*f).noNumber, &DEF_NAN);
+            *result = crate::xml::string::xml_strdup(no_number);
+            return status;
+        }
+
+        let zero_digit = fmt_char(fmt, |f| (*f).zeroDigit, &DEF_ZERO_DIGIT);
+        let digit = fmt_char(fmt, |f| (*f).digit, &DEF_DIGIT_CHAR);
+        let decimal_point = fmt_char(fmt, |f| (*f).decimalPoint, &DEF_DECIMAL_POINT);
+        let grouping = fmt_char(fmt, |f| (*f).grouping, &DEF_GROUPING);
+        let pattern_sep = fmt_char(fmt, |f| (*f).patternSeparator, &DEF_PATTERN_SEP);
+        let minus_sign = fmt_char(fmt, |f| (*f).minusSign, &DEF_MINUS);
+        let percent = fmt_char(fmt, |f| (*f).percent, &DEF_PERCENT);
+        let permille = fmt_char(fmt, |f| (*f).permille, &DEF_PERMILLE);
+
+        let mut info = FormatNumberInfo {
+            group: -1,
+            multiplier: 1,
+            ..Default::default()
+        };
+
+        let mut the_format: *const xmlChar = format;
+        let mut found_error: bool = false;
+        let mut default_sign: bool = false;
+        let mut prefix: *const xmlChar = the_format;
+        let mut prefix_length: c_int;
+        let mut suffix: *const xmlChar = ptr::null();
+        let mut suffix_length: c_int = 0;
+        let mut nprefix: *const xmlChar = ptr::null();
+        let mut nsuffix: *const xmlChar = ptr::null();
+        let mut nprefix_length: c_int = 0;
+        let mut nsuffix_length: c_int = 0;
+        let mut len: c_int = 0;
+        let mut delayed_multiplier: c_int = 0;
+
+        // +ve pattern: prefix.
+        prefix_length = pre_suffix(
+            fmt,
+            &mut the_format,
+            &mut info,
+            decimal_point,
+            grouping,
+            zero_digit,
+            digit,
+            pattern_sep,
+            percent,
+            permille,
+        );
+        if prefix_length < 0 {
+            found_error = true;
+            // goto OUTPUT_NUMBER
+        }
+
+        let self_grouping_len = if fmt.is_null() {
+            1
+        } else if grouping.is_null() {
+            0
+        } else {
+            libc::strlen(grouping as *const c_char) as usize
+        };
+
+        if !found_error {
+            // Number part: digits, grouping, percent/permille.
+            while *the_format != 0
+                && !utf8_char_cmp(the_format, decimal_point)
+                && !utf8_char_cmp(the_format, pattern_sep)
+            {
+                if delayed_multiplier != 0 {
+                    info.multiplier = delayed_multiplier;
+                    info.is_multiplier_set = true;
+                    delayed_multiplier = 0;
+                }
+                if utf8_char_cmp(the_format, digit) {
+                    if info.integer_digits > 0 {
+                        found_error = true;
+                        break;
+                    }
+                    info.integer_hash += 1;
+                    if info.group >= 0 {
+                        info.group += 1;
+                    }
+                } else if utf8_char_cmp(the_format, zero_digit) {
+                    info.integer_digits += 1;
+                    if info.group >= 0 {
+                        info.group += 1;
+                    }
+                } else if self_grouping_len > 0
+                    && libc::strncmp(
+                        the_format as *const c_char,
+                        grouping as *const c_char,
+                        self_grouping_len,
+                    ) == 0
+                {
+                    // Reset group count (the grouping separator may be
+                    // multi-byte; consume its whole length).
+                    info.group = 0;
+                    the_format = the_format.add(self_grouping_len);
+                    continue;
+                } else if utf8_char_cmp(the_format, percent) {
+                    if info.is_multiplier_set {
+                        found_error = true;
+                        break;
+                    }
+                    delayed_multiplier = 100;
+                } else if utf8_char_cmp(the_format, permille) {
+                    if info.is_multiplier_set {
+                        found_error = true;
+                        break;
+                    }
+                    delayed_multiplier = 1000;
+                } else {
+                    break;
+                }
+                len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+                if len < 1 {
+                    found_error = true;
+                    break;
+                }
+                the_format = the_format.add(len as usize);
+            }
+        }
+
+        // Fraction part.
+        if !found_error && *the_format != 0 && utf8_char_cmp(the_format, decimal_point) {
+            info.add_decimal = true;
+            len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+            if len < 1 {
+                found_error = true;
+            } else {
+                the_format = the_format.add(len as usize);
+                while *the_format != 0 {
+                    if utf8_char_cmp(the_format, zero_digit) {
+                        if info.frac_hash != 0 {
+                            found_error = true;
+                            break;
+                        }
+                        info.frac_digits += 1;
+                    } else if utf8_char_cmp(the_format, digit) {
+                        info.frac_hash += 1;
+                    } else if utf8_char_cmp(the_format, percent) {
+                        if info.is_multiplier_set {
+                            found_error = true;
+                            break;
+                        }
+                        delayed_multiplier = 100;
+                        len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+                        if len < 1 {
+                            found_error = true;
+                            break;
+                        }
+                        the_format = the_format.add(len as usize);
+                        continue;
+                    } else if utf8_char_cmp(the_format, permille) {
+                        if info.is_multiplier_set {
+                            found_error = true;
+                            break;
+                        }
+                        delayed_multiplier = 1000;
+                        len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+                        if len < 1 {
+                            found_error = true;
+                            break;
+                        }
+                        the_format = the_format.add(len as usize);
+                        continue;
+                    } else if !utf8_char_cmp(the_format, grouping) {
+                        break;
+                    }
+                    len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+                    if len < 1 {
+                        found_error = true;
+                        break;
+                    }
+                    the_format = the_format.add(len as usize);
+                    if delayed_multiplier != 0 {
+                        info.multiplier = delayed_multiplier;
+                        delayed_multiplier = 0;
+                        info.is_multiplier_set = true;
+                    }
+                }
+            }
+        }
+
+        // A trailing multiplier after the number part belongs to the suffix.
+        if delayed_multiplier != 0 {
+            the_format = the_format.sub(len as usize);
+            delayed_multiplier = 0;
+        }
+
+        // +ve suffix.
+        if !found_error {
+            suffix = the_format;
+            suffix_length = pre_suffix(
+                fmt,
+                &mut the_format,
+                &mut info,
+                decimal_point,
+                grouping,
+                zero_digit,
+                digit,
+                pattern_sep,
+                percent,
+                permille,
+            );
+            if suffix_length < 0 || (*the_format != 0 && !utf8_char_cmp(the_format, pattern_sep)) {
+                found_error = true;
+            }
+        }
+
+        // Negative number: -ve pattern.
+        if !found_error && number < 0.0 {
+            // `j` is the number of UTF-8 chars before the separator, not
+            // the number of bytes (upstream bug 151975).
+            let j = crate::abi::exports_string::xmlUTF8Strloc(format, pattern_sep);
+            if j < 0 {
+                // No -ve pattern present, so use default signing.
+                default_sign = true;
+            } else {
+                // Skip over the pattern separator (accounting for UTF-8).
+                the_format = crate::abi::exports_string::xmlUTF8Strpos(format, j + 1);
+                // Flag changes interpretation of percent/permille in the
+                // -ve pattern.
+                info.is_negative_pattern = true;
+                info.is_multiplier_set = false;
+
+                // First do the -ve prefix.
+                nprefix = the_format;
+                nprefix_length = pre_suffix(
+                    fmt,
+                    &mut the_format,
+                    &mut info,
+                    decimal_point,
+                    grouping,
+                    zero_digit,
+                    digit,
+                    pattern_sep,
+                    percent,
+                    permille,
+                );
+                if nprefix_length < 0 {
+                    found_error = true;
+                }
+                let mut neg_mult: c_int = 0;
+                if !found_error {
+                    while *the_format != 0 {
+                        if utf8_char_cmp(the_format, percent) || utf8_char_cmp(the_format, permille)
+                        {
+                            if info.is_multiplier_set {
+                                found_error = true;
+                                break;
+                            }
+                            info.is_multiplier_set = true;
+                            neg_mult = 1;
+                        } else if is_special(
+                            fmt,
+                            the_format,
+                            decimal_point,
+                            grouping,
+                            zero_digit,
+                            digit,
+                            pattern_sep,
+                        ) {
+                            neg_mult = 0;
+                        } else {
+                            break;
+                        }
+                        len = crate::abi::exports_string::xmlUTF8Strsize(the_format, 1);
+                        if len < 1 {
+                            found_error = true;
+                            break;
+                        }
+                        the_format = the_format.add(len as usize);
+                    }
+                    if neg_mult != 0 {
+                        info.is_multiplier_set = false;
+                        the_format = the_format.sub(len as usize);
+                    }
+                    // Finally do the -ve suffix.
+                    if *the_format != 0 {
+                        nsuffix = the_format;
+                        nsuffix_length = pre_suffix(
+                            fmt,
+                            &mut the_format,
+                            &mut info,
+                            decimal_point,
+                            grouping,
+                            zero_digit,
+                            digit,
+                            pattern_sep,
+                            percent,
+                            permille,
+                        );
+                        if nsuffix_length < 0 {
+                            found_error = true;
+                        }
+                    } else {
+                        nsuffix_length = 0;
+                    }
+                    if !found_error && *the_format != 0 {
+                        found_error = true;
+                    }
+                    // Java peculiarity: if the -ve prefix/suffix equals the
+                    // +ve ones, discard it and use the default.
+                    if (nprefix_length != prefix_length)
+                        || (nsuffix_length != suffix_length)
+                        || (nprefix_length > 0
+                            && prefix_length > 0
+                            && libc::strncmp(
+                                nprefix as *const c_char,
+                                prefix as *const c_char,
+                                prefix_length as usize,
+                            ) != 0)
+                        || (nsuffix_length > 0
+                            && suffix_length > 0
+                            && libc::strncmp(
+                                nsuffix as *const c_char,
+                                suffix as *const c_char,
+                                suffix_length as usize,
+                            ) != 0)
+                    {
+                        prefix = nprefix;
+                        prefix_length = nprefix_length;
+                        suffix = nsuffix;
+                        suffix_length = nsuffix_length;
+                    }
+                }
+            }
+        }
+
+        // OUTPUT_NUMBER:
+        if found_error {
+            // Upstream expands %s with the (possibly NULL) format string;
+            // glibc prints "(null)" for a NULL %s argument.
+            let shown = if format.is_null() {
+                "(null)".to_string()
+            } else {
+                let bytes =
+                    core::slice::from_raw_parts(format, libc::strlen(format as *const c_char));
+                String::from_utf8_lossy(bytes).into_owned()
+            };
+            let msg = format!(
+                "xsltFormatNumberConversion : error in format string '{}', using default\n",
+                shown
+            );
+            emit_transform_error(msg.as_bytes());
+            default_sign = number < 0.0;
+            prefix_length = 0;
+            suffix_length = 0;
+            info.integer_hash = 0;
+            info.integer_digits = 1;
+            info.frac_digits = 1;
+            info.frac_hash = 4;
+            info.group = -1;
+            info.multiplier = 1;
+            info.add_decimal = true;
+        }
+
+        // Apply the multiplier.
+        let scaled = number * info.multiplier as f64;
+        match is_inf(scaled) {
+            -1 => {
+                // Upstream `case -1` assigns the minus sign then falls
+                // through to `case 1`, concatenating the infinity string.
+                let ms = fmt_char(fmt, |f| (*f).minusSign, &DEF_MINUS);
+                let inf = fmt_char(fmt, |f| (*f).infinity, &DEF_INFINITY);
+                let mut joined = unsafe_bytes(ms).to_vec();
+                joined.extend_from_slice(unsafe_bytes(inf));
+                *result = xml_strdup_joined(&joined);
+                return status;
+            }
+            1 => {
+                let inf = fmt_char(fmt, |f| (*f).infinity, &DEF_INFINITY);
+                *result = crate::xml::string::xml_strdup(inf);
+                return status;
+            }
+            _ => {}
+        }
+
+        let mut out: Vec<u8> = Vec::new();
+
+        // Default sign first (only the first character of minus-sign is
+        // emitted, as upstream adds xmlUTF8Strsize(minusSign, 1) bytes).
+        if default_sign {
+            let l = crate::abi::exports_string::xmlUTF8Strsize(minus_sign, 1);
+            out.extend_from_slice(core::slice::from_raw_parts(minus_sign, l.max(1) as usize));
+        }
+
+        // Prefix (quote characters are stripped).
+        let mut j: c_int = 0;
+        let mut pc = prefix;
+        while j < prefix_length {
+            if *pc == SYMBOL_QUOTE {
+                pc = pc.add(1);
+            }
+            let l = crate::abi::exports_string::xmlUTF8Strsize(pc, 1);
+            if l < 1 {
+                break;
+            }
+            out.extend_from_slice(core::slice::from_raw_parts(pc, l as usize));
+            pc = pc.add(l as usize);
+            j += l;
+        }
+
+        // Round to frac_digits + frac_hash digits.
+        let mut num = scaled.abs();
+        let mut exp10 = info.frac_digits + info.frac_hash;
+        if exp10 > 308 {
+            if info.frac_digits > 308 {
+                info.frac_digits = 308;
+                info.frac_hash = 0;
+            } else {
+                info.frac_hash = 308 - info.frac_digits;
+            }
+            exp10 = 308;
+        }
+        let scale = 10f64.powi(exp10);
+        num += 0.5 / scale;
+        num -= num % (1.0 / scale);
+
+        // Integer part.
+        let zero_byte = *zero_digit as u32;
+        if !grouping.is_null() && *grouping != 0 {
+            let mut glen: c_int = libc::strlen(grouping as *const c_char) as c_int;
+            let gchar = get_utf8_char(grouping, &mut glen) as u32;
+            number_format_decimal(
+                &mut out,
+                num.floor(),
+                zero_byte,
+                info.integer_digits,
+                info.group,
+                gchar,
+            );
+        } else {
+            number_format_decimal(
+                &mut out,
+                num.floor(),
+                zero_byte,
+                info.integer_digits,
+                info.group,
+                ',' as u32,
+            );
+        }
+
+        // Java quirk: '.#' acts like '.0'.
+        if info.integer_digits + info.integer_hash + info.frac_digits == 0 && info.frac_hash > 0 {
+            info.frac_digits += 1;
+            info.frac_hash -= 1;
+        }
+
+        // Leading zero if the integer part is empty.
+        if num.floor() == 0.0 && info.integer_digits + info.frac_digits == 0 {
+            let l = crate::abi::exports_string::xmlUTF8Strsize(zero_digit, 1);
+            out.extend_from_slice(core::slice::from_raw_parts(zero_digit, l.max(1) as usize));
+        }
+
+        // Fraction part.
+        if info.frac_digits + info.frac_hash == 0 {
+            if info.add_decimal {
+                let l = crate::abi::exports_string::xmlUTF8Strsize(decimal_point, 1);
+                out.extend_from_slice(core::slice::from_raw_parts(
+                    decimal_point,
+                    l.max(1) as usize,
+                ));
+            }
+        } else {
+            let frac = num - num.floor();
+            if frac != 0.0 || info.frac_digits != 0 {
+                let l = crate::abi::exports_string::xmlUTF8Strsize(decimal_point, 1);
+                out.extend_from_slice(core::slice::from_raw_parts(
+                    decimal_point,
+                    l.max(1) as usize,
+                ));
+                let mut fnum = (scale * frac + 0.5).floor();
+                let mut jj = info.frac_hash;
+                while jj > 0 {
+                    if fnum % 10.0 >= 1.0 {
+                        break;
+                    }
+                    fnum /= 10.0;
+                    jj -= 1;
+                }
+                number_format_decimal(
+                    &mut out,
+                    fnum.floor(),
+                    zero_byte,
+                    info.frac_digits + jj,
+                    0,
+                    0,
+                );
+            }
+        }
+
+        // Suffix (quote characters are stripped).
+        let mut k: c_int = 0;
+        let mut sc = suffix;
+        while k < suffix_length {
+            if *sc == SYMBOL_QUOTE {
+                sc = sc.add(1);
+            }
+            let l = crate::abi::exports_string::xmlUTF8Strsize(sc, 1);
+            if l < 1 {
+                break;
+            }
+            out.extend_from_slice(core::slice::from_raw_parts(sc, l as usize));
+            sc = sc.add(l as usize);
+            k += l;
+        }
+
+        out.push(0);
+        let mem = crate::abi::allocator::xmlMallocImpl(out.len()) as *mut xmlChar;
+        if mem.is_null() {
+            return -1;
+        }
+        ptr::copy_nonoverlapping(out.as_ptr(), mem, out.len());
+        *result = mem;
+        status
+    }
+}
+
+/// Classification of a value as +inf / -inf / finite (upstream
+/// `xmlXPathIsInf`).
+fn is_inf(val: f64) -> i32 {
+    if val.is_infinite() {
+        if val > 0.0 {
+            1
+        } else {
+            -1
+        }
+    } else {
+        0
+    }
+}
+
+/// View a NUL-terminated string as bytes (excluding the terminator).
+unsafe fn unsafe_bytes(p: *const xmlChar) -> &'static [u8] {
+    unsafe {
+        if p.is_null() {
+            return &[];
+        }
+        core::slice::from_raw_parts(p, libc::strlen(p as *const c_char))
+    }
+}
+
+/// xmlStrdup an already-assembled NUL-terminated byte buffer.
+unsafe fn xml_strdup_joined(bytes: &[u8]) -> *mut xmlChar {
+    unsafe { crate::xml::string::xml_strdup(bytes.as_ptr() as *const xmlChar) }
+}
+
+/// Locate a decimal format by (namespace URI, local name), following
+/// upstream xslt.c `xsltDecimalFormatGetByQName`: the default format lives
+/// at the chain head and named formats are appended after it, so the named
+/// walk starts from `head->next`. With a NULL `name` the default (head) is
+/// returned. Imported stylesheets are consulted in order.
+///
+/// # SAFETY
+///
+/// - `style` may be NULL; `nsUri`/`name` may be NULL.
+pub(crate) unsafe fn decimal_format_by_qname(
+    style: *mut _xsltStylesheet,
+    ns_uri: *const xmlChar,
+    name: *const xmlChar,
+) -> *mut _xsltDecimalFormat {
+    unsafe {
+        if name.is_null() {
+            if style.is_null() {
+                return ptr::null_mut();
+            }
+            return (*style).decimalFormat;
+        }
+        let mut cur_style = style;
+        while !cur_style.is_null() {
+            if !(*cur_style).decimalFormat.is_null() {
+                let mut result = (*(*cur_style).decimalFormat).next;
+                while !result.is_null() {
+                    if crate::abi::exports_xml2::xmlStrEqual(ns_uri, (*result).nsUri) != 0
+                        && crate::abi::exports_xml2::xmlStrEqual(name, (*result).name) != 0
+                    {
+                        return result;
+                    }
+                    result = (*result).next;
+                }
+            }
+            cur_style = crate::abi::exports_xslt_apply::xsltNextImport(cur_style);
+        }
+        ptr::null_mut()
+    }
+}
 
 /// Format a number according to the format string.
 ///
@@ -176,79 +1075,246 @@ unsafe fn format_roman(number: f64, upper: bool) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::ptr;
 
-    fn free_str(p: *mut xmlChar) {
+    unsafe fn free_str(p: *mut xmlChar) {
         if !p.is_null() {
-            unsafe { libc::free(p as *mut libc::c_void) };
+            libc::free(p as *mut libc::c_void);
         }
     }
 
-    fn to_string(p: *mut xmlChar) -> String {
-        if p.is_null() {
-            return String::new();
-        }
+    /// Convert through the canonical entry point with the NULL (default
+    /// ASCII) decimal format and return the string.
+    unsafe fn to_string(number: f64, format: &[u8]) -> String {
         unsafe {
-            let bytes =
-                core::slice::from_raw_parts(p, libc::strlen(p as *const libc::c_char) as usize);
-            String::from_utf8_lossy(bytes).into_owned()
+            let mut fmt = format.to_vec();
+            fmt.push(0);
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let status = xslt_format_number_conversion(
+                ptr::null_mut(),
+                fmt.as_ptr() as *const xmlChar,
+                number,
+                &mut result,
+            );
+            assert_eq!(status, XPATH_EXPRESSION_OK as c_int);
+            let s = String::from_utf8_lossy(unsafe_bytes(result)).into_owned();
+            free_str(result);
+            s
+        }
+    }
+
+    /// Build a decimal format with the given character overrides (defaults
+    /// for everything else). The caller frees with `free_fmt`.
+    unsafe fn make_fmt(
+        decimal: &[u8],
+        grouping: &[u8],
+        infinity: &[u8],
+        no_number: &[u8],
+    ) -> *mut _xsltDecimalFormat {
+        unsafe {
+            let f = libc::calloc(1, core::mem::size_of::<_xsltDecimalFormat>())
+                as *mut _xsltDecimalFormat;
+            (*f).digit = crate::xml::string::xml_strdup(b"#\0".as_ptr() as *const xmlChar);
+            (*f).patternSeparator =
+                crate::xml::string::xml_strdup(b";\0".as_ptr() as *const xmlChar);
+            (*f).minusSign = crate::xml::string::xml_strdup(b"-\0".as_ptr() as *const xmlChar);
+            let mut d = decimal.to_vec();
+            d.push(0);
+            (*f).decimalPoint = crate::xml::string::xml_strdup(d.as_ptr() as *const xmlChar);
+            let mut g = grouping.to_vec();
+            g.push(0);
+            (*f).grouping = crate::xml::string::xml_strdup(g.as_ptr() as *const xmlChar);
+            (*f).percent = crate::xml::string::xml_strdup(b"%\0".as_ptr() as *const xmlChar);
+            (*f).permille = crate::xml::string::xml_strdup("‰\0".as_ptr() as *const xmlChar);
+            (*f).zeroDigit = crate::xml::string::xml_strdup(b"0\0".as_ptr() as *const xmlChar);
+            let mut inf = infinity.to_vec();
+            inf.push(0);
+            (*f).infinity = crate::xml::string::xml_strdup(inf.as_ptr() as *const xmlChar);
+            let mut nn = no_number.to_vec();
+            nn.push(0);
+            (*f).noNumber = crate::xml::string::xml_strdup(nn.as_ptr() as *const xmlChar);
+            f
+        }
+    }
+
+    unsafe fn free_fmt(f: *mut _xsltDecimalFormat) {
+        unsafe {
+            if f.is_null() {
+                return;
+            }
+            libc::free((*f).digit as *mut libc::c_void);
+            libc::free((*f).patternSeparator as *mut libc::c_void);
+            libc::free((*f).minusSign as *mut libc::c_void);
+            libc::free((*f).decimalPoint as *mut libc::c_void);
+            libc::free((*f).grouping as *mut libc::c_void);
+            libc::free((*f).percent as *mut libc::c_void);
+            libc::free((*f).permille as *mut libc::c_void);
+            libc::free((*f).zeroDigit as *mut libc::c_void);
+            libc::free((*f).infinity as *mut libc::c_void);
+            libc::free((*f).noNumber as *mut libc::c_void);
+            libc::free(f as *mut libc::c_void);
+        }
+    }
+
+    /// Convert with a custom decimal format.
+    unsafe fn to_string_fmt(fmt: *mut _xsltDecimalFormat, number: f64, format: &[u8]) -> String {
+        unsafe {
+            let mut f = format.to_vec();
+            f.push(0);
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let status = xslt_format_number_conversion(
+                fmt,
+                f.as_ptr() as *const xmlChar,
+                number,
+                &mut result,
+            );
+            assert_eq!(status, XPATH_EXPRESSION_OK as c_int);
+            let s = String::from_utf8_lossy(unsafe_bytes(result)).into_owned();
+            free_str(result);
+            s
+        }
+    }
+
+    // ── Differential-verified values (oracle libxslt 1.1.45) ────────────
+
+    #[test]
+    fn test_grouping_and_fraction() {
+        unsafe {
+            assert_eq!(to_string(1234567.891, b"#,##0.00"), "1,234,567.89");
+            assert_eq!(to_string(1234.5, b"#,##0.00"), "1,234.50");
+            assert_eq!(to_string(1234.5, b"0,000"), "1,235");
+            assert_eq!(to_string(123.456, b"0.00#"), "123.456");
+        }
+    }
+
+    #[test]
+    fn test_negative_patterns() {
+        unsafe {
+            assert_eq!(to_string(-1234.5, b"#,##0.00;(#,##0.00)"), "(1,234.50)");
+            assert_eq!(to_string(-1234.5, b"#,##0.00;-#,##0.00"), "-1,234.50");
+            // No -ve pattern: default sign.
+            assert_eq!(to_string(-42.0, b"0.00"), "-42.00");
+            // Identical -ve pattern is discarded and, because upstream's
+            // `default_sign = 1` else-branch is commented out (numbers.c),
+            // NO minus is emitted for the negative value.
+            assert_eq!(to_string(-1234.5, b"0.00;0.00"), "1234.50");
+        }
+    }
+
+    #[test]
+    fn test_multipliers() {
+        unsafe {
+            assert_eq!(to_string(0.055, b"0.00%"), "5.50%");
+            assert_eq!(to_string(0.055, "0.00‰".as_bytes()), "55.00‰");
+            assert_eq!(to_string(1234.0, b"0%"), "123400%");
+        }
+    }
+
+    #[test]
+    fn test_nan_and_infinity() {
+        unsafe {
+            assert_eq!(to_string(f64::NAN, b"0.00"), "NaN");
+            assert_eq!(to_string(f64::INFINITY, b"0.00"), "Infinity");
+            assert_eq!(to_string(f64::NEG_INFINITY, b"0.00"), "-Infinity");
+        }
+    }
+
+    #[test]
+    fn test_padding_and_java_quirks() {
+        unsafe {
+            assert_eq!(to_string(42.0, b"0000"), "0042");
+            assert_eq!(to_string(2.0, b"00.00"), "02.00");
+            // '.#' acts like '.0'.
+            assert_eq!(to_string(42.0, b".#"), "42.0");
+            assert_eq!(to_string(3.14159, b"#.##"), "3.14");
+            assert_eq!(to_string(7.0, b"0.############"), "7");
+        }
+    }
+
+    #[test]
+    fn test_prefix_suffix_quotes() {
+        unsafe {
+            // Quoted dollar prefix; the quoted special char after the
+            // closing quote is counted in the prefix (upstream quirk).
+            assert_eq!(to_string(1234.5, b"'$'#,##0.00"), "$#1,234.50");
+            assert_eq!(to_string(1234.5, b"#,##0.00 USD"), "1,234.50 USD");
+            assert_eq!(to_string(1234.5, b"'#'#,##0.00"), "##1,234.50");
+            assert_eq!(to_string(1234.5, b"''#,##0.00"), "'1,234.50");
+        }
+    }
+
+    #[test]
+    fn test_malformed_fallback() {
+        unsafe {
+            // Malformed pictures fall back to the default format.
+            assert_eq!(to_string(1234.5, b"0.##0"), "1234.5");
+            assert_eq!(to_string(1234.5, b"0;0;0"), "1235");
+            assert_eq!(to_string(1234.5, b"#0#"), "1234.5");
+        }
+    }
+
+    #[test]
+    fn test_tiny_numbers() {
+        unsafe {
+            assert_eq!(to_string(0.000000001, b"0.000000000"), "0.000000001");
+        }
+    }
+
+    #[test]
+    fn test_custom_decimal_format() {
+        unsafe {
+            // Euro style: decimal=',', grouping='.'.
+            let euro = make_fmt(b",", b".", b"INF", b"NAN");
+            // Picture '0.00' under euro: '.' is the grouping char, so the
+            // integer part is grouped every two digits.
+            assert_eq!(to_string_fmt(euro, 1234567.891, b"0.00"), "1.23.45.68");
+            assert_eq!(to_string_fmt(euro, f64::INFINITY, b"0"), "INF");
+            assert_eq!(to_string_fmt(euro, f64::NAN, b"0"), "NAN");
+            // '#' is not the digit char under euro (it is), but ',' IS the
+            // decimal point: '#,##0.00' has a fraction of '0.00' after ','.
+            assert_eq!(to_string_fmt(euro, -1234.5, b"#,##0.00"), "-1234,5");
+            free_fmt(euro);
         }
     }
 
     #[test]
     fn test_format_decimal() {
         unsafe {
-            let s = xsltFormatNumber(42.0, b"1\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "42");
-            free_str(s);
+            assert_eq!(to_string(1234.0, b"#,##0.00"), "1,234.00");
         }
     }
 
     #[test]
     fn test_format_padded() {
         unsafe {
-            let s = xsltFormatNumber(7.0, b"01\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "07");
-            free_str(s);
+            assert_eq!(to_string(42.0, b"0000"), "0042");
         }
     }
 
     #[test]
     fn test_format_alphabetic() {
         unsafe {
-            let s = xsltFormatNumber(1.0, b"a\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "a");
-            free_str(s);
-            let s = xsltFormatNumber(27.0, b"a\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "aa");
-            free_str(s);
-            let s = xsltFormatNumber(1.0, b"A\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "A");
-            free_str(s);
+            // The xsl:number token formatter (not the picture parser).
+            let p = xsltFormatNumber(27.0, b"a\0".as_ptr() as *const xmlChar);
+            assert_eq!(String::from_utf8_lossy(unsafe_bytes(p)), "aa");
+            free_str(p);
         }
     }
 
     #[test]
     fn test_format_roman() {
         unsafe {
-            let s = xsltFormatNumber(4.0, b"i\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "iv");
-            free_str(s);
-            let s = xsltFormatNumber(9.0, b"I\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "IX");
-            free_str(s);
-            let s = xsltFormatNumber(1999.0, b"I\0".as_ptr() as *const xmlChar);
-            assert_eq!(to_string(s), "MCMXCIX");
-            free_str(s);
+            let p = xsltFormatNumber(2024.0, b"I\0".as_ptr() as *const xmlChar);
+            assert_eq!(String::from_utf8_lossy(unsafe_bytes(p)), "MMXXIV");
+            free_str(p);
         }
     }
 
     #[test]
     fn test_format_null() {
         unsafe {
-            let s = xsltFormatNumber(5.0, ptr::null());
-            assert_eq!(to_string(s), "5");
-            free_str(s);
+            // NULL format behaves like an empty picture: raw decimal.
+            assert_eq!(to_string(7.0, b""), "7");
+            assert_eq!(to_string(0.0, b"0"), "0");
         }
     }
 }

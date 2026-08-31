@@ -38,6 +38,10 @@ pub(crate) enum XmlToken {
         /// (parallel to `attributes`; start of the raw value, used for the
         /// '<' in entity error caret).
         attr_start: Vec<usize>,
+        /// Byte offset of the tag's closing '>' (or '/' for empty elements) —
+        /// upstream xmlParseStartTag2 raises the undefined-namespace-prefix
+        /// error with the input still at the tag end.
+        end_pos: usize,
         empty: bool,
         unterminated: bool,
     },
@@ -494,6 +498,7 @@ impl XmlTokenizer {
                 attributes,
                 attr_end: Vec::new(),
                 attr_start: Vec::new(),
+                end_pos: self.input.current_pos().2,
                 empty,
                 unterminated: true,
             };
@@ -714,6 +719,7 @@ impl XmlTokenizer {
             attributes,
             attr_end,
             attr_start,
+            end_pos: end_pos.unwrap_or_else(|| self.input.current_pos().2),
             empty,
             unterminated,
         }
@@ -776,6 +782,23 @@ impl XmlTokenizer {
                     }
                 }
                 Some(c) => {
+                    if c == '<' {
+                        // UPSTREAM-PARITY (parser.c xmlParseAttValueInternal):
+                        // a raw '<' inside an attribute value is a fatal WFC
+                        // violation, but the character still becomes part of
+                        // the value.
+                        self.record_error(
+                            crate::abi::types::XML_FROM_PARSER,
+                            crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
+                            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Unescaped '<' not allowed in attributes values\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            None,
+                        );
+                    }
                     Self::push_char(&mut value, c);
                     self.input.read_char();
                 }
@@ -1073,6 +1096,7 @@ impl XmlTokenizer {
 
             // Check for `-->`
             if self.input.peek_char() == Some('-') {
+                let err_pos = self.input.current_pos().2;
                 self.input.read_char();
                 if self.input.peek_char() == Some('-') {
                     self.input.read_char();
@@ -1080,9 +1104,30 @@ impl XmlTokenizer {
                         self.input.read_char();
                         break;
                     }
-                    // Not `-->`, include what we read
-                    content.push(b'-');
-                    content.push(b'-');
+                    // UPSTREAM-PARITY (parser.c xmlParseCommentComplex): a
+                    // double hyphen inside a comment (not `-->`) is a fatal
+                    // WFC error "Double hyphen within comment: <!--%.50s\n"
+                    // (XML_ERR_HYPHEN_IN_COMMENT); parsing continues past
+                    // the two hyphens, which are NOT part of the content.
+                    // R-000166.
+                    let mut preview: Vec<u8> = content.clone();
+                    preview.truncate(50);
+                    let msg = format!(
+                        "Double hyphen within comment: <!--{}\n",
+                        String::from_utf8_lossy(&preview)
+                    );
+                    self.record_error_at(
+                        crate::abi::types::XML_FROM_PARSER,
+                        crate::abi::types::XML_ERR_HYPHEN_IN_COMMENT,
+                        crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        msg,
+                        None,
+                        None,
+                        None,
+                        0,
+                        err_pos,
+                        None,
+                    );
                     continue;
                 }
                 content.push(b'-');

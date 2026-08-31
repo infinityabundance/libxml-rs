@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<out>
+  <b id="b1" sv="b1"/>
+  <b id="b2" sv="b2">
+    <match>yes</match>
+  </b>
+  <b id="b3" sv="b3"/>
+  <s1>Rust Programming</s1>
+</out>

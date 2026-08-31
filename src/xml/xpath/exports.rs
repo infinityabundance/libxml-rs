@@ -1143,13 +1143,40 @@ pub unsafe extern "C" fn xmlXPathNodeTrailingSorted(
 }
 
 /// `void xmlXPathNodeSetFreeNs(xmlNsPtr ns)` — releases a synthesized
-/// namespace node (no-op: the ns declaration itself is owned by the tree).
+/// namespace node (upstream xpath.c `xmlXPathNodeSetFreeNs`).
+///
+/// UPSTREAM-PARITY: an XPath node-set that contains namespace nodes holds
+/// *synthesized* copies whose `next` field points at the owner element (not
+/// at another namespace declaration). Such nodes are freed here along with
+/// their href/prefix; real namespace declarations (owned by the tree) are
+/// left untouched.
 ///
 /// # SAFETY
 ///
 /// - `ns` must be a valid namespace pointer or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathNodeSetFreeNs(_ns: *mut _xmlNs) {}
+pub unsafe extern "C" fn xmlXPathNodeSetFreeNs(ns: *mut _xmlNs) {
+    unsafe {
+        if ns.is_null() {
+            return;
+        }
+        if (*ns).type_ != crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int {
+            return;
+        }
+        // A synthesized namespace node's `next` is the owner element.
+        if !(*ns).next.is_null()
+            && (*(*ns).next).type_ != crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int
+        {
+            if !(*ns).href.is_null() {
+                libc::free((*ns).href as *mut libc::c_void);
+            }
+            if !(*ns).prefix.is_null() {
+                libc::free((*ns).prefix as *mut libc::c_void);
+            }
+            libc::free(ns as *mut libc::c_void);
+        }
+    }
+}
 
 /// `XML_INTPTR_T xmlXPathOrderDocElems(xmlDocPtr doc)` (2.15 signature) —
 /// indexes the document's elements in document order: each element's

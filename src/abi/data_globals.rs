@@ -447,10 +447,61 @@ pub static xmlXPathNINF: f64 = f64::NEG_INFINITY;
 // xsltMaxDepth / xsltMaxVars are exported from src/xslt/transform/mod.rs
 // (they are read by the transform engine).
 
-/// `const int xsltLibxmlVersion` = LIBXML_VERSION (21503) — the libxml2
-/// version libxslt was built against (upstream xslt.c).
+/// `const int xsltLibxmlVersion` = 21501 — the libxml2 version the system
+/// libxslt 1.1.45 was compiled against (upstream xslt.c `LIBXML_VERSION`;
+/// the system libxslt was built against libxml2 2.15.1). Byte-parity with
+/// the oracle DSO, read directly by `xsltproc -V`.
 #[no_mangle]
-pub static xsltLibxmlVersion: c_int = 21503;
+pub static xsltLibxmlVersion: c_int = 21501;
+
+/// `const int xsltLibxsltVersion` = 10145 — the libxslt version
+/// (upstream xslt.c `XSLTPUBVAR const int xsltLibxsltVersion = LIBXSLT_VERSION`;
+/// oracle DSO symbol type R). Was previously exported as a function (T)
+/// — R-000167.
+#[no_mangle]
+pub static xsltLibxsltVersion: c_int = 10145;
+
+/// `const char *xsltEngineVersion` = "10145-GITv1.1.45" — the libxslt engine
+/// version string (upstream xslt.c `XSLTPUBVAR const char *xsltEngineVersion`;
+/// oracle DSO symbol type D). Was previously exported as a function (T)
+/// — R-000167. `static mut` follows the xmlParserVersion pattern (raw
+/// pointers are not Sync).
+#[no_mangle]
+pub static mut xsltEngineVersion: *const c_char = {
+    static S: [u8; 17] = *b"10145-GITv1.1.45\0";
+    S.as_ptr() as *const c_char
+};
+
+/// `const char *exsltLibraryVersion` = "825-GITv1.1.45" — the libexslt
+/// library version string (upstream exslt.c `EXSLTPUBVAR const char *`;
+/// oracle DSO symbol type D). Read by `xsltproc -V`.
+#[no_mangle]
+pub static mut exsltLibraryVersion: *const c_char = {
+    static S: [u8; 15] = *b"825-GITv1.1.45\0";
+    S.as_ptr() as *const c_char
+};
+
+/// `const int exsltLibexsltVersion` = 825 — the libexslt version
+/// (upstream exslt.h `EXSLTPUBVAR const int`; oracle DSO symbol type R).
+#[no_mangle]
+pub static exsltLibexsltVersion: c_int = 825;
+
+/// `const int exsltLibxmlVersion` = 21501 — the libxml2 version the system
+/// libexslt 0.8.25 was compiled against (oracle DSO symbol type R).
+#[no_mangle]
+pub static exsltLibxmlVersion: c_int = 21501;
+
+/// `const int exsltLibxsltVersion` = 10145 — the libxslt version the system
+/// libexslt 0.8.25 was compiled against (oracle DSO symbol type R).
+#[no_mangle]
+pub static exsltLibxsltVersion: c_int = 10145;
+
+/// `int xslDebugStatus` — the libxslt debugger status (upstream xsltutils.c
+/// `XSLTPUBVAR int xslDebugStatus;`, default XSLT_DEBUG_NONE = 0; oracle DSO
+/// symbol type B). Written by `xsltSetDebuggerStatus`; read by the transform
+/// engine's profiling gates (R-000165 DATA_MISSING closure).
+#[no_mangle]
+pub static mut xslDebugStatus: c_int = 0;
 
 /// `xmlGenericErrorFunc xsltGenericError` — the libxslt error callback.
 /// Upstream defaults to `xsltGenericErrorDefaultFunc` (xsltutils.c, a variadic

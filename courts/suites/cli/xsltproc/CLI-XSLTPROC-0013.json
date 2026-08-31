@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XSLTPROC-0013",
+  "surface": "cli-xsltproc",
+  "purpose": "version report (-V) byte-parity incl. the libxslt/libexslt data symbols (R-000167)",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/-V"
+    ]
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-X-version-data-closure"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "version"
+  ]
+}

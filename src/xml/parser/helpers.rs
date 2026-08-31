@@ -7,13 +7,23 @@
 //! # Ownership model
 //!
 //! When `setup_parser_input` is called, the `InputBuffer` is boxed and leaked (stored as a raw
-//! pointer in `ctxt._private`). This keeps the buffer's data alive so that the
-//! `_xmlParserInput` pointers (`base`/`cur`/`end`) remain valid. `parse_document` and
-//! `parse_chunk` take ownership of that boxed buffer, move it into an `InputStack`, create
-//! an `XmlParser`, run it, and drop everything — consuming the buffer in the process.
+//! pointer in a per-context side table, NOT in `ctxt._private`). This keeps the buffer's data
+//! alive so that the `_xmlParserInput` pointers (`base`/`cur`/`end`) remain valid.
+//! `parse_document` and `parse_chunk` take ownership of that boxed buffer, move it into an
+//! `InputStack`, create an `XmlParser`, run it, and drop everything — consuming the buffer in
+//! the process.
+//!
+//! # Why a side table?
+//!
+//! `ctxt._private` is application data (upstream `xmlCtxtSetPrivate`/`xmlCtxtGetPrivate`); the
+//! candidate must never stash internal parse state there, or freeing a context whose private
+//! field the application set would free the application's pointer as an `InputBuffer`
+//! (11.1-X R-000165 closure discovery). The boxed input lives in `PARSER_INPUT_STASH` keyed by
+//! context address and is released by `free_parser_ctxt`/`xmlCtxtReset`/`parse_document`.
 
 use core::ffi::CStr;
 use core::ptr;
+use std::collections::HashMap;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_void};
 
@@ -23,6 +33,38 @@ use crate::abi::structs::{_xmlParserCtxt, _xmlParserInput, _xmlParserInputBuffer
 use crate::xml::parser::input::{InputBuffer, InputStack};
 use crate::xml::parser::state::XmlParser;
 use crate::xml::sax::xmlSAX2InitDefaultSAXHandler;
+
+/// Per-context stash of the boxed `InputBuffer` backing the C-visible
+/// `_xmlParserInput` (see the module docs for why this is not `ctxt._private`).
+struct StashPtr(*mut InputBuffer);
+unsafe impl Send for StashPtr {}
+unsafe impl Sync for StashPtr {}
+
+static PARSER_INPUT_STASH: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, StashPtr>>> =
+    once_cell::sync::Lazy::new(Default::default);
+
+/// Stash the boxed input buffer for `ctxt` (takes ownership of `buf`).
+pub(crate) fn stash_input_buffer(ctxt: *mut _xmlParserCtxt, buf: *mut InputBuffer) {
+    PARSER_INPUT_STASH
+        .lock()
+        .insert(ctxt as usize, StashPtr(buf));
+}
+
+/// Take (remove) the stashed input buffer for `ctxt`; the caller owns it.
+pub(crate) fn take_stashed_input_buffer(ctxt: *mut _xmlParserCtxt) -> *mut InputBuffer {
+    PARSER_INPUT_STASH
+        .lock()
+        .remove(&(ctxt as usize))
+        .map_or(ptr::null_mut(), |s| s.0)
+}
+
+/// Drop the stashed input buffer for `ctxt`, if any.
+pub(crate) fn free_stashed_input_buffer(ctxt: *mut _xmlParserCtxt) {
+    if let Some(buf) = PARSER_INPUT_STASH.lock().remove(&(ctxt as usize)) {
+        // SAFETY: the pointer was stashed via Box::into_raw.
+        unsafe { drop(Box::from_raw(buf.0)) };
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Context creation / destruction
@@ -154,13 +196,10 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
             xmlFreeImpl(name_tab as *mut c_void);
         }
 
-        // Free the stored InputBuffer (leaked in setup_parser_input).
-        let private_data = (*ctxt)._private;
-        if !private_data.is_null() {
-            // SAFETY: The pointer was obtained via Box::into_raw in setup_parser_input.
-            // Reconstruct the Box and let it drop.
-            let _ = Box::from_raw(private_data as *mut InputBuffer);
-        }
+        // Free the stored InputBuffer (stashed in the side table by
+        // setup_parser_input). `ctxt._private` is application data and is
+        // NEVER touched here (11.1-X).
+        free_stashed_input_buffer(ctxt);
 
         // Free the parser dictionary (upstream xmlFreeParserCtxt).
         if !(*ctxt).dict.is_null() {
@@ -313,8 +352,9 @@ pub(crate) unsafe fn setup_parser_input(ctxt: *mut _xmlParserCtxt, input: InputB
     unsafe {
         let c = &mut *ctxt;
 
-        // Store the leaked pointer so we can free it later.
-        c._private = input_buf_ptr as *mut c_void;
+        // Store the leaked pointer in the side table so we can free it later
+        // (ctxt._private stays application data — 11.1-X).
+        stash_input_buffer(ctxt, input_buf_ptr);
 
         // SAFETY: input_buf_ptr points to a live InputBuffer whose data Vec
         // will not move while the _xmlParserInput references it.
@@ -348,9 +388,9 @@ pub(crate) unsafe fn setup_parser_input(ctxt: *mut _xmlParserCtxt, input: InputB
 
 /// Parse a complete document using the internal parser.
 ///
-/// Takes ownership of the `InputBuffer` stored in `ctxt._private` (from a
-/// previous `setup_parser_input` call), creates an `InputStack` and `XmlParser`,
-/// and runs `parse_document`.
+/// Takes ownership of the `InputBuffer` stashed for `ctxt` (from a
+/// previous `setup_parser_input` call), creates an `InputStack` and
+/// `XmlParser`, and runs `parse_document`.
 ///
 /// Returns `0` on success, `-1` on error.
 ///
@@ -358,16 +398,14 @@ pub(crate) unsafe fn setup_parser_input(ctxt: *mut _xmlParserCtxt, input: InputB
 ///
 /// - `ctxt` must be a valid pointer to a `_xmlParserCtxt` that was set up via
 ///   `setup_parser_input` (or equivalent).
-/// - After this call, the `InputBuffer` is consumed and `ctxt._private` is set
-///   to NULL. The context's `input` and `inputTab` may contain dangling pointers
-///   and should not be used for further parsing.
+/// - After this call, the `InputBuffer` is consumed and the stash entry is
+///   removed. The context's `input` and `inputTab` may contain dangling
+///   pointers and should not be used for further parsing.
 pub(crate) unsafe fn parse_document(ctxt: *mut _xmlParserCtxt) -> c_int {
-    // Take ownership of the stored InputBuffer.
-    // SAFETY: The pointer was stored by setup_parser_input via Box::into_raw.
+    // Take ownership of the stashed InputBuffer.
+    // SAFETY: The pointer was stashed by setup_parser_input via Box::into_raw.
     let input_buf = {
-        let c = &mut *ctxt;
-        let ptr = c._private as *mut InputBuffer;
-        c._private = ptr::null_mut();
+        let ptr = take_stashed_input_buffer(ctxt);
         if ptr.is_null() {
             // No input buffer — nothing to parse.
             return -1;
@@ -413,14 +451,12 @@ pub(crate) unsafe fn parse_chunk(
         &[]
     };
 
-    // Take ownership of the stored InputBuffer (if any).
+    // Take ownership of the stashed InputBuffer (if any).
     let stored_buf: Option<Box<InputBuffer>> = unsafe {
-        let c = &mut *ctxt;
-        if c._private.is_null() {
+        let ptr = take_stashed_input_buffer(ctxt);
+        if ptr.is_null() {
             None
         } else {
-            let ptr = c._private as *mut InputBuffer;
-            c._private = ptr::null_mut();
             // SAFETY: ptr is a valid Box<InputBuffer> from Box::into_raw.
             Some(unsafe { Box::from_raw(ptr) })
         }
@@ -539,24 +575,45 @@ pub(crate) unsafe fn alloc_parser_input_buffer() -> *mut _xmlParserInputBuffer {
 
 /// Free a C ABI `_xmlParserInput`.
 ///
-/// This frees only the struct itself — any data it points to is owned
-/// elsewhere and must be freed separately.
+/// Mirrors upstream `xmlFreeInputStream` (parserInternals.c): the
+/// deallocation callback, when set, takes full ownership of the input
+/// (it frees the struct itself); otherwise the owned filename, directory
+/// and buffer are freed before the struct.
 ///
 /// # Safety
 ///
-/// `input` must be a valid pointer returned by `alloc_parser_input` or
-/// `xmlMalloc`, or NULL (in which case this is a no-op).
+/// `input` must be a valid pointer returned by `alloc_parser_input`,
+/// `xmlNewInputStream`, `xmlNewInputFrom*` or `xmlMalloc`, or NULL (in
+/// which case this is a no-op).
 pub(crate) unsafe fn free_parser_input(input: *mut _xmlParserInput) {
     if input.is_null() {
         return;
     }
     // SAFETY: The filename is an owned xmlMalloc'd copy made by
     // alloc_parser_input (upstream frees input->filename with the input).
-    if !(*input).filename.is_null() {
-        crate::abi::allocator::xmlFreeImpl((*input).filename as *mut c_void);
+    // The deallocation callback (upstream input->free) is invoked first and
+    // owns the whole input when set.
+    if let Some(free_cb) = unsafe { (*input).free } {
+        // SAFETY: The callback contract matches upstream xmlFreeInputStream:
+        // it frees the input (and its buffer) itself.
+        unsafe { free_cb(input as *mut c_char) };
+        return;
     }
-    // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
-    unsafe { xmlFreeImpl(input as *mut c_void) };
+    unsafe {
+        if !(*input).filename.is_null() {
+            crate::abi::allocator::xmlFreeImpl((*input).filename as *mut c_void);
+        }
+        if !(*input).directory.is_null() {
+            crate::abi::allocator::xmlFreeImpl((*input).directory as *mut c_void);
+        }
+        if !(*input).buf.is_null() {
+            // The input owns its buffer (xmlNewInputFrom* family and the
+            // xmlLoadExternalEntity parser_input_from_buf path).
+            crate::xml::io::input_buffer_free((*input).buf);
+        }
+        // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
+        xmlFreeImpl(input as *mut c_void);
+    }
 }
 
 /// Free a C ABI `_xmlParserInputBuffer`.

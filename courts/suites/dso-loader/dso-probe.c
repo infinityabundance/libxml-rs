@@ -25,7 +25,6 @@
 typedef void *(*xmlReadMemoryFn)(const char *, int, const char *, const char *, int);
 typedef void (*xmlFreeDocFn)(void *);
 typedef void (*xmlSetStructuredErrorFuncFn)(void *, void (*)(void *, void *));
-typedef int (*xsltLibxsltVersionNumFn)(void);
 typedef void (*exsltRegisterAllFn)(void);
 
 static int errors_seen = 0;
@@ -96,19 +95,165 @@ int main(int argc, char **argv) {
     void *hx = dlopen("libxslt.so.1", RTLD_NOW | RTLD_LOCAL);
     CHECK(hx != NULL, "dlopen(libxslt.so.1)");
     if (hx) {
-        xsltLibxsltVersionNumFn ver = (xsltLibxsltVersionNumFn)dlsym(hx, "xsltLibxsltVersion");
-        CHECK(ver != NULL, "dlsym(xsltLibxsltVersion)");
+        /* R-000167: xsltLibxsltVersion is a DATA symbol (const int, oracle R) */
+        const int *ver = (const int *)dlsym(hx, "xsltLibxsltVersion");
+        CHECK(ver != NULL, "dlsym(xsltLibxsltVersion) data");
+        if (ver) {
+            printf("INFO xsltLibxsltVersion=%d\n", *ver);
+            CHECK(*ver == 10145, "xsltLibxsltVersion value");
+        }
+        const char *const *eng = (const char *const *)dlsym(hx, "xsltEngineVersion");
+        CHECK(eng != NULL && *eng != NULL && (*eng)[0] != '\0', "dlsym(xsltEngineVersion) data");
+        if (eng && *eng) printf("INFO xsltEngineVersion=%s\n", *eng);
         void *(*apply)(void *, void *, const char **) = dlsym(hx, "xsltApplyStylesheet");
         CHECK(apply != NULL, "dlsym(xsltApplyStylesheet)");
     }
 
-    /* libexslt.so.0 — exsltRegisterAll reachable */
+    /* libexslt.so.0 — exsltRegisterAll reachable + version data */
     void *he = dlopen("libexslt.so.0", RTLD_NOW | RTLD_LOCAL);
     CHECK(he != NULL, "dlopen(libexslt.so.0)");
     if (he) {
         exsltRegisterAllFn reg = (exsltRegisterAllFn)dlsym(he, "exsltRegisterAll");
         CHECK(reg != NULL, "dlsym(exsltRegisterAll)");
         if (reg) reg();
+        const char *const *libv = (const char *const *)dlsym(he, "exsltLibraryVersion");
+        CHECK(libv != NULL && *libv != NULL, "dlsym(exsltLibraryVersion) data");
+        if (libv && *libv) printf("INFO exsltLibraryVersion=%s\n", *libv);
+        const int *ev = (const int *)dlsym(he, "exsltLibexsltVersion");
+        CHECK(ev != NULL, "dlsym(exsltLibexsltVersion) data");
+        if (ev) {
+            printf("INFO exsltLibexsltVersion=%d\n", *ev);
+            CHECK(*ev == 825, "exsltLibexsltVersion value");
+        }
+        const int *lxv = (const int *)dlsym(he, "exsltLibxsltVersion");
+        CHECK(lxv != NULL && *lxv == 10145, "dlsym(exsltLibxsltVersion) data");
+        const int *lmv = (const int *)dlsym(he, "exsltLibxmlVersion");
+        CHECK(lmv != NULL && *lmv == 21501, "dlsym(exsltLibxmlVersion) data");
+    }
+
+    /* ── 11.1-X R-000165 closure: the newly exported surface ─────────────── */
+    {
+        /* xmlCtxt accessors: create a context, exercise the 2.14+ family. */
+        void *(*newCtxt)(void) = (void *(*)(void))dlsym(h, "xmlNewParserCtxt");
+        void *(*freeCtxt)(void *) = (void *(*)(void *))dlsym(h, "xmlFreeParserCtxt");
+        int (*getOpts)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtGetOptions");
+        int (*setOpts)(void *, int) = (int (*)(void *, int))dlsym(h, "xmlCtxtSetOptions");
+        void *(*getPriv)(void *) = (void *(*)(void *))dlsym(h, "xmlCtxtGetPrivate");
+        void (*setPriv)(void *, void *) = (void (*)(void *, void *))dlsym(h, "xmlCtxtSetPrivate");
+        int (*isHtml)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtIsHtml");
+        int (*isStopped)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtIsStopped");
+        int (*isInSubset)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtIsInSubset");
+        int (*getStatus)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtGetStatus");
+        void *(*getDoc)(void *) = (void *(*)(void *))dlsym(h, "xmlCtxtGetDocument");
+        int (*getStandalone)(void *) = (int (*)(void *))dlsym(h, "xmlCtxtGetStandalone");
+        const char *(*getVersion)(void *) = (const char *(*)(void *))dlsym(h, "xmlCtxtGetVersion");
+        CHECK(getOpts && setOpts && getPriv && setPriv && isHtml && isStopped &&
+              isInSubset && getStatus && getDoc && getStandalone && getVersion,
+              "dlsym(xmlCtxt* accessors)");
+        if (newCtxt && freeCtxt) {
+            void *ctxt = newCtxt();
+            if (ctxt) {
+                CHECK(getOpts(ctxt) == 0, "xmlCtxtGetOptions initial");
+                CHECK(setOpts(ctxt, 1) == 0, "xmlCtxtSetOptions");
+                CHECK(getOpts(ctxt) == 1, "xmlCtxtGetOptions after set");
+                int marker = 42;
+                setPriv(ctxt, &marker);
+                CHECK(getPriv(ctxt) == &marker, "xmlCtxtGet/SetPrivate");
+                CHECK(isHtml(ctxt) == 0, "xmlCtxtIsHtml (XML ctxt)");
+                CHECK(isStopped(ctxt) == 0, "xmlCtxtIsStopped initial");
+                CHECK(isInSubset(ctxt) == 0, "xmlCtxtIsInSubset initial");
+                CHECK(getStandalone(ctxt) == -1, "xmlCtxtGetStandalone tri-state");
+                CHECK(getStatus(ctxt) == 0, "xmlCtxtGetStatus clean");
+                CHECK(getDoc(ctxt) == NULL, "xmlCtxtGetDocument none");
+                freeCtxt(ctxt);
+            }
+        }
+
+        /* xmlNewInputFrom* family: build an input and read its data. */
+        void *(*newFromMem)(const char *, const void *, size_t, int) =
+            (void *(*)(const char *, const void *, size_t, int))dlsym(h, "xmlNewInputFromMemory");
+        void *(*newFromStr)(const char *, const char *, int) =
+            (void *(*)(const char *, const char *, int))dlsym(h, "xmlNewInputFromString");
+        void (*freeIn)(void *) = (void (*)(void *))dlsym(h, "xmlFreeInputStream");
+        CHECK(newFromMem && newFromStr && freeIn, "dlsym(xmlNewInputFrom*)");
+        if (newFromMem && freeIn) {
+            void *inp = newFromMem("mem.xml", "<a/>", 4, 0);
+            CHECK(inp != NULL, "xmlNewInputFromMemory");
+            if (inp) {
+                const unsigned char **base = (const unsigned char **)inp;
+                (void)base;
+                freeIn(inp);
+            }
+        }
+        if (newFromStr && freeIn) {
+            void *inp = newFromStr("str.xml", "<b/>", 0);
+            CHECK(inp != NULL, "xmlNewInputFromString");
+            if (inp) freeIn(inp);
+        }
+
+        /* encoding conversions */
+        int (*isolat1)(unsigned char *, int *, const unsigned char *, int *) =
+            (int (*)(unsigned char *, int *, const unsigned char *, int *))dlsym(h, "xmlIsolat1ToUTF8");
+        int (*utf8to1)(unsigned char *, int *, const unsigned char *, int *) =
+            (int (*)(unsigned char *, int *, const unsigned char *, int *))dlsym(h, "xmlUTF8ToIsolat1");
+        CHECK(isolat1 && utf8to1, "dlsym(encoding conversions)");
+        if (isolat1) {
+            unsigned char out[8];
+            const unsigned char in[1] = {0xE9}; /* latin1 é */
+            int olen = 8, ilen = 1;
+            int n = isolat1(out, &olen, in, &ilen);
+            CHECK(n == 2 && olen == 2 && out[0] == 0xC3 && out[1] == 0xA9,
+                  "xmlIsolat1ToUTF8 converts");
+        }
+
+        /* xlink detection */
+        int (*xlinkIsLink)(void *, void *) = (int (*)(void *, void *))dlsym(h, "xlinkIsLink");
+        CHECK(xlinkIsLink != NULL, "dlsym(xlinkIsLink)");
+        CHECK(xlinkIsLink(NULL, NULL) == 0, "xlinkIsLink(NULL) = NONE");
+        void *(*getDetect)(void) = (void *(*)(void))dlsym(h, "xlinkGetDefaultDetect");
+        CHECK(getDetect != NULL && getDetect() == NULL, "xlinkGetDefaultDetect NULL");
+
+        /* xslt helpers */
+        unsigned int (*utf8z)(const unsigned char *, int *) =
+            (unsigned int (*)(const unsigned char *, int *))dlsym(h, "xsltGetUTF8CharZ");
+        void (*setDbgStatus)(int) = (void (*)(int))dlsym(h, "xsltSetDebuggerStatus");
+        int (*setDbgCb)(int, void *) = (int (*)(int, void *))dlsym(h, "xsltSetDebuggerCallbacks");
+        int *dbgStatus = (int *)dlsym(h, "xslDebugStatus");
+        CHECK(utf8z && setDbgStatus && setDbgCb && dbgStatus,
+              "dlsym(xslt helpers)");
+        if (utf8z) {
+            int len = 0;
+            unsigned int cp = utf8z((const unsigned char *)"\xC3\xA9", &len);
+            CHECK(cp == 0xE9 && len == 2, "xsltGetUTF8CharZ decodes");
+        }
+        if (setDbgCb) {
+            CHECK(setDbgCb(3, NULL) == -1, "xsltSetDebuggerCallbacks NULL block");
+        }
+        if (dbgStatus) {
+            printf("INFO xslDebugStatus=%d\n", *dbgStatus);
+            CHECK(*dbgStatus == 0, "xslDebugStatus initial");
+        }
+
+        /* per-module EXSLT registration entry points */
+        void (*reg)(void) = NULL;
+        const char *mods[] = {"exsltCommonRegister", "exsltMathRegister", "exsltSetsRegister",
+                              "exsltFuncRegister", "exsltStrRegister", "exsltDateRegister",
+                              "exsltSaxonRegister", "exsltDynRegister", "exsltCryptoRegister"};
+        int all_present = 1;
+        for (size_t i = 0; i < sizeof(mods) / sizeof(mods[0]); i++) {
+            if (dlsym(he, mods[i]) == NULL) all_present = 0;
+        }
+        CHECK(all_present, "dlsym(per-module exslt*Register)");
+        reg = (void (*)(void))dlsym(he, "exsltCommonRegister");
+        if (reg) reg();
+        int (*xreg)(void *, const char *) = (int (*)(void *, const char *))dlsym(he, "exsltDateXpathCtxtRegister");
+        CHECK(xreg != NULL, "dlsym(exslt*XpathCtxtRegister)");
+        if (xreg) CHECK(xreg(NULL, "date") == 0, "exsltDateXpathCtxtRegister");
+
+        /* schematron helper surface */
+        int (*setValidOpts)(void *, int) = (int (*)(void *, int))dlsym(h, "xmlSchematronSetValidOptions");
+        int (*getValidOpts)(void *) = (int (*)(void *))dlsym(h, "xmlSchematronValidCtxtGetOptions");
+        CHECK(setValidOpts && getValidOpts, "dlsym(xmlSchematron* options)");
     }
 
     dlclose(he);

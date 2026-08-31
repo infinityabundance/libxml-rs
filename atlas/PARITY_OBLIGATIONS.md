@@ -8,111 +8,34 @@ courts (atlas/SYMBOL_COURT_INDEX.json).
 
 ## libxml2 — oracle `/usr/lib/libxml2.so.16`
 
-oracle functions: 1400, oracle data: 22, candidate functions: 1654
+oracle functions: 1400, oracle data: 22, candidate functions: 1714
 
 | overall status | count |
 |---|---|
-| MISSING | 52 |
 | STUB | 15 |
 | INTENTIONAL_NOOP | 9 |
-| IMPLEMENTED_UNVERIFIED | 1061 |
+| IMPLEMENTED_UNVERIFIED | 1113 |
 | CURRENT_PARITY_VERIFIED | 263 |
 | DATA_EXPORTED_UNVERIFIED | 22 |
 
-### Missing (52)
-- FUNC `htmlCtxtSetOptions`
-- FUNC `htmlUTF8ToHtml`
-- FUNC `xlinkGetDefaultDetect`
-- FUNC `xlinkGetDefaultHandler`
-- FUNC `xlinkIsLink`
-- FUNC `xlinkSetDefaultDetect`
-- FUNC `xlinkSetDefaultHandler`
-- FUNC `xmlCtxtGetCatalogs`
-- FUNC `xmlCtxtGetDeclaredEncoding`
-- FUNC `xmlCtxtGetDict`
-- FUNC `xmlCtxtGetDocTypeDecl`
-- FUNC `xmlCtxtGetDocument`
-- FUNC `xmlCtxtGetInputPosition`
-- FUNC `xmlCtxtGetInputWindow`
-- FUNC `xmlCtxtGetNode`
-- FUNC `xmlCtxtGetOptions`
-- FUNC `xmlCtxtGetPrivate`
-- FUNC `xmlCtxtGetSaxHandler`
-- FUNC `xmlCtxtGetStandalone`
-- FUNC `xmlCtxtGetStatus`
-- FUNC `xmlCtxtGetUserData`
-- FUNC `xmlCtxtGetValidCtxt`
-- FUNC `xmlCtxtGetVersion`
-- FUNC `xmlCtxtIsHtml`
-- FUNC `xmlCtxtIsInSubset`
-- FUNC `xmlCtxtIsStopped`
-- FUNC `xmlCtxtParseContent`
-- FUNC `xmlCtxtParseDtd`
-- FUNC `xmlCtxtPopInput`
-- FUNC `xmlCtxtPushInput`
-- FUNC `xmlCtxtSetCatalogs`
-- FUNC `xmlCtxtSetCharEncConvImpl`
-- FUNC `xmlCtxtSetDict`
-- FUNC `xmlCtxtSetPrivate`
-- FUNC `xmlCtxtSetResourceLoader`
-- FUNC `xmlCtxtSetSaxHandler`
-- FUNC `xmlCtxtValidateDocument`
-- FUNC `xmlCtxtValidateDtd`
-- FUNC `xmlInputSetEncodingHandler`
-- FUNC `xmlIsolat1ToUTF8`
-- FUNC `xmlNewInputFromFd`
-- FUNC `xmlNewInputFromIO`
-- FUNC `xmlNewInputFromMemory`
-- FUNC `xmlNewInputFromString`
-- FUNC `xmlNewInputFromUrl`
-- FUNC `xmlRelaxNGSetResourceLoader`
-- FUNC `xmlRelaxNGValidCtxtClearErrors`
-- FUNC `xmlRelaxParserSetIncLImit`
-- FUNC `xmlSchemaSetResourceLoader`
-- FUNC `xmlTextReaderSetResourceLoader`
-- FUNC `xmlUTF8ToIsolat1`
-- FUNC `xmlXIncludeSetResourceLoader`
-
 ## libxslt — oracle `/usr/lib/libxslt.so.1`
 
-oracle functions: 232, oracle data: 12, candidate functions: 252
+oracle functions: 232, oracle data: 12, candidate functions: 266
 
 | overall status | count |
 |---|---|
 | INTENTIONAL_NOOP | 6 |
 | IMPLEMENTED_UNVERIFIED | 197 |
 | CURRENT_PARITY_VERIFIED | 29 |
-| DATA_MISSING | 1 |
-| DATA_EXPORTED_UNVERIFIED | 11 |
-
-### Missing (1)
-- DATA `xslDebugStatus`
+| DATA_EXPORTED_UNVERIFIED | 12 |
 
 ## libexslt — oracle `/usr/lib/libexslt.so.0`
 
-oracle functions: 13, oracle data: 4, candidate functions: 1
+oracle functions: 13, oracle data: 4, candidate functions: 14
 
 | overall status | count |
 |---|---|
-| MISSING | 12 |
-| IMPLEMENTED_UNVERIFIED | 1 |
-| DATA_MISSING | 4 |
-
-### Missing (16)
-- FUNC `exsltCommonRegister`
-- FUNC `exsltDateRegister`
-- FUNC `exsltDateXpathCtxtRegister`
-- FUNC `exsltDynRegister`
-- FUNC `exsltFuncRegister`
-- DATA `exsltLibexsltVersion`
-- DATA `exsltLibraryVersion`
-- DATA `exsltLibxmlVersion`
-- DATA `exsltLibxsltVersion`
-- FUNC `exsltMathRegister`
-- FUNC `exsltMathXpathCtxtRegister`
-- FUNC `exsltSaxonRegister`
-- FUNC `exsltSetsRegister`
-- FUNC `exsltSetsXpathCtxtRegister`
-- FUNC `exsltStrRegister`
-- FUNC `exsltStrXpathCtxtRegister`
+| STUB | 1 |
+| IMPLEMENTED_UNVERIFIED | 12 |
+| DATA_EXPORTED_UNVERIFIED | 4 |
 

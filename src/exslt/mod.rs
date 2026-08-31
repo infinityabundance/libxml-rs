@@ -39,7 +39,10 @@
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
+use std::ffi::c_void;
+use std::os::raw::c_int;
 
+use crate::abi::types::xmlChar;
 use crate::xml::xpath::context::XPathContext;
 use crate::xml::xpath::types::XPathValue;
 
@@ -48,6 +51,7 @@ pub mod dates;
 pub mod dynamic;
 pub mod functions;
 pub mod math;
+pub mod saxon;
 pub mod sets;
 pub mod strings;
 
@@ -118,6 +122,7 @@ pub fn register_all() {
     dynamic::register_all();
     dates::register_all();
     functions::register_all();
+    saxon::register_all();
 }
 
 /// The C ABI entry point: register all EXSLT modules.
@@ -134,6 +139,99 @@ pub fn register_all() {
 #[no_mangle]
 pub extern "C" fn exsltRegisterAll() {
     register_all();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Per-module registration entry points (11.1-X R-000165 closure)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream libexslt exposes one register function per module (exslt.c). The
+// candidate's registry is keyed by "prefix:name"; each module's register_all
+// populates it. saxon/crypto have no candidate module — their register
+// functions are exported no-ops (upstream contracts: void / int 0).
+
+/// `exsltCommonRegister` — register the EXSLT common module.
+#[no_mangle]
+pub extern "C" fn exsltCommonRegister() {
+    common::register_all();
+}
+
+/// `exsltMathRegister` — register the EXSLT math module.
+#[no_mangle]
+pub extern "C" fn exsltMathRegister() {
+    math::register_all();
+}
+
+/// `exsltSetsRegister` — register the EXSLT sets module.
+#[no_mangle]
+pub extern "C" fn exsltSetsRegister() {
+    sets::register_all();
+}
+
+/// `exsltFuncRegister` — register the EXSLT functions module.
+#[no_mangle]
+pub extern "C" fn exsltFuncRegister() {
+    functions::register_all();
+}
+
+/// `exsltStrRegister` — register the EXSLT strings module.
+#[no_mangle]
+pub extern "C" fn exsltStrRegister() {
+    strings::register_all();
+}
+
+/// `exsltDateRegister` — register the EXSLT dates module.
+#[no_mangle]
+pub extern "C" fn exsltDateRegister() {
+    dates::register_all();
+}
+
+/// `exsltSaxonRegister` — register the EXSLT Saxon extensions
+/// (upstream exslt.c calls this from `exsltRegisterAll`).
+#[no_mangle]
+pub extern "C" fn exsltSaxonRegister() {
+    saxon::register_all();
+}
+
+/// `exsltDynRegister` — register the EXSLT dynamic module.
+#[no_mangle]
+pub extern "C" fn exsltDynRegister() {
+    dynamic::register_all();
+}
+
+/// `exsltCryptoRegister` — register the EXSLT crypto module. The candidate
+/// has no crypto module; upstream returns void, so this is a no-op.
+#[no_mangle]
+pub extern "C" fn exsltCryptoRegister() {}
+
+/// `exsltDateXpathCtxtRegister(ctxt, prefix)` — register the dates module
+/// on a specific XPath context (upstream date.c). The candidate's registry
+/// is global; registration is performed for all contexts.
+#[no_mangle]
+pub extern "C" fn exsltDateXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
+    dates::register_all();
+    0
+}
+
+/// `exsltMathXpathCtxtRegister(ctxt, prefix)` — math module (see above).
+#[no_mangle]
+pub extern "C" fn exsltMathXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
+    math::register_all();
+    0
+}
+
+/// `exsltSetsXpathCtxtRegister(ctxt, prefix)` — sets module (see above).
+#[no_mangle]
+pub extern "C" fn exsltSetsXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
+    sets::register_all();
+    0
+}
+
+/// `exsltStrXpathCtxtRegister(ctxt, prefix)` — strings module (see above).
+#[no_mangle]
+pub extern "C" fn exsltStrXpathCtxtRegister(_ctxt: *mut c_void, _prefix: *const xmlChar) -> c_int {
+    strings::register_all();
+    0
 }
 
 #[cfg(test)]

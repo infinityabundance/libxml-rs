@@ -377,7 +377,7 @@ unsafe fn parse_document(cli: &Cli, filename: &str) -> *mut _xmlDoc {
 }
 
 /// Dump a document to the output stream.
-unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
+unsafe fn dump_document(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) {
     if doc.is_null() {
         return;
     }
@@ -430,8 +430,13 @@ unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
         );
         // UPSTREAM-PARITY: xmlC14NDocDumpMemory returns the length of the
         // canonical form on success (>= 0); xmllint writes exactly ret bytes.
+        // On failure xmllint prints "Failed to canonicalize" and exits with
+        // XMLLINT_ERR_OUT (6).
         if ret >= 0 && !result.is_null() {
             write_stdout(core::slice::from_raw_parts(result, ret as usize));
+        } else {
+            eprintln!("Failed to canonicalize");
+            cli.return_code = 6;
         }
         if !result.is_null() {
             libxml_rs::abi::allocator::xmlFreeImpl(result as *mut c_void);
@@ -1235,7 +1240,7 @@ fn main() {
             // Generate a small doc and process it.
             let doc = make_auto_doc();
             if !doc.is_null() {
-                dump_document(&cli, doc, "auto");
+                dump_document(&mut cli, doc, "auto");
                 libxml_rs::xml::tree::free_doc(doc);
             }
             std::process::exit(cli.return_code);

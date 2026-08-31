@@ -36,6 +36,15 @@ const XML_PARSER_ENTITY_REF: c_int = 5;
 /// URI warning for relative (non-absolute) xmlns URIs.
 const XML_WAR_NS_URI_RELATIVE: c_int = 100;
 
+/// XML_NS_ERR_XML_NAMESPACE (include/libxml/xmlerror.h:200) — namespace
+/// declaration errors (empty xmlns, xml-prefix misuse, xmlns redefinition).
+const XML_NS_ERR_XML_NAMESPACE: c_int = 200;
+
+/// XML_NS_ERR_UNDEFINED_NAMESPACE (include/libxml/xmlerror.h:201) — a
+/// namespace prefix used on an element or attribute name has no binding in
+/// scope. R-000166.
+const XML_NS_ERR_UNDEFINED_NAMESPACE: c_int = 201;
+
 /// Whether a namespace URI carries a scheme (`[a-zA-Z][a-zA-Z0-9+.-]*:`
 /// prefix) — upstream xmlParseURISafe's `scheme == NULL` check.
 fn has_uri_scheme(uri: &[u8]) -> bool {
@@ -1082,6 +1091,7 @@ impl XmlParser {
                 attributes,
                 attr_end,
                 attr_start,
+                end_pos,
                 empty,
                 unterminated,
             } => {
@@ -1090,7 +1100,7 @@ impl XmlParser {
                     // already raised; upstream's element parse failed.
                     return Err(());
                 }
-                self.parse_element(name, attributes, attr_end, attr_start, empty)?;
+                self.parse_element(name, attributes, attr_end, attr_start, end_pos, empty)?;
 
                 // UPSTREAM-PARITY: a catastrophic stop (disableSAX == 2)
                 // ends the parse without the trailing checks.
@@ -1101,17 +1111,23 @@ impl XmlParser {
                 // UPSTREAM-PARITY: trailing misc, then xmlParserCheckEOF.
                 self.parse_misc_after_root()?;
                 if !self.tokenizer.input().current_ref().remaining().is_empty() {
-                    self.raise_error_now(
-                        XML_FROM_PARSER,
-                        XML_ERR_DOCUMENT_END,
-                        xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "Extra content at the end of the document\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                    );
-                    return Err(());
+                    // UPSTREAM-PARITY (R-000166): the fatal is raised only
+                    // when no prior error was recorded; otherwise the
+                    // remaining input is ignored (upstream sets EOF and
+                    // finishes).
+                    if unsafe { (*self.ctxt).errNo } == crate::abi::types::XML_ERR_OK {
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_DOCUMENT_END,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "Extra content at the end of the document\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                        );
+                        return Err(());
+                    }
                 }
                 Ok(())
             }
@@ -1135,6 +1151,32 @@ impl XmlParser {
                 }
                 XmlToken::Characters(data) => {
                     if data.iter().any(|&b| !b.is_ascii_whitespace()) {
+                        // UPSTREAM-PARITY (parser.c XML_PARSER_EPILOG): the
+                        // fatal "Extra content" is raised only when no prior
+                        // error was recorded (errNo == XML_ERR_OK) — a prior
+                        // namespace/other error suppresses it, the stray
+                        // content is ignored, and the document stays
+                        // well-formed (R-000166).
+                        if unsafe { (*self.ctxt).errNo } == crate::abi::types::XML_ERR_OK {
+                            self.raise_error_at(
+                                XML_FROM_PARSER,
+                                XML_ERR_DOCUMENT_END,
+                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                "Extra content at the end of the document\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                start,
+                            );
+                            return Err(());
+                        }
+                        return Ok(());
+                    }
+                }
+                _ => {
+                    // UPSTREAM-PARITY: same errNo gate as above.
+                    if unsafe { (*self.ctxt).errNo } == crate::abi::types::XML_ERR_OK {
                         self.raise_error_at(
                             XML_FROM_PARSER,
                             XML_ERR_DOCUMENT_END,
@@ -1148,20 +1190,7 @@ impl XmlParser {
                         );
                         return Err(());
                     }
-                }
-                _ => {
-                    self.raise_error_at(
-                        XML_FROM_PARSER,
-                        XML_ERR_DOCUMENT_END,
-                        xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "Extra content at the end of the document\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                        start,
-                    );
-                    return Err(());
+                    return Ok(());
                 }
             }
         }
@@ -1174,6 +1203,7 @@ impl XmlParser {
         attributes: Vec<(Vec<u8>, Vec<u8>)>,
         attr_end: Vec<usize>,
         attr_start: Vec<usize>,
+        end_pos: usize,
         empty: bool,
     ) -> Result<(), ()> {
         // Line where this element's start tag appeared (used for upstream
@@ -1188,6 +1218,10 @@ impl XmlParser {
         // Separate namespace declarations from regular attributes
         let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)> = Vec::new();
+        // Parallel to `regular_attrs`: the byte offset just past each
+        // attribute value's closing quote (upstream's position for
+        // namespace diagnostics).
+        let mut attr_pos: Vec<usize> = Vec::new();
 
         // UPSTREAM-PARITY: attribute values are parsed with
         // xmlParseAttValueInternal, which substitutes character references
@@ -1256,6 +1290,113 @@ impl XmlParser {
                     );
                 }
             }
+            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace
+            // declaration errors are reported (non-fatal) and the invalid
+            // declaration is skipped. R-000166.
+            if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
+                let pos = attr_end.get(idx).copied().unwrap_or(0);
+                let xml_ns_uri = b"http://www.w3.org/XML/1998/namespace";
+                let xmlns_uri = b"http://www.w3.org/2000/xmlns/";
+                let (decl_prefix, decl_value): (Vec<u8>, Vec<u8>) = if attr_name == b"xmlns" {
+                    (Vec::new(), attr_value.clone())
+                } else {
+                    (attr_name[b"xmlns:".len()..].to_vec(), attr_value.clone())
+                };
+                let mut skip_decl = false;
+                if decl_prefix == b"xml" {
+                    if decl_value != xml_ns_uri {
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_XML_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            "xml namespace prefix mapped to wrong URI\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                    }
+                    skip_decl = true;
+                } else if decl_value == xml_ns_uri {
+                    if attr_name == b"xmlns" {
+                        // Default xmlns with the xml namespace URI.
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_XML_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            "xml namespace URI cannot be the default namespace\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                    } else {
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_XML_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            "xml namespace URI mapped to wrong prefix\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                    }
+                    skip_decl = true;
+                } else if decl_prefix == b"xmlns" {
+                    self.raise_error_at(
+                        XML_FROM_NAMESPACE,
+                        XML_NS_ERR_XML_NAMESPACE as c_int,
+                        xmlErrorLevel::XML_ERR_ERROR as c_int,
+                        "redefinition of the xmlns prefix is forbidden\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        pos,
+                    );
+                    skip_decl = true;
+                } else if decl_value == xmlns_uri {
+                    self.raise_error_at(
+                        XML_FROM_NAMESPACE,
+                        XML_NS_ERR_XML_NAMESPACE as c_int,
+                        xmlErrorLevel::XML_ERR_ERROR as c_int,
+                        "reuse of the xmlns namespace name is forbidden\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        pos,
+                    );
+                    skip_decl = true;
+                } else if decl_value.is_empty() && attr_name != b"xmlns" {
+                    // UPSTREAM-PARITY: only PREFIXED declarations with an
+                    // empty URI are errors (xmlns:p=""); the default
+                    // xmlns="" legitimately undeclares the default
+                    // namespace (R-000166).
+                    self.raise_error_at(
+                        XML_FROM_NAMESPACE,
+                        XML_NS_ERR_XML_NAMESPACE as c_int,
+                        xmlErrorLevel::XML_ERR_ERROR as c_int,
+                        format!(
+                            "xmlns:{}: Empty XML namespace is not allowed\n",
+                            String::from_utf8_lossy(&decl_prefix)
+                        ),
+                        None,
+                        None,
+                        None,
+                        0,
+                        pos,
+                    );
+                    skip_decl = true;
+                }
+                if skip_decl {
+                    continue;
+                }
+            }
             if attr_name == b"xmlns" {
                 // Default namespace declaration: xmlns="uri"
                 ns_decls.push((Vec::new(), attr_value.clone()));
@@ -1275,9 +1416,91 @@ impl XmlParser {
                     }
                     let localname = attr_name[colons + 1..].to_vec();
                     regular_attrs.push((Some(prefix), localname, attr_value.clone(), *_had_ref));
+                    attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
                 } else {
                     regular_attrs.push((None, attr_name.clone(), attr_value.clone(), *_had_ref));
+                    attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
                 }
+            }
+        }
+
+        // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace prefixes
+        // used on attributes and on the element itself must be declared by
+        // this tag's declarations or by an ancestor's; otherwise
+        // XML_NS_ERR_UNDEFINED_NAMESPACE is raised. The xml prefix is
+        // always bound. Rejected declarations (empty xmlns:p="", wrong
+        // xml/xmlns bindings) are skipped above, so they correctly count as
+        // undeclared. R-000166.
+        let parent_node = unsafe { (*self.ctxt).node };
+        let my_doc = unsafe { (*self.ctxt).myDoc };
+        let prefix_declared = |prefix: &[u8]| -> bool {
+            if prefix == b"xml" {
+                return true;
+            }
+            if ns_decls.iter().any(|(dp, _)| dp == prefix) {
+                return true;
+            }
+            if !parent_node.is_null() {
+                // SAFETY: the document and parent are valid; the prefix is
+                // NUL-terminated for the search.
+                let mut prefix_c = prefix.to_vec();
+                prefix_c.push(0);
+                let ns = unsafe {
+                    crate::xml::tree::search_ns(
+                        my_doc,
+                        parent_node,
+                        prefix_c.as_ptr() as *const xmlChar,
+                    )
+                };
+                return !ns.is_null();
+            }
+            false
+        };
+        let element_local = match name.iter().position(|&b| b == b':') {
+            Some(colons) => &name[colons + 1..],
+            None => name.as_slice(),
+        };
+        for (i, (prefix, localname, _, _)) in regular_attrs.iter().enumerate() {
+            if let Some(p) = prefix {
+                if !prefix_declared(p) {
+                    let pos = attr_pos.get(i).copied().unwrap_or(end_pos);
+                    self.raise_error_at(
+                        XML_FROM_NAMESPACE,
+                        XML_NS_ERR_UNDEFINED_NAMESPACE as c_int,
+                        xmlErrorLevel::XML_ERR_ERROR as c_int,
+                        format!(
+                            "Namespace prefix {} for {} on {} is not defined\n",
+                            String::from_utf8_lossy(p),
+                            String::from_utf8_lossy(localname),
+                            String::from_utf8_lossy(element_local)
+                        ),
+                        Some(p.clone()),
+                        None,
+                        None,
+                        0,
+                        pos,
+                    );
+                }
+            }
+        }
+        if let Some(colons) = name.iter().position(|&b| b == b':') {
+            let prefix = &name[..colons];
+            if !prefix_declared(prefix) {
+                self.raise_error_at(
+                    XML_FROM_NAMESPACE,
+                    XML_NS_ERR_UNDEFINED_NAMESPACE as c_int,
+                    xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    format!(
+                        "Namespace prefix {} on {} is not defined\n",
+                        String::from_utf8_lossy(prefix),
+                        String::from_utf8_lossy(element_local)
+                    ),
+                    Some(prefix.to_vec()),
+                    None,
+                    None,
+                    0,
+                    end_pos,
+                );
             }
         }
 
@@ -1340,6 +1563,7 @@ impl XmlParser {
                         attributes: child_attrs,
                         attr_end: child_attr_end,
                         attr_start: child_attr_start,
+                        end_pos: child_end_pos,
                         empty: child_empty,
                         unterminated,
                     } => {
@@ -1355,6 +1579,7 @@ impl XmlParser {
                             child_attrs,
                             child_attr_end,
                             child_attr_start,
+                            child_end_pos,
                             child_empty,
                         )?;
                     }
@@ -1773,9 +1998,8 @@ impl XmlParser {
                         };
                         let buf = InputBuffer::from_memory(bytes, None);
                         self.tokenizer.push_input(buf);
-                        if !(*loaded).buf.is_null() {
-                            crate::xml::parser::helpers::free_parser_input_buffer((*loaded).buf);
-                        }
+                        // free_parser_input (xmlFreeInputStream) frees the
+                        // owned buffer; no separate buffer free here.
                         crate::abi::exports_xml2::xmlFreeInputStream(loaded);
                     }
                 }

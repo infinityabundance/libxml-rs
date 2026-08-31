@@ -124,8 +124,12 @@ pub unsafe extern "C" fn xsltNewTransformContext(
             (*internal).func_lookup_data = ctxt as *mut c_void;
         }
         // Register the standard XSLT extension functions and variable
-        // lookup for XSLT evaluation.
-        register_xslt_functions(ctxt);
+        // lookup for XSLT evaluation. UPSTREAM-PARITY: transform.c
+        // xsltNewTransformContext runs XSLT_REGISTER_VARIABLE_LOOKUP, which
+        // calls xsltRegisterAllFunctions(xpathCtxt) — registering the C
+        // XPath functions (format-number, key, document, ...) on the
+        // context and re-registering the internal Rust implementations.
+        crate::abi::exports_xslt_functions::xsltRegisterAllFunctions(xpath_ctxt);
     }
 
     // Security preferences: upstream xsltNewTransformContext binds the
@@ -573,11 +577,14 @@ pub(crate) unsafe fn apply_templates_to_children(
 pub unsafe fn execute_content(ctxt: *mut _xsltTransformContext, content: *mut _xmlNode) -> c_int {
     let mut cur = content;
     while !cur.is_null() {
-        let next = (*cur).next;
-        xsltProcessInstruction(ctxt, cur);
-        if (*ctxt).state == XSLT_STATE_ERROR {
+        // UPSTREAM-PARITY (transform.c xsltApplySequenceConstructor): the
+        // instruction loop stops as soon as the context leaves the OK
+        // state (an XPath failure sets STOPPED, a hard error sets ERROR).
+        if (*ctxt).state == XSLT_STATE_ERROR || (*ctxt).state == XSLT_STATE_STOPPED {
             return -1;
         }
+        let next = (*cur).next;
+        xsltProcessInstruction(ctxt, cur);
         cur = next;
     }
     0
@@ -1061,6 +1068,11 @@ pub(crate) unsafe fn process_apply_templates(
                 // Apply templates in sorted order.
                 let mut k = 0;
                 while k < (*sorted).nodeNr {
+                    // UPSTREAM-PARITY (transform.c xsltApplyTemplates): stop
+                    // once the context leaves the OK state.
+                    if (*ctxt).state == XSLT_STATE_ERROR || (*ctxt).state == XSLT_STATE_STOPPED {
+                        break;
+                    }
                     let n = *(*sorted).nodeTab.offset(k as isize);
                     if !n.is_null() {
                         (*ctxt).node = n;
@@ -1080,6 +1092,11 @@ pub(crate) unsafe fn process_apply_templates(
                 (*(*ctxt).xpathCtxt).contextSize = node_ptrs.len() as c_int;
             }
             for (i, n) in node_ptrs.iter().enumerate() {
+                // UPSTREAM-PARITY (transform.c xsltApplyTemplates): stop
+                // once the context leaves the OK state.
+                if (*ctxt).state == XSLT_STATE_ERROR || (*ctxt).state == XSLT_STATE_STOPPED {
+                    break;
+                }
                 if !n.is_null() {
                     (*ctxt).node = *n;
                     if !(*ctxt).xpathCtxt.is_null() {
@@ -1510,6 +1527,11 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
             }
             let mut k = 0;
             while k < (*sorted).nodeNr {
+                // UPSTREAM-PARITY (transform.c xsltForEach): stop iterating
+                // once the context leaves the OK state.
+                if (*ctxt).state == XSLT_STATE_ERROR || (*ctxt).state == XSLT_STATE_STOPPED {
+                    break;
+                }
                 let n = *(*sorted).nodeTab.offset(k as isize);
                 if !n.is_null() {
                     (*ctxt).node = n;
@@ -1528,6 +1550,11 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
             (*xpath_ctxt).contextSize = node_ptrs.len() as c_int;
         }
         for (i, n) in node_ptrs.iter().enumerate() {
+            // UPSTREAM-PARITY (transform.c xsltForEach): stop iterating
+            // once the context leaves the OK state.
+            if (*ctxt).state == XSLT_STATE_ERROR || (*ctxt).state == XSLT_STATE_STOPPED {
+                break;
+            }
             if !n.is_null() {
                 (*ctxt).node = *n;
                 if !xpath_ctxt.is_null() {
@@ -2445,6 +2472,26 @@ pub(crate) unsafe fn process_literal_element(
 /// # SAFETY
 ///
 /// - `ctxt` must be a valid transform context.
+/// Emit a transform error through the XSLT error machinery with the given
+/// transform context (so the context line carries the current instruction's
+/// file/line/element, matching upstream xsltTransformError(ctxt, ...)).
+///
+/// # SAFETY
+///
+/// - `tctxt` may be NULL; `msg` must not contain interior NUL bytes.
+unsafe fn emit_transform_error_with_ctxt(tctxt: *mut _xsltTransformContext, msg: &[u8]) {
+    unsafe {
+        let mut buf = msg.to_vec();
+        buf.push(0);
+        crate::xslt::errors::xsltTransformError(
+            tctxt,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            buf.as_ptr() as *const std::os::raw::c_char,
+        );
+    }
+}
+
 pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
     let xpath_ctxt = (*ctxt).xpathCtxt;
     if xpath_ctxt.is_null() {
@@ -2556,6 +2603,113 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         // SAFETY: node must be valid.
         let id = unsafe { format!("id{:p}", node) };
         Ok(XPathValue::String(id))
+    });
+
+    // format-number() — formats a number with an XSLT decimal-format
+    // picture (numbers.c xsltFormatNumberConversion). Two or three
+    // arguments: (number, picture [, decimal-format-name]). Faithful to
+    // upstream functions.c xsltFormatNumberFunction:
+    //
+    // - without a third argument the default format (chain head) is used;
+    // - an unresolvable QName prefix reports
+    //   "format-number : No namespace found for QName 'p:l'" and falls
+    //   back to the default format;
+    // - an undeclared format reports
+    //   "format-number() : undeclared decimal format 'name'" and pushes no
+    //   result, which surfaces as an XPath "Stack usage error".
+    internal.register_function("format-number", |ctx, args| {
+        if args.len() < 2 || args.len() > 3 {
+            return Err("format-number() requires 2 or 3 arguments".to_string());
+        }
+        let number = args[0].as_number();
+        let picture = args[1].as_string();
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        // Upstream starts from the default format (sheet->decimalFormat).
+        let mut fmt: *mut _xsltDecimalFormat = if tctxt.is_null() {
+            ptr::null_mut()
+        } else {
+            unsafe { (*(*tctxt).style).decimalFormat }
+        };
+        if args.len() == 3 {
+            let qname = args[2].as_string();
+            let (prefix, local) = match qname.split_once(':') {
+                Some((p, l)) => (Some(p), l),
+                None => (None, qname.as_str()),
+            };
+            let mut ns_uri: *const xmlChar = ptr::null();
+            let mut ncname_ok = true;
+            if let Some(p) = prefix {
+                let inst = unsafe { (*tctxt).inst };
+                if inst.is_null() {
+                    ncname_ok = false;
+                } else {
+                    let prefix_c = crate::xml::string::bytes_to_xmlstr(p.as_bytes());
+                    let ns = unsafe {
+                        crate::abi::exports_xml2::xmlSearchNs((*inst).doc, inst, prefix_c)
+                    };
+                    if !prefix_c.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(prefix_c as *mut c_void);
+                    }
+                    if ns.is_null() {
+                        // UPSTREAM-PARITY: unresolvable prefix — report and
+                        // fall back to the default format.
+                        let msg = format!(
+                            "format-number : No namespace found for QName '{}:{}'\n",
+                            p, local
+                        );
+                        emit_transform_error_with_ctxt(tctxt, msg.as_bytes());
+                        unsafe {
+                            (*(*tctxt).style).errors += 1;
+                        }
+                        ncname_ok = false;
+                    } else {
+                        ns_uri = unsafe { (*ns).href };
+                    }
+                }
+            }
+            if ncname_ok {
+                let local_c = crate::xml::string::bytes_to_xmlstr(local.as_bytes());
+                let style = unsafe { (*tctxt).style };
+                fmt = crate::xslt::numbering::decimal_format_by_qname(style, ns_uri, local_c);
+                if !local_c.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(local_c as *mut c_void);
+                }
+                if fmt.is_null() {
+                    // UPSTREAM-PARITY: undeclared format — report and push
+                    // nothing (the value-of then reports a stack error).
+                    let msg = format!("format-number() : undeclared decimal format '{}'\n", qname);
+                    emit_transform_error_with_ctxt(tctxt, msg.as_bytes());
+                    return Err("Stack usage error".to_string());
+                }
+            }
+        }
+        let picture_c = crate::xml::string::bytes_to_xmlstr(picture.as_bytes());
+        let mut result: *mut xmlChar = ptr::null_mut();
+        let status = unsafe {
+            crate::xslt::numbering::xslt_format_number_conversion(
+                fmt,
+                picture_c,
+                number,
+                &mut result,
+            )
+        };
+        if !picture_c.is_null() {
+            crate::abi::allocator::xmlFreeImpl(picture_c as *mut c_void);
+        }
+        let _ = status;
+        let s = if result.is_null() {
+            String::new()
+        } else {
+            unsafe {
+                std::ffi::CStr::from_ptr(result as *const std::os::raw::c_char)
+                    .to_string_lossy()
+                    .into_owned()
+            }
+        };
+        if !result.is_null() {
+            crate::abi::allocator::xmlFreeImpl(result as *mut c_void);
+        }
+        Ok(XPathValue::String(s))
     });
 
     // system-property() — returns system properties (xsl:version,

@@ -161,9 +161,9 @@ impl NodeSet {
     pub unsafe fn to_raw(&self) -> *mut crate::abi::structs::_xmlNodeSet {
         let node_max = self.nodes.len();
         let node_tab = if node_max > 0 {
-            let ptr =
-                crate::abi::allocator::xmlMallocImpl(node_max * std::mem::size_of::<*mut _xmlNode>())
-                    as *mut *mut _xmlNode;
+            let ptr = crate::abi::allocator::xmlMallocImpl(
+                node_max * std::mem::size_of::<*mut _xmlNode>(),
+            ) as *mut *mut _xmlNode;
             if ptr.is_null() {
                 return ptr::null_mut();
             }
@@ -380,69 +380,179 @@ unsafe fn collect_text(result: &mut String, node: *mut _xmlNode) {
 // Number <-> String conversions
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Convert a string to a number (XPath 1.0 §4.7.1).
-pub fn string_to_number(s: &str) -> f64 {
-    let s = s.trim();
-    if s.is_empty() {
+/// Port of upstream xpath.c `xmlXPathStringEvalNumber` (R-000166): the
+/// oracle accumulates digits directly (`ret = ret * 10 + d`), caps the
+/// fraction at MAX_FRAC=20 digits after any leading zeros, applies the
+/// exponent with `pow(10.0, exp)` (underflowing to 0 below the smallest
+/// subnormal, e.g. `5e-324`), accepts XML whitespace around the number, and
+/// returns NaN for anything else — including a leading '+'.
+pub fn string_bytes_to_number(bytes: &[u8]) -> f64 {
+    let len = bytes.len();
+    let mut cur = 0usize;
+    // Skip leading XML whitespace.
+    while cur < len && matches!(bytes[cur], b' ' | b'\t' | b'\n' | b'\r') {
+        cur += 1;
+    }
+    let mut isneg = false;
+    if cur < len && bytes[cur] == b'-' {
+        isneg = true;
+        cur += 1;
+    }
+    if cur >= len || (bytes[cur] != b'.' && !bytes[cur].is_ascii_digit()) {
         return f64::NAN;
     }
-    // Handle IEEE special values
-    match s {
-        "NaN" => return f64::NAN,
-        "Infinity" | "INF" => return f64::INFINITY,
-        "-Infinity" | "-INF" => return f64::NEG_INFINITY,
-        _ => {}
+
+    let mut ret = 0.0f64;
+    let mut ok = false;
+    while cur < len && bytes[cur].is_ascii_digit() {
+        ret = ret * 10.0 + (bytes[cur] - b'0') as f64;
+        ok = true;
+        cur += 1;
     }
-    // Try parsing as a number
-    if let Ok(n) = s.parse::<f64>() {
-        n
-    } else {
-        f64::NAN
+
+    let mut frac: i32 = 0;
+    if cur < len && bytes[cur] == b'.' {
+        cur += 1;
+        if (cur >= len || !bytes[cur].is_ascii_digit()) && !ok {
+            return f64::NAN;
+        }
+        while cur < len && bytes[cur] == b'0' {
+            frac += 1;
+            cur += 1;
+        }
+        let max = frac + 20; // MAX_FRAC
+        let mut fraction = 0.0f64;
+        while cur < len && bytes[cur].is_ascii_digit() && frac < max {
+            let v = (bytes[cur] - b'0') as f64;
+            fraction = fraction * 10.0 + v;
+            frac += 1;
+            cur += 1;
+        }
+        fraction /= 10f64.powf(frac as f64);
+        ret += fraction;
+        while cur < len && bytes[cur].is_ascii_digit() {
+            cur += 1;
+        }
     }
+
+    let mut exponent: i32 = 0;
+    let mut is_exponent_negative = false;
+    if cur < len && (bytes[cur] == b'e' || bytes[cur] == b'E') {
+        cur += 1;
+        if cur < len && bytes[cur] == b'-' {
+            is_exponent_negative = true;
+            cur += 1;
+        } else if cur < len && bytes[cur] == b'+' {
+            cur += 1;
+        }
+        while cur < len && bytes[cur].is_ascii_digit() {
+            if exponent < 1000000 {
+                exponent = exponent * 10 + (bytes[cur] - b'0') as i32;
+            }
+            cur += 1;
+        }
+    }
+    while cur < len && matches!(bytes[cur], b' ' | b'\t' | b'\n' | b'\r') {
+        cur += 1;
+    }
+    if cur != len {
+        return f64::NAN;
+    }
+    if isneg {
+        ret = -ret;
+    }
+    if is_exponent_negative {
+        exponent = -exponent;
+    }
+    ret *= 10f64.powf(exponent as f64);
+    ret
 }
 
-/// Convert a number to a string (XPath 1.0 §4.7.2).
-///
-/// UPSTREAM-PARITY:
-/// - NaN → "NaN"
-/// - +0 → "0"
-/// - -0 → "0" (XPath says negative zero stringifies as "0")
-/// - Infinity → "Infinity"
-/// - -Infinity → "-Infinity"
-/// - Integer → no decimal point: "42"
-/// - Non-integer → at least one digit after decimal: "3.14"
+/// Convert a string to a number (XPath 1.0 §4.7.1) — upstream
+/// `xmlXPathStringEvalNumber` semantics.
+pub fn string_to_number(s: &str) -> f64 {
+    string_bytes_to_number(s.as_bytes())
+}
+
+/// Convert a number to a string (XPath 1.0 §4.7.2) — a faithful port of
+/// upstream `xmlXPathCastNumberToString` / `xmlXPathFormatNumber` (xpath.c,
+/// R-000166): the integer shortcut, the 1e9/1e-5 scientific threshold, and
+/// the DBL_DIG=15 fraction-digit computation reproduce the oracle's exact
+/// digits, including exponent formatting (`e+20`, `e-05`) and
+/// trailing-zero trimming.
 pub fn number_to_string(n: f64) -> String {
     if n.is_nan() {
         return "NaN".to_string();
     }
     if n.is_infinite() {
-        if n.is_sign_negative() {
-            return "-Infinity".to_string();
-        }
-        return "Infinity".to_string();
+        return if n > 0.0 {
+            "Infinity".to_string()
+        } else {
+            "-Infinity".to_string()
+        };
     }
     if n == 0.0 {
+        // Both +0 and -0 serialize as "0" per XPath 1.0.
         return "0".to_string();
     }
+    // Upstream integer shortcut (xmlXPathFormatNumber): integral values
+    // within the int range print as plain decimal.
+    if n > i32::MIN as f64 && n < i32::MAX as f64 && n == (n as i32) as f64 {
+        return format!("{}", n as i32);
+    }
 
-    // For integers, no decimal point
-    if n.fract() == 0.0 && n.is_finite() {
-        // Check if it's within safe integer range
-        if n.abs() < 1e16 {
-            return format!("{:.0}", n);
+    let absolute_value = n.abs();
+    let s = if ((absolute_value > 1e9) || (absolute_value < 1e-5)) && absolute_value != 0.0 {
+        // Scientific notation: "%*.*e" with 14 fraction digits, then trim
+        // trailing zeros before the exponent (work[size] == 'e' scan).
+        let raw = format!("{:.14e}", n);
+        let e_pos = raw.find('e').expect("exponent format contains 'e'");
+        let mantissa = &raw[..e_pos];
+        let exponent = &raw[e_pos + 1..];
+        let mut mantissa = mantissa.to_string();
+        while mantissa.ends_with('0') {
+            mantissa.pop();
         }
-    }
-
-    // Format with minimal decimal places
-    let s = format!("{:.15}", n);
-    // Trim trailing zeros
-    let trimmed = s.trim_end_matches('0');
-    // Ensure at least one digit after decimal
-    if trimmed.ends_with('.') {
-        format!("{}0", trimmed)
+        if mantissa.ends_with('.') {
+            mantissa.pop();
+        }
+        // C's %e pads the exponent to at least two digits and always
+        // includes the sign: "e+20", "e-05", "e+100".
+        let (sign, digits) = if let Some(rest) = exponent.strip_prefix('-') {
+            ("-", rest)
+        } else {
+            ("+", exponent)
+        };
+        let digits = if digits.len() < 2 {
+            format!("0{}", digits)
+        } else {
+            digits.to_string()
+        };
+        format!("{}e{}{}", mantissa, sign, digits)
     } else {
-        trimmed.to_string()
+        // Regular notation: fraction digits depend on the integer place.
+        let integer_place = absolute_value.log10() as i32;
+        let fraction_place = if integer_place > 0 {
+            15 - integer_place - 1
+        } else {
+            15 - integer_place
+        };
+        let mut s = format!("{:.*}", fraction_place as usize, n);
+        // Trim fractional trailing zeros (and a trailing dot).
+        if s.contains('.') {
+            while s.ends_with('0') {
+                s.pop();
+            }
+            if s.ends_with('.') {
+                s.pop();
+            }
+        }
+        s
+    };
+    if s == "-0" {
+        return "0".to_string();
     }
+    s
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

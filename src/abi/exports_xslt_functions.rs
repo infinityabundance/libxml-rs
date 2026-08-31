@@ -352,6 +352,40 @@ unsafe fn xslt_error(ctxt: *mut _xsltTransformContext, msg: &'static [u8]) {
     );
 }
 
+/// Emit a transform error through the XSLT error machinery with a
+/// pre-formatted message (the upstream messages are variadic; the candidate
+/// formats before calling).
+///
+/// # SAFETY
+///
+/// - `ctxt` may be NULL; `msg` must not contain interior NUL bytes.
+unsafe fn emit_fn_error(ctxt: *mut _xsltTransformContext, msg: &[u8]) {
+    let mut buf = msg.to_vec();
+    buf.push(0);
+    crate::xslt::errors::xsltTransformError(
+        ctxt,
+        ptr::null_mut(),
+        ptr::null_mut(),
+        buf.as_ptr() as *const c_char,
+    );
+}
+
+/// Render a NUL-terminated string as an owned Rust String.
+///
+/// # SAFETY
+///
+/// - `p` must be NULL or a valid NUL-terminated string.
+unsafe fn cstr_to_string(p: *const xmlChar) -> String {
+    if p.is_null() {
+        return String::new();
+    }
+    unsafe {
+        std::ffi::CStr::from_ptr(p as *const c_char)
+            .to_string_lossy()
+            .into_owned()
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. XSLT XPath functions (functions.c)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1708,66 +1742,7 @@ unsafe fn decimal_format_get_by_qname(
     ns_uri: *const xmlChar,
     name: *const xmlChar,
 ) -> *mut _xsltDecimalFormat {
-    let mut style = style;
-    unsafe {
-        if name.is_null() {
-            if style.is_null() {
-                return ptr::null_mut();
-            }
-            return (*style).decimalFormat;
-        }
-        while !style.is_null() {
-            // UPSTREAM-PARITY: upstream starts from `decimalFormat->next`,
-            // skipping the always-present default format at the head. The
-            // candidate only creates formats on demand, so the equivalent
-            // is to match every entry (the default's NULL name can never
-            // equal a non-NULL name).
-            let mut result = (*style).decimalFormat;
-            while !result.is_null() {
-                if crate::abi::exports_xml2::xmlStrEqual(ns_uri, (*result).nsUri) != 0
-                    && crate::abi::exports_xml2::xmlStrEqual(name, (*result).name) != 0
-                {
-                    return result;
-                }
-                result = (*result).next;
-            }
-            style = next_import(style);
-        }
-    }
-    ptr::null_mut()
-}
-
-/// The default `_xsltDecimalFormat` values (upstream xsltNewDecimalFormat).
-///
-/// Used when the stylesheet declares no `xsl:decimal-format` (upstream
-/// always creates the default; the candidate creates formats on demand).
-static DEFAULT_FMT_DIGIT: &[u8] = b"#\0";
-static DEFAULT_FMT_PATTERN_SEP: &[u8] = b";\0";
-static DEFAULT_FMT_MINUS: &[u8] = b"-\0";
-static DEFAULT_FMT_INFINITY: &[u8] = b"Infinity\0";
-static DEFAULT_FMT_NAN: &[u8] = b"NaN\0";
-static DEFAULT_FMT_DECIMAL: &[u8] = b".\0";
-static DEFAULT_FMT_GROUPING: &[u8] = b",\0";
-static DEFAULT_FMT_PERCENT: &[u8] = b"%\0";
-static DEFAULT_FMT_PERMILLE: &[u8] = "‰\0".as_bytes();
-static DEFAULT_FMT_ZERO: &[u8] = b"0\0";
-
-unsafe fn default_decimal_format() -> _xsltDecimalFormat {
-    _xsltDecimalFormat {
-        next: ptr::null_mut(),
-        name: ptr::null_mut(),
-        digit: DEFAULT_FMT_DIGIT.as_ptr() as *mut xmlChar,
-        patternSeparator: DEFAULT_FMT_PATTERN_SEP.as_ptr() as *mut xmlChar,
-        minusSign: DEFAULT_FMT_MINUS.as_ptr() as *mut xmlChar,
-        infinity: DEFAULT_FMT_INFINITY.as_ptr() as *mut xmlChar,
-        noNumber: DEFAULT_FMT_NAN.as_ptr() as *mut xmlChar,
-        decimalPoint: DEFAULT_FMT_DECIMAL.as_ptr() as *mut xmlChar,
-        grouping: DEFAULT_FMT_GROUPING.as_ptr() as *mut xmlChar,
-        percent: DEFAULT_FMT_PERCENT.as_ptr() as *mut xmlChar,
-        permille: DEFAULT_FMT_PERMILLE.as_ptr() as *mut xmlChar,
-        zeroDigit: DEFAULT_FMT_ZERO.as_ptr() as *mut xmlChar,
-        nsUri: ptr::null(),
-    }
+    crate::xslt::numbering::decimal_format_by_qname(style, ns_uri, name)
 }
 
 /// Implement the XSLT `format-number()` function:
@@ -1801,6 +1776,9 @@ pub unsafe extern "C" fn xsltFormatNumberFunction(ctxt: *mut c_void, nargs: c_in
     if sheet.is_null() {
         return;
     }
+    // UPSTREAM-PARITY (functions.c xsltFormatNumberFunction): start from
+    // the default format (the chain head).
+    format_values = (*sheet).decimalFormat;
 
     match nargs {
         3 => {
@@ -1820,10 +1798,12 @@ pub unsafe extern "C" fn xsltFormatNumberFunction(ctxt: *mut c_void, nargs: c_in
                     prefix,
                 );
                 if ns.is_null() {
-                    xslt_error(
-                        tctxt,
-                        b"format-number : No namespace found for QName '%s:%s'\n\0",
+                    let msg = format!(
+                        "format-number : No namespace found for QName '{}:{}'\n",
+                        cstr_to_string(prefix),
+                        cstr_to_string(ncname)
                     );
+                    emit_fn_error(tctxt, msg.as_bytes());
                     (*sheet).errors += 1;
                     ncname = ptr::null();
                 } else {
@@ -1834,15 +1814,13 @@ pub unsafe extern "C" fn xsltFormatNumberFunction(ctxt: *mut c_void, nargs: c_in
                 format_values = decimal_format_get_by_qname(sheet, ns_uri, ncname);
             }
             if format_values.is_null() {
-                xslt_error(
-                    tctxt,
-                    b"format-number() : undeclared decimal format '%s'\n\0",
+                let msg = format!(
+                    "format-number() : undeclared decimal format '{}'\n",
+                    cstr_to_string((*decimal_obj).stringval)
                 );
+                emit_fn_error(tctxt, msg.as_bytes());
             }
             // Intentional fall-through.
-            if (*pc).value.is_null() {
-                // Arity already validated below; nothing to pop.
-            }
             if !(*pc).value.is_null()
                 && (*(*pc).value).type_ != xmlXPathObjectType::XPATH_STRING as c_int
             {
@@ -1874,15 +1852,6 @@ pub unsafe extern "C" fn xsltFormatNumberFunction(ctxt: *mut c_void, nargs: c_in
             (*pc).error = XPATH_INVALID_ARITY as c_int;
             return;
         }
-    }
-
-    // UPSTREAM-PARITY: upstream always has the default format at the head
-    // of `style->decimalFormat`; the candidate creates formats on demand,
-    // so a NULL head falls back to the standard defaults.
-    let local_default: _xsltDecimalFormat;
-    if format_values.is_null() {
-        local_default = default_decimal_format();
-        format_values = &local_default as *const _xsltDecimalFormat as *mut _xsltDecimalFormat;
     }
 
     if (*pc).error == 0

@@ -1,2 +1,2 @@
-warning: failed to load external entity "params.xsl"
-cannot parse params.xsl
+warning: failed to load external entity "xslt/--param"
+cannot parse xslt/--param

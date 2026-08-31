@@ -1,0 +1,29 @@
+{
+  "case_id": "CLI-XSLTPROC-0018",
+  "surface": "cli-xsltproc",
+  "purpose": "saxon: EXSLT Saxon extensions \u2014 systemId, line-number, evaluate, expression+eval",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/saxon.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "upstream-documentation",
+    "phase-11-1-x-exslt-saxon"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "exslt",
+    "saxon"
+  ]
+}
