@@ -1426,6 +1426,14 @@ mod tests {
         std::alloc::dealloc(node as *mut u8, layout);
     }
 
+    /// Verify `NodeTest` matching against a minimal element node.
+    ///
+    /// # Safety
+    ///
+    /// - `create_test_node` returns a valid `_xmlNode` whose `name` is a
+    ///   heap-allocated NUL-terminated string; `match_node_test` reads it
+    ///   while the node is alive.
+    /// - The node is freed exactly once with `free_test_node`.
     #[test]
     fn test_node_test_matching_element() {
         unsafe {
@@ -1456,6 +1464,14 @@ mod tests {
         }
     }
 
+    /// Verify `NodeTest` matching against a minimal text node.
+    ///
+    /// # Safety
+    ///
+    /// - The node from `create_test_node` is a valid `_xmlNode` with a
+    ///   heap-allocated NUL-terminated `name`; `match_node_test` reads it
+    ///   while the node is alive.
+    /// - The node is freed exactly once with `free_test_node`.
     #[test]
     fn test_node_test_matching_text() {
         unsafe {
@@ -1478,6 +1494,13 @@ mod tests {
         }
     }
 
+    /// Compile a simple pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_and_free_pattern() {
         unsafe {
@@ -1488,6 +1511,12 @@ mod tests {
         }
     }
 
+    /// Compile with a NULL pattern.
+    ///
+    /// # Safety
+    ///
+    /// - A NULL pattern is accepted by `xsltCompilePattern` and yields NULL
+    ///   without dereferencing.
     #[test]
     fn test_compile_null_pattern() {
         unsafe {
@@ -1496,6 +1525,12 @@ mod tests {
         }
     }
 
+    /// Compile an empty pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The empty string is a valid NUL-terminated string; `xsltCompilePattern`
+    ///   returns NULL for it.
     #[test]
     fn test_compile_empty_pattern() {
         unsafe {
@@ -1505,6 +1540,12 @@ mod tests {
         }
     }
 
+    /// Free a NULL pattern.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreePattern` accepts NULL and returns without freeing or
+    ///   dereferencing.
     #[test]
     fn test_free_null_pattern() {
         unsafe {
@@ -1544,6 +1585,13 @@ mod tests {
         assert!(names.is_empty());
     }
 
+    /// Compile a union pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_union_pattern() {
         unsafe {
@@ -1554,6 +1602,13 @@ mod tests {
         }
     }
 
+    /// Compile a compound path pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_compound_pattern() {
         unsafe {
@@ -1564,6 +1619,13 @@ mod tests {
         }
     }
 
+    /// Compile an absolute path pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_absolute_pattern() {
         unsafe {
@@ -1574,6 +1636,13 @@ mod tests {
         }
     }
 
+    /// Compile an attribute pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_attribute_pattern() {
         unsafe {
@@ -1584,6 +1653,13 @@ mod tests {
         }
     }
 
+    /// Compile a wildcard pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_wildcard_pattern() {
         unsafe {
@@ -1594,6 +1670,13 @@ mod tests {
         }
     }
 
+    /// Compile a namespace wildcard pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_ns_wildcard_pattern() {
         unsafe {
@@ -1604,6 +1687,13 @@ mod tests {
         }
     }
 
+    /// Compile a node-test pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_node_test_pattern() {
         unsafe {
@@ -1614,6 +1704,13 @@ mod tests {
         }
     }
 
+    /// Compile a text node-test pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_text_pattern() {
         unsafe {
@@ -1624,6 +1721,13 @@ mod tests {
         }
     }
 
+    /// Compile a comment node-test pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_comment_pattern() {
         unsafe {
@@ -1634,6 +1738,14 @@ mod tests {
         }
     }
 
+    /// Compile a processing-instruction pattern and free the compiled
+    /// result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_pi_pattern() {
         unsafe {
@@ -1644,6 +1756,13 @@ mod tests {
         }
     }
 
+    /// Compile a predicate pattern and free the compiled result.
+    ///
+    /// # Safety
+    ///
+    /// - The pattern string is a valid NUL-terminated string; the compiled
+    ///   pattern returned by `xsltCompilePattern` is freed exactly once with
+    ///   `xsltFreePattern`.
     #[test]
     fn test_compile_predicate_pattern() {
         unsafe {
@@ -1735,6 +1854,14 @@ mod tests {
         }
     }
 
+    /// Verify `NameTest` matching against a minimal element node.
+    ///
+    /// # Safety
+    ///
+    /// - The node from `create_test_node` is a valid `_xmlNode` with a
+    ///   heap-allocated NUL-terminated `name`; `match_name_test` reads its
+    ///   `type_` and `name` while the node is alive.
+    /// - The node is freed exactly once with `free_test_node`.
     #[test]
     fn test_match_name_test_local() {
         unsafe {
@@ -1755,6 +1882,14 @@ mod tests {
         }
     }
 
+    /// Verify wildcard node-test matching over element, text and comment
+    /// nodes.
+    ///
+    /// # Safety
+    ///
+    /// - Each `create_test_node` result is a valid `_xmlNode` with a
+    ///   heap-allocated NUL-terminated `name`; each node is freed exactly
+    ///   once with `free_test_node`.
     #[test]
     fn test_match_node_test_wildcard() {
         unsafe {
@@ -1773,6 +1908,13 @@ mod tests {
         }
     }
 
+    /// Verify namespace-wildcard matching on a node without a namespace.
+    ///
+    /// # Safety
+    ///
+    /// - The node from `create_test_node` is a valid `_xmlNode` with a
+    ///   heap-allocated NUL-terminated `name`; it is freed exactly once with
+    ///   `free_test_node`.
     #[test]
     fn test_match_node_test_ns_wildcard() {
         unsafe {
@@ -1788,6 +1930,12 @@ mod tests {
         }
     }
 
+    /// Verify default priorities through the C ABI entry point.
+    ///
+    /// # Safety
+    ///
+    /// - Each pattern string passed to `xsltDefaultPriority` is a valid
+    ///   NUL-terminated string.
     #[test]
     fn test_compute_priority_on_compiled_pattern() {
         unsafe {
@@ -1826,6 +1974,12 @@ mod tests {
         }
     }
 
+    /// Verify the default priority of a NULL pattern.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltDefaultPriority` accepts NULL and returns the default without
+    ///   dereferencing.
     #[test]
     fn test_compute_priority_null() {
         unsafe {
@@ -1838,6 +1992,12 @@ mod tests {
         }
     }
 
+    /// Verify the default priority of an empty pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The empty string is a valid NUL-terminated string passed to
+    ///   `xsltDefaultPriority`.
     #[test]
     fn test_compute_priority_empty() {
         unsafe {
@@ -1851,6 +2011,12 @@ mod tests {
         }
     }
 
+    /// Verify `xsltTestPattern` with all-NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - NULL context, pattern and node are accepted and yield 0 without
+    ///   dereferencing any of them.
     #[test]
     fn test_xslt_test_pattern_null_args() {
         unsafe {

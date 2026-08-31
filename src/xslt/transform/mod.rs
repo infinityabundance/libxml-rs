@@ -2583,6 +2583,21 @@ unsafe fn emit_transform_error_with_ctxt(tctxt: *mut _xsltTransformContext, msg:
     }
 }
 
+/// Register the XPath 1.0 core, XSLT, EXSLT, and extension functions on the
+/// transform context's XPath context.
+///
+/// # Safety
+///
+/// - `ctxt` must be a non-NULL pointer to a valid, live
+///   `_xsltTransformContext` whose `xpathCtxt` field is NULL or a pointer to a
+///   valid XPath context, and whose `extra` field is NULL or a pointer to the
+///   internal `XPathContext` struct used here; that internal context is
+///   mutably borrowed for the whole call, so no other code may access it
+///   concurrently. When `ctxt->style` is non-NULL, the style and its `doc`
+///   node tree must stay alive as long as the registered closures can run,
+///   because the `key` and `format-number` closures and the
+///   extension-function lookup dereference `tctxt`, `style`, `inst`,
+///   namespace nodes, and `style.doc` through raw pointers.
 pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
     let xpath_ctxt = (*ctxt).xpathCtxt;
     if xpath_ctxt.is_null() {
@@ -3053,6 +3068,12 @@ mod tests {
     use core::ptr;
 
     #[test]
+    /// Tests that `xsltNewTransformContext` returns NULL for a NULL style.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltNewTransformContext` tolerates NULL arguments and returns NULL
+    ///   without dereferencing them, so passing two null pointers is sound.
     fn test_new_context_null_style() {
         unsafe {
             assert!(xsltNewTransformContext(ptr::null_mut(), ptr::null_mut()).is_null());
@@ -3060,6 +3081,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the context and result free functions tolerate NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreeTransformContext` and `xsltFreeTransformResult` check their
+    ///   arguments for NULL and return early without dereferencing them.
     fn test_free_null() {
         unsafe {
             xsltFreeTransformContext(ptr::null_mut());
@@ -3068,6 +3095,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xsltApplyStylesheet` returns NULL for NULL inputs.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltApplyStylesheet` validates its arguments and returns NULL
+    ///   without dereferencing the null style, document, and parameters.
     fn test_apply_stylesheet_null() {
         unsafe {
             assert!(
@@ -3077,6 +3110,17 @@ mod tests {
     }
 
     #[test]
+    /// Tests a full transform with a simplified stylesheet, end to end.
+    ///
+    /// # Safety
+    ///
+    /// - `xsl` and `src` are NUL-terminated byte buffers that stay alive
+    ///   while `xsltParseStylesheetMemory` and `xmlReadMemory` parse them;
+    ///   `style` and `doc` are asserted non-NULL before use; `txt` and `len`
+    ///   are live stack pointers passed to `xsltSaveResultToString`, and the
+    ///   returned `txt` buffer is valid for `len` bytes when sliced via
+    ///   `from_raw_parts` and is freed with `libc::free`; `result`, `doc`,
+    ///   and `style` are freed once each after the last use.
     fn test_end_to_end_simplified_stylesheet() {
         unsafe {
             // A simplified stylesheet: a literal <html> element with an
@@ -3126,6 +3170,16 @@ mod tests {
     }
 
     #[test]
+    /// Tests a full transform with an explicit template, end to end.
+    ///
+    /// # Safety
+    ///
+    /// - `xsl` and `src` are NUL-terminated byte buffers alive for the parse
+    ///   calls; `style` and `doc` are asserted non-NULL before use; `txt` and
+    ///   `len` are live stack pointers for `xsltSaveResultToString`, and the
+    ///   returned `txt` buffer is valid for `len` bytes when sliced via
+    ///   `from_raw_parts` and is freed with `libc::free`; `result`, `doc`,
+    ///   and `style` are each freed exactly once after their last use.
     fn test_end_to_end_template_transform() {
         unsafe {
             // A normal stylesheet with an explicit template that emits
@@ -3210,6 +3264,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:for-each` over the selected nodes.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers that stay
+    ///   alive for the whole `run_transform` call, which parses, transforms,
+    ///   and serializes them and frees every created document before
+    ///   returning.
     fn test_xslt_for_each() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3228,6 +3290,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the XPath 1.0 core function library is registered on the
+    /// transform context.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_core_functions_in_value_of() {
         // UPSTREAM-PARITY: the transform context must register the XPath 1.0
         // core function library (count, string, substring, ...) so that
@@ -3257,6 +3327,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests attribute value templates inside literal result element
+    /// attributes.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_avt_in_literal_attribute() {
         // UPSTREAM-PARITY: literal result element attributes may contain
         // attribute value templates (XSLT 1.0 §7.6.2): {expr} is evaluated
@@ -3292,6 +3370,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xsl:element` name is treated as an AVT.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_avt_in_xsl_element_name() {
         // UPSTREAM-PARITY: xsl:element/@name is an AVT.
         unsafe {
@@ -3315,6 +3400,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a variable with inline content is copied into a result tree
+    /// fragment and stringifies to its full descendant text.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_variable_inline_content_rtf() {
         // UPSTREAM-PARITY: a variable with inline content is a result tree
         // fragment. Regression test: the inline content must be copied into
@@ -3337,6 +3430,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests `exsl:node-set` on a result tree fragment variable.
+    ///
+    /// # Safety
+    ///
+    /// - `exslt::register_all` runs before the transform; the `xsl` and `src`
+    ///   byte slices are NUL-terminated buffers alive for the whole
+    ///   `run_transform` call, which parses, transforms, and serializes them
+    ///   and frees every created document before returning.
     fn test_xslt_exsl_node_set_on_rtf() {
         // UPSTREAM-PARITY: exsl:node-set($var) on an RTF variable yields a
         // node-set whose root is the RVT document node, so path navigation
@@ -3361,6 +3462,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xsl:if` accepts a node-set `test` expression.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_if_node_set_test() {
         // UPSTREAM-PARITY: xsl:if/@test may be a node-set (XPath boolean
         // conversion §4.3). Regression: the transform read only boolval,
@@ -3386,6 +3494,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that attribute string values are used by `string` and
+    /// predicates.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_attribute_string_value() {
         // UPSTREAM-PARITY: string(@attr) / @attr='x' predicates use the
         // attribute's string value. Regression: node_string_value treated
@@ -3414,6 +3530,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:sort` with descending order.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_sort_descending() {
         // UPSTREAM-PARITY: xsl:sort with order="descending" inverts the
         // comparison. Regression: the sort was never compiled (null style)
@@ -3441,6 +3564,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `key` function through the stylesheet key tables.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_key_function() {
         // UPSTREAM-PARITY: key(name, value) resolves through the key tables
         // built from xsl:key definitions.
@@ -3460,6 +3590,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:call-template` with `xsl:with-param` and `xsl:param`
+    /// defaults.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_call_template_with_params() {
         // UPSTREAM-PARITY: xsl:with-param values are visible to $name inside
         // the called template; xsl:param defaults apply when no value is
@@ -3487,6 +3625,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests the HTML output method's meta charset insertion and formatting.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_html_method_meta_charset() {
         // UPSTREAM-PARITY: method="html" inserts <meta charset="..."> in
         // the <head> of the root <html> and formats with newlines only.
@@ -3510,6 +3655,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:if` with string equality tests.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_if() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3527,6 +3679,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:choose` with `xsl:when` and `xsl:otherwise` branches.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_choose() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3546,6 +3705,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests variables and `xsl:call-template` together.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_variable_and_call_template() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3569,6 +3735,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xsl:text` preserves whitespace verbatim.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_text_preserves_whitespace() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3585,6 +3758,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:element` and `xsl:attribute` construction.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_element_and_attribute() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3605,6 +3785,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:apply-templates` with a `select` expression.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_apply_templates_with_select() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3622,6 +3809,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:text`, `xsl:comment`, and `xsl:processing-instruction`
+    /// output.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_text_and_comment_and_pi() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3641,6 +3836,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:copy-of` for node sets and literal strings.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_copy_and_copy_of() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\
@@ -3658,6 +3860,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xsl:number` with explicit values and formats.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` and `src` byte slices are NUL-terminated buffers alive for
+    ///   the whole `run_transform` call, which parses, transforms, and
+    ///   serializes them and frees every created document before returning.
     fn test_xslt_number() {
         unsafe {
             let xsl = b"<?xml version=\"1.0\"?>\

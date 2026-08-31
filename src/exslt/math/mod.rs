@@ -323,6 +323,16 @@ mod tests {
         assert!((v - std::f64::consts::FRAC_PI_4).abs() < 1e-12);
     }
 
+    /// `math:max`/`math:min` over a node-set of numeric text nodes.
+    ///
+    /// # Safety
+    ///
+    /// - Each `new_text` call receives a NUL-terminated `format!`
+    ///   temporary that stays alive for the call and duplicates the
+    ///   content; the returned nodes are live, and each is freed exactly
+    ///   once with `free_node` after the results are read (the cloned
+    ///   node-sets borrow the raw pointers without dereferencing them
+    ///   afterwards).
     #[test]
     fn test_max_min() {
         let mut ns = NodeSet::new();

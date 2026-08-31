@@ -378,10 +378,21 @@ mod tests {
 
     /// Differential-oracle spot checks (values verified against the system
     /// libxml2 2.15.3 DSO via tools/abi/data_globals_probe.py).
+    ///
+    /// # Safety
+    ///
+    /// - `ch` is a plain integer passed by value; `xmlIsBaseChar` only
+    ///   inspects the value, so no pointer validity requirements apply.
     fn oracle_is_base_char(ch: c_uint) -> c_int {
         unsafe { xmlIsBaseChar(ch) }
     }
 
+    /// Check the XML 1.0 Char production for boundary code points.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsChar` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_char_basic() {
         unsafe {
@@ -401,6 +412,12 @@ mod tests {
         }
     }
 
+    /// Check blank-character classification against upstream.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsBlank` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_blank() {
         unsafe {
@@ -414,6 +431,12 @@ mod tests {
         }
     }
 
+    /// Check base-character classification for ASCII and range edges.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsBaseChar` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_base_char_ascii_and_ranges() {
         unsafe {
@@ -433,6 +456,12 @@ mod tests {
         }
     }
 
+    /// Check digit classification including non-ASCII digits.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsDigit` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_digit() {
         unsafe {
@@ -445,6 +474,13 @@ mod tests {
         }
     }
 
+    /// Check combining, extender and ideographic classifications.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; the classifier
+    ///   functions only inspect the value, so no pointer validity
+    ///   requirements apply.
     #[test]
     fn test_xml_is_combining_extender_ideographic() {
         unsafe {
@@ -463,6 +499,12 @@ mod tests {
         }
     }
 
+    /// Check PubidChar classification against upstream behavior.
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsPubidChar` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_pubid_char() {
         unsafe {
@@ -481,6 +523,12 @@ mod tests {
         }
     }
 
+    /// Check letter classification (base char plus ideographic).
+    ///
+    /// # Safety
+    ///
+    /// - All arguments are integers passed by value; `xmlIsLetter` only
+    ///   inspects the value, so no pointer validity requirements apply.
     #[test]
     fn test_xml_is_letter() {
         unsafe {
@@ -491,6 +539,12 @@ mod tests {
         }
     }
 
+    /// `xmlCharInRange` with a NULL group table returns 0.
+    ///
+    /// # Safety
+    ///
+    /// - The NULL group pointer is handled by `xmlCharInRange` without
+    ///   being dereferenced; the code point is passed by value.
     #[test]
     fn test_xml_char_in_range_null_group() {
         unsafe {
@@ -498,6 +552,15 @@ mod tests {
         }
     }
 
+    /// `xmlIsBlankNode` handles NULL, text and non-text nodes.
+    ///
+    /// # Safety
+    ///
+    /// - `node` is either NULL or a valid, aligned `_xmlNode` allocated
+    ///   with `xmlMallocImpl` and written with `ptr::write`; the `content`
+    ///   pointers are static NUL-terminated byte strings valid for the
+    ///   calls; the node is freed with `xmlFreeImpl` exactly once at the
+    ///   end.
     #[test]
     fn test_xml_is_blank_node() {
         unsafe {

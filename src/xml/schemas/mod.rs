@@ -671,6 +671,13 @@ fn parse_facet_kind(name: &str) -> Option<XsdDatatypeKind> {
 /// Equivalent to `xmlSchemaParse` in libxml2.
 ///
 /// Returns the parsed schema, or an error message on failure.
+///
+/// # Safety
+///
+/// - `xml_doc` must be a valid string readable for `xml_doc.len()` bytes;
+///   `doc_ptr` is non-NULL (checked) and owned by this function, which
+///   frees it with `xmlFreeDoc` exactly once after parsing; the schema
+///   document must not be mutated by other threads during the call.
 pub fn xsd_parse(xml_doc: &str) -> Result<XsdSchema, String> {
     // Use the XML parser to parse the schema document
     let doc_ptr = unsafe {
@@ -2084,6 +2091,13 @@ fn is_ncname(value: &str) -> bool {
 /// # UPSTREAM-PARITY
 ///
 /// Equivalent to libxml2's `xmlSchemaValidateDoc`.
+///
+/// # Safety
+///
+/// - `doc` must be a valid string readable for `doc.len()` bytes;
+///   `doc_ptr` is non-NULL (checked) and owned by this function, which
+///   frees it with `xmlFreeDoc` exactly once; the parsed document must not
+///   be mutated by other threads while `xsd_validate_doc` walks it.
 pub fn xsd_validate(schema: &XsdSchema, doc: &str) -> Result<(), Vec<String>> {
     let doc_ptr = unsafe {
         crate::abi::exports_xml2::xmlReadMemory(
@@ -3959,6 +3973,14 @@ mod tests {
 
     // ── C ABI Tests ───────────────────────────────────────────────────────
 
+    /// Create a memory parser context and parse a schema from it.
+    ///
+    /// # Safety
+    ///
+    /// - `schema_xml` is a static string valid for the call; `ctxt` is
+    ///   non-NULL (asserted) and valid until `xmlSchemaParse` consumes it;
+    ///   `schema` is non-NULL (asserted) and freed with `xmlSchemaFree`
+    ///   exactly once.
     #[test]
     fn test_xml_schema_new_mem_parser_ctxt() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3982,6 +4004,15 @@ mod tests {
         }
     }
 
+    /// Validate a well-formed document against a parsed schema.
+    ///
+    /// # Safety
+    ///
+    /// - The schema/doc strings are static and valid for the calls; the
+    ///   parser context, schema, valid context and document are non-NULL
+    ///   (asserted) and each freed exactly once with its matching free
+    ///   function; the document stays alive until `xmlSchemaValidateDoc`
+    ///   and the final `xmlFreeDoc`.
     #[test]
     fn test_xml_schema_validate_doc() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -4021,6 +4052,15 @@ mod tests {
         }
     }
 
+    /// Validate a document that violates the schema's type constraints.
+    ///
+    /// # Safety
+    ///
+    /// - The schema/doc strings are static and valid for the calls; the
+    ///   contexts, schema and document are non-NULL (asserted) and each
+    ///   freed exactly once with its matching free function; the document
+    ///   stays alive until `xmlSchemaValidateDoc` and the final
+    ///   `xmlFreeDoc`.
     #[test]
     fn test_xml_schema_validate_invalid_doc() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -4060,6 +4100,13 @@ mod tests {
         }
     }
 
+    /// A NULL schema argument still yields a usable valid context.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlSchemaNewValidCtxt` accepts a NULL schema and returns a
+    ///   non-NULL context (asserted) that must be freed with
+    ///   `xmlSchemaFreeValidCtxt` exactly once.
     #[test]
     fn test_xml_schema_new_valid_ctxt_null() {
         let ctxt = unsafe { xmlSchemaNewValidCtxt(ptr::null_mut()) };
@@ -4067,6 +4114,13 @@ mod tests {
         unsafe { xmlSchemaFreeValidCtxt(ctxt) };
     }
 
+    /// Freeing NULL schema/context pointers must not crash.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlSchemaFree`, `xmlSchemaFreeParserCtxt` and
+    ///   `xmlSchemaFreeValidCtxt` handle NULL as documented no-ops; no
+    ///   pointer is dereferenced.
     #[test]
     fn test_xml_schema_free_null() {
         unsafe {
@@ -4076,6 +4130,13 @@ mod tests {
         }
     }
 
+    /// A NULL filename still yields a parser context.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlSchemaNewParserCtxt` accepts a NULL filename and returns a
+    ///   non-NULL context (asserted) that is allocator-owned and freed with
+    ///   `xmlFreeImpl` exactly once.
     #[test]
     fn test_xml_schema_new_parser_ctxt_null() {
         let ctxt = unsafe { xmlSchemaNewParserCtxt(ptr::null()) };

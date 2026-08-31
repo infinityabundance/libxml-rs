@@ -1,0 +1,37 @@
+{
+ "court": "DSO-STATE-COHERENCE",
+ "phase": "11.1-Z.2",
+ "timestamp": "20260831T223742Z",
+ "schema": "dso-state-coherence-1",
+ "probe": "courts/suites/data-abi/dso-state-coherence-probe.c",
+ "mode": "documented-divergence (R-000177)",
+ "oracle_observations": {
+  "loader_observed_main_parse": 1,
+  "p1_allocator_observed": 1,
+  "p1_reg_observed": 0,
+  "p1_dereg_observed": 0,
+  "p2_allocator_observed": 1,
+  "p2_reg_observed": 1,
+  "p2_dereg_observed": 1,
+  "p2_loader_observed": 1,
+  "p2_result_size": 41,
+  "p2_result_has_entity": 0
+ },
+ "candidate_observations": {
+  "loader_observed_main_parse": 1,
+  "p1_allocator_observed": 0,
+  "p1_reg_observed": 0,
+  "p1_dereg_observed": 0,
+  "p2_allocator_observed": 0,
+  "p2_reg_observed": 0,
+  "p2_dereg_observed": 0,
+  "p2_loader_observed": 0,
+  "p2_result_size": 56,
+  "p2_result_has_entity": 0
+ },
+ "partition_profile_ok": true,
+ "hook_partition_ok": true,
+ "blanks_partition_ok": true,
+ "candidate_output": "loader_observed_main_parse=1\np1_allocator_observed=0\np1_reg_observed=0\np1_dereg_observed=0\np2_allocator_observed=0\np2_reg_observed=0\np2_dereg_observed=0\np2_loader_observed=0\np2_result_size=56\np2_result_has_entity=0\n",
+ "verdict": "PASS"
+}

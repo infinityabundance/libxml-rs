@@ -271,6 +271,14 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// NULL arguments to the import API are rejected without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltProcessImports`/`xsltProcessIncludes` return `-1`,
+    ///   `xsltGetImportDepth` returns `0`, and `xsltFreeImports` no-ops on
+    ///   NULL arguments before dereferencing them, so the unsafe block
+    ///   reads and frees no memory.
     #[test]
     fn test_null_args() {
         unsafe {

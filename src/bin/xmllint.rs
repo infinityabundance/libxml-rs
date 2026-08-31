@@ -364,6 +364,12 @@ fn usage() {
 }
 
 /// Write bytes to stdout.
+///
+/// # Safety
+///
+/// - `bytes` must be a valid slice readable for `bytes.len()` bytes; the
+///   raw `libc::write` reads it without copying and the slice must stay
+///   alive for the call.
 fn write_stdout(bytes: &[u8]) {
     unsafe {
         libc::write(1, bytes.as_ptr() as *const c_void, bytes.len());
@@ -390,6 +396,12 @@ unsafe fn close_output_file(cli: &Cli, fp: *mut libc::FILE) {
 }
 
 /// Print the version banner on stderr (upstream format, exit 0).
+///
+/// # Safety
+///
+/// - `xmlLibxmlVersionString` returns a static NUL-terminated library
+///   string; the pointer must be valid while `CStr::from_ptr` reads it,
+///   and it must not be freed by the caller.
 fn print_version() {
     let argv0 = std::env::args()
         .next()
@@ -564,6 +576,13 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
+/// Capture a validity message into the thread-local `CAPTURED_VALIDITY`.
+///
+/// # Safety
+///
+/// - `msg` must be NULL or a valid NUL-terminated string that stays valid
+///   for the duration of the call; the message bytes are copied out, so
+///   the callback does not retain the pointer.
 unsafe extern "C" fn capture_validity_msg(_ctx: *mut c_void, msg: *const c_char) {
     if msg.is_null() {
         return;
@@ -1198,6 +1217,16 @@ unsafe fn free_cstr(p: *mut c_char) {
     }
 }
 
+/// Parse and process the files named on the command line, then exit.
+///
+/// # Safety
+///
+/// - The documents returned by `parse_document` are NULL or owned by the
+///   caller and freed with `tree::free_doc` exactly once per path;
+///   `make_auto_doc` owns its document the same way; every pointer passed
+///   to the exported C API is a valid, static or allocator-owned buffer
+///   valid for the call; the process exits before any returned pointer is
+///   used afterwards.
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut cli = Cli::default();

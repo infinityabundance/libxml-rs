@@ -175,6 +175,15 @@ fn eval_relative_path(
 }
 
 /// Evaluate a single step.
+/// Evaluate one axis step, applying predicates to the traversed node-set.
+///
+/// # Safety
+///
+/// - `ctx.context_node` must be NULL or a valid `_xmlNode` that stays
+///   alive for the call; `traverse_axis` reads the node's subtree, so the
+///   whole reachable tree must be valid and stable while it runs; the
+///   predicate evaluation temporarily mutates the context fields, which
+///   must not be observed by other threads during the call.
 fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> {
     let context_node = ctx.context_node;
     if context_node.is_null() {

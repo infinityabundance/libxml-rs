@@ -46,7 +46,7 @@ closure, and the **11.1-Z.1 evidence/packaging amendment** (0.1.0-alpha.34)
 sealed the three-DSO ELF contract and the residual-ledger corrections.
 **11.1-Z.2** (0.1.0-alpha.35) added the function-signature ABI plane: the
 **ABI-FUNCTION-SIGNATURE** court mirrors every export across the oracle
-header / candidate header / actual Rust `extern "C"` signature (3319
+header / candidate header / actual Rust `extern "C"` signature (3259
 compared, 0 findings) and caught a whole defect class — the allocator hooks
 (`xmlMemSetup`/`xmlGcMemSetup` missing `mallocAtomicFunc` and the `int`
 return, two sources of allocator truth), shifted register layouts
@@ -61,6 +61,34 @@ consumer-linkable construction, so they carry private copies of the core
 state — hooks/globals installed through one DSO are not observed by the
 others (the ELF contract itself — SONAMEs, NEEDED chains, export surfaces —
 is verified by DSO-LOADER).
+**11.1-Z.3** (0.1.0-alpha.36) closed the allocator-UB and proof-scope
+accounts. The default allocator was invalid-layout UB (Rust `std::alloc`
+with fabricated `Layout`s); it is now plain libc `malloc`/`realloc`/`free`/
+`strdup` (upstream 2.15.0 `globals.c` defaults), untracked exactly like the
+oracle, with the debug-named surface (`xmlMemMalloc`/`*Loc`) keeping the
+registry — R-000178, proven by the new **ALLOCATOR-DEFAULT-001** differential
+court (byte-identical incl. `xmlMemSize`/`xmlMemUsed`/`xmlMemBlocks`
+exactness). The **ABI-FUNCTION-SIGNATURE** court was hardened to be
+fail-closed and oracle-isolated: fully separated compile environments with
+per-include-origin contamination checking, zero silent omissions (every
+header and every declaration accounted), and two fingerprints —
+SOURCE_PROTOTYPE (canonical base, pointer depth, pointee const/restrict,
+typedef identity, FULL fn-pointer signatures) and MACHINE_ABI (class, width,
+signedness, depth) — which found 25+ real candidate divergences that the
+old lossy normalization could not see: signedness (`xmlBufferGrow`/
+`xmlDictSetLimit`/`xmlOutputBufferGetSize`), wrong arities
+(`xmlValidateAttributeDecl` 4→3 args), wrong returns (`xmlXPathCastBooleanToNumber`
+int→double, `xmlCheckVersion` int→void, `xmlInitThreads` int→void), wrong
+fn-pointer typedefs (`xsltPreComputeFunction`/`xsltTopLevelFunction`), an
+invented `xmlTextReaderGetAttributeIndex` API (removed), `char`/`xmlChar`
+pointee drifts, and the `xmlAttributeTable` typedef identities. The
+**CUSTODIAN-COMMENTARY-DRIFT** census now GATES the verdict on zero
+unaccounted safety sites via proof scopes: 1811/1811 unsafe functions and
+5235/5235 unsafe blocks accounted (local proof 2514, enclosing proof scope
+2720, classified-generated 1), plus the rustdoc gate
+(`RUSTDOCFLAGS="-D warnings" cargo doc`), and the `xslHandleDebugger`
+non-obligation is reclassified HEADER_DECLARED_ORACLE_DSO_ABSENT (the
+oracle DSO itself does not export it).
 **11.1-W (generated parity matrix)** replaced every hand-typed
 headline count with evidence: `tools/evidence/generate_all.py` regenerates all
 six canonical ledgers (`atlas/PARITY_MATRIX.json`, `atlas/SURFACE_RECONCILIATION.json`,
@@ -71,10 +99,11 @@ their Markdown views, `--check` proves byte-reproducibility, and
 test-coverage tables in this README. The obligations ledger now covers all
 three oracle projects (libxml2 2.15.3, libxslt 1.1.45, libexslt 0.8.25):
 **0 missing** across 1683 obligations, with the residual closure loop at
-**78 FIXED / 3 OPEN** (81 residuals; the OPEN entries are R-000157
+**79 FIXED / 3 OPEN** (82 residuals; the OPEN entries are R-000157
 UNRESOLVED — iconv/ICU-only encodings, a real executed-platform gap pending
 an iconv/ICU backend — R-000168, the unexecuted-platform obligation, and
-R-000177, the documented cross-DSO state partitioning of the facades).
+R-000177, the documented cross-DSO state partitioning of the facades, a
+deliberately-open Phase-12 architectural target).
 The 11.1-Z.1 amendment shipped three real ELF DSOs (core `libxml2.so.16` +
 post-link facades `libxslt.so.1` and `libexslt.so.0` with the upstream NEEDED
 chain), fixed the parity-matrix per-project DSO accounting, bound the
@@ -96,7 +125,7 @@ byte-for-byte against the system libxml2 2.15.3 binaries:
 - **DTD validation diagnostics** — `--valid` output (messages, caret placement, exit codes) matches the oracle for both no-DTD and declaration errors
 - **Entity expansion** — `--noent` re-parses declared-entity content through the input stack (nested references and markup entities included), matching upstream trees
 - **HTML serialization** — meta-charset insertion, upstream formatting rules (p/pre/param never formatted, single-child and inline elements inline), HTML document headers
-- **1181 passing tests**: `cargo test --lib` — 0 failures
+- **1183 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 44-case CLI suite (`target/difftest_summary.sh`) is **byte-identical** to the system tools (stdout + stderr + exit codes), plus a 30+ case edge corpus (entities, DTDs, HTML, compact/no-compact, debug dumps, XPath)
 
 ### Phase 9 (historical)
@@ -117,7 +146,7 @@ process-wide EXSLT registry (`exsltRegisterAll`, mirroring upstream):
 - **`exsltRegisterAll` C ABI export** — mirrors upstream; `xsltproc` calls it at startup
 - **`xsltproc` CLI** — full option surface (`--param`, `--stringparam`, `--output`, `--noout`, `--html`, `--encoding`, `--xinclude`, `--profile`, `--maxdepth`, `--maxvars`, `--nonet`, `--nowrite`, …) with upstream exit codes (1–11)
 - **RTF support** — variables with inline content become context-owned result tree fragments; `exsl:node-set($var)/path` navigation works
-- **1181 passing tests**: `cargo test --lib` — 0 failures
+- **1183 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 12-case `xsltproc` corpus (basic transform, `count()`/AVTs, `exsl:node-set`/`math:`/`set:`/`str:`, predicates, attribute string-values, `xsl:if`/`xsl:when`, numbering, descending `xsl:sort`, `key()`, `call-template` with params, `method="html"`) is **byte-identical** to the system libxslt 1.1.45 `xsltproc` (stdout + exit codes)
 
 ### Underlying subsystem fixes landed during Phase 9
@@ -164,7 +193,7 @@ All six Phase 8 residuals are documented in [`atlas/RESIDUAL_LEDGER.md`](atlas/R
 ```sh
 cargo build                          # Build library + CLI binaries
 cargo build --lib                    # Build only the library
-cargo test --lib                     # Run library tests (1181 passing)
+cargo test --lib                     # Run library tests (1183 passing)
 
 # Test C consumer compilation against our headers:
 gcc -I include courts/suites/sanity/ABI-STRUCT-NODE-0001-abicheck.c -o /tmp/abicheck
@@ -176,7 +205,7 @@ docker build -f docker/Dockerfile.oracle -t libxml-rs/oracle:2.12.0 docker/
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.35`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.36`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification
@@ -216,7 +245,7 @@ by the oracle contamination court.
 | Automata | 16 |
 | XPointer | 15 |
 | XSLT numbering | 14 |
-| ABI allocator | 11 |
+| ABI allocator | 13 |
 | Debug | 11 |
 | Char validation | 9 |
 | Compatibility profiles | 9 |
@@ -255,7 +284,7 @@ by the oracle contamination court.
 | XSLT documents | 1 |
 | XSLT imports | 1 |
 | XSLT misc (attrs) | 1 |
-| **Total (1181 passing, 0 failed)** | |
+| **Total (1183 passing, 0 failed)** | |
 <!-- GENERATED-TESTCOVERAGE:END -->
 
 ---
@@ -308,7 +337,7 @@ libxml-rs/
 ```sh
 cargo build              # Build the library and CLI binaries
 cargo build --lib        # Build only the library
-cargo test --lib         # Run library tests (1181 passing)
+cargo test --lib         # Run library tests (1183 passing)
 cargo build --release    # Optimized build (LTO, panic=abort)
 ```
 
@@ -336,10 +365,10 @@ at your option.
 | API completeness | libxml2 1395 oracle functions, 1395 fully reconciled; libxslt 232/232 reconciled; libexslt 13 oracle functions (evidence: atlas/PARITY_MATRIX.json, atlas/API_PARITY_LEDGER.json) |
 | ABI compatibility | 0 mismatches across 937 measured entities (struct/enum layouts), verdict PASS (evidence: atlas/ABI_PARITY_LEDGER.json) |
 | Parity obligations | 1683 obligations; 0 missing, 292 parity-verified by per-symbol courts (evidence: atlas/PARITY_OBLIGATIONS.json) |
-| Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 76, PARTIAL 1, UNOBLIGATED 8 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
+| Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 73, PARTIAL 4, UNOBLIGATED 8 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1395 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |
-| Test coverage | 1181 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
+| Test coverage | 1183 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
 | C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |

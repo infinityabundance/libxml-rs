@@ -24,7 +24,7 @@
 //! # UPSTREAM-PARITY
 //!
 //! This implementation follows the XInclude 1.0 W3C Recommendation:
-//! https://www.w3.org/TR/xinclude/
+//! <https://www.w3.org/TR/xinclude/>
 //!
 //! # Upstream contract
 //!
@@ -1021,8 +1021,16 @@ mod tests {
     // Test helpers
     // ═══════════════════════════════════════════════════════════════════════════
 
-    /// Create a simple XML document from a string.
     #[allow(dead_code)]
+    /// Create a simple XML document from a string.
+    ///
+    /// # Safety
+    ///
+    /// - `xml` must be a byte slice that stays valid for the duration of the
+    ///   call; its pointer and length are passed to `xmlReadMemory`, which
+    ///   parses the bytes into a new document. The returned document pointer
+    ///   is NULL on failure and otherwise must be released by the caller with
+    ///   `tree::free_doc`.
     unsafe fn create_doc_from_xml(xml: &[u8]) -> *mut _xmlDoc {
         let doc = unsafe {
             crate::abi::exports_xml2::xmlReadMemory(
@@ -1117,6 +1125,13 @@ mod tests {
     }
     #[allow(dead_code)]
     /// Find the first element by name in the document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be NULL or a pointer to a valid, live `_xmlDoc`; `name`
+    ///   must be a NUL-terminated `xmlChar` string that stays readable for the
+    ///   whole search. The walk dereferences `(*doc).children` and follows the
+    ///   `(*child).next` links, all of which must belong to the live document.
     unsafe fn find_element(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut _xmlNode {
         if doc.is_null() {
             return ptr::null_mut();
@@ -1133,6 +1148,14 @@ mod tests {
     }
 
     #[allow(dead_code)]
+    /// Find the first element by name, searching a node subtree.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be NULL or a pointer to a valid, live `_xmlNode` whose
+    ///   `children` and `next` links form the subtree to search; `name` must
+    ///   be a NUL-terminated `xmlChar` string readable for the duration of the
+    ///   call. `n.name` is only compared when non-NULL.
     unsafe fn find_element_recursive(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlNode {
         if node.is_null() {
             return ptr::null_mut();
@@ -1156,6 +1179,13 @@ mod tests {
     }
 
     /// Count elements with a given name in the document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be NULL or a pointer to a valid, live `_xmlDoc`; `name`
+    ///   must be a NUL-terminated `xmlChar` string readable for the duration
+    ///   of the walk, which follows `(*doc).children` and `(*child).next`
+    ///   links inside the live document.
     unsafe fn count_elements(doc: *mut _xmlDoc, name: *const xmlChar) -> c_int {
         if doc.is_null() {
             return 0;
@@ -1169,6 +1199,14 @@ mod tests {
         count
     }
 
+    /// Count elements with a given name in a node subtree.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be NULL or a pointer to a valid, live `_xmlNode` whose
+    ///   `children` and `next` links form the subtree to walk; `name` must be
+    ///   a NUL-terminated `xmlChar` string readable for the duration of the
+    ///   call. `n.name` is only compared when non-NULL.
     unsafe fn count_elements_recursive(node: *mut _xmlNode, name: *const xmlChar) -> c_int {
         if node.is_null() {
             return 0;
@@ -1194,6 +1232,14 @@ mod tests {
     // ═══════════════════════════════════════════════════════════════════════════
 
     #[test]
+    /// Tests that `is_xinclude_element` recognizes and rejects nodes.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc`, which asserts non-NULL for
+    ///   the document and its root element, and is freed with `tree::free_doc`;
+    ///   `(*doc).children` is dereferenced only after the non-NULL assertion,
+    ///   and `is_xinclude_element` handles a NULL node argument.
     fn test_is_xinclude_element() {
         unsafe {
             let doc = create_simple_doc();
@@ -1207,6 +1253,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an `xi:include` child is detected through its namespace.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` come from `create_doc_with_xinclude_ns`; `include`
+    ///   and `regular` are `tree::new_child` results asserted non-NULL and are
+    ///   owned by `doc`, which is freed with `tree::free_doc` at the end;
+    ///   `is_xinclude_element` only reads node fields through valid pointers.
     fn test_xinclude_namespace_detection() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1225,6 +1279,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `find_fallback_child` locates an `xi:fallback` child.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, `include`, and `fallback` are produced by the test
+    ///   helpers and asserted non-NULL; `find_fallback_child` walks the node
+    ///   tree through valid child/sibling pointers, and the whole tree is
+    ///   freed with `tree::free_doc` before the test ends.
     fn test_find_fallback_child() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1244,6 +1306,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests the NULL handling and equality behavior of `xml_str_equal`.
+    ///
+    /// # Safety
+    ///
+    /// - The `c"..."` literals are NUL-terminated `'static` byte buffers;
+    ///   `xml_str_equal` returns early when either argument is NULL and only
+    ///   calls `xmlStrEqual` when both pointers are non-NULL and point to
+    ///   readable NUL-terminated strings.
     fn test_xml_str_equal() {
         unsafe {
             assert!(xml_str_equal(
@@ -1267,6 +1337,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xinclude_process` fails cleanly on a NULL document.
+    ///
+    /// # Safety
+    ///
+    /// - `xinclude_process` checks `doc` for NULL and returns
+    ///   `XINCLUDE_FAILURE` without dereferencing it.
     fn test_xinclude_process_null_doc() {
         unsafe {
             assert_eq!(xinclude_process(ptr::null_mut()), XINCLUDE_FAILURE);
@@ -1274,6 +1350,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a document without includes processes successfully.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc` and stays valid until
+    ///   `tree::free_doc`, so the internal tree walks of `xinclude_process`
+    ///   only touch live nodes.
     fn test_xinclude_process_no_includes() {
         unsafe {
             let doc = create_simple_doc();
@@ -1283,6 +1366,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an include referencing a missing file is handled gracefully.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` come from `create_doc_with_xinclude_ns`, and the
+    ///   include child is created by `create_include_child`; the document tree
+    ///   stays intact until `tree::free_doc`, so `xinclude_process` only
+    ///   dereferences live nodes.
     fn test_xinclude_process_with_includes() {
         unsafe {
             // Create doc with xi:include that references a nonexistent file.
@@ -1295,6 +1386,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that fallback content is kept when the include target is missing.
+    ///
+    /// # Safety
+    ///
+    /// - All nodes are created by the tree helpers and belong to `doc`, which
+    ///   is freed with `tree::free_doc` at the end; `count_elements` and
+    ///   `xinclude_process` walk only live, linked nodes that were asserted
+    ///   non-NULL when created.
     fn test_xinclude_fallback_content() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1318,6 +1417,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a self-referencing include does not crash the processor.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` come from `create_doc_with_xinclude_ns`; the include
+    ///   child is attached to `root` and owned by `doc`, which is freed after
+    ///   `xinclude_process` returns, so all pointer dereferences target live
+    ///   nodes.
     fn test_xinclude_circular_reference_detection() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1329,6 +1436,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `parse` attribute is stored and include children are
+    /// counted.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` come from `create_doc_with_xinclude_ns`; the loop
+    ///   dereferences `(*root).children` and follows `(*child).next`, all of
+    ///   which are nodes owned by `doc` and freed with `tree::free_doc`.
     fn test_xinclude_parse_attribute_detection() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1351,6 +1466,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests both `xinclude_process` and `xinclude_process_flags`.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc` and freed with `tree::free_doc`
+    ///   after both calls, so every dereference inside the processor touches a
+    ///   live document.
     fn test_xinclude_process_functions() {
         unsafe {
             let doc = create_simple_doc();
@@ -1363,6 +1485,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests an include with no href and a fallback child.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, `include`, and the fallback child are built by the
+    ///   test helpers, asserted non-NULL where used, and owned by `doc`, which
+    ///   is freed with `tree::free_doc` after `xinclude_process`.
     fn test_xinclude_process_with_empty_href() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1375,6 +1504,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `set_doc_recursive` assigns the document pointer to detached
+    /// nodes.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `parent`, and `detached` are `tree` module allocations
+    ///   asserted non-NULL; `set_doc_recursive` only writes the `(*node).doc`
+    ///   field of valid nodes, and the nodes are released with `tree::free_node`
+    ///   and `tree::free_doc` before the test ends.
     fn test_set_doc_recursive() {
         unsafe {
             let doc = tree::new_doc(ptr::null());
@@ -1396,6 +1534,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `find_root_element` returns the document root element.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc`; `root` is asserted non-NULL
+    ///   and dereferenced only while `doc` is alive, and `tree::free_doc`
+    ///   releases the whole tree at the end.
     fn test_find_root_element() {
         unsafe {
             let doc = create_simple_doc();
@@ -1407,6 +1552,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `xpointer` attribute round-trips through the tree.
+    ///
+    /// # Safety
+    ///
+    /// - `include` is created by `create_include_child` and owned by `doc`;
+    ///   `xptr_val` is a fresh `bytes_to_xmlstr` allocation freed right after
+    ///   `tree::set_prop` copies it; `xptr` from `tree::get_prop` is freed
+    ///   with `xmlFreeImpl` after `xmlstr_to_bytes` copies it, and `doc` is
+    ///   freed with `tree::free_doc`.
     fn test_xinclude_xpointer_attribute() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1425,6 +1579,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `accept` and `accept-language` attributes round-trip.
+    ///
+    /// # Safety
+    ///
+    /// - `include` is owned by `doc`; the attribute values from
+    ///   `bytes_to_xmlstr` are freed right after `tree::set_prop` copies them,
+    ///   and the values returned by `tree::get_prop` are freed with
+    ///   `xmlFreeImpl` after use; `doc` is freed with `tree::free_doc`.
     fn test_xinclude_accept_attributes() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1457,6 +1619,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `encoding` attribute round-trips through the tree.
+    ///
+    /// # Safety
+    ///
+    /// - `include` is owned by `doc`; `enc_val` is freed after `tree::set_prop`
+    ///   copies it, `encoding` from `tree::get_prop` is freed after use, and
+    ///   `doc` is freed with `tree::free_doc`.
     fn test_xinclude_encoding_attribute() {
         unsafe {
             let (doc, root) = create_doc_with_xinclude_ns();
@@ -1476,6 +1645,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xinclude_process` and `xinclude_process_flags` with zero
+    /// flags behave identically.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc` and freed with `tree::free_doc`
+    ///   after both calls, so the processor only dereferences live nodes.
     fn test_xinclude_process_flags_equivalence() {
         unsafe {
             let doc = create_simple_doc();
@@ -1487,6 +1663,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests `xinclude_process_flags` with the `XML_PARSE_NOXINCNODE` flag.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc` and freed with `tree::free_doc`
+    ///   after the call, so all pointer dereferences target live nodes.
     fn test_xinclude_process_flags_noxincnode() {
         unsafe {
             let doc = create_simple_doc();
@@ -1498,6 +1680,16 @@ mod tests {
 
     #[test]
     #[ignore = "pre-existing tree module cleanup bug with modified trees"]
+    /// Tests processing a document with nested includes and fallbacks.
+    ///
+    /// # Safety
+    ///
+    /// - All nodes are created by the `tree` helpers, asserted non-NULL, and
+    ///   owned by `doc`; `xinclude_process` walks the tree only while `doc` is
+    ///   alive. The test is ignored because the tree cleanup path does not
+    ///   free modified trees, and it deliberately leaks `doc` (no `free_doc`),
+    ///   but every unsafe access targets nodes that remain live for the whole
+    ///   test.
     fn test_complex_nested_includes_structure() {
         unsafe {
             // Build a doc with a complex structure including xi:include elements.
@@ -1533,6 +1725,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xinclude_process` leaves the document in a freeable state.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc`, processed while alive, and
+    ///   freed with `tree::free_doc` at the end, so all dereferences target
+    ///   live nodes.
     fn test_xinclude_process_xml_memory_cleanup() {
         unsafe {
             let doc = create_simple_doc();
@@ -1542,6 +1741,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `mark_doc_xinclude_processed` sets the XInclude flag.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is created by `create_simple_doc` and freed with `tree::free_doc`;
+    ///   the `(*doc).properties` field is read and written only while `doc` is
+    ///   alive.
     fn test_mark_doc_xinclude_processed() {
         unsafe {
             let doc = create_simple_doc();
@@ -1553,6 +1759,16 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `process_node_tree` skips XInclude start/end sentinel nodes.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` are created by the helpers and stay alive until the
+    ///   end of the test; the sentinel node is allocated by `tree::new_node`,
+    ///   manually linked into `root`'s sibling list, and unlinked again before
+    ///   `tree::free_node`; every dereference during linking, the
+    ///   `process_node_tree` walk, and unlinking touches nodes that are still
+    ///   allocated.
     fn test_xinclude_xinclude_start_end_nodes() {
         unsafe {
             let doc = create_simple_doc();

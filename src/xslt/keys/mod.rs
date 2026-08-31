@@ -675,6 +675,13 @@ mod tests {
 
     use core::ptr;
 
+    /// Adding a key definition with NULL arguments is rejected with `-1`.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltAddKeyDef` rejects NULL `style`/`name`/`nameURI`/`match`/
+    ///   `inst` before dereferencing them, so passing NULL pointers reads
+    ///   no memory.
     #[test]
     fn test_add_key_def_null() {
         unsafe {
@@ -691,6 +698,13 @@ mod tests {
         }
     }
 
+    /// Freeing NULL key structures is a no-op.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreeKeys`, `xsltFreeKeyDef`, `xsltFreeKeyTable`, and
+    ///   `xsltFreeKeyTables` all return early on NULL pointers before
+    ///   dereferencing, so the unsafe block frees no memory.
     #[test]
     fn test_free_null() {
         unsafe {

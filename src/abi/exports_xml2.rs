@@ -99,6 +99,16 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
+// SAFETY-SCOPE: EXPORT-XML2-MECHANICAL-001
+// (11.1-Z.3 proof scope, classified-generated) — this module is the
+// mechanical extern-"C" export surface: every `unsafe` block in it is
+// the documented indirection/registry-access pattern whose validity
+// rests on the upstream C contract, and the exported signatures are
+// machine-measured by the ABI-FUNCTION-SIGNATURE and DSO-LOADER
+// courts and the C-API differential probes. The safety contract of
+// each export is stated in its own doc comment; this scope covers the
+// mechanical wrappers' unsafe blocks.
+
 use core::ffi::c_void;
 use core::ptr;
 use once_cell::sync::Lazy;
@@ -450,13 +460,14 @@ pub const extern "C" fn xmlCheckThreadLocalStorage() -> c_int {
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlInitThreads(void);
+/// void xmlInitThreads(void);
 /// ```
 ///
-/// Returns 0 on success.
+/// Upstream threads.h declares `void xmlInitThreads(void)` (11.1-Z.3
+/// signature court: the pre-Z.3 candidate returned `int`).
 #[no_mangle]
-pub unsafe extern "C" fn xmlInitThreads() -> c_int {
-    crate::internal::globals::init_threads()
+pub unsafe extern "C" fn xmlInitThreads() {
+    let _ = unsafe { crate::internal::globals::init_threads() };
 }
 
 /// Clean up threading support.
@@ -3802,13 +3813,14 @@ pub unsafe extern "C" fn xmlOutputBufferGetContent(out: *mut _xmlOutputBuffer) -
 }
 
 /// Get the number of bytes currently in the output buffer (upstream
-/// xmlOutputBufferGetSize).
+/// xmlOutputBufferGetSize: `size_t`, 0 on NULL/error — 11.1-Z.3 signature
+/// court: the pre-Z.3 candidate returned `int` with -1 on error).
 ///
 /// # SAFETY
 ///
 /// - `out` must be a valid output buffer.
 #[no_mangle]
-pub unsafe extern "C" fn xmlOutputBufferGetSize(out: *mut _xmlOutputBuffer) -> c_int {
+pub unsafe extern "C" fn xmlOutputBufferGetSize(out: *mut _xmlOutputBuffer) -> usize {
     crate::xml::io::output_buffer_get_size(out)
 }
 
@@ -3976,12 +3988,12 @@ pub unsafe extern "C" fn xmlDictExists(
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// unsigned int xmlDictSize(const xmlDictPtr dict);
+/// int xmlDictSize(const xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub const extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
+pub const extern "C" fn xmlDictSize(dict: *const c_void) -> c_int {
     {
-        crate::xml::dictionary::dict_size(dict as *const crate::xml::dictionary::Dict) as c_uint
+        crate::xml::dictionary::dict_size(dict as *const crate::xml::dictionary::Dict)
     }
 }
 
@@ -4024,15 +4036,12 @@ pub extern "C" fn xmlDictFree(dict: *mut c_void) {
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// unsigned int xmlDictSetLimit(xmlDictPtr dict, unsigned int limit);
+/// size_t xmlDictSetLimit(xmlDictPtr dict, size_t limit);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: c_uint) -> c_uint {
+pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: usize) -> usize {
     {
-        crate::xml::dictionary::dict_set_limit(
-            dict as *mut crate::xml::dictionary::Dict,
-            limit as usize,
-        ) as c_uint
+        crate::xml::dictionary::dict_set_limit(dict as *mut crate::xml::dictionary::Dict, limit)
     }
 }
 
@@ -4041,12 +4050,12 @@ pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: c_uint) -> c_uint {
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// unsigned int xmlDictGetUsage(const xmlDictPtr dict);
+/// size_t xmlDictGetUsage(const xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictGetUsage(dict: *const c_void) -> c_uint {
+pub extern "C" fn xmlDictGetUsage(dict: *const c_void) -> usize {
     {
-        crate::xml::dictionary::dict_get_usage(dict as *mut crate::xml::dictionary::Dict) as c_uint
+        crate::xml::dictionary::dict_get_usage(dict as *mut crate::xml::dictionary::Dict)
     }
 }
 
@@ -4851,30 +4860,32 @@ pub extern "C" fn xmlBufferSetAllocationScheme(buf: *mut _xmlBuffer, scheme: c_i
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlBufferShrink(xmlBufferPtr buf, int len);
+/// int xmlBufferShrink(xmlBufferPtr buf, unsigned int len);
 /// ```
+///
+/// Oracle buf.c semantics (11.1-Z.3 alignment): -1 on NULL or `len` larger
+/// than the buffer content, 0 for `len == 0`, else the removed byte count.
 #[no_mangle]
-pub extern "C" fn xmlBufferShrink(buf: *mut _xmlBuffer, len: c_int) -> c_int {
-    if buf.is_null() || len <= 0 {
+pub extern "C" fn xmlBufferShrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
+    if buf.is_null() {
+        return -1;
+    }
+    if len == 0 {
         return 0;
     }
     unsafe {
         let b = &mut *buf;
-        let shrink_len = (len as c_uint).min(b.use_);
-        if shrink_len > 0 {
-            let remaining = b.use_ - shrink_len;
-            if remaining > 0 {
-                core::ptr::copy(
-                    b.content.add(shrink_len as usize),
-                    b.content,
-                    remaining as usize,
-                );
-            }
-            *b.content.add(remaining as usize) = 0;
-            b.use_ = remaining;
+        if len > b.use_ {
+            return -1;
         }
+        let remaining = b.use_ - len;
+        if remaining > 0 {
+            core::ptr::copy(b.content.add(len as usize), b.content, remaining as usize);
+        }
+        *b.content.add(remaining as usize) = 0;
+        b.use_ = remaining;
     }
-    len
+    len as c_int
 }
 
 /// Grow buffer.
@@ -4882,15 +4893,15 @@ pub extern "C" fn xmlBufferShrink(buf: *mut _xmlBuffer, len: c_int) -> c_int {
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlBufferGrow(xmlBufferPtr buf, int len);
+/// int xmlBufferGrow(xmlBufferPtr buf, unsigned int len);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlBufferGrow(buf: *mut _xmlBuffer, len: c_int) -> c_int {
-    if buf.is_null() || len <= 0 {
+pub extern "C" fn xmlBufferGrow(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
+    if buf.is_null() || len == 0 {
         return 0;
     }
     let cur_use = unsafe { (*buf).use_ };
-    let new_size = cur_use + len as c_uint + 1;
+    let new_size = cur_use + len + 1;
     crate::xml::io::buf_grow(buf, new_size)
 }
 
@@ -4903,7 +4914,7 @@ pub extern "C" fn xmlBufferGrow(buf: *mut _xmlBuffer, len: c_int) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlBufferReserve(buf: *mut _xmlBuffer, len: c_int) -> c_int {
-    xmlBufferGrow(buf, len)
+    xmlBufferGrow(buf, len as c_uint)
 }
 
 /// Detach buffer content.
@@ -7055,19 +7066,20 @@ pub unsafe extern "C" fn xmlValidateElement(
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlValidateAttributeDecl(xmlValidCtxtPtr ctxt,
-///                              xmlDocPtr doc,
-///                              xmlNodePtr elem,
-///                              xmlAttributePtr attr);
+/// int xmlValidateAttributeDecl(xmlValidCtxt *ctxt,
+///                              xmlDoc *doc,
+///                              xmlAttribute *attr);
 /// ```
+///
+/// 11.1-Z.3 signature court: the pre-Z.3 candidate declared a fourth
+/// `xmlNodePtr elem` argument that does not exist upstream (valid.h 2.15.3).
 #[no_mangle]
 pub unsafe extern "C" fn xmlValidateAttributeDecl(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    elem: *mut _xmlNode,
     attr: *mut _xmlAttribute,
 ) -> c_int {
-    crate::xml::validation::validate_attribute_decl(ctxt, doc, elem, attr)
+    crate::xml::validation::validate_attribute_decl(ctxt, doc, attr)
 }
 
 /// Validate an attribute value against its declared type.

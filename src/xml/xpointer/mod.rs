@@ -204,6 +204,12 @@ pub unsafe extern "C" fn xmlXPtrEvalNodeSet(
 /// Try to evaluate `expr` as a scheme-based pointer (`scheme(data)`).
 ///
 /// Returns `None` if the expression does not match a known scheme pattern.
+///
+/// # Safety
+///
+/// - `doc` must be NULL or a valid pointer to a live `_xmlDoc` whose node tree
+///   stays alive for the duration of the call; it is forwarded to
+///   `eval_element_scheme`, which walks the tree through raw node pointers.
 unsafe fn try_eval_scheme(expr: &str, doc: *mut _xmlDoc) -> Option<Option<*mut _xmlNode>> {
     let expr = expr.trim();
 
@@ -254,6 +260,14 @@ fn strip_scheme<'a>(expr: &'a str, scheme: &str) -> Option<&'a str> {
 /// * `element(id/N)` — select the N-th child (1-indexed) of the element
 ///   with the given ID.
 /// * `element(id/N1/N2/...)` — traverse deeper child levels.
+///
+/// # Safety
+///
+/// - `doc` must be NULL or a valid pointer to a live `_xmlDoc`; the lookup
+///   walks `(*doc).children` and the node `children`/`next` links via
+///   `find_element_by_id` and `nth_child_element`, so every visited node must
+///   belong to the live document. The returned node pointer is borrowed from
+///   `doc` and must not outlive it.
 unsafe fn eval_element_scheme(inner: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNode> {
     let inner = inner.trim();
     if inner.is_empty() {
@@ -298,6 +312,12 @@ unsafe fn eval_element_scheme(inner: &str, doc: *mut _xmlDoc) -> Option<*mut _xm
 /// Get the N-th child element node (1-indexed) of `node`.
 ///
 /// Only counts element nodes (XML_ELEMENT_NODE).
+///
+/// # Safety
+///
+/// - `node` must be NULL or a pointer to a valid, live `_xmlNode`; the
+///   function follows the `children` and `next` links inside the live tree and
+///   reads each visited node's `type_` field.
 unsafe fn nth_child_element(node: *mut _xmlNode, n: usize) -> Option<*mut _xmlNode> {
     if node.is_null() {
         return None;
@@ -328,6 +348,12 @@ unsafe fn nth_child_element(node: *mut _xmlNode, n: usize) -> Option<*mut _xmlNo
 ///
 /// Per the XPointer Framework, a shorthand pointer is treated as if it were
 /// `element(id)`.
+///
+/// # Safety
+///
+/// - `doc` must be NULL or a valid pointer to a live `_xmlDoc`; the lookup
+///   delegates to `find_element_by_id`, which walks the document tree through
+///   raw node pointers, so the document must stay alive for the call.
 unsafe fn shorthand_lookup(name: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNode> {
     unsafe { find_element_by_id(name, doc) }
 }
@@ -352,6 +378,12 @@ unsafe fn shorthand_lookup(name: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNod
 /// # Returns
 ///
 /// The first matching element node, or `None`.
+///
+/// # Safety
+///
+/// - `doc` must be NULL or a valid pointer to a live `_xmlDoc`; the search
+///   dereferences `(*doc).children` and recurses through the node tree via
+///   `walk_for_id`, so every node visited must belong to the live document.
 unsafe fn find_element_by_id(id: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNode> {
     if doc.is_null() || id.is_empty() {
         return None;
@@ -368,6 +400,12 @@ unsafe fn find_element_by_id(id: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNod
 }
 
 /// Recursively walk the tree looking for an element with the given ID.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a pointer to a valid, live `_xmlNode` whose
+///   `children` and `next` links form the subtree to search; `id` is a
+///   borrowed `&str` that must stay valid for the whole walk.
 unsafe fn walk_for_id(node: *mut _xmlNode, id: &str) -> Option<*mut _xmlNode> {
     if node.is_null() {
         return None;
@@ -396,6 +434,13 @@ unsafe fn walk_for_id(node: *mut _xmlNode, id: &str) -> Option<*mut _xmlNode> {
 /// Checks:
 /// 1. If the attribute's `atype` is `XML_ATTRIBUTE_ID`, compare its value.
 /// 2. If the attribute's name is "id" (case-insensitive), compare its value.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a pointer to a valid, live `_xmlNode`; the
+///   function walks `(*node).properties` through the `next` links and reads
+///   each attribute's `atype`, `name`, and value, so every visited attribute
+///   must belong to the live node.
 unsafe fn element_has_id(node: *mut _xmlNode, id: &str) -> bool {
     if node.is_null() {
         return false;
@@ -484,6 +529,14 @@ mod tests {
     // ── Helper: create a minimal document tree for testing ────────────────
 
     /// Create a minimal document with one element: `<root id="main">`.
+    ///
+    /// # Safety
+    ///
+    /// - The function dereferences the `xmlMallocZero` allocations it makes
+    ///   for `doc`, `root`, and the attribute and text nodes only after
+    ///   asserting they are non-NULL; the returned `doc` owns the whole tree,
+    ///   which the tests deliberately leak (never freed), so no use-after-free
+    ///   is possible.
     unsafe fn create_simple_doc() -> *mut _xmlDoc {
         let doc = xmlMallocZero(mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
         assert!(!doc.is_null());
@@ -522,6 +575,13 @@ mod tests {
     ///   <child3/>
     /// </root>
     /// ```
+    ///
+    /// # Safety
+    ///
+    /// - All nodes and attributes are `xmlMallocZero` allocations asserted
+    ///   non-NULL before being dereferenced and linked; the returned `doc`
+    ///   owns the whole tree, which the tests deliberately leak (never
+    ///   freed), so no use-after-free is possible.
     unsafe fn create_complex_doc() -> *mut _xmlDoc {
         let doc = xmlMallocZero(mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
         assert!(!doc.is_null());
@@ -570,6 +630,14 @@ mod tests {
         c_str.into_raw() as *const crate::abi::types::xmlChar
     }
 
+    /// Append a new element node as the last child of `parent`.
+    ///
+    /// # Safety
+    ///
+    /// - `parent` must be a non-NULL pointer to a valid, live `_xmlNode` whose
+    ///   `doc` field is readable; its `children` and `last` links are updated
+    ///   in place, and `name` must stay valid until it is copied by
+    ///   `string_to_xmlchar`.
     unsafe fn append_child_element(parent: *mut _xmlNode, name: &str) -> *mut _xmlNode {
         let node = xmlMallocZero(mem::size_of::<_xmlNode>()) as *mut _xmlNode;
         assert!(!node.is_null());
@@ -599,6 +667,14 @@ mod tests {
         node
     }
 
+    /// Add an attribute node with a text-value child to an element.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be a non-NULL pointer to a valid, live `_xmlNode` whose
+    ///   `doc` field is readable; the attribute and its text child are fresh
+    ///   `xmlMallocZero` allocations asserted non-NULL, and `name` and `value`
+    ///   must stay valid until copied by `string_to_xmlchar`.
     unsafe fn add_id_attr(node: *mut _xmlNode, name: &str, value: &str) -> *mut _xmlAttr {
         let attr = xmlMallocZero(mem::size_of::<_xmlAttr>()) as *mut _xmlAttr;
         assert!(!attr.is_null());
@@ -644,6 +720,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a bare name resolves as a shorthand ID pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_simple_doc`, which allocates and links the
+    ///   nodes; the resolved node is dereferenced by `c_name_eq` while `doc`
+    ///   is still live (the tree is leaked, never freed).
     fn test_shorthand_pointer() {
         unsafe {
             let doc = create_simple_doc();
@@ -654,6 +737,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an unknown shorthand pointer resolves to nothing.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_simple_doc`; `xptr_eval` walks the live
+    ///   tree and returns `None` without any dangling dereferences.
     fn test_shorthand_pointer_not_found() {
         unsafe {
             let doc = create_simple_doc();
@@ -663,6 +752,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests basic `element(id)` scheme resolution.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; every node dereferenced by
+    ///   the lookup and by `c_name_eq` is part of that live, leaked tree.
     fn test_element_scheme_basic() {
         unsafe {
             let doc = create_complex_doc();
@@ -682,6 +777,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests `element(id/N)` child-sequence traversal.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; every node dereferenced by
+    ///   the child-axis walk and by `c_name_eq` belongs to that live, leaked
+    ///   tree.
     fn test_element_scheme_with_child_sequence() {
         unsafe {
             let doc = create_complex_doc();
@@ -701,6 +803,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an out-of-range child index resolves to nothing.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; `xptr_eval` walks the live
+    ///   tree and returns `None` for the out-of-range index without dangling
+    ///   dereferences.
     fn test_element_scheme_child_out_of_range() {
         unsafe {
             let doc = create_complex_doc();
@@ -710,6 +819,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a zero child index is rejected by the `element` scheme.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; `xptr_eval` walks the live
+    ///   tree and returns `None` because zero is not a valid 1-indexed child
+    ///   position.
     fn test_element_scheme_zero_index() {
         unsafe {
             let doc = create_complex_doc();
@@ -719,6 +835,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an empty expression resolves to nothing.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_simple_doc`; `xptr_eval` returns early for
+    ///   the empty expression, and the tree stays live for the whole test.
     fn test_empty_expr() {
         unsafe {
             let doc = create_simple_doc();
@@ -728,6 +850,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a NULL document resolves to nothing.
+    ///
+    /// # Safety
+    ///
+    /// - `xptr_eval` checks `doc` for NULL and returns early without
+    ///   dereferencing it.
     fn test_null_doc() {
         unsafe {
             let result = xptr_eval("main", ptr::null_mut());
@@ -736,6 +864,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `xmlXPtrEval` C ABI entry point.
+    ///
+    /// # Safety
+    ///
+    /// - `c_expr` is a `CString` that stays alive for the call; `doc` is
+    ///   built by `create_simple_doc` and stays live while the returned node
+    ///   is dereferenced by `c_name_eq`.
     fn test_xml_xptr_eval_c_abi() {
         unsafe {
             let doc = create_simple_doc();
@@ -747,6 +882,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xmlXPtrEval` returns NULL for a NULL expression.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlXPtrEval` checks `expr` for NULL and returns early without
+    ///   dereferencing it; `doc` stays live for the whole test.
     fn test_xml_xptr_eval_null_expr() {
         unsafe {
             let doc = create_simple_doc();
@@ -756,6 +897,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `xmlXPtrEval` returns NULL for a NULL document.
+    ///
+    /// # Safety
+    ///
+    /// - `c_expr` is a `CString` that stays alive for the call; `xmlXPtrEval`
+    ///   checks `doc` for NULL and returns early without dereferencing it.
     fn test_xml_xptr_eval_null_doc() {
         unsafe {
             let c_expr = CString::new("main").unwrap();
@@ -765,6 +912,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests the `xmlXPtrEvalNodeSet` C ABI entry point.
+    ///
+    /// # Safety
+    ///
+    /// - `c_expr` is a `CString` alive for the call; `doc` is built by
+    ///   `create_simple_doc` and stays live; the returned node set is asserted
+    ///   non-NULL before `(*ns).nodeNr` and `(*ns).nodeTab` are read, and the
+    ///   node taken from `(*ns).nodeTab` is dereferenced by `c_name_eq` while
+    ///   `doc` is live.
     fn test_xml_xptr_eval_node_set() {
         unsafe {
             let doc = create_simple_doc();
@@ -779,6 +935,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an unknown ID in the `element` scheme resolves to nothing.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; the lookup walks the live
+    ///   tree and returns `None` without dangling dereferences.
     fn test_element_scheme_not_found() {
         unsafe {
             let doc = create_complex_doc();
@@ -788,6 +950,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that whitespace inside the `element` scheme is tolerated.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; the resolved node is
+    ///   dereferenced by `c_name_eq` while the tree is live.
     fn test_element_scheme_extra_spaces() {
         unsafe {
             let doc = create_complex_doc();
@@ -798,6 +966,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an element without an ID is not found by shorthand lookup.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is built by `create_complex_doc`; `xptr_eval` walks the live
+    ///   tree and returns `None` for the ID-less element.
     fn test_child3_no_id() {
         unsafe {
             let doc = create_complex_doc();

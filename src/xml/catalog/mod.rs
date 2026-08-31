@@ -790,6 +790,18 @@ pub(crate) fn cleanup() {
 /// ```c
 /// xmlCatalogPtr xmlCatalogLoad(const char *catalogs);
 /// ```
+///
+/// # Safety
+///
+/// - `catalogs` must be NULL or a valid pointer to a NUL-terminated C string
+///   that stays alive for the duration of the call (`CStr::from_ptr` reads it
+///   to the terminator).
+/// - The returned handle is an opaque non-NULL marker derived from the
+///   catalog count, not a dereferenceable pointer; NULL means nothing was
+///   loaded.
+/// - The global catalog state is shared: callers must not race `init` or
+///   `cleanup` with concurrent resolution, though the internal `RwLock`
+///   serializes ordinary readers and writers.
 pub(crate) fn load_catalog(catalogs: *const c_char) -> *mut c_void {
     if catalogs.is_null() {
         return ptr::null_mut();
@@ -882,6 +894,16 @@ unsafe fn resolve_public_entries(entries: &[CatalogEntry], pub_id_bytes: &[u8]) 
 /// ```c
 /// xmlCharPtr xmlCatalogResolvePublic(const xmlChar *pubID);
 /// ```
+///
+/// # Safety
+///
+/// - `pub_id` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+///   string readable through its full length for the duration of the call
+///   (`xmlstr_to_bytes` scans to the terminator).
+/// - A non-NULL return value is a freshly allocated NUL-terminated string
+///   that the caller owns and must free exactly once with `xmlFree`.
+/// - The catalog state is read under the internal lock; callers must not
+///   race `init`/`cleanup` with this call.
 pub(crate) unsafe fn resolve_public(pub_id: *const xmlChar) -> *mut xmlChar {
     if pub_id.is_null() {
         return ptr::null_mut();
@@ -964,6 +986,16 @@ unsafe fn resolve_system_entries(entries: &[CatalogEntry], sys_id_bytes: &[u8]) 
 /// ```c
 /// xmlCharPtr xmlCatalogResolveSystem(const xmlChar *sysID);
 /// ```
+///
+/// # Safety
+///
+/// - `sys_id` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+///   string readable through its full length for the duration of the call
+///   (`xmlstr_to_bytes` scans to the terminator).
+/// - A non-NULL return value is a freshly allocated NUL-terminated string
+///   that the caller owns and must free exactly once with `xmlFree`.
+/// - The catalog state is read under the internal lock; callers must not
+///   race `init`/`cleanup` with this call.
 pub(crate) unsafe fn resolve_system(sys_id: *const xmlChar) -> *mut xmlChar {
     if sys_id.is_null() {
         return ptr::null_mut();
@@ -1053,6 +1085,16 @@ unsafe fn resolve_uri_entries(entries: &[CatalogEntry], uri_bytes: &[u8]) -> Opt
 /// ```c
 /// xmlCharPtr xmlCatalogResolveURI(const xmlChar *URI);
 /// ```
+///
+/// # Safety
+///
+/// - `uri` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+///   string readable through its full length for the duration of the call
+///   (`xmlstr_to_bytes` scans to the terminator).
+/// - A non-NULL return value is a freshly allocated NUL-terminated string
+///   that the caller owns and must free exactly once with `xmlFree`.
+/// - The catalog state is read under the internal lock; callers must not
+///   race `init`/`cleanup` with this call.
 pub(crate) unsafe fn resolve_uri(uri: *const xmlChar) -> *mut xmlChar {
     if uri.is_null() {
         return ptr::null_mut();
@@ -2267,6 +2309,16 @@ mod tests {
 
     // ── Basic public ID resolution ───────────────────────────────────────
 
+    /// Test basic public ID resolution against the global catalog state.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`.
+    /// - The non-NULL result of `resolve_public` is a fresh allocation freed
+    ///   exactly once with `xmlFreeImpl`; the NULL result is not freed.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state against other tests.
     #[test]
     fn test_resolve_public_basic() {
         let _guard = setup();
@@ -2300,6 +2352,16 @@ mod tests {
 
     // ── Basic system ID resolution ───────────────────────────────────────
 
+    /// Test basic system ID resolution against the global catalog state.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_system` is a fresh allocation freed
+    ///   exactly once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_resolve_system_basic() {
         let _guard = setup();
@@ -2323,6 +2385,16 @@ mod tests {
 
     // ── URI resolution ──────────────────────────────────────────────────
 
+    /// Test URI resolution against system entries in the global catalog.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_uri` is a fresh allocation freed exactly
+    ///   once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_resolve_uri_basic() {
         let _guard = setup();
@@ -2347,6 +2419,16 @@ mod tests {
 
     // ── RewriteSystem resolution ────────────────────────────────────────
 
+    /// Test RewriteSystem prefix rewriting in the global catalog.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_system` is a fresh allocation freed
+    ///   exactly once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_rewrite_system() {
         let _guard = setup();
@@ -2375,6 +2457,16 @@ mod tests {
 
     // ── RewriteURI resolution ───────────────────────────────────────────
 
+    /// Test RewriteURI prefix rewriting in the global catalog.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_uri` is a fresh allocation freed exactly
+    ///   once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_rewrite_uri() {
         let _guard = setup();
@@ -2403,6 +2495,16 @@ mod tests {
 
     // ── Remove entries ──────────────────────────────────────────────────
 
+    /// Test removing an entry from the global catalog.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_public` is a fresh allocation that must
+    ///   be freed by the caller (it is intentionally not retained here).
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_remove_entries() {
         let _guard = setup();
@@ -2560,6 +2662,16 @@ URI "http://example.com/resource" "/local/resource"
 
     // ── Resolution precedence ───────────────────────────────────────────
 
+    /// Test that a direct system match outranks a rewrite prefix.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_system` is a fresh allocation freed
+    ///   exactly once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_resolution_precedence() {
         let _guard = setup();
@@ -2594,6 +2706,17 @@ URI "http://example.com/resource" "/local/resource"
 
     // ── Convert SGML to XML ─────────────────────────────────────────────
 
+    /// Test converting the global catalog to an XML document.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`.
+    /// - `doc` is the non-NULL result of `convert()`: a live `_xmlDoc` whose
+    ///   root element and its children chain are read via raw pointers while
+    ///   alive, then released exactly once with `free_doc`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_convert_sgml_to_xml() {
         let _guard = setup();
@@ -2628,6 +2751,16 @@ URI "http://example.com/resource" "/local/resource"
 
     // ── Catalog allowed / disallowed ────────────────────────────────────
 
+    /// Test that resolution is blocked when catalogs are disallowed.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   resolution functions return NULL here, so nothing is freed from
+    ///   their results.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_catalog_disallowed() {
         let _guard = setup();
@@ -2702,6 +2835,16 @@ URI "http://example.com/resource" "/local/resource"
 
     // ── Multiple entries, multiple resolution ───────────────────────────
 
+    /// Test resolving multiple distinct public entries.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; each
+    ///   non-NULL resolve result is a fresh allocation freed exactly once
+    ///   with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_multiple_entries() {
         let _guard = setup();
@@ -2737,6 +2880,16 @@ URI "http://example.com/resource" "/local/resource"
 
     // ── Longest prefix wins for rewrite ─────────────────────────────────
 
+    /// Test that the longest rewrite prefix wins.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlChar` pointers from `to_xmlstr_str` are valid NUL-terminated
+    ///   heap strings, each freed exactly once with `free_xmlstr`; the
+    ///   non-NULL result of `resolve_system` is a fresh allocation freed
+    ///   exactly once with `xmlFreeImpl`.
+    /// - `setup`/`teardown` hold the test mutex, serializing access to the
+    ///   global catalog state.
     #[test]
     fn test_longest_prefix_wins() {
         let _guard = setup();
@@ -2780,6 +2933,14 @@ mod c_abi_tests {
         s.as_ptr() as *const xmlChar
     }
 
+    /// Test the C-ABI catalog handle lifecycle (create, empty-check, free).
+    ///
+    /// # Safety
+    ///
+    /// - `h` is the non-NULL result of `xmlNewCatalog(0)`; it is a heap
+    ///   handle owned by the caller and released exactly once with
+    ///   `xmlFreeCatalog`, after which it must not be used.
+    /// - `xmlFreeCatalog(NULL)` is a no-op per the C contract.
     #[test]
     fn test_new_free_catalog() {
         unsafe {
@@ -2791,6 +2952,18 @@ mod c_abi_tests {
         }
     }
 
+    /// Test the C-ABI handle add/resolve/remove round-trip.
+    ///
+    /// # Safety
+    ///
+    /// - Each `cstr` result points to a static NUL-terminated byte array
+    ///   valid for the duration of its call.
+    /// - `h` is a non-NULL live handle from `xmlNewCatalog(0)`; `(*h).entries`
+    ///   is read and mutated directly, so `h` must not be freed or mutated
+    ///   concurrently while in use, and each handle is released exactly once
+    ///   with `xmlFreeCatalog`.
+    /// - Each non-NULL resolve result is a fresh allocation freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_acatalog_add_resolve_remove() {
         unsafe {
@@ -2851,6 +3024,18 @@ mod c_abi_tests {
         }
     }
 
+    /// Test C-ABI public resolution and rewrite on a seeded handle.
+    ///
+    /// # Safety
+    ///
+    /// - Each `cstr` result points to a static NUL-terminated byte array
+    ///   valid for the duration of its call.
+    /// - `h` is a non-NULL live handle from `xmlNewCatalog(0)`; `(*h).entries`
+    ///   is mutated directly, so `h` must not be freed or mutated
+    ///   concurrently while in use, and is released exactly once with
+    ///   `xmlFreeCatalog`.
+    /// - Each non-NULL resolve result is a fresh allocation freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_acatalog_public_and_rewrite() {
         unsafe {
@@ -2891,6 +3076,13 @@ mod c_abi_tests {
         }
     }
 
+    /// Test the global prefer/debug setters return the previous values.
+    ///
+    /// # Safety
+    ///
+    /// - The setters read and write crate-global catalog configuration; they
+    ///   touch no raw pointers, and the calls are safe as long as the global
+    ///   catalog state is not being torn down concurrently.
     #[test]
     fn test_catalog_set_debug_and_prefer() {
         unsafe {
@@ -2906,6 +3098,14 @@ mod c_abi_tests {
         }
     }
 
+    /// Test the C-ABI local-resolution helpers with NULL and empty state.
+    ///
+    /// # Safety
+    ///
+    /// - Each `cstr` result points to a static NUL-terminated byte array
+    ///   valid for the duration of its call; a NULL catalog handle is accepted
+    ///   by the local helpers and yields NULL, and `xmlCatalogFreeLocal(NULL)`
+    ///   is a no-op.
     #[test]
     fn test_catalog_local_resolve() {
         unsafe {
@@ -2916,6 +3116,13 @@ mod c_abi_tests {
         }
     }
 
+    /// Test that the C-ABI global resolver accepts NULL IDs.
+    ///
+    /// # Safety
+    ///
+    /// - Passing NULL for both public and system IDs to `xmlCatalogResolve`
+    ///   is accepted per the C contract and returns NULL without
+    ///   dereferencing the arguments.
     #[test]
     fn test_catalog_resolve_global_null() {
         unsafe {

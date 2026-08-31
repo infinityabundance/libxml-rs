@@ -130,8 +130,6 @@ XMLPUBFUN int xmlTextReaderStandalone(xmlTextReaderPtr reader);
 XMLPUBFUN int xmlTextReaderNormalization(xmlTextReaderPtr reader);
 XMLPUBFUN xmlChar *xmlTextReaderBaseUri(xmlTextReaderPtr reader);
 XMLPUBFUN xmlChar *xmlTextReaderXmlLang(xmlTextReaderPtr reader);
-XMLPUBFUN int xmlTextReaderGetAttributeIndex(xmlTextReaderPtr reader,
-                                             const xmlChar *name);
 XMLPUBFUN xmlTextReaderPtr xmlReaderForDoc(const xmlChar *cur,
                                            const char *URL,
                                            const char *encoding,

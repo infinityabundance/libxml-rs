@@ -285,6 +285,14 @@ fn format_date_time(dt: &DateTime, with_tz: bool) -> String {
 }
 
 /// The current local date-time (using the system clock and local timezone).
+///
+/// # Safety
+///
+/// - `std::mem::zeroed()` yields a valid all-zero `libc::tm` (plain data
+///   fields) and `t` is a live `libc::time_t` value, so
+///   `libc::localtime_r` receives valid pointers to writable memory of
+///   the correct size and fills `tm`; the fields are only read after the
+///   call returns.
 fn now() -> DateTime {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

@@ -7,6 +7,7 @@
 #ifndef __XML_DICT_H__
 #define __XML_DICT_H__
 
+#include <stddef.h>
 #include <libxml/xmlversion.h>
 #include <libxml/xmlstring.h>
 
@@ -21,10 +22,10 @@ XMLPUBFUN xmlDictPtr xmlDictCreate(void);
 XMLPUBFUN xmlDictPtr xmlDictCreateSub(xmlDictPtr sub);
 XMLPUBFUN const xmlChar *xmlDictLookup(xmlDictPtr dict, const xmlChar *name, int len);
 XMLPUBFUN const xmlChar *xmlDictExists(xmlDictPtr dict, const xmlChar *name, int len);
-XMLPUBFUN unsigned int xmlDictSize(const xmlDictPtr dict);
+XMLPUBFUN int xmlDictSize(const xmlDictPtr dict);
 XMLPUBFUN void xmlDictFree(xmlDictPtr dict);
-XMLPUBFUN unsigned int xmlDictSetLimit(xmlDictPtr dict, unsigned int limit);
-XMLPUBFUN unsigned int xmlDictGetUsage(const xmlDictPtr dict);
+XMLPUBFUN size_t xmlDictSetLimit(xmlDictPtr dict, size_t limit);
+XMLPUBFUN size_t xmlDictGetUsage(const xmlDictPtr dict);
 
 
 /* [11.1-S] begin: oracle-extracted declarations

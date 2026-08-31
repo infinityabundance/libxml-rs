@@ -704,6 +704,13 @@ impl XmlTextReader {
     /// Unified attribute addressing: namespace declarations first, then
     /// regular attributes (upstream reader attribute iteration, R-000143:
     /// xmlns / xmlns:prefix count as attributes, ordered before properties).
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be non-NULL (checked) and point to a valid `_xmlNode`.
+    /// - The `nsDef` and `properties` lists of the node must be valid
+    ///   NULL-terminated linked lists of `_xmlNs` and `_xmlAttr` objects.
+    /// - `index` must be non-negative (checked).
     unsafe fn attr_at(&self, node: *mut _xmlNode, index: i32) -> AttrTarget {
         if node.is_null() || index < 0 {
             return AttrTarget::None;
@@ -730,6 +737,15 @@ impl XmlTextReader {
 
     /// The index of the attribute matching `name` (ns decls use
     /// "xmlns:prefix"/"xmlns" names), or -1.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be non-NULL (checked) and point to a valid `_xmlNode`.
+    /// - `name` must be non-NULL (checked) and point to a valid
+    ///   NUL-terminated `xmlChar` string; it is scanned with `libc::strlen`.
+    /// - The `nsDef` and `properties` lists must be valid NULL-terminated
+    ///   linked lists, and every `prefix` and `prop.name` encountered must be
+    ///   NULL or a valid NUL-terminated `xmlChar` string.
     unsafe fn attr_index_by_name(&self, node: *mut _xmlNode, name: *const xmlChar) -> i32 {
         if node.is_null() || name.is_null() {
             return -1;
@@ -3566,6 +3582,14 @@ mod tests {
 
     // ─── Basic tests ───────────────────────────────────────────────────────
 
+    /// Creates a reader from a memory buffer and checks its initial state.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_create_reader_from_memory() {
         unsafe {
@@ -3576,6 +3600,14 @@ mod tests {
         }
     }
 
+    /// Reads a simple document and verifies the event sequence.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_read_simple_document() {
         unsafe {
@@ -3609,6 +3641,14 @@ mod tests {
         }
     }
 
+    /// Verifies read state transitions from INITIALIZED to EOF.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_read_state_transitions() {
         unsafe {
@@ -3631,6 +3671,13 @@ mod tests {
         }
     }
 
+    /// Verifies reader API entry points return error indicators for a NULL
+    /// reader pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is passed only to reader API entry points that accept NULL and
+    ///   return error indicators without dereferencing the pointer.
     #[test]
     fn test_null_reader_returns_error() {
         unsafe {
@@ -3648,6 +3695,12 @@ mod tests {
         }
     }
 
+    /// Verifies freeing a NULL reader does not crash.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlFreeTextReader` must tolerate a NULL pointer without
+    ///   dereferencing it.
     #[test]
     fn test_xmlFreeTextReader_null() {
         unsafe {
@@ -3656,6 +3709,15 @@ mod tests {
         }
     }
 
+    /// Verifies `xmlTextReaderName` and `xmlTextReaderValue` results.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderName` and `xmlTextReaderValue` return heap strings
+    ///   allocated via `xml_strdup`; each non-NULL result is freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_reader_name_and_value() {
         unsafe {
@@ -3685,6 +3747,14 @@ mod tests {
         }
     }
 
+    /// Verifies an empty element reports no END_ELEMENT event.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_empty_element() {
         unsafe {
@@ -3706,6 +3776,14 @@ mod tests {
         }
     }
 
+    /// Verifies attribute counting on an element with two attributes.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_element_with_attributes() {
         unsafe {
@@ -3725,6 +3803,17 @@ mod tests {
         }
     }
 
+    /// Verifies attribute navigation (first, next, by name, by index).
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
+    /// - The pointers returned by `xmlTextReaderConstName` and
+    ///   `xmlTextReaderConstValue` are borrowed from the reader and are not
+    ///   freed by the test.
     #[test]
     fn test_attribute_navigation() {
         unsafe {
@@ -3779,6 +3868,15 @@ mod tests {
         }
     }
 
+    /// Verifies attribute lookup by name and by index.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderGetAttribute` and `xmlTextReaderGetAttributeNo` return
+    ///   heap strings; each non-NULL result is freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_get_attribute() {
         unsafe {
@@ -3820,6 +3918,14 @@ mod tests {
         }
     }
 
+    /// Verifies depth tracking across nested elements.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_depth_tracking() {
         unsafe {
@@ -3842,6 +3948,14 @@ mod tests {
         }
     }
 
+    /// Verifies traversal of multiple sibling elements.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_multiple_siblings() {
         unsafe {
@@ -3864,6 +3978,16 @@ mod tests {
         }
     }
 
+    /// Verifies `xmlTextReaderNext` skips to the next sibling element.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
+    /// - The `name` field read through `(*reader)` is borrowed from the
+    ///   reader and is not freed.
     #[test]
     fn test_next_skip_to_sibling() {
         unsafe {
@@ -3900,6 +4024,13 @@ mod tests {
         }
     }
 
+    /// Verifies comment and processing-instruction nodes are reported.
+    ///
+    /// # Safety
+    ///
+    /// - The static NUL-terminated `xml` buffer stays valid for the
+    ///   `xmlReaderForMemory` call; the returned `reader` is asserted non-NULL
+    ///   before use and is freed exactly once with `free_reader`.
     #[test]
     fn test_comment_and_pi_nodes() {
         unsafe {
@@ -3963,6 +4094,14 @@ mod tests {
         }
     }
 
+    /// Verifies `xmlTextReaderLocalName` returns the local name.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderLocalName` returns a heap string that is freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_local_name() {
         unsafe {
@@ -3980,6 +4119,14 @@ mod tests {
         }
     }
 
+    /// Verifies the base URI is NULL for memory-created readers.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_base_uri() {
         unsafe {
@@ -3995,6 +4142,14 @@ mod tests {
         }
     }
 
+    /// Verifies namespace prefix lookup on the reader.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderLookupNamespace` returns a heap string; the non-NULL
+    ///   result is freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_lookup_namespace() {
         unsafe {
@@ -4029,6 +4184,14 @@ mod tests {
         }
     }
 
+    /// Verifies parser property get/set round trips and error codes.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_parser_properties() {
         unsafe {
@@ -4056,6 +4219,14 @@ mod tests {
         }
     }
 
+    /// Verifies the current document is available after the first read.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_current_doc() {
         unsafe {
@@ -4074,6 +4245,14 @@ mod tests {
         }
     }
 
+    /// Verifies a reader can be freed after reading to EOF.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_free_reader_after_read() {
         unsafe {
@@ -4089,6 +4268,12 @@ mod tests {
         }
     }
 
+    /// Verifies a NULL buffer with a non-zero size is rejected.
+    ///
+    /// # Safety
+    ///
+    /// - A NULL buffer with a non-zero size must be rejected by
+    ///   `xmlReaderForMemory` without reading any memory.
     #[test]
     fn test_reader_for_memory_null_buffer() {
         unsafe {
@@ -4097,6 +4282,12 @@ mod tests {
         }
     }
 
+    /// Verifies a zero size makes `xmlReaderForMemory` return NULL.
+    ///
+    /// # Safety
+    ///
+    /// - The static buffer is not read: a size of 0 must make
+    ///   `xmlReaderForMemory` return a NULL reader.
     #[test]
     fn test_reader_for_memory_empty_size() {
         unsafe {
@@ -4112,6 +4303,13 @@ mod tests {
         }
     }
 
+    /// Verifies a nonexistent file yields a NULL reader.
+    ///
+    /// # Safety
+    ///
+    /// - The static NUL-terminated filename stays valid for the
+    ///   `xmlReaderForFile` call; a nonexistent file must yield a NULL reader
+    ///   without reading.
     #[test]
     fn test_reader_for_file_not_found() {
         unsafe {
@@ -4121,6 +4319,15 @@ mod tests {
         }
     }
 
+    /// Verifies const name and value pointers borrowed from the reader.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - The pointers returned by `xmlTextReaderConstName` and
+    ///   `xmlTextReaderConstValue` are borrowed from the reader and must not
+    ///   be freed by the caller.
     #[test]
     fn test_const_name_and_value() {
         unsafe {
@@ -4143,6 +4350,14 @@ mod tests {
         }
     }
 
+    /// Reads a complex nested document and counts node types.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_complex_nested_document() {
         unsafe {
@@ -4196,6 +4411,14 @@ mod tests {
         }
     }
 
+    /// Verifies `xmlTextReaderSetup` reinitializes a used reader.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderSetup` with a NULL input must reset the reader without
+    ///   dereferencing the NULL input.
     #[test]
     fn test_setup_reinitialize() {
         unsafe {
@@ -4219,6 +4442,14 @@ mod tests {
         }
     }
 
+    /// Verifies attribute queries on non-element and attribute-less nodes.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_has_attributes_on_non_element() {
         unsafe {
@@ -4235,6 +4466,14 @@ mod tests {
         }
     }
 
+    /// Verifies `xmlTextReaderPrev` fails after EOF.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_prev_sibling() {
         unsafe {
@@ -4253,6 +4492,15 @@ mod tests {
         }
     }
 
+    /// Verifies moving to an attribute index fails on an element without
+    /// attributes.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_move_to_attribute_no_not_on_element() {
         unsafe {
@@ -4269,6 +4517,14 @@ mod tests {
         }
     }
 
+    /// Verifies namespaced attribute lookup with a NULL namespace URI.
+    ///
+    /// # Safety
+    ///
+    /// - The `reader` pointer is asserted non-NULL before use and freed
+    ///   exactly once with `free_reader`.
+    /// - `xmlTextReaderGetAttributeNs` returns a heap string; the non-NULL
+    ///   result is freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_get_attribute_ns() {
         unsafe {
@@ -4291,6 +4547,14 @@ mod tests {
         }
     }
 
+    /// Verifies mixed content (text and elements) event ordering.
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
     #[test]
     fn test_mixed_content() {
         unsafe {
@@ -4312,6 +4576,13 @@ mod tests {
         }
     }
 
+    /// Verifies malformed XML makes reading fail gracefully.
+    ///
+    /// # Safety
+    ///
+    /// - The static `data` buffer is valid for the 7-byte `xmlReaderForMemory`
+    ///   read; the returned `reader` is asserted non-NULL before being read
+    ///   and is freed exactly once with `free_reader`.
     #[test]
     fn test_error_handling_invalid_xml() {
         unsafe {
@@ -4328,6 +4599,14 @@ mod tests {
         }
     }
 
+    /// Verifies parser options are stored and honored by the reader.
+    ///
+    /// # Safety
+    ///
+    /// - The static NUL-terminated `data` buffer stays valid for the
+    ///   `xmlReaderForMemory` call; the returned `reader` is asserted non-NULL
+    ///   before dereferencing its `options` field and before
+    ///   `xmlTextReaderRead`, and is freed exactly once with `free_reader`.
     #[test]
     fn test_reader_with_options() {
         unsafe {
@@ -4350,6 +4629,14 @@ mod tests {
         }
     }
 
+    /// Verifies reading a document from an open file descriptor.
+    ///
+    /// # Safety
+    ///
+    /// - The descriptor returned by `libc::open` must be a valid open
+    ///   descriptor passed to `xmlReaderForFd`, which reads from it; the
+    ///   returned `reader` is asserted non-NULL before use, freed with
+    ///   `free_reader`, and the descriptor is closed afterwards.
     #[test]
     fn test_reader_for_fd() {
         unsafe {

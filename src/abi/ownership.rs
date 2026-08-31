@@ -529,6 +529,15 @@ impl<T> UniquePtr<T> {
 }
 
 impl<T> Drop for UniquePtr<T> {
+    /// Release the owned pointer by invoking the stored `drop_fn`.
+    ///
+    /// # Safety
+    ///
+    /// - The stored `drop_fn` must be a valid function pointer that
+    ///   releases the pointed-to object exactly once; `ptr` must be the
+    ///   uniquely-owned, valid pointer from `UniquePtr::new` and must not
+    ///   be freed by any other code; Rust guarantees `drop` runs at most
+    ///   once, after which the pointer is dangling.
     fn drop(&mut self) {
         if let Some(ptr) = self.ptr.take() {
             unsafe { (self.drop_fn)(ptr.as_ptr()) };

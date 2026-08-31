@@ -497,6 +497,12 @@ mod tests {
     use super::*;
     use crate::xml::tree::new_doc;
 
+    /// Build a document with a single `root` element.
+    ///
+    /// # Safety
+    ///
+    /// - The returned document is non-NULL and owns its root element; the
+    ///   caller must free it with `tree::free_doc` exactly once.
     fn doc_with_root() -> *mut _xmlDoc {
         unsafe {
             let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
@@ -507,6 +513,14 @@ mod tests {
         }
     }
 
+    /// Save a formatted doc to a buffer and compare the serialized bytes.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` are non-NULL (asserted) and valid until freed with
+    ///   `tree::free_doc`/`io::buf_free`; `ctxt` is non-NULL and valid
+    ///   until `xmlSaveFinish`; the buffer content/pointers are valid while
+    ///   the byte slice is constructed and read.
     #[test]
     fn test_save_to_buffer_format_and_nodes() {
         unsafe {
@@ -526,6 +540,13 @@ mod tests {
         }
     }
 
+    /// Save a doc without an XML declaration and compare the output.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` are non-NULL (asserted) and valid until freed;
+    ///   `ctxt` is valid until `xmlSaveFinish`; the buffer content is
+    ///   valid while the byte slice is read.
     #[test]
     fn test_save_no_decl() {
         unsafe {
@@ -544,6 +565,14 @@ mod tests {
         }
     }
 
+    /// Set an indent string and verify it appears in the serialized output.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `buf` and `ctxt` are non-NULL (asserted) and valid until
+    ///   their respective frees; the indent string is a static
+    ///   NUL-terminated string valid for `xmlSaveSetIndentString`; the
+    ///   buffer content is valid while the byte slice is read.
     #[test]
     fn test_save_set_indent_string() {
         unsafe {
@@ -570,6 +599,15 @@ mod tests {
         }
     }
 
+    /// NULL and invalid arguments must be rejected without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlSaveToFd`, `xmlSaveFlush`, `xmlSaveFinish`, `xmlSaveClose`,
+    ///   `xmlSaveSetIndentString`, `xmlSaveSetEscape`,
+    ///   `xmlSaveSetAttrEscape`, `xmlSaveDoc` and `xmlSaveTree` handle NULL
+    ///   contexts/documents as documented no-ops returning an error code;
+    ///   no pointer is dereferenced.
     #[test]
     fn test_save_close_null_and_errors() {
         unsafe {

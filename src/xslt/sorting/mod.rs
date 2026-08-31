@@ -523,6 +523,12 @@ mod tests {
         assert_eq!(XSLT_SORT_CASE_LOWER_FIRST, 1);
     }
 
+    /// Compiling a sort with NULL arguments returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltCompileSort` returns NULL on NULL `ctxt`/`node` before
+    ///   dereferencing them, so passing `ptr::null_mut()` reads no memory.
     #[test]
     fn test_compile_sort_null() {
         unsafe {
@@ -530,6 +536,13 @@ mod tests {
         }
     }
 
+    /// Freeing NULL sort structures is a no-op.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreeSort` and `xsltFreeSortList` return early on NULL
+    ///   pointers before dereferencing, so the unsafe block frees no
+    ///   memory.
     #[test]
     fn test_free_sort_null() {
         unsafe {

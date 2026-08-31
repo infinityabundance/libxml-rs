@@ -828,7 +828,7 @@ typedef void (*xmlStructuredErrorFunc)(void *ctx, const xmlError *error);
 /* Functions */
 XMLPUBFUN void xmlSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handler);
 XMLPUBFUN void xmlSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc handler);
-XMLPUBFUN xmlErrorPtr xmlGetLastError(void);
+XMLPUBFUN const xmlError *xmlGetLastError(void);
 XMLPUBFUN int xmlCopyError(const xmlError *from, xmlError *to);
 XMLPUBFUN void xmlResetError(xmlError *err);
 XMLPUBFUN void xmlResetLastError(void);

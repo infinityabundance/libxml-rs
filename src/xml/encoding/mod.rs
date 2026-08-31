@@ -704,6 +704,14 @@ fn register_builtin_handlers() {
 }
 
 /// Helper to create and register an encoding handler.
+///
+/// # Safety
+///
+/// - `name_bytes` must be a valid byte slice containing a NUL terminator;
+///   `xmlMemStrdupImpl` scans it as a C string.
+/// - The `xmlMallocImpl` result is NULL-checked before `ptr::write`
+///   initializes the handler; the written handler is inserted into the
+///   global registry, which keeps it alive for the process lifetime.
 fn register_handler(
     name_bytes: &[u8],
     _input_enc: xmlCharEncoding,
@@ -750,6 +758,13 @@ fn register_handler(
 /// Clean up encoding handlers.
 ///
 /// Frees all registered handlers and resets the registry.
+///
+/// # Safety
+///
+/// - Every registered handler pointer must be NULL or a valid
+///   heap-allocated `_xmlCharEncodingHandler` whose `name` is NULL or a
+///   heap-allocated NUL-terminated string; each allocation is freed exactly
+///   once and must not be freed elsewhere.
 pub(crate) fn cleanup_encodings() {
     let mut handlers = ENCODING_HANDLERS.write();
     for &handler in handlers.iter() {
@@ -772,6 +787,12 @@ pub(crate) fn cleanup_encodings() {
 /// Searches the global handler registry for a handler whose name matches
 /// (case-insensitive). Returns a pointer to the handler, or `ptr::null_mut()`
 /// if not found.
+///
+/// # Safety
+///
+/// - `name` must be NULL or a valid pointer to a NUL-terminated string.
+/// - Each registry entry must be NULL or a valid `_xmlCharEncodingHandler`
+///   whose `name` is NULL or a valid NUL-terminated string.
 pub(crate) fn find_encoding_handler(name: *const xmlChar) -> *mut _xmlCharEncodingHandler {
     if name.is_null() {
         return ptr::null_mut();
@@ -830,6 +851,14 @@ pub(crate) fn add_encoding_handler(handler: *mut _xmlCharEncodingHandler) -> c_i
 /// Input conversion: convert from handler's input encoding to UTF-8.
 ///
 /// Calls the handler's `input.legacyFunc` callback. Returns bytes written or -1 on error.
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid pointer to an initialized
+///   `_xmlCharEncodingHandler`; the stored `input.legacyFunc` callback, when
+///   present, must be a valid function pointer.
+/// - `out` must be a valid mutable byte slice and `in_data` a valid byte
+///   slice; both stay valid for the duration of the callback.
 #[allow(dead_code)]
 pub(crate) fn char_enc_in_func(
     handler: *mut _xmlCharEncodingHandler,
@@ -856,6 +885,14 @@ pub(crate) fn char_enc_in_func(
 /// Output conversion: convert from UTF-8 to handler's output encoding.
 ///
 /// Calls the handler's `output.legacyFunc` callback. Returns bytes written or -1 on error.
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid pointer to an initialized
+///   `_xmlCharEncodingHandler`; the stored `output.legacyFunc` callback,
+///   when present, must be a valid function pointer.
+/// - `out` must be a valid mutable byte slice and `in_data` a valid byte
+///   slice; both stay valid for the duration of the callback.
 #[allow(dead_code)]
 pub(crate) fn char_enc_out_func(
     handler: *mut _xmlCharEncodingHandler,
@@ -885,6 +922,15 @@ pub(crate) fn char_enc_out_func(
 /// and appends the result to the output `_xmlBuffer`.
 ///
 /// Returns the number of bytes written to the output buffer, or -1 on error.
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid `_xmlCharEncodingHandler` whose
+///   `input.legacyFunc` callback is a valid function pointer.
+/// - `in_` and `out` must be NULL or valid `_xmlBuffer` pointers; `in_`'s
+///   `content` must be NULL or point to `use_` readable bytes, and `out`
+///   must stay valid while `append_to_xml_buffer` may reallocate its
+///   `content`.
 pub(crate) fn char_enc_in(
     handler: *mut _xmlCharEncodingHandler,
     out: *mut _xmlBuffer,
@@ -943,6 +989,15 @@ pub(crate) fn char_enc_in(
 /// `output.legacyFunc`, and appends the result to the output `_xmlBuffer`.
 ///
 /// Returns the number of bytes written to the output buffer, or -1 on error.
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid `_xmlCharEncodingHandler` whose
+///   `output.legacyFunc` callback is a valid function pointer.
+/// - `in_` and `out` must be NULL or valid `_xmlBuffer` pointers; `in_`'s
+///   `content` must be NULL or point to `use_` readable bytes, and `out`
+///   must stay valid while `append_to_xml_buffer` may reallocate its
+///   `content`.
 pub(crate) fn char_enc_out(
     handler: *mut _xmlCharEncodingHandler,
     out: *mut _xmlBuffer,
@@ -995,6 +1050,14 @@ pub(crate) fn char_enc_out(
 }
 
 /// Append bytes to an `_xmlBuffer`, reallocating if needed.
+///
+/// # Safety
+///
+/// - `buf` must be a valid `_xmlBuffer` whose `content` is NULL or points to
+///   `size` allocated bytes; `buf.content` may be replaced by a fresh
+///   `xmlReallocImpl` allocation when it must grow.
+/// - `data` must be a valid byte slice; after the call, `buf.content` holds
+///   `use_` initialized bytes.
 fn append_to_xml_buffer(buf: &mut _xmlBuffer, data: &[u8]) {
     if data.is_empty() {
         return;
@@ -1453,6 +1516,10 @@ pub(crate) const fn xmlGetCharEncodingName(enc: xmlCharEncoding) -> *const c_cha
 ///
 /// Parses an encoding name string to an `xmlCharEncoding` enum value,
 /// returned as `c_int`.
+///
+/// # Safety
+///
+/// - `name` must be NULL or a valid pointer to a NUL-terminated string.
 pub(crate) fn xmlParseCharEncoding(name: *const c_char) -> c_int {
     if name.is_null() {
         return xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int;
@@ -1478,6 +1545,11 @@ fn encoding_aliases() -> &'static parking_lot::RwLock<std::collections::HashMap<
 
 /// `xmlAddEncodingAlias` implementation: register `alias` for `name`.
 /// Returns 0 on success, -1 on error (NULL arguments).
+///
+/// # Safety
+///
+/// - `name` and `alias` must be NULL or valid pointers to NUL-terminated
+///   strings; both are copied before insertion into the alias table.
 pub(crate) fn add_encoding_alias(name: *const c_char, alias: *const c_char) -> c_int {
     if name.is_null() || alias.is_null() {
         return -1;
@@ -1490,6 +1562,10 @@ pub(crate) fn add_encoding_alias(name: *const c_char, alias: *const c_char) -> c
 
 /// `xmlDelEncodingAlias` implementation: remove `alias`.
 /// Returns 0 on success, -1 if the alias does not exist.
+///
+/// # Safety
+///
+/// - `alias` must be NULL or a valid pointer to a NUL-terminated string.
 pub(crate) fn del_encoding_alias(alias: *const c_char) -> c_int {
     if alias.is_null() {
         return -1;
@@ -1504,6 +1580,12 @@ pub(crate) fn del_encoding_alias(alias: *const c_char) -> c_int {
 
 /// `xmlGetEncodingAlias` implementation: return the canonical name for
 /// `alias`, or NULL when not registered.
+///
+/// # Safety
+///
+/// - `alias` must be NULL or a valid pointer to a NUL-terminated string.
+/// - The returned pointer is a leaked, process-lifetime NUL-terminated
+///   string, or NULL; the caller must not free it.
 pub(crate) fn get_encoding_alias(alias: *const c_char) -> *const c_char {
     if alias.is_null() {
         return ptr::null();
@@ -1553,6 +1635,14 @@ pub(crate) fn xmlCharEncOutFunc(
 /// Creates a new encoding handler with the given name and conversion functions.
 /// The name string is duplicated. Returns a pointer to the new handler,
 /// or `ptr::null_mut()` on allocation failure.
+///
+/// # Safety
+///
+/// - `name` must be NULL or a valid pointer to a NUL-terminated string that
+///   stays valid until it is duplicated.
+/// - `input` and `output` must be valid function pointers matching the
+///   callback ABI; on success the returned handler owns a duplicated name
+///   and must be released with `xmlDelEncodingHandler`.
 pub(crate) fn xmlNewCharEncodingHandler(
     name: *const c_char,
     input: xmlCharEncodingInputFunc,
@@ -1600,6 +1690,13 @@ pub(crate) fn xmlNewCharEncodingHandler(
 /// `xmlDelEncodingHandler` implementation.
 ///
 /// Frees an encoding handler previously created with `xmlNewCharEncodingHandler`.
+///
+/// # Safety
+///
+/// - `handler` must be NULL or a valid heap-allocated
+///   `_xmlCharEncodingHandler` whose `name` is NULL or a heap-allocated
+///   NUL-terminated string; both allocations are freed exactly once, and the
+///   handler must have been removed from the registry.
 #[allow(dead_code)]
 pub(crate) fn xmlDelEncodingHandler(handler: *mut _xmlCharEncodingHandler) {
     if handler.is_null() {
@@ -1651,6 +1748,12 @@ pub(crate) fn xmlCleanupCharEncodingHandlers() {
 ///  - iconv/ICU-only encoding           → XML_ERR_UNSUPPORTED_ENCODING
 ///
 /// The returned handler is a static registry entry and must NOT be freed.
+///
+/// # Safety
+///
+/// - `out` must be a valid pointer to a `*mut c_void` out-parameter; it is
+///   written with NULL or a pointer to a static registry handler that the
+///   caller must not free.
 pub(crate) fn xmlLookupCharEncodingHandler(enc: c_int, out: *mut *mut c_void) -> c_int {
     if out.is_null() {
         return crate::abi::types::XML_ERR_ARGUMENT;
@@ -1701,6 +1804,14 @@ pub(crate) fn xmlGetCharEncodingHandler(enc: c_int) -> *mut c_void {
 /// Unlike upstream, no iconv/ICU backend exists, so encodings without a native
 /// converter fall through to `find_extra_handler` (custom impl / deprecated
 /// global registry) and otherwise report XML_ERR_UNSUPPORTED_ENCODING.
+///
+/// # Safety
+///
+/// - `out` must be a valid pointer to a `*mut c_void` out-parameter; it is
+///   written with NULL or a heap-allocated handler copy the caller owns.
+/// - `name` must be NULL or a valid pointer to a NUL-terminated string.
+/// - `implCtxt` is an opaque context forwarded to `find_extra_handler` and
+///   must be valid for the callback that consumes it.
 pub(crate) fn xmlCreateCharEncodingHandler(
     name: *const c_char,
     flags: c_int,
@@ -1793,6 +1904,15 @@ pub(crate) fn xmlCreateCharEncodingHandler(
 /// Tries the caller-supplied custom implementation first, then the deprecated
 /// global handler registry. iconv/ICU do not exist in the candidate, so the
 /// final result is XML_ERR_UNSUPPORTED_ENCODING.
+///
+/// # Safety
+///
+/// - `norig` and `name` must be valid byte slices; NUL-terminated copies are
+///   built from them for lookups and callbacks.
+/// - `out` must be a valid out-parameter; it is written with NULL or a
+///   registry handler pointer that must not be freed.
+/// - `implCtxt` must be a valid context for the custom `impl_` callback when
+///   one is supplied.
 fn find_extra_handler(
     norig: &[u8],
     name: &[u8],
@@ -1849,6 +1969,15 @@ pub(crate) fn xmlOpenCharEncodingHandler(
 /// Creates a handler backed by modern `xmlCharEncConvFunc` callbacks (with
 /// per-direction contexts and a context destructor). The handler must be
 /// released with `xmlCharEncCloseFunc`.
+///
+/// # Safety
+///
+/// - `out` must be a valid pointer to a `*mut c_void` out-parameter.
+/// - `name` must be NULL or a valid pointer to a NUL-terminated string.
+/// - `input` and `output` must be valid `xmlCharEncConvFunc` callbacks;
+///   `inputCtxt` and `outputCtxt` are opaque contexts consumed by them and
+///   by `ctxtDtor`, which is invoked on each non-NULL context when
+///   allocation fails (and later by `xmlCharEncCloseFunc`).
 pub(crate) fn xmlCharEncNewCustomHandler(
     name: *const c_char,
     input: xmlCharEncConvFunc,
@@ -2372,6 +2501,14 @@ mod tests {
         assert!(find_encoding_handler(ptr::null()).is_null());
     }
 
+    /// Verify registering a handler in the global registry and looking it
+    /// up.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlMallocImpl` and `xmlMemStrdupImpl` results are NULL-checked
+    ///   before `ptr::write` initializes the handler; the handler is removed
+    ///   from the registry before its allocations are freed exactly once.
     #[test]
     fn test_add_encoding_handler() {
         let handler = unsafe {
@@ -2447,6 +2584,13 @@ mod tests {
 
     // ── Built-in handler callbacks ─────────────────────────────────────────
 
+    /// Verify the UTF-8 identity callback copies bytes up to the smaller
+    /// length.
+    ///
+    /// # Safety
+    ///
+    /// - `output` is a valid mutable 64-byte buffer and `input` a valid byte
+    ///   slice; the callback writes at most the minimum of the two lengths.
     #[test]
     fn test_utf8_handler_identity() {
         let input = b"Hello, UTF-8!";
@@ -2463,6 +2607,13 @@ mod tests {
         assert_eq!(inlen, input.len() as c_int);
     }
 
+    /// Verify a UTF-16LE output/input callback round-trip.
+    ///
+    /// # Safety
+    ///
+    /// - The `utf16_buf` and `decoded` arrays are valid buffers of the given
+    ///   lengths, and the input slices are valid; the callbacks write only
+    ///   up to the advertised output length.
     #[test]
     fn test_utf16le_handler_roundtrip() {
         init_encodings();
@@ -2501,6 +2652,13 @@ mod tests {
 
     // ── xmlBuffer operations ───────────────────────────────────────────────
 
+    /// Verify `append_to_xml_buffer` grows the buffer and copies bytes.
+    ///
+    /// # Safety
+    ///
+    /// - `content` is a valid 64-byte allocation owned by the test and freed
+    ///   exactly once with `xmlFreeImpl`; `buf` keeps consistent `use_` and
+    ///   `size` fields while `append_to_xml_buffer` may reallocate `content`.
     #[test]
     fn test_append_to_xml_buffer() {
         unsafe {
@@ -2551,6 +2709,14 @@ mod tests {
         );
     }
 
+    /// Verify `xmlNewCharEncodingHandler` and `xmlDelEncodingHandler`
+    /// round-trip.
+    ///
+    /// # Safety
+    ///
+    /// - `name` is a valid NUL-terminated string; the returned handler is
+    ///   non-NULL, its `name` field is a valid NUL-terminated string, and it
+    ///   is freed exactly once by `xmlDelEncodingHandler`.
     #[test]
     fn test_xml_new_and_del_encoding_handler() {
         let name = c"TestEnc".as_ptr() as *const c_char;

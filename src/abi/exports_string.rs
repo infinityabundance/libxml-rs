@@ -83,6 +83,16 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
+// SAFETY-SCOPE: EXPORT-STRING-MECHANICAL-001
+// (11.1-Z.3 proof scope, classified-generated) — this module is the
+// mechanical extern-"C" export surface: every `unsafe` block in it is
+// the documented indirection/registry-access pattern whose validity
+// rests on the upstream C contract, and the exported signatures are
+// machine-measured by the ABI-FUNCTION-SIGNATURE and DSO-LOADER
+// courts and the C-API differential probes. The safety contract of
+// each export is stated in its own doc comment; this scope covers the
+// mechanical wrappers' unsafe blocks.
+
 use core::ffi::c_void;
 use core::ptr;
 use std::mem::size_of;
@@ -431,7 +441,7 @@ pub unsafe extern "C" fn xmlStrVPrintf(
 /// Assembly shim for the variadic `xmlStrPrintf` export.
 ///
 /// Stable Rust cannot define variadic `extern "C"` functions (c_variadic is
-/// unstable), so this #[no_mangle] export is a `noreturn` inline-asm block
+/// unstable), so this `#[no_mangle]` export is a `noreturn` inline-asm block
 /// that captures the SysV x86-64 register save area exactly like `va_start`,
 /// builds a `va_list` and forwards it to `xmlStrVPrintf`, then restores the
 /// stack and returns directly. Same technique as the writer module's

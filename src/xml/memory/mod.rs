@@ -100,6 +100,12 @@ pub const fn cleanup_memory() {
 mod tests {
     use super::*;
 
+    /// `xmlMallocImpl`/`xmlFreeImpl` round trip through the ABI allocator.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` is non-NULL (asserted) and allocator-owned, valid for 100
+    ///   bytes, and freed with `xmlFreeImpl` exactly once.
     #[test]
     fn test_memory_module_delegates_to_allocator() {
         unsafe {
@@ -109,6 +115,13 @@ mod tests {
         }
     }
 
+    /// `xmlMallocZero` returns zero-initialized allocator memory.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` is non-NULL (asserted) and allocator-owned, valid for 64
+    ///   zeroed bytes while the slice is read, and freed with
+    ///   `xmlFreeImpl` exactly once.
     #[test]
     fn test_memory_zero_alloc() {
         unsafe {

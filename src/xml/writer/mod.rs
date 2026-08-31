@@ -66,6 +66,14 @@
 //! DTD bracket from StartDTD (R-000152), do not return raw byte counts
 //! from encoder-active writes (R-000151) and do not escape the apostrophe
 //! (R-000154) — every one of these is observable through the C ABI.
+//!
+//! # Safety
+//!
+//! The only module-level `unsafe` block is the `unsafe extern` declaration
+//! of the platform `vsnprintf` (system libc). It is only invoked through
+//! `vformat_buf`, which supplies a valid destination buffer, a valid printf
+//! format string and a valid va_list pointer, and validates the return
+//! value before using the output.
 
 #![allow(
     missing_docs,
@@ -3682,6 +3690,12 @@ mod tests {
     }
 
     /// Helper: get the buffer content as a string.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` must be NULL or a valid pointer to a `_xmlBuffer`; its
+    ///   `content` must be NULL or point to `use_` readable bytes, and the
+    ///   pointer must stay valid for the duration of the call.
     unsafe fn buf_to_string(buf: *mut _xmlBuffer) -> String {
         let content = io::buf_content(buf);
         let len = io::buf_length(buf);
@@ -3702,6 +3716,13 @@ mod tests {
     // Test: Write a simple document
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify a simple document is written through the memory buffer.
+    ///
+    /// # Safety
+    ///
+    /// - `create_test_writer` returns a valid writer and `_xmlBuffer`; the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_simple_document() {
         unsafe {
@@ -3753,6 +3774,13 @@ mod tests {
     // Test: Write elements with attributes
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify elements with attributes are written and escaped.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_element_with_attributes() {
         unsafe {
@@ -3795,6 +3823,13 @@ mod tests {
     // Test: Write with namespaces
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify namespaced elements and attributes are written.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_with_namespaces() {
         unsafe {
@@ -3838,6 +3873,13 @@ mod tests {
     // Test: Write text, CDATA, comments, PIs
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify text, CDATA, comments and processing instructions are written.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_text_cdata_comment_pi() {
         unsafe {
@@ -3895,6 +3937,13 @@ mod tests {
     // Test: DTD writing
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify a DTD declaration is written.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_dtd() {
         unsafe {
@@ -3930,6 +3979,13 @@ mod tests {
     // Test: DTD with internal subset declarations
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify a DTD with an internal subset is written.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals passed to the writer functions are
+    ///   valid, and the writer and buffer are freed exactly once at the end.
     #[test]
     fn test_write_dtd_with_subset() {
         unsafe {
@@ -4005,6 +4061,13 @@ mod tests {
     // Test: Indentation control
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify indentation control with a custom indent string.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated indent string is valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_indentation_control() {
         unsafe {
@@ -4043,6 +4106,13 @@ mod tests {
     // Test: Memory output
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify writing to a memory buffer created with `xmlNewTextWriterMemory`.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid buffer from `io::buf_create`; the writer borrows
+    ///   it and is freed with `xmlFreeTextWriter`, then `buf` is freed
+    ///   exactly once with `io::buf_free`.
     #[test]
     fn test_memory_output() {
         unsafe {
@@ -4075,6 +4145,13 @@ mod tests {
     // Test: Flush and close
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify flushing mid-document and closing the writer.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_flush_and_close() {
         unsafe {
@@ -4100,6 +4177,12 @@ mod tests {
     // Test: Edge cases — null writer, null parameters
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify every writer entry point accepts a NULL writer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL writers and NULL string arguments are accepted and return -1
+    ///   without dereferencing; `xmlFreeTextWriter` accepts NULL.
     #[test]
     fn test_null_handling() {
         unsafe {
@@ -4158,6 +4241,13 @@ mod tests {
     // Test: Nested elements
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify deeply nested elements are written in order.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_nested_elements() {
         unsafe {
@@ -4190,6 +4280,13 @@ mod tests {
     // Test: Self-closing element (no content)
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify an empty element is self-closing.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated element name is valid, and the writer and buffer are
+    ///   freed exactly once at the end.
     #[test]
     fn test_self_closing_element() {
         unsafe {
@@ -4216,6 +4313,13 @@ mod tests {
     // Test: Full end element (not self-closing)
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify `xmlTextWriterFullEndElement` emits an explicit end tag.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated element name is valid, and the writer and buffer are
+    ///   freed exactly once at the end.
     #[test]
     fn test_full_end_element() {
         unsafe {
@@ -4247,6 +4351,14 @@ mod tests {
     // Test: WriteElement (element with inline content)
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify `xmlTextWriterWriteElement` writes an element with inline
+    /// content.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_write_element_inline() {
         unsafe {
@@ -4272,6 +4384,13 @@ mod tests {
     // Test: XML escaping in text content
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify XML escaping of text content.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_text_escaping() {
         unsafe {
@@ -4299,6 +4418,13 @@ mod tests {
     // Test: Raw content (no escaping)
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify raw content is written without escaping.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_raw_content() {
         unsafe {
@@ -4326,6 +4452,13 @@ mod tests {
     // Test: Base64 writing
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify base64 content is written with explicit byte length.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid; `test_data`
+    ///   is a valid byte slice whose length is passed explicitly, and the
+    ///   writer and buffer are freed exactly once at the end.
     #[test]
     fn test_base64_write() {
         unsafe {
@@ -4359,6 +4492,13 @@ mod tests {
     // Test: Incremental CDATA/comment/PI
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify incremental CDATA, comment and PI writing.
+    ///
+    /// # Safety
+    ///
+    /// - The writer and buffer from `create_test_writer` are valid, the
+    ///   NUL-terminated string literals are valid, and the writer and buffer
+    ///   are freed exactly once at the end.
     #[test]
     fn test_incremental_cdata_comment_pi() {
         unsafe {
@@ -4414,6 +4554,11 @@ mod tests {
     // Test: xmlNewTextWriterFilename returns NULL for NULL uri
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify `xmlNewTextWriterFilename` returns NULL for a NULL uri.
+    ///
+    /// # Safety
+    ///
+    /// - A NULL uri is accepted and returns NULL without dereferencing.
     #[test]
     fn test_new_writer_filename_null() {
         unsafe {
@@ -4426,6 +4571,12 @@ mod tests {
     // Test: xmlNewTextWriter returns NULL for NULL output
     // ═══════════════════════════════════════════════════════════════════════════
 
+    /// Verify `xmlNewTextWriter` returns NULL for a NULL output buffer.
+    ///
+    /// # Safety
+    ///
+    /// - A NULL output pointer is accepted and returns NULL without
+    ///   dereferencing.
     #[test]
     fn test_new_writer_null_output() {
         unsafe {

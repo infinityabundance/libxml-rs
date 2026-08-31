@@ -890,11 +890,10 @@ pub unsafe fn validate_id_refs(
 ///
 /// # SAFETY
 ///
-/// - `ctxt`, `doc`, `elem`, `attr` may be NULL.
+/// - `ctxt`, `doc`, `attr` may be NULL.
 pub unsafe fn validate_attribute_decl(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    _elem: *mut _xmlNode,
     attr: *mut _xmlAttribute,
 ) -> c_int {
     if attr.is_null() {
@@ -1752,7 +1751,7 @@ pub unsafe fn validate_dtd(
         let ctx = unsafe { &*(data as *mut ValidateDtdCtx) };
         unsafe {
             let attr = payload as *mut _xmlAttribute;
-            validate_attribute_decl(ctx.ctxt, ctx.doc, ptr::null_mut(), attr);
+            validate_attribute_decl(ctx.ctxt, ctx.doc, attr);
         }
     }
 
@@ -2321,6 +2320,14 @@ unsafe fn split_qname4(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *cons
 
 /// Free an xmlID entry (upstream xmlFreeID). Also clears the owning
 /// attribute's id/atype back-references.
+///
+/// # Safety
+///
+/// - `id` must be NULL or a pointer to a heap-allocated `_xmlID` whose
+///   `value` and `name` fields are NULL or pointers to strings allocated by
+///   `xml_strdup`; the function frees both, clears the `id` and `atype`
+///   fields of `attr` when `attr` is non-NULL (it must then be a valid
+///   `_xmlAttr`), frees `id` itself, and leaves it dangling.
 unsafe fn free_id(id: *mut _xmlID) {
     if id.is_null() {
         return;
@@ -2348,6 +2355,15 @@ unsafe extern "C" fn free_id_entry(payload: *mut c_void, _name: *mut xmlChar) {
 
 /// Upstream xmlAddIDInternal: add an attribute value as an ID.
 /// Returns 1 on success, 0 if the ID already exists, -1 on OOM.
+///
+/// # Safety
+///
+/// - `attr` must be non-NULL and a valid `_xmlAttr` whose `doc` field is a
+///   valid `_xmlDoc`; `value` must be NULL or a valid null-terminated
+///   string (a NULL or empty value returns 0); `id_ptr` may be NULL or a
+///   valid writable out-pointer. On success the created `_xmlID` is owned by
+///   the document's ID table and must later be released via `remove_id` or
+///   `free_id_table`.
 unsafe fn add_id_internal(
     attr: *mut _xmlAttr,
     value: *const xmlChar,
@@ -2467,6 +2483,12 @@ pub unsafe fn remove_id(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
 }
 
 /// Free an xmlRef entry.
+///
+/// # Safety
+///
+/// - `r` must be NULL or a pointer to a heap-allocated `_xmlRef` whose
+///   `value` and `name` fields are NULL or `xml_strdup`-allocated strings;
+///   the function frees them and `r` itself, after which `r` is dangling.
 unsafe fn free_ref(r: *mut _xmlRef) {
     if r.is_null() {
         return;
@@ -2736,7 +2758,7 @@ pub unsafe fn get_refs(doc: *mut _xmlDoc, id: *const xmlChar) -> *mut crate::xml
 }
 
 /// Upstream `xmlIsID(doc, elem, attr)`: is this attribute an ID? Handles the
-/// HTML special cases (id attribute; name attribute on <a>) and the DTD
+/// HTML special cases (id attribute; name attribute on `<a>`) and the DTD
 /// declaration lookup, plus the xml:id namespace convention.
 ///
 /// # SAFETY
@@ -3743,6 +3765,15 @@ struct ValidState {
 
 /// Find the declaration for an element (upstream xmlValidGetElemDecl).
 /// Reports "No declaration for element %s" when absent.
+///
+/// # Safety
+///
+/// - `ctxt`, `doc` and `elem` must be valid non-NULL pointers (checked)
+///   with a non-NULL `name` field on `elem` (checked); the `ns` field of
+///   `elem` and its `prefix` may be NULL; the `intSubset` and `extSubset`
+///   fields of `doc` must be valid DTD pointers or NULL; `extsubset` may be
+///   NULL or a valid writable `c_int` out-pointer that is set to 1 when the
+///   declaration comes from the external subset.
 unsafe fn valid_get_elem_decl(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
@@ -3794,6 +3825,15 @@ unsafe fn valid_get_elem_decl(
 }
 
 /// Upstream xmlValidateCheckMixed: is `qname` in the MIXED content list?
+///
+/// # Safety
+///
+/// - `cont` must be NULL or a valid `_xmlElementContent` chain whose
+///   `type_`, `c1`, `c2`, `name` and `prefix` fields are valid for the
+///   traversal (leaf `name` and `prefix` are NULL or null-terminated
+///   strings); `qname` must be a valid null-terminated string (NULL is
+///   tolerated via `split_qname3` and `xml_strcmp`); `ctxt` must be a valid
+///   context or NULL (`vctxt_error` tolerates NULL).
 unsafe fn validate_check_mixed(
     ctxt: *mut _xmlValidCtxt,
     cont: *mut _xmlElementContent,
@@ -3871,6 +3911,13 @@ unsafe fn validate_check_mixed(
 
 /// Does `prefix` equal the first `len` bytes of `qname` (upstream
 /// xmlStrncmp(prefix, qname, plen))?
+///
+/// # Safety
+///
+/// - `prefix` and `qname` must be valid null-terminated strings (NULL
+///   yields an empty slice via `xmlstr_to_bytes`); `len` must be the
+///   non-negative byte count to compare, and only bytes within the shorter
+///   slice are read because both lengths are checked before slicing.
 unsafe fn prefix_matches(prefix: *const xmlChar, qname: *const xmlChar, len: c_int) -> bool {
     unsafe {
         let p = string::xmlstr_to_bytes(prefix);
@@ -3938,6 +3985,14 @@ impl NfaBuilder {
 /// occurrence quantifier on the node is applied by wrapping the fragment
 /// with epsilon edges (standard Thompson construction, matching upstream's
 /// automaton shape for OPT/MULT/PLUS).
+///
+/// # Safety
+///
+/// - `model` must be NULL or a valid `_xmlElementContent` tree: `type_` and
+///   `ocur` must be known enum values, `name` must be NULL or a valid
+///   null-terminated string, and `c1`/`c2` must be NULL or valid child
+///   nodes; the tree must be acyclic so that recursion terminates. NULL is
+///   handled by emitting an empty fragment.
 unsafe fn compile_content_sub(
     b: &mut NfaBuilder,
     model: *mut _xmlElementContent,
@@ -4080,6 +4135,12 @@ unsafe fn eps_closure(nfa: &ContentModelNfa, states: &[u32]) -> Vec<u32> {
 }
 
 /// Create an exec context over a compiled content model. Returns NULL on OOM.
+///
+/// # Safety
+///
+/// - `nfa` must be non-NULL and point to a valid compiled `ContentModelNfa`
+///   (from `build_content_nfa`) that outlives the returned exec; the caller
+///   must free the returned `ContentModelExec` with `free_content_exec`.
 unsafe fn new_content_exec(nfa: *mut ContentModelNfa) -> *mut ContentModelExec {
     unsafe {
         let exec = allocator::xmlMallocImpl(size_of::<ContentModelExec>()) as *mut ContentModelExec;
@@ -4094,6 +4155,13 @@ unsafe fn new_content_exec(nfa: *mut ContentModelNfa) -> *mut ContentModelExec {
 }
 
 /// Free an exec context.
+///
+/// # Safety
+///
+/// - `exec` must be NULL or a pointer previously returned by
+///   `new_content_exec`; the `current` state set is dropped in place and the
+///   struct is freed, leaving `exec` dangling. The referenced NFA is not
+///   freed.
 unsafe fn free_content_exec(exec: *mut ContentModelExec) {
     if exec.is_null() {
         return;
@@ -4108,6 +4176,13 @@ unsafe fn free_content_exec(exec: *mut ContentModelExec) {
 ///
 /// Mirrors upstream xmlRegExecPushString contract: 1 = match complete,
 /// 0 = more input needed, -1 = cannot continue (Misplaced).
+///
+/// # Safety
+///
+/// - `exec` must be non-NULL and a valid `ContentModelExec` created by
+///   `new_content_exec`, with `nfa` pointing to a valid compiled
+///   `ContentModelNfa`; `value` must be NULL (end of input) or a valid
+///   null-terminated element name.
 unsafe fn content_exec_push(exec: *mut ContentModelExec, value: *const xmlChar) -> c_int {
     unsafe {
         if exec.is_null() {
@@ -4146,6 +4221,15 @@ unsafe fn content_exec_push(exec: *mut ContentModelExec, value: *const xmlChar) 
 }
 
 /// Upstream vstateVPush: push a validation state for an open element.
+///
+/// # Safety
+///
+/// - `ctxt` must be a non-NULL valid `_xmlValidCtxt` with a consistent
+///   `vstateTab`/`vstateNr`/`vstateMax` (an unallocated `vstateTab` is
+///   allowed while `vstateMax` is 0; `xmlReallocImpl` grows it); `elem_decl`
+///   may be NULL or a valid `_xmlElement` declaration; `node` may be NULL or
+///   a valid `_xmlNode`. The pushed state must later be popped with
+///   `vstate_vpop`.
 unsafe fn vstate_vpush(
     ctxt: *mut _xmlValidCtxt,
     elem_decl: *mut _xmlElement,
@@ -4206,6 +4290,13 @@ unsafe fn vstate_vpush(
 }
 
 /// Upstream vstateVPop: pop the current validation state, freeing its exec.
+///
+/// # Safety
+///
+/// - `ctxt` must be a non-NULL valid `_xmlValidCtxt` whose `vstateTab` is
+///   non-NULL and whose `vstateNr` counts states previously pushed by
+///   `vstate_vpush`; the exec stored in the popped slot is freed, so the
+///   slot must not be used afterwards.
 unsafe fn vstate_vpop(ctxt: *mut _xmlValidCtxt) -> c_int {
     unsafe {
         if (*ctxt).vstateNr < 1 {
@@ -4538,6 +4629,13 @@ mod tests {
 
     // ── xmlValidateName tests ─────────────────────────────────────────────
 
+    /// Verify that `validate_name` accepts a NULL value and returns 0.
+    ///
+    /// # Safety
+    ///
+    /// - The only pointer passed is NULL; `validate_name` checks
+    ///   `value.is_null()` before any dereference, so no pointer validity
+    ///   requirement applies beyond the callee's NULL tolerance.
     #[test]
     fn test_validate_name_null() {
         unsafe {
@@ -4545,6 +4643,13 @@ mod tests {
         }
     }
 
+    /// Verify that `validate_name` rejects an empty string.
+    ///
+    /// # Safety
+    ///
+    /// - `s` points to a 1-byte stack array containing a NUL terminator;
+    ///   `validate_name` reads it as a null-terminated string and the array
+    ///   is live for the whole call.
     #[test]
     fn test_validate_name_empty() {
         unsafe {
@@ -4553,6 +4658,13 @@ mod tests {
         }
     }
 
+    /// Verify that valid XML Names are accepted by `validate_name`.
+    ///
+    /// # Safety
+    ///
+    /// - Each `s` is a heap allocation from `c_str` holding the
+    ///   NUL-terminated test string, live for the `validate_name` call, and
+    ///   freed exactly once with `xmlFreeImpl` before the loop moves on.
     #[test]
     fn test_validate_name_valid() {
         unsafe {
@@ -4565,6 +4677,13 @@ mod tests {
         }
     }
 
+    /// Verify that invalid XML Names are rejected by `validate_name`.
+    ///
+    /// # Safety
+    ///
+    /// - Each `s` is a heap allocation from `c_str` holding the
+    ///   NUL-terminated test string, live for the `validate_name` call, and
+    ///   freed exactly once with `xmlFreeImpl` before the loop moves on.
     #[test]
     fn test_validate_name_invalid() {
         unsafe {
@@ -4577,6 +4696,13 @@ mod tests {
         }
     }
 
+    /// Verify that a whitespace-separated list of Names validates.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated list, live
+    ///   for the `validate_names` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_names_valid() {
         unsafe {
@@ -4586,6 +4712,13 @@ mod tests {
         }
     }
 
+    /// Verify that a list containing an invalid Name is rejected.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated list, live
+    ///   for the `validate_names` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_names_invalid() {
         unsafe {
@@ -4597,6 +4730,12 @@ mod tests {
 
     // ── xmlValidateNmtoken tests ──────────────────────────────────────────
 
+    /// Verify that `validate_nmtoken` accepts a NULL value and returns 0.
+    ///
+    /// # Safety
+    ///
+    /// - The only pointer passed is NULL; `validate_nmtoken` checks for NULL
+    ///   before dereferencing, so no pointer validity requirement applies.
     #[test]
     fn test_validate_nmtoken_null() {
         unsafe {
@@ -4604,6 +4743,13 @@ mod tests {
         }
     }
 
+    /// Verify that valid NMTOKENs are accepted by `validate_nmtoken`.
+    ///
+    /// # Safety
+    ///
+    /// - Each `s` is a heap allocation from `c_str` holding the
+    ///   NUL-terminated test string, live for the `validate_nmtoken` call,
+    ///   and freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_validate_nmtoken_valid() {
         unsafe {
@@ -4621,6 +4767,13 @@ mod tests {
         }
     }
 
+    /// Verify that a string with whitespace is not a valid NMTOKEN.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated string, live
+    ///   for the `validate_nmtoken` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_nmtoken_invalid() {
         unsafe {
@@ -4630,6 +4783,13 @@ mod tests {
         }
     }
 
+    /// Verify that a whitespace-separated list of NMTOKENs validates.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated list, live
+    ///   for the `validate_nmtokens` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_nmtokens_valid() {
         unsafe {
@@ -4641,6 +4801,14 @@ mod tests {
 
     // ── xmlValidateAttributeValue tests ───────────────────────────────────
 
+    /// Verify that CDATA attribute values always validate, including empty.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation (NUL-terminated, live for the call,
+    ///   freed exactly once after); `empty` is a stack byte array with a NUL
+    ///   terminator, live for the call; `validate_attribute_value` reads
+    ///   both as null-terminated strings.
     #[test]
     fn test_validate_attribute_value_cdata() {
         unsafe {
@@ -4657,6 +4825,13 @@ mod tests {
         }
     }
 
+    /// Verify that ID attribute values require a valid Name.
+    ///
+    /// # Safety
+    ///
+    /// - `valid` and `invalid` are `c_str` allocations holding
+    ///   NUL-terminated strings, live for their calls and each freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_id() {
         unsafe {
@@ -4676,6 +4851,12 @@ mod tests {
         }
     }
 
+    /// Verify that a valid IDREF attribute value validates.
+    ///
+    /// # Safety
+    ///
+    /// - `valid` is a `c_str` allocation holding the NUL-terminated string,
+    ///   live for the call and freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_idref() {
         unsafe {
@@ -4688,6 +4869,13 @@ mod tests {
         }
     }
 
+    /// Verify that IDREFS values accept a valid list and reject bad Names.
+    ///
+    /// # Safety
+    ///
+    /// - `valid` and `invalid` are `c_str` allocations holding
+    ///   NUL-terminated strings, live for their calls and each freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_idrefs() {
         unsafe {
@@ -4707,6 +4895,12 @@ mod tests {
         }
     }
 
+    /// Verify that an ENTITY attribute value validates as a Name.
+    ///
+    /// # Safety
+    ///
+    /// - `valid` is a `c_str` allocation holding the NUL-terminated string,
+    ///   live for the call and freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_entity() {
         unsafe {
@@ -4719,6 +4913,14 @@ mod tests {
         }
     }
 
+    /// Verify that NMTOKEN attribute values accept valid NMTOKENs and
+    ///   reject whitespace.
+    ///
+    /// # Safety
+    ///
+    /// - `valid` and `invalid` are `c_str` allocations holding
+    ///   NUL-terminated strings, live for their calls and each freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_nmtoken() {
         unsafe {
@@ -4738,6 +4940,13 @@ mod tests {
         }
     }
 
+    /// Verify NULL attribute values: CDATA returns 1, ID returns 0.
+    ///
+    /// # Safety
+    ///
+    /// - Only NULL `value` pointers are passed; the callee checks for NULL
+    ///   before dereferencing (CDATA returns 1, the ID path returns 0), so
+    ///   no pointer validity requirement applies.
     #[test]
     fn test_validate_attribute_value_null() {
         unsafe {
@@ -4757,6 +4966,15 @@ mod tests {
 
     // ── xmlValidateEnumeration tests ──────────────────────────────────────
 
+    /// Verify that a value matching one enumeration entry validates.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt` from `new_valid_ctxt` (released
+    ///   via `free_valid_ctxt` at the end); `e1` is a valid enumeration
+    ///   chain of zero-initialized nodes whose `name` fields are `xml_strdup`
+    ///   strings and whose `next` links are valid (last is NULL); `value` is
+    ///   a NUL-terminated string; all stay live for the call.
     #[test]
     fn test_validate_enumeration_valid() {
         unsafe {
@@ -4791,6 +5009,14 @@ mod tests {
         }
     }
 
+    /// Verify that a value matching no enumeration entry fails.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt` from `new_valid_ctxt`; `e1` is a
+    ///   valid single enumeration node with a `xml_strdup` name and NULL
+    ///   `next`; `value` is a NUL-terminated string; all stay live for the
+    ///   call.
     #[test]
     fn test_validate_enumeration_invalid() {
         unsafe {
@@ -4811,6 +5037,14 @@ mod tests {
 
     // ── xmlValidateNotationUse tests ──────────────────────────────────────
 
+    /// Verify that a declared notation is accepted by `validate_notation_use`.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` come from `make_test_doc` and are valid and linked;
+    ///   `notation_name` is a NUL-terminated `c_str` allocation; `ctxt` is a
+    ///   valid `_xmlValidCtxt`; all remain live until the call completes and
+    ///   are released with `free_valid_ctxt` and `tree::free_doc`.
     #[test]
     fn test_validate_notation_use_valid() {
         unsafe {
@@ -4829,6 +5063,14 @@ mod tests {
         }
     }
 
+    /// Verify that an undeclared notation is rejected.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` comes from `make_test_doc` and is valid; `ctxt` is a valid
+    ///   `_xmlValidCtxt`; `notation_name` is a NUL-terminated `c_str`
+    ///   allocation freed after the call; all remain live until the call
+    ///   completes.
     #[test]
     fn test_validate_notation_use_invalid() {
         unsafe {
@@ -4848,6 +5090,14 @@ mod tests {
 
     // ── xmlNewValidCtxt / xmlFreeValidCtxt tests ─────────────────────────
 
+    /// Verify `new_valid_ctxt` initializes a context and `free_valid_ctxt`
+    ///   releases it.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid, zero-initialized `_xmlValidCtxt` returned by
+    ///   `new_valid_ctxt`; it is dereferenced while live and freed exactly
+    ///   once by `free_valid_ctxt`.
     #[test]
     fn test_new_free_valid_ctxt() {
         unsafe {
@@ -4859,6 +5109,12 @@ mod tests {
         }
     }
 
+    /// Verify `free_valid_ctxt` tolerates a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is passed to `free_valid_ctxt`, which returns immediately on a
+    ///   NULL argument without dereferencing it.
     #[test]
     fn test_free_valid_ctxt_null() {
         unsafe {
@@ -4868,6 +5124,12 @@ mod tests {
 
     // ── xmlSetValidErrors tests ──────────────────────────────────────────
 
+    /// Verify `set_valid_errors` tolerates a NULL context.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is passed for `ctxt`; `set_valid_errors` returns immediately
+    ///   when `ctxt` is NULL without dereferencing it.
     #[test]
     fn test_set_valid_errors_null() {
         unsafe {
@@ -4877,6 +5139,14 @@ mod tests {
 
     // ── xmlValidateElement tests ──────────────────────────────────────────
 
+    /// Verify an element validates when the document has no DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc` from `tree::new_doc`; `root` is a valid
+    ///   `_xmlNode` created by `create_root_elem` and attached to `doc`;
+    ///   `ctxt` is a valid `_xmlValidCtxt`; all are released with
+    ///   `free_valid_ctxt` and `tree::free_doc` after the call.
     #[test]
     fn test_validate_element_no_dtd() {
         unsafe {
@@ -4897,6 +5167,13 @@ mod tests {
         }
     }
 
+    /// Verify an EMPTY-declared element validates.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` come from `make_test_doc` and are valid and linked;
+    ///   `root` is a valid `_xmlNode` attached to `doc`; `ctxt` is a valid
+    ///   `_xmlValidCtxt`; all live for the call and are freed afterward.
     #[test]
     fn test_validate_element_empty_valid() {
         unsafe {
@@ -4922,6 +5199,13 @@ mod tests {
         }
     }
 
+    /// Verify an undeclared element fails validation.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` come from `make_test_doc` and are valid and linked;
+    ///   `root` is a valid `_xmlNode` attached to `doc`; `ctxt` is a valid
+    ///   `_xmlValidCtxt`; all live for the call and are freed afterward.
     #[test]
     fn test_validate_element_undeclared() {
         unsafe {
@@ -4941,6 +5225,15 @@ mod tests {
         }
     }
 
+    /// Verify an element whose content matches its `child+` model validates.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `child_content` is a valid
+    ///   `_xmlElementContent` tree created by `dtd::create_content_model`;
+    ///   `root` and its child are valid `_xmlNode`s attached to `doc`;
+    ///   `ctxt` is a valid `_xmlValidCtxt`; all live for the call and are
+    ///   freed afterward.
     #[test]
     fn test_validate_element_with_content() {
         unsafe {
@@ -4982,6 +5275,14 @@ mod tests {
         }
     }
 
+    /// Verify an element whose children do not match its model fails.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `child_content` is a valid
+    ///   `_xmlElementContent` tree; `root` and the `wrong` child are valid
+    ///   `_xmlNode`s attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`;
+    ///   all live for the call and are freed afterward.
     #[test]
     fn test_validate_element_invalid_content() {
         unsafe {
@@ -5032,6 +5333,13 @@ mod tests {
 
     // ── xmlValidateRoot tests ─────────────────────────────────────────────
 
+    /// Verify `validate_root` passes when the root matches the DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `root` is a valid `_xmlNode`
+    ///   attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`; all live for
+    ///   the call and are released with `free_valid_ctxt` and `tree::free_doc`.
     #[test]
     fn test_validate_root_match() {
         unsafe {
@@ -5056,6 +5364,13 @@ mod tests {
         }
     }
 
+    /// Verify `validate_root` passes when the document has no DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc` from `tree::new_doc`; `root` is a valid
+    ///   `_xmlNode` attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`;
+    ///   all live for the call and are freed afterward.
     #[test]
     fn test_validate_root_no_dtd() {
         unsafe {
@@ -5078,6 +5393,13 @@ mod tests {
 
     // ── xmlValidateDocument tests ─────────────────────────────────────────
 
+    /// Verify `validate_document` passes for a valid document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `root` is a valid `_xmlNode`
+    ///   attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`; all live for
+    ///   the call and are freed afterward.
     #[test]
     fn test_validate_document_valid() {
         unsafe {
@@ -5102,6 +5424,13 @@ mod tests {
         }
     }
 
+    /// Verify `validate_document` fails when the document has no root.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc` from `tree::new_doc`; `ctxt` is a valid
+    ///   `_xmlValidCtxt`; both stay live for the call and are freed
+    ///   afterward.
     #[test]
     fn test_validate_document_no_root() {
         unsafe {
@@ -5120,6 +5449,14 @@ mod tests {
 
     // ── xmlValidateContent tests ──────────────────────────────────────────
 
+    /// Verify `validate_content` passes when children match the model.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `child_content` is a valid
+    ///   `_xmlElementContent` tree; `root` and its child are valid `_xmlNode`s
+    ///   attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`; all remain
+    ///   live for the call.
     #[test]
     fn test_validate_content_valid() {
         unsafe {
@@ -5160,6 +5497,13 @@ mod tests {
 
     // ── xmlIsMixedElement / xmlIsEmptyElement tests ───────────────────────
 
+    /// Verify `is_mixed_element` detects MIXED declarations.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `name` and `other` are
+    ///   NUL-terminated `c_str` allocations live for their calls; `other` is
+    ///   freed afterward; `doc` is freed via `tree::free_doc`.
     #[test]
     fn test_is_mixed_element() {
         unsafe {
@@ -5177,6 +5521,13 @@ mod tests {
         }
     }
 
+    /// Verify `is_empty_element` detects EMPTY declarations.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `name` and `other` are
+    ///   NUL-terminated `c_str` allocations live for their calls; `other` is
+    ///   freed afterward; `doc` is freed via `tree::free_doc`.
     #[test]
     fn test_is_empty_element() {
         unsafe {
@@ -5194,6 +5545,12 @@ mod tests {
         }
     }
 
+    /// Verify `is_mixed_element` returns 0 when there is no DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc`; `name` is a NUL-terminated `c_str`
+    ///   allocation live for the call and freed afterward.
     #[test]
     fn test_is_mixed_element_no_dtd() {
         unsafe {
@@ -5208,6 +5565,12 @@ mod tests {
         }
     }
 
+    /// Verify `is_empty_element` returns 0 when there is no DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc`; `name` is a NUL-terminated `c_str`
+    ///   allocation live for the call and freed afterward.
     #[test]
     fn test_is_empty_element_no_dtd() {
         unsafe {
@@ -5224,6 +5587,12 @@ mod tests {
 
     // ── xmlValidateDtd tests ──────────────────────────────────────────────
 
+    /// Verify `validate_dtd` tolerates NULL doc and dtd arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `doc` and
+    ///   `dtd`, which `validate_dtd` checks before dereferencing.
     #[test]
     fn test_validate_dtd_null() {
         unsafe {
@@ -5236,6 +5605,13 @@ mod tests {
 
     // ── Additional edge case tests ────────────────────────────────────────
 
+    /// Verify `validate_element` returns 0 for a NULL element.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid `_xmlDoc`; `ctxt` is a valid `_xmlValidCtxt`;
+    ///   NULL is passed for `elem`, which the callee checks before
+    ///   dereferencing.
     #[test]
     fn test_validate_element_null() {
         unsafe {
@@ -5250,6 +5626,13 @@ mod tests {
         }
     }
 
+    /// Verify `validate_document` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `doc` and
+    ///   also for `ctxt`, both of which the callee checks before
+    ///   dereferencing.
     #[test]
     fn test_validate_document_null() {
         unsafe {
@@ -5263,6 +5646,13 @@ mod tests {
         }
     }
 
+    /// Verify `validate_document_final` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `doc` and
+    ///   also for `ctxt`, both of which the callee checks before
+    ///   dereferencing.
     #[test]
     fn test_validate_document_final_null() {
         unsafe {
@@ -5276,6 +5666,12 @@ mod tests {
         }
     }
 
+    /// Verify `validate_attribute_decl` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `doc` and
+    ///   `attr`, which the callee checks before dereferencing.
     #[test]
     fn test_validate_attribute_decl_null() {
         unsafe {
@@ -5283,7 +5679,7 @@ mod tests {
             assert!(!ctxt.is_null());
 
             assert_eq!(
-                validate_attribute_decl(ctxt, ptr::null_mut(), ptr::null_mut(), ptr::null_mut()),
+                validate_attribute_decl(ctxt, ptr::null_mut(), ptr::null_mut()),
                 0
             );
 
@@ -5291,6 +5687,12 @@ mod tests {
         }
     }
 
+    /// Verify `validate_content` tolerates NULL node and doc arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `node` and
+    ///   `doc`, which the callee checks before dereferencing.
     #[test]
     fn test_validate_content_null() {
         unsafe {
@@ -5303,6 +5705,12 @@ mod tests {
         }
     }
 
+    /// Verify `validate_root` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is passed for both `ctxt` and `doc`; `validate_root` checks
+    ///   them before dereferencing.
     #[test]
     fn test_validate_root_null() {
         unsafe {
@@ -5310,6 +5718,12 @@ mod tests {
         }
     }
 
+    /// Verify `validate_enumeration` tolerates NULL value and tree.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `value` and
+    ///   `tree`, which the callee checks before dereferencing.
     #[test]
     fn test_validate_enumeration_null() {
         unsafe {
@@ -5322,6 +5736,12 @@ mod tests {
         }
     }
 
+    /// Verify `validate_notation_use` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a valid `_xmlValidCtxt`; NULL is passed for `doc` and
+    ///   `notation_name`, which the callee checks before dereferencing.
     #[test]
     fn test_validate_notation_use_null() {
         unsafe {
@@ -5334,6 +5754,13 @@ mod tests {
         }
     }
 
+    /// Verify names starting with Unicode letters validate.
+    ///
+    /// # Safety
+    ///
+    /// - `name` is a `c_str` heap allocation holding the NUL-terminated
+    ///   UTF-8 string, live for the `validate_name` call and freed exactly
+    ///   once with `xmlFreeImpl`.
     #[test]
     fn test_validate_name_start_characters() {
         unsafe {
@@ -5344,6 +5771,13 @@ mod tests {
         }
     }
 
+    /// Verify a single-Name list validates.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated string, live
+    ///   for the `validate_names` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_names_single() {
         unsafe {
@@ -5353,6 +5787,13 @@ mod tests {
         }
     }
 
+    /// Verify a single NMTOKEN list validates.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated string, live
+    ///   for the `validate_nmtokens` call and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_nmtokens_single() {
         unsafe {
@@ -5362,6 +5803,13 @@ mod tests {
         }
     }
 
+    /// Verify NMTOKENS handling of tabs and invalid characters.
+    ///
+    /// # Safety
+    ///
+    /// - `s` and `s2` are `c_str` allocations holding NUL-terminated
+    ///   strings, live for their calls and each freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_validate_nmtokens_invalid() {
         unsafe {
@@ -5376,6 +5824,13 @@ mod tests {
         }
     }
 
+    /// Verify non-CDATA attribute types reject an empty value.
+    ///
+    /// # Safety
+    ///
+    /// - `empty` is a 1-byte stack array with a NUL terminator, live for the
+    ///   calls; `validate_attribute_value` reads it as a null-terminated
+    ///   string.
     #[test]
     fn test_validate_attribute_value_empty_non_cdata() {
         unsafe {
@@ -5395,6 +5850,12 @@ mod tests {
         }
     }
 
+    /// Verify an unknown attribute type falls through to a valid result.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a `c_str` allocation holding the NUL-terminated string, live
+    ///   for the call and freed exactly once with `xmlFreeImpl`.
     #[test]
     fn test_validate_attribute_value_unknown_type() {
         unsafe {
@@ -5406,6 +5867,13 @@ mod tests {
         }
     }
 
+    /// Verify ANY content models accept any children.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `root` and `child` are valid
+    ///   `_xmlNode`s attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`;
+    ///   all live for the call and are freed afterward.
     #[test]
     fn test_validate_element_any_content() {
         unsafe {
@@ -5441,6 +5909,13 @@ mod tests {
         }
     }
 
+    /// Verify an EMPTY element with a child fails validation.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`/`dtd` are valid and linked; `root` and `child` are valid
+    ///   `_xmlNode`s attached to `doc`; `ctxt` is a valid `_xmlValidCtxt`;
+    ///   all live for the call and are freed afterward.
     #[test]
     fn test_validate_element_empty_with_child() {
         unsafe {
@@ -5476,6 +5951,13 @@ mod tests {
         }
     }
 
+    /// Verify `validate_dtd_final` tolerates NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is passed for both `ctxt` and `doc`; `validate_dtd_final`
+    ///   forwards to `validate_document_final`, which checks them before
+    ///   dereferencing.
     #[test]
     fn test_validate_dtd_final_null() {
         unsafe {

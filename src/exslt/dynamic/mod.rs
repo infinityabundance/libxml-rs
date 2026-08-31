@@ -182,6 +182,16 @@ mod tests {
         assert_eq!(r.as_string(), "abc");
     }
 
+    /// `dyn:element` with a name and empty content creates a single
+    /// element node.
+    ///
+    /// # Safety
+    ///
+    /// - `node` is a live element node returned by `element_fn`; the
+    ///   content pointer from `node_get_content` is a heap-allocated
+    ///   NUL-terminated string (asserted non-NULL with a zero first byte)
+    ///   released with `libc::free`, and the node itself is released with
+    ///   `free_node` afterwards.
     #[test]
     fn test_element_creation() {
         let mut c = ctx();

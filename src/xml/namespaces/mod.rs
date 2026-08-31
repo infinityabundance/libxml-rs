@@ -11,8 +11,8 @@
 //! Mirrors upstream namespaces.c (SRC-LIBXML2-2.15.0-NAMESPACES-C, oracle
 //! tree `oracle/historical/src/libxml2-2.15.0/namespaces.c`): xmlNewNs,
 //! xmlSetNs, xmlSearchNs, xmlSearchNsByHref, xmlGetNsList,
-//! xmlReconciliateNs, xmlCopyNamespace[List], xmlFreeNs[List],
-//! xmlNewGlobalNs.
+//! xmlReconciliateNs, xmlCopyNamespace, xmlCopyNamespaceList,
+//! xmlFreeNamespace, xmlFreeNamespaceList, xmlNewGlobalNs.
 //!
 //! # Conceptual behavior
 //!

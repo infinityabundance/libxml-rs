@@ -535,6 +535,12 @@ pub unsafe fn hash_lookup3(
 }
 
 /// Internal: find an entry's payload.
+///
+/// # Safety
+///
+/// - `table` must be NULL or a valid, initialized `HashTable` that stays
+///   alive for the call; `name`, `name2` and `name3` must be NULL or valid
+///   NUL-terminated strings readable for the hash/key comparisons.
 unsafe fn hash_find_entry(
     table: *mut HashTable,
     name: *const xmlChar,
@@ -862,6 +868,13 @@ const fn keys_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
 mod tests {
     use super::*;
 
+    /// Allocate a NUL-terminated xmlChar key buffer with the libxml2 allocator.
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be a valid string; the returned pointer is
+    ///   allocator-owned and valid for `bytes.len() + 1` bytes, or NULL on
+    ///   allocation failure.
     fn c_str(s: &str) -> *const xmlChar {
         let bytes = s.as_bytes();
         let buf = unsafe { allocator::xmlMallocImpl(bytes.len() + 1) as *mut u8 };
@@ -874,6 +887,12 @@ mod tests {
         buf as *const xmlChar
     }
 
+    /// Create and free a hash table.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted) and valid until freed with
+    ///   `hash_free`, which must be called exactly once.
     #[test]
     fn test_hash_create_free() {
         unsafe {
@@ -883,6 +902,14 @@ mod tests {
         }
     }
 
+    /// Add, look up and reject a duplicate key in a hash table.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); `key` is a valid NUL-terminated
+    ///   string allocated by `c_str` and stays valid until `hash_free`;
+    ///   `value` points to a stack `c_int` alive for the whole test;
+    ///   `hash_free` releases the table exactly once.
     #[test]
     fn test_hash_add_lookup() {
         unsafe {
@@ -905,6 +932,13 @@ mod tests {
         }
     }
 
+    /// Looking up a missing key returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); the lookup key is a valid
+    ///   NUL-terminated string valid for the call; `hash_free` releases
+    ///   the table exactly once.
     #[test]
     fn test_hash_lookup_not_found() {
         unsafe {
@@ -915,6 +949,13 @@ mod tests {
         }
     }
 
+    /// Remove an entry and check that a second removal fails.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); `key` is a valid NUL-terminated
+    ///   string valid for the calls; `value` stays alive until `hash_free`
+    ///   releases the table exactly once.
     #[test]
     fn test_hash_remove_entry() {
         unsafe {
@@ -937,6 +978,13 @@ mod tests {
         }
     }
 
+    /// Update an entry's payload and verify the new value is returned.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); `key` is a valid NUL-terminated
+    ///   string; `val1`/`val2` point to stack `c_int`s alive for the test;
+    ///   `hash_free` releases the table exactly once.
     #[test]
     fn test_hash_update_entry() {
         unsafe {
@@ -955,6 +1003,14 @@ mod tests {
         }
     }
 
+    /// Look up an entry keyed by two strings.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); both key strings are valid
+    ///   NUL-terminated strings valid for the calls; `value` is a stack
+    ///   `c_int` alive for the test; `hash_free` releases the table
+    ///   exactly once.
     #[test]
     fn test_hash_two_key_lookup() {
         unsafe {
@@ -975,6 +1031,14 @@ mod tests {
         }
     }
 
+    /// Look up an entry keyed by three strings.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); all three key strings are valid
+    ///   NUL-terminated strings valid for the calls; `value` is a stack
+    ///   `c_int` alive for the test; `hash_free` releases the table
+    ///   exactly once.
     #[test]
     fn test_hash_three_key_lookup() {
         unsafe {
@@ -992,6 +1056,13 @@ mod tests {
         }
     }
 
+    /// Count entries as keys are added.
+    ///
+    /// # Safety
+    ///
+    /// - `table` is non-NULL (asserted); each `c_str` key is a valid
+    ///   NUL-terminated string valid until `hash_free` releases the table
+    ///   exactly once; NULL payloads are accepted.
     #[test]
     fn test_hash_size() {
         unsafe {
@@ -1011,6 +1082,12 @@ mod tests {
         }
     }
 
+    /// NULL table/key arguments must be tolerated without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `hash_lookup`, `hash_size` and `hash_free` handle NULL table
+    ///   pointers as documented no-ops; no pointer is dereferenced.
     #[test]
     fn test_hash_null_handling() {
         unsafe {

@@ -138,6 +138,14 @@ static DEF_DIGIT_CHAR: [u8; 2] = *b"#\0";
 
 /// Resolve a decimal-format character as a NUL-terminated string: the
 /// format's field if non-NULL (with a non-NULL `self`), else the default.
+///
+/// # Safety
+///
+/// - `fmt` must be NULL or a valid pointer to a `_xsltDecimalFormat` whose
+///   field accessor `get` may be invoked with it; `get` must return NULL or
+///   a valid pointer to a NUL-terminated string.
+/// - The returned pointer is either a static default buffer or a field of
+///   `fmt`; it stays valid while `fmt` is alive.
 unsafe fn fmt_char(
     fmt: *mut _xsltDecimalFormat,
     get: unsafe fn(*mut _xsltDecimalFormat) -> *mut xmlChar,
@@ -158,6 +166,13 @@ unsafe fn fmt_char(
 
 /// Compare the UTF-8 character at `cur` with the first UTF-8 character of
 /// the NUL-terminated string `s` (upstream `xsltUTF8Charcmp`).
+///
+/// # Safety
+///
+/// - `cur` must be NULL or point to the start of a complete UTF-8 character
+///   in a readable buffer; `xmlUTF8Strsize` reads its length.
+/// - `s` must be NULL or a valid pointer to a NUL-terminated string;
+///   `strncmp` reads at most the character length from both operands.
 unsafe fn utf8_char_cmp(cur: *const xmlChar, s: *const xmlChar) -> bool {
     unsafe {
         if cur.is_null() || s.is_null() {
@@ -174,6 +189,13 @@ unsafe fn utf8_char_cmp(cur: *const xmlChar, s: *const xmlChar) -> bool {
 /// Whether the UTF-8 character at `cur` is a picture "special" character
 /// (upstream IS_SPECIAL: zeroDigit, digit, decimalPoint, grouping,
 /// patternSeparator).
+///
+/// # Safety
+///
+/// - `cur` and each of `decimal_point`, `grouping`, `zero_digit`, `digit`
+///   and `pattern_sep` must be NULL or valid pointers to NUL-terminated
+///   strings (each is passed to `utf8_char_cmp`).
+/// - `_fmt` is unused and may be NULL.
 unsafe fn is_special(
     _fmt: *mut _xsltDecimalFormat,
     cur: *const xmlChar,
@@ -196,6 +218,17 @@ unsafe fn is_special(
 /// `xsltFormatNumberPreSuffix`, numbers.c); returns the length in **bytes**
 /// (excluding quote characters) or -1 on error. `format` is advanced past
 /// the consumed characters.
+///
+/// # Safety
+///
+/// - The pointer stored in `format` must be a valid pointer into a
+///   NUL-terminated string; it is advanced and re-read, and must stay
+///   non-NULL while the picture is parsed.
+/// - `fmt` must be NULL or a valid `_xsltDecimalFormat`; `info` must be a
+///   valid mutable `FormatNumberInfo`.
+/// - Every character pointer (`decimal_point`, `grouping`, `zero_digit`,
+///   `digit`, `pattern_sep`, `percent`, `permille`) must be NULL or a valid
+///   pointer to a NUL-terminated string.
 #[allow(clippy::too_many_arguments)]
 unsafe fn pre_suffix(
     fmt: *mut _xsltDecimalFormat,
@@ -285,6 +318,13 @@ const unsafe fn encode_utf8(out: &mut [u8], val: u32) -> usize {
 /// Decode the first UTF-8 character at `p` (upstream `xsltGetUTF8Char`);
 /// returns the code point, or -1 on error. `*len` receives the byte length
 /// of the character.
+///
+/// # Safety
+///
+/// - `p` must be a valid pointer to a NUL-terminated string holding at least
+///   one UTF-8 character.
+/// - `len` must be a valid pointer to a `c_int` that receives the character
+///   length.
 unsafe fn get_utf8_char(p: *const xmlChar, len: &mut c_int) -> c_int {
     unsafe { crate::abi::exports_misc::xmlGetUTF8Char(p, len as *mut c_int) }
 }
@@ -297,6 +337,13 @@ unsafe fn get_utf8_char(p: *const xmlChar, len: &mut c_int) -> c_int {
 /// upstream does (so a single-byte zero-digit above 0x7F yields the
 /// same-value code point, and a multi-byte zero-digit follows upstream's
 /// byte-arithmetic behavior).
+///
+/// # Safety
+///
+/// - No raw pointers are dereferenced; the only `unsafe` operation is the
+///   call to `encode_utf8`, which writes at most 4 bytes, so each buffer
+///   passed to it (`gbuf`, `cb`) must be at least 4 bytes long.
+/// - `out` must be a valid byte vector owned by the caller.
 unsafe fn number_format_decimal(
     out: &mut Vec<u8>,
     mut number: f64,
@@ -937,6 +984,13 @@ fn is_inf(val: f64) -> i32 {
 }
 
 /// View a NUL-terminated string as bytes (excluding the terminator).
+///
+/// # Safety
+///
+/// - `p` must be NULL or a valid pointer to a NUL-terminated string.
+/// - The returned slice aliases `p`'s backing memory with a static
+///   lifetime; the caller must keep that memory alive and immutable for as
+///   long as the slice is used.
 unsafe fn unsafe_bytes(p: *const xmlChar) -> &'static [u8] {
     unsafe {
         if p.is_null() {
@@ -947,6 +1001,14 @@ unsafe fn unsafe_bytes(p: *const xmlChar) -> &'static [u8] {
 }
 
 /// xmlStrdup an already-assembled NUL-terminated byte buffer.
+///
+/// # Safety
+///
+/// - `bytes` must contain a NUL terminator within its length; `xml_strdup`
+///   copies bytes up to and including that terminator into a fresh
+///   allocation.
+/// - The returned pointer is heap-allocated and must be freed by the caller
+///   with the matching libxml allocator free once no longer used.
 unsafe fn xml_strdup_joined(bytes: &[u8]) -> *mut xmlChar {
     unsafe { crate::xml::string::xml_strdup(bytes.as_ptr() as *const xmlChar) }
 }
@@ -1169,6 +1231,14 @@ mod tests {
 
     /// Convert through the canonical entry point with the NULL (default
     /// ASCII) decimal format and return the string.
+    ///
+    /// # Safety
+    ///
+    /// - `format` must be a valid byte slice; it is NUL-terminated here
+    ///   before `xslt_format_number_conversion` parses it.
+    /// - The conversion writes a heap-allocated NUL-terminated string into
+    ///   `result`, which is read through `unsafe_bytes` and freed with
+    ///   `free_str` exactly once.
     unsafe fn to_string(number: f64, format: &[u8]) -> String {
         unsafe {
             let mut fmt = format.to_vec();
@@ -1189,6 +1259,15 @@ mod tests {
 
     /// Build a decimal format with the given character overrides (defaults
     /// for everything else). The caller frees with `free_fmt`.
+    ///
+    /// # Safety
+    ///
+    /// - Each override slice must be a valid byte slice; it is
+    ///   NUL-terminated before being duplicated with `xml_strdup`.
+    /// - The `calloc` and `xml_strdup` results are stored without further
+    ///   NULL checks, so allocation must succeed.
+    /// - The returned format is heap-allocated with heap-allocated field
+    ///   strings; the caller must free it exactly once with `free_fmt`.
     unsafe fn make_fmt(
         decimal: &[u8],
         grouping: &[u8],
@@ -1220,6 +1299,16 @@ mod tests {
         }
     }
 
+    /// Free a decimal format previously built by `make_fmt`.
+    ///
+    /// # Safety
+    ///
+    /// - `f` must be NULL or a valid pointer to a `_xsltDecimalFormat` whose
+    ///   character fields are NULL or heap-allocated NUL-terminated strings
+    ///   that have not been freed yet; every allocation is freed exactly
+    ///   once.
+    /// - After the call, `f` and its field pointers are dangling and must
+    ///   not be used.
     unsafe fn free_fmt(f: *mut _xsltDecimalFormat) {
         unsafe {
             if f.is_null() {
@@ -1240,6 +1329,14 @@ mod tests {
     }
 
     /// Convert with a custom decimal format.
+    ///
+    /// # Safety
+    ///
+    /// - `fmt` must be NULL or a valid pointer to a `_xsltDecimalFormat`
+    ///   with valid NUL-terminated field strings (for example from
+    ///   `make_fmt`), and must stay alive for the duration of the call.
+    /// - `format` must be a valid byte slice; the heap-allocated result
+    ///   string is read through `unsafe_bytes` and freed exactly once.
     unsafe fn to_string_fmt(fmt: *mut _xsltDecimalFormat, number: f64, format: &[u8]) -> String {
         unsafe {
             let mut f = format.to_vec();
@@ -1260,6 +1357,12 @@ mod tests {
 
     // ── Differential-verified values (oracle libxslt 1.1.45) ────────────
 
+    /// Verify grouped and fractional pictures against oracle values.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees its heap-allocated result.
     #[test]
     fn test_grouping_and_fraction() {
         unsafe {
@@ -1270,6 +1373,12 @@ mod tests {
         }
     }
 
+    /// Verify negative sub-picture handling.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_negative_patterns() {
         unsafe {
@@ -1284,6 +1393,12 @@ mod tests {
         }
     }
 
+    /// Verify percent and permille multiplier handling.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_multipliers() {
         unsafe {
@@ -1293,6 +1408,12 @@ mod tests {
         }
     }
 
+    /// Verify NaN and infinity rendering.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_nan_and_infinity() {
         unsafe {
@@ -1301,6 +1422,12 @@ mod tests {
             assert_eq!(to_string(f64::NEG_INFINITY, b"0.00"), "-Infinity");
         }
     }
+    /// Verify zero-padding and upstream Java-quirk pictures.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[allow(clippy::approx_constant)]
     #[test]
     fn test_padding_and_java_quirks() {
@@ -1314,6 +1441,12 @@ mod tests {
         }
     }
 
+    /// Verify quoted prefix and suffix handling.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_prefix_suffix_quotes() {
         unsafe {
@@ -1326,6 +1459,12 @@ mod tests {
         }
     }
 
+    /// Verify malformed pictures fall back to the default format.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_malformed_fallback() {
         unsafe {
@@ -1336,6 +1475,12 @@ mod tests {
         }
     }
 
+    /// Verify tiny fractional numbers render without rounding loss.
+    ///
+    /// # Safety
+    ///
+    /// - The picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_tiny_numbers() {
         unsafe {
@@ -1343,6 +1488,13 @@ mod tests {
         }
     }
 
+    /// Verify a custom decimal format with overridden characters.
+    ///
+    /// # Safety
+    ///
+    /// - `make_fmt` returns a heap-allocated format consumed by
+    ///   `to_string_fmt`; the format is freed exactly once by `free_fmt`,
+    ///   and `to_string_fmt` frees its own heap-allocated result.
     #[test]
     fn test_custom_decimal_format() {
         unsafe {
@@ -1360,6 +1512,12 @@ mod tests {
         }
     }
 
+    /// Verify the canonical decimal picture.
+    ///
+    /// # Safety
+    ///
+    /// - The picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_format_decimal() {
         unsafe {
@@ -1367,6 +1525,12 @@ mod tests {
         }
     }
 
+    /// Verify zero-padded decimal output.
+    ///
+    /// # Safety
+    ///
+    /// - The picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_format_padded() {
         unsafe {
@@ -1374,6 +1538,13 @@ mod tests {
         }
     }
 
+    /// Verify alphabetic token formatting through `xsltFormatNumber`.
+    ///
+    /// # Safety
+    ///
+    /// - The format token is a valid NUL-terminated string; the returned
+    ///   heap-allocated string is read through `unsafe_bytes` and freed with
+    ///   `free_str` exactly once.
     #[test]
     fn test_format_alphabetic() {
         unsafe {
@@ -1384,6 +1555,13 @@ mod tests {
         }
     }
 
+    /// Verify roman numeral token formatting through `xsltFormatNumber`.
+    ///
+    /// # Safety
+    ///
+    /// - The format token is a valid NUL-terminated string; the returned
+    ///   heap-allocated string is read through `unsafe_bytes` and freed with
+    ///   `free_str` exactly once.
     #[test]
     fn test_format_roman() {
         unsafe {
@@ -1393,6 +1571,12 @@ mod tests {
         }
     }
 
+    /// Verify NULL-like formats behave like an empty picture.
+    ///
+    /// # Safety
+    ///
+    /// - Each picture byte slice is valid; `to_string` NUL-terminates it and
+    ///   frees the heap-allocated result exactly once.
     #[test]
     fn test_format_null() {
         unsafe {

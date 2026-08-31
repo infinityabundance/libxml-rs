@@ -116,6 +116,13 @@ const XML_BUFFER_ALLOC_IMMUTABLE: c_int = 2;
 /// The buffer content is initialized to an empty null-terminated string.
 ///
 /// Returns a pointer to the new buffer, or NULL on allocation failure.
+///
+/// # Safety
+///
+/// - The function takes no caller-provided pointers; it allocates and
+///   initializes a new `_xmlBuffer`, checking every allocation for NULL
+///   before use. The caller owns the returned buffer and must release it
+///   with `buf_free`.
 pub(crate) fn buf_create(size: c_int) -> *mut _xmlBuffer {
     let buf_size = if size <= 0 {
         DEFAULT_BUFFER_SIZE
@@ -165,6 +172,14 @@ pub(crate) fn buf_create(size: c_int) -> *mut _xmlBuffer {
 /// content will not be freed when the buffer is freed.
 ///
 /// If `size` <= 0, the length is determined by `xmlStrlen` (scanning for null).
+///
+/// # Safety
+///
+/// - `str` must be NULL or point to a buffer of at least `size` bytes when
+///   `size` is positive, or to a null-terminated string when `size` is zero
+///   or negative (the function scans for the terminator). The buffer is not
+///   copied: the returned `_xmlBuffer` borrows it as IMMUTABLE content and
+///   `buf_free` will not free it, so `str` must outlive the buffer.
 pub(crate) fn buf_create_static(str: *const xmlChar, size: c_int) -> *mut _xmlBuffer {
     if str.is_null() {
         return ptr::null_mut();
@@ -208,6 +223,13 @@ pub(crate) fn buf_create_static(str: *const xmlChar, size: c_int) -> *mut _xmlBu
 ///
 /// If the buffer's allocation scheme is not IMMUTABLE, the content is freed.
 /// The contentIO pointer (if non-NULL and different from content) is also freed.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a pointer returned by `buf_create` or
+///   `buf_create_static`; the function frees the content buffer (unless the
+///   allocation scheme is IMMUTABLE) and the struct itself, leaving `buf`
+///   dangling. The caller must not free the content again.
 pub(crate) fn buf_free(buf: *mut _xmlBuffer) {
     if buf.is_null() {
         return;
@@ -239,6 +261,12 @@ pub(crate) fn buf_free(buf: *mut _xmlBuffer) {
 /// Empty an xmlBuffer (reset `use_` to 0).
 ///
 /// The content is kept allocated but the first byte is set to null terminator.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuffer` whose `content` field is
+///   NULL or a writable buffer of at least one byte; the first byte is
+///   overwritten with a NUL terminator.
 pub(crate) fn buf_empty(buf: *mut _xmlBuffer) {
     if buf.is_null() {
         return;
@@ -253,6 +281,12 @@ pub(crate) fn buf_empty(buf: *mut _xmlBuffer) {
 }
 
 /// Get the content of an xmlBuffer.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuffer`; the returned pointer
+///   aliases the `content` field of `buf` and stays valid until the buffer
+///   is modified or freed.
 pub(crate) fn buf_content(buf: *mut _xmlBuffer) -> *mut xmlChar {
     if buf.is_null() {
         return ptr::null_mut();
@@ -261,6 +295,11 @@ pub(crate) fn buf_content(buf: *mut _xmlBuffer) -> *mut xmlChar {
 }
 
 /// Get the used length of an xmlBuffer.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuffer`; only the `use_` field is
+///   read.
 pub(crate) fn buf_length(buf: *mut _xmlBuffer) -> c_int {
     if buf.is_null() {
         return -1;
@@ -272,6 +311,14 @@ pub(crate) fn buf_length(buf: *mut _xmlBuffer) -> c_int {
 ///
 /// Grows the buffer if needed. Always maintains null termination.
 /// Returns the number of bytes written, or -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuffer` that is not
+///   IMMUTABLE; `str` must be NULL or point to at least `len` readable
+///   bytes; `len` must be positive. The buffer may be reallocated and its
+///   `content` pointer replaced, so borrowed pointers into the old content
+///   become invalid.
 pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> c_int {
     if buf.is_null() || str.is_null() || len <= 0 {
         return 0;
@@ -325,6 +372,12 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
 }
 
 /// Cat a null-terminated string to an xmlBuffer.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuffer`; `str` must be
+///   NULL or a valid null-terminated string whose length is scanned before
+///   being appended.
 pub(crate) fn buf_cat(buf: *mut _xmlBuffer, str: *const xmlChar) -> c_int {
     if buf.is_null() || str.is_null() {
         return -1;
@@ -351,6 +404,13 @@ pub(crate) fn buf_ccat(buf: *mut _xmlBuffer, c: xmlChar) -> c_int {
 ///
 /// If `len` exceeds the used length, the buffer is emptied.
 /// Returns the new used length, or -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be a valid `_xmlBuffer` pointer or NULL (NULL returns -1);
+///   the body mutates `b.content`/`b.use_` and null-terminates at
+///   `content[remaining]`, which is in-bounds because `remaining <= use_`
+///   and the buffer always carries a terminating byte.
 #[allow(dead_code)]
 pub(crate) fn buf_shrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
     if buf.is_null() {
@@ -378,6 +438,14 @@ pub(crate) fn buf_shrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
 /// Add data at the head of a buffer.
 ///
 /// Returns 0 on success, -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuffer`; `str` must be
+///   NULL or point to at least `len` readable bytes; `len` must be
+///   positive. The content is shifted right by `len` bytes and `str` is
+///   copied to the front; the buffer may be reallocated, invalidating
+///   pointers into the old content.
 pub(crate) fn buf_add_head(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> c_int {
     if buf.is_null() || str.is_null() || len <= 0 {
         return -1;
@@ -409,6 +477,15 @@ pub(crate) fn buf_add_head(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int
     0
 }
 
+/// Grow an xmlBuffer to at least `size` bytes of capacity.
+///
+/// Returns 0 on success, -1 on failure.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuffer`; when growth is needed the
+///   `content` pointer is replaced by a reallocated buffer, so pointers
+///   into the old content become invalid.
 pub(crate) fn buf_grow(buf: *mut _xmlBuffer, size: c_uint) -> c_int {
     if buf.is_null() {
         return -1;
@@ -441,6 +518,13 @@ pub(crate) fn buf_grow(buf: *mut _xmlBuffer, size: c_uint) -> c_int {
 ///
 /// If `size` <= 0, a default buffer size is used.
 /// Returns a pointer to the new buffer, or NULL on allocation failure.
+///
+/// # Safety
+///
+/// - The function takes no caller-provided pointers; it allocates and
+///   initializes a new `_xmlBuf`, checking every allocation for NULL before
+///   use. The caller owns the returned buffer and must release it with
+///   `xml_buf_free`.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_create(size: c_int) -> *mut _xmlBuf {
     let buf_size = if size <= 0 {
@@ -486,6 +570,12 @@ pub(crate) fn xml_buf_create(size: c_int) -> *mut _xmlBuf {
 /// Free an xmlBuf.
 ///
 /// Frees the content and the buffer struct itself.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a pointer returned by `xml_buf_create`; the
+///   function frees `content` (if non-NULL) and the struct, leaving `buf`
+///   dangling.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_free(buf: *mut _xmlBuf) {
     if buf.is_null() {
@@ -501,6 +591,12 @@ pub(crate) fn xml_buf_free(buf: *mut _xmlBuf) {
 }
 
 /// Get the content of an xmlBuf.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuf`; the returned pointer aliases
+///   the `content` field of `buf` and stays valid until the buffer is
+///   modified or freed.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_content(buf: *mut _xmlBuf) -> *mut xmlChar {
     if buf.is_null() {
@@ -510,6 +606,11 @@ pub(crate) fn xml_buf_content(buf: *mut _xmlBuf) -> *mut xmlChar {
 }
 
 /// Get the used length of an xmlBuf.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuf`; only the `use_` field is
+///   read.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_length(buf: *mut _xmlBuf) -> c_int {
     if buf.is_null() {
@@ -521,6 +622,13 @@ pub(crate) fn xml_buf_length(buf: *mut _xmlBuf) -> c_int {
 /// Add `len` bytes from `str` to an xmlBuf.
 ///
 /// Returns the number of bytes added, or -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuf`; `str` must be NULL
+///   or point to at least `len` readable bytes; `len` must be positive. The
+///   content may be reallocated, invalidating pointers into the old
+///   content.
 pub(crate) fn xml_buf_add(buf: *mut _xmlBuf, str: *const xmlChar, len: c_int) -> c_int {
     if buf.is_null() || str.is_null() || len <= 0 {
         return 0;
@@ -554,6 +662,12 @@ pub(crate) fn xml_buf_add(buf: *mut _xmlBuf, str: *const xmlChar, len: c_int) ->
 }
 
 /// Cat a null-terminated string to an xmlBuf.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid writable `_xmlBuf`; `str` must be NULL
+///   or a valid null-terminated string whose length is scanned before being
+///   appended.
 pub(crate) fn xml_buf_cat(buf: *mut _xmlBuf, str: *const xmlChar) -> c_int {
     if buf.is_null() || str.is_null() {
         return -1;
@@ -573,6 +687,12 @@ pub(crate) fn xml_buf_cat(buf: *mut _xmlBuf, str: *const xmlChar) -> c_int {
 /// Grow an xmlBuf to at least `size` bytes of capacity.
 ///
 /// Returns 0 on success, -1 on failure.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuf`; when growth is needed the
+///   `content` pointer is replaced by a reallocated buffer, so pointers
+///   into the old content become invalid.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_grow(buf: *mut _xmlBuf, size: c_uint) -> c_int {
     if buf.is_null() {
@@ -598,6 +718,11 @@ pub(crate) fn xml_buf_grow(buf: *mut _xmlBuf, size: c_uint) -> c_int {
 /// Shrink an xmlBuf by `len` bytes from the end.
 ///
 /// Returns the new used length, or -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuf` with a `content` buffer of at
+///   least `use_ + 1` bytes; a NUL terminator is written at the new end.
 #[allow(dead_code)]
 pub(crate) fn xml_buf_shrink(buf: *mut _xmlBuf, len: c_uint) -> c_int {
     if buf.is_null() {
@@ -684,6 +809,13 @@ fn find_handler_for_encoding(enc: c_int) -> *mut _xmlCharEncodingHandler {
 ///
 /// Allocates the struct and initializes all fields to zero/NULL.
 /// The caller is responsible for setting the specific fields.
+///
+/// # Safety
+///
+/// - The function takes no caller-provided pointers; it allocates and
+///   zero-initializes an `_xmlParserInputBuffer`, checking the allocation
+///   for NULL. The caller owns the result and must release it with
+///   `input_buffer_free` after populating it.
 fn allocate_input_buffer() -> *mut _xmlParserInputBuffer {
     let buf =
         unsafe { xmlMallocImpl(size_of::<_xmlParserInputBuffer>()) as *mut _xmlParserInputBuffer };
@@ -715,6 +847,13 @@ fn allocate_input_buffer() -> *mut _xmlParserInputBuffer {
 ///
 /// The data is copied into the input buffer's internal storage.
 /// If `enc` specifies a non-UTF-8 encoding, the data is converted to UTF-8.
+///
+/// # Safety
+///
+/// - `buffer` must be NULL or point to `size` readable bytes (non-NULL and
+///   `size` positive are required); the data is copied into an internal
+///   buffer, so `buffer` need not outlive the call. On failure all partial
+///   allocations are freed before returning NULL.
 pub(crate) fn input_buffer_create_mem(
     buffer: *const c_char,
     size: c_int,
@@ -812,6 +951,12 @@ unsafe extern "C" fn file_close_callback(context: *mut c_void) -> c_int {
 ///
 /// Opens the file, reads its contents into memory, and creates a memory-based
 /// input buffer. The file is closed after reading.
+///
+/// # Safety
+///
+/// - `filename` must be NULL or a valid null-terminated C string naming a
+///   readable file; the file is opened, read, and closed within the call,
+///   and the data is copied into the returned buffer.
 pub(crate) fn input_buffer_create_file(
     filename: *const c_char,
     enc: c_int,
@@ -908,6 +1053,14 @@ pub(crate) fn input_buffer_create_file(
 ///
 /// The `ioread` callback is called to fill the raw buffer.
 /// The `ioclose` callback is called when the buffer is freed.
+///
+/// # Safety
+///
+/// - `ioread` and `ioclose` may be NULL or valid callbacks; `ioctx` is an
+///   opaque context passed verbatim to those callbacks and must be valid
+///   for whatever they expect (NULL is fine when no callback dereferences
+///   it). The callbacks are invoked later by `input_buffer_read` and
+///   `input_buffer_free`, so `ioctx` must outlive the buffer.
 #[allow(dead_code)]
 pub(crate) fn input_buffer_create_io(
     ioread: Option<xmlInputReadCallback>,
@@ -977,6 +1130,13 @@ pub(crate) fn input_buffer_create_fd(fd: c_int, enc: c_int) -> *mut _xmlParserIn
 ///
 /// Calls the close callback if one is set, frees all internal buffers,
 /// then frees the input buffer struct itself.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a pointer returned by one of the
+///   `input_buffer_create_*` functions; the close callback (if any) is
+///   invoked with the stored context, the internal buffers are freed, and
+///   the struct is freed, leaving `buf` dangling.
 pub(crate) fn input_buffer_free(buf: *mut _xmlParserInputBuffer) {
     if buf.is_null() {
         return;
@@ -1013,6 +1173,14 @@ pub(crate) fn input_buffer_free(buf: *mut _xmlParserInputBuffer) {
 /// directly from the internal buffer.
 ///
 /// Returns the number of bytes read, or -1 on error.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlParserInputBuffer` from one of the
+///   `input_buffer_create_*` functions; `buffer` must be NULL or a writable
+///   region of at least `len` bytes; `len` must be positive. The read
+///   callback (if any) is invoked with the stored context and the output
+///   buffer.
 #[allow(dead_code)]
 pub(crate) fn input_buffer_read(
     buf: *mut _xmlParserInputBuffer,
@@ -1127,6 +1295,12 @@ pub(crate) fn input_buffer_read(
 ///
 /// The data is appended to the raw buffer and, if an encoder is set,
 /// converted to UTF-8 in the buffer.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlParserInputBuffer`; `buffer` must
+///   be NULL or point to at least `len` readable bytes; `len` must be
+///   positive. The data is copied into the internal raw buffer.
 pub(crate) fn input_buffer_push(
     buf: *mut _xmlParserInputBuffer,
     buffer: *const c_char,
@@ -1172,6 +1346,12 @@ pub(crate) fn input_buffer_push(
 ///
 /// Sets the encoder for an input buffer. The handler must already be
 /// properly initialized.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlParserInputBuffer`; `handler` may
+///   be NULL or a valid initialized `_xmlCharEncodingHandler` that outlives
+///   the buffer (it is stored, not owned).
 pub(crate) fn input_buffer_set_encoder(
     buf: *mut _xmlParserInputBuffer,
     handler: *mut _xmlCharEncodingHandler,
@@ -1234,6 +1414,13 @@ unsafe extern "C" fn buffer_write_callback(
 /// Internal helper: create an _xmlOutputBuffer struct.
 ///
 /// Allocates the struct and initializes all fields to zero/NULL.
+///
+/// # Safety
+///
+/// - The function takes no caller-provided pointers; it allocates and
+///   zero-initializes an `_xmlOutputBuffer`, checking the allocation for
+///   NULL. The caller owns the result and must release it with
+///   `output_buffer_close` after populating it.
 fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
     let buf = unsafe { xmlMallocImpl(size_of::<_xmlOutputBuffer>()) as *mut _xmlOutputBuffer };
     if buf.is_null() {
@@ -1263,6 +1450,12 @@ fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
 ///
 /// Opens the file for writing and sets up write/close callbacks.
 /// If `compression` is nonzero, future versions may support compression.
+///
+/// # Safety
+///
+/// - `URI` must be NULL or a valid null-terminated C string naming a
+///   writable file path; the file is created or truncated within the call.
+///   `encoder` may be NULL or a valid handler that outlives the buffer.
 pub(crate) fn output_buffer_create_filename(
     URI: *const c_char,
     encoder: *mut _xmlCharEncodingHandler,
@@ -1334,6 +1527,13 @@ pub(crate) fn output_buffer_create_filename(
 }
 
 /// Create an output buffer for a file descriptor.
+///
+/// # Safety
+///
+/// - `fd` must be a valid open file descriptor (negative values are
+///   rejected); the returned buffer owns the descriptor and closes it via
+///   its close callback when closed. `encoder` may be NULL or a valid
+///   handler that outlives the buffer.
 pub(crate) fn output_buffer_create_fd(
     fd: c_int,
     encoder: *mut _xmlCharEncodingHandler,
@@ -1377,6 +1577,14 @@ pub(crate) fn output_buffer_create_fd(
 }
 
 /// Create an output buffer from I/O callbacks.
+///
+/// # Safety
+///
+/// - `iowrite` and `ioclose` may be NULL or valid callbacks; `ioctx` is an
+///   opaque context passed verbatim to them and must be valid for what the
+///   callbacks expect; the callbacks run later, so `ioctx` must outlive the
+///   buffer. `encoder` may be NULL or a valid handler that outlives the
+///   buffer.
 pub(crate) fn output_buffer_create_io(
     iowrite: Option<xmlOutputWriteCallback>,
     ioclose: Option<xmlOutputCloseCallback>,
@@ -1420,6 +1628,13 @@ pub(crate) fn output_buffer_create_io(
 /// Create an output buffer from a pre-existing xmlBuffer.
 ///
 /// Writes to the output buffer will be appended to the given `_xmlBuffer`.
+///
+/// # Safety
+///
+/// - `target_buf` must be non-NULL and a valid writable `_xmlBuffer` that
+///   outlives the returned output buffer (writes are appended to it through
+///   the buffer write callback). `encoder` may be NULL or a valid handler
+///   that outlives the buffer.
 pub(crate) fn output_buffer_create_buffer(
     target_buf: *mut _xmlBuffer,
     encoder: *mut _xmlCharEncodingHandler,
@@ -1470,6 +1685,12 @@ pub(crate) fn output_buffer_create_buffer(
 /// write callback. Resets the internal buffer after writing.
 ///
 /// Returns the number of bytes written, or -1 on error.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer` whose `buffer`, `conv`
+///   (when an encoder is set) and write callback are valid; the write
+///   callback is invoked with the stored context and buffer content.
 pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
     if out.is_null() {
         return -1;
@@ -1559,6 +1780,13 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
 ///
 /// Flushes any pending data, calls the close callback if set,
 /// frees all internal buffers, then frees the output buffer struct.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a pointer returned by one of the
+///   `output_buffer_create_*` functions; pending data is flushed, the close
+///   callback (if any) runs with the stored context, internal buffers are
+///   freed, and the struct is freed, leaving `out` dangling.
 pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
     if out.is_null() {
         return -1;
@@ -1605,6 +1833,12 @@ pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
 /// SAVE-001 differential court). With no write callback, `len` is returned.
 ///
 /// Returns the bytes written through the callback (possibly 0), or -1 on error.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer`; `data` must be NULL
+///   or point to at least `len` readable bytes; `len` must be positive. The
+///   data is copied into the internal buffer before any flush.
 pub(crate) fn output_buffer_write(
     out: *mut _xmlOutputBuffer,
     len: c_int,
@@ -1646,6 +1880,12 @@ pub(crate) fn output_buffer_write(
 }
 
 /// Write a null-terminated string to an output buffer.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer`; `str` must be NULL
+///   or a valid null-terminated C string whose length is scanned before
+///   being written.
 pub(crate) fn output_buffer_write_string(out: *mut _xmlOutputBuffer, str: *const c_char) -> c_int {
     if out.is_null() || str.is_null() {
         return -1;
@@ -1670,6 +1910,12 @@ pub(crate) fn output_buffer_write_char(out: *mut _xmlOutputBuffer, c: c_char) ->
 /// Get the content of an output buffer's internal buffer.
 ///
 /// Returns a pointer to the internal buffer's content, or NULL on error.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer`; the returned pointer
+///   aliases the internal buffer's content and is valid until the buffer is
+///   modified, flushed, or closed.
 pub(crate) fn output_buffer_get_content(out: *mut _xmlOutputBuffer) -> *const xmlChar {
     if out.is_null() {
         return ptr::null();
@@ -1684,21 +1930,33 @@ pub(crate) fn output_buffer_get_content(out: *mut _xmlOutputBuffer) -> *const xm
     buf_content(buf)
 }
 
-/// Get the number of bytes currently buffered (upstream xmlOutputBufferGetSize).
-pub(crate) fn output_buffer_get_size(out: *mut _xmlOutputBuffer) -> c_int {
+/// Get the number of bytes currently buffered (upstream xmlOutputBufferGetSize:
+/// `size_t`, 0 on NULL/error — 11.1-Z.3 signature court).
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer`; only the internal
+///   buffer's used length is read.
+pub(crate) fn output_buffer_get_size(out: *mut _xmlOutputBuffer) -> usize {
     if out.is_null() {
-        return -1;
+        return 0;
     }
     let ob = unsafe { &*out };
     let buf = ob.buffer as *mut _xmlBuffer;
     if buf.is_null() {
-        return -1;
+        return 0;
     }
-    buf_length(buf)
+    buf_length(buf) as usize
 }
 
 /// Allocate an output buffer with no I/O target (upstream xmlAllocOutputBuffer):
 /// a fresh internal buffer and no write/close callbacks.
+///
+/// # Safety
+///
+/// - `_encoder` may be NULL or a valid handler; the function allocates an
+///   `_xmlOutputBuffer` with a fresh internal buffer and no I/O callbacks,
+///   checking allocations for NULL.
 pub(crate) fn output_buffer_create(
     _encoder: *mut crate::abi::structs::_xmlCharEncodingHandler,
 ) -> *mut _xmlOutputBuffer {
@@ -1733,6 +1991,13 @@ pub(crate) fn output_buffer_create_file(
     if file.is_null() {
         return ptr::null_mut();
     }
+    /// Write `len` bytes from `buffer` to the FILE stored in `ctx`.
+    ///
+    /// # Safety
+    ///
+    /// - `ctx` must be NULL or a valid `FILE *`; `buffer` must be NULL or
+    ///   point to at least `len` readable bytes; `len` must be positive.
+    ///   Non-NULL arguments are passed to `libc::fwrite`.
     unsafe extern "C" fn file_write(ctx: *mut c_void, buffer: *const c_char, len: c_int) -> c_int {
         let f = ctx as *mut libc::FILE;
         if f.is_null() || buffer.is_null() || len <= 0 {
@@ -1741,6 +2006,12 @@ pub(crate) fn output_buffer_create_file(
         let n = unsafe { libc::fwrite(buffer as *const libc::c_void, 1, len as usize, f) };
         n as c_int
     }
+    /// Flush the FILE stored in `ctx`.
+    ///
+    /// # Safety
+    ///
+    /// - `ctx` must be NULL or a valid `FILE *`; a non-NULL pointer is
+    ///   passed to `libc::fflush`.
     unsafe extern "C" fn file_flush(ctx: *mut c_void) -> c_int {
         let f = ctx as *mut libc::FILE;
         if f.is_null() {
@@ -1772,6 +2043,13 @@ pub(crate) fn output_buffer_create_file(
 /// path (0 while data is only buffered).
 ///
 /// Returns the bytes written through the callback, or -1 on error.
+///
+/// # Safety
+///
+/// - `out` must be NULL or a valid `_xmlOutputBuffer`; `str` must be NULL
+///   or a valid null-terminated string; `escaping`, when Some, must be a
+///   valid C callback that writes its escaped output into the provided
+///   1024-byte buffer and reports the consumed input length.
 pub(crate) fn output_buffer_write_escape(
     out: *mut _xmlOutputBuffer,
     str: *const xmlChar,
@@ -1843,6 +2121,12 @@ pub(crate) fn output_buffer_write_escape(
 /// escapes `&`/`<`/`>` and CR; tab/LF/quotes pass through; multi-byte UTF-8
 /// is copied verbatim (no XML_ESCAPE_NON_ASCII flag). Returns a
 /// heap-allocated NUL-terminated string (caller frees).
+///
+/// # Safety
+///
+/// - `str` must be NULL or a valid null-terminated string; the function
+///   reads it fully and returns a heap-allocated NUL-terminated copy (or
+///   NULL on allocation failure) that the caller must free with `libc::free`.
 unsafe fn escape_text(str: *const xmlChar) -> *mut xmlChar {
     if str.is_null() {
         return core::ptr::null_mut();
@@ -1909,6 +2193,11 @@ const fn utf8_seq_len(lead: u8) -> usize {
 /// Check if a file exists.
 ///
 /// Returns 1 if the file exists, 0 if not, -1 on error.
+///
+/// # Safety
+///
+/// - `filename` must be NULL or a valid null-terminated C string; it is
+///   converted to a Rust string and passed to `libc::stat`.
 #[allow(dead_code)]
 pub(crate) fn check_file_exists(filename: *const c_char) -> c_int {
     if filename.is_null() {
@@ -1944,6 +2233,13 @@ pub(crate) fn check_file_exists(filename: *const c_char) -> c_int {
 /// The size of the buffer is stored in `size` if it's non-NULL.
 ///
 /// The returned buffer must be freed with `xmlFree`.
+///
+/// # Safety
+///
+/// - `filename` must be NULL or a valid null-terminated C string; `size`
+///   may be NULL or a valid writable `c_int` out-pointer that receives the
+///   byte count. The returned buffer is allocated with `xmlMallocImpl` and
+///   must be freed with `xmlFreeImpl`.
 #[allow(dead_code)]
 pub(crate) fn read_file_to_memory(filename: *const c_char, size: *mut c_int) -> *mut c_char {
     if filename.is_null() {
@@ -2026,6 +2322,12 @@ pub(crate) fn read_file_to_memory(filename: *const c_char, size: *mut c_int) -> 
 ///
 /// Creates or truncates the file and writes `size` bytes from `data`.
 /// Returns 0 on success, -1 on error.
+///
+/// # Safety
+///
+/// - `filename` must be NULL or a valid null-terminated C string; `data`
+///   must be NULL or point to at least `size` readable bytes; `size` must
+///   be positive.
 #[allow(dead_code)]
 pub(crate) fn write_memory_to_file(
     filename: *const c_char,
@@ -2090,6 +2392,12 @@ pub(crate) fn write_memory_to_file(
 ///
 /// Returns a newly allocated null-terminated string, or NULL on failure.
 /// The returned pointer must be freed with `xmlFree`.
+///
+/// # Safety
+///
+/// - The function takes no caller-provided pointers; it allocates the
+///   result with `xmlMallocImpl` (the caller frees it with `xmlFreeImpl`)
+///   and returns NULL on failure.
 #[allow(dead_code)]
 pub(crate) fn get_cwd() -> *mut c_char {
     // Use a reasonable initial buffer size
@@ -2143,12 +2451,24 @@ mod tests {
     }
 
     /// Interpret a &[u8] as &[i8] for comparison with c_char buffers.
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be a valid slice whose bytes are reinterpreted as `i8`
+    ///   with the same length; the returned slice borrows `s`.
     fn i8_slice(s: &[u8]) -> &[i8] {
         unsafe { std::slice::from_raw_parts(s.as_ptr() as *const i8, s.len()) }
     }
 
     // ── xmlBuffer tests ────────────────────────────────────────────────────
 
+    /// Verify `buf_create` initializes a buffer and `buf_free` releases it.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a freshly allocated non-NULL `_xmlBuffer` from `buf_create`
+    ///   with a non-NULL `content`; it is dereferenced while live and freed
+    ///   exactly once by `buf_free`.
     #[test]
     fn test_buf_create_free() {
         let buf = buf_create(100);
@@ -2168,6 +2488,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_create(0)` falls back to the default size.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a freshly allocated non-NULL `_xmlBuffer` from `buf_create`;
+    ///   it is dereferenced while live and freed exactly once by `buf_free`.
     #[test]
     fn test_buf_create_default_size() {
         let buf = buf_create(0);
@@ -2179,6 +2505,13 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_create_static` borrows the static string as IMMUTABLE.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a static byte array with a NUL terminator, live for the
+    ///   whole program; `buf` borrows it as IMMUTABLE content, so `buf_free`
+    ///   does not free `s`.
     #[test]
     fn test_buf_create_static() {
         let s: &[u8] = b"hello\0";
@@ -2199,6 +2532,13 @@ mod tests {
         buf_free(buf); // Should not free the static content
     }
 
+    /// Verify `buf_add` appends data and maintains null termination.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuffer` from `buf_create`; `s1` and
+    ///   `s2` are NUL-terminated byte arrays live for their calls; the
+    ///   buffer is dereferenced while live and freed once at the end.
     #[test]
     fn test_buf_add() {
         let buf = buf_create(10);
@@ -2240,6 +2580,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_cat` appends a null-terminated string.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuffer`; `s` is a NUL-terminated
+    ///   byte array live for the call; the buffer is freed once at the end.
     #[test]
     fn test_buf_cat() {
         let buf = buf_create(10);
@@ -2253,6 +2599,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_ccat` appends a single character.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuffer`; the character is passed by
+    ///   pointer to a stack slot that is live for the call.
     #[test]
     fn test_buf_ccat() {
         let buf = buf_create(10);
@@ -2268,6 +2620,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_empty` resets the used length.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid `_xmlBuffer` from `buf_create` with a writable
+    ///   `content`; it is dereferenced while live and freed once at the end.
     #[test]
     fn test_buf_empty() {
         let buf = buf_create(10);
@@ -2305,6 +2663,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_shrink` truncates and re-null-terminates.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuffer`; `s` is a NUL-terminated
+    ///   byte array; the buffer is dereferenced while live and freed once.
     #[test]
     fn test_buf_shrink() {
         let buf = buf_create(10);
@@ -2327,6 +2691,12 @@ mod tests {
         buf_free(buf);
     }
 
+    /// Verify `buf_grow` grows capacity to the requested size.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid `_xmlBuffer` from `buf_create`; it is dereferenced
+    ///   while live and freed once at the end.
     #[test]
     fn test_buf_grow() {
         let buf = buf_create(10);
@@ -2346,6 +2716,14 @@ mod tests {
 
     // ── xmlBuf tests ───────────────────────────────────────────────────────
 
+    /// Verify `xml_buf_create` initializes a buffer and `xml_buf_free`
+    ///   releases it.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a freshly allocated non-NULL `_xmlBuf` with non-NULL
+    ///   `content`; it is dereferenced while live and freed exactly once by
+    ///   `xml_buf_free`.
     #[test]
     fn test_xml_buf_create_free() {
         let buf = xml_buf_create(100);
@@ -2362,6 +2740,13 @@ mod tests {
         xml_buf_free(buf);
     }
 
+    /// Verify `xml_buf_add` appends data.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuf` from `xml_buf_create`; `s` is a
+    ///   NUL-terminated byte array live for the call; the buffer is freed
+    ///   once at the end.
     #[test]
     fn test_xml_buf_add() {
         let buf = xml_buf_create(10);
@@ -2405,6 +2790,12 @@ mod tests {
         xml_buf_free(buf);
     }
 
+    /// Verify `xml_buf_grow` grows capacity to the requested size.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid `_xmlBuf` from `xml_buf_create`; it is dereferenced
+    ///   while live and freed once at the end.
     #[test]
     fn test_xml_buf_grow() {
         let buf = xml_buf_create(10);
@@ -2430,6 +2821,15 @@ mod tests {
 
     // ── Input buffer tests ─────────────────────────────────────────────────
 
+    /// Verify `input_buffer_create_mem` copies data and reads it back.
+    ///
+    /// # Safety
+    ///
+    /// - `data` is a `CString` whose bytes are valid for the create call
+    ///   (they are copied in); `buf` is a valid `_xmlParserInputBuffer` from
+    ///   `input_buffer_create_mem`, dereferenced while live and freed once
+    ///   via `input_buffer_free`; `out` is a stack array passed as a
+    ///   writable destination.
     #[test]
     fn test_input_buffer_create_mem() {
         let data = c("Hello XML");
@@ -2498,6 +2898,14 @@ mod tests {
         input_buffer_free(buf);
     }
 
+    /// Verify `input_buffer_set_encoder` stores a NULL encoder.
+    ///
+    /// # Safety
+    ///
+    /// - `data` is a `CString` valid for the create call; `buf` is a valid
+    ///   `_xmlParserInputBuffer`; NULL is passed as the handler, which the
+    ///   callee stores without dereferencing; `buf` is freed once via
+    ///   `input_buffer_free`.
     #[test]
     fn test_input_buffer_set_encoder() {
         let _buf = input_buffer_create_mem(ptr::null(), 0, 0);
@@ -2516,6 +2924,15 @@ mod tests {
 
     // ── Output buffer tests ────────────────────────────────────────────────
 
+    /// Verify an output buffer writing into a target `_xmlBuffer` flushes.
+    ///
+    /// # Safety
+    ///
+    /// - `internal_buf` is a valid writable `_xmlBuffer`; `obuf` is a valid
+    ///   `_xmlOutputBuffer` created from it; `data` is a `CString` valid for
+    ///   the call; `ctx` is `obuf`'s context buffer, dereferenced while
+    ///   `obuf` is live; `obuf` is closed exactly once via
+    ///   `output_buffer_close`.
     #[test]
     fn test_output_buffer_create_buffer() {
         let internal_buf = buf_create(100);
@@ -2606,6 +3023,15 @@ mod tests {
         assert!(not_exists == 0);
     }
 
+    /// Verify `write_memory_to_file` and `read_file_to_memory` round-trip.
+    ///
+    /// # Safety
+    ///
+    /// - `tmpfile` and `data` are `CString`s valid for their calls;
+    ///   `read_data` is a heap buffer from `read_file_to_memory` containing
+    ///   `size` readable bytes, sliced with `from_raw_parts` while live and
+    ///   freed exactly once with `xmlFreeImpl`; `size` is a valid stack
+    ///   out-pointer.
     #[test]
     fn test_read_write_file() {
         let tmpfile = c("/tmp/libxml_rs_test_io_file.txt");
@@ -2650,6 +3076,13 @@ mod tests {
         assert_eq!(ret, -1);
     }
 
+    /// Verify `get_cwd` returns a non-empty, freeable path.
+    ///
+    /// # Safety
+    ///
+    /// - `cwd` is a heap buffer from `get_cwd` (non-NULL asserted); it is
+    ///   read as a C string while live and freed exactly once with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_get_cwd() {
         let cwd = get_cwd();
@@ -2663,6 +3096,13 @@ mod tests {
 
     // ── Edge case tests ────────────────────────────────────────────────────
 
+    /// Verify `buf_add` grows a buffer for large data.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` is a valid writable `_xmlBuffer`; `large_data` is a
+    ///   NUL-terminated Vec live for the call; the buffer is dereferenced
+    ///   while live and freed once at the end.
     #[test]
     fn test_buf_add_large_data() {
         let buf = buf_create(10);
@@ -2773,6 +3213,16 @@ mod tests {
         input_buffer_free(buf);
     }
 
+    /// Verify an output buffer converts UTF-8 to Latin-1 on flush.
+    ///
+    /// # Safety
+    ///
+    /// - `handler` is a valid encoding handler returned by
+    ///   `encoding::find_encoding_handler` and outlives `obuf`; `internal_buf`
+    ///   is a valid `_xmlBuffer`; `obuf` is a valid `_xmlOutputBuffer`;
+    ///   `utf8_data` is a `CString` valid for the call; `ctx` is `obuf`'s
+    ///   context buffer, valid until `obuf` is closed; `internal_buf` is
+    ///   freed once with `buf_free` after `obuf` is closed.
     #[test]
     fn test_output_buffer_with_encoding() {
         // Initialize encodings
@@ -2830,6 +3280,14 @@ mod tests {
 
     // ── Input buffer from fd (requires /dev/null) ──────────────────────────
 
+    /// Verify an fd-based input buffer reads EOF from /dev/null.
+    ///
+    /// # Safety
+    ///
+    /// - `fd` is a valid open descriptor from `libc::open`; `buf` is a valid
+    ///   `_xmlParserInputBuffer` owning `fd`; `out` is a stack array writable
+    ///   destination; `buf` is freed once via `input_buffer_free`, which
+    ///   closes `fd` through the close callback.
     #[test]
     fn test_input_buffer_create_fd() {
         // Open /dev/null and create an fd-based input buffer
@@ -2856,6 +3314,13 @@ mod tests {
         static mut TEST_DATA: &[u8] = b"Hello from callback!";
         static mut CALLED: bool = false;
 
+        /// Fill `buffer` with the static test data; EOF on the second call.
+        ///
+        /// # Safety
+        ///
+        /// - `buffer` must be NULL or point to at least `len` writable
+        ///   bytes; `len` must be positive. The static `TEST_DATA` slice is
+        ///   read-only and is copied into `buffer`.
         unsafe extern "C" fn test_read(
             _ctx: *mut c_void,
             buffer: *mut c_char,
@@ -2873,6 +3338,12 @@ mod tests {
             to_copy
         }
 
+        /// No-op close callback returning success.
+        ///
+        /// # Safety
+        ///
+        /// - The context argument is ignored; the function dereferences
+        ///   nothing.
         unsafe extern "C" fn test_close(_ctx: *mut c_void) -> c_int {
             0
         }

@@ -76,10 +76,9 @@ XMLPUBFUN int
 XMLPUBFUN int
                 xmlValidateAttributeDecl  (xmlValidCtxtPtr ctxt,
                                            xmlDocPtr doc,
-                                           xmlNodePtr elem,
-                                           const xmlChar *fullname);
+                                           xmlAttributePtr attr);
 XMLPUBFUN int
-                xmlValidateAttributeValue (int type,
+                xmlValidateAttributeValue (xmlAttributeType type,
                                            const xmlChar *value);
 XMLPUBFUN int
                 xmlValidateNotationUse    (xmlValidCtxtPtr ctxt,

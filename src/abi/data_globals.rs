@@ -664,6 +664,12 @@ pub static mut xsltGenericDebug: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC
 /// then the (pre-formatted) message is written to that context FILE*.
 /// Upstream's handler is variadic; the candidate's callers format the
 /// message before dispatch (same documented divergence as xsltGenericError).
+///
+/// # Safety
+///
+/// - `msg` must be NULL or a valid NUL-terminated string valid for the
+///   call; when `xsltGenericDebugContext` is non-NULL it must be a valid
+///   `FILE*` writable via `fwrite` for the message length.
 unsafe extern "C" fn xsltGenericDebugDefaultFunc(_ctx: *mut c_void, msg: *const c_char) {
     if msg.is_null() {
         return;
@@ -856,6 +862,13 @@ pub unsafe fn sync_xml_last_error(err: *const crate::abi::structs::_xmlError) {
 }
 
 /// Mirror write helper; caller must hold `LAST_ERROR_MIRROR_LOCK`.
+///
+/// # Safety
+///
+/// - `err` must be non-NULL and point to a valid `_xmlError` whose string
+///   fields are NULL or NUL-terminated; the caller must hold
+///   `LAST_ERROR_MIRROR_LOCK` so the `xmlLastError` global is not read or
+///   written concurrently; each field is deep-copied with `dup_cstr`.
 unsafe fn sync_xml_last_error_locked(err: *const crate::abi::structs::_xmlError) {
     unsafe {
         reset_xml_last_error_locked();
@@ -927,6 +940,13 @@ unsafe fn reset_xml_last_error_locked() {
 }
 
 /// Heap-copy a NUL-terminated string (NULL-safe).
+///
+/// # Safety
+///
+/// - `s` must be NULL or a valid NUL-terminated string readable via
+///   `strlen` for the duration of the copy; the returned pointer is
+///   `libc::malloc`-owned and must be freed with `libc::free`, or is NULL
+///   when `s` is NULL or the allocation fails.
 unsafe fn dup_cstr(s: *const u8) -> *mut c_char {
     if s.is_null() {
         return core::ptr::null_mut();
@@ -2013,6 +2033,12 @@ mod tests {
 
     /// Allocate a NUL-terminated C string owned by xmlMallocImpl (the same
     /// allocator the thread-local error slot uses).
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be a valid string; the returned pointer is
+    ///   allocator-owned, valid for `bytes.len() + 1` bytes, and must be
+    ///   freed with `xmlFreeImpl` exactly once.
     unsafe fn alloc_cstr(s: &str) -> *mut c_char {
         let bytes = s.as_bytes();
         let p = unsafe { xmlMallocImpl(bytes.len() + 1) as *mut c_char };
@@ -2025,6 +2051,13 @@ mod tests {
     }
 
     /// Build an owned `_xmlError` with distinct string fields.
+    ///
+    /// # Safety
+    ///
+    /// - Every `message`/`file`/`str1` field is an `alloc_cstr`
+    ///   allocation that the returned struct owns; the caller must free
+    ///   them with `xmlFreeImpl` exactly once (e.g. via
+    ///   `reset_last_error`), or the fields leak.
     unsafe fn build_error(tag: &str) -> _xmlError {
         _xmlError {
             domain: 1,
@@ -2046,6 +2079,13 @@ mod tests {
     /// Concurrent sync/reset hammer: one thread raises errors while another
     /// resets. Before the mirror lock this double-freed the shared strings;
     /// the test crashes (SIGABRT) under the old code and passes now.
+    ///
+    /// # Safety
+    ///
+    /// - `build_error` allocates owned string fields with `xmlFreeImpl`;
+    ///   `set_last_error` deep-copies them into the mirror and the
+    ///   thread-local slot, and `reset_last_error` frees each copy exactly
+    ///   once; the mirror is internally serialized by `LAST_ERROR_MIRROR_LOCK`.
     #[test]
     fn test_last_error_mirror_concurrent_sync_reset() {
         let sync = std::thread::spawn(|| {
@@ -2068,6 +2108,14 @@ mod tests {
 
     /// Many threads raising concurrently (the full parallel-suite shape that
     /// originally aborted in `test_encode_entities_reentrant_*` victims).
+    ///
+    /// # Safety
+    ///
+    /// - Each thread's `build_error` allocations are owned by the
+    ///   thread-local last-error slot and the locked mirror; every
+    ///   `set_last_error`/`reset_last_error` pair frees owned strings
+    ///   exactly once, and the final `reset_last_error` leaves the mirror
+    ///   clean.
     #[test]
     fn test_last_error_mirror_many_threads() {
         let mut handles = Vec::new();

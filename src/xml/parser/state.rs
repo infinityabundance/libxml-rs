@@ -245,11 +245,22 @@ impl XmlParser {
     }
 
     /// Return whether pedantic mode (XML_PARSE_PEDANTIC) is active.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`
+    ///   (established by `XmlParser::new`); only the `pedantic` field is
+    ///   read.
     fn is_pedantic(&self) -> bool {
         unsafe { (*self.ctxt).pedantic != 0 }
     }
 
     /// Return whether SAX dispatch is currently disabled.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; only the
+    ///   `disableSAX` field is read.
     fn is_sax_disabled(&self) -> bool {
         unsafe { (*self.ctxt).disableSAX != 0 }
     }
@@ -261,6 +272,14 @@ impl XmlParser {
     /// Parse a complete XML document.
     ///
     /// Returns 0 on success, -1 on error.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` (see
+    ///   `XmlParser::new`); the function writes parser state fields
+    ///   (`instate`, `standalone`, `wellFormed`, `disableSAX`, `errNo`) and
+    ///   reads `myDoc`, which must be NULL or a valid `_xmlDoc` whose
+    ///   `standalone` field is written.
     pub fn parse_document(&mut self) -> c_int {
         // Fire startDocument
         self.sax_start_document();
@@ -397,6 +416,11 @@ impl XmlParser {
     /// (pushed back for `parse_content`), `Ok(false)` when it ended at EOF
     /// or non-'<' content (the caller raises "Start tag expected" —
     /// upstream `xmlParseDocument`), and `Err(())` on a fatal prolog error.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   `wellFormed` field is read to decide error reporting.
     fn parse_prolog(&mut self) -> Result<bool, ()> {
         loop {
             let (token, start) = self.tokenizer.next_token_with_start();
@@ -529,6 +553,13 @@ impl XmlParser {
     }
 
     /// Handle an XML declaration (`<?xml ...?>`).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   function writes `instate`, `version`, `encoding` and `standalone`.
+    ///   The `version`/`encoding` pointers are NUL-terminated buffers
+    ///   created by `vec_to_cstr` and are intentionally leaked, not freed.
     fn parse_xml_decl(
         &mut self,
         version: Vec<u8>,
@@ -580,6 +611,13 @@ impl XmlParser {
     }
 
     /// Parse the DTD from a `<!DOCTYPE ...>` declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `sax` pointer is a valid `_xmlSAXHandler` and whose `userData`
+    ///   matches the SAX handler's expectations; `content` is a byte slice
+    ///   owned by the caller and live for the call.
     fn parse_dtd(&mut self, content: &[u8]) -> Result<(), ()> {
         unsafe {
             (*self.ctxt).instate = XML_PARSER_DTD;
@@ -648,6 +686,13 @@ impl XmlParser {
     /// Scans for `<!ELEMENT`, `<!ENTITY`, `<!ATTLIST`, `<!NOTATION`
     /// declarations plus comments and PIs, and populates the DTD's
     /// declaration hash tables so that validation and serialization work.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `myDoc` is NULL or a valid `_xmlDoc`; when non-NULL its `intSubset`
+    ///   must be NULL or a valid `_xmlDtd` (the DTD is passed to the
+    ///   `parse_*_decl` helpers, which require it valid and non-NULL).
     fn parse_internal_subset(&mut self, content: &[u8]) -> Result<(), ()> {
         // Mark that we're parsing the DTD
         unsafe {
@@ -736,6 +781,13 @@ impl XmlParser {
     }
 
     /// Parse a `<!ELEMENT name contentmodel>` declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` must be a valid, non-NULL `_xmlDtd` whose hash tables are
+    ///   initialized (`dtd::add_element_decl` may insert into them); `args`
+    ///   is a byte slice owned by the caller, live for the call; the
+    ///   temporary `name_cstr` is freed before returning.
     fn parse_element_decl(dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
@@ -786,6 +838,13 @@ impl XmlParser {
     ///
     /// Returns the content-model tree and whether it is a mixed model
     /// (contains `#PCDATA`).
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a byte slice owned by the caller, live for the call; the
+    ///   returned tree is dereferenced to inspect its `type_` field and must
+    ///   be valid (it comes from `parse_cp`, which returns only NULL or a
+    ///   valid tree).
     fn parse_content_model(s: &[u8]) -> (*mut _xmlElementContent, bool) {
         let mut idx = 0usize;
         let tree = Self::parse_cp(s, &mut idx);
@@ -800,6 +859,14 @@ impl XmlParser {
     }
 
     /// Parse a single content particle (recursive).
+    ///
+    /// # Safety
+    ///
+    /// - `s` is a byte slice owned by the caller; `idx` is a valid writable
+    ///   index into `s`; the returned `_xmlElementContent` tree is built from
+    ///   `dtd::create_content_model` allocations and is acyclic (each
+    ///   `c1`/`c2` child is a fresh node); group construction writes
+    ///   `c1`/`c2`/`parent`/`ocur` on freshly allocated nodes.
     fn parse_cp(s: &[u8], idx: &mut usize) -> *mut _xmlElementContent {
         skip_ws(s, idx);
         if *idx >= s.len() || s[*idx] != b'(' {
@@ -933,6 +1000,12 @@ impl XmlParser {
     }
 
     /// Parse a `<!ENTITY ...>` declaration (general or parameter).
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` must be a valid, non-NULL `_xmlDtd` (passed to
+    ///   `entities::add_entity`); `args` is a caller-owned byte slice, live
+    ///   for the call; temporary C strings are freed before returning.
     fn parse_entity_decl(dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
@@ -1021,6 +1094,14 @@ impl XmlParser {
     }
 
     /// Parse a `<!ATTLIST elem attr type default ...>` declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` must be a valid, non-NULL `_xmlDtd`; `args` is a caller-owned
+    ///   byte slice live for the call; `elem_decl` (from
+    ///   `dtd::get_element_decl_created`) must be NULL or a valid `_xmlElement`
+    ///   declaration; the enumeration tree from `parse_attr_type` (if any) is
+    ///   handed to `dtd::add_attribute_decl`.
     fn parse_attlist_decl(dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
@@ -1083,6 +1164,12 @@ impl XmlParser {
     }
 
     /// Parse a `<!NOTATION ...>` declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` must be a valid, non-NULL `_xmlDtd`; `args` is a caller-owned
+    ///   byte slice live for the call; temporary C strings are freed before
+    ///   returning.
     fn parse_notation_decl(dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
@@ -1111,6 +1198,13 @@ impl XmlParser {
     }
 
     /// Parse the external DTD subset.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with a
+    ///   valid `sax` handler and matching `userData`; the SAX event receives
+    ///   NUL-terminated strings that are intentionally leaked, remaining
+    ///   valid until the process exits.
     fn parse_external_subset(
         &mut self,
         _name: &[u8],
@@ -1145,6 +1239,11 @@ impl XmlParser {
     /// trailing misc (comments/PIs/whitespace) is consumed and any
     /// remaining input raises "Extra content at the end of the document"
     /// (upstream `xmlParserCheckEOF` with XML_ERR_DOCUMENT_END).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   `disableSAX` and `errNo` fields are read.
     fn parse_content(&mut self) -> Result<(), ()> {
         let token = self.tokenizer.next_token_raw();
         self.raise_pending_errors();
@@ -1202,6 +1301,11 @@ impl XmlParser {
     /// `xmlParseMisc`): blanks, PIs, comments. Anything else (including a
     /// second root or stray text) raises "Extra content at the end of the
     /// document" at the token start (upstream `xmlParserCheckEOF`).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   `errNo` field is read to gate the "Extra content" error.
     fn parse_misc_after_root(&mut self) -> Result<(), ()> {
         loop {
             let (token, start) = self.tokenizer.next_token_with_start();
@@ -1260,6 +1364,14 @@ impl XmlParser {
     }
 
     /// Parse a single element: start tag, content, and matching end tag.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with valid
+    ///   `sax`/`userData`; `myDoc` must be NULL or a valid `_xmlDoc`; `node`
+    ///   may be NULL or a valid `_xmlNode` (passed to `tree::search_ns`);
+    ///   the byte-slice inputs are owned by the caller and live for the
+    ///   call.
     fn parse_element(
         &mut self,
         name: Vec<u8>,
@@ -1752,6 +1864,15 @@ impl XmlParser {
     /// `value_start_pos` is the document byte offset just after the
     /// attribute's opening quote — the caret for the `<`-in-entity error
     /// points at the `&` of the offending reference (R-000121).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `myDoc`
+    ///   must be NULL or a valid `_xmlDoc` whose entity table is initialized
+    ///   (`entities::get_entity`); `value` is a caller-owned byte slice;
+    ///   entity `content` pointers (from `get_entity` and
+    ///   `get_entity_content`) are read as NUL-terminated strings while the
+    ///   entity is live.
     fn substitute_refs(&mut self, value: &[u8], value_start_pos: usize) -> Result<Vec<u8>, ()> {
         let mut out = Vec::with_capacity(value.len());
         let mut i = 0usize;
@@ -1903,6 +2024,15 @@ impl XmlParser {
     /// missing ';', invalid charref digits/values) with upstream positions;
     /// this function performs the substitution semantics and raises the
     /// undeclared-entity error (upstream `xmlParseReference`).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `entity` (from the SAX getEntity handler)
+    ///   must be NULL or a valid `_xmlEntity` whose `content`, `SystemID`,
+    ///   `ExternalID` and `expandedSize` fields are consistent; a loaded
+    ///   external-entity input is a valid `_xmlParserInput` freed via
+    ///   `xmlFreeInputStream`.
     fn parse_reference(&mut self, data: &[u8]) -> Result<(), ()> {
         if data.len() < 2 {
             // Bare "&" with no name — the tokenizer raised
@@ -2104,6 +2234,13 @@ impl XmlParser {
     /// (content shared, children = entity), matching xmlNewReference. The
     /// parse is guarded against loops with the XML_ENT_EXPANDING flag and
     /// cached with XML_ENT_PARSED.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `ent`
+    ///   must be non-NULL and a valid `_xmlEntity` whose `flags`, `content`
+    ///   and `children` fields are consistent; the function mutates `ent`
+    ///   and builds its children node list.
     fn parse_entity_content(&mut self, ent: *mut _xmlEntity) -> Result<(), ()> {
         const XML_ENT_PARSED: c_int = 1 << 0;
         const XML_ENT_EXPANDING: c_int = 1 << 3;
@@ -2374,6 +2511,12 @@ impl XmlParser {
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Fire `startDocument` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
+    ///   handler.
     fn sax_start_document(&mut self) {
         if self.is_sax_disabled() {
             return;
@@ -2386,6 +2529,12 @@ impl XmlParser {
     }
 
     /// Fire `endDocument` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
+    ///   handler.
     fn sax_end_document(&mut self) {
         if self.is_sax_disabled() {
             return;
@@ -2401,6 +2550,16 @@ impl XmlParser {
     ///
     /// `attrs` is a list of `(prefix, localname, value)` tuples.
     /// `ns_decls` is a list of `(prefix, uri)` tuples.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `myDoc` must be NULL or a valid `_xmlDoc`;
+    ///   `node` may be NULL or a valid `_xmlNode` (for `tree::search_ns`);
+    ///   `attrs` and `ns_decls` are caller-owned slices live for the call;
+    ///   the NUL-terminated C strings passed to the SAX callback are
+    ///   intentionally leaked and stay valid for the duration of the
+    ///   callback.
     fn sax_start_element(
         &mut self,
         _name: &[u8],
@@ -2565,6 +2724,12 @@ impl XmlParser {
     }
 
     /// Fire `endElement` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `name` is a caller-owned slice live for the
+    ///   call.
     fn sax_end_element(&mut self, name: &[u8]) {
         if self.is_sax_disabled() {
             return;
@@ -2584,6 +2749,12 @@ impl XmlParser {
     }
 
     /// Fire `characters` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
+    ///   call.
     fn sax_characters(&mut self, data: &[u8]) {
         if self.is_sax_disabled() || data.is_empty() {
             return;
@@ -2598,6 +2769,12 @@ impl XmlParser {
     }
 
     /// Fire `comment` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
+    ///   call.
     fn sax_comment(&mut self, data: &[u8]) {
         if self.is_sax_disabled() {
             return;
@@ -2612,6 +2789,12 @@ impl XmlParser {
     }
 
     /// Fire `processingInstruction` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `target` and `data` are caller-owned slices
+    ///   live for the call.
     fn sax_pi(&mut self, target: &[u8], data: &[u8]) {
         if self.is_sax_disabled() {
             return;
@@ -2627,6 +2810,12 @@ impl XmlParser {
     }
 
     /// Fire `cdataBlock` SAX event.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
+    ///   call.
     fn sax_cdata(&mut self, data: &[u8]) {
         if self.is_sax_disabled() || data.is_empty() {
             return;
@@ -2643,6 +2832,12 @@ impl XmlParser {
     /// Mirror the tokenizer's current (line, col) into `ctxt->input` so the
     /// default SAX tree builder can stamp node line numbers (upstream parity:
     /// nodes carry the line of their construct).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `input`
+    ///   must be NULL or a valid `_xmlParserInput` whose `line` and `col`
+    ///   fields are written.
     fn sync_input_position(&mut self) {
         let (line, col, _pos) = self.tokenizer.current_pos();
         unsafe {
@@ -2656,6 +2851,13 @@ impl XmlParser {
 
     /// Materialize the xml namespace on the document (upstream keeps it on
     /// `doc->oldNs`; created once per document).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `myDoc`
+    ///   must be NULL or a valid `_xmlDoc` whose `oldNs` chain is a valid
+    ///   linked list of `_xmlNs` nodes with NULL or null-terminated `prefix`
+    ///   and `href`.
     fn ensure_doc_xml_ns(&mut self) {
         unsafe {
             let doc = (*self.ctxt).myDoc;
@@ -2693,6 +2895,12 @@ impl XmlParser {
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Push an element name onto the context's name stack.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `name`
+    ///   is a caller-owned slice; the NUL-terminated copy is leaked
+    ///   intentionally and remains valid until the context is freed.
     fn push_name(&mut self, name: &[u8]) {
         let name_cstr = Self::vec_to_cstr_null(name);
         unsafe {
@@ -2703,6 +2911,12 @@ impl XmlParser {
     }
 
     /// Pop an element name from the context's name stack.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   `name` pointer is cleared when the stack empties and must not be
+    ///   used afterwards.
     fn pop_name(&mut self) {
         unsafe {
             if (*self.ctxt).nameNr > 0 {
@@ -2766,6 +2980,13 @@ impl XmlParser {
     /// `line`/`col` are 1-based (col is a byte column, upstream
     /// `input->col`); `window` is the source line + 0-based caret column;
     /// `enc_bytes` feeds the `XML_ERR_INVALID_ENCODING` "Bytes:" fragment.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; the
+    ///   error path dereferences `self.ctxt` directly and passes it to
+    ///   `raise_error_streamed` as an opaque pointer; the tokenizer's
+    ///   current input must be valid for `filename()`.
     #[allow(clippy::too_many_arguments)]
     fn raise_parser_error(
         &mut self,
@@ -2898,6 +3119,12 @@ impl XmlParser {
     /// `input->consumed + (cur - base)`).
     ///
     /// Returns `true` when the error was raised (caller must abort).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `slot`
+    ///   must be NULL or a valid writable `c_ulong` accumulation slot
+    ///   (typically the scanning entity's `expandedSize`).
     fn parser_entity_check(
         &mut self,
         extra: c_ulong,
@@ -2990,6 +3217,13 @@ impl XmlParser {
     /// Select the generic delivery for a parser error: a custom SAX `error`
     /// slot is called directly (upstream `channel(data, msg)` path), while
     /// the default/legacy handlers route through the fragment stream.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `sax` is a valid `_xmlSAXHandler`; the `error` slot is read to
+    ///   choose the delivery, and `userData` is captured for the custom
+    ///   callback.
     fn error_delivery(&self) -> crate::xml::errors::GenericDelivery {
         use crate::xml::errors::GenericDelivery;
         unsafe {
@@ -3185,6 +3419,12 @@ fn read_name<'a>(s: &'a [u8], idx: &mut usize) -> &'a [u8] {
 }
 
 /// Apply an occurrence suffix (`?`, `*`, `+`) to a content-model node.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid, non-const `_xmlElementContent` whose
+///   `ocur` field is written; `s` is a caller-owned byte slice; `idx` is a
+///   valid writable index into `s`.
 fn apply_occurrence(node: *mut crate::abi::structs::_xmlElementContent, s: &[u8], idx: &mut usize) {
     if node.is_null() {
         return;
@@ -3304,6 +3544,13 @@ fn parse_attr_type(s: &[u8]) -> (c_int, *mut crate::abi::structs::_xmlEnumeratio
 }
 
 /// Parse `( a | b | c )` into an enumeration chain.
+///
+/// # Safety
+///
+/// - `s` is a caller-owned byte slice, live for the call; the returned
+///   `_xmlEnumeration` chain consists of zero-initialized nodes whose `name`
+///   fields are `xml_strdup` allocations and whose `next` links are valid
+///   (the last is NULL); the caller owns the chain.
 fn parse_enumeration(s: &[u8]) -> (*mut crate::abi::structs::_xmlEnumeration, usize) {
     let s = trim_ascii(s);
     if !s.starts_with(b"(") {

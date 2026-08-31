@@ -2,7 +2,7 @@
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
  "mode": "check",
- "candidate_git_head": "5f0ab2eaed89f4e2a6793822d6539c2b85216dde",
+ "candidate_git_head": "6c764969e0041f166b5e967476e16272955f9fba",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -24,12 +24,12 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "1af8b414418f5f44c371908d29242798cdeb6e525db940d86a6cb4a6cc5e031b",
-  "candidate SONAME libxml2": "1af8b414418f5f44c371908d29242798cdeb6e525db940d86a6cb4a6cc5e031b",
-  "candidate SONAME libxslt": "3327e26b302d3dbbb16f4bff3094b4bf5d8306937faa7685b4a78638fef4f0f6",
-  "candidate SONAME libexslt": "033c70943a91e4628896a3e870717205095b6d5583a749fc62dfc4a1265582b0",
-  "candidate headers": "459777a0f70a96643e161fadea9f9229d3c2da866abc7f0b4f2e15d4892305d2",
-  "residual ledger JSON (hand-maintained)": "34d064e2aad97c33ebbb8344573f59fd1202b3e2195b5f0957ed79c9b6f2b300",
+  "candidate DSO": "8e90c27f245630e393c226c6edbb24845e40d9e2e0be6d21c32bc51046838c84",
+  "candidate SONAME libxml2": "8e90c27f245630e393c226c6edbb24845e40d9e2e0be6d21c32bc51046838c84",
+  "candidate SONAME libxslt": "54521ba5683cf3c2740f58d4f30eac3d28a33bbbac670b42ca0b75fb7a021614",
+  "candidate SONAME libexslt": "0be84d233730c6821cdaa1add104f84deb3fcdee4bbf1fde42609ca1897aca92",
+  "candidate headers": "0110e0579d55a13e619f0906bb976ba587d62536e1f6d13f595f94d8dded9fc7",
+  "residual ledger JSON (hand-maintained)": "8ca250be5af00dfa75cc41ed8272c7f8b542fb9cbf0dfc4089d4a487ff6b5556",
   "symbol court index": "e76ffb6c88db37c542b9036c42de3f305f3a8d39d6492dc5e8ebb0dad9767b9c"
  },
  "steps": [
@@ -47,10 +47,10 @@
    "ok": true,
    "detail": "wrote PARITY_MATRIX.json/.md, API_PARITY_LEDGER.json/.md, DOXYGEN_SURFACE_ATLAS.json/.md\n",
    "hashes": {
-    "atlas/PARITY_MATRIX.json": "ccf5b6d497186996ce8ce9c287711bf5a663bf3e55f2846ecf41f926788feae8",
-    "atlas/PARITY_MATRIX.md": "2212ae13204af07f24250326c33cce26a958909912b881e2d8e2597a2812852e",
-    "atlas/API_PARITY_LEDGER.json": "5082c68e7790d0592f573ba49178bed71ab7423181dd663e6f0723b3110b6b2d",
-    "atlas/API_PARITY_LEDGER.md": "cae067968dff8203a5621c35d0b2225e5511a632360643ee949d9100931f13b4",
+    "atlas/PARITY_MATRIX.json": "b757d5cf895f69d1b69e398f61d62627e1c8d3f8fe2485c6327b3dc2e12aee9a",
+    "atlas/PARITY_MATRIX.md": "c6cc382f0d3c1d7111e5435729b680ad1fb720d18d0ce6a3818fa90a44c51753",
+    "atlas/API_PARITY_LEDGER.json": "8e7756d3efac0325d6fb43372cf69a7c4e6daec80beecf8427bae10399e23384",
+    "atlas/API_PARITY_LEDGER.md": "17aa38c49ec91aba69ab10ce922526269d9d646ceb40d02359ab36a0440d25ef",
     "atlas/DOXYGEN_SURFACE_ATLAS.json": "71826ee43fb10aa3eb0481f4b6f5f0efe173879fffe338a48daa75918797b15e",
     "atlas/DOXYGEN_SURFACE_ATLAS.md": "8f525f5a5426c11924ab6ff44117ff329cc3311bf886941290cbdcde7b820222"
    }
@@ -76,19 +76,19 @@
   {
    "step": "parity_obligations",
    "ok": true,
-   "detail": "libxml2: funcs=1400 data=22\n    INTENTIONAL_NOOP: 23\n    IMPLEMENTED_UNVERIFIED: 1114\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
+   "detail": "libxml2: funcs=1400 data=22\n    STUB: 4\n    INTENTIONAL_NOOP: 24\n    IMPLEMENTED_UNVERIFIED: 1109\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
    "hashes": {
-    "atlas/PARITY_OBLIGATIONS.json": "3558cefd4845287f993f7e459ad77a0845d020180f5ffe9a0613e61751656a55",
-    "atlas/PARITY_OBLIGATIONS.md": "a08bc35faa0e3593f02cdb2b34a685d6bfba052384c3b5c3c427c476bd82b6f5"
+    "atlas/PARITY_OBLIGATIONS.json": "0e6ad884d1c10cebc0f9c5b68cc487ad7c10aef744960256312718f396e60bc9",
+    "atlas/PARITY_OBLIGATIONS.md": "83bb3421494fa4d70a950fbeb4c0df02e982b72de7aaf89294ad809a88b95632"
    }
   },
   {
    "step": "subsystem_census",
    "ok": true,
-   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 76, \"PARTIAL\": 1, \"UNOBLIGATED\": 8}\nuncategorized: 0 []\n",
+   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 73, \"PARTIAL\": 4, \"UNOBLIGATED\": 8}\nuncategorized: 0 []\n",
    "hashes": {
-    "atlas/SUBSYSTEM_CENSUS.json": "fdbd5fd923a9eef6315e2530cad57120832bac2f28548a500efff2919218dfd9",
-    "atlas/SUBSYSTEM_CENSUS.md": "067fd857a1c63d34340bcaf58f860764240f2c6449e66381843cf0fd59e5a232"
+    "atlas/SUBSYSTEM_CENSUS.json": "9fdc48849a694411345624484a567e75f7610fe892c37c670f269e8a39c3bffa",
+    "atlas/SUBSYSTEM_CENSUS.md": "cf9236f5b1d609aff0f0446cfb95f6a11ec248afe08d4f1b03a355223b00c0fb"
    }
   },
   {
@@ -96,7 +96,7 @@
    "ok": true,
    "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/RESIDUAL_LEDGER.md\n",
    "hashes": {
-    "atlas/RESIDUAL_LEDGER.md": "ad897ebff811672e218d5931e25993bd2c716f835fdee13ace8896762c8faefd"
+    "atlas/RESIDUAL_LEDGER.md": "a450fa3968d03f7d080afc18f7c32941e96464e7136a537688893d266d0780d8"
    }
   }
  ],

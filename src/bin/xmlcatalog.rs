@@ -430,6 +430,16 @@ unsafe fn shell_loop() {
     }
 }
 
+/// Run the xmlcatalog CLI: load, modify, query, dump and save catalogs.
+///
+/// # Safety
+///
+/// - Every C string passed to the catalog API is produced by `cstr_alloc`
+///   and released by `free_cstr` on all paths; pointers returned by
+///   `xmlCatalogResolvePublic`/`xmlCatalogResolveSystem`/`xmlCatalogResolveURI`
+///   are allocator-owned, read via `strlen`/`write` while valid, and freed
+///   with `xmlFreeImpl` exactly once; `xmlParseURI` results are freed with
+///   `xmlFreeURI`; the process exits before any pointer is used again.
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut cli = Cli::default();

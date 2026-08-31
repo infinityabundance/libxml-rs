@@ -491,6 +491,11 @@ pub unsafe fn dict_free(dict: *mut Dict) {
 /// ```
 ///
 /// Returns the previous limit.
+///
+/// # Safety
+///
+/// - `dict` must be NULL or a valid, initialized `Dict` that stays alive
+///   for the call; the limit field is written in place.
 pub fn dict_set_limit(dict: *mut Dict, limit: usize) -> usize {
     if dict.is_null() {
         return 0;
@@ -559,6 +564,13 @@ impl Dict {
 mod tests {
     use super::*;
 
+    /// Allocate a NUL-terminated xmlChar string with the libxml2 allocator.
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be a valid string; the returned pointer is
+    ///   allocator-owned, valid for `bytes.len() + 1` bytes, and must be
+    ///   released with `xmlFreeImpl`.
     fn xml_str(s: &str) -> *const xmlChar {
         // Create a null-terminated string
         let bytes = s.as_bytes();
@@ -570,12 +582,25 @@ mod tests {
         buf as *const xmlChar
     }
 
+    /// Free a string previously allocated by `xml_str` (NULL-safe).
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be NULL or a pointer allocated with `xmlFreeImpl`'s
+    ///   allocator; it is freed exactly once and must not be used
+    ///   afterwards.
     fn free_xml_str(s: *const xmlChar) {
         if !s.is_null() {
             unsafe { allocator::xmlFreeImpl(s as *mut c_void) };
         }
     }
 
+    /// Create and free a dictionary.
+    ///
+    /// # Safety
+    ///
+    /// - `dict` is non-NULL (asserted) and valid until `dict_free`
+    ///   releases it exactly once.
     #[test]
     fn test_dict_create_free() {
         unsafe {
@@ -585,6 +610,14 @@ mod tests {
         }
     }
 
+    /// Look up a string and check pointer stability across lookups.
+    ///
+    /// # Safety
+    ///
+    /// - `dict` is non-NULL (asserted); `name`/`name2` are valid
+    ///   NUL-terminated strings allocated by `xml_str` and freed by
+    ///   `free_xml_str`; `dict_free` releases the dict exactly once; the
+    ///   returned interned pointer is only compared, never dereferenced.
     #[test]
     fn test_dict_lookup() {
         unsafe {
@@ -609,6 +642,13 @@ mod tests {
         }
     }
 
+    /// Check existence of an entry before and after insertion.
+    ///
+    /// # Safety
+    ///
+    /// - `dict` is non-NULL (asserted); `name` is a valid NUL-terminated
+    ///   string freed by `free_xml_str`; `dict_free` releases the dict
+    ///   exactly once; returned pointers are only compared.
     #[test]
     fn test_dict_exists() {
         unsafe {
@@ -633,6 +673,14 @@ mod tests {
         }
     }
 
+    /// Verify the dictionary size tracks distinct insertions.
+    ///
+    /// # Safety
+    ///
+    /// - `dict` is non-NULL (asserted); the three key strings are valid
+    ///   NUL-terminated strings freed by `free_xml_str`; `dict_free`
+    ///   releases the dict exactly once; returned pointers are only
+    ///   compared.
     #[test]
     fn test_dict_size() {
         unsafe {
@@ -663,6 +711,14 @@ mod tests {
         }
     }
 
+    /// Verify the entry limit rejects insertions past it.
+    ///
+    /// # Safety
+    ///
+    /// - `dict` is non-NULL (asserted); the key strings are valid
+    ///   NUL-terminated strings freed by `free_xml_str`; `dict_free`
+    ///   releases the dict exactly once; returned pointers are only
+    ///   compared for NULL.
     #[test]
     fn test_dict_set_limit() {
         unsafe {
@@ -692,6 +748,14 @@ mod tests {
         }
     }
 
+    /// Create a sub-dictionary sharing strings with its parent.
+    ///
+    /// # Safety
+    ///
+    /// - `parent` and `sub` are non-NULL (asserted); `name` is a valid
+    ///   NUL-terminated string; `sub` must be freed before `parent`;
+    ///   `name` is freed after both dicts; returned pointers are only
+    ///   compared.
     #[test]
     fn test_dict_create_sub() {
         unsafe {
@@ -716,6 +780,13 @@ mod tests {
         }
     }
 
+    /// NULL dict/name arguments must be tolerated without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `dict_lookup`, `dict_exists`, `dict_size`, `dict_set_limit`,
+    ///   `dict_get_usage` and `dict_free` handle NULL dict pointers as
+    ///   documented no-ops; no pointer is dereferenced.
     #[test]
     fn test_dict_null_handling() {
         unsafe {

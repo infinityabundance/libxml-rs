@@ -7,6 +7,16 @@
 //! References:
 //! - XML Canonicalization (C14N) — inclusive: <https://www.w3.org/TR/xml-c14n11/>
 //! - Exclusive XML Canonicalization (C14N): <https://www.w3.org/2001/10/xml-exc-c14n>
+//!
+//! # Safety
+//!
+//! - The unsafe entry points in this module accept raw pointers that must be
+//!   valid, correctly typed, and live for the duration of the call: pointers
+//!   to `_xmlDoc`, `_xmlNode`, `_xmlNs`, `_xmlBuffer`, and `xmlOutputBuffer`
+//!   objects, and NUL-terminated `xmlChar` strings. NULL is permitted only
+//!   where an individual function's contract explicitly allows it.
+//! - Callers own the pointed-to objects for the duration of each call and
+//!   release them afterwards with the matching free function.
 
 #![allow(
     missing_docs,
@@ -343,6 +353,15 @@ impl C14nContext {
     }
 
     /// Add a namespace declaration to the current scope.
+    ///
+    /// # Safety
+    ///
+    /// - `prefix` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+    ///   string; it is compared against existing entries with `xmlStrEqual`,
+    ///   which reads it as a C string.
+    /// - `href` is stored in the scope entry without being dereferenced here;
+    ///   it must remain valid (or NULL, for an undeclaration) for as long as
+    ///   the context keeps the entry.
     #[allow(dead_code)]
     fn add_namespace(&mut self, prefix: *const xmlChar, href: *const xmlChar) {
         if let Some(top) = self.ns_stack.last_mut() {
@@ -369,6 +388,12 @@ impl C14nContext {
     }
 
     /// Check if a prefix is in scope.
+    ///
+    /// # Safety
+    ///
+    /// - `prefix` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+    ///   string; it is compared with `xmlStrEqual`, which reads it as a C
+    ///   string.
     #[allow(dead_code)]
     fn is_prefix_in_scope(&self, prefix: *const xmlChar) -> bool {
         self.ns_stack.iter().rev().any(|scope| {
@@ -379,6 +404,15 @@ impl C14nContext {
     }
 
     /// Get the href for a prefix from the current scope.
+    ///
+    /// # Safety
+    ///
+    /// - `prefix` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+    ///   string; it is compared with `xmlStrEqual`, which reads it as a C
+    ///   string.
+    /// - The returned pointer is the matching scope entry's stored `href`; it
+    ///   is valid only while that entry (and the string it points to) remains
+    ///   alive in the context.
     #[allow(dead_code)]
     fn get_href_for_prefix(&self, prefix: *const xmlChar) -> *const xmlChar {
         for scope in self.ns_stack.iter().rev() {
@@ -392,6 +426,12 @@ impl C14nContext {
     }
 
     /// Check if a prefix is in the inclusive namespace prefixes list.
+    ///
+    /// # Safety
+    ///
+    /// - A non-NULL `prefix` must be a valid pointer to a NUL-terminated
+    ///   `xmlChar` string; it is converted with `CStr::from_ptr`. A NULL
+    ///   `prefix` matches the empty-string entry in the set.
     #[allow(dead_code)]
     fn is_inclusive_prefix(&self, prefix: *const xmlChar) -> bool {
         if let Some(ref set) = self.inclusive_ns_prefixes {
@@ -412,6 +452,12 @@ impl C14nContext {
     }
 
     /// Mark a namespace as rendered.
+    ///
+    /// # Safety
+    ///
+    /// - `prefix` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+    ///   string; it is compared with `xmlStrEqual`, which reads it as a C
+    ///   string.
     #[allow(dead_code)]
     fn mark_rendered(&mut self, prefix: *const xmlChar) {
         for scope in self.ns_stack.iter_mut().rev() {
@@ -425,6 +471,12 @@ impl C14nContext {
     }
 
     /// Check if a namespace is already rendered.
+    ///
+    /// # Safety
+    ///
+    /// - `prefix` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+    ///   string; it is compared with `xmlStrEqual`, which reads it as a C
+    ///   string.
     #[allow(dead_code)]
     fn is_rendered(&self, prefix: *const xmlChar) -> bool {
         for scope in self.ns_stack.iter().rev() {
@@ -1542,6 +1594,11 @@ unsafe fn doc_has_relative_ns(doc: *mut _xmlDoc) -> bool {
 
 /// Whether a NUL-terminated URI has a scheme (`scheme:` prefix) — upstream
 /// xmlParseURISafe's `scheme == NULL` check.
+///
+/// # Safety
+///
+/// - `uri` must be a valid pointer to a NUL-terminated `xmlChar` buffer; the
+///   scan reads one byte at a time until the terminating NUL and never past it.
 const unsafe fn has_uri_scheme_bytes(uri: *const xmlChar) -> bool {
     unsafe {
         let mut i: usize = 0;
@@ -2042,6 +2099,11 @@ pub unsafe fn c14n_doc_save_to(
 /// Parse a comma-separated list of inclusive namespace prefixes.
 ///
 /// Returns `None` if the input is NULL (meaning no inclusive prefixes).
+///
+/// # Safety
+///
+/// - `input` must be NULL or a valid pointer to a NUL-terminated `xmlChar`
+///   string; a non-NULL input is read as a C string with `CStr::from_ptr`.
 fn parse_inclusive_prefixes(input: *const xmlChar) -> Option<HashSet<String>> {
     if input.is_null() {
         return None;
@@ -2571,6 +2633,16 @@ mod tests {
 
     // ── Basic document canonicalization ──
 
+    /// Verify that an unexpanded entity reference makes C14N fail with -1,
+    /// matching the upstream oracle.
+    ///
+    /// # Safety
+    ///
+    /// - The `xmlReadMemory` input must be a byte buffer readable for
+    ///   `len - 1` bytes and NUL-terminated at the end.
+    /// - The returned `doc` is asserted non-NULL and freed with `xmlFreeDoc`;
+    ///   the `result` out-parameter is left NULL on the -1 failure path, as
+    ///   asserted.
     #[test]
     fn test_c14n_entity_ref_node_fails_like_upstream() {
         // R-000175: an unexpanded entity reference is an invalid node for
@@ -2602,6 +2674,14 @@ mod tests {
         }
     }
 
+    /// Verify that canonicalizing a simple document emits the expected
+    /// element markup.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` returned by `create_simple_doc` must be a valid `_xmlDoc`
+    ///   pointer, alive until `canonicalize_doc` returns; the test frees it
+    ///   with `tree::free_doc`.
     #[test]
     fn test_c14n_basic_document() {
         unsafe {
@@ -2641,6 +2721,13 @@ mod tests {
         }
     }
 
+    /// Verify that an empty element is canonicalized in expanded form.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` created by the tree helpers must be valid and linked
+    ///   before `canonicalize_doc` reads them; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_basic_empty_element() {
         unsafe {
@@ -2664,6 +2751,13 @@ mod tests {
 
     // ── Namespace propagation ──
 
+    /// Verify that namespace declarations propagate through canonicalization.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `ns`, and `root` created by the tree helpers must be valid,
+    ///   live pointers while `canonicalize_doc` walks the document; the doc is
+    ///   freed with `tree::free_doc`.
     #[test]
     fn test_c14n_namespace_propagation() {
         unsafe {
@@ -2705,6 +2799,13 @@ mod tests {
 
     // ── Attribute ordering ──
 
+    /// Verify that attributes are canonicalized in lexicographic order.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` created by the tree helpers must be valid and linked
+    ///   before `canonicalize_doc` reads them; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_attribute_ordering() {
         unsafe {
@@ -2759,6 +2860,14 @@ mod tests {
 
     // ── Character escaping ──
 
+    /// Verify that text content escapes the less-than, ampersand,
+    /// greater-than, and carriage-return characters.
+    ///
+    /// # Safety
+    ///
+    /// - The text bytes must be NUL-terminated (`tree::new_text` reads them as
+    ///   a C string); `doc` and `root` must be valid while `canonicalize_doc`
+    ///   runs, and the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_character_escaping_text() {
         unsafe {
@@ -2788,6 +2897,15 @@ mod tests {
         }
     }
 
+    /// Verify that attribute values escape the less-than, ampersand, quote,
+    /// tab, newline, and carriage-return characters.
+    ///
+    /// # Safety
+    ///
+    /// - The attribute name and value byte buffers must be NUL-terminated
+    ///   (`tree::set_prop` reads them as C strings); `doc` and `root` must be
+    ///   valid while `canonicalize_doc` runs, and the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_character_escaping_attr() {
         unsafe {
@@ -2843,6 +2961,13 @@ mod tests {
 
     // ── With comments ──
 
+    /// Verify that comments are omitted or included depending on the mode.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `comment` created by the tree helpers must be
+    ///   valid, live pointers while `canonicalize_doc` runs; the doc is freed
+    ///   with `tree::free_doc`.
     #[test]
     fn test_c14n_with_comments() {
         unsafe {
@@ -2880,6 +3005,14 @@ mod tests {
 
     // ── Exclusive vs inclusive ──
 
+    /// Verify the namespace rendering difference between exclusive and
+    /// inclusive C14N.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `child` created by the tree helpers must be valid,
+    ///   live pointers while `canonicalize_doc` runs; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_exclusive_vs_inclusive() {
         unsafe {
@@ -2932,6 +3065,13 @@ mod tests {
 
     // ── XML declaration handling ──
 
+    /// Verify that C14N output omits the XML declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` returned by `create_simple_doc` must be a valid `_xmlDoc`
+    ///   pointer, alive until `canonicalize_doc` returns; the test frees it
+    ///   with `tree::free_doc`.
     #[test]
     fn test_c14n_no_xml_declaration() {
         unsafe {
@@ -2949,6 +3089,12 @@ mod tests {
 
     // ── Empty document ──
 
+    /// Verify that an empty document canonicalizes to empty output.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` created by `tree::new_doc` must be a valid `_xmlDoc` pointer
+    ///   while `canonicalize_doc` runs; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_empty_document() {
         unsafe {
@@ -2968,6 +3114,12 @@ mod tests {
 
     // ── Edge cases ──
 
+    /// Verify that canonicalizing a NULL document returns -1.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `doc` is allowed and must not be dereferenced; the
+    ///   `result` out-parameter receives no allocation on the failure path.
     #[test]
     fn test_c14n_null_doc() {
         unsafe {
@@ -2984,6 +3136,13 @@ mod tests {
         }
     }
 
+    /// Verify that text node content survives canonicalization.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `text` created by the tree helpers must be valid,
+    ///   live pointers while `canonicalize_doc` runs; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_text_node() {
         unsafe {
@@ -3010,6 +3169,13 @@ mod tests {
         }
     }
 
+    /// Verify that CDATA content is canonicalized as escaped text.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and the text node created by the tree helpers must be
+    ///   valid, live pointers while `canonicalize_doc` runs; the doc is freed
+    ///   with `tree::free_doc`.
     #[test]
     fn test_c14n_cdata_section() {
         unsafe {
@@ -3038,6 +3204,13 @@ mod tests {
         }
     }
 
+    /// Verify that processing instructions are canonicalized.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `pi` created by the tree helpers must be valid,
+    ///   live pointers while `canonicalize_doc` runs; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_pi_node() {
         unsafe {
@@ -3062,6 +3235,14 @@ mod tests {
         }
     }
 
+    /// Verify that the with-comments flag includes comments in the output.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `comment` created by the tree helpers must be
+    ///   valid, live pointers while `c14n_doc_dump_memory` runs.
+    /// - `result` receives a buffer owned by the callee; it is asserted
+    ///   non-NULL, read as `len` bytes, and freed with `xmlFreeImpl`.
     #[test]
     fn test_c14n_with_comments_flag() {
         unsafe {
@@ -3133,6 +3314,14 @@ mod tests {
         assert!(!C14nMode::XML_C14N_1_1.is_exclusive());
     }
 
+    /// Verify that `c14n_escape_text` escapes carriage returns as `&#xD;`.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` from `io::buf_create` must be a valid `_xmlBuffer` pointer for
+    ///   the whole call; it is freed with `io::buf_free`.
+    /// - `text` must point to a buffer with at least `len` readable bytes
+    ///   (the NUL terminator is not needed because `len` bounds the read).
     #[test]
     fn test_c14n_escape_text_cr() {
         unsafe {
@@ -3159,6 +3348,15 @@ mod tests {
         }
     }
 
+    /// Verify that `c14n_escape_attr` escapes tab, newline, and carriage
+    /// return characters.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` from `io::buf_create` must be a valid `_xmlBuffer` pointer for
+    ///   the whole call; it is freed with `io::buf_free`.
+    /// - `text` must be a valid NUL-terminated `xmlChar` string, read as a C
+    ///   string by `c14n_escape_attr`.
     #[test]
     fn test_c14n_escape_attr_tab_nl_cr() {
         unsafe {
@@ -3194,6 +3392,13 @@ mod tests {
         }
     }
 
+    /// Verify `parse_inclusive_prefixes` on NULL, empty, and comma-separated
+    /// inputs.
+    ///
+    /// # Safety
+    ///
+    /// - The static byte-string pointers passed in must be NUL-terminated;
+    ///   NULL is allowed and yields `None`.
     #[test]
     fn test_c14n_parse_inclusive_prefixes() {
         // Test NULL input
@@ -3220,6 +3425,13 @@ mod tests {
         assert_eq!(set.len(), 3);
     }
 
+    /// Verify `cmp_document_order` against siblings in document order.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, `child1`, and `child2` created by the tree helpers
+    ///   must be valid, live pointers while `cmp_document_order` walks the
+    ///   ancestor chains; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_document_order() {
         unsafe {
@@ -3261,6 +3473,13 @@ mod tests {
         }
     }
 
+    /// Verify that `c14n_escape_text` escapes a greater-than sign as `&gt;`.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` from `io::buf_create` must be a valid `_xmlBuffer` pointer for
+    ///   the whole call; it is freed with `io::buf_free`.
+    /// - `text` must point to a buffer with at least `len` readable bytes.
     #[test]
     fn test_c14n_escape_text_gt() {
         unsafe {
@@ -3286,6 +3505,13 @@ mod tests {
         }
     }
 
+    /// Verify that `c14n_escape_text` escapes the CDATA-end sequence.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` from `io::buf_create` must be a valid `_xmlBuffer` pointer for
+    ///   the whole call; it is freed with `io::buf_free`.
+    /// - `text` must point to a buffer with at least `len` readable bytes.
     #[test]
     fn test_c14n_escape_text_cdata_end() {
         unsafe {
@@ -3312,6 +3538,14 @@ mod tests {
         }
     }
 
+    /// Verify that `c14n_execute` streams canonicalized output through a C
+    /// callback.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` pointer, alive for the call.
+    /// - `output_vec` must be the `Box::into_raw` pointer of a byte vector
+    ///   and stay exclusively owned until it is reclaimed with `Box::from_raw`.
     #[test]
     fn test_c14n_execute_callback() {
         unsafe {
@@ -3320,6 +3554,14 @@ mod tests {
             // Use a heap-allocated Vec passed through the callback context
             let output_vec = Box::into_raw(Box::new(Vec::<u8>::new()));
 
+            /// C callback that appends canonicalized output to a byte vector.
+            ///
+            /// # Safety
+            ///
+            /// - `ctx` must be the `Box::into_raw` pointer of a byte vector
+            ///   that is exclusively owned for the duration of the call.
+            /// - `data` must point to `len` readable bytes of output; `len` is
+            ///   cast to `usize` for the slice.
             unsafe extern "C" fn test_callback(
                 ctx: *mut c_void,
                 data: *const c_char,
@@ -3356,6 +3598,14 @@ mod tests {
         }
     }
 
+    /// Verify that `c14n_doc_save_to` writes into an output buffer.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` pointer, alive for the call.
+    /// - `buf` and the `output` buffer created from it must be valid pointers
+    ///   until `io::output_buffer_close`; `buf` is freed with `io::buf_free`
+    ///   and the doc with `tree::free_doc`.
     #[test]
     fn test_c14n_save_to_output_buffer() {
         unsafe {
@@ -3397,6 +3647,14 @@ mod tests {
         }
     }
 
+    /// Verify the `xmlC14NDocDumpMemory` C ABI export.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` pointer, alive for the call.
+    /// - `result` receives a callee-owned buffer, asserted non-NULL, read as
+    ///   `len` bytes, and freed with `xmlFreeImpl`; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_c_abi_doc_dump_memory() {
         unsafe {
@@ -3430,6 +3688,13 @@ mod tests {
         }
     }
 
+    /// Verify the `xmlC14NExecute` C ABI export with no visibility callback.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` pointer, alive for the call.
+    /// - `buf` and the `output` buffer created from it must be valid until
+    ///   `io::output_buffer_close`; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_c_abi_execute() {
         unsafe {
@@ -3472,6 +3737,14 @@ mod tests {
         }
     }
 
+    /// Verify the `xmlC14NDocSaveTo` C ABI export.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` pointer, alive for the call.
+    /// - `buf` and the `output` buffer created from it must be valid until
+    ///   `io::output_buffer_close`; `buf` is freed with `io::buf_free` and the
+    ///   doc with `tree::free_doc`.
     #[test]
     fn test_c14n_c_abi_save_to() {
         unsafe {
@@ -3544,6 +3817,14 @@ mod tests {
         doc
     }
 
+    /// Verify that exclusive C14N does not re-declare a namespace already
+    /// rendered by an ancestor.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` from `build_nested_ns_doc` must be a valid `_xmlDoc` with valid
+    ///   node, namespace, and attribute pointers while `canonicalize_doc` runs;
+    ///   the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_exclusive_skips_ancestor_rendered_ns() {
         // R-000166: exclusive C14N must not re-declare a namespace already
@@ -3560,6 +3841,13 @@ mod tests {
         }
     }
 
+    /// Verify that namespaces render in lexicographic prefix order.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and the namespace declarations created by the tree
+    ///   helpers must be valid, live pointers while `canonicalize_doc` runs;
+    ///   the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_namespace_sorting() {
         // R-000166: namespaces render in lexicographic prefix order (upstream
@@ -3587,6 +3875,13 @@ mod tests {
         }
     }
 
+    /// Verify that the implicit `xml` namespace is never rendered.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `xml_ns` created by the tree helpers must be valid,
+    ///   live pointers; `xml_ns` is stored in `doc.oldNs` and must stay alive
+    ///   until the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_xml_ns_never_rendered() {
         // R-000166: the xml namespace is never rendered as xmlns:xml in
@@ -3609,6 +3904,13 @@ mod tests {
         }
     }
 
+    /// Verify that an empty default namespace undeclaration is rendered.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, `d_ns`, `a`, and the namespace declarations created
+    ///   by the tree helpers must be valid, live pointers while
+    ///   `canonicalize_doc` runs; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_empty_default_undeclaration() {
         // R-000166: `<a xmlns="">` renders the empty default undeclaration
@@ -3641,6 +3943,13 @@ mod tests {
         }
     }
 
+    /// Verify that exclusive C14N rejects relative namespace URIs.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` created by the tree helpers must be valid, live
+    ///   pointers while `c14n_doc_dump_memory` runs; the doc is freed with
+    ///   `tree::free_doc`.
     #[test]
     fn test_c14n_relative_ns_rejected_exclusive() {
         // R-000166: the relative-namespace-URI rejection applies in exclusive
@@ -3672,6 +3981,13 @@ mod tests {
         }
     }
 
+    /// Verify newline placement for document-level PIs.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `pi1`, `root`, and `pi2` created by the tree helpers must be
+    ///   valid, live pointers; the PIs are children of the doc and must stay
+    ///   alive until the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_pi_document_level_newlines() {
         // R-000166: PIs before the document element get a trailing newline,
@@ -3690,6 +4006,15 @@ mod tests {
         }
     }
 
+    /// Verify that subset canonicalization renders only nodes in the set.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `child` created by the tree helpers must be valid,
+    ///   live pointers while `c14n_doc_dump_memory` runs; the nodeset array
+    ///   must be NULL-terminated and live for the call.
+    /// - `result` receives a callee-owned buffer, read as `len` bytes, and
+    ///   freed with `xmlFreeImpl`; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_subset_visibility() {
         // R-000166: subset canonicalization renders only nodes in the set;
@@ -3724,6 +4049,16 @@ mod tests {
         }
     }
 
+    /// Verify that C14N 1.0 imports xml-namespace attributes from hidden
+    /// ancestors of a visible orphan element.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `xml_ns`, `root`, `lang_attr`, and `child` created by the tree
+    ///   helpers must be valid, live pointers while `c14n_doc_dump_memory`
+    ///   runs; the nodeset array must be NULL-terminated and live for the call.
+    /// - `result` receives a callee-owned buffer, read as `len` bytes, and
+    ///   freed with `xmlFreeImpl`; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_subset_hidden_parent_xml_lang() {
         // R-000166: C14N 1.0 imports xml-namespace attributes from hidden
@@ -3770,6 +4105,14 @@ mod tests {
         }
     }
 
+    /// Verify that a prefix rebound away and back to an older URI is
+    /// re-rendered.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, `b`, `c`, and the namespace declarations created by
+    ///   the tree helpers must be valid, live pointers while `canonicalize_doc`
+    ///   runs; the doc is freed with `tree::free_doc`.
     #[test]
     fn test_c14n_rebinding_chain_rere_declares() {
         // R-000166: a prefix rebound away and back to an older URI IS

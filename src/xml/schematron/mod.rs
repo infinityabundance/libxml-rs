@@ -637,6 +637,16 @@ unsafe fn get_inline_text(node: *mut _xmlNode) -> String {
 /// created from a memory buffer.
 ///
 /// Returns the parsed schema, or an error message on failure.
+///
+/// # Safety
+///
+/// - `xml_doc` must be a valid `&str` whose byte buffer stays alive and
+///   readable for `xml_doc.len()` bytes for the duration of the call
+///   (`xmlReadMemory` copies the buffer).
+/// - The document pointer returned by `xmlReadMemory` is borrowed by
+///   `schematron_parse_doc` and then released exactly once with `xmlFreeDoc`
+///   on every path; a NULL result is treated as a parse error and is not
+///   freed.
 pub fn schematron_parse(xml_doc: &str) -> Result<SchematronSchema, String> {
     let doc_ptr = unsafe {
         crate::abi::exports_xml2::xmlReadMemory(
@@ -1343,6 +1353,17 @@ unsafe fn find_matching_nodes(
 
 /// Simple context matching for XPath-like context expressions.
 /// This is a fallback when XPath compilation fails.
+///
+/// # Safety
+///
+/// - `root` must be NULL or a valid pointer to a live `_xmlNode` whose
+///   children/next chains are valid and NULL-terminated.
+/// - The wildcard paths tolerate a NULL `root` (the collectors short-circuit),
+///   but the name-matching path dereferences `(*root).children` directly, so
+///   `root` must be non-NULL there.
+/// - The tree must not be mutated or freed concurrently during the call; the
+///   returned `Vec` holds borrowed node pointers valid only while the tree
+///   stays alive.
 fn simple_context_match(context: &str, root: *mut _xmlNode) -> Vec<*mut _xmlNode> {
     unsafe {
         let context = context.trim();
@@ -2370,6 +2391,14 @@ mod tests {
 
     // ── Validation Tests ──────────────────────────────────────────────────
 
+    /// Test that a true assertion passes validation.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_assert_pass() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2404,6 +2433,14 @@ mod tests {
         assert!(valid, "Validation failed: {:?}", ctxt.errors);
     }
 
+    /// Test that a false assertion fails validation and records an error.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_assert_fail() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2443,6 +2480,14 @@ mod tests {
         assert!(ctxt.nb_errors > 0);
     }
 
+    /// Test that a false report does not trigger validation errors.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_report_pass() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2477,6 +2522,14 @@ mod tests {
         assert!(valid, "Report should not trigger: {:?}", ctxt.errors);
     }
 
+    /// Test that a true report triggers a validation error.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_report_fail() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2512,6 +2565,14 @@ mod tests {
         assert!(ctxt.nb_errors > 0);
     }
 
+    /// Test that a child-element context matches each child node.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_context_matching() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2549,6 +2610,14 @@ mod tests {
         assert!(valid, "Context matching failed: {:?}", ctxt.errors);
     }
 
+    /// Test that multiple patterns/rules are all evaluated.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_multiple_rules() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2590,6 +2659,14 @@ mod tests {
         assert!(valid, "Multiple rules failed: {:?}", ctxt.errors);
     }
 
+    /// Test that the default phase filters which patterns run.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_with_phase_filtering() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2640,6 +2717,14 @@ mod tests {
         );
     }
 
+    /// Test that a schema with no rules validates cleanly.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_no_rules() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2669,6 +2754,14 @@ mod tests {
         assert!(valid, "Empty schema should pass validation");
     }
 
+    /// Test that abstract-rule inheritance is resolved by the validator.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_extends_resolution() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2718,6 +2811,14 @@ mod tests {
         assert!(valid, "Extends resolution failed: {:?}", ctxt.errors);
     }
 
+    /// Test that assertion flags are recorded in the error messages.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_assert_with_flag() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2760,6 +2861,13 @@ mod tests {
 
     // ── C ABI Lifecycle Tests ─────────────────────────────────────────────
 
+    /// Test the C-ABI parser-context lifecycle (create and free).
+    ///
+    /// # Safety
+    ///
+    /// - `xmlSchematronNewParserCtxt(NULL)` returns a non-NULL heap context;
+    ///   it is owned by the caller and must be released exactly once with
+    ///   `xmlSchematronFreeParserCtxt`, which accepts NULL too.
     #[test]
     fn test_c_abi_new_free_parser_ctxt() {
         let ctxt = unsafe { xmlSchematronNewParserCtxt(ptr::null()) };
@@ -2768,6 +2876,16 @@ mod tests {
         // Should not crash
     }
 
+    /// Test the C-ABI parser/validation-context lifecycle.
+    ///
+    /// # Safety
+    ///
+    /// - `schema` is a non-NULL heap parser context from `xmlSchematronNewParserCtxt`;
+    ///   it is borrowed by `xmlSchematronNewValidCtxt`, which returns a
+    ///   non-NULL heap validation context owned by the caller.
+    /// - Each context is released exactly once with its matching free
+    ///   function (`xmlSchematronFreeValidCtxt`, then `xmlSchematronFreeParserCtxt`)
+    ///   and never used afterwards.
     #[test]
     fn test_c_abi_new_free_valid_ctxt() {
         let schema = unsafe { xmlSchematronNewParserCtxt(ptr::null()) };
@@ -2781,6 +2899,15 @@ mod tests {
         // Should not crash
     }
 
+    /// Test the C-ABI memory-parser round trip (parse then free).
+    ///
+    /// # Safety
+    ///
+    /// - `schema_xml` is a valid byte buffer readable for `schema_xml.len()`
+    ///   bytes during the `xmlSchematronNewMemParserCtxt` call.
+    /// - `ctxt` (non-NULL) and the `schema` returned by `xmlSchematronParse`
+    ///   are the same heap pointer: it is released exactly once with
+    ///   `xmlSchematronFree` and never used afterwards.
     #[test]
     fn test_c_abi_parse_free() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2807,6 +2934,17 @@ mod tests {
         // Should not crash
     }
 
+    /// Test the full C-ABI validate path against a passing schema.
+    ///
+    /// # Safety
+    ///
+    /// - `schema_xml` and `doc_xml` are valid byte buffers readable for their
+    ///   lengths during the respective `xmlSchematronNewMemParserCtxt` and
+    ///   `xmlReadMemory` calls.
+    /// - `schema` (non-NULL), `valid_ctxt` (non-NULL) and `doc` (non-NULL)
+    ///   are live heap objects; `xmlSchematronValidateDoc` borrows them, and
+    ///   each is released exactly once with its matching free function in
+    ///   reverse order of creation.
     #[test]
     fn test_c_abi_validate_doc() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2854,6 +2992,17 @@ mod tests {
         unsafe { xmlSchematronFree(schema) };
     }
 
+    /// Test the full C-ABI validate path against a failing schema.
+    ///
+    /// # Safety
+    ///
+    /// - `schema_xml` and `doc_xml` are valid byte buffers readable for their
+    ///   lengths during the respective `xmlSchematronNewMemParserCtxt` and
+    ///   `xmlReadMemory` calls.
+    /// - `schema` (non-NULL), `valid_ctxt` (non-NULL) and `doc` (non-NULL)
+    ///   are live heap objects; `xmlSchematronValidateDoc` borrows them, and
+    ///   each is released exactly once with its matching free function in
+    ///   reverse order of creation.
     #[test]
     fn test_c_abi_validate_fail() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2901,6 +3050,13 @@ mod tests {
         unsafe { xmlSchematronFree(schema) };
     }
 
+    /// Test NULL handling across the C-ABI schematron entry points.
+    ///
+    /// # Safety
+    ///
+    /// - The free functions accept NULL as a no-op; `xmlSchematronParse(NULL)`
+    ///   returns NULL and `xmlSchematronValidateDoc(NULL, NULL)` returns -1
+    ///   without dereferencing either argument.
     #[test]
     fn test_c_abi_null_handling() {
         // All free functions should handle NULL gracefully
@@ -2919,6 +3075,13 @@ mod tests {
 
     // ── Edge Case Tests ───────────────────────────────────────────────────
 
+    /// Test that validating a NULL document reports an error.
+    ///
+    /// # Safety
+    ///
+    /// - `schematron_validate_doc` accepts a NULL `doc` and records an error
+    ///   without dereferencing it; `schema` and `ctxt` are ordinary Rust
+    ///   references that must stay alive for the call.
     #[test]
     fn test_validate_null_doc() {
         let schema = SchematronSchema::new();
@@ -3040,6 +3203,14 @@ mod tests {
         assert!(ctxt.active_phase.is_none());
     }
 
+    /// Test an assertion that counts child elements.
+    ///
+    /// # Safety
+    ///
+    /// - `doc_xml` is a valid byte buffer readable for `doc_xml.len()` bytes
+    ///   during the `xmlReadMemory` call; the returned non-NULL `doc` is a
+    ///   live `_xmlDoc` borrowed by `schematron_validate_doc` and released
+    ///   exactly once with `xmlFreeDoc` afterwards.
     #[test]
     fn test_validate_assert_with_child_count() {
         let schema_xml = r#"<?xml version="1.0"?>

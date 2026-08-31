@@ -27,8 +27,8 @@
   "exsltStrXpathCtxtRegister"
  ],
  "verdict_totals": {
-  "IMPLEMENTED_UNVERIFIED": 76,
-  "PARTIAL": 1,
+  "IMPLEMENTED_UNVERIFIED": 73,
+  "PARTIAL": 4,
   "UNOBLIGATED": 8
  },
  "uncategorized_oracle_functions": [],
@@ -81,15 +81,20 @@
    "missing_symbols": [],
    "obligations_total": 21,
    "obligations": {
-    "INTENTIONAL_NOOP": 2,
-    "IMPLEMENTED": 19
+    "INTENTIONAL_NOOP": 3,
+    "IMPLEMENTED": 15,
+    "STUB": 3
    },
    "obligation_gap": 5,
    "semantic_verified": 0,
-   "stub_symbols": [],
+   "stub_symbols": [
+    "xmlMemDisplay",
+    "xmlMemDisplayLast",
+    "xmlMemoryDump"
+   ],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "verdict": "PARTIAL",
    "note": ""
   },
   "dictionaries": {
@@ -580,16 +585,19 @@
    "missing_symbols": [],
    "obligations_total": 46,
    "obligations": {
-    "IMPLEMENTED": 42,
+    "IMPLEMENTED": 41,
     "NOT_APPLICABLE": 1,
-    "INTENTIONAL_NOOP": 3
+    "INTENTIONAL_NOOP": 3,
+    "STUB": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [],
+   "stub_symbols": [
+    "xmlCheckVersion"
+   ],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "verdict": "PARTIAL",
    "note": ""
   },
   "html-tree": {
@@ -1501,15 +1509,18 @@
    "missing_symbols": [],
    "obligations_total": 3,
    "obligations": {
-    "IMPLEMENTED": 2,
+    "STUB": 1,
+    "IMPLEMENTED": 1,
     "NOT_APPLICABLE": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [],
+   "stub_symbols": [
+    "xmlCheckVersion"
+   ],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "IMPLEMENTED_UNVERIFIED",
+   "verdict": "PARTIAL",
    "note": ""
   },
   "xslt-lifecycle": {

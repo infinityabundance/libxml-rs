@@ -173,6 +173,14 @@ mod tests {
         XPathContext::new(ptr::null_mut())
     }
 
+    /// Create a standalone text node carrying `s` as its content.
+    ///
+    /// # Safety
+    ///
+    /// - The `format!` temporary is a NUL-terminated buffer that lives for
+    ///   the duration of the `new_text` call, which duplicates the content
+    ///   immediately; the returned node is NULL or a valid heap text node
+    ///   that the caller must release with `free_node`.
     fn text_node(s: &str) -> *mut crate::abi::structs::_xmlNode {
         unsafe {
             crate::xml::tree::new_text(
@@ -181,6 +189,15 @@ mod tests {
         }
     }
 
+    /// `set:difference` keeps only the nodes of the first set not present
+    /// in the second.
+    ///
+    /// # Safety
+    ///
+    /// - `a`/`b`/`c` are live standalone text nodes from `text_node`;
+    ///   they are borrowed by the input node-sets and the result node-set
+    ///   (which is only inspected for its first pointer), and each node is
+    ///   freed exactly once with `free_node` after the assertions.
     #[test]
     fn test_difference() {
         let a = text_node("a");
@@ -208,6 +225,14 @@ mod tests {
         }
     }
 
+    /// `set:intersection` keeps only the nodes present in both sets.
+    ///
+    /// # Safety
+    ///
+    /// - `a`/`b`/`c` are live standalone text nodes from `text_node`;
+    ///   they are borrowed by the input node-sets and the result node-set
+    ///   (inspected only for its first pointer), and each node is freed
+    ///   exactly once with `free_node` after the assertions.
     #[test]
     fn test_intersection() {
         let a = text_node("a");
@@ -235,6 +260,14 @@ mod tests {
         }
     }
 
+    /// `set:distinct` drops duplicate string values from a node-set.
+    ///
+    /// # Safety
+    ///
+    /// - `a`/`b`/`c` are live standalone text nodes from `text_node`;
+    ///   they are borrowed by the node-set passed to `distinct_fn`, and
+    ///   each node is freed exactly once with `free_node` after the result
+    ///   length is checked.
     #[test]
     fn test_distinct() {
         let a = text_node("x");
@@ -255,6 +288,14 @@ mod tests {
         }
     }
 
+    /// `set:has-same-node` reports whether the two sets share a node.
+    ///
+    /// # Safety
+    ///
+    /// - `a`/`b` are live standalone text nodes from `text_node`; the
+    ///   node-set clones borrow them (clone copies the raw pointers, never
+    ///   dereferencing), and each node is freed exactly once with
+    ///   `free_node` after the boolean results are read.
     #[test]
     fn test_has_same_node() {
         let a = text_node("a");

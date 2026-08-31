@@ -54,6 +54,18 @@
 //! collapsing attributes): xmllint --debug output is a byte-exact parity
 //! target and downstream tooling parses it. Do not drop the compact-text
 //! threshold logic — R-000119/E-004 depend on it.
+//!
+//! # Safety
+//!
+//! This module contains no top-level `unsafe` blocks, no `static mut` items
+//! and no module-level `unsafe` code; every `unsafe` operation lives inside
+//! the individual `unsafe fn` entry points and their tests below, each
+//! carrying its own `# Safety` contract. The module-level invariant for the
+//! exported dump surface is that all raw pointers (output `FILE*`, `_xmlDoc`,
+//! `_xmlNode`, `_xmlAttr`, `_xmlElement`, `_xmlEntity` and `xmlChar` strings)
+//! are borrowed for the duration of each call — never stored, freed or
+//! detached — and must point to live, unmutated objects; NULL is accepted
+//! wherever the upstream C API allows it.
 
 use crate::abi::structs::{_xmlAttr, _xmlDoc, _xmlNode};
 use core::ffi::{c_char, c_int, c_void};
@@ -65,6 +77,16 @@ const MAX_DEPTH: c_int = 100;
 /// Check if a node is an XInclude start node.
 ///
 /// UPSTREAM-PARITY: `xmlDebugIsXInclude()` — internal check used by debug dumper.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to a live `_xmlNode`.
+/// - If non-NULL, `(*node).ns` must be NULL or a valid `_xmlNs` whose `href`
+///   points to a region of at least 30 readable bytes, and `(*node).name`
+///   must be NULL or point to at least 8 readable bytes (both are scanned
+///   with `from_raw_parts` at fixed lengths).
+/// - The node and its namespace must not be mutated concurrently during the
+///   call.
 fn is_xinclude_node(node: *mut _xmlNode) -> bool {
     if node.is_null() {
         return false;
@@ -555,6 +577,16 @@ struct DtdDumpCtx {
 }
 
 /// Dump an element declaration (`ELEMDECL(name), TYPE (model)`).
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to a live `_xmlElement` whose
+///   `name` is NULL or a NUL-terminated string and whose `content` is NULL or
+///   a valid content-model tree.
+/// - `data` must be NULL or a valid pointer to a `DtdDumpCtx` whose `output`
+///   is a valid writable `FILE*` and whose `depth` is non-negative.
+/// - The element and context must not be mutated concurrently during the
+///   call.
 unsafe extern "C" fn dump_elemscan_cb(payload: *mut c_void, data: *mut c_void, _name: *const u8) {
     if payload.is_null() || data.is_null() {
         return;
@@ -591,6 +623,15 @@ unsafe extern "C" fn dump_elemscan_cb(payload: *mut c_void, data: *mut c_void, _
 
 /// Render a content model tree in the upstream debug format
 /// (`xmlDebugDumpContentModel`, flattened).
+///
+/// # Safety
+///
+/// - `output` must be a valid writable `FILE*`.
+/// - `content` must be NULL or a valid pointer to a live `_xmlElementContent`
+///   tree; element-type nodes require `name` to be a valid NUL-terminated
+///   string and `prefix` to be NULL or a valid NUL-terminated string (both
+///   are passed to `fprintf`).
+/// - The tree must not be mutated or freed concurrently during the call.
 unsafe fn dump_debug_content_model(
     output: *mut _IO_FILE,
     content: *mut crate::abi::structs::_xmlElementContent,
@@ -645,6 +686,14 @@ unsafe fn dump_debug_content_model(
 }
 
 /// Collect the leaves of a same-type chain (left-leaning trees flatten).
+///
+/// # Safety
+///
+/// - `node` must be a valid non-NULL pointer to a live `_xmlElementContent`.
+/// - The subtree reachable through `c1`/`c2` must remain alive and unmutated
+///   for the duration of the call; the traversal reads raw pointers
+///   recursively and stores borrowed copies in `parts`.
+/// - `parts` must be a valid mutable `Vec` reference.
 fn flatten_chain(
     node: *mut crate::abi::structs::_xmlElementContent,
     chain_type: c_int,
@@ -664,6 +713,12 @@ fn flatten_chain(
 }
 
 /// Print the occurrence suffix.
+///
+/// # Safety
+///
+/// - `output` must be a valid writable `FILE*`; the matched occurrence
+///   suffixes are static strings passed to `fprintf`.
+/// - `ocur` is an arbitrary `c_int`; unmatched values return without writing.
 unsafe fn dump_debug_occurrence(output: *mut _IO_FILE, ocur: c_int) {
     use crate::abi::types::xmlElementContentOccur::*;
     let s = match ocur {
@@ -697,6 +752,14 @@ const unsafe fn contains_markup(s: *const crate::abi::types::xmlChar) -> bool {
 }
 
 /// Dump an entity declaration (`ENTITYDECL(name), internal`).
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to a live `_xmlEntity` whose
+///   `name` is NULL or a NUL-terminated string.
+/// - `data` must be NULL or a valid pointer to a `DtdDumpCtx` whose `output`
+///   is a valid writable `FILE*` and whose `depth` is non-negative.
+/// - The entity and context must not be mutated concurrently during the call.
 unsafe extern "C" fn dump_entityscan_cb(payload: *mut c_void, data: *mut c_void, _name: *const u8) {
     if payload.is_null() || data.is_null() {
         return;
@@ -1118,6 +1181,13 @@ mod tests {
         doc
     }
 
+    /// Test that `xmlBoolToText` returns the static strings `true`/`false`.
+    ///
+    /// # Safety
+    ///
+    /// - The returned pointers are non-NULL (asserted) and point to static
+    ///   NUL-terminated strings; reading their first byte requires each
+    ///   pointer to be valid, which the assertions guarantee.
     #[test]
     fn test_xml_bool_to_text() {
         unsafe {
@@ -1131,6 +1201,13 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpString` tolerates NULL output and NULL string.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpString` accepts NULL for both arguments per the C
+    ///   contract; `fmemopen` returns a valid writable `FILE*` when non-NULL,
+    ///   and `fclose` takes ownership of it exactly once.
     #[test]
     fn test_debug_dump_string_null() {
         unsafe {
@@ -1145,6 +1222,13 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpDocument` tolerates NULL output and doc.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpDocument` accepts NULL arguments (early return); a
+    ///   non-NULL `fmemopen` result is a valid `FILE*` owned by the caller
+    ///   and closed exactly once with `fclose`.
     #[test]
     fn test_debug_dump_document_null() {
         unsafe {
@@ -1157,6 +1241,13 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpNode` tolerates NULL output and node.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpNode` accepts NULL arguments (early return); a non-NULL
+    ///   `fmemopen` result is a valid `FILE*` closed exactly once with
+    ///   `fclose`.
     #[test]
     fn test_debug_dump_node_null() {
         unsafe {
@@ -1169,6 +1260,15 @@ mod tests {
         }
     }
 
+    /// Test counting a node and its sibling chain.
+    ///
+    /// # Safety
+    ///
+    /// - `node` and `sibling` are non-NULL pointers returned by `new_node`
+    ///   and linked with `add_sibling`; they remain valid until `free_node`
+    ///   transfers ownership exactly once at the end.
+    /// - `xmlLsCountNode` borrows the chain and must not race concurrent
+    ///   mutation.
     #[test]
     fn test_ls_count_node() {
         unsafe {
@@ -1187,6 +1287,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpAttr` tolerates NULL output and attr.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpAttr` accepts NULL arguments; a non-NULL `fmemopen`
+    ///   result is a valid `FILE*` closed exactly once with `fclose`.
     #[test]
     fn test_debug_dump_attr_null() {
         unsafe {
@@ -1199,6 +1305,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpAttrList` tolerates NULL output and attr list.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpAttrList` accepts NULL arguments and returns without
+    ///   dereferencing them; no pointers are owned or freed by this test.
     #[test]
     fn test_debug_dump_attr_list_null() {
         unsafe {
@@ -1206,6 +1318,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpNodeList` tolerates NULL output and node list.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpNodeList` accepts NULL arguments and returns without
+    ///   dereferencing them; no pointers are owned or freed by this test.
     #[test]
     fn test_debug_dump_node_list_null() {
         unsafe {
@@ -1213,6 +1331,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlLsOneNode` tolerates NULL output and node.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlLsOneNode` accepts NULL arguments; a non-NULL `fmemopen` result
+    ///   is a valid `FILE*` closed exactly once with `fclose`.
     #[test]
     fn test_ls_one_node_null() {
         unsafe {
@@ -1225,6 +1349,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlDebugDumpDocumentHead` tolerates NULL output and doc.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlDebugDumpDocumentHead` accepts NULL arguments and returns without
+    ///   dereferencing them; no pointers are owned or freed by this test.
     #[test]
     fn test_dump_document_head_null() {
         unsafe {
@@ -1232,6 +1362,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlLsCountNode` returns 0 for a NULL node.
+    ///
+    /// # Safety
+    ///
+    /// - Passing NULL to `xmlLsCountNode` is accepted and yields 0 without
+    ///   dereferencing the pointer.
     #[test]
     fn test_ls_count_node_null() {
         assert_eq!(unsafe { xmlLsCountNode(ptr::null_mut()) }, 0);

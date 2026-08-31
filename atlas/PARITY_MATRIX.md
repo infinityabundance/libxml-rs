@@ -12,7 +12,7 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_clang_ast | 1403 |
 | oracle_headers | 1408 |
 | oracle_dso | 1395 |
-| candidate_headers | 1396 |
+| candidate_headers | 1395 |
 | candidate_dso | 1713 |
 | fully_reconciled | 1395 |
 | unresolved_oracle_only | 0 |
@@ -173,7 +173,7 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1396, candidate DSO 1713, reconciled all four 1374, oracle-only 5, candidate-only 311
+- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1395, candidate DSO 1713, reconciled all four 1374, oracle-only 5, candidate-only 310
 - data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 52, reconciled all four 18, oracle-only 0, candidate-only 31
 
 ## libxslt

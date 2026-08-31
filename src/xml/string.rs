@@ -500,6 +500,12 @@ mod tests {
     use super::*;
     use crate::abi::allocator::xmlFreeImpl;
 
+    /// Measure C-string lengths, including the NULL and empty cases.
+    ///
+    /// # Safety
+    ///
+    /// - The tested pointers are NULL or static NUL-terminated strings
+    ///   valid for the duration of `xml_strlen`'s scan.
     #[test]
     fn test_xml_strlen() {
         unsafe {
@@ -511,6 +517,13 @@ mod tests {
         }
     }
 
+    /// Duplicate a C string and verify the copy's contents and terminator.
+    ///
+    /// # Safety
+    ///
+    /// - `s` is NULL or a static NUL-terminated string; `dup` is
+    ///   allocator-owned, valid for `len + 1` bytes, and freed with
+    ///   `xmlFreeImpl` exactly once; `dup` must not be read afterwards.
     #[test]
     fn test_xml_strdup() {
         unsafe {
@@ -526,6 +539,12 @@ mod tests {
         }
     }
 
+    /// Compare C strings, including NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - Every tested pointer is NULL or a static NUL-terminated string
+    ///   valid for the duration of `xml_strcmp`'s scan.
     #[test]
     fn test_xml_strcmp() {
         unsafe {
@@ -540,6 +559,13 @@ mod tests {
         }
     }
 
+    /// Concatenate two C strings and verify the result.
+    ///
+    /// # Safety
+    ///
+    /// - `a` and `b` are static NUL-terminated strings valid for the call;
+    ///   `result` is allocator-owned, valid while read, and freed with
+    ///   `xmlFreeImpl` exactly once.
     #[test]
     fn test_xml_strcat() {
         unsafe {
@@ -558,6 +584,12 @@ mod tests {
         }
     }
 
+    /// Convert a byte slice to a NUL-terminated xmlChar buffer.
+    ///
+    /// # Safety
+    ///
+    /// - `bytes` is a static slice; `ptr` is allocator-owned, valid for
+    ///   `len + 1` bytes, and freed with `xmlFreeImpl` exactly once.
     #[test]
     fn test_bytes_to_xmlstr() {
         unsafe {
@@ -570,6 +602,12 @@ mod tests {
         }
     }
 
+    /// Check prefix matching, including NULL arguments.
+    ///
+    /// # Safety
+    ///
+    /// - The tested pointers are NULL or static NUL-terminated strings
+    ///   valid for the duration of `xml_str_starts_with`'s scan.
     #[test]
     fn test_xml_str_starts_with() {
         unsafe {

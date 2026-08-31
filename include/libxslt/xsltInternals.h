@@ -239,8 +239,9 @@ typedef void (*xsltTransformFunction) (xsltTransformContextPtr ctxt,
 			               xsltElemPreCompPtr comp);
 
 /* upstream xsltInternals.h: stylesheet-compile-time precompute hook */
-typedef void (*xsltPreComputeFunction) (xsltStylesheetPtr style,
-				        xmlNodePtr inst);
+typedef xsltElemPreCompPtr (*xsltPreComputeFunction)(xsltStylesheetPtr style,
+                                                     xmlNodePtr inst,
+                                                     xsltTransformFunction function);
 
 typedef void (*xsltSortFunc) (xsltTransformContextPtr ctxt, xmlNodePtr *sorts,
 				      int nbsorts);

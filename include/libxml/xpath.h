@@ -140,8 +140,8 @@ XMLPUBFUN xmlXPathObjectPtr xmlXPathNodeEval(xmlNodePtr node,
 XMLPUBFUN int xmlXPathEvalPredicate(xmlXPathContextPtr ctxt,
                                     xmlXPathObjectPtr res);
 XMLPUBFUN void xmlXPathFreeObject(xmlXPathObjectPtr obj);
-XMLPUBFUN void *xmlXPathCompile(const xmlChar *str);
-XMLPUBFUN void xmlXPathFreeCompExpr(void *comp);
+XMLPUBFUN xmlXPathCompExpr *xmlXPathCompile(const xmlChar *str);
+XMLPUBFUN void xmlXPathFreeCompExpr(xmlXPathCompExpr *comp);
 XMLPUBFUN int xmlXPathRegisterNs(xmlXPathContextPtr ctxt,
                                   const xmlChar *prefix, const xmlChar *ns_uri);
 XMLPUBFUN int xmlXPathRegisterFunc(xmlXPathContextPtr ctxt,
@@ -153,7 +153,7 @@ XMLPUBFUN int xmlXPathRegisterVariable(xmlXPathContextPtr ctxt,
                                         const xmlChar *name,
                                         xmlXPathObjectPtr value);
 XMLPUBFUN xmlXPathObjectPtr xmlXPathNewNodeSet(xmlNodePtr val);
-XMLPUBFUN xmlXPathObjectPtr xmlXPathNewCString(const xmlChar *val);
+XMLPUBFUN xmlXPathObjectPtr xmlXPathNewCString(const char *val);
 XMLPUBFUN xmlXPathObjectPtr xmlXPathNewFloat(double val);
 XMLPUBFUN xmlXPathObjectPtr xmlXPathNewBoolean(int val);
 
@@ -178,7 +178,7 @@ XMLPUBFUN xmlXPathObjectPtr xmlXPathConvertString(xmlXPathObjectPtr val);
 XMLPUBFUN int xmlXPathCastToBoolean(xmlXPathObjectPtr val);
 XMLPUBFUN double xmlXPathCastToNumber(xmlXPathObjectPtr val);
 XMLPUBFUN xmlChar *xmlXPathCastToString(xmlXPathObjectPtr val);
-XMLPUBFUN int xmlXPathCastBooleanToNumber(int val);
+XMLPUBFUN double xmlXPathCastBooleanToNumber(int val);
 XMLPUBFUN xmlChar *xmlXPathCastBooleanToString(int val);
 XMLPUBFUN int xmlXPathCastNodeSetToBoolean(xmlNodeSetPtr ns);
 XMLPUBFUN double xmlXPathCastNodeSetToNumber(xmlNodeSetPtr ns);

@@ -1,15 +1,15 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-08-31T21:01:31Z",
+ "generated": "2026-08-31T22:34:03Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1181,
+  "passed": 1183,
   "failed": 0,
   "ignored": 1
  },
  "subsystems": {
-  "ABI allocator": 11,
+  "ABI allocator": 13,
   "ABI data globals": 2,
   "ABI (xml2 exports)": 1,
   "ABI (xslt exports)": 8,

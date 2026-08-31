@@ -47,6 +47,13 @@ unsafe fn parse_bytes(bytes: &[u8]) -> *mut _xmlDoc {
     doc
 }
 
+/// Parse an empty document and check the root element type and name.
+///
+/// # Safety
+///
+/// - The document returned by `parse_bytes` is non-NULL (asserted) and
+///   valid while its children and name pointers are read; the document
+///   and its subtree stay alive until the end of the test.
 #[test]
 fn test_parse_empty_document() {
     unsafe {
@@ -65,6 +72,12 @@ fn test_parse_empty_document() {
     }
 }
 
+/// Parse a document with text content and verify the text node.
+///
+/// # Safety
+///
+/// - The parsed document and its child text node are non-NULL
+///   (asserted) and stay valid while `content` is read.
 #[test]
 fn test_parse_element_with_text() {
     unsafe {
@@ -84,6 +97,13 @@ fn test_parse_element_with_text() {
     }
 }
 
+/// Parse a document with attributes and verify name/value chains.
+///
+/// # Safety
+///
+/// - The document, root, attribute and value nodes are non-NULL
+///   (asserted) and stay alive while their `name`/`content` pointers
+///   are read.
 #[test]
 fn test_parse_element_with_attributes() {
     unsafe {
@@ -112,6 +132,12 @@ fn test_parse_element_with_attributes() {
     }
 }
 
+/// Parse nested elements and verify the parent/child/sibling chain.
+///
+/// # Safety
+///
+/// - Every traversed node is non-NULL (asserted) and stays alive while
+///   its `name` and `next`/`children` pointers are read.
 #[test]
 fn test_parse_nested_elements() {
     unsafe {
@@ -141,6 +167,12 @@ fn test_parse_nested_elements() {
     }
 }
 
+/// Parse a comment node and verify its type and content.
+///
+/// # Safety
+///
+/// - The document, root and comment nodes are non-NULL (asserted) and
+///   valid while `type_` and `content` are read.
 #[test]
 fn test_parse_comments() {
     unsafe {
@@ -160,6 +192,12 @@ fn test_parse_comments() {
     }
 }
 
+/// Parse a processing instruction and read its content.
+///
+/// # Safety
+///
+/// - The document and PI node are non-NULL (asserted) and valid while
+///   `type_` and `content` are read.
 #[test]
 fn test_parse_processing_instruction() {
     unsafe {
@@ -177,6 +215,12 @@ fn test_parse_processing_instruction() {
     }
 }
 
+/// Parse a document containing an entity reference.
+///
+/// # Safety
+///
+/// - The document, root and text nodes are non-NULL (asserted) and
+///   stay valid while `type_` and `content` are read.
 #[test]
 fn test_parse_with_entities() {
     unsafe {
@@ -197,6 +241,12 @@ fn test_parse_with_entities() {
     }
 }
 
+/// Parse a CDATA section and check the resulting node kind.
+///
+/// # Safety
+///
+/// - The document, root and cdata nodes are non-NULL (asserted) and
+///   valid while `type_` is read.
 #[test]
 fn test_parse_cdata_section() {
     unsafe {
@@ -217,6 +267,12 @@ fn test_parse_cdata_section() {
     }
 }
 
+/// Parse a document with an XML declaration and verify version/encoding.
+///
+/// # Safety
+///
+/// - The parsed document is non-NULL (asserted) and valid while its
+///   `version` and `encoding` pointers are read.
 #[test]
 fn test_parse_xml_declaration() {
     unsafe {
@@ -231,6 +287,12 @@ fn test_parse_xml_declaration() {
     }
 }
 
+/// Parse malformed XML and check that failure is reported.
+///
+/// # Safety
+///
+/// - The parser context is non-NULL (asserted) and valid until
+///   `free_parser_ctxt`; `myDoc` may be NULL and is only null-checked.
 #[test]
 fn test_parse_invalid_xml() {
     unsafe {
@@ -255,6 +317,14 @@ fn test_parse_invalid_xml() {
     }
 }
 
+/// Parse through the exported `xmlReadMemory` entry point.
+///
+/// # Safety
+///
+/// - `xml` is a static byte buffer valid for the call; the returned
+///   document is non-NULL (asserted) and valid while its tree is read;
+///   the document is never freed here, matching the exported API's
+///   ownership contract.
 #[test]
 fn test_xml_read_memory_export() {
     unsafe {
@@ -284,6 +354,13 @@ fn test_xml_read_memory_export() {
 
 // ── R-000166 regression tests (11.1-Y) ──
 
+/// Parse an unbound-prefix document and verify the raw QName is kept.
+///
+/// # Safety
+///
+/// - The document, nodes and attributes are non-NULL (asserted) and
+///   valid while their `name`/`ns` fields are read; the document is
+///   freed with `tree::free_doc` exactly once at the end.
 #[test]
 fn test_undefined_prefix_keeps_qname() {
     // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): elements and
@@ -312,6 +389,13 @@ fn test_undefined_prefix_keeps_qname() {
     }
 }
 
+/// Parse ancestor-declared namespace prefixes and verify the binding.
+///
+/// # Safety
+///
+/// - The document, nodes, attributes and `ns` pointers are non-NULL
+///   (asserted) and stay valid while `href` is read; the document is
+///   freed with `tree::free_doc` exactly once at the end.
 #[test]
 fn test_ancestor_declared_prefix_binds_uri() {
     // UPSTREAM-PARITY (parser.c xmlParserNsLookupUri): element and attribute

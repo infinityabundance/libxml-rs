@@ -88,6 +88,18 @@
 //! (R-000139 class) and every C consumer reading fields at upstream offsets.
 //! Do not auto-maintain parent pointers for namespace nodes (QUIRK-0002); do
 //! not drop the last/next/prev links — TREE-001 fingerprints them.
+//!
+//! # Safety
+//!
+//! - The unsafe entry points in this module accept raw pointers that must be
+//!   valid, correctly typed, and live for the duration of the call: `_xmlDoc`,
+//!   `_xmlNode`, `_xmlAttr`, `_xmlNs`, `_xmlDtd`, `_xmlBuffer`, and
+//!   NUL-terminated `xmlChar` strings. NULL is permitted only where an
+//!   individual function's contract explicitly allows it.
+//! - Tree links (`parent`, `children`, `last`, `next`, `prev`, `properties`,
+//!   `nsDef`) must form a consistent, live tree; documents own their node
+//!   subtrees, so callers must not free a node that still belongs to a live
+//!   document.
 
 use core::ffi::c_void;
 use core::ptr;
@@ -441,6 +453,11 @@ pub unsafe fn doc_set_root_element(doc: *mut _xmlDoc, root: *mut _xmlNode) -> *m
 ///
 /// Returns the root element, or NULL if the document has no root element.
 /// Skips non-element nodes (like PIs, comments) at the document level.
+///
+/// # Safety
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL; when non-NULL it
+///   is dereferenced and its `children` chain is walked.
 pub fn doc_get_root_element(doc: *mut _xmlDoc) -> *mut _xmlNode {
     if doc.is_null() {
         return ptr::null_mut();
@@ -469,6 +486,11 @@ pub fn doc_get_root_element(doc: *mut _xmlDoc) -> *mut _xmlNode {
 /// ```
 ///
 /// Returns the line number, or 0 if not available.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode`; it is forwarded
+///   to `get_line_no_internal`, which walks the tree links.
 pub fn get_line_no(node: *const _xmlNode) -> c_long {
     unsafe { get_line_no_internal(node, 0) }
 }
@@ -477,6 +499,13 @@ pub fn get_line_no(node: *const _xmlNode) -> c_long {
 /// nodes report their stored line; other node types (DTD nodes, entity
 /// references, declarations, ...) walk to the nearest previous or ancestor
 /// element-ish node and return -1 when none exists.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode` in a consistent
+///   tree: the `children`, `next`, `prev`, and `parent` links it follows must
+///   themselves point to valid `_xmlNode` structs.
+/// - `depth` bounds the recursion; callers start at 0.
 unsafe fn get_line_no_internal(node: *const _xmlNode, depth: c_int) -> c_long {
     if depth >= 5 {
         return -1;
@@ -1019,6 +1048,14 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
 /// Copy a linked list of nodes.
 ///
 /// Returns the first node of the new list, or NULL on failure.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode`; when non-NULL it
+///   is copied with `copy_node` and its `next` chain is walked, so every node
+///   reachable through `next` must be valid and alive.
+/// - `recursive` is forwarded to `copy_node` and selects deep versus shallow
+///   copy; deep copies require valid `children` subtrees.
 unsafe fn copy_node_list(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNode {
     if node.is_null() {
         return ptr::null_mut();
@@ -1050,6 +1087,14 @@ unsafe fn copy_node_list(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNo
 }
 
 /// Copy a linked list of namespace declarations.
+///
+/// # Safety
+///
+/// - `ns` must be NULL or a valid pointer to an `_xmlNs`; when non-NULL its
+///   fields are read and its `next` chain is walked, so every reachable
+///   `_xmlNs` must be valid and alive.
+/// - `href` and `prefix` of each entry may be NULL or NUL-terminated `xmlChar`
+///   strings; `dup_xml_str` reads them as C strings.
 unsafe fn copy_ns_list(ns: *const _xmlNs) -> *mut _xmlNs {
     if ns.is_null() {
         return ptr::null_mut();
@@ -1092,6 +1137,15 @@ unsafe fn copy_ns_list(ns: *const _xmlNs) -> *mut _xmlNs {
 }
 
 /// Copy a linked list of properties.
+///
+/// # Safety
+///
+/// - `prop` must be NULL or a valid pointer to an `_xmlAttr`; its fields are
+///   read and its `next` chain is walked, so every reachable `_xmlAttr` must
+///   be valid and alive.
+/// - `children` of each attribute must be NULL or a valid node list; it is
+///   copied recursively via `copy_node_list`. `name` may be NULL or a
+///   NUL-terminated `xmlChar` string read by `dup_xml_str`.
 unsafe fn copy_prop_list(prop: *const _xmlAttr) -> *mut _xmlAttr {
     if prop.is_null() {
         return ptr::null_mut();
@@ -1150,6 +1204,15 @@ unsafe fn copy_prop_list(prop: *const _xmlAttr) -> *mut _xmlAttr {
 }
 
 /// Propagate the document pointer to all descendants of a node.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode`; the function
+///   walks the whole subtree through `properties`, `children`, and `next`
+///   links, so every reachable node and attribute must be a valid, live
+///   struct.
+/// - `doc` may be NULL or a valid pointer to an `_xmlDoc`; it is only stored
+///   into `doc` fields, never dereferenced.
 unsafe fn propagate_doc(node: *mut _xmlNode, doc: *mut _xmlDoc) {
     let mut cur = node;
     while !cur.is_null() {
@@ -2504,15 +2567,47 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
     }
 
     // Free hash tables for declarations
+    /// Hash-table deallocator shim that frees an `_xmlNotation` payload.
+    ///
+    /// # Safety
+    ///
+    /// - `payload` must be NULL or a valid pointer to an `_xmlNotation` owned
+    ///   exclusively by the hash table being freed; it is freed with
+    ///   `free_notation`.
+    /// - `_name` is unused.
     unsafe extern "C" fn free_notation_wrapper(payload: *mut c_void, _name: *mut u8) {
         crate::xml::dtd::free_notation(payload as *mut _xmlNotation);
     }
+    /// Hash-table deallocator shim that frees an `_xmlElement` payload.
+    ///
+    /// # Safety
+    ///
+    /// - `payload` must be NULL or a valid pointer to an `_xmlElement` owned
+    ///   exclusively by the hash table being freed; it is freed with
+    ///   `free_element`.
+    /// - `_name` is unused.
     unsafe extern "C" fn free_element_wrapper(payload: *mut c_void, _name: *mut u8) {
         crate::xml::dtd::free_element(payload as *mut _xmlElement);
     }
+    /// Hash-table deallocator shim that frees an `_xmlAttribute` payload.
+    ///
+    /// # Safety
+    ///
+    /// - `payload` must be NULL or a valid pointer to an `_xmlAttribute` owned
+    ///   exclusively by the hash table being freed; it is freed with
+    ///   `free_attribute`.
+    /// - `_name` is unused.
     unsafe extern "C" fn free_attribute_wrapper(payload: *mut c_void, _name: *mut u8) {
         crate::xml::dtd::free_attribute(payload as *mut _xmlAttribute);
     }
+    /// Hash-table deallocator shim that frees an `_xmlEntity` payload.
+    ///
+    /// # Safety
+    ///
+    /// - `payload` must be NULL or a valid pointer to an `_xmlEntity` owned
+    ///   exclusively by the hash table being freed; it is freed with
+    ///   `free_entity`.
+    /// - `_name` is unused.
     unsafe extern "C" fn free_entity_wrapper(payload: *mut c_void, _name: *mut u8) {
         crate::xml::entities::free_entity(payload as *mut _xmlEntity);
     }
@@ -2913,6 +3008,12 @@ unsafe fn write_indent(
 /// Upstream compares `node->name == xmlStringTextNoenc` (pointer equality
 /// against a static marker). Our trees carry the marker as a duplicated
 /// `"textnoenc"` string, so we compare contents.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode`.
+/// - When `node.name` is non-NULL it must be a valid NUL-terminated `xmlChar`
+///   string; `c_str_eq_bytes` scans it until the NUL byte.
 unsafe fn is_noenc_text(node: *mut _xmlNode) -> bool {
     if node.is_null() {
         return false;
@@ -2925,6 +3026,12 @@ unsafe fn is_noenc_text(node: *mut _xmlNode) -> bool {
 }
 
 /// Compare a NUL-terminated xmlChar string with a byte slice.
+///
+/// # Safety
+///
+/// - `s` must be a valid pointer to a NUL-terminated `xmlChar` buffer; the
+///   scan reads `b.len()` bytes plus the terminating NUL at `s[b.len()]`, so
+///   the buffer must be at least `b.len() + 1` readable bytes.
 const unsafe fn c_str_eq_bytes(s: *const xmlChar, b: &[u8]) -> bool {
     let mut i = 0usize;
     while i < b.len() {
@@ -4445,6 +4552,13 @@ mod tests {
     use super::*;
     use core::ffi::c_void;
 
+    /// Helper: allocate a NUL-terminated xmlChar copy of `s`.
+    ///
+    /// # Safety
+    ///
+    /// - The returned buffer is heap-allocated with `xmlMallocImpl` and must
+    ///   be freed by the caller with `xmlFreeImpl`; it may be NULL on OOM, so
+    ///   callers check it before use.
     fn c_str(s: &str) -> *const xmlChar {
         let bytes = s.as_bytes();
         let buf = unsafe { allocator::xmlMallocImpl(bytes.len() + 1) as *mut u8 };
@@ -4457,6 +4571,12 @@ mod tests {
         buf as *const xmlChar
     }
 
+    /// Verify creating and freeing a document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` from `new_doc` must be a valid `_xmlDoc` while its fields are
+    ///   read; it is freed with `free_doc`.
     #[test]
     fn test_new_free_doc() {
         unsafe {
@@ -4470,6 +4590,13 @@ mod tests {
         }
     }
 
+    /// Verify creating a document with a version string.
+    ///
+    /// # Safety
+    ///
+    /// - The `c_str` buffer must be NUL-terminated and alive while `new_doc`
+    ///   duplicates it; the buffer is freed with `xmlFreeImpl` and the doc
+    ///   with `free_doc`.
     #[test]
     fn test_new_doc_with_version() {
         unsafe {
@@ -4484,6 +4611,13 @@ mod tests {
         }
     }
 
+    /// Verify creating a node.
+    ///
+    /// # Safety
+    ///
+    /// - The `c_str` buffer must be NUL-terminated and alive while `new_node`
+    ///   duplicates it; the node is freed with `free_node` and the doc with
+    ///   `free_doc`.
     #[test]
     fn test_new_node() {
         unsafe {
@@ -4497,6 +4631,13 @@ mod tests {
         }
     }
 
+    /// Verify that `node_get_content` concatenates all descendant text.
+    ///
+    /// # Safety
+    ///
+    /// - The doc and nodes built by the tree helpers must be valid and linked
+    ///   before `node_get_content` walks them; `content` is read with
+    ///   `strlen` and freed with `xmlFreeImpl`, and the doc with `free_doc`.
     #[test]
     fn test_node_get_content_recurses_descendants() {
         // UPSTREAM-PARITY: xmlNodeGetContent (tree.c) concatenates ALL
@@ -4525,6 +4666,12 @@ mod tests {
         }
     }
 
+    /// Verify setting the root element of a document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` must be valid pointers while `doc_set_root_element`
+    ///   relinks them; the doc is freed with `free_doc`.
     #[test]
     fn test_doc_set_root_element() {
         unsafe {
@@ -4538,6 +4685,13 @@ mod tests {
         }
     }
 
+    /// Verify adding children and siblings.
+    ///
+    /// # Safety
+    ///
+    /// - The doc and nodes built by the tree helpers must be valid and linked
+    ///   before their `parent`, `children`, `last`, `next`, and `prev` fields
+    ///   are read; the doc is freed with `free_doc`.
     #[test]
     fn test_add_child_and_sibling() {
         unsafe {
@@ -4569,6 +4723,13 @@ mod tests {
         }
     }
 
+    /// Verify unlinking a node.
+    ///
+    /// # Safety
+    ///
+    /// - The doc and nodes must be valid while `unlink_node` rewrites the
+    ///   sibling links; the unlinked node is freed with `free_node` and the
+    ///   doc with `free_doc`.
     #[test]
     fn test_unlink_node() {
         unsafe {
@@ -4591,6 +4752,12 @@ mod tests {
         }
     }
 
+    /// Verify creating text, comment, and PI nodes.
+    ///
+    /// # Safety
+    ///
+    /// - The `c_str` buffers must be NUL-terminated and alive while the
+    ///   creators duplicate them; each node is freed with `free_node`.
     #[test]
     fn test_text_and_comment_nodes() {
         unsafe {
@@ -4612,6 +4779,13 @@ mod tests {
         }
     }
 
+    /// Verify setting and getting a property.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` must be valid while `set_prop` and `get_prop` run;
+    ///   the value returned by `get_prop` is freed with `xmlFreeImpl` and the
+    ///   doc with `free_doc`.
     #[test]
     fn test_set_and_get_prop() {
         unsafe {
@@ -4632,6 +4806,13 @@ mod tests {
         }
     }
 
+    /// Verify removing a property.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` must be valid while `set_prop`, `get_prop`, and
+    ///   `remove_prop` run; values returned by `get_prop` are freed with
+    ///   `xmlFreeImpl` and the doc with `free_doc`.
     #[test]
     fn test_remove_prop() {
         unsafe {
@@ -4660,6 +4841,13 @@ mod tests {
         }
     }
 
+    /// Verify namespace operations: creation, binding, and search.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `ns` must be valid while the namespace helpers
+    ///   run; the `c_str` buffers must be NUL-terminated and alive for the
+    ///   calls. The doc is freed with `free_doc`.
     #[test]
     fn test_namespace_operations() {
         unsafe {
@@ -4684,6 +4872,13 @@ mod tests {
         }
     }
 
+    /// Verify creating a DTD and attaching it to a document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` must be valid while `new_dtd` and `get_int_subset`
+    ///   run; the `c_str` buffers must be NUL-terminated and alive for the
+    ///   calls. The doc is freed with `free_doc`.
     #[test]
     fn test_new_dtd() {
         unsafe {
@@ -4696,6 +4891,12 @@ mod tests {
         }
     }
 
+    /// Verify deep-copying a node.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` must be valid while `copy_node` walks the subtree;
+    ///   the copy is freed with `free_node` and the doc with `free_doc`.
     #[test]
     fn test_copy_node_deep() {
         unsafe {
@@ -4716,6 +4917,13 @@ mod tests {
         }
     }
 
+    /// Verify creating a CDATA section node.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be valid and `content` NUL-terminated and alive while
+    ///   `new_cdata_block` runs; the node is freed with `free_node` and the
+    ///   doc with `free_doc`.
     #[test]
     fn test_new_cdata_block() {
         unsafe {
@@ -4729,6 +4937,14 @@ mod tests {
         }
     }
 
+    /// Verify NULL handling in the tree API entry points.
+    ///
+    /// # Safety
+    ///
+    /// - NULL pointers passed to `new_doc`, `new_node`, `free_node`,
+    ///   `free_doc`, `unlink_node`, `add_child`, and `add_sibling` must be
+    ///   accepted without dereference (the test asserts this); all created
+    ///   objects are freed.
     #[test]
     fn test_null_handling() {
         unsafe {
@@ -4749,6 +4965,11 @@ mod tests {
     // ═══════════════════════════════════════════════════════════════════
 
     /// Helper: compare a buffer's content to an expected string.
+    ///
+    /// # Safety
+    ///
+    /// - `buf` must be a valid pointer to an `_xmlBuffer`; its content and
+    ///   length are read through `io::buf_content` and `io::buf_length`.
     unsafe fn buf_eq_str(buf: *mut _xmlBuffer, expected: &str) -> bool {
         let content = io::buf_content(buf);
         if content.is_null() {
@@ -4762,6 +4983,13 @@ mod tests {
         slice == expected.as_bytes()
     }
 
+    /// Verify serializing an empty document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` and `buf` a valid `_xmlBuffer` while
+    ///   `doc_dump` runs; `buf` is freed with `io::buf_free` and the doc with
+    ///   `free_doc`.
     #[test]
     fn test_serialize_empty_document() {
         unsafe {
@@ -4783,6 +5011,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing an element with text content.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_element_with_text() {
         unsafe {
@@ -4808,6 +5042,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing an element with attributes.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_element_with_attributes() {
         unsafe {
@@ -4832,6 +5072,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing nested elements.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` walks the tree; `buf`
+    ///   is freed with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_nested_elements() {
         unsafe {
@@ -4858,6 +5104,12 @@ mod tests {
         }
     }
 
+    /// Verify formatted serialization output.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `serialize_node` runs; `buf` is
+    ///   freed with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_with_formatting() {
         unsafe {
@@ -4882,6 +5134,12 @@ mod tests {
         }
     }
 
+    /// Verify that `&` is escaped in serialized text.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_escape_ampersand() {
         unsafe {
@@ -4906,6 +5164,12 @@ mod tests {
         }
     }
 
+    /// Verify that angle brackets are escaped in serialized text.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_escape_angle_brackets() {
         unsafe {
@@ -4930,6 +5194,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing a comment node.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_comment() {
         unsafe {
@@ -4954,6 +5224,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing a processing instruction.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_pi() {
         unsafe {
@@ -4981,6 +5257,12 @@ mod tests {
         }
     }
 
+    /// Verify serializing an empty element in self-closing form.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_self_closing() {
         unsafe {
@@ -5002,6 +5284,13 @@ mod tests {
         }
     }
 
+    /// Verify dumping a node to a string.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be a valid `_xmlNode` while `dump_node` serializes it;
+    ///   `result` is read with `xml_strlen` and freed with `xmlFreeImpl`, and
+    ///   the node with `free_node`.
     #[test]
     fn test_dump_node_to_string() {
         unsafe {
@@ -5021,6 +5310,13 @@ mod tests {
         }
     }
 
+    /// Verify dumping a document to a string.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` while `dump_doc` serializes it;
+    ///   `result` is read with `xml_strlen` and freed with `xmlFreeImpl`, and
+    ///   the doc with `free_doc`.
     #[test]
     fn test_dump_doc_to_string() {
         unsafe {
@@ -5041,6 +5337,13 @@ mod tests {
         }
     }
 
+    /// Verify `xmlDocDumpFormatMemory`.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` must be a valid `_xmlDoc` while the export runs; `mem` receives
+    ///   a callee-owned buffer read as `size` bytes and freed with
+    ///   `xmlFreeImpl`, and the doc with `free_doc`.
     #[test]
     fn test_xmlDocDumpFormatMemory() {
         unsafe {
@@ -5067,6 +5370,12 @@ mod tests {
         }
     }
 
+    /// Verify escaping of special characters in attribute values.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` must be valid while `doc_dump` runs; `buf` is freed
+    ///   with `io::buf_free` and the doc with `free_doc`.
     #[test]
     fn test_serialize_escape_attribute() {
         unsafe {

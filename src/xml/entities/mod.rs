@@ -58,6 +58,15 @@
 //! re-entry check would loop on a self-referential entity (CVE-2013-2877). Do
 //! not drop the silent-failure path for unloadable external entities — the
 //! NONET oracle behavior depends on it (SD-004).
+//!
+//! # Safety
+//!
+//! - The module-level `unsafe impl Sync for SyncPtr` is only instantiated in
+//!   this module as the `static PREDEFINED_ENTITIES` array of `_xmlEntity`
+//!   values. That static and the byte-string literals it points to are
+//!   immutable after initialization and are only ever read (never mutated or
+//!   freed), so sharing references to it across threads cannot cause data
+//!   races or use-after-free.
 
 use core::ffi::c_void;
 use core::mem::size_of;
@@ -590,6 +599,15 @@ pub unsafe fn free_entity(entity: *mut _xmlEntity) {
 /// This is separated because the hash deallocator should not free children
 /// (they are owned by the document tree), but `xmlFreeEntity` from user code
 /// should free everything.
+///
+/// # Safety
+///
+/// - `entity` must be NULL or a pointer to a heap-allocated `_xmlEntity` whose
+///   `name`, `content`, `orig`, `ExternalID`, `SystemID`, and `URI` fields are
+///   each either NULL or pointers to allocator-owned allocations. The call
+///   frees every non-NULL field, then frees the entity itself, so afterwards
+///   neither the entity nor any of its fields may be dereferenced or freed
+///   again by the caller.
 unsafe fn free_entity_internal(entity: *mut _xmlEntity, free_children: bool) {
     if entity.is_null() {
         return;
@@ -937,6 +955,12 @@ pub unsafe fn string_decode_entities(
 /// Decode a numeric character reference (`&#NNN;` or `&#xHHH;`).
 ///
 /// Returns the decoded character and the number of additional characters consumed.
+///
+/// # Safety
+///
+/// - `input` must be a valid pointer to a buffer of at least `len` readable
+///   bytes; `pos` must be a valid `&mut usize` in `0..=len` — the read at
+///   `input[pos]` is bounds-checked against `len` before every access.
 const unsafe fn decode_numeric_ref(
     input: *const xmlChar,
     pos: &mut usize,
@@ -1002,6 +1026,15 @@ unsafe impl<T> Sync for SyncPtr<T> {}
 /// Look up a predefined XML entity by name.
 ///
 /// Returns the entity pointer (to a static entity) or NULL.
+///
+/// # Safety
+///
+/// - `name` must be NULL or a pointer to a NUL-terminated `xmlChar` string
+///   that stays readable for the duration of the call: the first byte is read
+///   via `name.add(0)` and the full string is compared with
+///   `string::xml_strcmp`. The returned pointer aliases the immutable static
+///   `PREDEFINED_ENTITIES` array, lives for the whole program, and must not be
+///   freed or mutated by the caller.
 unsafe fn lookup_predefined_entity(name: *const xmlChar) -> *mut _xmlEntity {
     if name.is_null() {
         return ptr::null_mut();
@@ -1243,6 +1276,17 @@ mod tests {
     // ── Entity Declaration Tests ────────────────────────────────────────
 
     #[test]
+    /// Tests that a general entity can be added to a DTD and looked back up.
+    ///
+    /// # Safety
+    ///
+    /// - The test dereferences only raw pointers it allocates itself: `doc`
+    ///   and `dtd` are zero-initialized by `make_doc_and_dtd` and stay alive
+    ///   until the final `xmlFreeImpl` calls; `name` and `content` are
+    ///   NUL-terminated buffers from `c_str`; `entity` is asserted non-NULL
+    ///   before `(*entity)` is read. The hash tables are freed with
+    ///   `entity_deallocator` before `dtd` and `doc` are freed, so no access
+    ///   touches freed memory.
     fn test_add_entity_general() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1280,6 +1324,13 @@ mod tests {
         }
     }
 
+    /// Deallocator passed to `hash::hash_free` to release entity payloads.
+    ///
+    /// # Safety
+    ///
+    /// - `payload` must be NULL or a pointer to a heap-allocated `_xmlEntity`
+    ///   that has not yet been freed, because it is forwarded to
+    ///   `free_entity`; `_name` is ignored by this function.
     unsafe extern "C" fn entity_deallocator(payload: *mut c_void, _name: *mut u8) {
         if !payload.is_null() {
             free_entity(payload as *mut _xmlEntity);
@@ -1287,6 +1338,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a parameter entity is stored in the `pentities` table.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` are zero-initialized by `make_doc_and_dtd` and remain
+    ///   live until the trailing frees; `name` and `content` are NUL-terminated
+    ///   `c_str` allocations valid for the whole test; the `entity` pointer is
+    ///   asserted non-NULL before `(*entity)` is read, and the hash tables are
+    ///   freed with `entity_deallocator` before `dtd` and `doc` are freed.
     fn test_add_entity_parameter() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1326,6 +1386,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `add_entity` returns NULL when the DTD is NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `add_entity` checks `dtd` for NULL and returns early without
+    ///   dereferencing it, and the `name` argument is a NUL-terminated `c_str`
+    ///   allocation that stays alive for the duration of the call.
     fn test_add_entity_null_dtd() {
         unsafe {
             let entity = add_entity(
@@ -1341,6 +1408,16 @@ mod tests {
     }
 
     #[test]
+    /// Tests that re-adding an entity with the same name reuses the existing
+    /// declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` are zero-initialized by `make_doc_and_dtd` and outlive
+    ///   every dereference; `name` and `content` are NUL-terminated `c_str`
+    ///   allocations; `e1` is asserted non-NULL before `(*e1)` is read, and
+    ///   the hash tables are freed with `entity_deallocator` before `dtd` and
+    ///   `doc` are freed.
     fn test_add_entity_duplicate() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1381,6 +1458,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an external parsed entity keeps its SystemID.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` come from `make_doc_and_dtd` and stay live until the
+    ///   trailing frees; `name` and `sysid` are NUL-terminated `c_str`
+    ///   allocations; `entity` is asserted non-NULL before `(*entity).SystemID`
+    ///   is passed to `string::xml_strcmp`, and the hash tables are freed with
+    ///   `entity_deallocator` before `dtd` and `doc` are freed.
     fn test_add_entity_external() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1413,6 +1499,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `get_entity` returns NULL when the document is NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `get_entity` checks `doc` for NULL before dereferencing it, and the
+    ///   `name` argument is a NUL-terminated `c_str` allocation that stays
+    ///   alive for the duration of the call.
     fn test_get_entity_null_doc() {
         unsafe {
             let found = get_entity(ptr::null_mut(), c_str(b"test"));
@@ -1421,6 +1514,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `get_entity` returns NULL for an undeclared name.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` are zero-initialized by `make_doc_and_dtd` and stay
+    ///   live until the trailing frees; the lookup name is a NUL-terminated
+    ///   `c_str` allocation; the hash tables are freed with
+    ///   `entity_deallocator` before `dtd` and `doc` are freed.
     fn test_get_entity_not_found() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1441,6 +1542,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `get_parameter_entity` finds a stored parameter entity.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` come from `make_doc_and_dtd` and stay live until the
+    ///   trailing frees; `name` and `content` are NUL-terminated `c_str`
+    ///   allocations; `entity` is asserted non-NULL before the equality check,
+    ///   and the hash tables are freed with `entity_deallocator` before `dtd`
+    ///   and `doc` are freed.
     fn test_get_parameter_entity() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1474,6 +1584,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `copy_entity` produces an independent deep copy.
+    ///
+    /// # Safety
+    ///
+    /// - `entity` is a zero-initialized `xmlMallocZero` allocation whose
+    ///   `name` and `content` fields are fresh `xml_strdup` allocations; the
+    ///   original and the copy are both freed with `free_entity` before the
+    ///   test returns, and every dereference of these raw pointers happens
+    ///   while the allocations are still live.
     fn test_copy_entity() {
         unsafe {
             let name = c_str(b"srcEntity");
@@ -1503,6 +1622,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `copy_entity` returns NULL for a NULL input.
+    ///
+    /// # Safety
+    ///
+    /// - `copy_entity` checks its argument for NULL and returns early without
+    ///   dereferencing it, so passing `ptr::null_mut()` is sound.
     fn test_copy_entity_null() {
         unsafe {
             assert!(copy_entity(ptr::null_mut()).is_null());
@@ -1510,6 +1635,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `free_entity` tolerates a NULL pointer without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `free_entity` returns early when the pointer is NULL and never
+    ///   dereferences it, so the call is sound.
     fn test_free_entity_null() {
         unsafe {
             free_entity(ptr::null_mut()); // Should not crash
@@ -1552,6 +1683,12 @@ mod tests {
     // ── Entity Encoding Tests ───────────────────────────────────────────
 
     #[test]
+    /// Tests that `encode_entities_reentrant` returns NULL for NULL input.
+    ///
+    /// # Safety
+    ///
+    /// - `encode_entities_reentrant` checks `input` for NULL and returns
+    ///   without dereferencing it, so passing null pointers is sound.
     fn test_encode_entities_reentrant_null() {
         unsafe {
             let result = encode_entities_reentrant(ptr::null_mut(), ptr::null());
@@ -1560,6 +1697,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that text without special characters is encoded unchanged.
+    ///
+    /// # Safety
+    ///
+    /// - `input` is a NUL-terminated `c_str` allocation that stays alive until
+    ///   the comparison; `result` is the freshly allocated output of
+    ///   `encode_entities_reentrant`, asserted non-NULL, and is freed with
+    ///   `xmlFreeImpl` after the comparison.
     fn test_encode_entities_reentrant_no_special() {
         unsafe {
             let input = c_str(b"Hello, World!");
@@ -1571,6 +1716,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `lt` and `gt` characters are encoded to entities.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is the freshly allocated
+    ///   output of `encode_entities_reentrant`, asserted non-NULL, and is
+    ///   freed with `xmlFreeImpl` after the comparison.
     fn test_encode_entities_reentrant_lt_gt() {
         unsafe {
             let input = c_str(b"a < b > c");
@@ -1583,6 +1736,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `amp` character is encoded to an entity.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is the freshly allocated
+    ///   output of `encode_entities_reentrant`, asserted non-NULL, and is
+    ///   freed with `xmlFreeImpl` after the comparison.
     fn test_encode_entities_reentrant_amp() {
         unsafe {
             let input = c_str(b"a & b");
@@ -1595,6 +1756,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that quotes and apostrophes are encoded to entities.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is the freshly allocated
+    ///   output of `encode_entities_reentrant`, asserted non-NULL, and is
+    ///   freed with `xmlFreeImpl` after the comparison.
     fn test_encode_entities_reentrant_quotes() {
         unsafe {
             let input = c_str(b"\"hello\" 'world'");
@@ -1607,6 +1776,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a mixed string is fully encoded in one pass.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is the freshly allocated
+    ///   output of `encode_entities_reentrant`, asserted non-NULL, and is
+    ///   freed with `xmlFreeImpl` after the comparison.
     fn test_encode_entities_reentrant_all() {
         unsafe {
             let input = c_str(b"<tag attr=\"value\">&'more'</tag>");
@@ -1622,6 +1799,13 @@ mod tests {
     // ── Entity Decoding Tests ───────────────────────────────────────────
 
     #[test]
+    /// Tests that `string_decode_entities` returns NULL for a NULL input.
+    ///
+    /// # Safety
+    ///
+    /// - `string_decode_entities` returns early when `input` is NULL, and the
+    ///   `doc` argument is only dereferenced for entity lookup during
+    ///   decoding, so passing null pointers here is sound.
     fn test_decode_entities_null_input() {
         unsafe {
             let result = string_decode_entities(ptr::null_mut(), ptr::null(), 0, 0, 0, 0);
@@ -1630,6 +1814,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that decoding an empty string yields an empty NUL-terminated
+    /// result.
+    ///
+    /// # Safety
+    ///
+    /// - `input` is a NUL-terminated `c_str` allocation valid for the call;
+    ///   `result` is asserted non-NULL before the `*result` dereference and is
+    ///   freed with `xmlFreeImpl` before the test ends.
     fn test_decode_entities_empty() {
         unsafe {
             let input = c_str(b"");
@@ -1641,6 +1833,13 @@ mod tests {
     }
 
     #[test]
+    /// Tests that input without references is decoded unchanged.
+    ///
+    /// # Safety
+    ///
+    /// - `input` is a NUL-terminated `c_str` allocation that stays alive until
+    ///   the comparison; `result` is asserted non-NULL before being passed to
+    ///   `string::xml_strcmp` and is freed with `xmlFreeImpl` afterwards.
     fn test_decode_entities_no_refs() {
         unsafe {
             let input = c_str(b"Hello, World!");
@@ -1652,6 +1851,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a decimal numeric character reference is decoded.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is asserted non-NULL before
+    ///   being passed to `string::xml_strcmp` and is freed with `xmlFreeImpl`
+    ///   afterwards.
     fn test_decode_numeric_decimal() {
         unsafe {
             // &#65; = 'A'
@@ -1665,6 +1872,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a hexadecimal numeric character reference is decoded.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is asserted non-NULL before
+    ///   being passed to `string::xml_strcmp` and is freed with `xmlFreeImpl`
+    ///   afterwards.
     fn test_decode_numeric_hex() {
         unsafe {
             // &#x41; = 'A'
@@ -1678,6 +1893,14 @@ mod tests {
     }
 
     #[test]
+    /// Tests that mixed decimal and hexadecimal references are decoded.
+    ///
+    /// # Safety
+    ///
+    /// - `input` and `expected` are NUL-terminated `c_str` allocations that
+    ///   stay alive until the comparison; `result` is asserted non-NULL before
+    ///   being passed to `string::xml_strcmp` and is freed with `xmlFreeImpl`
+    ///   afterwards.
     fn test_decode_numeric_mixed() {
         unsafe {
             let input = c_str(b"Hello &#x57;&#111;rld!"); // Hello World!
@@ -1690,6 +1913,15 @@ mod tests {
     }
 
     #[test]
+    /// Tests that predefined general entities in the DTD are substituted.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` are zero-initialized by `make_doc_and_dtd` and stay
+    ///   live until the trailing frees; the `input` and `expected` buffers are
+    ///   NUL-terminated `c_str` allocations; `result` is asserted non-NULL
+    ///   before the comparison and freed with `xmlFreeImpl`; the hash tables
+    ///   are freed with `entity_deallocator` before `dtd` and `doc` are freed.
     fn test_decode_predefined_entities() {
         unsafe {
             let (doc, dtd) = make_doc_and_dtd();
@@ -1760,6 +1992,14 @@ mod tests {
     // ── Entity Content Tests ────────────────────────────────────────────
 
     #[test]
+    /// Tests that `get_entity_content` returns a copy of the entity content.
+    ///
+    /// # Safety
+    ///
+    /// - `entity` is a zero-initialized `xmlMallocZero` allocation whose
+    ///   `content` field is a fresh `xml_strdup` allocation; `retrieved` is
+    ///   asserted non-NULL before the comparison and freed with `xmlFreeImpl`,
+    ///   and `entity` is freed with `free_entity` before the test returns.
     fn test_get_entity_content() {
         unsafe {
             let content = c_str(b"entity content");
@@ -1778,6 +2018,12 @@ mod tests {
     }
 
     #[test]
+    /// Tests that `get_entity_content` returns NULL for a NULL entity.
+    ///
+    /// # Safety
+    ///
+    /// - `get_entity_content` checks its argument for NULL and returns early
+    ///   without dereferencing it, so passing `ptr::null_mut()` is sound.
     fn test_get_entity_content_null() {
         unsafe {
             assert!(get_entity_content(ptr::null_mut()).is_null());

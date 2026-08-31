@@ -18,7 +18,7 @@ typedef struct _xmlMutex xmlMutex;
 typedef xmlMutex *xmlMutexPtr;
 typedef struct _xmlRMutex xmlRMutex;
 typedef xmlRMutex *xmlRMutexPtr;
-XMLPUBFUN int xmlInitThreads(void);
+XMLPUBFUN void xmlInitThreads(void);
 XMLPUBFUN void xmlCleanupThreads(void);
 XMLPUBFUN void xmlLockLibrary(void);
 XMLPUBFUN void xmlUnlockLibrary(void);

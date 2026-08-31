@@ -101,6 +101,13 @@ mod debug_test {
     /// parse-input stash lives in a side table, so setting the private field
     /// and freeing the context must never free the application's pointer as
     /// an `InputBuffer` (previously a double-free/UB).
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is non-NULL (asserted) and valid until freed with
+    ///   `helpers::free_parser_ctxt`; `marker` is an integer cast to a
+    ///   pointer and is never dereferenced, and the stashed input buffer is
+    ///   owned by the parser machinery.
     #[test]
     fn test_ctxt_private_is_application_data() {
         unsafe {
@@ -182,6 +189,15 @@ mod debug_test {
         assert!(buf.is_eof());
     }
 
+    /// Parse a simple `<root/>` document through the internal parser.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is non-NULL (asserted) and valid until
+    ///   `helpers::free_parser_ctxt`; `input_buf_ptr` is non-NULL
+    ///   (asserted) and uniquely owned via `Box::from_raw`; the parsed
+    ///   `myDoc` is non-NULL (asserted) and owned by the parser context
+    ///   for the duration of the test.
     #[test]
     fn test_parser_simple_el() {
         unsafe {
@@ -236,6 +252,14 @@ mod debug_test {
         }
     }
 
+    /// Parse a document with text content through the internal parser.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is non-NULL (asserted) and valid until
+    ///   `helpers::free_parser_ctxt`; `input_buf_ptr` is non-NULL
+    ///   (asserted) and uniquely owned via `Box::from_raw`; the parsed
+    ///   `myDoc` and its root are non-NULL (asserted) while read.
     #[test]
     fn test_parser_with_text() {
         unsafe {

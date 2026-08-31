@@ -1963,6 +1963,12 @@ mod tests {
     ///
     /// This ensures the returned pointer uses the same allocator as xmlFreeImpl,
     /// preventing allocator mismatch crashes.
+    ///
+    /// # Safety
+    ///
+    /// - `s` must be a valid slice; the returned pointer is allocator-owned,
+    ///   valid for `len + 1` bytes, and must be freed with `xmlFreeImpl`, or
+    ///   is NULL when the allocation fails.
     fn to_xml_str(s: &[u8]) -> *mut xmlChar {
         let len = s.len();
         let ptr =
@@ -1978,6 +1984,12 @@ mod tests {
     }
 
     /// Helper: match a regex pattern against an input string.
+    ///
+    /// # Safety
+    ///
+    /// - The temporary `pat`/`val` NUL-terminated strings must stay valid
+    ///   for the compile/exec calls; `compiled` is freed with
+    ///   `xmlRegFreeRegexp` before return.
     fn match_regex(pattern: &[u8], input: &[u8]) -> c_int {
         let pat = to_xml_str(pattern);
         let val = to_xml_str(input);
@@ -1993,6 +2005,12 @@ mod tests {
     }
 
     /// Helper to compile a pattern and return the compiled regex.
+    ///
+    /// # Safety
+    ///
+    /// - `pattern` must be a valid slice; the returned `XmlRegexp` pointer
+    ///   is non-NULL only on success and must be freed with
+    ///   `xmlRegFreeRegexp` by the caller.
     fn compile(pattern: &[u8]) -> *mut XmlRegexp {
         let pat = to_xml_str(pattern);
         unsafe { xmlRegexpCompile(pat) }
@@ -2275,6 +2293,12 @@ mod tests {
 
     // ── Determinism ──────────────────────────────────────────────────────
 
+    /// A deterministic literal pattern is reported as deterministic.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` is non-NULL (asserted) and valid until freed with
+    ///   `xmlRegFreeRegexp`; `xmlRegexpIsDeterministic` only reads it.
     #[test]
     fn test_deterministic_literal() {
         let compiled = compile(b"hello");
@@ -2283,6 +2307,12 @@ mod tests {
         unsafe { xmlRegFreeRegexp(compiled) };
     }
 
+    /// An alternation pattern is reported as non-deterministic.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` is non-NULL (asserted) and valid until freed with
+    ///   `xmlRegFreeRegexp`; `xmlRegexpIsDeterministic` only reads it.
     #[test]
     fn test_non_deterministic() {
         // Alternation is non-deterministic in NFA form
@@ -2294,6 +2324,13 @@ mod tests {
 
     // ── Incremental Execution ────────────────────────────────────────────
 
+    /// Push a NULL terminator into an incremental execution context.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` and `ctxt` are non-NULL (asserted) and valid until
+    ///   their frees; a NULL push string is accepted as end-of-input by
+    ///   `xmlRegExecPushString`.
     #[test]
     fn test_incremental_empty_input() {
         let compiled = compile(b"a*");
@@ -2308,6 +2345,13 @@ mod tests {
         unsafe { xmlRegFreeRegexp(compiled) };
     }
 
+    /// Push a complete string into an incremental execution context.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` and `ctxt` are non-NULL (asserted) and valid until
+    ///   freed; `val` is an allocator-owned NUL-terminated string valid
+    ///   for the push call.
     #[test]
     fn test_incremental_simple_match() {
         let compiled = compile(b"abc");
@@ -2323,12 +2367,25 @@ mod tests {
 
     // ── Edge Cases ───────────────────────────────────────────────────────
 
+    /// Compiling a NULL pattern returns NULL without dereferencing it.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlRegexpCompile` accepts a NULL pattern and returns NULL; no
+    ///   pointer is dereferenced.
     #[test]
     fn test_null_pattern() {
         let compiled = unsafe { xmlRegexpCompile(ptr::null()) };
         assert!(compiled.is_null());
     }
 
+    /// Executing with a NULL input string reports an error.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` is non-NULL (asserted) and valid until freed with
+    ///   `xmlRegFreeRegexp`; the NULL input is accepted by
+    ///   `xmlRegexpExec` as an invalid input.
     #[test]
     fn test_null_input() {
         let compiled = compile(b"a");
@@ -2338,6 +2395,12 @@ mod tests {
         unsafe { xmlRegFreeRegexp(compiled) };
     }
 
+    /// Freeing a compiled regexp must not crash.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` is non-NULL (asserted) and is freed exactly once with
+    ///   `xmlRegFreeRegexp`; the object must not be used afterwards.
     #[test]
     fn test_double_free() {
         let compiled = compile(b"test");
@@ -2347,6 +2410,13 @@ mod tests {
         // We just test that it doesn't crash
     }
 
+    /// Print a compiled regexp to a NULL output stream.
+    ///
+    /// # Safety
+    ///
+    /// - `compiled` is non-NULL (asserted) and valid until freed with
+    ///   `xmlRegFreeRegexp`; the NULL FILE* output is accepted by
+    ///   `xmlRegexpPrint`.
     #[test]
     fn test_print() {
         let compiled = compile(b"hello");

@@ -283,10 +283,28 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// Allocate a zero-initialized `_xsltStylesheet`.
+    ///
+    /// # Safety
+    ///
+    /// - `libc::calloc` returns a zeroed block of the struct size or NULL;
+    ///   the caller must check for NULL before dereferencing and must
+    ///   release the block with `libc::free` when done.
     fn make_style() -> *mut _xsltStylesheet {
         unsafe { libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet }
     }
 
+    /// Exercise strip/preserve rules through `xsltAddStripSpace` and
+    /// `xsltShouldStripSpace`.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a live zeroed `_xsltStylesheet` from `make_style`; the
+    ///   `c"..."` name literals are valid NUL-terminated `xmlChar` buffers
+    ///   passed to the strip-space APIs, which heap-copy the names they
+    ///   retain.
+    /// - The rule list is freed with `xsltFreeStripSpaces` before
+    ///   `libc::free(style)` so no freed memory is read.
     #[test]
     fn test_should_strip_space() {
         unsafe {
@@ -327,6 +345,15 @@ mod tests {
         }
     }
 
+    /// NULL arguments to the strip-space API are rejected without
+    /// crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltAddStripSpace` returns `-1` and `xsltShouldStripSpace`
+    ///   returns `0` for NULL `style`/`name` before dereferencing them;
+    ///   `xsltFreeStripSpaceEntry`/`xsltFreeStripSpaces` no-op on NULL, so
+    ///   the unsafe block reads and frees no memory.
     #[test]
     fn test_null_args() {
         unsafe {

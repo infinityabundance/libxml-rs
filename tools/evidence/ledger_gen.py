@@ -60,6 +60,8 @@ COURT_FAMILIES = {
     # cross-DSO state-coherence (documented divergence) and commentary drift
     "ABI-FUNCTION-SIGNATURE", "ALLOCATOR-HOOK", "DSO-STATE-COHERENCE",
     "CUSTODIAN-COMMENTARY-DRIFT",
+    # 11.1-Z.3: default-allocator differential court (R-000178)
+    "ALLOCATOR-DEFAULT",
 }
 
 

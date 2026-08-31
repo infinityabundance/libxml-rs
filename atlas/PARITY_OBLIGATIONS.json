@@ -67,9 +67,9 @@
    "candidate_functions": 1718,
    "counts": {
     "MISSING": 0,
-    "STUB": 0,
-    "INTENTIONAL_NOOP": 23,
-    "IMPLEMENTED_UNVERIFIED": 1114,
+    "STUB": 4,
+    "INTENTIONAL_NOOP": 24,
+    "IMPLEMENTED_UNVERIFIED": 1109,
     "CURRENT_PARITY_VERIFIED": 263,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
@@ -83,9 +83,9 @@
      "EXPORTED": 1422
     },
     "implementation_status": {
-     "STUB": 0,
-     "INTENTIONAL_NOOP": 23,
-     "IMPLEMENTED": 1364,
+     "STUB": 4,
+     "INTENTIONAL_NOOP": 24,
+     "IMPLEMENTED": 1359,
      "UNKNOWN": 13,
      "NOT_APPLICABLE": 22
     },
@@ -3410,15 +3410,15 @@
      "candidate_symbol": "xmlCheckVersion",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "IMPLEMENTED",
+     "implementation_status": "STUB",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "has logic",
+     "stub_reason": "empty body",
      "courts": [],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "STUB"
     },
     {
      "entity_id": "libxml2:xmlChildElementCount",
@@ -8770,15 +8770,15 @@
      "candidate_symbol": "xmlMemDisplay",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "IMPLEMENTED",
+     "implementation_status": "STUB",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "has logic",
+     "stub_reason": "empty body",
      "courts": [],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "STUB"
     },
     {
      "entity_id": "libxml2:xmlMemDisplayLast",
@@ -8786,15 +8786,15 @@
      "candidate_symbol": "xmlMemDisplayLast",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "IMPLEMENTED",
+     "implementation_status": "STUB",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "has logic",
+     "stub_reason": "empty body",
      "courts": [],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "STUB"
     },
     {
      "entity_id": "libxml2:xmlMemFree",
@@ -8882,17 +8882,17 @@
      "candidate_symbol": "xmlMemShow",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "IMPLEMENTED",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "has logic",
+     "stub_reason": "documented intentional no-op (residual R-000131)",
      "courts": [],
      "residuals": [
       "R-000131"
      ],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlMemSize",
@@ -8964,15 +8964,15 @@
      "candidate_symbol": "xmlMemoryDump",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "IMPLEMENTED",
+     "implementation_status": "STUB",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "has logic",
+     "stub_reason": "empty body",
      "courts": [],
      "residuals": [],
-     "overall": "IMPLEMENTED_UNVERIFIED"
+     "overall": "STUB"
     },
     {
      "entity_id": "libxml2:xmlMemoryStrdup",

@@ -570,6 +570,14 @@ mod tests {
 
     use core::ptr;
 
+    /// Create and free a stylesheet, checking the default field values.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a valid `_xsltStylesheet` returned by
+    ///   `xsltStylesheetCreate` (asserted non-NULL) and not yet freed, so
+    ///   reading `templates`/`omitXmlDeclaration` and passing it to
+    ///   `xsltFreeStylesheet` are valid.
     #[test]
     fn test_create_free_stylesheet() {
         unsafe {
@@ -581,6 +589,13 @@ mod tests {
         }
     }
 
+    /// Freeing a NULL stylesheet is a no-op.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreeStylesheet` returns early on a NULL pointer before
+    ///   dereferencing, so passing `ptr::null_mut()` reads and frees
+    ///   nothing.
     #[test]
     fn test_free_null() {
         unsafe {
@@ -588,6 +603,17 @@ mod tests {
         }
     }
 
+    /// Parse a stylesheet from an in-memory buffer and verify the compiled
+    /// document and templates list.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` byte string is a valid NUL-terminated buffer passed to
+    ///   `xsltParseStylesheetMemory`, which returns a valid stylesheet
+    ///   (asserted non-NULL) or NULL; `xsltFreeStylesheet` releases the
+    ///   stylesheet and the document it owns.
+    /// - The `templates` and `doc` fields are only read after the
+    ///   non-NULL assertions while the stylesheet is still live.
     #[test]
     fn test_parse_stylesheet_memory() {
         unsafe {
@@ -605,6 +631,14 @@ mod tests {
         }
     }
 
+    /// NULL inputs to the parse entry points are rejected with NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltParseStylesheetMemory`, `xsltParseStylesheetFile`,
+    ///   `xsltParseStylesheetDoc`, and `xsltGetStylesheetDoc` all return
+    ///   early on NULL arguments before dereferencing them, so passing
+    ///   `ptr::null()`/`ptr::null_mut()` reads no memory.
     #[test]
     fn test_parse_stylesheet_null() {
         unsafe {

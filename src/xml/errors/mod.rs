@@ -231,6 +231,13 @@ pub fn reset_last_error() {
 /// Upstream libxml2 uses `vsnprintf` internally for message formatting.
 /// We use a simple formatting approach that produces compatible output
 /// for the common error patterns.
+///
+/// # Safety
+///
+/// - `msg` must be NULL or a valid NUL-terminated C string; `str1`, `str2`
+///   and `str3` must be NULL or valid NUL-terminated C strings; the
+///   returned buffer is allocator-owned and must be freed with
+///   `xmlFreeImpl`, or is NULL on allocation failure.
 pub fn format_error_message(
     _domain: c_int,
     _code: c_int,
@@ -533,6 +540,13 @@ pub struct VaListTag {
 
 #[cfg(target_arch = "x86_64")]
 unsafe extern "C" {
+    /// Format `msg` with the caller's va_list into `s` (libc `vsnprintf`).
+    ///
+    /// # Safety
+    ///
+    /// - `s` must point to a writable buffer of at least `n` bytes;
+    ///   `format` must be a valid NUL-terminated printf format string;
+    ///   `ap` must be a valid va_list matching the format's specifiers.
     fn vsnprintf(s: *mut c_char, n: usize, format: *const c_char, ap: *mut VaListTag) -> c_int;
 }
 
@@ -540,6 +554,12 @@ unsafe extern "C" {
 /// formatted text through the generic channel (upstream error.c
 /// `xmlVFormatLegacyError`: `xmlGenericError(ctx, "%s: ", level)` then the
 /// `xmlStrVASPrintf`-formatted message).
+///
+/// # Safety
+///
+/// - `msg` must be NULL or a valid NUL-terminated printf format string;
+///   `ap` must be a valid va_list matching the format's specifiers; the
+///   format is consumed exactly once.
 #[cfg(target_arch = "x86_64")]
 unsafe fn emit_legacy_message_v(level: &str, msg: *const c_char, ap: *mut VaListTag) -> c_int {
     if msg.is_null() {
@@ -564,6 +584,12 @@ unsafe fn emit_legacy_message_v(level: &str, msg: *const c_char, ap: *mut VaList
 /// address; a 240-byte frame keeps the `call` 16-aligned and the overflow
 /// area at rsp+256 (= entry_rsp + 8); the alignment push is popped before
 /// `ret`.
+///
+/// # Safety
+///
+/// - `receiver` must be a valid x86_64 SysV function pointer that accepts
+///   `(ctx, msg, ap)` and consumes the va_list built in the fixed stack
+///   slots; the frame layout described above must match the ABI.
 #[cfg(target_arch = "x86_64")]
 unsafe fn legacy_shim(
     receiver: unsafe extern "C" fn(*mut c_void, *const c_char, *mut VaListTag) -> c_int,
@@ -943,6 +969,13 @@ pub unsafe fn raise_error_streamed(
 }
 
 /// x86-64 streamed raise (SysV va_list channel). See `raise_error_streamed`.
+///
+/// # Safety
+///
+/// - `ctxt` may be NULL; `msg`, `file`, `str1`, `str2`, `str3` must be
+///   valid NUL-terminated C strings or NULL; `source_window` bytes must be
+///   valid for the duration of the call; every string field is duplicated
+///   before being stored in the thread-local last error.
 #[allow(clippy::too_many_arguments)]
 #[cfg(target_arch = "x86_64")]
 unsafe fn raise_error_streamed_x86_64(
@@ -1221,6 +1254,12 @@ mod tests {
     use crate::abi::allocator;
     use core::ffi::c_void;
 
+    /// Reset an error struct and verify the defaults are applied.
+    ///
+    /// # Safety
+    ///
+    /// - `err` is a stack `_xmlError` whose fields are all NULL/zero; it
+    ///   is valid for `reset_error` to write and for the subsequent reads.
     #[test]
     fn test_error_default_reset() {
         unsafe {
@@ -1248,6 +1287,12 @@ mod tests {
         }
     }
 
+    /// Copy one error struct into another and verify the fields.
+    ///
+    /// # Safety
+    ///
+    /// - `from` and `to` are stack `_xmlError` structs valid for the
+    ///   `copy_error` copy and the subsequent field reads.
     #[test]
     fn test_copy_error() {
         unsafe {
@@ -1293,6 +1338,14 @@ mod tests {
         }
     }
 
+    /// Raise an error and verify it is stored as the last error.
+    ///
+    /// # Safety
+    ///
+    /// - `file`/`str1` are static NUL-terminated strings valid for the
+    ///   raise; `raise_error` duplicates them, so the test's later reads of
+    ///   `last` only touch the thread-local copy; `reset_last_error`
+    ///   releases the owned strings exactly once.
     #[test]
     fn test_raise_and_get_last_error() {
         unsafe {
@@ -1388,6 +1441,13 @@ mod tests {
         }
     }
 
+    /// Format messages with a direct `msg` and with domain plus `str1`.
+    ///
+    /// # Safety
+    ///
+    /// - `msg`/`str1` are static NUL-terminated strings valid for the
+    ///   calls; each returned buffer is allocator-owned and freed with
+    ///   `xmlFreeImpl` exactly once before the test ends.
     #[test]
     fn test_format_error_message() {
         unsafe {

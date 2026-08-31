@@ -831,6 +831,13 @@ impl InputBuffer {
     /// Like [`populate_parser_input`](Self::populate_parser_input) but leaves
     /// `filename` untouched: the caller owns a duplicated C string instead of
     /// borrowing the Rust-side filename (which the parser moves/drops).
+    ///
+    /// # Safety
+    ///
+    /// - `self` must be a valid `InputBuffer` and `input` a valid
+    ///   `_xmlParserInput`; the `base`/`cur`/`end` pointers written into
+    ///   `input` borrow `self.data`, so the buffer must stay alive and not
+    ///   be mutated or reallocated while the parser input is in use.
     pub const unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
         let data_ptr = self.data.as_ptr();
         let base = data_ptr as *const crate::abi::types::xmlChar;

@@ -34,8 +34,7 @@ typedef void *(*xsltStyleExtInitFunction)(xsltStylesheetPtr style,
                                           const xmlChar *URI);
 typedef void (*xsltStyleExtShutdownFunction)(xsltStylesheetPtr style,
                                              const xmlChar *URI, void *data);
-typedef void (*xsltTopLevelFunction)(xsltStylesheetPtr style, xmlNodePtr node,
-                                     void *data);
+typedef void (*xsltTopLevelFunction)(xsltStylesheetPtr style, xmlNodePtr inst);
 XMLPUBFUN int xsltRegisterExtModule(const xmlChar *URI,
                                     xsltExtInitFunction initFunc,
                                     xsltExtShutdownFunction shutdownFunc);
@@ -73,7 +72,7 @@ XMLPUBFUN void xsltShutdownCtxtExts(xsltTransformContextPtr ctxt);
 XMLPUBFUN void xsltFreeCtxtExts(xsltTransformContextPtr ctxt);
 XMLPUBFUN void *xsltGetExtData(xsltTransformContextPtr ctxt, const xmlChar *URI);
 XMLPUBFUN void *xsltStyleGetExtData(xsltStylesheetPtr style, const xmlChar *URI);
-XMLPUBFUN void *xsltGetExtInfo(xsltStylesheetPtr style, const xmlChar *URI);
+XMLPUBFUN xmlHashTablePtr xsltGetExtInfo(xsltStylesheetPtr style, const xmlChar *URI);
 XMLPUBFUN void xsltRegisterAllExtras(void);
 XMLPUBFUN void xsltRegisterExtras(xsltTransformContextPtr ctxt);
 XMLPUBFUN void xsltRegisterAllElement(xsltTransformContextPtr ctxt);

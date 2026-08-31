@@ -193,13 +193,13 @@ typedef struct _xmlAttribute xmlAttribute;
 typedef xmlAttribute *xmlAttributePtr;
 
 /* DTD declaration tables (upstream tree.h) */
-typedef struct _xmlAttributeTable xmlAttributeTable;
+typedef struct _xmlHashTable xmlAttributeTable;
 typedef xmlAttributeTable *xmlAttributeTablePtr;
-typedef struct _xmlElementTable xmlElementTable;
+typedef struct _xmlHashTable xmlElementTable;
 typedef xmlElementTable *xmlElementTablePtr;
-typedef struct _xmlEntitiesTable xmlEntitiesTable;
+typedef struct _xmlHashTable xmlEntitiesTable;
 typedef xmlEntitiesTable *xmlEntitiesTablePtr;
-typedef struct _xmlNotationTable xmlNotationTable;
+typedef struct _xmlHashTable xmlNotationTable;
 typedef xmlNotationTable *xmlNotationTablePtr;
 
 typedef struct _xmlEnumeration xmlEnumeration;
@@ -519,7 +519,7 @@ XMLPUBFUN int xmlNodeIsText(const xmlNode *node);
 XMLPUBFUN int xmlIsBlankNode(const xmlNode *node);
 XMLPUBFUN xmlNsPtr xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix);
 XMLPUBFUN void xmlSetNs(xmlNodePtr node, xmlNsPtr ns);
-XMLPUBFUN xmlNsPtr *xmlGetNsList(xmlDocPtr doc, const xmlNode *node);
+XMLPUBFUN xmlNs **xmlGetNsList(const xmlDoc *doc, const xmlNode *node);
 XMLPUBFUN xmlNsPtr xmlSearchNs(xmlDocPtr doc, xmlNodePtr node, const xmlChar *nameSpace);
 XMLPUBFUN xmlNsPtr xmlSearchNsByHref(xmlDocPtr doc, xmlNodePtr node, const xmlChar *href);
 XMLPUBFUN xmlAttrPtr xmlSetProp(xmlNodePtr node, const xmlChar *name, const xmlChar *value);
@@ -546,19 +546,19 @@ XMLPUBFUN xmlEntityPtr xmlNewEntity(xmlDocPtr doc, const xmlChar *name, int type
                                      const xmlChar *ExternalID, const xmlChar *SystemID,
                                      const xmlChar *content);
 XMLPUBFUN xmlEntityPtr xmlGetDocEntity(const xmlDoc *doc, const xmlChar *name);
-XMLPUBFUN xmlEntityPtr xmlGetParameterEntity(const xmlDoc *doc, const xmlChar *name);
+XMLPUBFUN xmlEntityPtr xmlGetParameterEntity(xmlDoc *doc, const xmlChar *name);
 XMLPUBFUN xmlBufferPtr xmlBufferCreate(void);
 XMLPUBFUN xmlBufferPtr xmlBufferCreateSize(size_t size);
 XMLPUBFUN xmlBufferPtr xmlBufferCreateStatic(void *mem, size_t size);
 XMLPUBFUN void xmlBufferFree(xmlBufferPtr buf);
 XMLPUBFUN void xmlBufferEmpty(xmlBufferPtr buf);
-XMLPUBFUN xmlChar *xmlBufferContent(const xmlBuffer *buf);
+XMLPUBFUN const xmlChar *xmlBufferContent(const xmlBuffer *buf);
 XMLPUBFUN int xmlBufferLength(const xmlBuffer *buf);
 XMLPUBFUN int xmlBufferAdd(xmlBufferPtr buf, const xmlChar *str, int len);
 XMLPUBFUN int xmlBufferAddHead(xmlBufferPtr buf, const xmlChar *str, int len);
-XMLPUBFUN void xmlBufferSetAllocationScheme(xmlBufferPtr buf, int scheme);
-XMLPUBFUN int xmlBufferShrink(xmlBufferPtr buf, int len);
-XMLPUBFUN int xmlBufferGrow(xmlBufferPtr buf, int len);
+XMLPUBFUN void xmlBufferSetAllocationScheme(xmlBufferPtr buf, xmlBufferAllocationScheme scheme);
+XMLPUBFUN int xmlBufferShrink(xmlBufferPtr buf, unsigned int len);
+XMLPUBFUN int xmlBufferGrow(xmlBufferPtr buf, unsigned int len);
 XMLPUBFUN int xmlBufferReserve(xmlBufferPtr buf, int len);
 XMLPUBFUN xmlChar *xmlBufferDetach(xmlBufferPtr buf);
 XMLPUBFUN int xmlIsBlankNode(const xmlNode *node);

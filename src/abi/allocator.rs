@@ -13,7 +13,11 @@
 //! Complete — all allocator APIs are implemented; state lives in the five
 //! exported function-pointer variables exactly as upstream (globals.c),
 //! giving `xmlMemSetup` and direct `xmlMalloc = custom` assignment one
-//! shared override mechanism (R-000176).
+//! shared override mechanism (R-000176). Since 11.1-Z.3 (R-000178) the
+//! default bodies are plain libc `malloc`/`realloc`/`free`/`strdup`
+//! wrappers — no Rust `std::alloc` layout fabrication (that was UB) and no
+//! accounting, byte-identical with upstream's `globals.c` defaults
+//! (`xmlMalloc = malloc` etc.).
 //!
 //! # Safety
 //!
@@ -26,35 +30,61 @@
 //! `oracle/historical/src/libxml2-2.15.0/xmlmemory.c`) plus the allocator globals
 //! of `globals.c`. The 5 allocator entry points (`xmlMalloc`, `xmlMallocAtomic`,
 //! `xmlRealloc`, `xmlFree`, `xmlMemStrdup`) are exported as DATA function-pointer
-//! globals matching the upstream `XMLPUBVAR` declarations (R-000162).
+//! globals matching the upstream `XMLPUBVAR` declarations (R-000162). Upstream
+//! initializes them to the C runtime functions (`xmlFree = free`, `xmlMalloc =
+//! malloc`, `xmlMallocAtomic = malloc`, `xmlRealloc = realloc`, `xmlMemStrdup =
+//! xmlPosixStrdup`); the candidate initializes them to the `*Default` bodies,
+//! which are libc wrappers with identical observable behavior.
 //!
 //! # Conceptual behavior
 //!
 //! This module implements the complete libxml2 memory-hook system: swappable
-//! allocator hooks via `xmlMemSetup`/`xmlMemGet` (and the GC aliases), a
-//! per-block metadata registry mirroring upstream xmlmemory.cs debug block
-//! table, and the tracking/debug entry points built on it (`xmlMemUsed`,
-//! `xmlMemBlocks`, `xmlMemSize`, `xmlMemDisplay*`, `xmlMemShow`,
-//! `xmlMemoryDump`).
+//! allocator hooks via `xmlMemSetup`/`xmlMemGet` (and the GC aliases), plus the
+//! deprecated debug-named surface (`xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/
+//! `xmlMemoryStrdup` and the `*Loc` variants) which upstream keeps as a
+//! separately-tagged debug allocator. There are therefore two allocation
+//! planes, exactly as in upstream 2.15.0:
+//!
+//!   - the five exported variables (the hook system): default = libc, and
+//!     `xmlMemSetup`/direct assignment re-route them. Untracked — upstream's
+//!     `debugMemSize`/`debugMemBlocks` counters are only maintained by the
+//!     debug allocator, so with the default installed `xmlMemUsed()` == 0,
+//!     `xmlMemBlocks()` == 0 and `xmlMemSize()` == 0 (verified against the
+//!     oracle);
+//!   - the debug-named surface (deprecated, exported for legacy consumers):
+//!     always libc-backed and tracked by the per-block registry, mirroring
+//!     upstream `xmlMemMalloc` et al. `xmlMemSize` returns the recorded size
+//!     for these blocks and `xmlMemUsed`/`xmlMemBlocks` count them.
+//!
+//! The display entry points (`xmlMemDisplay`, `xmlMemDisplayLast`, `xmlMemShow`,
+//! `xmlMemoryDump`) are no-ops matching upstream 2.15.0, which removed that
+//! feature.
 //!
 //! # Ownership & safety invariants
 //!
 //! Every pointer returned by an xml* allocator must be freed with `xmlFree`
 //! (OWNERSHIP_ATLAS section 1). The block registry records
-//! ptr -> (size, file, line) so `xmlMemSize` and the dumps are exact, and
-//! `xmlMemUsed`/`xmlMemBlocks` track live totals. `xmlMemSetup` custom
-//! allocators bypass the registry (counters only), matching upstreams
-//! debug-allocator-only contract. `xmlFree` on a foreign/unknown pointer is a
-//! registry-removal no-op instead of upstreams corruption — a documented safe
-//! divergence (OWNERSHIP_ATLAS section 8).
+//! ptr -> (size, file, line) for the debug-named surface only, so
+//! `xmlMemSize` is exact for debug-surface blocks and 0 for default-allocator
+//! blocks (upstream's MEMHDR tag lookup behaves identically: a plain `malloc`
+//! block carries no tag). `xmlMemSetup` custom allocators bypass the registry
+//! entirely, matching upstream's debug-allocator-only contract.
 //!
 //! # Historical quirks & epochs
 //!
-//! R-000131 (11.1-J): the legacy allocator surface was simplified before the
-//! per-block registry existed — `xmlMemSize` returned 0 and the `*Loc` variants
-//! ignored file/line. Since the 11.1-J fix the registry is the source of truth;
-//! `xmlMemShow`s upstream most-recent ordering is still not reproduced
-//! (documented divergence). R-000133 (11.1-H): the legacy names
+//! R-000178 (11.1-Z.3): the pre-Z.3 default allocator routed through Rust's
+//! global allocator with fabricated `Layout`s — `default_free` deallocated
+//! every pointer with a 1-byte layout and `default_realloc` passed the
+//! requested new size as the old allocation layout; both are invalid-layout
+//! UB under the Rust allocator contract. Replaced with libc
+//! `malloc`/`realloc`/`free` (C allocation semantics; no layout exists), and
+//! the default no longer maintains the accounting registry so `xmlMemUsed`/
+//! `xmlMemBlocks`/`xmlMemSize` match the oracle's 0s; the registry now backs
+//! only the debug-named surface. R-000131 (11.1-J) sealed: `xmlMemSize`
+//! returns the recorded size for debug-surface blocks, the `*Loc` variants
+//! accept-and-ignore file/line exactly like upstream 2.15.0's `ATTRIBUTE_UNUSED`
+//! parameters, and the display functions are upstream-faithful no-ops.
+//! R-000133 (11.1-H): the legacy names
 //! (`xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/`xmlMemoryStrdup`) were
 //! declared-but-unexported and had to be implemented for the honest-header
 //! rule.
@@ -63,106 +93,95 @@
 //!
 //! `xmlMemSetup`/direct variable assignment bypass the accounting registry
 //! (deliberate: upstream's block table exists only in the debug allocator).
-//! The default allocator routes through Rust's global allocator but the five
-//! exported variables (`xmlMalloc`, `xmlMallocAtomic`, `xmlRealloc`, `xmlFree`,
-//! `xmlMemStrdup`) default to the `*Default` accounting bodies, so downstream
-//! `xmlMemSetup` swaps behave identically to upstream. The exported variables
-//! are the single source of truth (R-000176, 11.1-Z.2): `xmlMemSetup` assigns
-//! them and every internal allocation reads them through the `*Impl`
-//! indirection, exactly like upstream internal `xmlMalloc(...)` calls.
+//! The five exported variables (`xmlMalloc`, `xmlMallocAtomic`, `xmlRealloc`,
+//! `xmlFree`, `xmlMemStrdup`) are the single source of truth (R-000176,
+//! 11.1-Z.2): `xmlMemSetup` assigns them and every internal allocation reads
+//! them through the `*Impl` indirection, exactly like upstream internal
+//! `xmlMalloc(...)` calls. The debug-named functions deliberately do NOT
+//! route through the variables (upstream's debug allocator is independent of
+//! the hooks); they are always libc-backed + registry-tracked.
 //!
 //! # Proving courts
 //!
-//! ABI-DATA, ALLOCATOR, GLOBAL-STATE and THREADING court families; the
-//! allocator probes (`tools/abi/*_probe.py` + `courts/suites/data-abi/*`)
-//! compile the same C probe against the oracle DSO and the candidate and
-//! require byte-identical output; the DSO-LOADER court resolves every exported
-//! symbol from the built DSO.
+//! ABI-DATA, ALLOCATOR, ALLOCATOR-DEFAULT, GLOBAL-STATE and THREADING court
+//! families; the allocator probes (`tools/abi/*_probe.py` +
+//! `courts/suites/data-abi/*`) compile the same C probe against the oracle DSO
+//! and the candidate and require byte-identical output; ALLOCATOR-DEFAULT-001
+//! proves the default-allocator contract (many sizes, zero-size, grow/shrink
+//! realloc, realloc-to-zero, realloc/malloc failure, strdup, direct
+//! exported-variable calls, long churn, `xmlMemSize`/`xmlMemUsed`/`xmlMemBlocks`
+//! exactness — all byte-identical with the oracle, R-000178); the DSO-LOADER
+//! court resolves every exported symbol from the built DSO.
 //!
 //! # Tempting simplifications that would break parity
 //!
-//! A tempting simplification is to drop the per-block registry and return 0
-//! from `xmlMemSize` — that is exactly the pre-R-000131 state and would break
-//! the ALLOCATOR probes, `xmlMemUsed` exactness, and every downstream
-//! allocator-debugging consumer. Another tempting shortcut is exporting the
-//! allocator entry points as plain functions — upstream exports them as data
-//! function pointers, so the allocator-override mechanism (`xmlMalloc` =
-//! custom) could not link (R-000162 lesson).
+//! A tempting simplification is to keep the pre-Z.3 default allocator — Rust
+//! `std::alloc` with fabricated layouts is invalid-layout UB (R-000178) and
+//! returning nonzero `xmlMemUsed`/`xmlMemBlocks` under the default diverges
+//! from the oracle's 0s. Another tempting shortcut is exporting the allocator
+//! entry points as plain functions — upstream exports them as data function
+//! pointers, so the allocator-override mechanism (`xmlMalloc` = custom) could
+//! not link (R-000162 lesson).
 
-use core::alloc::Layout;
 use core::ffi::c_void;
 use core::ptr;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
-use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_long};
 
 use crate::abi::callbacks::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Default Allocator (Rust global allocator)
+// Default Allocator (libc — upstream 2.15.0 globals.c defaults, R-000178)
 // ═══════════════════════════════════════════════════════════════════════════════
+//
+// Upstream initializes the five exported allocator variables to the C runtime
+// functions (`xmlFree = free`, `xmlMalloc = malloc`, `xmlMallocAtomic = malloc`,
+// `xmlRealloc = realloc`, `xmlMemStrdup = xmlPosixStrdup`). The candidate's
+// `*Default` bodies are libc wrappers with identical observable behavior:
+//
+//   - malloc(0)      -> glibc returns a unique non-NULL pointer (C semantics);
+//   - realloc(p, 0)  -> glibc frees p and returns NULL (C semantics);
+//   - realloc(NULL,n)-> malloc(n) (C semantics);
+//   - realloc failure-> NULL with the old block left intact (C semantics);
+//   - free(NULL)     -> no-op (C semantics).
+//
+// All of these are byte-identical with the oracle (verified by the
+// ALLOCATOR-DEFAULT-001 differential court). The pre-Z.3 implementation used
+// Rust's `std::alloc` with fabricated `Layout`s: `default_free` deallocated
+// every pointer with a 1-byte layout and `default_realloc` passed the
+// requested NEW size as the OLD allocation layout. Rust's allocator API
+// requires the deallocation/reallocation layout to correspond to the original
+// allocation, so both were invalid-layout UB — the defect R-000178. libc
+// allocation has no layout parameter, so the C contract is reproduced exactly
+// and the UB class is eliminated.
 
-/// Default malloc implementation using Rust's global allocator.
+/// Default malloc: `libc::malloc`.
 ///
 /// # SAFETY
 ///
-/// - `size` must be a valid allocation size (0 is handled by allocating 1 byte)
+/// - `size` must be a valid allocation size (0 is handled by the platform
+///   `malloc` contract, matching upstream which calls `malloc` directly)
 /// - Returns NULL on allocation failure
 unsafe extern "C" fn default_malloc(size: usize) -> *mut c_void {
-    if size == 0 {
-        // Upstream malloc(0) may return NULL or a valid pointer.
-        // libxml2 checks for NULL and treats it as OOM.
-        // Allocate 1 byte to avoid UB with zero-size Layout.
-        let layout = Layout::from_size_align_unchecked(1, 1);
-        let ptr = std::alloc::alloc(layout);
-        if ptr.is_null() {
-            ptr::null_mut()
-        } else {
-            ptr as *mut c_void
-        }
-    } else {
-        let layout = match Layout::from_size_align(size, 1) {
-            Ok(l) => l,
-            Err(_) => return ptr::null_mut(),
-        };
-        let ptr = std::alloc::alloc(layout);
-        if ptr.is_null() {
-            ptr::null_mut()
-        } else {
-            ptr as *mut c_void
-        }
-    }
+    unsafe { libc::malloc(size) }
 }
 
-/// Default realloc implementation using Rust's global allocator.
+/// Default realloc: `libc::realloc`.
 ///
 /// # SAFETY
 ///
 /// - `ptr` must be a valid pointer from a previous `default_malloc` or `default_realloc`,
 ///   or NULL (in which case this behaves like malloc)
-/// - `size` must be a valid allocation size
+/// - `size` must be a valid allocation size; `realloc(p, 0)` follows the C
+///   contract (glibc frees `p` and returns NULL), matching upstream which
+///   calls `realloc` directly
+/// - On failure the old block is left intact (C contract)
 unsafe extern "C" fn default_realloc(ptr: *mut c_void, size: usize) -> *mut c_void {
-    if ptr.is_null() {
-        return default_malloc(size);
-    }
-    if size == 0 {
-        default_free(ptr);
-        return default_malloc(0);
-    }
-    let layout = match Layout::from_size_align(size, 1) {
-        Ok(l) => l,
-        Err(_) => return ptr::null_mut(),
-    };
-    let new_ptr = std::alloc::realloc(ptr as *mut u8, layout, size);
-    if new_ptr.is_null() {
-        ptr::null_mut()
-    } else {
-        new_ptr as *mut c_void
-    }
+    unsafe { libc::realloc(ptr, size) }
 }
 
-/// Default free implementation using Rust's global allocator.
+/// Default free: `libc::free`.
 ///
 /// # SAFETY
 ///
@@ -172,36 +191,28 @@ unsafe extern "C" fn default_free(ptr: *mut c_void) {
     if ptr.is_null() {
         return;
     }
-    // We use a layout with size 0 and alignment 1 for deallocation,
-    // since Rust's dealloc requires the original layout.
-    // However, we don't know the original size. We use a 1-byte layout
-    // which is the minimum. This is technically UB in Rust but matches
-    // how C realloc/free work.
-    let layout = Layout::from_size_align_unchecked(1, 1);
-    std::alloc::dealloc(ptr as *mut u8, layout);
+    unsafe { libc::free(ptr) };
 }
 
-/// Default strdup implementation using Rust's global allocator.
+/// Default strdup: `libc::malloc` + copy (upstream `xmlPosixStrdup` ->
+/// `xmlCharStrdup`, which is a NULL-checked malloc+copy).
 ///
 /// # SAFETY
 ///
-/// - `str` must be a valid null-terminated C string
+/// - `str` must be a valid null-terminated C string or NULL (NULL returns NULL,
+///   matching upstream `xmlCharStrdup`)
 unsafe extern "C" fn default_strdup(str: *const c_char) -> *mut c_void {
     if str.is_null() {
         return ptr::null_mut();
     }
-    let len = libc::strlen(str);
+    let len = unsafe { libc::strlen(str) };
     let size = len + 1; // include null terminator
-    let layout = match Layout::from_size_align(size, 1) {
-        Ok(l) => l,
-        Err(_) => return ptr::null_mut(),
-    };
-    let new_ptr = std::alloc::alloc(layout);
+    let new_ptr = unsafe { libc::malloc(size) };
     if new_ptr.is_null() {
         return ptr::null_mut();
     }
-    ptr::copy_nonoverlapping(str as *const u8, new_ptr, size);
-    new_ptr as *mut c_void
+    unsafe { ptr::copy_nonoverlapping(str as *const u8, new_ptr as *mut u8, size) };
+    new_ptr
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -235,14 +246,23 @@ unsafe extern "C" fn default_strdup(str: *const c_char) -> *mut c_void {
 /// Global allocation counters (for xmlMemUsed/xmlMemBlocks).
 ///
 /// These use relaxed ordering since they are approximate debugging counters.
+/// Since 11.1-Z.3 (R-000178) they are maintained ONLY by the debug-named
+/// surface (`xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/`xmlMemoryStrdup` and
+/// the `*Loc` variants) — exactly like upstream's `debugMemSize`/
+/// `debugMemBlocks`, which the plain-malloc default never touches. With the
+/// default allocator installed, `xmlMemUsed()` and `xmlMemBlocks()` return 0
+/// (byte-identical with the oracle).
 static MEM_USED: AtomicUsize = AtomicUsize::new(0);
 static MEM_BLOCKS: AtomicUsize = AtomicUsize::new(0);
 
 /// Per-block metadata (upstream xmlmemory.c block table): enables
-/// xmlMemSize, exact xmlMemUsed and per-block dumps (11.1-J / R-000131).
+/// xmlMemSize and the counters for the debug-named surface.
 /// The file pointer is stored as a raw address (usize) so the registry stays
-/// Send + Sync.
+/// Send + Sync. The `file`/`line` fields mirror upstream's allocation-site
+/// record (populated by the `*Loc` variants); they are write-only until a
+/// future dump surface reads them, hence `allow(dead_code)`.
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct BlockMeta {
     size: usize,
     file: usize,
@@ -268,16 +288,13 @@ unsafe fn block_record(ptr: *mut c_void, size: usize, file: *const c_char, line:
     );
 }
 
-/// Drop a block from the registry; returns its recorded size (0 if unknown).
-unsafe fn block_forget(ptr: *mut c_void) -> usize {
+/// Drop a block from the registry; returns its recorded size (None if the
+/// block was unknown or NULL).
+unsafe fn block_forget(ptr: *mut c_void) -> Option<usize> {
     if ptr.is_null() {
-        return 0;
+        return None;
     }
-    BLOCKS
-        .lock()
-        .remove(&(ptr as usize))
-        .map(|m| m.size)
-        .unwrap_or(0)
+    BLOCKS.lock().remove(&(ptr as usize)).map(|m| m.size)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -505,20 +522,25 @@ pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
     unsafe { (xmlMalloc)(size) }
 }
 
-/// Default `xmlMalloc` body: Rust global allocator + accounting registry.
+/// Default `xmlMalloc` body: plain `libc::malloc` (upstream default `malloc`).
 ///
 /// This is the initial value of the exported `xmlMalloc` variable and never
-/// reads the variable (no recursion). Accounting matches the upstream
-/// debug-allocator contract: counters plus the per-block registry, so
-/// `xmlMemUsed`/`xmlMemSize` are exact while the default is installed.
+/// reads the variable (no recursion). Since 11.1-Z.3 (R-000178) it performs
+/// NO accounting: upstream's counters are maintained only by the debug
+/// allocator, so with the default installed `xmlMemUsed`/`xmlMemBlocks` are 0
+/// and `xmlMemSize` is 0 — byte-identical with the oracle.
+///
+/// # Safety
+///
+/// - `size` is a byte count passed straight to `libc::malloc`; 0 is handled
+///   by the platform contract (glibc returns a unique non-NULL pointer).
+/// - The returned pointer (NULL on failure) is a libc-owned allocation that
+///   must be freed exactly once with the matching free path and never
+///   dereferenced after freeing.
+/// - This wrapper never reads the exported allocator variables, so it cannot
+///   recurse and is safe to install as a hook.
 unsafe extern "C" fn xmlMallocDefault(size: usize) -> *mut c_void {
-    let ptr = unsafe { default_malloc(size) };
-    if !ptr.is_null() {
-        MEM_USED.fetch_add(size, Ordering::Relaxed);
-        MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
-        unsafe { block_record(ptr, size, ptr::null(), 0) };
-    }
-    ptr
+    unsafe { default_malloc(size) }
 }
 
 /// Allocate through the exported `xmlMallocAtomic` variable.
@@ -572,22 +594,13 @@ pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c
     unsafe { (xmlRealloc)(ptr, size) }
 }
 
-/// Default `xmlRealloc` body (initial exported-variable value).
+/// Default `xmlRealloc` body: plain `libc::realloc` (upstream default `realloc`).
+///
+/// No accounting (R-000178) — see `xmlMallocDefault`. C semantics: `realloc(NULL,
+/// n)` allocates, `realloc(p, 0)` follows the platform contract (glibc frees and
+/// returns NULL), failure leaves the old block intact.
 unsafe extern "C" fn xmlReallocDefault(ptr: *mut c_void, size: usize) -> *mut c_void {
-    let new_ptr = unsafe { default_realloc(ptr, size) };
-    if !new_ptr.is_null() {
-        // Exact accounting via the block registry.
-        let old_size = unsafe { block_forget(ptr) };
-        MEM_USED.fetch_add(size.saturating_sub(old_size), Ordering::Relaxed);
-        if ptr.is_null() {
-            MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
-        }
-        unsafe { block_record(new_ptr, size, ptr::null(), 0) };
-    } else if !ptr.is_null() {
-        // realloc failure: the old block is still alive.
-        unsafe { block_record(ptr, block_forget(ptr), ptr::null(), 0) };
-    }
-    new_ptr
+    unsafe { default_realloc(ptr, size) }
 }
 
 /// Free through the exported `xmlFree` variable.
@@ -611,17 +624,11 @@ pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
     unsafe { (xmlFree)(ptr) }
 }
 
-/// Default `xmlFree` body (initial exported-variable value).
+/// Default `xmlFree` body: plain `libc::free` (upstream default `free`).
+///
+/// No accounting (R-000178) — see `xmlMallocDefault`.
 unsafe extern "C" fn xmlFreeDefault(ptr: *mut c_void) {
-    if ptr.is_null() {
-        return;
-    }
-    let old_size = unsafe { block_forget(ptr) };
     unsafe { default_free(ptr) };
-    MEM_BLOCKS.fetch_sub(1, Ordering::Relaxed);
-    if old_size > 0 {
-        MEM_USED.fetch_sub(old_size, Ordering::Relaxed);
-    }
 }
 
 /// Duplicate a C string through the exported `xmlMemStrdup` variable.
@@ -643,19 +650,10 @@ pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
     unsafe { (xmlMemStrdup)(str) }
 }
 
-/// Default `xmlMemStrdup` body (initial exported-variable value).
+/// Default `xmlMemStrdup` body: plain libc strdup (upstream default
+/// `xmlPosixStrdup`). No accounting (R-000178) — see `xmlMallocDefault`.
 unsafe extern "C" fn xmlMemStrdupDefault(str: *const c_char) -> *mut c_void {
-    if str.is_null() {
-        return ptr::null_mut();
-    }
-    let ptr = unsafe { default_strdup(str) };
-    if !ptr.is_null() {
-        let len = unsafe { libc::strlen(str) } + 1;
-        MEM_USED.fetch_add(len, Ordering::Relaxed);
-        MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
-        unsafe { block_record(ptr, len, ptr::null(), 0) };
-    }
-    ptr
+    unsafe { default_strdup(str) }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -703,10 +701,11 @@ pub static mut xmlMemStrdup: xmlStrdupFunc = xmlMemStrdupDefault;
 /// int xmlMemUsed(void);
 /// ```
 ///
-/// Returns an approximate count of allocated bytes.
-/// With the default allocator, this tracks allocations but is not
-/// byte-exact for realloc (since we don't track old sizes).
-/// Custom allocator hooks can provide exact counts.
+/// Returns upstream's `debugMemSize` counter, which is maintained ONLY by the
+/// debug allocator (`xmlMemMalloc`/`*Loc` surface). With the default
+/// allocator installed the counter stays 0 — byte-identical with the oracle
+/// (R-000178, verified by ALLOCATOR-DEFAULT-001). Custom allocator hooks
+/// never touch it (upstream contract).
 #[no_mangle]
 pub extern "C" fn xmlMemUsed() -> c_int {
     MEM_USED.load(Ordering::Relaxed) as c_int
@@ -720,7 +719,8 @@ pub extern "C" fn xmlMemUsed() -> c_int {
 /// int xmlMemBlocks(void);
 /// ```
 ///
-/// Returns an approximate count of live allocations.
+/// Returns upstream's `debugMemBlocks` counter (debug allocator only; 0 with
+/// the default allocator — R-000178, byte-identical with the oracle).
 #[no_mangle]
 pub extern "C" fn xmlMemBlocks() -> c_int {
     MEM_BLOCKS.load(Ordering::Relaxed) as c_int
@@ -734,30 +734,15 @@ pub extern "C" fn xmlMemBlocks() -> c_int {
 /// void xmlMemDisplay(FILE *fp);
 /// ```
 ///
-/// Prints debug memory information. With the default allocator,
-/// this prints a summary message. Custom allocator hooks may
-/// provide more detailed output.
+/// No-op — upstream 2.15.0 removed this feature (`@deprecated This feature
+/// was removed.`). The pre-Z.3 candidate printed aggregate counters; that was
+/// a divergence from the executed oracle and is removed (R-000131 sealed).
 ///
 /// # SAFETY
 ///
-/// - `fp` must be a valid FILE* pointer or NULL (in which case stderr is used)
+/// - `fp` must be a valid FILE* pointer or NULL (unused)
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemDisplay(fp: *mut c_void) {
-    // SAFETY: Caller guarantees fp is valid FILE* or NULL.
-    unsafe {
-        let out = if fp.is_null() {
-            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
-        } else {
-            fp
-        };
-        libc::fprintf(
-            out as *mut _,
-            b"Memory: used=%d blocks=%d\n\0" as *const u8 as *const c_char,
-            xmlMemUsed(),
-            xmlMemBlocks(),
-        );
-    }
-}
+pub const unsafe extern "C" fn xmlMemDisplay(_fp: *mut c_void) {}
 
 /// Show memory allocation information.
 ///
@@ -767,58 +752,16 @@ pub unsafe extern "C" fn xmlMemDisplay(fp: *mut c_void) {
 /// void xmlMemShow(FILE *fp, int nr);
 /// ```
 ///
-/// Prints debug memory information for the last `nr` allocations.
-/// With the default allocator, this is a no-op (we don't track allocation history).
+/// No-op — upstream 2.15.0 removed this feature (`@deprecated This feature
+/// was removed.`); the candidate previously dumped the registry with a
+/// non-upstream ordering, a documented divergence that is now removed
+/// (R-000131 sealed).
 ///
 /// # SAFETY
 ///
-/// - `fp` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `fp` must be a valid FILE* pointer or NULL (unused)
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemShow(fp: *mut c_void, nr: c_int) {
-    // Upstream xmlMemShow(fp, nr) prints the nr most recently allocated
-    // blocks from the debug allocator's history. The candidate's block
-    // registry is unordered; print the live blocks (bounded by nr), which
-    // preserves the observable purpose (per-block debugging output).
-    unsafe {
-        let out = if fp.is_null() {
-            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
-        } else {
-            fp
-        };
-        if out.is_null() {
-            return;
-        }
-        let mut msg = String::from("Recent blocks\n");
-        let map = BLOCKS.lock();
-        let mut entries: Vec<(usize, &BlockMeta)> = map.iter().map(|(k, v)| (*k, v)).collect();
-        entries.sort_by_key(|(k, _)| *k);
-        let take = if nr > 0 { nr as usize } else { usize::MAX };
-        for (addr, meta) in entries.into_iter().take(take) {
-            msg.push_str(&format!(
-                "  {:018p} : {:>7} bytes\n",
-                addr as *const c_void, meta.size
-            ));
-        }
-        let bytes = msg.as_bytes();
-        libc::fwrite(
-            bytes.as_ptr() as *const c_void,
-            1,
-            bytes.len(),
-            out as *mut libc::FILE,
-        );
-    }
-}
+pub const unsafe extern "C" fn xmlMemShow(_fp: *mut c_void, _nr: c_int) {}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Convenience Functions (used internally)
@@ -933,108 +876,194 @@ pub const extern "C" fn xmlCleanupMemory() {
 // `xmlMemSize`, `xmlMemDisplayLast` and `xmlMemoryDump` alongside the modern
 // names. Downstream code (older consumers, some language bindings) links
 // against these names, so the candidate exports them with identical
-// semantics. The `*Loc` variants take a source file/line that the default
-// allocator does not track (upstream uses it for leak reports only); the
-// location arguments are accepted and ignored — a documented safe divergence
-// (residual R-000131).
+// semantics. In upstream 2.15.0 these ARE the debug allocator: always
+// libc-backed, independent of the hook variables, and tracked by
+// `debugMemSize`/`debugMemBlocks` (with the MEMHDR tag enabling
+// `xmlMemSize`). The candidate mirrors that exactly: the debug-named
+// functions and the `*Loc` variants are always libc-backed + registry- and
+// counter-tracked, do NOT route through the exported variables, and the
+// `*Loc` location arguments are accepted and ignored — exactly like
+// upstream's `ATTRIBUTE_UNUSED` parameters (R-000131 sealed). The candidate
+// returns plain libc pointers (no MEMHDR prefix), so a debug-surface block
+// can also be freed with `xmlFree` — a safe superset of the upstream
+// contract (upstream requires `xmlMemFree` for such blocks).
 
-/// Allocate memory (legacy name; same contract as `xmlMalloc`).
+/// Debug-surface malloc: libc + counters + registry (upstream xmlMemMalloc).
+///
+/// # Safety
+///
+/// - `size` must be a valid allocation size; the underlying `default_malloc`
+///   follows the libc contract (0 handled by the platform).
+/// - `file` must be NULL or a valid pointer to a NUL-terminated C string that
+///   stays valid for the duration of the call (it is stored by address only,
+///   never dereferenced here).
+/// - The returned pointer (NULL on failure, with counters untouched) is owned
+///   by the caller and must be freed exactly once via `debug_free` or
+///   `xmlMemFree`; never dereferenced after freeing.
+unsafe fn debug_malloc(size: usize, file: *const c_char, line: c_int) -> *mut c_void {
+    let ptr = unsafe { default_malloc(size) };
+    if !ptr.is_null() {
+        MEM_USED.fetch_add(size, Ordering::Relaxed);
+        MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        unsafe { block_record(ptr, size, file, line) };
+    }
+    ptr
+}
+
+/// Debug-surface realloc: libc + counters + registry (upstream xmlMemRealloc).
+///
+/// # Safety
+///
+/// - `ptr` must be NULL or a valid pointer previously returned by the debug
+///   surface (`debug_malloc`/`debug_realloc`) or by a matching libc
+///   allocation, and not yet freed; NULL behaves like malloc.
+/// - On failure the old block is left intact and stays recorded; on success
+///   the old pointer is invalidated and the returned pointer must be freed
+///   exactly once via `debug_free`/`xmlMemFree`.
+/// - `file` must be NULL or a valid NUL-terminated C string valid for the
+///   duration of the call (stored by address only).
+unsafe fn debug_realloc(
+    ptr: *mut c_void,
+    size: usize,
+    file: *const c_char,
+    line: c_int,
+) -> *mut c_void {
+    let new_ptr = unsafe { default_realloc(ptr, size) };
+    if !new_ptr.is_null() {
+        let old_size = unsafe { block_forget(ptr) };
+        if let Some(old) = old_size {
+            MEM_USED.fetch_add(size.saturating_sub(old), Ordering::Relaxed);
+        } else if ptr.is_null() {
+            MEM_USED.fetch_add(size, Ordering::Relaxed);
+            MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        }
+        unsafe { block_record(new_ptr, size, file, line) };
+    }
+    new_ptr
+}
+
+/// Debug-surface strdup: libc + counters + registry (upstream xmlMemoryStrdup).
+///
+/// # Safety
+///
+/// - `str` must be NULL or a valid pointer to a NUL-terminated C string
+///   readable through its full length (including the terminator) for the
+///   duration of the call; NULL yields NULL.
+/// - `file` must be NULL or a valid NUL-terminated C string valid for the
+///   duration of the call (stored by address only).
+/// - The returned pointer (NULL on failure) must be freed exactly once via
+///   `debug_free`/`xmlMemFree`; never dereferenced after freeing.
+unsafe fn debug_strdup(str: *const c_char, file: *const c_char, line: c_int) -> *mut c_void {
+    if str.is_null() {
+        return ptr::null_mut();
+    }
+    let ptr = unsafe { default_strdup(str) };
+    if !ptr.is_null() {
+        let len = unsafe { libc::strlen(str) } + 1;
+        MEM_USED.fetch_add(len, Ordering::Relaxed);
+        MEM_BLOCKS.fetch_add(1, Ordering::Relaxed);
+        unsafe { block_record(ptr, len, file, line) };
+    }
+    ptr
+}
+
+/// Debug-surface free: registry/counter removal + libc free (upstream xmlMemFree).
+/// A foreign pointer (not in the registry) is freed without touching the
+/// counters — a safe divergence from upstream's tag-error print (which would
+/// pollute stderr).
+///
+/// # Safety
+///
+/// - `ptr` must be NULL (a no-op) or a valid pointer previously returned by
+///   the debug surface (`debug_malloc`/`debug_realloc`/`debug_strdup`) or by
+///   a matching libc allocation; it must not be freed twice and must not be
+///   dereferenced after this call.
+/// - The registry and counters are only touched when the pointer was recorded;
+///   a foreign pointer is still freed via libc.
+unsafe fn debug_free(ptr: *mut c_void) {
+    if ptr.is_null() {
+        return;
+    }
+    let old_size = unsafe { block_forget(ptr) };
+    unsafe { default_free(ptr) };
+    if let Some(old) = old_size {
+        MEM_USED.fetch_sub(old, Ordering::Relaxed);
+        MEM_BLOCKS.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
+/// Allocate memory through the debug allocator (upstream xmlmemory.h).
 ///
 /// ```c
 /// void *xmlMemMalloc(size_t size);
 /// ```
 ///
+/// Always libc-backed and tracked (upstream debug allocator contract): the
+/// block is recorded so `xmlMemSize`/`xmlMemUsed`/`xmlMemBlocks` observe it.
+///
 /// # SAFETY
 ///
-/// The function touches crate-global state only; it is safe
-/// as long as the caller respects the library's global
-/// initialization/cleanup ordering (xmlInitParser before use,
-/// xmlCleanupParser only after all users are done).
-///
-/// Violating the global lifecycle ordering, or calling this after
-/// teardown or from a signal handler, is undefined behavior.
+/// - The returned pointer must be freed with `xmlMemFree` (or `xmlFree` —
+///   plain libc pointer, candidate superset)
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
-    // SAFETY: identical contract to xmlMalloc.
-    unsafe { xmlMallocImpl(size) }
+    unsafe { debug_malloc(size, ptr::null(), 0) }
 }
 
-/// Free memory (legacy name; same contract as `xmlFree`).
+/// Free memory through the debug allocator (upstream xmlmemory.h).
 ///
 /// ```c
 /// void xmlMemFree(void *ptr);
 /// ```
 ///
+/// Un-records the block and frees it. NULL is a no-op.
+///
 /// # SAFETY
 ///
 /// - `ptr` must be valid pointers (or NULL
 ///   where the upstream C contract allows), obtained from the
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
-    // SAFETY: identical contract to xmlFree.
-    unsafe { xmlFreeImpl(ptr) }
+    unsafe { debug_free(ptr) };
 }
 
-/// Reallocate memory (legacy name; same contract as `xmlRealloc`).
+/// Reallocate memory through the debug allocator (upstream xmlmemory.h).
 ///
 /// ```c
 /// void *xmlMemRealloc(void *ptr, size_t size);
 /// ```
 ///
+/// C realloc semantics + registry maintenance (upstream xmlMemRealloc:
+/// NULL ptr allocates, failure leaves the old block recorded and intact).
+///
 /// # SAFETY
 ///
 /// - `ptr` must be valid pointers (or NULL
 ///   where the upstream C contract allows), obtained from the
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_void {
-    // SAFETY: identical contract to xmlRealloc.
-    unsafe { xmlReallocImpl(ptr, size) }
+    unsafe { debug_realloc(ptr, size, ptr::null(), 0) }
 }
 
-/// Duplicate a string (legacy name; same contract as `xmlMemStrdup`).
+/// Duplicate a string through the debug allocator (upstream xmlmemory.h).
 ///
 /// ```c
 /// void *xmlMemoryStrdup(const char *str);
 /// ```
 ///
+/// NULL returns NULL (upstream xmlPosixStrdup/xmlCharStrdup contract).
+///
 /// # SAFETY
 ///
-///
-/// - `str` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `str` must point to a valid NUL-terminated string, or NULL
+/// - The returned pointer must be freed with `xmlMemFree` (or `xmlFree`)
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
-    // SAFETY: identical contract to xmlMemStrdup.
-    unsafe { xmlMemStrdupImpl(str) }
+    unsafe { debug_strdup(str, ptr::null(), 0) }
 }
 
 /// Allocate memory, recording the allocation site (upstream xmlmemory.h).
@@ -1043,9 +1072,10 @@ pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
 /// void *xmlMallocLoc(size_t size, const char *file, int line);
 /// ```
 ///
-/// The default candidate allocator does not track allocation sites (see
-/// residual R-000131); the location arguments are accepted for ABI
-/// compatibility and ignored.
+/// Debug-allocator contract (upstream xmlMallocLoc -> xmlMemMalloc): always
+/// libc-backed + tracked, independent of the hook variables. Upstream 2.15.0
+/// ignores the file/line arguments (`ATTRIBUTE_UNUSED`); the candidate
+/// records them in the registry so `xmlMemSize` works (R-000131 sealed).
 ///
 /// # SAFETY
 ///
@@ -1067,18 +1097,18 @@ pub unsafe extern "C" fn xmlMallocLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let ptr = unsafe { xmlMallocImpl(size) };
-    if !ptr.is_null() {
-        unsafe { block_record(ptr, size, file, line) };
-    }
-    ptr
+    unsafe { debug_malloc(size, file, line) }
 }
 
-/// Allocate zeroed memory, recording the allocation site (upstream xmlmemory.h).
+/// Allocate memory, recording the allocation site (upstream xmlmemory.h).
 ///
 /// ```c
 /// void *xmlMallocAtomicLoc(size_t size, const char *file, int line);
 /// ```
+///
+/// Upstream xmlMallocAtomicLoc -> xmlMemMalloc: a plain (non-zeroed) tracked
+/// allocation. The pre-Z.3 candidate zeroed it via `xmlMallocZero` — a real
+/// divergence, fixed in 11.1-Z.3 (R-000178 narrative).
 ///
 /// # SAFETY
 ///
@@ -1100,11 +1130,7 @@ pub unsafe extern "C" fn xmlMallocAtomicLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let ptr = unsafe { xmlMallocZero(size) };
-    if !ptr.is_null() {
-        unsafe { block_record(ptr, size, file, line) };
-    }
-    ptr
+    unsafe { debug_malloc(size, file, line) }
 }
 
 /// Reallocate memory, recording the allocation site (upstream xmlmemory.h).
@@ -1112,6 +1138,9 @@ pub unsafe extern "C" fn xmlMallocAtomicLoc(
 /// ```c
 /// void *xmlReallocLoc(void *ptr, size_t size, const char *file, int line);
 /// ```
+///
+/// Debug-allocator contract (upstream xmlReallocLoc -> xmlMemRealloc): the
+/// old record is superseded on success, kept on failure.
 ///
 /// # SAFETY
 ///
@@ -1138,17 +1167,7 @@ pub unsafe extern "C" fn xmlReallocLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let new_ptr = unsafe { xmlReallocImpl(ptr, size) };
-    if !new_ptr.is_null() {
-        unsafe { block_record(new_ptr, size, file, line) };
-    } else if !ptr.is_null() {
-        // Keep the old site on failure.
-        let meta = BLOCKS.lock().get(&(ptr as usize)).copied();
-        if let Some(m) = meta {
-            unsafe { block_record(ptr, m.size, m.file as *const c_char, m.line) };
-        }
-    }
-    new_ptr
+    unsafe { debug_realloc(ptr, size, file, line) }
 }
 
 /// Duplicate a string, recording the allocation site (upstream xmlmemory.h).
@@ -1156,6 +1175,8 @@ pub unsafe extern "C" fn xmlReallocLoc(
 /// ```c
 /// void *xmlMemStrdupLoc(const char *str, const char *file, int line);
 /// ```
+///
+/// Debug-allocator contract (upstream xmlMemStrdupLoc -> xmlMemoryStrdup).
 ///
 /// # SAFETY
 ///
@@ -1177,12 +1198,7 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
     file: *const c_char,
     line: c_int,
 ) -> *mut c_void {
-    let ptr = unsafe { xmlMemStrdupImpl(str) };
-    if !ptr.is_null() {
-        let len = unsafe { libc::strlen(str) } + 1;
-        unsafe { block_record(ptr, len, file, line) };
-    }
-    ptr
+    unsafe { debug_strdup(str, file, line) }
 }
 
 /// Return the size of an allocated block (upstream xmlmemory.h).
@@ -1191,8 +1207,10 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
 /// size_t xmlMemSize(void *ptr);
 /// ```
 ///
-/// Returns the recorded size from the block registry (0 for unknown or
-/// foreign pointers, matching upstream's lookup-miss behavior).
+/// Returns the recorded size for debug-surface blocks (`xmlMemMalloc`/`*Loc`
+/// surface) and 0 for everything else — matching upstream's MEMHDR tag
+/// lookup, which misses on plain-malloc blocks (default allocator) and on
+/// foreign pointers (R-000178; byte-identical with the oracle).
 ///
 /// # SAFETY
 ///
@@ -1200,14 +1218,6 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
 ///   where the upstream C contract allows), obtained from the
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemSize(ptr: *mut c_void) -> usize {
     if ptr.is_null() {
@@ -1226,76 +1236,15 @@ pub unsafe extern "C" fn xmlMemSize(ptr: *mut c_void) -> usize {
 /// void xmlMemDisplayLast(FILE *fp, long nbBytes);
 /// ```
 ///
-/// Dumps the per-block registry (upstream xmlMemDisplayLast block listing):
-/// one line per live block with its address, size and recorded allocation
-/// site, bounded by `nb_bytes` when positive. The aggregate footer matches
-/// upstream's counters.
+/// No-op — upstream 2.15.0 removed this feature (`@deprecated This feature
+/// was removed.`); the pre-Z.3 candidate dumped the registry with a
+/// non-upstream format, a divergence now removed (R-000131 sealed).
 ///
 /// # SAFETY
 ///
-/// - `fp` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// - `fp` must be a valid FILE* pointer or NULL (unused)
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
-    // SAFETY: fp must be a valid FILE* or NULL (stderr used).
-    unsafe {
-        let out = if fp.is_null() {
-            libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut c_void
-        } else {
-            fp
-        };
-        if out.is_null() {
-            return;
-        }
-        let mut total: usize = 0;
-        let mut msg = String::new();
-        msg.push_str("MEMORY ALLOCATED : 0, MAX : 0, BLOCKS : ");
-        let blocks = MEM_BLOCKS.load(Ordering::Relaxed);
-        msg.push_str(&blocks.to_string());
-        msg.push('\n');
-        let map = BLOCKS.lock();
-        let mut entries: Vec<(usize, &BlockMeta)> = map.iter().map(|(k, v)| (*k, v)).collect();
-        entries.sort_by_key(|(k, _)| *k);
-        for (addr, meta) in entries {
-            if nb_bytes > 0 && (total as c_long) >= nb_bytes {
-                break;
-            }
-            total += meta.size;
-            msg.push_str(&format!(
-                "  {:018p} : {:>7} bytes",
-                addr as *const c_void, meta.size
-            ));
-            if meta.file != 0 {
-                let file = CStr::from_ptr(meta.file as *const c_char).to_string_lossy();
-                msg.push_str(&format!(" @ {}:{}", file, meta.line));
-            }
-            msg.push('\n');
-        }
-        drop(map);
-        let used = MEM_USED.load(Ordering::Relaxed);
-        msg.push_str(&format!(
-            "TOTAL MEMORY ALLOCATED : {} bytes, TOTAL BLOCKS : {}\n",
-            used, blocks
-        ));
-        let bytes = msg.as_bytes();
-        libc::fwrite(
-            bytes.as_ptr() as *const c_void,
-            1,
-            bytes.len(),
-            out as *mut libc::FILE,
-        );
-    }
-}
+pub const unsafe extern "C" fn xmlMemDisplayLast(_fp: *mut c_void, _nb_bytes: c_long) {}
 
 /// Dump memory allocation statistics (upstream xmlmemory.h).
 ///
@@ -1303,8 +1252,8 @@ pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
 /// void xmlMemoryDump(void);
 /// ```
 ///
-/// Prints the global counters to stderr (no leak detector is active in the
-/// default allocator).
+/// No-op — upstream 2.15.0 removed this feature (`@deprecated This feature
+/// was removed.`).
 ///
 /// # SAFETY
 ///
@@ -1312,14 +1261,9 @@ pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
 /// as long as the caller respects the library's global
 /// initialization/cleanup ordering (xmlInitParser before use,
 /// xmlCleanupParser only after all users are done).
-///
-/// Violating the global lifecycle ordering, or calling this after
-/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlMemoryDump() {
-    unsafe {
-        xmlMemDisplayLast(ptr::null_mut(), -1);
-    }
+pub const unsafe extern "C" fn xmlMemoryDump() {
+    // Upstream: empty body (feature removed in 2.15.0).
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1332,6 +1276,12 @@ mod tests {
     use core::ptr;
 
     /// Test basic allocation and deallocation.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` is the non-NULL result of `xmlMalloc(100)` (asserted): it is a
+    ///   valid heap allocation owned by the caller, freed exactly once by
+    ///   `xmlFree`, and not used afterwards.
     #[test]
     fn test_malloc_free() {
         unsafe {
@@ -1342,6 +1292,12 @@ mod tests {
     }
 
     /// Test that xmlMalloc(0) returns a valid pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlMalloc(0)` may return NULL or a unique non-NULL pointer per the
+    ///   platform contract; a non-NULL result is a valid allocation freed
+    ///   exactly once by `xmlFree` and not used afterwards.
     #[test]
     fn test_malloc_zero() {
         unsafe {
@@ -1355,6 +1311,11 @@ mod tests {
     }
 
     /// Test xmlFree(NULL) is a no-op.
+    ///
+    /// # Safety
+    ///
+    /// - Passing NULL to `xmlFree` is accepted and performs no operation; no
+    ///   pointer is dereferenced.
     #[test]
     fn test_free_null() {
         unsafe {
@@ -1364,6 +1325,13 @@ mod tests {
     }
 
     /// Test xmlRealloc.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must be a valid non-NULL allocation from `xmlMalloc`; on the
+    ///   successful `xmlRealloc` here the old pointer is invalidated and only
+    ///   the returned `new_ptr` (non-NULL, asserted) is freed exactly once by
+    ///   `xmlFree` and not used afterwards.
     #[test]
     fn test_realloc() {
         unsafe {
@@ -1376,6 +1344,14 @@ mod tests {
     }
 
     /// Test xmlMemStrdup.
+    ///
+    /// # Safety
+    ///
+    /// - `s` points to a valid NUL-terminated byte string of 6 bytes (the
+    ///   literal `hello` plus terminator) that stays alive for the call.
+    /// - `dup` is the non-NULL result of `xmlMemStrdup`, a fresh allocation of
+    ///   at least 6 bytes readable as a slice; it is freed exactly once by
+    ///   `xmlFree` and not used afterwards.
     #[test]
     fn test_mem_strdup() {
         unsafe {
@@ -1391,6 +1367,12 @@ mod tests {
     }
 
     /// Test xmlMallocZero returns zeroed memory.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` is the non-NULL result of `xmlMallocZero(100)`: a valid
+    ///   allocation of at least 100 bytes, readable as a 100-byte slice
+    ///   while alive, and freed exactly once by `xmlFree` afterwards.
     #[test]
     fn test_malloc_zero_init() {
         unsafe {
@@ -1405,6 +1387,16 @@ mod tests {
     /// Test custom allocator setup/get (R-000176: int returns, single source
     /// of truth — `xmlMemSetup` writes the exported variables and `xmlMemGet`
     /// reads them back).
+    ///
+    /// # Safety
+    ///
+    /// - Each output pointer passed to `xmlMemGet` is derived from a live
+    ///   stack local of matching type, so every non-NULL output points to
+    ///   valid, aligned, writable storage for the duration of the call; NULL
+    ///   outputs are tolerated and skipped.
+    /// - The function pointers written back must be treated as valid
+    ///   C-compatible hooks (they are the currently installed allocator
+    ///   functions).
     #[test]
     fn test_mem_setup_get() {
         unsafe {
@@ -1439,6 +1431,13 @@ mod tests {
 
     /// Test the GC allocator hooks: 5-argument Setup/Get with the dedicated
     /// `mallocAtomicFunc` slot (R-000176 — previously 4-arg and void).
+    ///
+    /// # Safety
+    ///
+    /// - Each output pointer passed to `xmlGcMemGet` is derived from a live
+    ///   stack local of matching type, so every non-NULL output points to
+    ///   valid, aligned, writable storage for the duration of the call; NULL
+    ///   outputs are tolerated and skipped.
     #[test]
     fn test_gc_mem_setup_get() {
         unsafe {
@@ -1466,6 +1465,14 @@ mod tests {
 
     /// Test `xmlMemSetup` NULL validation returns -1 (upstream xmlmemory.c)
     /// and that a NULL `mallocAtomicFunc` makes `xmlGcMemSetup` fail.
+    ///
+    /// # Safety
+    ///
+    /// - `default_malloc` cast to `xmlMallocFunc` is a valid C-compatible
+    ///   malloc-shaped function pointer; it is only passed as an argument here
+    ///   and never called by this test.
+    /// - The NULL hooks are rejected with -1 before any write, so no
+    ///   allocator state is modified by this test.
     #[test]
     fn test_mem_setup_null_rejected() {
         unsafe {
@@ -1485,6 +1492,17 @@ mod tests {
     /// Test the single-source-of-truth model (R-000176): a direct assignment
     /// to the exported `xmlMalloc` variable is observed by `xmlMemGet` AND by
     /// actual internal allocations through `xmlMallocImpl`.
+    ///
+    /// # Safety
+    ///
+    /// - The exported `static mut` allocator variables are read and written
+    ///   directly, which is only valid under the upstream single-threaded
+    ///   setup ordering: no other thread may allocate or read the variables
+    ///   concurrently with these assignments.
+    /// - The values installed (`xmlMallocDefault`/`xmlFreeDefault`) are valid
+    ///   malloc/free-shaped functions; `p` from `xmlMallocImpl` is a valid
+    ///   allocation freed exactly once by `xmlFreeImpl`; the prior hook values
+    ///   are restored before the block ends.
     #[test]
     fn test_direct_assignment_coherence() {
         unsafe {
@@ -1519,21 +1537,124 @@ mod tests {
         }
     }
 
-    /// Test xmlMemUsed and xmlMemBlocks return reasonable values.
+    /// Test xmlMemUsed and xmlMemBlocks return 0 with the default allocator
+    /// and the debug surface is tracked (R-000178: byte-identical with the
+    /// oracle — default malloc untracked, xmlMemMalloc/*Loc tracked).
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` from `xmlMalloc` is a valid libc allocation freed exactly once
+    ///   by `xmlFree`; `xmlMemSize` reads the registry by address only and is
+    ///   safe on freed default-allocator pointers (returns 0).
+    /// - `dptr` from `xmlMallocLoc` and `rptr` from `xmlReallocLoc` are
+    ///   debug-surface allocations: on success the old pointer is invalidated
+    ///   and only `rptr` is freed, exactly once, by `xmlMemFree`.
     #[test]
     fn test_mem_stats() {
         unsafe {
+            // Default allocator: plain libc, NOT tracked (oracle contract).
             let ptr = xmlMalloc(100);
             assert!(!ptr.is_null());
-
-            // The block registry records the exact size (deterministic,
-            // unlike the process-wide counters which other test threads
-            // mutate concurrently).
-            assert_eq!(xmlMemSize(ptr), 100);
-
+            assert_eq!(xmlMemSize(ptr), 0, "default-allocator blocks are untracked");
             xmlFree(ptr);
-            // Freed blocks leave the registry.
             assert_eq!(xmlMemSize(ptr), 0);
+
+            // Debug surface: tracked, xmlMemSize returns the recorded size.
+            let dptr = xmlMallocLoc(100, c"mem.c".as_ptr(), 42);
+            assert!(!dptr.is_null());
+            assert_eq!(xmlMemSize(dptr), 100, "debug-surface blocks are tracked");
+            let rptr = xmlReallocLoc(dptr, 200, c"mem.c".as_ptr(), 43);
+            assert!(!rptr.is_null());
+            // The realloc record supersedes the old one (same address when
+            // glibc grows in place — then the block AT that address is 200).
+            assert_eq!(xmlMemSize(rptr), 200);
+            assert_eq!(xmlMemSize(dptr), xmlMemSize(rptr));
+            xmlMemFree(rptr);
+            assert_eq!(xmlMemSize(rptr), 0);
+
+            // xmlMemSize(NULL) is 0.
+            assert_eq!(xmlMemSize(ptr::null_mut()), 0);
+        }
+    }
+
+    /// Test the default allocator follows the C/libc contract exactly
+    /// (R-000178): malloc(0) non-NULL, realloc(p,0) NULL after freeing,
+    /// realloc(NULL,n) == malloc, realloc failure leaves the old block,
+    /// malloc(SIZE_MAX) NULL, strdup(NULL) NULL.
+    ///
+    /// # Safety
+    ///
+    /// - Each non-NULL allocation is freed exactly once by `xmlFree`, and
+    ///   pointers are not used after freeing; in particular `q` is freed by
+    ///   the `realloc(p, 0)` call that returns NULL (glibc contract), so it
+    ///   must not be used afterwards, and `r` is freed explicitly after the
+    ///   failed huge realloc leaves it intact.
+    /// - NULL arguments to `xmlRealloc`, `xmlMemStrdup` and `xmlFree` are
+    ///   accepted per the C contract.
+    #[test]
+    fn test_default_libc_semantics() {
+        unsafe {
+            // malloc(0): glibc returns a unique non-NULL pointer.
+            let p0 = xmlMalloc(0);
+            assert!(!p0.is_null(), "malloc(0) must be non-NULL on glibc");
+            xmlFree(p0);
+
+            // realloc(NULL, n) allocates.
+            let p = xmlRealloc(ptr::null_mut(), 16);
+            assert!(!p.is_null());
+            // grow: content preserved.
+            let q = xmlRealloc(p, 256);
+            assert!(!q.is_null());
+            // realloc(p, 0): glibc frees and returns NULL.
+            let z = xmlRealloc(q, 0);
+            assert!(z.is_null(), "realloc(p, 0) returns NULL on glibc");
+
+            // realloc failure: old block intact.
+            let r = xmlMalloc(8);
+            assert!(!r.is_null());
+            let huge = xmlRealloc(r, usize::MAX);
+            assert!(huge.is_null(), "realloc to SIZE_MAX must fail");
+            xmlFree(r);
+
+            // malloc failure.
+            let m = xmlMalloc(usize::MAX);
+            assert!(m.is_null(), "malloc(SIZE_MAX) must fail");
+
+            // strdup(NULL) returns NULL (upstream xmlPosixStrdup).
+            let d = xmlMemStrdup(ptr::null());
+            assert!(d.is_null());
+
+            // free(NULL) no-op.
+            xmlFree(ptr::null_mut());
+        }
+    }
+
+    /// Test the debug-named surface is independent of the hook variables and
+    /// always libc-backed + tracked (upstream debug-allocator contract).
+    ///
+    /// # Safety
+    ///
+    /// - `p`, `q` and `s` are non-NULL debug-surface allocations; after the
+    ///   successful `xmlMemRealloc` only `q` remains valid, and `q` and `s`
+    ///   are each freed exactly once by `xmlMemFree` and not used afterwards.
+    /// - `xmlMemFree(NULL)` is a no-op; `xmlMemSize` reads the registry by
+    ///   address only.
+    #[test]
+    fn test_debug_surface_tracked() {
+        unsafe {
+            let p = xmlMemMalloc(64);
+            assert!(!p.is_null());
+            assert_eq!(xmlMemSize(p), 64);
+            let q = xmlMemRealloc(p, 128);
+            assert!(!q.is_null());
+            assert_eq!(xmlMemSize(q), 128);
+            let s = xmlMemoryStrdup(c"dbg".as_ptr());
+            assert!(!s.is_null());
+            assert_eq!(xmlMemSize(s), 4);
+            xmlMemFree(q);
+            xmlMemFree(s);
+            // xmlMemFree(NULL) no-op.
+            xmlMemFree(ptr::null_mut());
         }
     }
 }

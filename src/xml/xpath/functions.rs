@@ -199,6 +199,12 @@ const fn fn_id(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathVal
 }
 
 /// local-name(node-set?) — local part of name.
+///
+/// # Safety
+///
+/// - The node returned by `get_first_node` must be NULL or a valid
+///   `_xmlNode` that stays alive for the call; its `name` field must be
+///   NULL or a valid NUL-terminated string.
 fn fn_local_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let node = get_first_node(ctx, args, 0);
     if let Some(node) = node {
@@ -217,6 +223,13 @@ fn fn_local_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
 }
 
 /// namespace-uri(node-set?) — namespace URI of node.
+///
+/// # Safety
+///
+/// - The node returned by `get_first_node` must be NULL or a valid
+///   `_xmlNode` that stays alive for the call; its `ns` pointer, when
+///   non-NULL, must point to a valid `_xmlNs` whose `href` is NULL or a
+///   valid NUL-terminated string.
 fn fn_namespace_uri(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let node = get_first_node(ctx, args, 0);
     if let Some(node) = node {
@@ -234,6 +247,12 @@ fn fn_namespace_uri(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPath
 }
 
 /// name(node-set?) — QName of node.
+///
+/// # Safety
+///
+/// - The node returned by `get_first_node` must be NULL or a valid
+///   `_xmlNode` that stays alive for the call; its `name` field must be
+///   NULL or a valid NUL-terminated string.
 fn fn_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let node = get_first_node(ctx, args, 0);
     if let Some(node) = node {
@@ -412,6 +431,14 @@ const fn fn_false(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPath
 }
 
 /// lang(string) — language test.
+///
+/// # Safety
+///
+/// - `ctx.context_node` must be NULL or a valid `_xmlNode`; the walk up
+///   the `parent` chain and through each node's `properties` must only
+///   touch valid nodes and attributes whose `name` and child `content`
+///   fields are NULL or valid NUL-terminated strings; the chain must stay
+///   alive and acyclic for the duration of the call.
 fn fn_lang(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let lang = get_string_arg(args, 0);
     let mut node = ctx.context_node;

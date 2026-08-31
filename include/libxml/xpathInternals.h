@@ -56,10 +56,6 @@ XMLPUBFUN xmlNodeSetPtr
                 xmlXPathNodeSetCreate      (xmlNodePtr val);
 XMLPUBFUN void
                 xmlXPathFreeNodeSet        (xmlNodeSetPtr ns);
-XMLPUBFUN void *
-                xmlXPathCompile            (const xmlChar *str);
-XMLPUBFUN void
-                xmlXPathFreeCompExpr       (void *comp);
 XMLPUBFUN int
                 xmlXPathRegisterNs         (xmlXPathContextPtr ctxt,
                                             const xmlChar *prefix,
@@ -80,7 +76,7 @@ XMLPUBFUN int
 XMLPUBFUN xmlXPathObjectPtr
                 xmlXPathNewNodeSet         (xmlNodePtr val);
 XMLPUBFUN xmlXPathObjectPtr
-                xmlXPathNewCString         (const xmlChar *val);
+                xmlXPathNewCString         (const char *val);
 XMLPUBFUN xmlXPathObjectPtr
                 xmlXPathNewFloat           (double val);
 XMLPUBFUN xmlXPathObjectPtr

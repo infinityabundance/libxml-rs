@@ -345,6 +345,13 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// NULL arguments to the document-loading API are rejected with NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltLoadDocument` returns NULL and `xsltFreeDocCache` no-ops on
+    ///   NULL arguments before dereferencing them, so the unsafe block
+    ///   reads and frees no memory.
     #[test]
     fn test_null_args() {
         unsafe {

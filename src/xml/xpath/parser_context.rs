@@ -600,6 +600,13 @@ pub unsafe fn compare_values_impl(
     ret as c_int
 }
 
+/// Compare two node-sets numerically (any node pair satisfying the relation).
+///
+/// # Safety
+///
+/// - Every node pointer in `a` and `b` must be NULL or a valid `_xmlNode`
+///   that stays alive for the call, since `node_to_number` reads each
+///   node's string value.
 fn compare_node_sets(a: &NodeSet, b: &NodeSet, inf: bool, strict: bool) -> c_int {
     if a.is_empty() || b.is_empty() {
         return 0;
@@ -665,6 +672,13 @@ fn compare_node_set_value(
     }
 }
 
+/// Compare a node-set against a scalar number.
+///
+/// # Safety
+///
+/// - Every node pointer in `ns` must be NULL or a valid `_xmlNode` that
+///   stays alive for the call, since `node_to_number` reads each node's
+///   string value.
 fn compare_node_set_number(
     ns: &NodeSet,
     f: f64,

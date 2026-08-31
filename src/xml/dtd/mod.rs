@@ -93,6 +93,10 @@ use crate::abi::types::xmlAttributeType::*;
 /// ```
 ///
 /// Returns a pointer to the DTD, or NULL if none.
+///
+/// # Safety
+///
+/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
 pub const fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
     if doc.is_null() {
         return ptr::null_mut();
@@ -233,19 +237,46 @@ pub unsafe fn new_dtd(
     dtd
 }
 
-/// extern "C" copier shims for `hash::hash_copy`.
+/// extern "C" copier shim for `hash::hash_copy`: element declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlElement` owned by
+///   the hash table being copied; it is forwarded to `copy_element`.
+/// - `_name` is unused.
 unsafe extern "C" fn copy_elem_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
     unsafe { copy_element(payload as *mut _xmlElement) as *mut c_void }
 }
 
+/// extern "C" copier shim for `hash::hash_copy`: attribute declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlAttribute` owned by
+///   the hash table being copied; it is forwarded to `copy_attribute_decl`.
+/// - `_name` is unused.
 unsafe extern "C" fn copy_attr_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
     unsafe { copy_attribute_decl(payload as *mut _xmlAttribute) as *mut c_void }
 }
 
+/// extern "C" copier shim for `hash::hash_copy`: entity declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlEntity` owned by
+///   the hash table being copied; it is forwarded to `copy_entity`.
+/// - `_name` is unused.
 unsafe extern "C" fn copy_ent_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
     unsafe { crate::xml::entities::copy_entity(payload as *mut _xmlEntity) as *mut c_void }
 }
 
+/// extern "C" copier shim for `hash::hash_copy`: notation declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlNotation` owned by
+///   the hash table being copied; it is forwarded to `copy_notation`.
+/// - `_name` is unused.
 unsafe extern "C" fn copy_notation_cb(payload: *mut c_void, _name: *const xmlChar) -> *mut c_void {
     unsafe { copy_notation(payload as *mut _xmlNotation) as *mut c_void }
 }
@@ -385,24 +416,56 @@ pub unsafe fn free_dtd(dtd: *mut _xmlDtd) {
 // Hash Deallocators
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Hash-table deallocator for notation declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlNotation` owned
+///   exclusively by the hash table being freed; it is freed with
+///   `free_notation`.
+/// - `_name` is unused.
 unsafe extern "C" fn notation_deallocator(payload: *mut c_void, _name: *mut u8) {
     if !payload.is_null() {
         free_notation(payload as *mut _xmlNotation);
     }
 }
 
+/// Hash-table deallocator for element declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlElement` owned
+///   exclusively by the hash table being freed; it is freed with
+///   `free_element`.
+/// - `_name` is unused.
 unsafe extern "C" fn element_deallocator(payload: *mut c_void, _name: *mut u8) {
     if !payload.is_null() {
         free_element(payload as *mut _xmlElement);
     }
 }
 
+/// Hash-table deallocator for attribute declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlAttribute` owned
+///   exclusively by the hash table being freed; it is freed with
+///   `free_attribute`.
+/// - `_name` is unused.
 unsafe extern "C" fn attribute_deallocator(payload: *mut c_void, _name: *mut u8) {
     if !payload.is_null() {
         free_attribute(payload as *mut _xmlAttribute);
     }
 }
 
+/// Hash-table deallocator for entity declarations.
+///
+/// # Safety
+///
+/// - `payload` must be NULL or a valid pointer to an `_xmlEntity` owned
+///   exclusively by the hash table being freed; it is freed with
+///   `free_entity`.
+/// - `_name` is unused.
 unsafe extern "C" fn entity_deallocator(payload: *mut c_void, _name: *mut u8) {
     if !payload.is_null() {
         crate::xml::entities::free_entity(payload as *mut _xmlEntity);
@@ -1408,6 +1471,15 @@ pub unsafe fn valid_content_model(
 }
 
 /// Validate content against a content model without considering occurrence.
+///
+/// # Safety
+///
+/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
+///   dereferenced to read `type_` and `name`, and its `c1`/`c2` children are
+///   followed when non-NULL.
+/// - Each entry in `names` must be NULL or a valid pointer to a
+///   NUL-terminated `xmlChar` element name; non-NULL entries are compared
+///   with `xml_strcmp`.
 unsafe fn valid_content_model_inner(
     model: *mut _xmlElementContent,
     names: &[*const xmlChar],
@@ -1452,6 +1524,13 @@ unsafe fn valid_content_model_inner(
 }
 
 /// Validate content for zero-or-more occurrence.
+///
+/// # Safety
+///
+/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
+///   forwarded to `valid_content_model_inner`, which dereferences it.
+/// - Each entry in `names` must be NULL or a valid pointer to a
+///   NUL-terminated `xmlChar` element name.
 unsafe fn valid_content_model_zero_or_more(
     model: *mut _xmlElementContent,
     names: &[*const xmlChar],
@@ -1480,6 +1559,13 @@ unsafe fn valid_content_model_zero_or_more(
 }
 
 /// Validate content for one-or-more occurrence.
+///
+/// # Safety
+///
+/// - `model` must be a valid pointer to an `_xmlElementContent`; it is
+///   forwarded to `valid_content_model_inner`, which dereferences it.
+/// - Each entry in `names` must be NULL or a valid pointer to a
+///   NUL-terminated `xmlChar` element name.
 unsafe fn valid_content_model_one_or_more(
     model: *mut _xmlElementContent,
     names: &[*const xmlChar],
@@ -1507,6 +1593,14 @@ unsafe fn valid_content_model_one_or_more(
 }
 
 /// Validate content against a sequence content model.
+///
+/// # Safety
+///
+/// - The `model` reference must point to a live `_xmlElementContent`.
+/// - Non-NULL `c1`/`c2` children must be valid pointers to
+///   `_xmlElementContent`; they are passed to `valid_content_model`.
+/// - Each entry in `names` must be NULL or a valid pointer to a
+///   NUL-terminated `xmlChar` element name.
 unsafe fn valid_content_model_seq(
     model: &_xmlElementContent,
     names: &[*const xmlChar],
@@ -1551,6 +1645,14 @@ unsafe fn valid_content_model_seq(
 }
 
 /// Validate content against a choice content model.
+///
+/// # Safety
+///
+/// - The `model` reference must point to a live `_xmlElementContent`.
+/// - Non-NULL `c1`/`c2` children must be valid pointers to
+///   `_xmlElementContent`; they are passed to `valid_content_model`.
+/// - Each entry in `names` must be NULL or a valid pointer to a
+///   NUL-terminated `xmlChar` element name.
 unsafe fn valid_content_model_or(
     model: &_xmlElementContent,
     names: &[*const xmlChar],
@@ -1614,6 +1716,11 @@ mod tests {
 
     // ── DTD Access Tests ────────────────────────────────────────────────
 
+    /// Verify that `get_int_subset` accepts a NULL document.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is never dereferenced.
     #[test]
     fn test_get_int_subset_null() {
         {
@@ -1621,6 +1728,13 @@ mod tests {
         }
     }
 
+    /// Verify that `create_int_subset` attaches a DTD to a document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `dtd` from `make_doc_and_dtd` are heap-allocated structs
+    ///   that must be valid while their fields are read; the DTD is freed with
+    ///   `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_create_int_subset() {
         unsafe {
@@ -1635,6 +1749,11 @@ mod tests {
         }
     }
 
+    /// Verify that `create_int_subset` with a NULL document returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `doc` is allowed and is not dereferenced.
     #[test]
     fn test_create_int_subset_null_doc() {
         unsafe {
@@ -1643,6 +1762,13 @@ mod tests {
         }
     }
 
+    /// Verify that `new_dtd` creates a DTD node and attaches it to the doc.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a heap-allocated `_xmlDoc` and the strings passed to
+    ///   `new_dtd` are NUL-terminated allocations that stay alive for the call.
+    /// - `dtd` must be freed with `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_new_dtd() {
         unsafe {
@@ -1661,6 +1787,12 @@ mod tests {
         }
     }
 
+    /// Verify that `new_dtd` works without a document.
+    ///
+    /// # Safety
+    ///
+    /// - The strings passed to `new_dtd` must be NUL-terminated and alive for
+    ///   the call; the returned DTD is freed with `free_dtd`.
     #[test]
     fn test_new_dtd_no_doc() {
         unsafe {
@@ -1672,6 +1804,13 @@ mod tests {
 
     // ── Notation Tests ──────────────────────────────────────────────────
 
+    /// Verify adding and looking up a notation declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` from `make_doc_and_dtd` and the NUL-terminated `c_str` buffers
+    ///   must be valid and alive for the calls; the DTD is freed with
+    ///   `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_add_get_notation() {
         unsafe {
@@ -1697,6 +1836,12 @@ mod tests {
         }
     }
 
+    /// Verify that adding a notation to a NULL DTD returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `dtd` is allowed and is not dereferenced; the name
+    ///   buffer must be NUL-terminated.
     #[test]
     fn test_add_notation_null_dtd() {
         unsafe {
@@ -1705,6 +1850,13 @@ mod tests {
         }
     }
 
+    /// Verify `copy_notation` deep-copies a notation declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `n` from `add_notation_decl` must be a valid `_xmlNotation` while
+    ///   copied; the copy is freed with `free_notation`, the DTD with
+    ///   `free_dtd`, and the doc with `xmlFreeImpl`.
     #[test]
     fn test_copy_notation() {
         unsafe {
@@ -1729,6 +1881,11 @@ mod tests {
         }
     }
 
+    /// Verify that `copy_notation` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_copy_notation_null() {
         unsafe {
@@ -1736,6 +1893,11 @@ mod tests {
         }
     }
 
+    /// Verify that `free_notation` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_free_notation_null() {
         unsafe {
@@ -1745,6 +1907,13 @@ mod tests {
 
     // ── Content Model Tests ─────────────────────────────────────────────
 
+    /// Verify creating and freeing a content model.
+    ///
+    /// # Safety
+    ///
+    /// - The name buffer passed to `create_content_model` must be
+    ///   NUL-terminated and alive for the call; the returned model is freed
+    ///   with `free_content_model`.
     #[test]
     fn test_create_free_content_model() {
         unsafe {
@@ -1757,6 +1926,12 @@ mod tests {
         }
     }
 
+    /// Verify creating a PCDATA content model.
+    ///
+    /// # Safety
+    ///
+    /// - The returned model must be valid while read and is freed with
+    ///   `free_content_model`.
     #[test]
     fn test_create_content_model_pcdata() {
         unsafe {
@@ -1767,6 +1942,12 @@ mod tests {
         }
     }
 
+    /// Verify `copy_content_model` deep-copies a content model.
+    ///
+    /// # Safety
+    ///
+    /// - `cm` must be a valid `_xmlElementContent` while copied; both models
+    ///   are freed with `free_content_model`.
     #[test]
     fn test_copy_content_model() {
         unsafe {
@@ -1785,6 +1966,11 @@ mod tests {
         }
     }
 
+    /// Verify that `copy_content_model` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_copy_content_model_null() {
         unsafe {
@@ -1792,6 +1978,11 @@ mod tests {
         }
     }
 
+    /// Verify that `free_content_model` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_free_content_model_null() {
         unsafe {
@@ -1799,6 +1990,13 @@ mod tests {
         }
     }
 
+    /// Verify creating a sequence content model with two children.
+    ///
+    /// # Safety
+    ///
+    /// - `c1`, `c2`, and `seq` must be valid `_xmlElementContent` pointers
+    ///   whose `parent`/`c1`/`c2` links are consistent before `free_content_model`
+    ///   walks them.
     #[test]
     fn test_create_sequence_content_model() {
         unsafe {
@@ -1817,6 +2015,13 @@ mod tests {
 
     // ── Element Declaration Tests ───────────────────────────────────────
 
+    /// Verify adding and looking up an element declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` from `make_doc_and_dtd` and the NUL-terminated `c_str` buffers
+    ///   must be valid and alive for the calls; the DTD is freed with
+    ///   `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_add_get_element() {
         unsafe {
@@ -1839,6 +2044,14 @@ mod tests {
         }
     }
 
+    /// Verify that adding a duplicate element declaration returns the
+    /// existing declaration unchanged.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` from `make_doc_and_dtd` and the NUL-terminated name buffer must
+    ///   be valid and alive for the calls; the DTD is freed with `free_dtd`
+    ///   and the doc with `xmlFreeImpl`.
     #[test]
     fn test_add_element_duplicate() {
         unsafe {
@@ -1858,6 +2071,12 @@ mod tests {
         }
     }
 
+    /// Verify that adding an element to a NULL DTD returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `dtd` is allowed and is not dereferenced; the name
+    ///   buffer must be NUL-terminated.
     #[test]
     fn test_add_element_null_dtd() {
         unsafe {
@@ -1871,6 +2090,13 @@ mod tests {
         }
     }
 
+    /// Verify `copy_element` deep-copies an element declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `elem` and its content model must be valid while copied; the copy is
+    ///   freed with `free_element`, the DTD with `free_dtd`, and the doc with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_copy_element() {
         unsafe {
@@ -1896,6 +2122,11 @@ mod tests {
         }
     }
 
+    /// Verify that `free_element` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_free_element_null() {
         unsafe {
@@ -1905,6 +2136,13 @@ mod tests {
 
     // ── Attribute Declaration Tests ─────────────────────────────────────
 
+    /// Verify adding and looking up an attribute declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` from `make_doc_and_dtd` and the NUL-terminated `c_str` buffers
+    ///   must be valid and alive for the calls; the DTD is freed with
+    ///   `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_add_get_attribute() {
         unsafe {
@@ -1947,6 +2185,13 @@ mod tests {
         }
     }
 
+    /// Verify adding an attribute declaration with a default value.
+    ///
+    /// # Safety
+    ///
+    /// - `dtd` from `make_doc_and_dtd` and the NUL-terminated `c_str` buffers
+    ///   must be valid and alive for the calls; the DTD is freed with
+    ///   `free_dtd` and the doc with `xmlFreeImpl`.
     #[test]
     fn test_add_attribute_with_default() {
         unsafe {
@@ -1981,6 +2226,14 @@ mod tests {
         }
     }
 
+    /// Verify adding an attribute with an enumeration of values.
+    ///
+    /// # Safety
+    ///
+    /// - The `_xmlEnumeration` chain built with `xmlMallocZero` must consist
+    ///   of valid structs with NUL-terminated duplicated names before it is
+    ///   handed to `add_attribute_decl`; the DTD owns and frees it via
+    ///   `free_dtd`, and the doc is freed with `xmlFreeImpl`.
     #[test]
     fn test_add_attribute_enumeration() {
         unsafe {
@@ -2025,6 +2278,12 @@ mod tests {
         }
     }
 
+    /// Verify that adding an attribute to a NULL DTD returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `dtd` is allowed and is not dereferenced; the name
+    ///   buffer must be NUL-terminated.
     #[test]
     fn test_add_attribute_null_dtd() {
         unsafe {
@@ -2042,6 +2301,13 @@ mod tests {
         }
     }
 
+    /// Verify `copy_attribute_decl` deep-copies an attribute declaration.
+    ///
+    /// # Safety
+    ///
+    /// - `attr` must be a valid `_xmlAttribute` while copied; the copy is
+    ///   freed with `free_attribute`, the DTD with `free_dtd`, and the doc
+    ///   with `xmlFreeImpl`.
     #[test]
     fn test_copy_attribute() {
         unsafe {
@@ -2080,6 +2346,11 @@ mod tests {
         }
     }
 
+    /// Verify that `free_attribute` accepts a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - NULL is allowed and is not dereferenced.
     #[test]
     fn test_free_attribute_null() {
         unsafe {
@@ -2089,6 +2360,11 @@ mod tests {
 
     // ── Content Model Validation Tests ──────────────────────────────────
 
+    /// Verify that `valid_content_model` rejects a NULL model.
+    ///
+    /// # Safety
+    ///
+    /// - Passing a NULL `model` is allowed and is not dereferenced.
     #[test]
     fn test_valid_content_model_null() {
         unsafe {
@@ -2099,6 +2375,13 @@ mod tests {
         }
     }
 
+    /// Verify PCDATA content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `cm` must be a valid `_xmlElementContent` while validated; the name
+    ///   buffer must be NUL-terminated and alive for the call. The model is
+    ///   freed with `free_content_model`.
     #[test]
     fn test_valid_content_model_pcdata() {
         unsafe {
@@ -2119,6 +2402,13 @@ mod tests {
         }
     }
 
+    /// Verify single-element content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `cm` must be a valid `_xmlElementContent` and the name buffers
+    ///   NUL-terminated and alive for the calls; the model is freed with
+    ///   `free_content_model`.
     #[test]
     fn test_valid_content_model_element() {
         unsafe {
@@ -2152,6 +2442,13 @@ mod tests {
         }
     }
 
+    /// Verify sequence content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `c1`, `c2`, and `seq` must be valid, linked `_xmlElementContent`
+    ///   structs and the name buffers NUL-terminated for the calls; the
+    ///   sequence is freed with `free_content_model`.
     #[test]
     fn test_valid_content_model_seq() {
         unsafe {
@@ -2188,6 +2485,13 @@ mod tests {
         }
     }
 
+    /// Verify choice content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `c1`, `c2`, and `choice` must be valid, linked `_xmlElementContent`
+    ///   structs and the name buffers NUL-terminated for the calls; the
+    ///   choice is freed with `free_content_model`.
     #[test]
     fn test_valid_content_model_or() {
         unsafe {
@@ -2225,6 +2529,13 @@ mod tests {
         }
     }
 
+    /// Verify optional-occurrence content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `c1` must be a valid `_xmlElementContent` and the name buffer
+    ///   NUL-terminated for the calls; the model is freed with
+    ///   `free_content_model`.
     #[test]
     fn test_valid_content_model_optional() {
         unsafe {
@@ -2246,6 +2557,13 @@ mod tests {
         }
     }
 
+    /// Verify zero-or-more content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `c1` must be a valid `_xmlElementContent` and the name buffer
+    ///   NUL-terminated for the calls; the model is freed with
+    ///   `free_content_model`.
     #[test]
     fn test_valid_content_model_zero_or_more() {
         unsafe {
@@ -2273,6 +2591,13 @@ mod tests {
         }
     }
 
+    /// Verify one-or-more content-model validation.
+    ///
+    /// # Safety
+    ///
+    /// - `c1` must be a valid `_xmlElementContent` and the name buffer
+    ///   NUL-terminated for the calls; the model is freed with
+    ///   `free_content_model`.
     #[test]
     fn test_valid_content_model_one_or_more() {
         unsafe {

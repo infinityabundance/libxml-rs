@@ -2,7 +2,7 @@
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1396, candidate DSO 1713, reconciled all four 1374, oracle-only 5, candidate-only 311
+- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1395, candidate DSO 1713, reconciled all four 1374, oracle-only 5, candidate-only 310
 - data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 52, reconciled all four 18, oracle-only 0, candidate-only 31
 
 ## libxslt

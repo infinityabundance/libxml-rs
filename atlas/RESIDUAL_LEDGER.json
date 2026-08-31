@@ -35,7 +35,8 @@
   "11.1-X",
   "11.1-Y",
   "11.1-Z",
-  "11.1-Z.2"
+  "11.1-Z.2",
+  "11.1-Z.3"
  ],
  "ledger": [
   {
@@ -1086,7 +1087,7 @@
    ],
    "discovery_date": "2026-08-29",
    "root_cause": "The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.",
-   "fix": "11.1-J allocator instrumentation: the default allocator now maintains the upstream-style per-block registry (ptr -> size/file/line). xmlMemSize returns the recorded size, the *Loc variants record the allocation site, xmlMemDisplayLast and xmlMemShow dump per-block listings (ordered by address; xmlMemShow's upstream most-recent ordering is not reproduced — documented divergence), and xmlMemUsed/MEM_BLOCKS are exact (realloc adjusts by the old size). xmlMemSetup custom allocators still bypass the registry (counters only), matching upstream's debug-allocator-only contract.",
+   "fix": "11.1-J allocator instrumentation evolved into the 11.1-Z.3 final shape: the DEFAULT allocator (the five exported variables) is plain libc malloc/realloc/free/strdup with no tracking — byte-identical with upstream 2.15.0 globals.c defaults (xmlMalloc = malloc etc.), so xmlMemSize returns 0 and xmlMemUsed/xmlMemBlocks are 0 under the default (R-000178). The debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants) maintains the upstream-style per-block registry (ptr -> size/file/line): xmlMemSize returns the recorded size for debug-surface blocks, the *Loc variants record the allocation site and accept-and-ignore file/line exactly like upstream's ATTRIBUTE_UNUSED parameters, and the counters track the debug surface — matching upstream's MEMHDR debug allocator (verified byte-identical with the oracle). xmlMemDisplayLast/xmlMemShow/xmlMemDisplay/xmlMemoryDump are no-ops (upstream 2.15.0 removed the feature).",
    "evidence": [
     "src/abi/allocator.rs"
    ],
@@ -2617,7 +2618,7 @@
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxml2 2.15.3, libxslt 1.1.45 (system)",
    "root_cause": "Cargo emits one cdylib (the core, also installed as libxml2.so.16 via the symlink chain). The libxslt/libexslt DSOs are whole-archive re-links of the same staticlib with version-script localization (local: *), so every non-xslt/exslt symbol resolves to a private copy inside the facade — including all Rust statics (the allocator variables, hook globals, parser globals, error state). Upstream libxslt.so.1 leaves the libxml2 symbols undefined and resolves them into the single libxml2.so.16 instance, so hooks/globals are shared. The candidate's facades are ELF-correct (SONAME, NEEDED chain, export surface, consumer link+run) but state-partitioned. Thin re-export facades were tested and cannot work: with the symbols undefined the consumer static link fails (modern ld refuses a U entry as a definition), and the core cannot satisfy the facades' references to the crate's mangled internal symbols (xmlMallocImpl etc. are not exported). Fixing this requires splitting the crate so the xslt/exslt code references only exported core symbols — a Phase-13-scale restructuring, out of scope for 11.1-Z.2.",
-   "observable_residual": "A C consumer that installs an allocator/entity loader/node callbacks or changes a parser global through -lxml2 and then runs an XSLT transform through -lxslt does not see those hooks fire inside the transform (the DSO-STATE-COHERENCE court pins the exact profile: transform-phase allocator/register/deregister/loader observations all 0, keepBlanks not shared — 56-byte result vs the oracle's 41). Transforms themselves work: documents built through -lxml2 are consumed correctly by -lxslt (shared struct layouts); only cross-DSO state is partitioned.",
+   "observable_residual": "A C consumer that installs an allocator/entity loader/node callbacks or changes a parser global through -lxml2 and then runs an XSLT transform through -lxslt does not see those hooks fire inside the transform (the DSO-STATE-COHERENCE court pins the exact profile: transform-phase allocator/register/deregister/loader observations all 0, keepBlanks not shared — 56-byte result vs the oracle's 41). Transforms themselves work: documents built through -lxml2 are consumed correctly by -lxslt (shared struct layouts); only cross-DSO state is partitioned. This is the deliberately-open Phase 12 architectural target (machine-enforced DSO boundary lint), not a Phase-11 defect.",
    "triangulation": "DSO-STATE-COHERENCE court (courts/suites/data-abi/dso-state-coherence-probe.c): every hook observation is True for the oracle (shared instance) and False for the candidate facades; the documented-partition profile is asserted so any silent architectural change is caught. The three-DSO ELF contract (SONAMEs, NEEDED chains, per-DSO export surfaces, consumer link+run) is verified by the DSO-LOADER court.",
    "evidence": [
     "courts/suites/data-abi/dso-state-coherence-probe.c",
@@ -2629,7 +2630,48 @@
     {
      "status": "OPEN",
      "date": "2026-08-31",
-     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile"
+     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile. Phase 12 target: eliminate the partitioning with a machine-enforced DSO boundary lint — src/xslt + the libxslt ABI layer may call ONLY a sanctioned libxml2 public-ABI gateway (no crate-private XML implementation internals, no XML-layer private globals, no allocator implementation internals), so with function/data sections + linker GC libxslt.so.1 owns XSLT state and resolves XML operations through libxml2.so.16, and libexslt.so.0 calls libxslt.so.1 + libxml2.so.16 — still one Cargo crate."
+    }
+   ]
+  },
+  {
+   "id": "R-000178",
+   "status": "FIXED",
+   "phase": "11.1-Z.3",
+   "title": "Default allocator invalid-layout UB: default_free/default_realloc used Rust std::alloc with fabricated Layouts (1-byte dealloc layout; requested new size as the old realloc layout)",
+   "surface": "default allocator hooks (xmlMallocDefault/xmlReallocDefault/xmlFreeDefault/xmlMemStrdupDefault) and the default path of xmlMalloc/xmlMallocAtomic/xmlRealloc/xmlFree/xmlMemStrdup",
+   "component": [
+    "src/abi/allocator.rs",
+    "tools/abi/allocator_default_probe.py",
+    "courts/suites/data-abi/allocator-default-probe.c"
+   ],
+   "discovery_date": "2026-08-31",
+   "fixed_date": "2026-08-31",
+   "root_cause": "The pre-Z.3 default allocator routed through Rust's global allocator with fabricated Layouts: default_free deallocated every pointer with Layout::from_size_align_unchecked(1, 1) and default_realloc passed the requested NEW size as the OLD allocation layout to std::alloc::realloc. Rust's allocator API requires the deallocation/reallocation layout to correspond to the original allocation; both uses are invalid-layout UB (the source itself commented the free path as 'technically UB'). It does not become valid because the platform allocator underneath probably ignores the size. The default also maintained an accounting registry (MEM_USED/MEM_BLOCKS/BLOCKS), which diverges from upstream 2.15.0: globals.c initializes the exported variables to the plain C runtime functions (xmlMalloc = malloc etc.), so xmlMemUsed/xmlMemBlocks/xmlMemSize are 0 while the default is installed (verified empirically against the system oracle). A second latent defect in the same surface: xmlMallocAtomicLoc zeroed its allocation via xmlMallocZero, while upstream xmlMallocAtomicLoc -> xmlMemMalloc is a plain (non-zeroed) allocation.",
+   "fix": "Replaced the default hooks with libc malloc/realloc/free/strdup wrappers (default_malloc = libc::malloc, default_realloc = libc::realloc, default_free = libc::free, default_strdup = libc::malloc + copy with NULL -> NULL, matching upstream xmlPosixStrdup/xmlCharStrdup). The *Default bodies are now pure libc calls with NO accounting, so xmlMemUsed/xmlMemBlocks/xmlMemSize return 0 under the default exactly like the oracle's plain-malloc default. The registry + counters now back ONLY the debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants), which upstream keeps as a separately-tagged, always-libc-backed, tracked debug allocator; the *Loc variants now delegate to shared debug_malloc/debug_realloc/debug_strdup/debug_free helpers (counter + registry maintenance, matching upstream xmlMemMalloc et al.). xmlMallocAtomicLoc no longer zeroes (upstream xmlMallocAtomicLoc -> xmlMemMalloc is not zeroed). xmlMemDisplay/xmlMemDisplayLast/xmlMemShow/xmlMemoryDump are now no-ops matching upstream 2.15.0 ('This feature was removed.').",
+   "observable_residual": "None on the executed platform: the ALLOCATOR-DEFAULT-001 differential court proves byte-identical behavior with the system oracle across many sizes, zero-size, grow/shrink realloc, realloc-to-zero, realloc/malloc failure, strdup, free(NULL), direct exported-variable calls, 100k alloc/free churn, xmlMemSize/xmlMemUsed/xmlMemBlocks exactness (0 under the default on both sides) and no-op display entry points. The debug surface (xmlMemMalloc/*Loc) is also byte-identical with the oracle (tracked sizes/counters, verified by the same differential probes and unit tests). The valgrind memory-safety sweep is not executable in this environment (valgrind 3.25.1 SIGILLs in the dynamic loader on every binary, including /bin/true) — recorded as unavailable in the court receipt.",
+   "triangulation": "ALLOCATOR-DEFAULT-001 (tools/abi/allocator_default_probe.py + courts/suites/data-abi/allocator-default-probe.c): identical SHA-256 of the oracle and candidate probe outputs; plus ALLOCATOR-HOOK-001 (hook swap still byte-identical), the allocator unit tests (test_default_libc_semantics, test_debug_surface_tracked, test_mem_stats), and the empirical oracle probes recorded during Z.3.",
+   "regression_courts": [
+    "ALLOCATOR-DEFAULT",
+    "ALLOCATOR-HOOK"
+   ],
+   "evidence": [
+    "courts/receipts/phase-11/allocator-default-*.json",
+    "courts/suites/data-abi/allocator-default-probe.c",
+    "tools/abi/allocator_default_probe.py",
+    "src/abi/allocator.rs"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered in the 11.1-Z.3 review: default_free deallocates every pointer with a fabricated 1-byte layout and default_realloc passes the requested new size as the old allocation layout — both invalid-layout UB under the Rust allocator contract; the default also diverged from the oracle's untracked plain-malloc default"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-08-31",
+     "note": "closed by 11.1-Z.3: default hooks are now libc malloc/realloc/free/strdup (C allocation semantics, no layout exists), the default no longer maintains the accounting registry (xmlMemUsed/xmlMemBlocks/xmlMemSize match the oracle's 0s), the registry backs only the debug-named surface (matching upstream's tracked debug allocator), the display entry points are upstream-faithful no-ops, and xmlMallocAtomicLoc no longer zeroes; ALLOCATOR-DEFAULT-001 differential court passes byte-identical"
     }
    ]
   }

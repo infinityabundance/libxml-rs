@@ -76,6 +76,14 @@ fn node_set_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValu
 }
 
 /// Build a node-set containing a synthetic text node with the given content.
+///
+/// # Safety
+///
+/// - `cstr(s)` produces a NUL-terminated Vec that stays alive for the
+///   duration of the `new_text` call, which duplicates the string into
+///   heap-owned node content; the node is NULL or a valid text node, is
+///   pushed only when non-NULL, and is owned by the caller (to be
+///   released with `free_node`).
 fn make_text_wrapper(s: &str) -> XPathValue {
     let node = unsafe {
         crate::xml::tree::new_text(cstr(s).as_ptr() as *const crate::abi::types::xmlChar)
@@ -123,6 +131,13 @@ mod tests {
         XPathContext::new(std::ptr::null_mut())
     }
 
+    /// A node-set argument to `exsl:node-set` passes through unchanged.
+    ///
+    /// # Safety
+    ///
+    /// - `n` is a live text node created by `new_text` and borrowed by the
+    ///   node-set clone; it is freed exactly once with `free_node` after
+    ///   the result length is checked.
     #[test]
     fn test_node_set_node_set_passthrough() {
         let mut ns = NodeSet::new();
@@ -139,6 +154,13 @@ mod tests {
         unsafe { crate::xml::tree::free_node(n) };
     }
 
+    /// A string argument to `exsl:node-set` is wrapped in a text node.
+    ///
+    /// # Safety
+    ///
+    /// - `first` is a live text node created by `make_text_wrapper`;
+    ///   `node_string_value` reads its NUL-terminated content while it is
+    ///   alive, and it is freed exactly once with `free_node` afterwards.
     #[test]
     fn test_node_set_string_wraps() {
         let mut c = ctx();

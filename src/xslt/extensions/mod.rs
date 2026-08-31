@@ -315,6 +315,13 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// Allocate a zero-initialized `_xsltTransformContext`.
+    ///
+    /// # Safety
+    ///
+    /// - `libc::calloc` returns a zeroed block of the struct size or NULL;
+    ///   the caller must check for NULL before dereferencing and must
+    ///   release the block with `libc::free` when done.
     fn make_ctxt() -> *mut _xsltTransformContext {
         unsafe {
             libc::calloc(1, core::mem::size_of::<_xsltTransformContext>())
@@ -322,6 +329,16 @@ mod tests {
         }
     }
 
+    /// Register an extension function and find it back by name/URI.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a live zeroed `_xsltTransformContext` from `make_ctxt`
+    ///   and is released with `libc::free` after `xsltFreeExts` has run.
+    /// - `dummy` is a valid extern "C" function pointer registered and
+    ///   compared by address; the `c"..."` string literals are valid
+    ///   NUL-terminated `xmlChar` buffers passed to the register/find
+    ///   APIs, which heap-copy the names they retain.
     #[test]
     fn test_register_and_find_function() {
         unsafe {
@@ -353,6 +370,13 @@ mod tests {
         }
     }
 
+    /// NULL contexts, names, URIs, and callbacks are rejected with `-1`.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltRegisterExtFunction`/`xsltRegisterExtElement` return `-1` on
+    ///   NULL arguments before dereferencing them, so passing NULL
+    ///   pointers reads no memory.
     #[test]
     fn test_register_null() {
         unsafe {

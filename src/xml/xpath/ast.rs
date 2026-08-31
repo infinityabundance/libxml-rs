@@ -208,7 +208,7 @@ impl fmt::Display for NodeTest {
 // Step
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// A single location step: axis::node-test[predicates]
+/// A single location step: axis::node-test\[predicates\]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Step {
     /// Axis the step traverses (defaults to `child` for abbreviated steps)

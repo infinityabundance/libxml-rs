@@ -598,6 +598,14 @@ unsafe fn node_is(node: *mut _xmlNode, local_name: &str) -> bool {
 /// Equivalent to `xmlRelaxNGParse` in libxml2 when given a parser context
 /// created from a memory buffer.
 ///
+/// # Safety
+///
+/// - `xml_doc` must be a valid `&str`; its bytes stay readable for the
+///   duration of the `xmlReadMemory` call.
+/// - The document pointer returned by `xmlReadMemory` is NULL-checked before
+///   being passed to `rng_parse_doc`, and is freed exactly once with
+///   `xmlFreeDoc`.
+///
 /// Returns the parsed schema, or an error message on failure.
 pub fn rng_parse(xml_doc: &str) -> Result<RelaxNgSchema, String> {
     let doc_ptr = unsafe {
@@ -2628,6 +2636,14 @@ mod tests {
 
     // ── Validation Tests ──────────────────────────────────────────────────
 
+    /// Validates a document against a schema with a single `element` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_simple_element() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2658,6 +2674,14 @@ mod tests {
         assert!(valid, "Validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies validation fails when the root element name does not match.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_element_mismatch() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2689,6 +2713,14 @@ mod tests {
         assert!(ctxt.nb_errors > 0);
     }
 
+    /// Validates a document whose element carries a declared attribute.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_with_attribute() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2722,6 +2754,14 @@ mod tests {
         assert!(valid, "Validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies validation fails when a required attribute is absent.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_missing_attribute() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2758,6 +2798,14 @@ mod tests {
         );
     }
 
+    /// Validates a document matching one branch of a `choice` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_with_choice() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2797,6 +2845,14 @@ mod tests {
         assert!(valid, "Choice validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies validation fails when no `choice` branch matches.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_choice_no_match() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2839,6 +2895,14 @@ mod tests {
         );
     }
 
+    /// Validates a grammar that uses a named `ref` to a `define`.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_grammar_with_ref() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2880,6 +2944,14 @@ mod tests {
         assert!(valid, "Ref validation failed: {:?}", ctxt.errors);
     }
 
+    /// Validates repeated children under a `zeroOrMore` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_zero_or_more() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2914,6 +2986,14 @@ mod tests {
         assert!(valid, "zeroOrMore validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies a `zeroOrMore` pattern accepts zero repetitions.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_zero_or_more_empty() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2948,6 +3028,14 @@ mod tests {
         assert!(valid, "Empty zeroOrMore should be valid");
     }
 
+    /// Validates a document with one occurrence under `oneOrMore`.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_one_or_more() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -2982,6 +3070,14 @@ mod tests {
         assert!(valid, "oneOrMore validation failed: {:?}", ctxt.errors);
     }
 
+    /// Validates an `optional` element that is present.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_optional_present() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3021,6 +3117,14 @@ mod tests {
         );
     }
 
+    /// Validates an `optional` element that is absent.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_optional_absent() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3060,6 +3164,14 @@ mod tests {
         );
     }
 
+    /// Validates children in the declared `sequence` order.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_sequence() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3101,6 +3213,14 @@ mod tests {
         assert!(valid, "Sequence validation failed: {:?}", ctxt.errors);
     }
 
+    /// Validates a `data` pattern with an integer type.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_data_pattern() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3131,6 +3251,14 @@ mod tests {
         assert!(valid, "Data pattern validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies a non-integer value fails a `data` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_data_pattern_invalid() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3161,6 +3289,14 @@ mod tests {
         assert!(!valid, "Validation should have failed for invalid integer");
     }
 
+    /// Validates a `value` pattern with an exact match.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_value_pattern() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3191,6 +3327,14 @@ mod tests {
         assert!(valid, "Value pattern validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies a `value` pattern mismatch fails validation.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_value_pattern_mismatch() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3221,6 +3365,14 @@ mod tests {
         assert!(!valid, "Validation should have failed for value mismatch");
     }
 
+    /// Verifies a `notAllowed` pattern always fails validation.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_not_allowed() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3251,6 +3403,14 @@ mod tests {
         assert!(!valid, "notAllowed should cause validation failure");
     }
 
+    /// Validates children in any order under an `interleave` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_interleave() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3292,6 +3452,14 @@ mod tests {
         assert!(valid, "Interleave validation failed: {:?}", ctxt.errors);
     }
 
+    /// Validates an empty element against an `empty` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_empty_element() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3395,6 +3563,15 @@ mod tests {
 
     // ── C ABI Tests ───────────────────────────────────────────────────────
 
+    /// Exercises the C ABI schema parse round trip: `xmlRelaxNGNewMemParserCtxt`,
+    /// `xmlRelaxNGParse` and `xmlRelaxNGFree`.
+    ///
+    /// # Safety
+    ///
+    /// - The static `schema_xml` string stays valid for the
+    ///   `xmlRelaxNGNewMemParserCtxt` call; the parser context and the schema
+    ///   returned by `xmlRelaxNGParse` are asserted non-NULL before use, and
+    ///   the schema is freed exactly once with `xmlRelaxNGFree`.
     #[test]
     fn test_c_abi_new_parse_free() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3417,6 +3594,15 @@ mod tests {
         unsafe { xmlRelaxNGFree(schema) };
     }
 
+    /// Exercises the C ABI document validation path.
+    ///
+    /// # Safety
+    ///
+    /// - The static schema and document strings stay valid for their
+    ///   `xmlRelaxNGNewMemParserCtxt` and `xmlReadMemory` calls; the parser
+    ///   context, schema, validation context and document pointers are
+    ///   asserted non-NULL before use, and the document, validation context
+    ///   and schema are each freed exactly once.
     #[test]
     fn test_c_abi_validate_doc() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3458,6 +3644,19 @@ mod tests {
         unsafe { xmlRelaxNGFree(schema) };
     }
 
+    /// Exercises the C ABI full-element validation path.
+    ///
+    /// # Safety
+    ///
+    /// - The static schema and document strings stay valid for their
+    ///   `xmlRelaxNGNewMemParserCtxt` and `xmlReadMemory` calls; the parser
+    ///   context, schema, validation context and document pointers are
+    ///   asserted non-NULL before use.
+    /// - The document tree walked through `children` and `next` links must be
+    ///   well-formed and NULL-terminated; the located `item` node is asserted
+    ///   non-NULL before being passed to `xmlRelaxNGValidateFullElement`.
+    /// - The document, validation context and schema are each freed exactly
+    ///   once.
     #[test]
     fn test_c_abi_validate_full_element() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3523,6 +3722,13 @@ mod tests {
         unsafe { xmlRelaxNGFree(schema) };
     }
 
+    /// Verifies the C ABI accepts NULL pointers and NULL frees.
+    ///
+    /// # Safety
+    ///
+    /// - NULL pointers are passed only to C ABI entry points that accept NULL
+    ///   inputs, and the free functions must tolerate NULL without
+    ///   dereferencing.
     #[test]
     fn test_c_abi_null_handling() {
         // Test null pointer handling
@@ -3573,6 +3779,14 @@ mod tests {
         assert_eq!(schema.grammar.defines[0].name, "shared");
     }
 
+    /// Validates a `list` pattern with space-separated tokens.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_list_pattern() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3605,6 +3819,14 @@ mod tests {
         assert!(valid, "List pattern validation failed: {:?}", ctxt.errors);
     }
 
+    /// Validates children in order under a `group` pattern.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_group_pattern() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3646,6 +3868,14 @@ mod tests {
         assert!(valid, "Group validation failed: {:?}", ctxt.errors);
     }
 
+    /// Verifies validation fails when a `ref` names an undefined define.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_undefined_ref() {
         let schema_xml = r#"<?xml version="1.0"?>
@@ -3680,6 +3910,12 @@ mod tests {
         assert!(!valid, "Undefined ref should cause failure");
     }
 
+    /// Verifies `rng_validate_doc` rejects a NULL document pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `rng_validate_doc` is called with a NULL document pointer, which it
+    ///   must reject without dereferencing.
     #[test]
     fn test_validate_null_doc() {
         let schema = RelaxNgSchema::new();
@@ -3753,6 +3989,14 @@ mod tests {
         assert_eq!(ctxt.current_path(), "/root");
     }
 
+    /// Verifies a `sequence` pattern rejects children in the wrong order.
+    ///
+    /// # Safety
+    ///
+    /// - The static `doc_xml` string is passed to `xmlReadMemory`, which reads
+    ///   exactly `doc_xml.len()` bytes and returns an owned `_xmlDoc` or NULL;
+    ///   the pointer is asserted non-NULL before `rng_validate_doc`
+    ///   dereferences it and is freed exactly once with `xmlFreeDoc`.
     #[test]
     fn test_validate_sequence_wrong_order() {
         let schema_xml = r#"<?xml version="1.0"?>

@@ -68,6 +68,21 @@
 //! libxml2 tag-recovery quirks. Do not re-add newlines to the dump (E-007
 //! epoch) and do not reorder or re-flag the element table — both are
 //! observable through the serializer and the exported data globals.
+//!
+//! # Safety
+//!
+//! - Raw `_xmlDoc`, `_xmlNode`, `_xmlAttr` and `_xmlBuffer` pointers are
+//!   allocated by the crate allocator (or the tree helpers) and must stay
+//!   valid for the duration of each call; owned documents are freed with
+//!   `tree::free_doc` and buffers with the matching `xmlFreeImpl` routine.
+//! - `HtmlParserCtxt.input` must be non-NULL and readable for `input_len`
+//!   bytes whenever `input_pos` is below `input_len`; every read is
+//!   bounds-checked against `input_len` before dereferencing.
+//! - Node trees walked through `parent`, `children`, `next` and `properties`
+//!   links must be well-formed: links are NULL-terminated, the parent chain
+//!   terminates (no cycles), and every node in a chain is a valid `_xmlNode`.
+//! - `name`, `content`, `version` and `encoding` fields are NULL or valid
+//!   NUL-terminated `xmlChar` strings.
 
 use core::ffi::c_void;
 use core::ptr;
@@ -794,6 +809,12 @@ impl HtmlParserCtxt {
     }
 
     /// Peek at the next byte without consuming it.
+    ///
+    /// # Safety
+    ///
+    /// - `self.input` must be non-NULL and point to a valid allocation of at
+    ///   least `self.input_len` bytes; the read at `self.input_pos` is
+    ///   bounds-checked against `self.input_len` before dereferencing.
     fn peek(&self) -> Option<u8> {
         if self.input_pos < self.input_len {
             unsafe { Some(*self.input.add(self.input_pos)) }
@@ -803,6 +824,14 @@ impl HtmlParserCtxt {
     }
 
     /// Peek ahead `n` bytes.
+    ///
+    /// # Safety
+    ///
+    /// - `self.input` must be non-NULL and point to a valid allocation of at
+    ///   least `self.input_len` bytes; the read at `self.input_pos + offset`
+    ///   is bounds-checked against `self.input_len` before dereferencing, so
+    ///   `offset` must not be large enough to overflow `usize` when added to
+    ///   `self.input_pos`.
     fn peek_at(&self, offset: usize) -> Option<u8> {
         let pos = self.input_pos + offset;
         if pos < self.input_len {
@@ -813,6 +842,12 @@ impl HtmlParserCtxt {
     }
 
     /// Consume and return the next byte.
+    ///
+    /// # Safety
+    ///
+    /// - `self.input` must be non-NULL and point to a valid allocation of at
+    ///   least `self.input_len` bytes; the read at `self.input_pos` is
+    ///   bounds-checked against `self.input_len` before dereferencing.
     fn next(&mut self) -> Option<u8> {
         if self.input_pos < self.input_len {
             let ch = unsafe { *self.input.add(self.input_pos) };
@@ -848,6 +883,13 @@ impl HtmlParserCtxt {
     }
 
     /// Read a sequence of bytes while the predicate returns true.
+    ///
+    /// # Safety
+    ///
+    /// - `self.input` must be a valid pointer to `self.input_len` readable
+    ///   bytes for the duration of the call; reads are bounds-checked against
+    ///   `self.input_pos`/`self.input_len` before each access, and the
+    ///   returned slice is copied out before `self` can mutate.
     fn read_while<F: Fn(u8) -> bool>(&mut self, f: F) -> Vec<u8> {
         let start = self.input_pos;
         while let Some(ch) = self.peek() {
@@ -872,6 +914,12 @@ fn is_heading(name: &str) -> bool {
 
 /// Get the parent element of a node, walking up to find the nearest element.
 /// Returns the current node's parent if it's an element, or walks up.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid pointer to an `_xmlNode`; every node
+///   reached through the `parent` link must also be a valid `_xmlNode`, and
+///   the parent chain must terminate in a NULL pointer (no cycles).
 #[allow(dead_code)]
 unsafe fn get_parent_element(node: *mut _xmlNode) -> *mut _xmlNode {
     if node.is_null() {
@@ -896,6 +944,15 @@ unsafe fn get_parent_element(node: *mut _xmlNode) -> *mut _xmlNode {
 
 /// Auto-close elements that should be closed before opening a new tag.
 /// Returns the new current insertion point.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `HtmlParserCtxt` whose `current` field is NULL or
+///   points into a well-formed node tree; every node reached through the
+///   `parent` link must be a valid `_xmlNode` and the chain must terminate in
+///   a NULL pointer (no cycles).
+/// - For every element node visited, `name` must be NULL or a valid
+///   NUL-terminated `xmlChar` string readable by `xmlstr_to_bytes`.
 unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
     let tag_lower: Vec<u8> = tag_name.bytes().map(|b| b.to_ascii_lowercase()).collect();
     let tag_lower_str = match core::str::from_utf8(&tag_lower) {
@@ -1390,6 +1447,16 @@ fn parse_entity(ctxt: &mut HtmlParserCtxt) -> Vec<u8> {
 }
 
 /// Handle text content in the tree builder.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `HtmlParserCtxt` with a non-NULL `doc` pointing
+///   to a valid `_xmlDoc`.
+/// - The `head`, `body`, `html` and `current` fields, when non-NULL, must be
+///   valid `_xmlNode` pointers owned by that document tree.
+/// - Nodes returned by `tree::new_text` and `tree::new_node` are NULL-checked
+///   before their fields are written, and `tree::add_child` requires a valid
+///   non-NULL parent node.
 unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
     if text.is_empty() {
         return;
@@ -1689,6 +1756,15 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
 }
 
 /// Process an end tag in the tree builder.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `HtmlParserCtxt` whose `current` field is NULL or
+///   points into a well-formed node tree; every node reached through the
+///   `parent` link must be a valid `_xmlNode` and the chain must terminate in
+///   a NULL pointer (no cycles).
+/// - Element `name` pointers visited must be NULL or valid NUL-terminated
+///   `xmlChar` strings.
 unsafe fn handle_end_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8]) {
     let tag_lower: Vec<u8> = tag_name.iter().map(|b| b.to_ascii_lowercase()).collect();
     let tag_str = core::str::from_utf8(&tag_lower).unwrap_or("");
@@ -2363,6 +2439,15 @@ fn trim_ascii_start(s: &[u8]) -> &[u8] {
     &s[start..]
 }
 
+/// Write text content into an HTML output buffer, escaping `&` and `<`.
+///
+/// # Safety
+///
+/// - `buf` must be non-NULL and point to a valid `_xmlBuffer` writable via
+///   `io::buf_add`.
+/// - `content` must be non-NULL and readable for at least `len` bytes; `len`
+///   is required to be positive (checked) and the loop reads exactly `len`
+///   bytes starting at `content`.
 unsafe fn html_serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
     if buf.is_null() || content.is_null() || len <= 0 {
         return;
@@ -2390,6 +2475,13 @@ unsafe fn html_serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len
 /// Serialize an attribute value for HTML output.
 ///
 /// In HTML, attribute values should be quoted and have `&`, `"` escaped.
+///
+/// # Safety
+///
+/// - `buf` must be non-NULL and point to a valid `_xmlBuffer` writable via
+///   `io::buf_add`.
+/// - `value` must be non-NULL and point to a valid NUL-terminated `xmlChar`
+///   string; `xml_strlen` scans it up to the terminator.
 unsafe fn html_serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar) {
     if buf.is_null() || value.is_null() {
         return;
@@ -2446,6 +2538,16 @@ unsafe fn html_head_has_meta(child: *mut _xmlNode) -> bool {
     false
 }
 
+/// Serialize a node tree to HTML output.
+///
+/// # Safety
+///
+/// - `node` must be non-NULL and point to a valid `_xmlNode` in a well-formed
+///   tree; the `children`, `next`, `parent`, `properties` and `doc` links
+///   walked here must be NULL-terminated and point to valid objects.
+/// - `buf` must be non-NULL and point to a valid `_xmlBuffer`.
+/// - `name`, `content` and `encoding` fields must be NULL or valid
+///   NUL-terminated `xmlChar` strings.
 pub(crate) unsafe fn serialize_node(
     node: *mut _xmlNode,
     buf: *mut _xmlBuffer,
@@ -2809,6 +2911,15 @@ mod tests {
     // Basic Parsing
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Parses a complete HTML document and verifies the serialized output
+    /// contains the expected elements.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_parse_basic_html() {
         unsafe {
@@ -2827,6 +2938,12 @@ mod tests {
         }
     }
 
+    /// Verifies that parsing an empty buffer yields a NULL document.
+    ///
+    /// # Safety
+    ///
+    /// - The static one-byte buffer is valid for the `parse_memory` call with
+    ///   size 0, which must not read from it; a NULL document is expected.
     #[test]
     fn test_parse_empty_document() {
         unsafe {
@@ -2840,6 +2957,15 @@ mod tests {
     // Implicit html/head/body Creation
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies that a bare paragraph triggers implicit `html` and `body`
+    /// creation during parsing.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_implicit_html_head_body() {
         unsafe {
@@ -2860,6 +2986,15 @@ mod tests {
         }
     }
 
+    /// Verifies that a bare `title` triggers implicit `html` and `head`
+    /// creation during parsing.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_implicit_head_with_title() {
         unsafe {
@@ -2881,6 +3016,14 @@ mod tests {
     // Auto-closing
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies that a second `p` start tag auto-closes the first.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_auto_close_p() {
         unsafe {
@@ -2900,6 +3043,14 @@ mod tests {
         }
     }
 
+    /// Verifies that an `h1` element is auto-closed before an `h2`.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_auto_close_heading() {
         unsafe {
@@ -2920,6 +3071,14 @@ mod tests {
     // Void Elements
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies that void elements are serialized without closing tags.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_void_elements() {
         unsafe {
@@ -2946,6 +3105,15 @@ mod tests {
     // Unquoted and Minimized Attributes
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies that unquoted attribute values are parsed and re-serialized
+    /// with quotes.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_unquoted_attributes() {
         unsafe {
@@ -2961,6 +3129,14 @@ mod tests {
         }
     }
 
+    /// Verifies that minimized (valueless) attributes are preserved.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_minimized_attributes() {
         unsafe {
@@ -2981,6 +3157,14 @@ mod tests {
     // HTML Entities
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies named entity resolution and re-escaping during serialization.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_html_entities() {
         unsafe {
@@ -3000,6 +3184,14 @@ mod tests {
         }
     }
 
+    /// Verifies decimal and hexadecimal numeric entity resolution.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_numeric_entities() {
         unsafe {
@@ -3019,6 +3211,14 @@ mod tests {
     // Nested Elements
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies nested element parsing and serialization.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_nested_elements() {
         unsafe {
@@ -3040,6 +3240,14 @@ mod tests {
     // Malformed HTML Recovery
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies tag-recovery when end tags are missing.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_missing_end_tags() {
         unsafe {
@@ -3056,6 +3264,14 @@ mod tests {
         }
     }
 
+    /// Verifies case-insensitive parsing with case-preserved serialization.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_mismatched_case() {
         unsafe {
@@ -3074,6 +3290,14 @@ mod tests {
         }
     }
 
+    /// Verifies recovery from deeply nested malformed markup.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_nested_malformed() {
         unsafe {
@@ -3093,6 +3317,14 @@ mod tests {
     // HTML Serialization Round-trip
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies a simple parse and serialize round trip.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `original` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_serialization_round_trip_simple() {
         unsafe {
@@ -3110,6 +3342,14 @@ mod tests {
         }
     }
 
+    /// Verifies void elements are not serialized with self-closing syntax.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_serialize_void_elements_no_self_close() {
         unsafe {
@@ -3130,6 +3370,14 @@ mod tests {
     // Script and Style Handling
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies raw text content inside a `script` element is preserved.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_script_content() {
         unsafe {
@@ -3151,6 +3399,14 @@ mod tests {
     // Comments and DOCTYPE
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies HTML comments are preserved in the serialized output.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_html_comment() {
         unsafe {
@@ -3169,6 +3425,15 @@ mod tests {
     // new_doc / new_doc_no_dtd
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies `new_doc` creates an HTML document with implicit `html`,
+    /// `head` and `body` elements.
+    ///
+    /// # Safety
+    ///
+    /// - `new_doc` returns an owned `_xmlDoc` or NULL; the pointer is
+    ///   asserted non-NULL before its `type_` field is dereferenced and
+    ///   before `html_doc_to_string`, and is freed exactly once with
+    ///   `tree::free_doc`.
     #[test]
     fn test_new_doc_creates_html_head_body() {
         unsafe {
@@ -3185,6 +3450,15 @@ mod tests {
         }
     }
 
+    /// Verifies `new_doc_no_dtd` creates a document without implicit
+    /// structure and without a DTD.
+    ///
+    /// # Safety
+    ///
+    /// - `new_doc_no_dtd` returns an owned `_xmlDoc` or NULL; the pointer is
+    ///   asserted non-NULL before its `type_` field is dereferenced and
+    ///   before `html_doc_to_string`, and is freed exactly once with
+    ///   `tree::free_doc`.
     #[test]
     fn test_new_doc_no_dtd() {
         unsafe {
@@ -3234,6 +3508,13 @@ mod tests {
     // Parser Context
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies `create_file_parser_ctxt` and `free_parser_ctxt` round trip.
+    ///
+    /// # Safety
+    ///
+    /// - The static NUL-terminated filename stays valid for the
+    ///   `create_file_parser_ctxt` call; the returned context is asserted
+    ///   non-NULL before being freed with `free_parser_ctxt`.
     #[test]
     fn test_create_free_parser_ctxt() {
         unsafe {
@@ -3248,6 +3529,14 @@ mod tests {
     // Complex HTML Documents
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Parses a complex HTML document and verifies the serialized structure.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_complex_html_document() {
         unsafe {
@@ -3298,6 +3587,14 @@ mod tests {
     // parse_doc
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies `parse_doc` parses from an `xmlChar` buffer.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer is passed to `parse_doc` as
+    ///   an `xmlChar` pointer and must stay valid for the call; the returned
+    ///   document pointer is asserted non-NULL before it is dereferenced by
+    ///   `html_doc_to_string` and is freed exactly once with `tree::free_doc`.
     #[test]
     fn test_parse_doc() {
         unsafe {
@@ -3316,6 +3613,14 @@ mod tests {
     // Table elements auto-close
     // ═════════════════════════════════════════════════════════════════════════
 
+    /// Verifies a `td` element auto-closes a previous `td` inside a row.
+    ///
+    /// # Safety
+    ///
+    /// - The NUL-terminated static `html` buffer stays valid for the
+    ///   `parse_memory` call; the returned document pointer is asserted
+    ///   non-NULL before it is dereferenced by `html_doc_to_string` and is
+    ///   freed exactly once with `tree::free_doc`.
     #[test]
     fn test_table_element_auto_close() {
         unsafe {

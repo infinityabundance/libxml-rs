@@ -64,7 +64,8 @@
 //!
 //! Do not drop the C-callback bridge back to a Rust-only registry: XSLT
 //! extension functions and C consumers register raw function pointers
-//! through xmlXPathRegisterFunc[NS] and observe them firing (R-000162).
+//! through xmlXPathRegisterFunc/xmlXPathRegisterFuncNS and observe them
+//! firing (R-000162).
 //! Do not remove the recursion guard — deep expressions must fail like
 //! the oracle, not overflow the stack.
 
@@ -683,6 +684,13 @@ mod tests {
         assert_eq!(ctx.context_position, 1);
     }
 
+    /// Create a context with a document and check it is recorded.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` is a valid, aligned `_xmlDoc` allocated by `create_test_doc`
+    ///   and freed with `free_test_doc` exactly once; it is only stored as
+    ///   a pointer, never dereferenced, during the test.
     #[test]
     fn test_new_with_doc() {
         unsafe {
@@ -695,6 +703,13 @@ mod tests {
 
     // ── set_context_node ─────────────────────────────────────────────────
 
+    /// Set a non-NULL context node and verify position state.
+    ///
+    /// # Safety
+    ///
+    /// - `node` is a valid, aligned `_xmlNode` allocated by
+    ///   `create_test_node` and freed with `free_test_node` exactly once;
+    ///   the context only stores and compares the pointer.
     #[test]
     fn test_set_context_node_non_null() {
         unsafe {
@@ -735,6 +750,13 @@ mod tests {
 
     // ── set_context_list ─────────────────────────────────────────────────
 
+    /// Set a context list and verify size and position initialization.
+    ///
+    /// # Safety
+    ///
+    /// - `node1`/`node2` are valid, aligned `_xmlNode`s allocated by
+    ///   `create_test_node` and freed with `free_test_node`; the context
+    ///   stores the pointers in a `Vec` without dereferencing them.
     #[test]
     fn test_set_context_list() {
         unsafe {
@@ -1033,6 +1055,13 @@ mod tests {
         assert_eq!(ctx.context_position, 1);
     }
 
+    /// Advance the position across a three-node context list.
+    ///
+    /// # Safety
+    ///
+    /// - The three nodes are valid, aligned `_xmlNode`s allocated by
+    ///   `create_test_node` and freed with `free_test_node`; the context
+    ///   only stores and counts the pointers.
     #[test]
     fn test_position_with_context_list() {
         unsafe {
@@ -1061,6 +1090,13 @@ mod tests {
 
     // ── has_context_node ─────────────────────────────────────────────────
 
+    /// Check `has_context_node` before and after setting a node.
+    ///
+    /// # Safety
+    ///
+    /// - `node` is a valid, aligned `_xmlNode` allocated by
+    ///   `create_test_node` and freed with `free_test_node` exactly once;
+    ///   `has_context_node` only checks the stored pointer for NULL.
     #[test]
     fn test_has_context_node() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
@@ -1131,6 +1167,13 @@ mod tests {
     fn test_set_callback_fields() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
 
+        /// A no-op variable-lookup callback returning NULL.
+        ///
+        /// # Safety
+        ///
+        /// - The callback is never invoked by this test; if installed it
+        ///   must be a valid function pointer, and `data`/`ns`/`name`
+        ///   would need to be valid pointers if it were called.
         unsafe extern "C" fn dummy_var_lookup(
             _data: *mut c_void,
             _ns: *const xmlChar,
@@ -1139,6 +1182,13 @@ mod tests {
             std::ptr::null_mut()
         }
 
+        /// A no-op function-lookup callback returning NULL.
+        ///
+        /// # Safety
+        ///
+        /// - The callback is never invoked by this test; if installed it
+        ///   must be a valid function pointer, and `data`/`ns`/`name`
+        ///   would need to be valid pointers if it were called.
         unsafe extern "C" fn dummy_func_lookup(
             _data: *mut c_void,
             _ns: *const xmlChar,

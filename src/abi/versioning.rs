@@ -190,20 +190,19 @@ pub const fn xmlParserVersion() -> *const c_char {
 }
 
 /// Check that the library version is at least `version`.
-///
-/// # Returns
-///
-/// - 0 if the library version is >= `version`
-/// - -1 if the library version is < `version`
+/// Check the compiled-in library version against a caller-required version.
 ///
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// int xmlCheckVersion(int version);
+/// void xmlCheckVersion(int version);
 /// ```
 ///
-/// Oracle behavior: compares LIBXML2_VERSION (compiled-in) against `version`.
-/// Returns 0 if compatible, -1 if not.
+/// Oracle parserInternals.c behavior: compares LIBXML_VERSION (compiled-in)
+/// against `version` and prints a fatal/warning message on mismatch. The
+/// candidate's compiled-in version always satisfies the oracle's guard, so
+/// no message is emitted. Returns nothing (11.1-Z.3 signature court: the
+/// pre-Z.3 candidate returned `int`).
 ///
 /// # SAFETY
 ///
@@ -215,12 +214,11 @@ pub const fn xmlParserVersion() -> *const c_char {
 /// Violating the global lifecycle ordering, or calling this after
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlCheckVersion(version: c_int) -> c_int {
-    if LIBXML2_VERSION_NUM >= version {
-        0
-    } else {
-        -1
-    }
+pub const unsafe extern "C" fn xmlCheckVersion(_version: c_int) {
+    // The candidate's compiled-in version is the oracle-major parity target
+    // (LIBXML2_VERSION_NUM = 21503 for 2.15.3); upstream prints a diagnostic
+    // only when the caller was compiled against a different major/minor than
+    // the running library, which cannot happen here.
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

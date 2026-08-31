@@ -252,6 +252,15 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// NULL arguments to the attribute-set API are rejected without
+    /// crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltCompileAttrSet` returns NULL, `xsltApplyAttrSets` returns
+    ///   `-1`, and the free functions no-op on NULL arguments before
+    ///   dereferencing them, so the unsafe block reads and frees no
+    ///   memory.
     #[test]
     fn test_null_args() {
         unsafe {

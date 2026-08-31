@@ -654,8 +654,8 @@ pub unsafe extern "C" fn xsltNextImport(cur: *mut _xsltStylesheet) -> *mut _xslt
 ///
 /// Import precedence dominates priority: the first stylesheet in the walk
 /// that contains a matching template wins (upstream returns immediately on
-/// the first match per stylesheet). Within a stylesheet the highest-priority
-/// matching template is selected (see [`best_template_in_style`]).
+/// matches per stylesheet). Within a stylesheet the highest-priority
+/// matching template is selected (see `best_template_in_style`).
 ///
 /// # UPSTREAM-PARITY
 ///

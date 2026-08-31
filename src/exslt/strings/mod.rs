@@ -270,6 +270,14 @@ fn str_at(args: &[XPathValue], index: usize) -> String {
 }
 
 /// Create a text node with the given bytes and push it into a node-set.
+///
+/// # Safety
+///
+/// - `buf` is a NUL-terminated copy of `bytes` (a trailing `\0` is
+///   pushed) that stays alive for the duration of the `new_text` call,
+///   which duplicates the content into heap-owned node memory before
+///   returning; the node is NULL or a valid text node and is pushed only
+///   when non-NULL.
 fn push_text(ns: &mut NodeSet, bytes: &[u8]) {
     let mut buf = bytes.to_vec();
     buf.push(0);
@@ -302,6 +310,14 @@ mod tests {
         XPathContext::new(ptr::null_mut())
     }
 
+    /// `str:tokenize` splits a string into standalone text nodes.
+    ///
+    /// # Safety
+    ///
+    /// - The nodes in the returned node-set are live standalone text nodes
+    ///   created by `push_text`/`new_text`; after the string values are
+    ///   read, each node is freed exactly once with `free_node`, and the
+    ///   node-set is not dereferenced afterwards.
     #[test]
     fn test_tokenize() {
         let mut c = ctx();
@@ -374,6 +390,14 @@ mod tests {
         assert_eq!(r.as_string(), "  ab ");
     }
 
+    /// `str:concat` joins the string values of nodes sharing a document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `a`, and `b` are live nodes created by `new_doc`/`new_text`;
+    ///   `add_child` links `a` and `b` under `doc`, making `doc` own them,
+    ///   so `free_doc` is the single release path and `a`/`b` are never
+    ///   freed separately while still referenced by the node-set.
     #[test]
     fn test_concat() {
         // Nodes must share a document for a deterministic document-order

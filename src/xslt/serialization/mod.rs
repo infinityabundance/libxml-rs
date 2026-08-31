@@ -26,6 +26,20 @@
 //! atlas/OWNERSHIP_ATLAS.md section 8). File/fd sinks are borrowed from
 //! the caller; the result document is borrowed (never freed here).
 //!
+//! # Safety
+//!
+//! - Every `unsafe` block in this module dereferences a caller-supplied
+//!   raw pointer: `result` must be NULL or a valid `_xmlDoc` whose child
+//!   list, `encoding`, and `version` fields are consistent, and `style`
+//!   must be NULL or a valid `_xsltStylesheet` whose import chain and
+//!   output fields are initialized (see the per-function `# Safety`
+//!   sections for the exact contract of each entry point).
+//! - Output pointers (`doc_txt_ptr`, `doc_txt_len`, `output`, `URL`) are
+//!   only dereferenced after NULL checks; the buffer written through
+//!   `doc_txt_ptr` is owned by the caller and must be released with
+//!   `xmlFree`, while file, fd, document, and stylesheet arguments are
+//!   borrowed and never freed by this module.
+//!
 //! # Historical quirks & epochs
 //!
 //! E-008 (atlas/SEMANTIC_EPOCHS.md): xsltproc output bytes are identical
@@ -127,6 +141,17 @@ unsafe fn next_import(style: *mut _xsltStylesheet) -> *mut _xsltStylesheet {
 }
 
 /// `XSLT_GET_IMPORT_PTR`: the first non-NULL value in the import chain.
+///
+/// # Safety
+///
+/// - `style` must be NULL or a valid `_xsltStylesheet`; the function
+///   walks the import chain through the `imports` and `next` links, each
+///   of which must be NULL or a valid stylesheet, and dereferences every
+///   stylesheet it visits.
+/// - `get` must be a valid function pointer callable with a reference to
+///   each stylesheet in the chain; each value it returns must be NULL or
+///   a pointer to a valid NUL-terminated string, since the caller may
+///   read it through `c_str_to_bytes`.
 unsafe fn import_chain_str(
     style: *mut _xsltStylesheet,
     get: fn(&_xsltStylesheet) -> *const xmlChar,
@@ -143,6 +168,15 @@ unsafe fn import_chain_str(
 }
 
 /// `XSLT_GET_IMPORT_INT`: the first value != -1 in the import chain.
+///
+/// # Safety
+///
+/// - `style` must be NULL or a valid `_xsltStylesheet`; the function
+///   walks the import chain through the `imports` and `next` links, each
+///   of which must be NULL or a valid stylesheet, and dereferences every
+///   stylesheet it visits.
+/// - `get` must be a valid function pointer callable with a reference to
+///   each stylesheet in the chain.
 unsafe fn import_chain_int(
     style: *mut _xsltStylesheet,
     get: fn(&_xsltStylesheet) -> c_int,
@@ -159,6 +193,12 @@ unsafe fn import_chain_int(
 }
 
 /// Case-insensitive string comparison against a byte literal.
+///
+/// # Safety
+///
+/// - `s` must be a valid pointer to a NUL-terminated `xmlChar` buffer, or
+///   NULL (NULL compares equal only to an empty literal); the scan reads
+///   through `s.add(i)` until a NUL and never past the literal's length.
 const unsafe fn cstr_eq_ignore_case(s: *const xmlChar, lit: &[u8]) -> bool {
     if s.is_null() {
         return lit.is_empty();
@@ -597,6 +637,14 @@ mod tests {
     use crate::xml::tree::*;
     use core::ptr;
 
+    /// Verify that `xsltSaveResultToString` rejects NULL output/document
+    /// pointers with -1.
+    ///
+    /// # Safety
+    ///
+    /// - Only NULL pointers are passed to `xsltSaveResultToString`, which
+    ///   rejects them before any dereference, so no raw pointer is read
+    ///   or written inside the unsafe block.
     #[test]
     fn test_save_result_null() {
         unsafe {
@@ -612,6 +660,21 @@ mod tests {
         }
     }
 
+    /// Serialize a small document with `xsltSaveResultToString` and check
+    /// the produced bytes, then release the result buffer, stylesheet,
+    /// and document.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `text` are live nodes created by `new_doc`,
+    ///   `new_node`, and `new_text` and linked with `doc_set_root_element`
+    ///   and `add_child`, so they stay valid for the duration of the call.
+    /// - `style` is a valid stylesheet returned by `xsltStylesheetCreate`
+    ///   and is released with `xsltFreeStylesheet` after the buffer is
+    ///   freed.
+    /// - `txt` is heap-allocated by `xsltSaveResultToString` with
+    ///   `xmlMalloc` and released here with `xmlFreeImpl`; the slice read
+    ///   from it is bounded by the returned `len`.
     #[test]
     fn test_save_result_to_string() {
         unsafe {
@@ -637,6 +700,19 @@ mod tests {
         }
     }
 
+    /// Pin the upstream quirk: `indent == -1` (unset) writes a trailing
+    /// newline while `indent == 0` (indent="no") does not.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` are live nodes created by `new_doc` and
+    ///   `new_node` and linked with `doc_set_root_element`, so they remain
+    ///   valid for `xsltSaveResultToString`.
+    /// - `style` is a valid stylesheet from `xsltStylesheetCreate`; the
+    ///   write to `(*style).indent` is valid because the struct is live
+    ///   and is freed with `xsltFreeStylesheet` afterwards.
+    /// - `txt` is an `xmlMalloc` buffer owned by the test and released
+    ///   with `xmlFreeImpl` before `style` and `doc` are freed.
     #[test]
     fn test_save_result_indent_quirk() {
         // UPSTREAM-PARITY: `indent == -1` (unset) writes the trailing
@@ -658,6 +734,21 @@ mod tests {
         }
     }
 
+    /// Verify the `text` output method writes the raw concatenated text
+    /// of the document with no escaping or trailing newline.
+    ///
+    /// # Safety
+    ///
+    /// - `doc`, `root`, and `text` are live nodes created by `new_doc`,
+    ///   `new_node`, and `new_text` and linked with `doc_set_root_element`
+    ///   and `add_child`, so they stay valid for the call.
+    /// - `method` is a 5-byte `libc::malloc` buffer filled with `text\0`
+    ///   by `copy_nonoverlapping`, so `(*style).method` is a valid
+    ///   NUL-terminated string; `style` is valid from
+    ///   `xsltStylesheetCreate` and `xsltFreeStylesheet` releases both
+    ///   `style` and its `method` field.
+    /// - `txt` is an `xmlMalloc` buffer returned by `xsltSaveResultToString`
+    ///   and is freed with `xmlFreeImpl`.
     #[test]
     fn test_save_result_text_method() {
         unsafe {

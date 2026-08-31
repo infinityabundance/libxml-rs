@@ -81,7 +81,18 @@
 //! directly would fail to link (R-000135). Do not fix the racy C-visible
 //! symbols: the internal locks must not change the documented upstream
 //! semantics for direct consumers.
-
+//!
+//! # Safety
+//!
+//! - The module-level statics are synchronization primitives only
+//!   (atomics, a `parking_lot` mutex, and a `thread_local` cell); there are
+//!   no top-level `unsafe` blocks outside functions. Reads and writes of
+//!   the exported C globals in `crate::abi::data_globals` happen only
+//!   inside the accessor functions, where the `(handler, ctx)` slot pairs
+//!   are serialized under `ERROR_HANDLER_LOCK` so a reader never observes a
+//!   new handler with an old context. The thread-local `LAST_ERROR` slot is
+//!   only mutated through `set_last_error`/`reset_last_error`, which free
+//!   the previous slot's owned strings exactly once.
 use core::cell::RefCell;
 use core::ffi::c_void;
 use core::ptr;
@@ -391,6 +402,14 @@ pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
 /// The closure runs after the lock is released, so a handler installed by
 /// the callback (or an error raised from inside the handler) cannot
 /// deadlock on ERROR_HANDLER_LOCK.
+///
+/// # Safety
+///
+/// - The two `unsafe` reads of the exported `xmlStructuredError`/
+///   `xmlStructuredErrorContext` data variables are performed under
+///   `ERROR_HANDLER_LOCK`, matching the write side (xmlSetStructuredError), so
+///   the pair is observed atomically; the values are only borrowed for the
+///   duration of the closure and never dereferenced here.
 pub fn with_structured_error<R>(
     f: impl FnOnce(Option<xmlStructuredErrorFunc>, *mut c_void) -> R,
 ) -> R {
@@ -453,6 +472,13 @@ pub fn set_last_error(err: _xmlError) {
 
 /// Free the owned string fields of a stored error (upstream xmlResetError:
 /// message/file/str1/str2/str3 are xmlMalloc'd copies).
+///
+/// # Safety
+///
+/// - `err` must point to a valid `_xmlError` whose `message`, `file`,
+///   `str1`, `str2` and `str3` fields are NULL or pointers allocated with
+///   `xmlFreeImpl`'s allocator; each non-NULL field is freed exactly once
+///   and must not be freed or used again afterwards.
 fn free_error_strings(err: &_xmlError) {
     use crate::abi::allocator::xmlFreeImpl;
     unsafe {
@@ -643,6 +669,14 @@ mod tests {
         assert_eq!(get_substitute_entities_default(), 0);
     }
 
+    /// Increment and decrement the init reference count.
+    ///
+    /// # Safety
+    ///
+    /// - `init_parser`/`cleanup_parser` mutate the global reference count
+    ///   and may run subsystem init/cleanup; the test balances the two
+    ///   calls so the library is left in a clean state, and the reference
+    ///   count is only read between calls.
     #[test]
     fn test_init_cleanup_ref_count() {
         // Reset for test
@@ -673,10 +707,25 @@ mod tests {
         assert!(get_structured_error_func().is_none());
     }
 
+    /// Install and reset the generic error handler slot pair.
+    ///
+    /// # Safety
+    ///
+    /// - `dummy_handler` is a valid no-op callback pointer; `dummy_ctx`
+    ///   points to a stack `i32` alive for the test; `set_generic_error_func`
+    ///   writes the exported slot pair under the handler lock, and NULL
+    ///   resets to the built-in default printer.
     #[test]
     fn test_error_callbacks_set_and_get() {
         let _guard = ERROR_HANDLER_TEST_LOCK.lock();
         unsafe {
+            /// A no-op generic error callback used as a handler pointer.
+            ///
+            /// # Safety
+            ///
+            /// - The function is never invoked by this test; when installed as a
+            ///   handler it must be a valid function pointer, and the parameters
+            ///   would need to be valid C pointers if it were called.
             unsafe extern "C" fn dummy_handler(_ctx: *mut c_void, _msg: *const core::ffi::c_char) {}
             let dummy_func: xmlGenericErrorFunc = dummy_handler;
             let dummy_ctx: *mut c_void = &mut 0 as *mut i32 as *mut c_void;
@@ -694,6 +743,14 @@ mod tests {
         }
     }
 
+    /// Store and reset a thread-local last error.
+    ///
+    /// # Safety
+    ///
+    /// - `err` has all NULL string fields, so `set_last_error` stores it
+    ///   without owning heap strings and `reset_last_error` frees nothing;
+    ///   `get_last_error` returns a pointer valid while the thread-local
+    ///   slot is not mutated.
     #[test]
     fn test_last_error_thread_local() {
         assert!(get_last_error().is_null());

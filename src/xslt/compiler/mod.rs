@@ -1445,6 +1445,13 @@ mod tests {
     use crate::xml::tree::*;
     use core::ptr;
 
+    /// Verify that `compile` with NULL arguments returns `-1`.
+    ///
+    /// # Safety
+    ///
+    /// - `compile` rejects NULL `style`/`doc` before any dereference, so
+    ///   passing `ptr::null_mut()` for both is safe and no raw pointer is
+    ///   read inside the unsafe block.
     #[test]
     fn test_compile_null() {
         unsafe {
@@ -1452,6 +1459,14 @@ mod tests {
         }
     }
 
+    /// Verify the element/namespace helpers tolerate NULL nodes.
+    ///
+    /// # Safety
+    ///
+    /// - `is_xslt_element`, `is_xslt_namespace`, `get_element_ns`, and
+    ///   `get_element_name` all return early on a NULL `node` (or NULL
+    ///   `ns`/`name` fields) before dereferencing, so passing
+    ///   `ptr::null_mut()` is safe and reads no memory.
     #[test]
     fn test_is_xslt_element_null() {
         unsafe {
@@ -1462,6 +1477,17 @@ mod tests {
         }
     }
 
+    /// Compile a simplified stylesheet (literal result element) and check
+    /// the implicit template wrapping the root element.
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `root` are live nodes created by `new_doc`/`new_node`
+    ///   and linked with `doc_set_root_element`; `style` is a zeroed
+    ///   `_xsltStylesheet` from `libc::calloc`, both required by `compile`.
+    /// - `compile` stores `doc` into `style->doc`, so `xsltFreeStylesheet`
+    ///   (which owns the stylesheet document) is the single release path;
+    ///   the templates list it walks is valid after compilation.
     #[test]
     fn test_compile_simplified_stylesheet() {
         unsafe {
@@ -1481,6 +1507,17 @@ mod tests {
         }
     }
 
+    /// A malformed `select` on `xsl:value-of` is reported at compile time
+    /// and increments `style->errors`.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` byte string is a valid NUL-terminated buffer passed to
+    ///   `xmlReadMemory`, which returns a valid document (asserted
+    ///   non-NULL) or NULL that `compile` rejects.
+    /// - `style` is a zeroed `_xsltStylesheet` from `libc::calloc` as
+    ///   required by `compile`; `xsltFreeStylesheet` releases `style` and
+    ///   the stylesheet document it owns.
     #[test]
     fn test_compile_bad_select_reports_error() {
         // UPSTREAM-PARITY (preproc.c xsltPreCompute): a malformed select on
@@ -1515,6 +1552,17 @@ mod tests {
         }
     }
 
+    /// An `xsl:sort` outside `apply-templates`/`for-each` is reported at
+    /// compile time and increments `style->errors`.
+    ///
+    /// # Safety
+    ///
+    /// - The `xsl` byte string is a valid NUL-terminated buffer passed to
+    ///   `xmlReadMemory`, which returns a valid document (asserted
+    ///   non-NULL) or NULL that `compile` rejects.
+    /// - `style` is a zeroed `_xsltStylesheet` from `libc::calloc` as
+    ///   required by `compile`; `xsltFreeStylesheet` releases `style` and
+    ///   the stylesheet document it owns.
     #[test]
     fn test_compile_sort_outside_context_reports_error() {
         // UPSTREAM-PARITY (preproc.c xsltCheckParentElement): xsl:sort

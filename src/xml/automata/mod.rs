@@ -839,6 +839,13 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// Test that a fresh automata is created and released.
+    ///
+    /// # Safety
+    ///
+    /// - `am` returned by `xmlNewAutomata` must be non-NULL (asserted) and
+    ///   not yet freed; `xmlFreeAutomata` takes ownership, so it must be
+    ///   called exactly once and never concurrently with other uses of `am`.
     #[test]
     fn test_new_automata() {
         unsafe {
@@ -848,6 +855,15 @@ mod tests {
         }
     }
 
+    /// Test that the free/get-init/compile entry points accept NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlFreeAutomata`, `xmlAutomataGetInitState` and `xmlAutomataCompile`
+    ///   accept NULL per the upstream C contract.
+    /// - `xmlAutomataCompile` returns NULL here; when it returns non-NULL the
+    ///   caller owns the resulting regexp and must free it exactly once with
+    ///   `xmlRegFreeRegexp`.
     #[test]
     fn test_new_automata_null_safety() {
         unsafe {
@@ -857,6 +873,15 @@ mod tests {
         }
     }
 
+    /// Test that a new state becomes the automata init state.
+    ///
+    /// # Safety
+    ///
+    /// - `am` must be a non-NULL, not-yet-freed pointer from `xmlNewAutomata`.
+    /// - The state pointer returned by `xmlAutomataNewState` is owned by the
+    ///   automata: it is only borrowed here and must not be freed separately.
+    /// - `xmlFreeAutomata(am)` releases the automata and all its states
+    ///   exactly once, after all borrowed state pointers are dead.
     #[test]
     fn test_new_state() {
         unsafe {
@@ -869,6 +894,15 @@ mod tests {
         }
     }
 
+    /// Test adding an epsilon transition between two states.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be non-NULL pointers obtained from
+    ///   `xmlNewAutomata` and `xmlAutomataNewState` on the same automata and
+    ///   not yet freed; the states are borrowed and owned by `am`.
+    /// - The returned pointer aliases `s1` and must not be freed separately.
+    /// - `xmlFreeAutomata(am)` runs exactly once at the end.
     #[test]
     fn test_epsilon_transition() {
         unsafe {
@@ -882,6 +916,16 @@ mod tests {
         }
     }
 
+    /// Test adding a character transition with a one-byte token.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be valid, not-yet-freed pointers owned by the
+    ///   automata as described for `test_epsilon_transition`.
+    /// - `token` must point to a valid NUL-terminated C string that lives for
+    ///   the duration of the call (only its first byte is read).
+    /// - The result aliases `s1`; the automata is freed exactly once at the
+    ///   end with `xmlFreeAutomata`.
     #[test]
     fn test_char_transition() {
         unsafe {
@@ -896,6 +940,15 @@ mod tests {
         }
     }
 
+    /// Test adding a counted transition with min/max bounds.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be valid, not-yet-freed pointers from the
+    ///   automata constructors; `token` must point to a valid NUL-terminated
+    ///   C string valid for the call (only its first byte is read).
+    /// - The returned pointer aliases `s1`; `xmlFreeAutomata(am)` is the only
+    ///   free and runs exactly once.
     #[test]
     fn test_count_transition() {
         unsafe {
@@ -909,6 +962,13 @@ mod tests {
         }
     }
 
+    /// Test adding an any-character transition.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be non-NULL, not-yet-freed automata-owned
+    ///   pointers; the result aliases `s1` and must not be freed separately;
+    ///   `xmlFreeAutomata(am)` runs exactly once at the end.
     #[test]
     fn test_all_transition() {
         unsafe {
@@ -921,6 +981,14 @@ mod tests {
         }
     }
 
+    /// Test adding a once (consuming) transition.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be valid non-NULL automata-owned pointers;
+    ///   `token` must point to a valid NUL-terminated C string valid for the
+    ///   call; the result aliases `s1`; `xmlFreeAutomata(am)` runs exactly
+    ///   once at the end.
     #[test]
     fn test_once_transition() {
         unsafe {
@@ -934,6 +1002,15 @@ mod tests {
         }
     }
 
+    /// Test counter-based counted/counter transitions.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2` must be valid non-NULL pointers owned by the
+    ///   automata and not yet freed; the counter ID and the transition
+    ///   pointers returned are owned by `am` (borrowed here) and must not be
+    ///   freed separately; `xmlFreeAutomata(am)` frees everything exactly
+    ///   once.
     #[test]
     fn test_counter_transition() {
         unsafe {
@@ -949,6 +1026,15 @@ mod tests {
         }
     }
 
+    /// Test that compiling an automata with no accepting path yields NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `am` must be a non-NULL, not-yet-freed pointer from `xmlNewAutomata`.
+    /// - `xmlAutomataCompile` returns NULL here, so no regexp is owned; when
+    ///   it returns non-NULL the caller must free it exactly once with
+    ///   `xmlRegFreeRegexp`.
+    /// - `xmlFreeAutomata(am)` runs exactly once at the end.
     #[test]
     fn test_compile_empty() {
         unsafe {
@@ -961,6 +1047,13 @@ mod tests {
         }
     }
 
+    /// Test that marking a state final returns 0 (no-op in this builder).
+    ///
+    /// # Safety
+    ///
+    /// - `am` and `state` must be valid, not-yet-freed automata-owned
+    ///   pointers; `xmlAutomataSetFinalState` does not take ownership, and
+    ///   the automata is freed exactly once with `xmlFreeAutomata` at the end.
     #[test]
     fn test_set_final_state() {
         unsafe {
@@ -972,6 +1065,13 @@ mod tests {
         }
     }
 
+    /// Test that an uncompiled automata reports deterministic (1).
+    ///
+    /// # Safety
+    ///
+    /// - `am` must be a valid, not-yet-freed pointer from `xmlNewAutomata`;
+    ///   `xmlAutomataIsDeterministic` borrows it, and `xmlFreeAutomata(am)`
+    ///   runs exactly once at the end.
     #[test]
     fn test_is_deterministic_not_compiled() {
         unsafe {
@@ -982,6 +1082,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlAutomataNewState` returns NULL for a NULL automata.
+    ///
+    /// # Safety
+    ///
+    /// - Passing NULL to `xmlAutomataNewState` is accepted by the C contract
+    ///   and returns NULL without dereferencing the argument.
     #[test]
     fn test_null_automata_returns_null_state() {
         unsafe {
@@ -990,6 +1096,12 @@ mod tests {
         }
     }
 
+    /// Test that `xmlAutomataGetInitState` returns NULL for a NULL automata.
+    ///
+    /// # Safety
+    ///
+    /// - Passing NULL to `xmlAutomataGetInitState` is accepted and returns
+    ///   NULL without dereferencing; the result is not dereferenced here.
     #[test]
     fn test_null_automata_returns_null_init() {
         unsafe {
@@ -997,6 +1109,15 @@ mod tests {
         }
     }
 
+    /// Test that new states are appended to the automata state list.
+    ///
+    /// # Safety
+    ///
+    /// - `am` must be non-NULL and not yet freed; `(*am).states` is read
+    ///   directly, so `am` must point to a live `XmlAutomata` (guaranteed by
+    ///   `xmlNewAutomata` here) and must not be mutated concurrently.
+    /// - `s1` and `s2` are owned by the automata and not freed separately;
+    ///   `xmlFreeAutomata(am)` runs exactly once at the end.
     #[test]
     fn test_new_state_adds_to_list() {
         unsafe {
@@ -1011,6 +1132,16 @@ mod tests {
         }
     }
 
+    /// Test that a two-transition chain compiles to a caller-owned regexp.
+    ///
+    /// # Safety
+    ///
+    /// - `am`, `s1`, `s2`, `s3` must be valid non-NULL automata-owned
+    ///   pointers; `token_a` and `token_b` must point to valid NUL-terminated
+    ///   strings valid for their respective calls.
+    /// - `xmlAutomataCompile` returns a caller-owned regexp here: it must be
+    ///   freed exactly once with `xmlRegFreeRegexp` before `xmlFreeAutomata`
+    ///   releases the automata.
     #[test]
     fn test_compile_simple_chain() {
         unsafe {

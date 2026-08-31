@@ -53,8 +53,8 @@ XMLPUBFUN int xmlOutputBufferWriteString(xmlOutputBufferPtr out, const char *str
 XMLPUBFUN int xmlOutputBufferWriteEscape(xmlOutputBufferPtr out,
                                           const xmlChar *str,
                                           xmlCharEncodingOutputFunc escaping);
-XMLPUBFUN const char *xmlOutputBufferGetContent(xmlOutputBufferPtr out);
-XMLPUBFUN int xmlOutputBufferGetSize(xmlOutputBufferPtr out);
+XMLPUBFUN const xmlChar *xmlOutputBufferGetContent(xmlOutputBufferPtr out);
+XMLPUBFUN size_t xmlOutputBufferGetSize(xmlOutputBufferPtr out);
 typedef xmlOutputBufferPtr
 (*xmlOutputBufferCreateFilenameFunc)(const char *URI,
                                      xmlCharEncodingHandlerPtr encoder,

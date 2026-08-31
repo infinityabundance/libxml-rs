@@ -108,6 +108,14 @@ pub(crate) mod default_sax_handler {
     /// Compact (inline) content is promoted to a heap allocation on the first
     /// merge — an interrupted character-data stream (e.g. an entity
     /// reference) is never compact, matching the oracle's debug output.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be NULL or a valid `_xmlNode` that stays alive for the
+    ///   call; `ch` must be NULL or a valid buffer of at least `len` bytes;
+    ///   when the node's content is heap-allocated it must be an
+    ///   `xmlReallocImpl`-compatible allocation; the caller must not mutate
+    ///   the node or `ch` concurrently.
     unsafe fn merge_into_text_node(node: *mut _xmlNode, ch: *const xmlChar, len: c_int) {
         if node.is_null() || ch.is_null() || len <= 0 {
             return;
@@ -145,6 +153,12 @@ pub(crate) mod default_sax_handler {
     /// UPSTREAM-PARITY: `debugXML.c` identifies compact text via
     /// `node->content == (xmlChar *) &(node->properties)`; the parser stores
     /// short strings in the memory occupied by the unused `properties` field.
+    ///
+    /// # Safety
+    ///
+    /// - `node` must be NULL or a valid, initialized `_xmlNode` that stays
+    ///   alive for the call; the `content` and `properties` fields are only
+    ///   read and compared as addresses.
     unsafe fn content_is_inline(node: *mut _xmlNode) -> bool {
         if node.is_null() {
             return false;
@@ -174,6 +188,14 @@ pub(crate) mod default_sax_handler {
     /// ```
     ///
     /// Returns the new node, or NULL on allocation failure.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be NULL or a valid `_xmlParserCtxt` that stays alive
+    ///   for the call; `ch` must be a valid buffer of at least `len` bytes;
+    ///   the returned node owns its allocations and must eventually be
+    ///   freed through the tree ownership contract; the caller must not
+    ///   race this call with mutation of `ctxt`.
     unsafe fn parser_new_text_node(
         ctxt: *mut _xmlParserCtxt,
         ch: *const xmlChar,
@@ -230,6 +252,15 @@ pub(crate) mod default_sax_handler {
     /// forces the non-compact path (R-000120).
     ///
     /// Returns the attribute, or NULL on failure.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid `_xmlParserCtxt`; `node` must be a valid
+    ///   `_xmlNode`; `name`, `prefix` and `value` must be NULL or valid
+    ///   NUL-terminated strings, and `value` must be readable for
+    ///   `value_len` bytes; the node, its namespace chain and the parser
+    ///   context must stay alive for the call; created attributes are
+    ///   owned by the node's property list.
     unsafe fn parser_set_prop(
         ctxt: *mut _xmlParserCtxt,
         node: *mut _xmlNode,
@@ -1457,6 +1488,15 @@ pub(crate) mod default_sax_handler {
         }
     }
 
+    /// Handle an entity reference by creating an `XML_ENTITY_REF_NODE`.
+    ///
+    /// # Safety
+    ///
+    /// - `ctx` must be NULL or a valid pointer to an `_xmlParserCtxt` that
+    ///   stays alive for the call; `name` must be NULL or a valid
+    ///   NUL-terminated string; the context's `nodeTab`, `myDoc` and entity
+    ///   table must be consistent while the reference node is created and
+    ///   linked into the tree.
     pub unsafe extern "C" fn reference(ctx: *mut c_void, name: *const xmlChar) {
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
         if ctxt.is_null() || name.is_null() {

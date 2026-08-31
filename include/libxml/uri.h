@@ -41,7 +41,7 @@ XMLPUBFUN int
 XMLPUBFUN void xmlFreeURI(xmlURIPtr uri);
 XMLPUBFUN xmlChar *xmlSaveUri(xmlURIPtr uri);
 XMLPUBFUN char *xmlURIUnescapeString(const char *str, int len, char *target);
-XMLPUBFUN char *xmlURIEscapeStr(const char *str, const char *list);
+XMLPUBFUN xmlChar *xmlURIEscapeStr(const xmlChar *str, const xmlChar *list);
 XMLPUBFUN int xmlNormalizeURIPath(char *path);
 
 

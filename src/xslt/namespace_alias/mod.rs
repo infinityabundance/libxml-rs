@@ -205,10 +205,29 @@ mod tests {
     use super::*;
     use core::ptr;
 
+    /// Allocate a zero-initialized `_xsltStylesheet`.
+    ///
+    /// # Safety
+    ///
+    /// - `libc::calloc` returns a zeroed block of the struct size or NULL;
+    ///   the caller must check for NULL before dereferencing and must
+    ///   release the block with `libc::free` when done.
     fn make_style() -> *mut _xsltStylesheet {
         unsafe { libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet }
     }
 
+    /// Register a namespace alias and resolve it back, checking the
+    /// returned URI strings.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a live zeroed `_xsltStylesheet` from `make_style`; the
+    ///   `c"..."` URI literals are valid NUL-terminated `xmlChar` buffers
+    ///   passed to `xsltAddNsAlias`/`xsltResolveNsAlias`.
+    /// - `resolved`/`other` are NULL or valid NUL-terminated strings owned
+    ///   by `style` (or aliases of the input literals), so `strcmp` is
+    ///   bounded; the alias lists are freed with `xsltFreeNsAliases`
+    ///   before `libc::free(style)`.
     #[test]
     fn test_add_and_resolve_alias() {
         unsafe {
@@ -249,6 +268,14 @@ mod tests {
         }
     }
 
+    /// NULL arguments to the alias API are rejected without crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltAddNsAlias` returns `-1` on NULL `style`/`resultURI`/
+    ///   `styleURI` before dereferencing them, and `xsltFreeNsAlias`/
+    ///   `xsltFreeNsAliases` no-op on NULL, so the unsafe block reads and
+    ///   frees no memory.
     #[test]
     fn test_null_args() {
         unsafe {

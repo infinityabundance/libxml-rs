@@ -880,6 +880,11 @@ pub unsafe fn list_clear(l: *mut List) {
 /// ```
 ///
 /// Returns 1 if empty, 0 if not empty.
+///
+/// # Safety
+///
+/// - `l` must be NULL or a valid, initialized `List` that stays alive for
+///   the call; the list is only read.
 pub fn list_empty(l: *mut List) -> c_int {
     if l.is_null() {
         return 1;
@@ -901,6 +906,12 @@ pub fn list_empty(l: *mut List) -> c_int {
 /// ```
 ///
 /// Returns the data at the front, or NULL if the list is empty.
+///
+/// # Safety
+///
+/// - `l` must be NULL or a valid, initialized `List` that stays alive for
+///   the call; the returned payload pointer is borrowed from the list and
+///   must not be freed by the caller.
 pub fn list_front(l: *mut List) -> *mut c_void {
     if l.is_null() {
         return ptr::null_mut();
@@ -922,6 +933,12 @@ pub fn list_front(l: *mut List) -> *mut c_void {
 /// ```
 ///
 /// Returns the data at the back, or NULL if the list is empty.
+///
+/// # Safety
+///
+/// - `l` must be NULL or a valid, initialized `List` that stays alive for
+///   the call; the returned payload pointer is borrowed from the list and
+///   must not be freed by the caller.
 pub fn list_back(l: *mut List) -> *mut c_void {
     if l.is_null() {
         return ptr::null_mut();
@@ -1203,12 +1220,24 @@ pub unsafe fn list_merge(l1: *mut List, l2: *mut List) {
 mod tests {
     use super::*;
 
+    /// Compare two `i32` payloads for the list comparator callback.
+    ///
+    /// # Safety
+    ///
+    /// - `a` and `b` must be non-NULL, valid, aligned pointers to `i32` that
+    ///   remain valid for the duration of the call.
     unsafe extern "C" fn int_compare(a: *const c_void, b: *const c_void) -> c_int {
         let ai = *(a as *const i32);
         let bi = *(b as *const i32);
         ai.cmp(&bi) as c_int
     }
 
+    /// Create and delete a list with no callbacks.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted) and valid until `list_delete`
+    ///   releases it exactly once.
     #[test]
     fn test_list_create_delete() {
         unsafe {
@@ -1218,6 +1247,14 @@ mod tests {
         }
     }
 
+    /// Push/pop payloads and verify size and front/back access.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted); `v1`/`v2` point to stack `i32`s
+    ///   alive for the test; `list_front`/`list_back` return valid
+    ///   payload pointers while the values are read; `list_delete`
+    ///   releases the list exactly once.
     #[test]
     fn test_list_push_pop() {
         unsafe {
@@ -1244,6 +1281,13 @@ mod tests {
         }
     }
 
+    /// Push payloads at the front and verify ordering.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted); the payload pointers point to
+    ///   stack `i32`s alive for the test; `list_delete` releases the list
+    ///   exactly once.
     #[test]
     fn test_list_push_front() {
         unsafe {
@@ -1260,6 +1304,13 @@ mod tests {
         }
     }
 
+    /// Insert payloads with a comparator and verify sorted order.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted); `int_compare` requires the payload
+    ///   pointers to be valid `i32`s alive for the test; `list_delete`
+    ///   releases the list exactly once.
     #[test]
     fn test_list_insert_sorted() {
         unsafe {
@@ -1281,6 +1332,13 @@ mod tests {
         }
     }
 
+    /// Remove the first matching payload with a comparator.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted); payloads and the search key are
+    ///   valid `i32` pointers alive for the test; `list_delete` releases
+    ///   the list exactly once.
     #[test]
     fn test_list_remove_first() {
         unsafe {
@@ -1301,6 +1359,13 @@ mod tests {
         }
     }
 
+    /// Clear a list and verify it becomes empty.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted) and valid until `list_delete`
+    ///   releases it exactly once; payloads are stack values never freed
+    ///   by the list (no deallocator installed).
     #[test]
     fn test_list_clear() {
         unsafe {
@@ -1317,6 +1382,13 @@ mod tests {
         }
     }
 
+    /// Reverse a list and verify the new front/back ordering.
+    ///
+    /// # Safety
+    ///
+    /// - `list` is non-NULL (asserted); payload pointers point to stack
+    ///   `i32`s alive for the test; `list_delete` releases the list
+    ///   exactly once.
     #[test]
     fn test_list_reverse() {
         unsafe {
@@ -1338,6 +1410,13 @@ mod tests {
         }
     }
 
+    /// NULL list pointers must be tolerated by the accessors.
+    ///
+    /// # Safety
+    ///
+    /// - `list_empty`, `list_size`, `list_front`, `list_back`,
+    ///   `list_delete`, `list_clear`, `list_pop_front` and `list_pop_back`
+    ///   handle NULL as documented no-ops; no pointer is dereferenced.
     #[test]
     fn test_list_null_handling() {
         unsafe {

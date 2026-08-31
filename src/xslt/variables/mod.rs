@@ -513,6 +513,18 @@ mod tests {
 
     use core::ptr;
 
+    /// Allocate a zeroed stack element whose `name` is a NUL-terminated
+    /// heap copy of `name` flagged `XSLT_VAR_INTERNAL`.
+    ///
+    /// # Safety
+    ///
+    /// - Returns NULL if the element allocation fails, otherwise a valid
+    ///   zero-initialized `_xsltStackElem`; the caller must check for NULL
+    ///   before dereferencing.
+    /// - The returned element must be released with `xsltFreeStackElem`,
+    ///   which frees the heap-copied `name`; `name` itself is a valid
+    ///   byte slice, so the `memcpy` source and the NUL terminator write
+    ///   into the freshly `malloc`-ed buffer are in-bounds.
     fn make_stack_elem(name: &[u8]) -> *mut _xsltStackElem {
         unsafe {
             // Zeroed stack element; the name is heap-copied with
@@ -536,6 +548,13 @@ mod tests {
         }
     }
 
+    /// Allocate a zero-initialized `_xsltTransformContext`.
+    ///
+    /// # Safety
+    ///
+    /// - `libc::calloc` returns a zeroed block of the struct size or NULL;
+    ///   the caller must check for NULL before dereferencing and must
+    ///   release the block with `xmlFreeImpl` when done.
     fn make_ctxt() -> *mut _xsltTransformContext {
         unsafe {
             // Zeroed context: every field NULL/0, matching calloc in
@@ -545,6 +564,18 @@ mod tests {
         }
     }
 
+    /// Push two variables, pop them back in LIFO order, and verify the
+    /// stack returns NULL when empty.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a live zeroed context from `make_ctxt` (asserted
+    ///   non-NULL); `v1`/`v2` are valid elements from `make_stack_elem`
+    ///   (NULL propagates as `-1` from `xsltPushVariable` without being
+    ///   dereferenced).
+    /// - Elements are released with `xsltFreeStackElem` and the context
+    ///   with `xmlFreeImpl`; `xsltPopVariable` returns elements owned by
+    ///   the stack, which are not freed separately.
     #[test]
     fn test_push_pop_variable() {
         unsafe {
@@ -566,6 +597,16 @@ mod tests {
         }
     }
 
+    /// Push two named variables and look one up by name.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a live zeroed context from `make_ctxt`; the elements
+    ///   are valid `_xsltStackElem` values whose `name` fields are valid
+    ///   NUL-terminated strings, so `xsltLookupVariable` may compare them.
+    /// - The `c"bar"`/`c"baz"` string literals are valid NUL-terminated
+    ///   `xmlChar` buffers; elements and the context are freed with
+    ///   `xsltFreeStackElem` and `xmlFreeImpl`.
     #[test]
     fn test_lookup_variable() {
         unsafe {
@@ -585,6 +626,14 @@ mod tests {
         }
     }
 
+    /// A lookup on an empty stack returns NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is a live zeroed context from `make_ctxt` with `varsNr`
+    ///   zero, so `xsltLookupVariable` walks no entries; the name literal
+    ///   is a valid NUL-terminated string. The context is released with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_lookup_empty_stack() {
         unsafe {
@@ -595,6 +644,13 @@ mod tests {
         }
     }
 
+    /// Pushing NULL contexts/elements returns `-1` instead of crashing.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltPushVariable` rejects NULL arguments before any dereference,
+    ///   so passing `ptr::null_mut()` is safe; `ctxt` is a live zeroed
+    ///   context from `make_ctxt` and is released with `xmlFreeImpl`.
     #[test]
     fn test_push_null_returns_error() {
         unsafe {

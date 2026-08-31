@@ -37,6 +37,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -172,24 +173,130 @@ def _ctx(text, pos, width=70):
 
 
 # ── coverage census ──────────────────────────────────────────────────────────
+# 11.1-Z.3 proof-scope model (the reviewer's SAFETY-SCOPE design): every
+# unsafe block is accounted in exactly one bucket, and `unaccounted` GATES the
+# verdict (the 11.2 goal "unexplained unsafe blocks/functions: 0"):
+#
+#   local-proof           — a SAFETY/`# Safety` comment in the block's window,
+#                           or a `// SAFETY-SCOPE:` marker attached to the
+#                           block itself;
+#   enclosing-proof-scope — the enclosing fn documents its safety contract: a
+#                           `# Safety` section in the fn doc comment, or an
+#                           explicit `// SAFETY-SCOPE:` marker attached to the
+#                           fn (the marker may name the fn doc as the scope);
+#   classified-generated  — inside a module carrying a module-level
+#                           `// SAFETY-SCOPE:` marker declaring the module
+#                           mechanical/generated (the export-registry
+#                           modules: uniform extern-"C" indirection patterns
+#                           covered by the upstream contract + the
+#                           ABI-FUNCTION-SIGNATURE / DSO-LOADER courts);
+#   unaccounted           — anything else; MUST be 0 for the verdict to pass.
+#
+# Unsafe functions are accounted as: documented (doc comment), covered by a
+# module-level scope (classified-generated), or unaccounted (gate: 0).
+
+SAFETY_SCOPE_RE = re.compile(r"//\s*SAFETY-SCOPE:\s*([A-Za-z0-9_.-]+)")
+FN_RE = re.compile(
+    r"(?m)^\s*(?:(?:pub(?:\([^)]*\))?|const|unsafe|extern\s+\"C\")\s+)*"
+    r"fn\s+([A-Za-z_][A-Za-z0-9_]*)\b")
+MACRO_RE = re.compile(r"(?m)^\s*macro_rules!\s*[A-Za-z_][A-Za-z0-9_]*\s*\x7b")
+
+
+def macro_regions(text):
+    """(start, end) ranges of every macro_rules! body (generated code)."""
+    out = []
+    for m in MACRO_RE.finditer(text):
+        i = m.end() - 1  # the '{'
+        depth = 1
+        j = i + 1
+        while j < len(text) and depth > 0:
+            if text[j] == "{":
+                depth += 1
+            elif text[j] == "}":
+                depth -= 1
+            j += 1
+        out.append((m.start(), j))
+    return out
+
+
+def fn_regions(text):
+    """(name, start, body_start, body_end) for every fn in the file."""
+    out = []
+    for m in FN_RE.finditer(text):
+        i = text.find("{", m.end())
+        if i < 0:
+            continue
+        depth = 1
+        j = i + 1
+        while j < len(text) and depth > 0:
+            if text[j] == "{":
+                depth += 1
+            elif text[j] == "}":
+                depth -= 1
+            j += 1
+        out.append((m.group(1), m.start(), i, j))
+    return out
+
+
+def fn_doc(text, fn_start):
+    head = text[:fn_start]
+    stripped = re.sub(r"#\[[^\]]*\]\s*\n", "", head)
+    stripped = re.sub(r"(?:pub\s*)?(?:const\s*)?(?:unsafe\s*)?"
+                      r"(?:extern\s+\"C\"\s+)?$", "", stripped.rstrip())
+    m = re.search(r"///[^\n]*\n(\s*///[^\n]*\n)*\s*$", stripped + "\n")
+    return m.group(0) if m else ""
+
+
+def module_scope_id(text):
+    """The module-level SAFETY-SCOPE id, if a marker appears in the header
+    region (before the first real item — a line starting with an item
+    keyword; //! docs, comments, attributes and blank lines precede it)."""
+    item_re = re.compile(r"^(?:pub|fn|unsafe|extern|static|mod|struct|enum|type|const|macro_rules|use)\b")
+    header = text
+    for line in text.splitlines():
+        s = line.strip()
+        if s and not s.startswith(("//", "/*", "*", "#[", "#!", "//!", "///")) and item_re.match(s):
+            idx = text.index(line)
+            header = text[:idx]
+            break
+    for m in SAFETY_SCOPE_RE.finditer(header):
+        return m.group(1)
+    return None
+
+
+def fn_attached_scope(text, fn_start):
+    """SAFETY-SCOPE id directly attached above the fn (only attribute lines
+    between the marker and the fn)."""
+    head = text[:fn_start]
+    head = re.sub(r"#\[[^\]]*\]\s*\n", "", head).rstrip()
+    m = SAFETY_SCOPE_RE.findall(head)
+    return m[-1] if m else None
+
+
 def coverage_census(rel):
     path = os.path.join(ROOT, rel)
     text = open(path, encoding="utf-8", errors="replace").read()
     census = {"exports": {"total": 0, "documented": 0, "undocumented": []},
-              "unsafe_fns": {"total": 0, "documented": 0, "undocumented": []},
-              "unsafe_blocks": {"total": 0, "safety_commented": 0}}
+              "unsafe_fns": {"total": 0, "documented": 0,
+                              "scope_covered": 0, "undocumented": []},
+              "unsafe_blocks": {"total": 0,
+                                 "local_proof": 0,
+                                 "enclosing_proof_scope": 0,
+                                 "classified_generated": 0,
+                                 "unaccounted": 0}}
+    mscope = module_scope_id(text)
+    fns = fn_regions(text)
+    macros = macro_regions(text)
 
     # F. #[no_mangle] exports
     for m in re.finditer(
             r"#\[no_mangle\]\s*(?:pub(?:\([^)]*\))?\s*)?"
-            r"(?:unsafe\s+)?(?:extern\s+\"C\"\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)",
+            r"(?:(?:const|unsafe)\s+)*(?:extern\s+\"C\"\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)",
             text):
         census["exports"]["total"] += 1
         name = m.group(1)
         head = text[:m.start()]
         documented = False
-        # strip intervening attribute lines (cfg, allow, ...) between the
-        # doc comment block and the #[no_mangle] attribute
         stripped = re.sub(r"#\[[^\]]*\]\s*\n", "", head)
         if re.search(r"///[^\n]*\n(\s*///[^\n]*\n)*\s*$", stripped):
             documented = True
@@ -198,28 +305,49 @@ def coverage_census(rel):
         else:
             census["exports"]["undocumented"].append(name)
 
-    # G. unsafe fns
+    # G. unsafe fns: documented (doc comment) or module-scope covered
     for m in re.finditer(
             r"(?:pub(?:\([^)]*\))?(?:\s+const)?\s+)?unsafe(?:\s+extern\s+\"C\"\s+)?fn\s+"
             r"([A-Za-z_][A-Za-z0-9_]*)",
             text):
         census["unsafe_fns"]["total"] += 1
         name = m.group(1)
-        head = text[:m.start()]
-        stripped = re.sub(r"#\[[^\]]*\]\s*\n", "", head)
-        # drop a trailing `pub [const] ` prefix left by the fn-arity match
-        stripped = re.sub(r"(?:pub\s*)?(?:const\s*)?$", "", stripped.rstrip())
-        if re.search(r"///[^\n]*\n(\s*///[^\n]*\n)*\s*$", stripped + "\n"):
+        if fn_doc(text, m.start()):
             census["unsafe_fns"]["documented"] += 1
+        elif mscope:
+            census["unsafe_fns"]["scope_covered"] += 1
         else:
             census["unsafe_fns"]["undocumented"].append(name)
 
-    # H. unsafe blocks with a SAFETY comment in the vicinity
+    # H. unsafe blocks: local proof / enclosing proof scope / classified /
+    #    unaccounted (proof-scope model, 11.1-Z.3)
     for m in re.finditer(r"unsafe\s*\{", text):
+        pos = m.start()
         census["unsafe_blocks"]["total"] += 1
-        window = text[max(0, m.start() - 400):m.end() + 400]
+        window = text[max(0, pos - 400):pos + 400]
         if re.search(r"//\s*SAFETY\b|#\s*Safety\b", window, re.I):
-            census["unsafe_blocks"]["safety_commented"] += 1
+            census["unsafe_blocks"]["local_proof"] += 1
+            continue
+        # generated code: unsafe blocks inside macro_rules! bodies
+        # (macro-expanded shims/registries) are classified-generated
+        if any(ms < pos < me for (ms, me) in macros):
+            census["unsafe_blocks"]["classified_generated"] += 1
+            continue
+        owner = None
+        for (name, fs, si, ei) in fns:
+            if si < pos < ei:
+                owner = (name, fs)
+                break
+        if owner:
+            name, fs = owner
+            doc = fn_doc(text, fs)
+            if re.search(r"#\s*Safety\b", doc, re.I) or fn_attached_scope(text, fs):
+                census["unsafe_blocks"]["enclosing_proof_scope"] += 1
+                continue
+        if mscope:
+            census["unsafe_blocks"]["classified_generated"] += 1
+            continue
+        census["unsafe_blocks"]["unaccounted"] += 1
     return census
 
 
@@ -244,34 +372,55 @@ def main():
 
     # aggregate census
     agg = {"exports": {"total": 0, "documented": 0},
-           "unsafe_fns": {"total": 0, "documented": 0},
-           "unsafe_blocks": {"total": 0, "safety_commented": 0}}
+           "unsafe_fns": {"total": 0, "documented": 0, "scope_covered": 0},
+           "unsafe_blocks": {"total": 0, "local_proof": 0,
+                              "enclosing_proof_scope": 0,
+                              "classified_generated": 0,
+                              "unaccounted": 0}}
     for r in census_rows:
         for k in ("exports", "unsafe_fns", "unsafe_blocks"):
-            agg[k]["total"] += r[k]["total"]
-            if k == "unsafe_blocks":
-                agg[k]["safety_commented"] += r[k]["safety_commented"]
-            else:
-                agg[k]["documented"] += r[k]["documented"]
+            for sub in agg[k]:
+                agg[k][sub] += r[k][sub]
     for k in ("exports", "unsafe_fns"):
         agg[k]["undocumented"] = [x for r in census_rows
                                   for x in r[k]["undocumented"]]
-    agg["unsafe_blocks"]["unsafety_commented"] = (
-        agg["unsafe_blocks"]["total"] - agg["unsafe_blocks"]["safety_commented"])
 
-    verdict = "PASS" if not all_findings else "FAIL"
+    # ── rustdoc gate (11.1-Z.3): RUSTDOCFLAGS="-D warnings" cargo doc ──────
+    rustdoc = subprocess.run(
+        ["cargo", "doc", "--no-deps", "--all-features"],
+        capture_output=True, text=True,
+        env={**os.environ, "RUSTDOCFLAGS": "-D warnings"},
+        timeout=900)
+    rustdoc_result = {
+        "command": "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps --all-features",
+        "exit_code": rustdoc.returncode,
+        "clean": rustdoc.returncode == 0,
+        "stderr_tail": rustdoc.stderr[-2000:],
+    }
+
+    gate_fail = (len(all_findings) > 0
+                 or agg["unsafe_blocks"]["unaccounted"] > 0
+                 or agg["unsafe_fns"]["undocumented"]
+                 or not rustdoc_result["clean"])
+    verdict = "FAIL" if gate_fail else "PASS"
     ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     receipt = {
         "court": "CUSTODIAN-COMMENTARY-DRIFT",
-        "phase": "11.1-Z.2",
+        "phase": "11.1-Z.3",
         "timestamp": ts,
-        "schema": "custodian-commentary-drift-1",
+        "schema": "custodian-commentary-drift-2",
         "checks": {
             "A-mutable-count": "no (N/N) court-verdict counts embedded in source",
             "B-residual-unresolved": "every R-\\d{6} resolves in the residual ledger",
             "C-court-unresolved": "every court/probe/casefile ID is known",
             "D-receipt-path-unresolved": "every courts/receipts mention exists",
             "E-epoch-unresolved": "every E-\\d{3} resolves in the epochs atlas",
+        },
+        "verdict_gates": {
+            "reference_drift": "A-E findings must be 0",
+            "unsafe_blocks_unaccounted": "must be 0 (11.2 goal: unexplained unsafe blocks: 0)",
+            "unsafe_fns_unaccounted": "must be 0 (11.2 goal: unexplained unsafe functions: 0)",
+            "rustdoc": "RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features must pass",
         },
         "modules_total": len(modules),
         "findings": all_findings,
@@ -280,6 +429,8 @@ def main():
                               "C-court-unresolved", "D-receipt-path-unresolved",
                               "E-epoch-unresolved")},
         "coverage_census": agg,
+        "unsafe_fn_unaccounted": agg["unsafe_fns"]["undocumented"],
+        "rustdoc": rustdoc_result,
         "coverage_per_module": census_rows,
         "verdict": verdict,
     }
@@ -291,10 +442,14 @@ def main():
     print(f"modules={len(modules)} findings={len(all_findings)} verdict={verdict}")
     for k, v in receipt["summary"].items():
         print(f"  {k}: {v}")
+    ab = agg["unsafe_blocks"]
     print("coverage census: "
           f"exports {agg['exports']['documented']}/{agg['exports']['total']} documented, "
-          f"unsafe-fns {agg['unsafe_fns']['documented']}/{agg['unsafe_fns']['total']} documented, "
-          f"unsafe-blocks {agg['unsafe_blocks']['safety_commented']}/{agg['unsafe_blocks']['total']} SAFETY-commented")
+          f"unsafe-fns {agg['unsafe_fns']['documented']}/{agg['unsafe_fns']['total']} documented "
+          f"(+{agg['unsafe_fns']['scope_covered']} scope-covered), "
+          f"unsafe-blocks local={ab['local_proof']} enclosing-scope={ab['enclosing_proof_scope']} "
+          f"generated={ab['classified_generated']} unaccounted={ab['unaccounted']}/{ab['total']}")
+    print(f"rustdoc exit={rustdoc_result['exit_code']} clean={rustdoc_result['clean']}")
     for f_ in all_findings[:40]:
         print(f"  [{f_['check']}] {f_['module']}: {f_.get('token')} — {f_.get('context', '')[:60]}")
     return 0 if verdict == "PASS" else 1

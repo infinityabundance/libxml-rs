@@ -288,6 +288,19 @@ pub fn xsltSetTransformErrorFunc(
 /// * `style` — The stylesheet (may be null).
 /// * `inst`  — The instruction node that triggered the error (may be null).
 /// * `msg`   — The message, NUL-terminated, typically ending in `\n`.
+///
+/// # Safety
+///
+/// - `msg` must be NULL or a valid NUL-terminated C string; it is read
+///   with `libc::strlen` and converted to a byte slice, so it must not
+///   be dangling.
+/// - `ctxt` must be NULL or a valid `_xsltTransformContext`; it is
+///   dereferenced to read `state`, `inst`, `error`, and `errctx`, and a
+///   registered `error` handler must be a valid extern "C" function
+///   pointer callable with `errctx` and the formatted message.
+/// - `inst` must be NULL or a valid `_xmlNode`; it is passed to
+///   `print_error_context`, which dereferences it.
+/// - `style` is only used in NULL comparisons and may be NULL.
 pub fn xsltTransformError(
     ctxt: *mut _xsltTransformContext,
     style: *mut _xsltStylesheet,
@@ -360,6 +373,19 @@ pub fn xsltTransformError(
 /// error: element E\n
 /// compilation error ... / runtime error ...
 /// ```
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid `_xmlNode`; it is dereferenced for
+///   its `type_`, `doc`, and `name` fields, `xmlGetLineNo` is called on
+///   it, and when it is a document node it is cast to `_xmlDoc` to read
+///   the `URL` field.
+/// - The `doc` field of `node` must be NULL or a valid `_xmlDoc` while
+///   `node` is alive; the `URL` and `name` fields of `node` must be NULL
+///   or valid NUL-terminated strings since they are read with
+///   `CStr::from_ptr`.
+/// - `ctxt` and `style` are only used in NULL comparisons and may be
+///   NULL.
 fn print_error_context(
     ctxt: *mut _xsltTransformContext,
     style: *mut _xsltStylesheet,

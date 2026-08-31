@@ -1,9 +1,9 @@
 {
  "manifest_id": "PHASE-11-1-Y-CENSUS",
  "title": "11.1-Y required court families census",
- "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0). 11.1-Z.1 amendment: PREPROCESSOR-SURFACE and AST-SURFACE now point at the real condition-lattice / Clang-AST machinery (dedicated courts), not the config-script / header-compile courts.",
+ "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0). 11.1-Z.1 amendment: PREPROCESSOR-SURFACE and AST-SURFACE now point at the real condition-lattice / Clang-AST machinery (dedicated courts), not the config-script / header-compile courts. 11.1-Z.3 amendment: ALLOCATOR-DEFAULT-001 (libc default-allocator differential, R-000178) added; ABI-FUNCTION-SIGNATURE hardened fail-closed/oracle-isolated with SOURCE_PROTOTYPE + MACHINE_ABI fingerprints; CUSTODIAN-COMMENTARY-DRIFT now verdict-gates on zero unaccounted safety sites (proof scopes) + rustdoc gate.",
  "date": "2026-08-31",
- "candidate_commit": "be03688004e664e525196fc714a1a88c4c897c95",
+ "candidate_commit": "PENDING-Z3-SEAL",
  "verdict": "PASS",
  "families": {
   "DOXYGEN-SURFACE": {
@@ -108,7 +108,7 @@
    "runner": "cargo test --lib abi::allocator + tools/abi/register_globals_court.py",
    "receipt": "courts/receipts/phase-11/allocator-*.json",
    "result": "PASS",
-   "note": "allocator unit tests + registry courts"
+   "note": "cargo test --lib abi::allocator + tools/abi/register_globals_court.py + ALLOCATOR-DEFAULT-001 + ALLOCATOR-HOOK-001 (all PASS)"
   },
   "GLOBAL-STATE": {
    "runner": "tools/abi/data_globals_probe.py + tools/abi/register_globals_court.py",
@@ -300,7 +300,7 @@
    "runner": "tools/abi/function_signature_court.py",
    "receipt": "courts/receipts/phase-11/abi-function-signature-20260831T203925Z.json",
    "result": "PASS",
-   "note": "three-way prototype mirror (oracle header / candidate header / Rust extern) — 3319 compared, 0 findings (R-000176)"
+   "note": "fail-closed + oracle-isolated (11.1-Z.3): separate include envs with include-origin contamination checks, zero silent omissions, SOURCE_PROTOTYPE + MACHINE_ABI fingerprints; 3259 compared / 0 findings"
   },
   "ALLOCATOR-HOOK": {
    "runner": "tools/abi/allocator_hook_probe.py",
@@ -318,7 +318,13 @@
    "runner": "tools/evidence/custodian_commentary_drift.py",
    "receipt": "courts/receipts/phase-11/custodian-commentary-drift-20260831T205546Z.json",
    "result": "PASS",
-   "note": "reference-drift court: residual/court/epoch/receipt references resolve; no embedded mutable counts; export/unsafe/SAFETY coverage census"
+   "note": "verdict gates on zero unaccounted safety sites (11.1-Z.3 proof-scope census: 1811/1811 unsafe fns, 5235/5235 unsafe blocks) + rustdoc -D warnings gate"
+  },
+  "ALLOCATOR-DEFAULT": {
+   "runner": "tools/abi/allocator_default_probe.py",
+   "receipt": "courts/receipts/phase-11/allocator-default-*.json",
+   "result": "PASS",
+   "note": "default-allocator differential (R-000178): libc malloc/realloc/free/strdup vs oracle globals.c defaults; byte-identical incl. xmlMemSize/xmlMemUsed/xmlMemBlocks exactness; valgrind sweep unavailable (loader SIGILL)"
   }
  }
 }

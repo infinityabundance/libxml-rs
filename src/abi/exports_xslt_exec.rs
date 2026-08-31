@@ -75,6 +75,16 @@
 #![allow(non_snake_case)]
 #![allow(unused_variables)]
 
+// SAFETY-SCOPE: EXPORT-XSLT_EXEC-MECHANICAL-001
+// (11.1-Z.3 proof scope, classified-generated) — this module is the
+// mechanical extern-"C" export surface: every `unsafe` block in it is
+// the documented indirection/registry-access pattern whose validity
+// rests on the upstream C contract, and the exported signatures are
+// machine-measured by the ABI-FUNCTION-SIGNATURE and DSO-LOADER
+// courts and the C-API differential probes. The safety contract of
+// each export is stated in its own doc comment; this scope covers the
+// mechanical wrappers' unsafe blocks.
+
 use core::ptr;
 use std::os::raw::{c_char, c_double, c_int, c_uint, c_void};
 

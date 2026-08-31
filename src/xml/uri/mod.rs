@@ -234,6 +234,13 @@ impl Default for CXmlUri {
 }
 
 /// Allocate an allocator-owned null-terminated copy of `bytes`, or NULL.
+///
+/// # Safety
+///
+/// - `bytes` must be a valid slice readable for `b.len()` bytes; the
+///   returned pointer is allocated with the libxml2 allocator and must be
+///   released with `xmlFreeImpl`, or is NULL when `bytes` is empty or the
+///   allocation fails.
 unsafe fn to_c_str(bytes: Option<&[u8]>) -> *mut c_char {
     let b = match bytes {
         Some(b) if !b.is_empty() => b,
@@ -251,6 +258,12 @@ unsafe fn to_c_str(bytes: Option<&[u8]>) -> *mut c_char {
 }
 
 /// Read an allocator-owned C string back into `Vec<u8>` (empty when NULL).
+///
+/// # Safety
+///
+/// - `p` must be NULL or a valid pointer to a NUL-terminated C string that
+///   stays valid and unmodified for the duration of the call; the bytes are
+///   copied out, so the caller keeps ownership of the string.
 unsafe fn from_c_str(p: *const c_char) -> Option<Vec<u8>> {
     if p.is_null() {
         return None;
@@ -264,6 +277,13 @@ unsafe fn from_c_str(p: *const c_char) -> Option<Vec<u8>> {
 }
 
 /// Free a C-ABI URI object and all its strings.
+///
+/// # Safety
+///
+/// - `uri` must be NULL or a pointer previously produced by `parts_to_c`
+///   (a `Box<CXmlUri>`); every non-NULL string field must have been
+///   allocated with `xmlMallocImpl`. After the call the pointer and its
+///   strings are dangling and must not be used or freed again.
 unsafe fn free_c_uri(uri: *mut CXmlUri) {
     if uri.is_null() {
         return;
@@ -290,6 +310,12 @@ unsafe fn free_c_uri(uri: *mut CXmlUri) {
 }
 
 /// Convert internal parts to a C-ABI URI object (allocates).
+///
+/// # Safety
+///
+/// - `parts` must be a valid `UriParts` reference; the returned pointer
+///   owns a `Box<CXmlUri>` whose string fields are `xmlMallocImpl`
+///   allocations, and must be released with `free_c_uri` exactly once.
 unsafe fn parts_to_c(parts: &UriParts) -> *mut CXmlUri {
     let boxed = Box::new(CXmlUri {
         scheme: unsafe { to_c_str(parts.scheme.as_deref()) },
@@ -308,6 +334,14 @@ unsafe fn parts_to_c(parts: &UriParts) -> *mut CXmlUri {
 }
 
 /// Convert a C-ABI URI object back to internal parts (copies strings).
+///
+/// # Safety
+///
+/// - `uri` must be non-NULL and point to a valid, initialized `CXmlUri`
+///   (for example one produced by `xmlParseURI` or `parts_to_c`) whose
+///   string fields are NULL or valid NUL-terminated strings; the object
+///   must stay alive for the duration of the call since the fields are
+///   copied out.
 unsafe fn c_to_parts(uri: *const CXmlUri) -> UriParts {
     let u = unsafe { &*uri };
     UriParts {
@@ -1534,6 +1568,13 @@ mod tests {
 
     // ── C ABI wrapper functions ────────────────────────────────────────────
 
+    /// Create a URI with `xmlCreateURI` and release it with `xmlFreeURI`.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlCreateURI` returns an allocator-owned `CXmlUri` or NULL; the
+    ///   non-NULL result asserted here must be freed exactly once with
+    ///   `xmlFreeURI` before the test ends.
     #[test]
     fn test_xml_create_and_free_uri() {
         unsafe {
@@ -1543,6 +1584,13 @@ mod tests {
         }
     }
 
+    /// Parse a C string URI and read back its fields before freeing.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` points to a static NUL-terminated string valid for the
+    ///   call; the returned `CXmlUri` is valid while its fields are read
+    ///   and must be freed with `xmlFreeURI`.
     #[test]
     fn test_xml_parse_uri() {
         unsafe {
@@ -1557,6 +1605,12 @@ mod tests {
         }
     }
 
+    /// `xmlParseURI` must accept a NULL pointer and report failure.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlParseURI` handles a NULL `str` without dereferencing it and
+    ///   returns NULL; no pointer is read or freed in this test.
     #[test]
     fn test_xml_parse_uri_null() {
         unsafe {
@@ -1565,6 +1619,14 @@ mod tests {
         }
     }
 
+    /// Round-trip a parsed URI through `xmlSaveUri` and compare strings.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` is a valid NUL-terminated string; `saved` is an
+    ///   allocator-owned buffer freed with `xmlFreeImpl`, and `uri` is
+    ///   freed with `xmlFreeURI`; both pointers must stay valid until
+    ///   their respective frees.
     #[test]
     fn test_xml_save_uri() {
         unsafe {
@@ -1580,6 +1642,13 @@ mod tests {
         }
     }
 
+    /// Escape a C string with `xmlURIEscapeStr` and a NULL safe list.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be a valid NUL-terminated string and the NULL safe
+    ///   list is accepted by the API; the returned buffer is
+    ///   allocator-owned and freed with `xmlFreeImpl`.
     #[test]
     fn test_xml_escape_str() {
         unsafe {
@@ -1592,6 +1661,12 @@ mod tests {
         }
     }
 
+    /// Escape a C string with `xmlURIEscapeStr` and a non-NULL safe list.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` and `safe` must be valid NUL-terminated strings; the
+    ///   returned buffer is allocator-owned and freed with `xmlFreeImpl`.
     #[test]
     fn test_xml_escape_str_with_safe_list() {
         unsafe {
@@ -1605,6 +1680,12 @@ mod tests {
         }
     }
 
+    /// Unescape a percent-encoded C string with `xmlURIUnescapeString`.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be a valid NUL-terminated string; the returned buffer
+    ///   is allocator-owned and freed with `xmlFreeImpl`.
     #[test]
     fn test_xml_unescape_string() {
         unsafe {
@@ -1617,6 +1698,13 @@ mod tests {
         }
     }
 
+    /// Unescape an explicit-length percent-encoded string.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be valid for the declared length (a static string)
+    ///   and the returned buffer is allocator-owned, freed with
+    ///   `xmlFreeImpl`.
     #[test]
     fn test_xml_unescape_string_with_len() {
         unsafe {
@@ -1629,6 +1717,12 @@ mod tests {
         }
     }
 
+    /// Parse a raw C string URI with `xmlParseURIRaw` and read fields.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be a valid NUL-terminated string; the returned
+    ///   `CXmlUri` is valid while read and freed with `xmlFreeURI`.
     #[test]
     fn test_xml_parse_uri_raw() {
         unsafe {
@@ -1642,6 +1736,12 @@ mod tests {
         }
     }
 
+    /// `xmlFreeURI` must tolerate a NULL pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `xmlFreeURI(NULL)` is a documented no-op; no pointer is
+    ///   dereferenced or freed.
     #[test]
     fn test_xml_free_null() {
         unsafe {
@@ -1737,6 +1837,14 @@ mod tests {
 
     // ── Parse URI C string ─────────────────────────────────────────────────
 
+    /// Parse a C string URI into an internal `UriParts` box and free it.
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be a valid NUL-terminated string; the pointer
+    ///   returned by `parse_uri_cstr` is non-NULL (asserted), valid for
+    ///   reading while its fields are checked, and must be released with
+    ///   `free_uri_parts` exactly once.
     #[test]
     fn test_parse_uri_cstr() {
         let cstr = c"http://example.com/path".as_ptr() as *const xmlChar;

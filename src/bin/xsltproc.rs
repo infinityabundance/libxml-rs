@@ -504,6 +504,16 @@ unsafe fn cstr_alloc(s: &str) -> *mut xmlChar {
 }
 
 /// The `stderr` FILE* (the libc crate exposes no `stderr` value).
+///
+/// # Safety
+///
+/// - The function reads and writes the `static mut STDERR_FILE` cache and
+///   is only ever called from `main_impl` on the main thread, so there is
+///   no concurrent access to the static.
+/// - `libc::fdopen(2, ...)` either returns a valid FILE* wrapping the
+///   process's stderr descriptor or NULL; the `c"w"` mode literal is a
+///   valid NUL-terminated buffer, and the returned pointer is owned by
+///   the process for its lifetime and must not be closed by the caller.
 unsafe fn stderr_file() -> *mut libc::FILE {
     static mut STDERR_FILE: *mut libc::FILE = ptr::null_mut();
     unsafe {
@@ -515,6 +525,16 @@ unsafe fn stderr_file() -> *mut libc::FILE {
 }
 
 /// The `stdout` FILE*.
+///
+/// # Safety
+///
+/// - The function reads and writes the `static mut STDOUT_FILE` cache and
+///   is only ever called from `main_impl` on the main thread, so there is
+///   no concurrent access to the static.
+/// - `libc::fdopen(1, ...)` either returns a valid FILE* wrapping the
+///   process's stdout descriptor or NULL; the `c"w"` mode literal is a
+///   valid NUL-terminated buffer, and the returned pointer is owned by
+///   the process for its lifetime and must not be closed by the caller.
 unsafe fn stdout_file() -> *mut libc::FILE {
     static mut STDOUT_FILE: *mut libc::FILE = ptr::null_mut();
     unsafe {

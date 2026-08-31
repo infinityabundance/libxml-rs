@@ -141,6 +141,12 @@ pub unsafe fn traverse_axis(
 /// Including the DTD (type 14) would make `/root` match the doctype name
 /// and corrupt string-values, e.g. count(/root) returning 2 and
 /// string(/root) returning the DTD's empty value.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid `_xmlNode`; its `children`/`next`
+///   sibling chain must contain only valid, alive `_xmlNode` pointers and
+///   must be acyclic; `node_test` must be a valid reference.
 unsafe fn child_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut NodeSet) {
     if node.is_null() {
         return;

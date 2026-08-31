@@ -310,6 +310,18 @@ mod tests {
         s.as_ptr() as *const c_char
     }
 
+    /// Parse a simple `name=value` param into a stack element and verify
+    /// the copied fields.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a zeroed `_xsltStylesheet` from `libc::calloc` and is
+    ///   freed with `libc::free`; the `c(...)` byte literals are static
+    ///   NUL-terminated buffers that stay valid for the call.
+    /// - `xsltParseStylesheetParam` heap-copies `name`/`value` into the
+    ///   returned `_xsltStackElem`, which is released with
+    ///   `xsltFreeStackElem`; the `strcmp` reads are bounded by the NUL
+    ///   terminators.
     #[test]
     fn test_parse_simple_param() {
         unsafe {
@@ -327,6 +339,17 @@ mod tests {
         }
     }
 
+    /// Parse a namespaced `{uri}name` param and check the `nameURI`
+    /// splitting.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a zeroed `_xsltStylesheet` from `libc::calloc` freed
+    ///   with `libc::free`; the `c(...)` byte literals are static
+    ///   NUL-terminated buffers valid for the call.
+    /// - The returned element's `name`, `nameURI`, and `select` fields are
+    ///   heap copies released by `xsltFreeStackElem`; the `strcmp` reads
+    ///   are bounded by the NUL terminators.
     #[test]
     fn test_parse_ns_param() {
         unsafe {
@@ -358,6 +381,15 @@ mod tests {
         }
     }
 
+    /// An empty `value` parses to an element whose `select` is an empty
+    /// NUL-terminated string.
+    ///
+    /// # Safety
+    ///
+    /// - `style` is a zeroed `_xsltStylesheet` from `libc::calloc` freed
+    ///   with `libc::free`; the `c(...)` byte literals are static
+    ///   NUL-terminated buffers valid for the call; `xsltFreeStackElem`
+    ///   releases the parsed element.
     #[test]
     fn test_parse_empty_value() {
         unsafe {
@@ -370,6 +402,15 @@ mod tests {
         }
     }
 
+    /// Empty names, NULL pointers, and NULL stylesheets are rejected with
+    /// NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltParseStylesheetParam` rejects NULL `style`/`name`/`value`
+    ///   and empty names before dereferencing them, so passing
+    ///   `ptr::null()` is safe and reads no memory; `style` is a live
+    ///   zeroed stylesheet from `libc::calloc` freed with `libc::free`.
     #[test]
     fn test_parse_invalid_param() {
         unsafe {
@@ -384,6 +425,18 @@ mod tests {
         }
     }
 
+    /// The params array is a NULL-terminated sequence of `(name, value)`
+    /// pairs.
+    ///
+    /// # Safety
+    ///
+    /// - `p1n`/`p1v`/`p2n`/`p2v` are NUL-terminated `libc::malloc` buffers
+    ///   that stay alive through `xsltParseStylesheetParams` and are freed
+    ///   with `libc::free`; the trailing `ptr::null()` terminates the
+    ///   array.
+    /// - `arr` is a live Vec whose backing array stays valid for the call;
+    ///   `style` is a zeroed `_xsltStylesheet` from `libc::calloc` freed
+    ///   with `libc::free`.
     #[test]
     fn test_parse_params_array_pairs() {
         // UPSTREAM-PARITY: the params array is (name, value) pairs.

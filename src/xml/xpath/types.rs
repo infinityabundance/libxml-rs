@@ -384,6 +384,13 @@ impl XPathValue {
 /// For attribute nodes: the attribute value.
 /// For namespace nodes: the namespace URI.
 /// For comment/PI nodes: the content.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid `_xmlNode` that stays alive for the
+///   call; its `children` chain (recursed by `collect_text`) and every
+///   `content`/`name` pointer must be NULL or valid NUL-terminated
+///   strings, and the reachable subtree must be acyclic.
 pub fn node_string_value(node: *mut _xmlNode) -> String {
     if node.is_null() {
         return String::new();

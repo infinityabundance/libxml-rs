@@ -63,3 +63,4 @@ archaeology/libxslt-git/
 
 # Cargo lock is committed for reproducible builds
 # Cargo.lock
+vgcore.*

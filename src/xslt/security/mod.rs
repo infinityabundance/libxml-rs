@@ -266,6 +266,13 @@ mod tests {
 
     /// The security API surface matches the upstream callback contract:
     /// set/get round-trip callbacks and default to NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `prefs` is a valid `XsltSecurityPrefs` returned by
+    ///   `xsltNewSecurityPrefs` (asserted non-NULL) and is released with
+    ///   `xsltFreeSecurityPrefs`; the getter calls only read the callback
+    ///   slots through this live pointer.
     #[test]
     fn test_set_get_callback_roundtrip() {
         unsafe {
@@ -283,12 +290,31 @@ mod tests {
 
     /// Registering a callback per option and reading it back works, and the
     /// upstream WRITE_FILE -> createFile slot quirk is preserved.
+    ///
+    /// # Safety
+    ///
+    /// - `prefs` is a live `XsltSecurityPrefs` from `xsltNewSecurityPrefs`
+    ///   released with `xsltFreeSecurityPrefs`.
+    /// - `forbid` is a valid `unsafe extern "C"` callback whose address is
+    ///   stable within the DSO, so storing it and comparing it by address
+    ///   through `xsltSetSecurityPrefs`/`xsltGetSecurityPrefs` is
+    ///   well-defined; the setters/getters never invoke the callback.
+    ///
+    /// UPSTREAM-PARITY: the round-trip asserts compare the stored callback
+    /// against the registered one by address (the C API contract); on ELF
+    /// platforms a symbol's address is stable within the DSO.
     #[test]
-    // UPSTREAM-PARITY: the round-trip asserts compare the stored callback
-    // against the registered one by address (the C API contract); on ELF
-    // platforms a symbol's address is stable within the DSO.
     #[allow(renamed_and_removed_lints, clippy::fn_address_comparisons)]
     fn test_set_get_registered_callback() {
+        /// Deny-everything security check callback used to exercise the
+        /// register/read-back surface.
+        ///
+        /// # Safety
+        ///
+        /// - The function ignores its raw-pointer arguments (`_sec`,
+        ///   `_ctxt`, `_value`) and never dereferences them, so it is
+        ///   callable with any pointer values passed with C ABI
+        ///   conventions.
         unsafe extern "C" fn forbid(
             _sec: *mut c_void,
             _ctxt: *mut c_void,
@@ -321,6 +347,13 @@ mod tests {
     }
 
     /// Invalid options and NULL prefs return -1 / NULL like upstream.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltSetSecurityPrefs`/`xsltGetSecurityPrefs` return early on a
+    ///   NULL `sec` or an invalid option before dereferencing, so passing
+    ///   `ptr::null_mut()` is safe; `prefs` is a live `XsltSecurityPrefs`
+    ///   from `xsltNewSecurityPrefs` released with `xsltFreeSecurityPrefs`.
     #[test]
     fn test_invalid_option_and_null() {
         unsafe {
@@ -337,6 +370,13 @@ mod tests {
     }
 
     /// Verify that creating and freeing security prefs works.
+    ///
+    /// # Safety
+    ///
+    /// - `prefs` is a pointer returned by `xsltNewSecurityPrefs`
+    ///   (asserted non-NULL) that has not yet been freed, so
+    ///   `xsltFreeSecurityPrefs` reconstructs the box and frees it exactly
+    ///   once.
     #[test]
     fn test_new_free_security_prefs() {
         unsafe {
@@ -347,6 +387,12 @@ mod tests {
     }
 
     /// Verify that freeing a null pointer is a no-op.
+    ///
+    /// # Safety
+    ///
+    /// - `xsltFreeSecurityPrefs` checks for NULL before `Box::from_raw`,
+    ///   so passing `ptr::null_mut()` performs no dereference or
+    ///   deallocation.
     #[test]
     fn test_free_null() {
         unsafe {
