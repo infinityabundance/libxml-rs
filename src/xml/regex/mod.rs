@@ -18,7 +18,6 @@
 )]
 
 use core::ffi::c_void;
-use core::fmt;
 use core::ptr;
 use std::os::raw::c_int;
 
@@ -30,9 +29,11 @@ use crate::abi::types::xmlChar;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Maximum number of states in an NFA.
+#[allow(dead_code)]
 const MAX_NFA_STATES: usize = 1024;
 
 /// Maximum recursion depth for parsing.
+#[allow(dead_code)]
 const MAX_PARSE_DEPTH: usize = 256;
 
 /// Return value for a successful match.
@@ -82,6 +83,7 @@ enum Transition {
     /// Match any character in a range [lo, hi].
     Range(u8, u8),
     /// Match any character in a set.
+    #[allow(dead_code)]
     Set(Vec<u8>),
     /// Match any character NOT in a range.
     NotRange(u8, u8),
@@ -111,7 +113,7 @@ struct NfaState {
 }
 
 impl NfaState {
-    fn new() -> Self {
+    const fn new() -> Self {
         NfaState {
             transitions: Vec::new(),
             is_accept: false,
@@ -175,7 +177,7 @@ struct NfaFragment {
 }
 
 impl NfaFragment {
-    fn new(nfa: Nfa, start: usize, out: Vec<usize>) -> Self {
+    const fn new(nfa: Nfa, start: usize, out: Vec<usize>) -> Self {
         NfaFragment { nfa, start, out }
     }
 }
@@ -223,6 +225,7 @@ fn nfa_range(lo: u8, hi: u8) -> NfaFragment {
 }
 
 /// Create an NFA fragment matching a character set.
+#[allow(dead_code)]
 fn nfa_set(chars: Vec<u8>) -> NfaFragment {
     let mut nfa = Nfa::new();
     let start = nfa.start;
@@ -243,6 +246,7 @@ fn nfa_not_range(lo: u8, hi: u8) -> NfaFragment {
 }
 
 /// Create an NFA fragment matching a NOT set.
+#[allow(dead_code)]
 fn nfa_not_set(chars: Vec<u8>) -> NfaFragment {
     let mut nfa = Nfa::new();
     let start = nfa.start;
@@ -332,7 +336,7 @@ fn union(a: NfaFragment, b: NfaFragment) -> NfaFragment {
 
     // Add all states from a (adjusting indices)
     let a_start = nfa.states.len();
-    let a_size = a.nfa.states.len();
+    let _a_size = a.nfa.states.len();
     for mut state in a.nfa.states {
         for (_, target) in &mut state.transitions {
             *target += a_start;
@@ -373,7 +377,7 @@ fn kleene_star(frag: NfaFragment) -> NfaFragment {
 
     // Add fragment states (adjusted)
     let frag_start = nfa.states.len();
-    let frag_size = frag.nfa.states.len();
+    let _frag_size = frag.nfa.states.len();
     for mut state in frag.nfa.states {
         for (_, target) in &mut state.transitions {
             *target += frag_start;
@@ -398,7 +402,7 @@ fn kleene_star(frag: NfaFragment) -> NfaFragment {
 /// One or more repetitions: `a+`.
 fn plus(frag: NfaFragment) -> NfaFragment {
     let out_orig = frag.out.clone();
-    let frag_start_orig = frag.start;
+    let _frag_start_orig = frag.start;
 
     let mut nfa = Nfa::new();
     let new_start = nfa.start;
@@ -460,6 +464,7 @@ fn optional(frag: NfaFragment) -> NfaFragment {
 
 /// Token types for the regex parser.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 enum RegexToken {
     /// A literal character
     Char(u8),
@@ -488,6 +493,7 @@ enum RegexToken {
     /// Comma in quantifier
     Comma,
     /// Number in quantifier
+    #[allow(dead_code)]
     Number(u32),
     /// Escape sequence
     Escape(u8),
@@ -512,7 +518,7 @@ struct RegexParser<'a> {
 }
 
 impl<'a> RegexParser<'a> {
-    fn new(input: &'a [u8]) -> Self {
+    const fn new(input: &'a [u8]) -> Self {
         RegexParser {
             input,
             pos: 0,
@@ -535,6 +541,7 @@ impl<'a> RegexParser<'a> {
     }
 
     /// Skip whitespace in the pattern.
+    #[allow(dead_code)]
     fn skip_whitespace(&mut self) {
         while let Some(ch) = self.peek() {
             if ch == b' ' || ch == b'\t' || ch == b'\n' || ch == b'\r' {
@@ -582,7 +589,7 @@ impl<'a> RegexParser<'a> {
     }
 
     /// Push back a token as lookahead.
-    fn unscan(&mut self, token: RegexToken) {
+    const fn unscan(&mut self, token: RegexToken) {
         self.lookahead = Some(token);
     }
 
@@ -968,7 +975,7 @@ impl<'a> RegexParser<'a> {
         }
 
         // Merge overlapping/consecutive ranges
-        combined_ranges.sort_by(|a, b| a.0.cmp(&b.0));
+        combined_ranges.sort_by_key(|a| a.0);
         let mut merged: Vec<(u8, u8)> = Vec::new();
         for (lo, hi) in combined_ranges {
             if let Some(last) = merged.last_mut() {
@@ -1026,7 +1033,7 @@ fn matches_transition(c: u8, trans: &Transition) -> bool {
 }
 
 /// Check if a character matches a predefined class.
-fn matches_predefined(c: u8, class: PredefinedClass) -> bool {
+const fn matches_predefined(c: u8, class: PredefinedClass) -> bool {
     match class {
         PredefinedClass::Digit => c >= b'0' && c <= b'9',
         PredefinedClass::NotDigit => c < b'0' || c > b'9',
@@ -1065,10 +1072,11 @@ fn epsilon_closure(nfa: &Nfa, states: &[usize]) -> Vec<usize> {
         result.push(s);
 
         for (cond, target) in &nfa.states[s].transitions {
-            if matches!(cond, Transition::Epsilon) {
-                if *target < nfa.states.len() && !visited[*target] {
-                    stack.push(*target);
-                }
+            if matches!(cond, Transition::Epsilon)
+                && *target < nfa.states.len()
+                && !visited[*target]
+            {
+                stack.push(*target);
             }
         }
     }
@@ -1155,10 +1163,8 @@ fn move_on_char(nfa: &Nfa, states: &[usize], c: u8, is_start: bool, is_end: bool
                 Transition::Epsilon => continue,
                 Transition::Anchor(_) => continue, // already handled above
                 _ => {
-                    if matches_transition(c, cond) {
-                        if !next.contains(target) {
-                            next.push(*target);
-                        }
+                    if matches_transition(c, cond) && !next.contains(target) {
+                        next.push(*target);
                     }
                 }
             }
@@ -1256,6 +1262,7 @@ fn nfa_exec(nfa: &Nfa, input: &[u8]) -> c_int {
 /// # UPSTREAM-PARITY
 ///
 /// Corresponds to `xmlRegexpPtr` / `_xmlRegexp` in libxml2.
+#[derive(Debug)]
 #[repr(C)]
 pub struct XmlRegexp {
     /// The original pattern string (null-terminated xmlChar*).
@@ -1434,7 +1441,7 @@ fn is_deterministic(nfa: &Nfa) -> bool {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// xmlChar* helper: get length of null-terminated xmlChar string.
-unsafe fn xml_strlen(s: *const xmlChar) -> usize {
+const unsafe fn xml_strlen(s: *const xmlChar) -> usize {
     if s.is_null() {
         return 0;
     }
@@ -1556,7 +1563,7 @@ pub unsafe extern "C" fn xmlRegexpExec(compiled: *const XmlRegexp, value: *const
 ///
 /// - `compiled` must be a valid pointer to an XmlRegexp, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRegexpIsDeterministic(compiled: *const XmlRegexp) -> c_int {
+pub const unsafe extern "C" fn xmlRegexpIsDeterministic(compiled: *const XmlRegexp) -> c_int {
     if compiled.is_null() {
         return 0;
     }
@@ -1699,6 +1706,7 @@ pub unsafe extern "C" fn xmlRegFreeRegexp(regexp: *mut XmlRegexp) {
 /// # UPSTREAM-PARITY
 ///
 /// Corresponds to `xmlRegExecCtxtPtr` / `_xmlRegExecCtxt` in libxml2.
+#[derive(Debug)]
 #[repr(C)]
 pub struct RegExecCtxt {
     /// The compiled regex being executed.
@@ -1866,7 +1874,8 @@ mod tests {
     /// preventing allocator mismatch crashes.
     fn to_xml_str(s: &[u8]) -> *mut xmlChar {
         let len = s.len();
-        let ptr = unsafe { xmlMallocImpl((len + 1) * core::mem::size_of::<xmlChar>()) } as *mut xmlChar;
+        let ptr =
+            unsafe { xmlMallocImpl((len + 1) * core::mem::size_of::<xmlChar>()) } as *mut xmlChar;
         if ptr.is_null() {
             return ptr::null_mut();
         }

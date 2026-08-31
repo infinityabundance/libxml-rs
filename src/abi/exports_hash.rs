@@ -46,7 +46,7 @@ use crate::xml::hash::{
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Byte-wise comparison of two null-terminated xmlChar strings (null-safe).
-unsafe fn c_str_eq(a: *const xmlChar, b: *const xmlChar) -> bool {
+const unsafe fn c_str_eq(a: *const xmlChar, b: *const xmlChar) -> bool {
     if a.is_null() && b.is_null() {
         return true;
     }
@@ -244,7 +244,7 @@ pub unsafe extern "C" fn xmlHashCopySafe(
         );
     }
 
-    let new_table = unsafe { hash_create(0) };
+    let new_table = { hash_create(0) };
     if new_table.is_null() {
         return ptr::null_mut();
     }
@@ -562,7 +562,7 @@ fn register_owned(dict: *mut c_void, s: *const xmlChar) {
     DICT_OWNED
         .lock()
         .entry(dict as usize)
-        .or_insert_with(HashSet::new)
+        .or_default()
         .insert(s as usize);
 }
 
@@ -640,7 +640,7 @@ pub unsafe extern "C" fn xmlDictOwns(dict: *mut c_void, str: *const xmlChar) -> 
     let owned = DICT_OWNED
         .lock()
         .get(&(dict as usize))
-        .map_or(false, |set| set.contains(&(str as usize)));
+        .is_some_and(|set| set.contains(&(str as usize)));
     if owned {
         1
     } else {
@@ -659,6 +659,6 @@ pub unsafe extern "C" fn xmlDictOwns(dict: *mut c_void, str: *const xmlChar) -> 
 /// Upstream deprecated this function in 2.13 when the global dictionary was
 /// removed; it is a no-op (takes no arguments) in the oracle 2.15 headers.
 #[no_mangle]
-pub unsafe extern "C" fn xmlDictCleanup() {
+pub const unsafe extern "C" fn xmlDictCleanup() {
     // No-op: there is no global dictionary to clean up (upstream 2.13+).
 }

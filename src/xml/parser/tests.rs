@@ -31,10 +31,7 @@ fn test_parse_empty_document() {
         let xml = b"<?xml version=\"1.0\"?>\n<root/>\n";
         let doc = parse_bytes(xml);
         assert!(!doc.is_null(), "should parse empty doc");
-        assert!(
-            (*doc).children != ptr::null_mut(),
-            "should have root element"
-        );
+        assert!(!(*doc).children.is_null(), "should have root element");
         let root = (*doc).children;
         assert_eq!(
             (*root).type_,
@@ -83,7 +80,7 @@ fn test_parse_element_with_attributes() {
             crate::xml::string::xmlstr_to_bytes((*(*attr).children).content as *const xmlChar);
         assert_eq!(attr_val, b"123");
         // Second attribute: name="test"
-        let attr2 = (*attr).next as *mut _xmlAttr;
+        let attr2 = (*attr).next;
         assert!(!attr2.is_null(), "should have second attribute");
         let attr2_name = crate::xml::string::xmlstr_to_bytes((*attr2).name as *const xmlChar);
         assert_eq!(attr2_name, b"name");
@@ -222,7 +219,7 @@ fn test_parse_invalid_xml() {
         let input = helpers::input_from_memory(xml.as_ptr() as *const i8, xml.len() as i32);
         helpers::setup_parser_input(ctxt, input);
         // Without recovery mode, this should fail
-        let ret = helpers::parse_document(ctxt);
+        let _ret = helpers::parse_document(ctxt);
         let doc = (*ctxt).myDoc;
         helpers::free_parser_ctxt(ctxt);
         // Should fail (ret != 0) or doc may be NULL

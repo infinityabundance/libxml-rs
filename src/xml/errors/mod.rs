@@ -29,7 +29,6 @@
 //! Variadic message formatting will be enhanced in Phase 2+.
 
 use core::ffi::c_void;
-use core::fmt::Write;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
@@ -103,7 +102,7 @@ pub fn get_last_error() -> *mut _xmlError {
 /// # SAFETY
 ///
 /// - `from` and `to` must be valid pointers to `_xmlError` structs, or NULL.
-pub unsafe fn copy_error(from: *const _xmlError, to: *mut _xmlError) -> c_int {
+pub const unsafe fn copy_error(from: *const _xmlError, to: *mut _xmlError) -> c_int {
     if from.is_null() || to.is_null() {
         return -1;
     }
@@ -125,7 +124,7 @@ pub unsafe fn copy_error(from: *const _xmlError, to: *mut _xmlError) -> c_int {
 /// # SAFETY
 ///
 /// - `err` must be a valid pointer to `_xmlError`, or NULL.
-pub unsafe fn reset_error(err: *mut _xmlError) {
+pub const unsafe fn reset_error(err: *mut _xmlError) {
     if err.is_null() {
         return;
     }
@@ -344,6 +343,7 @@ pub fn format_error_message(
 /// - `msg` must be a valid C string or NULL.
 /// - `file` must be a valid C string or NULL.
 /// - `str1`, `str2`, `str3`: error-related strings (may be NULL).
+#[allow(clippy::too_many_arguments)]
 pub unsafe fn raise_error(
     ctxt: *mut c_void,
     _ctxt2: *mut c_void,
@@ -359,7 +359,7 @@ pub unsafe fn raise_error(
     str2: *const c_char,
     str3: *const c_char,
     int1: c_int,
-    int2: c_int,
+    _int2: c_int,
     msg: *const c_char,
 ) {
     // Format the error message
@@ -555,6 +555,7 @@ unsafe fn ch_call2(
 ///
 /// - `file` and `message` must be valid C strings or NULL.
 /// - `source_window` bytes must be valid for the duration of the call.
+#[allow(clippy::too_many_arguments)]
 #[cfg(target_arch = "x86_64")]
 unsafe fn format_error_streamed(
     domain: c_int,
@@ -577,7 +578,7 @@ unsafe fn format_error_streamed(
         ch_call2(
             handler,
             data,
-            b"%s:%d: \0".as_ptr() as *const c_char,
+            c"%s:%d: ".as_ptr() as *const c_char,
             file as usize,
             line as usize,
         );
@@ -592,7 +593,7 @@ unsafe fn format_error_streamed(
         ch_call1(
             handler,
             data,
-            b"Entity: line %d: \0".as_ptr() as *const c_char,
+            c"Entity: line %d: ".as_ptr() as *const c_char,
             line as usize,
         );
     }
@@ -658,13 +659,13 @@ unsafe fn format_error_streamed(
     // bytes at the error position, only for XML_ERR_INVALID_ENCODING).
     if code == XML_ERR_INVALID_ENCODING {
         if let Some(bytes) = enc_bytes {
-            ch_call0(handler, data, b"Bytes:\0".as_ptr() as *const c_char);
+            ch_call0(handler, data, c"Bytes:".as_ptr() as *const c_char);
             for b in bytes {
                 // " 0x%02X"
                 let hex = format!(" 0x{:02X}\0", b);
                 ch_call0(handler, data, hex.as_ptr() as *const c_char);
             }
-            ch_call0(handler, data, b"\n\0".as_ptr() as *const c_char);
+            ch_call0(handler, data, c"\n".as_ptr() as *const c_char);
         }
     }
 
@@ -675,7 +676,7 @@ unsafe fn format_error_streamed(
         ch_call1(
             handler,
             data,
-            b"%s\n\0".as_ptr() as *const c_char,
+            c"%s\n".as_ptr() as *const c_char,
             win.as_ptr() as usize,
         );
         let mut caret_line = Vec::with_capacity(caret + 2);
@@ -687,7 +688,7 @@ unsafe fn format_error_streamed(
         ch_call1(
             handler,
             data,
-            b"%s\n\0".as_ptr() as *const c_char,
+            c"%s\n".as_ptr() as *const c_char,
             caret_line.as_ptr() as usize,
         );
     }
@@ -695,7 +696,7 @@ unsafe fn format_error_streamed(
 
 /// How a raise delivers to the generic side of the error system (upstream
 /// `xmlVRaiseError` channel selection, error.c 2.15).
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum GenericDelivery {
     /// Custom SAX channel: single call `channel(ctx, msg)`.
     Custom(xmlGenericErrorFunc, *mut c_void),
@@ -727,6 +728,7 @@ pub enum GenericDelivery {
 /// - `ctxt` may be NULL.
 /// - `msg`, `file`, `str1`, `str2`, `str3` must be valid C strings or NULL.
 /// - `source_window` bytes must be valid for the duration of the call.
+#[allow(clippy::too_many_arguments)]
 pub unsafe fn raise_error_streamed(
     ctxt: *mut c_void,
     domain: c_int,
@@ -803,6 +805,7 @@ pub unsafe fn raise_error_streamed(
 }
 
 /// x86-64 streamed raise (SysV va_list channel). See `raise_error_streamed`.
+#[allow(clippy::too_many_arguments)]
 #[cfg(target_arch = "x86_64")]
 unsafe fn raise_error_streamed_x86_64(
     ctxt: *mut c_void,
@@ -920,6 +923,25 @@ pub unsafe extern "C" fn xmlParserError(ctx: *mut c_void, msg: *const c_char) {
 }
 
 /// Default SAX v1 warning handler — `void xmlParserWarning(void *ctx, const char *msg, ...)`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `msg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserWarning(ctx: *mut c_void, msg: *const c_char) {
     let _ = ctx;
@@ -927,6 +949,25 @@ pub unsafe extern "C" fn xmlParserWarning(ctx: *mut c_void, msg: *const c_char) 
 }
 
 /// Default validity error handler — `void xmlParserValidityError(void *ctx, const char *msg, ...)`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `msg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserValidityError(ctx: *mut c_void, msg: *const c_char) {
     let _ = ctx;
@@ -934,6 +975,25 @@ pub unsafe extern "C" fn xmlParserValidityError(ctx: *mut c_void, msg: *const c_
 }
 
 /// Default validity warning handler — `void xmlParserValidityWarning(void *ctx, const char *msg, ...)`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `msg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserValidityWarning(ctx: *mut c_void, msg: *const c_char) {
     let _ = ctx;

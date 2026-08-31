@@ -53,6 +53,7 @@ struct ExtModule {
     init_func: Option<xsltExtInitFunction>,
     shutdown_func: Option<xsltExtShutdownFunction>,
     style_init_func: Option<xsltStyleExtInitFunction>,
+    #[allow(dead_code)]
     style_shutdown_func: Option<xsltStyleExtShutdownFunction>,
 }
 
@@ -832,7 +833,7 @@ pub unsafe extern "C" fn xsltRegisterAllExtras() {
     // (process_exsl_document); registering the module URI makes
     // xsltCheckExtURI agree with upstream.
     xsltRegisterExtModule(
-        b"http://exslt.org/common\0".as_ptr() as *const xmlChar,
+        c"http://exslt.org/common".as_ptr() as *const xmlChar,
         None,
         None,
     );
@@ -863,10 +864,8 @@ pub unsafe extern "C" fn xsltRegisterExtras(ctxt: *mut _xsltTransformContext) {
 /// void xsltRegisterAllElement(xsltTransformContextPtr ctxt);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xsltRegisterAllElement(ctxt: *mut _xsltTransformContext) {
-    if ctxt.is_null() {
-        return;
-    }
+pub const unsafe extern "C" fn xsltRegisterAllElement(ctxt: *mut _xsltTransformContext) {
+    if ctxt.is_null() {}
     // The engine dispatches EXSLT elements natively (process_exsl_document
     // and the exslt module registrations); nothing to add to the context's
     // per-context registration lists.
@@ -883,7 +882,7 @@ pub unsafe extern "C" fn xsltRegisterAllElement(ctxt: *mut _xsltTransformContext
 #[no_mangle]
 pub unsafe extern "C" fn xsltRegisterTestModule() {
     xsltRegisterExtModule(
-        b"http://xmlsoft.org/XSLT/\0".as_ptr() as *const xmlChar,
+        c"http://xmlsoft.org/XSLT/".as_ptr() as *const xmlChar,
         None,
         None,
     );
@@ -893,17 +892,25 @@ pub unsafe extern "C" fn xsltRegisterTestModule() {
 
 /// Stylesheet extension-prefix registration (upstream style->extInfos hash
 /// entries; the candidate uses a linked list).
+#[derive(Debug)]
 #[repr(C)]
 pub struct ExtPrefixEntry {
+    /// Next entry in the linked list.
     pub next: *mut ExtPrefixEntry,
+    /// The extension prefix mapped to `uri`.
     pub prefix: *mut c_char,
+    /// The namespace URI the prefix is registered for.
     pub uri: *mut c_char,
 }
 
 /// Per-context / per-style extension data record (URI -> init data).
+#[derive(Debug)]
 #[repr(C)]
 pub struct ExtDataEntry {
+    /// Next entry in the linked list.
     pub next: *mut ExtDataEntry,
+    /// The namespace URI of the extension module.
     pub uri: *mut c_char,
+    /// Module-specific initialization data.
     pub data: *mut c_void,
 }

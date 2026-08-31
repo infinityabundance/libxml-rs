@@ -31,7 +31,7 @@ pub unsafe fn xsltCompileAttrSet(
         return ptr::null_mut();
     }
     // Get the name attribute.
-    let name = crate::xml::tree::get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = crate::xml::tree::get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return ptr::null_mut();
     }
@@ -44,7 +44,7 @@ pub unsafe fn xsltCompileAttrSet(
     (*set).inst = inst;
     (*set).style = style;
     // Look up the namespace of the name attribute (QName may have a prefix).
-    let ns = crate::xml::tree::get_prop(inst, b"xmlns\0".as_ptr() as *const xmlChar);
+    let ns = crate::xml::tree::get_prop(inst, c"xmlns".as_ptr() as *const xmlChar);
     (*set).ns = ns; // may be null
                     // Prepend to the stylesheet's attribute set hash chain.
     (*set).next = (*style).attributeSets as *mut _xsltAttrSet;
@@ -147,7 +147,7 @@ pub unsafe fn xsltApplyAttrSets(
 /// - All pointers must be valid.
 unsafe fn apply_attr_set_content(
     ctxt: *mut _xsltTransformContext,
-    node: *mut _xmlNode,
+    _node: *mut _xmlNode,
     inst: *mut _xmlNode,
 ) {
     if inst.is_null() {

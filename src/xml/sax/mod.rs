@@ -7,4 +7,3 @@ pub(crate) mod default;
 pub(crate) mod dispatch;
 
 pub(crate) use dispatch::xmlSAX2InitDefaultSAXHandler;
-pub(crate) use dispatch::SaxDispatcher;

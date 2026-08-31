@@ -95,11 +95,13 @@ struct HttpHandle(u64);
 
 /// Side registry for live FTP contexts, keyed by handle address. Mirrors
 /// `struct xmlNanoFTPCtxt` (nanoftp.c); transport fields are faked.
-static FTP_CTXTS: Lazy<Mutex<HashMap<usize, NanoFtpState>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static FTP_CTXTS: Lazy<Mutex<HashMap<usize, NanoFtpState>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Side registry for live HTTP contexts, keyed by handle address. Mirrors
 /// `struct xmlNanoHTTPCtxt` (nanohttp.c); the zlib members are omitted.
-static HTTP_CTXTS: Lazy<Mutex<HashMap<usize, NanoHttpState>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static HTTP_CTXTS: Lazy<Mutex<HashMap<usize, NanoHttpState>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Module-level FTP proxy configuration (upstream static `proxy` globals in
 /// nanoftp.c). Inert in the offline build: it is stored for API shape but no
@@ -257,7 +259,7 @@ fn opt_cstring(p: *const c_char) -> Option<CString> {
 }
 
 /// Bytes of a NULL-terminated C string (`&[]` for NULL).
-unsafe fn cstr_bytes<'a>(p: *const c_char) -> &'a [u8] {
+const unsafe fn cstr_bytes<'a>(p: *const c_char) -> &'a [u8] {
     if p.is_null() {
         return &[];
     }
@@ -279,7 +281,7 @@ fn starts_with_ci(haystack: &[u8], needle: &[u8]) -> bool {
         && haystack[..needle.len()]
             .iter()
             .zip(needle.iter())
-            .all(|(h, n)| h.to_ascii_lowercase() == n.to_ascii_lowercase())
+            .all(|(h, n)| h.eq_ignore_ascii_case(n))
 }
 
 /// Result of the minimal URL scan, replicating the fields upstream extracts
@@ -307,7 +309,7 @@ fn parse_url(url: &str) -> ParsedUrl {
         }
         None => return out,
     };
-    let (authority, tail) = match rest.find(|c| c == '/' || c == '?') {
+    let (authority, tail) = match rest.find(['/', '?']) {
         Some(i) => rest.split_at(i),
         None => (rest, ""),
     };
@@ -619,7 +621,10 @@ pub unsafe extern "C" fn xmlNanoFTPQuit(ctx: *mut c_void) -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn xmlNanoFTPScanProxy(URL: *const c_char) {
     let mut proxy = FTP_PROXY.lock();
-    *proxy = FtpProxyCfg { port: 0, ..FtpProxyCfg::default() };
+    *proxy = FtpProxyCfg {
+        port: 0,
+        ..FtpProxyCfg::default()
+    };
     if URL.is_null() {
         return;
     }
@@ -1051,7 +1056,10 @@ pub unsafe extern "C" fn xmlNanoHTTPCleanup() {
 #[no_mangle]
 pub unsafe extern "C" fn xmlNanoHTTPScanProxy(URL: *const c_char) {
     let mut proxy = HTTP_PROXY.lock();
-    *proxy = HttpProxyCfg { port: 0, ..HttpProxyCfg::default() };
+    *proxy = HttpProxyCfg {
+        port: 0,
+        ..HttpProxyCfg::default()
+    };
     if URL.is_null() {
         return;
     }
@@ -1078,7 +1086,10 @@ pub unsafe extern "C" fn xmlNanoHTTPScanProxy(URL: *const c_char) {
 /// contentType is set to NULL first (upstream). Since no HTTP context can
 /// be created offline, this always returns NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlNanoHTTPOpen(URL: *const c_char, contentType: *mut *mut c_char) -> *mut c_void {
+pub unsafe extern "C" fn xmlNanoHTTPOpen(
+    URL: *const c_char,
+    contentType: *mut *mut c_char,
+) -> *mut c_void {
     if !contentType.is_null() {
         unsafe { *contentType = ptr::null_mut() };
     }
@@ -1107,7 +1118,15 @@ pub unsafe extern "C" fn xmlNanoHTTPOpenRedir(
     if !redir.is_null() {
         unsafe { *redir = ptr::null_mut() };
     }
-    xmlNanoHTTPMethodRedir(URL, ptr::null(), ptr::null(), contentType, redir, ptr::null(), 0)
+    xmlNanoHTTPMethodRedir(
+        URL,
+        ptr::null(),
+        ptr::null(),
+        contentType,
+        redir,
+        ptr::null(),
+        0,
+    )
 }
 
 /// Open a connection via HTTP using the given method, headers and input.
@@ -1131,7 +1150,15 @@ pub unsafe extern "C" fn xmlNanoHTTPMethod(
     headers: *const c_char,
     ilen: c_int,
 ) -> *mut c_void {
-    xmlNanoHTTPMethodRedir(URL, method, input, contentType, ptr::null_mut(), headers, ilen)
+    xmlNanoHTTPMethodRedir(
+        URL,
+        method,
+        input,
+        contentType,
+        ptr::null_mut(),
+        headers,
+        ilen,
+    )
 }
 
 /// Open a connection via HTTP using the given method, tracking redirects.
@@ -1278,7 +1305,10 @@ pub unsafe extern "C" fn xmlNanoHTTPReturnCode(ctx: *mut c_void) -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn xmlNanoHTTPAuthHeader(ctx: *mut c_void) -> *const c_char {
     let reg = HTTP_CTXTS.lock();
-    match reg.get(&(ctx as usize)).and_then(|st| st.auth_header.as_ref()) {
+    match reg
+        .get(&(ctx as usize))
+        .and_then(|st| st.auth_header.as_ref())
+    {
         Some(h) => h.as_ptr(),
         None => ptr::null(),
     }
@@ -1342,7 +1372,10 @@ pub unsafe extern "C" fn xmlNanoHTTPEncoding(ctx: *mut c_void) -> *const c_char 
 #[no_mangle]
 pub unsafe extern "C" fn xmlNanoHTTPMimeType(ctx: *mut c_void) -> *const c_char {
     let reg = HTTP_CTXTS.lock();
-    match reg.get(&(ctx as usize)).and_then(|st| st.mime_type.as_ref()) {
+    match reg
+        .get(&(ctx as usize))
+        .and_then(|st| st.mime_type.as_ref())
+    {
         Some(m) => m.as_ptr(),
         None => ptr::null(),
     }
@@ -1444,7 +1477,10 @@ pub unsafe extern "C" fn xmlIOHTTPOpen(filename: *const c_char) -> *mut c_void {
 ///
 /// Upstream 2.13+: "Support for HTTP POST has been removed. Returns NULL."
 #[no_mangle]
-pub unsafe extern "C" fn xmlIOHTTPOpenW(post_uri: *const c_char, compression: c_int) -> *mut c_void {
+pub const unsafe extern "C" fn xmlIOHTTPOpenW(
+    post_uri: *const c_char,
+    compression: c_int,
+) -> *mut c_void {
     let _ = (post_uri, compression);
     ptr::null_mut()
 }

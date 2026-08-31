@@ -57,11 +57,17 @@ pub mod strings;
 
 /// EXSLT namespace URIs.
 pub const EXSLT_NS_COMMON: &str = "http://exslt.org/common";
+/// Math module namespace (`math:max`, `math:min`, `math:sin`, ...).
 pub const EXSLT_NS_MATH: &str = "http://exslt.org/math";
+/// Sets module namespace (`set:difference`, `set:distinct`, ...).
 pub const EXSLT_NS_SETS: &str = "http://exslt.org/sets";
+/// Strings module namespace (`str:concat`, `str:padding`, ...).
 pub const EXSLT_NS_STRINGS: &str = "http://exslt.org/strings";
+/// Dynamic module namespace (`dyn:element`, `dyn:evaluate`, ...).
 pub const EXSLT_NS_DYNAMIC: &str = "http://exslt.org/dynamic";
+/// Functions module namespace (`func:function`, `func:result`, ...).
 pub const EXSLT_NS_FUNCTIONS: &str = "http://exslt.org/functions";
+/// Dates-and-times module namespace (`date:date`, `date:format-date`, ...).
 pub const EXSLT_NS_DATES: &str = "http://exslt.org/dates-and-times";
 
 /// The XPath function signature used throughout the EXSLT modules.
@@ -202,7 +208,7 @@ pub extern "C" fn exsltDynRegister() {
 /// `exsltCryptoRegister` — register the EXSLT crypto module. The candidate
 /// has no crypto module; upstream returns void, so this is a no-op.
 #[no_mangle]
-pub extern "C" fn exsltCryptoRegister() {}
+pub const extern "C" fn exsltCryptoRegister() {}
 
 /// `exsltDateXpathCtxtRegister(ctxt, prefix)` — register the dates module
 /// on a specific XPath context (upstream date.c). The candidate's registry

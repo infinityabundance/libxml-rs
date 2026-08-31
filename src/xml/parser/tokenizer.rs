@@ -125,7 +125,7 @@ impl XmlTokenizer {
     }
 
     /// Create a new tokenizer over the given input stack.
-    pub fn new(input: InputStack) -> Self {
+    pub const fn new(input: InputStack) -> Self {
         XmlTokenizer {
             input,
             push_back: None,
@@ -134,16 +134,18 @@ impl XmlTokenizer {
     }
 
     /// Get a mutable reference to the input stack.
-    pub fn input_mut(&mut self) -> &mut InputStack {
+    #[allow(dead_code)]
+    pub const fn input_mut(&mut self) -> &mut InputStack {
         &mut self.input
     }
 
     /// Get a reference to the input stack.
-    pub fn input(&self) -> &InputStack {
+    pub const fn input(&self) -> &InputStack {
         &self.input
     }
 
     /// Consume the tokenizer and return the input stack.
+    #[allow(dead_code)]
     pub fn into_input(self) -> InputStack {
         self.input
     }
@@ -154,6 +156,7 @@ impl XmlTokenizer {
     }
 
     /// Pop the current input from the stack.
+    #[allow(dead_code)]
     pub fn pop_input(&mut self) -> Option<InputBuffer> {
         self.input.pop()
     }
@@ -166,6 +169,7 @@ impl XmlTokenizer {
     // ── Error recording ─────────────────────────────────────────────────────
 
     /// Record a parser error at the current input position.
+    #[allow(clippy::too_many_arguments)]
     pub fn record_error(
         &mut self,
         domain: c_int,
@@ -185,6 +189,7 @@ impl XmlTokenizer {
     }
 
     /// Record a parser error at an arbitrary byte position (token start).
+    #[allow(clippy::too_many_arguments)]
     pub fn record_error_at(
         &mut self,
         domain: c_int,
@@ -460,7 +465,7 @@ impl XmlTokenizer {
     /// recorded with upstream codes/levels at the exact detection position.
     fn scan_start_tag(&mut self) -> XmlToken {
         let name = self.scan_name();
-        let mut attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        let attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         let mut empty = false;
         let mut unterminated = false;
         // Byte offset of the tag's closing '>'/'/' (upstream raises the
@@ -887,7 +892,7 @@ impl XmlTokenizer {
         if self
             .input
             .peek_char()
-            .map_or(false, |c| c.is_ascii_whitespace())
+            .is_some_and(|c| c.is_ascii_whitespace())
         {
             self.input.read_char();
         }
@@ -900,7 +905,7 @@ impl XmlTokenizer {
             }
             if self.input.peek_char() == Some('?') {
                 // Peek for '>'
-                let saved = self.input.current().pos();
+                let _saved = self.input.current().pos();
                 self.input.read_char();
                 if self.input.peek_char() == Some('>') {
                     self.input.read_char();
@@ -1244,9 +1249,7 @@ impl XmlTokenizer {
                     content.push(b'[');
                 }
                 Some(']') => {
-                    if depth > 0 {
-                        depth -= 1;
-                    }
+                    depth = depth.saturating_sub(1);
                     self.input.read_char();
                     content.push(b']');
                 }
@@ -1611,7 +1614,7 @@ fn utf8_char_len(data: &[u8]) -> usize {
 
 /// Whether a byte is a valid XML Name character (upstream `IS_CHAR`-style
 /// byte check used by the entity-name scan).
-fn is_name_byte(b: u8) -> bool {
+const fn is_name_byte(b: u8) -> bool {
     b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' || b == b':' || b >= 0x80
 }
 

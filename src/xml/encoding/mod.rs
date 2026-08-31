@@ -33,18 +33,19 @@ use crate::abi::callbacks::{
     xmlCharEncConvCtxtDtor, xmlCharEncConvFunc, xmlCharEncConvImpl, xmlCharEncodingInputFunc,
     xmlCharEncodingOutputFunc,
 };
-use crate::abi::constants::XML_MAX_ENCODING_NAME_LEN;
 use crate::abi::structs::{
     _xmlBuffer, _xmlCharEncodingHandler, EncodingInputUnion, EncodingOutputUnion,
 };
-use crate::abi::types::{xmlChar, xmlCharEncoding, xmlCharPtr};
+use crate::abi::types::{xmlChar, xmlCharEncoding};
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
 /// Maximum bytes needed per character for any supported encoding.
+#[allow(dead_code)]
 const MAX_CHAR_BYTES: usize = 6;
 
 /// UTF-8 BOM bytes.
+#[allow(dead_code)]
 const UTF8_BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
 
 /// UTF-16LE BOM bytes.
@@ -83,6 +84,7 @@ static ENCODING_INIT_MUTEX: parking_lot::Mutex<()> = parking_lot::Mutex::new(())
 ///
 /// Returns `XML_CHAR_ENCODING_NONE` if no BOM is present, or if `data` is empty.
 /// Otherwise returns the matching encoding enum value.
+#[allow(dead_code)]
 pub(crate) fn detect_encoding_from_bom(data: &[u8]) -> xmlCharEncoding {
     if data.len() >= 3 && data[0..3] == UTF8_BOM {
         xmlCharEncoding::XML_CHAR_ENCODING_UTF8
@@ -99,6 +101,7 @@ pub(crate) fn detect_encoding_from_bom(data: &[u8]) -> xmlCharEncoding {
 ///
 /// Scans for `<?xml ... encoding="..." ?>` and returns the encoding name
 /// as a byte vector (lowercased), or `None` if not found.
+#[allow(dead_code)]
 pub(crate) fn detect_encoding_from_declaration(data: &[u8]) -> Option<Vec<u8>> {
     // Look for "<?xml" at the start (possibly after BOM)
     let start = if data.len() >= 3 && data[0..3] == UTF8_BOM {
@@ -215,7 +218,7 @@ pub(crate) fn encoding_from_name(name: &[u8]) -> xmlCharEncoding {
 /// Get the canonical name for an encoding as a byte slice.
 ///
 /// Returns `None` for `XML_CHAR_ENCODING_ERROR` and `XML_CHAR_ENCODING_NONE`.
-pub(crate) fn encoding_name(enc: xmlCharEncoding) -> Option<&'static [u8]> {
+pub(crate) const fn encoding_name(enc: xmlCharEncoding) -> Option<&'static [u8]> {
     match enc {
         xmlCharEncoding::XML_CHAR_ENCODING_UTF8 => Some(b"UTF-8" as &[u8]),
         xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE => Some(b"UTF-16LE" as &[u8]),
@@ -250,7 +253,8 @@ pub(crate) fn encoding_name(enc: xmlCharEncoding) -> Option<&'static [u8]> {
 /// Check if a byte sequence is valid UTF-8.
 ///
 /// Returns `true` if the entire slice is valid UTF-8, `false` otherwise.
-pub(crate) fn utf8_valid(data: &[u8]) -> bool {
+#[allow(dead_code)]
+pub(crate) const fn utf8_valid(data: &[u8]) -> bool {
     core::str::from_utf8(data).is_ok()
 }
 
@@ -265,14 +269,12 @@ pub(crate) fn utf8_valid(data: &[u8]) -> bool {
 /// - `#x10000` – `#x10FFFF`
 ///
 /// Excludes surrogate halves (`#xD800` – `#xDFFF`) and `#xFFFE`/`#xFFFF`.
-pub(crate) fn is_valid_xml_char(cp: u32) -> bool {
-    match cp {
-        0x9 | 0xA | 0xD => true,
-        0x20..=0xD7FF => true,
-        0xE000..=0xFFFD => true,
-        0x10000..=0x10FFFF => true,
-        _ => false,
-    }
+#[allow(dead_code)]
+pub(crate) const fn is_valid_xml_char(cp: u32) -> bool {
+    matches!(
+        cp,
+        0x9 | 0xA | 0xD | 0x20..=0xD7FF | 0xE000..=0xFFFD | 0x10000..=0x10FFFF
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -281,7 +283,7 @@ pub(crate) fn is_valid_xml_char(cp: u32) -> bool {
 
 /// Decode a single UTF-16LE code unit from two bytes.
 #[inline]
-fn read_utf16le_unit(data: &[u8]) -> Option<u16> {
+const fn read_utf16le_unit(data: &[u8]) -> Option<u16> {
     if data.len() < 2 {
         return None;
     }
@@ -290,7 +292,7 @@ fn read_utf16le_unit(data: &[u8]) -> Option<u16> {
 
 /// Decode a single UTF-16BE code unit from two bytes.
 #[inline]
-fn read_utf16be_unit(data: &[u8]) -> Option<u16> {
+const fn read_utf16be_unit(data: &[u8]) -> Option<u16> {
     if data.len() < 2 {
         return None;
     }
@@ -300,7 +302,7 @@ fn read_utf16be_unit(data: &[u8]) -> Option<u16> {
 /// Encode a Unicode codepoint as UTF-8 bytes.
 ///
 /// Returns the number of bytes written (1–4), or 0 if the codepoint is invalid.
-fn encode_codepoint_to_utf8(cp: u32, out: &mut [u8]) -> usize {
+const fn encode_codepoint_to_utf8(cp: u32, out: &mut [u8]) -> usize {
     if cp < 0x80 {
         if !out.is_empty() {
             out[0] = cp as u8;
@@ -358,7 +360,7 @@ pub(crate) fn utf16le_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
         let unit = read_utf16le_unit(&data[i..]).ok_or(())?;
         i += 2;
 
-        if unit >= 0xD800 && unit <= 0xDBFF {
+        if (0xD800..=0xDBFF).contains(&unit) {
             // High surrogate: expect a low surrogate
             let low = read_utf16le_unit(&data[i..]).ok_or(())?;
             i += 2;
@@ -374,7 +376,7 @@ pub(crate) fn utf16le_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
                 return Err(());
             }
             result.extend_from_slice(&buf[..n]);
-        } else if unit >= 0xDC00 && unit <= 0xDFFF {
+        } else if (0xDC00..=0xDFFF).contains(&unit) {
             // Unexpected low surrogate
             return Err(());
         } else {
@@ -410,7 +412,7 @@ pub(crate) fn utf16be_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
         let unit = read_utf16be_unit(&data[i..]).ok_or(())?;
         i += 2;
 
-        if unit >= 0xD800 && unit <= 0xDBFF {
+        if (0xD800..=0xDBFF).contains(&unit) {
             // High surrogate: expect a low surrogate
             let low = read_utf16be_unit(&data[i..]).ok_or(())?;
             i += 2;
@@ -426,7 +428,7 @@ pub(crate) fn utf16be_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
                 return Err(());
             }
             result.extend_from_slice(&buf[..n]);
-        } else if unit >= 0xDC00 && unit <= 0xDFFF {
+        } else if (0xDC00..=0xDFFF).contains(&unit) {
             // Unexpected low surrogate
             return Err(());
         } else {
@@ -494,6 +496,7 @@ pub(crate) fn utf8_to_utf16le(data: &[u8]) -> Result<Vec<u8>, ()> {
 ///
 /// Latin-1 maps codepoints 0x00–0xFF directly to Unicode codepoints U+0000–U+00FF.
 /// Each input byte produces either 1 or 2 UTF-8 bytes.
+#[allow(dead_code)]
 pub(crate) fn latin1_to_utf8(data: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(data.len() * 2);
 
@@ -630,8 +633,8 @@ fn register_builtin_handlers() {
 /// Helper to create and register an encoding handler.
 fn register_handler(
     name_bytes: &[u8],
-    input_enc: xmlCharEncoding,
-    output_enc: xmlCharEncoding,
+    _input_enc: xmlCharEncoding,
+    _output_enc: xmlCharEncoding,
     input_func: Option<xmlCharEncodingInputFunc>,
     output_func: Option<xmlCharEncodingOutputFunc>,
 ) {
@@ -641,8 +644,8 @@ fn register_handler(
         return;
     }
 
-    let handler =
-        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+    let handler = unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) }
+        as *mut _xmlCharEncodingHandler;
 
     if handler.is_null() {
         unsafe { xmlFreeImpl(name_raw) };
@@ -754,6 +757,7 @@ pub(crate) fn add_encoding_handler(handler: *mut _xmlCharEncodingHandler) -> c_i
 /// Input conversion: convert from handler's input encoding to UTF-8.
 ///
 /// Calls the handler's `input.legacyFunc` callback. Returns bytes written or -1 on error.
+#[allow(dead_code)]
 pub(crate) fn char_enc_in_func(
     handler: *mut _xmlCharEncodingHandler,
     out: &mut [u8],
@@ -779,6 +783,7 @@ pub(crate) fn char_enc_in_func(
 /// Output conversion: convert from UTF-8 to handler's output encoding.
 ///
 /// Calls the handler's `output.legacyFunc` callback. Returns bytes written or -1 on error.
+#[allow(dead_code)]
 pub(crate) fn char_enc_out_func(
     handler: *mut _xmlCharEncodingHandler,
     out: &mut [u8],
@@ -1006,7 +1011,7 @@ unsafe extern "C" fn utf16le_input_func(
     }
 
     let in_data = core::slice::from_raw_parts(in_, avail_in);
-    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let _out_slice = core::slice::from_raw_parts_mut(out, avail_out);
 
     // Use the safe wrapper
     let result = match utf16le_to_utf8(in_data) {
@@ -1045,7 +1050,7 @@ unsafe extern "C" fn utf16le_output_func(
     }
 
     let in_data = core::slice::from_raw_parts(in_, avail_in);
-    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let _out_slice = core::slice::from_raw_parts_mut(out, avail_out);
 
     let result = match utf8_to_utf16le(in_data) {
         Ok(v) => v,
@@ -1085,7 +1090,7 @@ unsafe extern "C" fn utf16be_input_func(
     }
 
     let in_data = core::slice::from_raw_parts(in_, avail_in);
-    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+    let _out_slice = core::slice::from_raw_parts_mut(out, avail_out);
 
     let result = match utf16be_to_utf8(in_data) {
         Ok(v) => v,
@@ -1132,7 +1137,7 @@ unsafe extern "C" fn utf16be_output_func(
 
     // Swap byte pairs to get UTF-16BE
     let mut result = le_result;
-    for chunk in result.chunks_exact_mut(2) {
+    for chunk in result.as_chunks_mut::<2>().0 {
         chunk.swap(0, 1);
     }
 
@@ -1238,7 +1243,7 @@ unsafe extern "C" fn latin1_output_func(
             // ASCII — direct mapping
             out_slice[out_pos] = byte;
             out_pos += 1;
-        } else if byte >= 0xC2 && byte <= 0xC3 {
+        } else if (0xC2..=0xC3).contains(&byte) {
             // Two-byte UTF-8 for codepoints U+0080–U+00FF
             if in_pos < avail_in {
                 let second = in_data[in_pos];
@@ -1255,7 +1260,7 @@ unsafe extern "C" fn latin1_output_func(
             } else {
                 return -1; // Truncated
             }
-        } else if byte >= 0x80 && byte <= 0xBF {
+        } else if (0x80..=0xBF).contains(&byte) {
             // Unexpected continuation byte
             return -1;
         } else {
@@ -1339,7 +1344,7 @@ pub(crate) fn xmlFindCharEncodingHandler(name: *const c_char) -> *mut _xmlCharEn
 /// `xmlGetCharEncodingName` implementation.
 ///
 /// Returns the canonical name for an encoding, or `ptr::null()` if unknown.
-pub(crate) fn xmlGetCharEncodingName(enc: xmlCharEncoding) -> *const c_char {
+pub(crate) const fn xmlGetCharEncodingName(enc: xmlCharEncoding) -> *const c_char {
     // Return null-terminated C strings using static CStr literals.
     // Mirrors upstream 2.15 xmlGetCharEncodingName: the UTF-16/UCS-4 pairs
     // return the W3C canonical names before the defaultHandlers table.
@@ -1395,10 +1400,7 @@ static ENCODING_ALIASES: std::sync::OnceLock<
 > = std::sync::OnceLock::new();
 
 fn encoding_aliases() -> &'static parking_lot::RwLock<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
-    ENCODING_ALIASES.get_or_init(|| {
-        let m = parking_lot::RwLock::new(std::collections::HashMap::new());
-        m
-    })
+    ENCODING_ALIASES.get_or_init(|| parking_lot::RwLock::new(std::collections::HashMap::new()))
 }
 
 /// `xmlAddEncodingAlias` implementation: register `alias` for `name`.
@@ -1492,8 +1494,8 @@ pub(crate) fn xmlNewCharEncodingHandler(
         return ptr::null_mut();
     }
 
-    let handler =
-        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+    let handler = unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) }
+        as *mut _xmlCharEncodingHandler;
 
     if handler.is_null() {
         unsafe { xmlFreeImpl(name_raw) };
@@ -1525,6 +1527,7 @@ pub(crate) fn xmlNewCharEncodingHandler(
 /// `xmlDelEncodingHandler` implementation.
 ///
 /// Frees an encoding handler previously created with `xmlNewCharEncodingHandler`.
+#[allow(dead_code)]
 pub(crate) fn xmlDelEncodingHandler(handler: *mut _xmlCharEncodingHandler) {
     if handler.is_null() {
         return;
@@ -1681,7 +1684,8 @@ pub(crate) fn xmlCreateCharEncodingHandler(
          * Return a copy of the handler with the original name (upstream
          * "Return a copy of the handler with the original name").
          */
-        let copy = xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler;
+        let copy =
+            xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) as *mut _xmlCharEncodingHandler;
         if copy.is_null() {
             return crate::abi::types::XML_ERR_NO_MEMORY;
         }
@@ -1784,8 +1788,8 @@ pub(crate) fn xmlCharEncNewCustomHandler(
     if out.is_null() {
         return crate::abi::types::XML_ERR_ARGUMENT;
     }
-    let handler =
-        unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) } as *mut _xmlCharEncodingHandler;
+    let handler = unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) }
+        as *mut _xmlCharEncodingHandler;
     if handler.is_null() {
         unsafe {
             if let Some(d) = ctxtDtor {
@@ -2264,29 +2268,29 @@ mod tests {
     fn test_init_and_find_encodings() {
         init_encodings();
 
-        let utf8_name: *const xmlChar = b"UTF-8\0".as_ptr();
+        let utf8_name: *const xmlChar = c"UTF-8".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(utf8_name).is_null());
 
-        let utf16le_name: *const xmlChar = b"UTF-16LE\0".as_ptr();
+        let utf16le_name: *const xmlChar = c"UTF-16LE".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(utf16le_name).is_null());
 
-        let utf16be_name: *const xmlChar = b"UTF-16BE\0".as_ptr();
+        let utf16be_name: *const xmlChar = c"UTF-16BE".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(utf16be_name).is_null());
 
-        let latin1_name: *const xmlChar = b"ISO-8859-1\0".as_ptr();
+        let latin1_name: *const xmlChar = c"ISO-8859-1".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(latin1_name).is_null());
 
-        let ascii_name: *const xmlChar = b"ASCII\0".as_ptr();
+        let ascii_name: *const xmlChar = c"ASCII".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(ascii_name).is_null());
 
         // Case insensitive
-        let lower_name: *const xmlChar = b"utf-8\0".as_ptr();
+        let lower_name: *const xmlChar = c"utf-8".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(lower_name).is_null());
     }
 
     #[test]
     fn test_find_encoding_handler_not_found() {
-        let name: *const xmlChar = b"NONEXISTENT\0".as_ptr();
+        let name: *const xmlChar = c"NONEXISTENT".as_ptr() as *const xmlChar;
         assert!(find_encoding_handler(name).is_null());
     }
 
@@ -2302,8 +2306,9 @@ mod tests {
         };
         assert!(!handler.is_null());
 
-        let name =
-            unsafe { crate::abi::allocator::xmlMemStrdupImpl(b"TEST-ENC\0".as_ptr() as *const c_char) };
+        let name = unsafe {
+            crate::abi::allocator::xmlMemStrdupImpl(c"TEST-ENC".as_ptr() as *const c_char)
+        };
         unsafe {
             ptr::write(
                 handler,
@@ -2321,7 +2326,7 @@ mod tests {
 
         assert_eq!(add_encoding_handler(handler), 0);
 
-        let found = find_encoding_handler(b"TEST-ENC\0".as_ptr() as *const xmlChar);
+        let found = find_encoding_handler(c"TEST-ENC".as_ptr() as *const xmlChar);
         assert_eq!(found, handler);
 
         // Remove from registry before freeing to avoid dangling pointers
@@ -2352,7 +2357,7 @@ mod tests {
         let utf16le = utf8_to_utf16le(original).unwrap();
         // Convert LE to BE by swapping bytes
         let mut utf16be = utf16le.clone();
-        for chunk in utf16be.chunks_exact_mut(2) {
+        for chunk in utf16be.as_chunks_mut::<2>().0 {
             chunk.swap(0, 1);
         }
         let back = utf16be_to_utf8(&utf16be).unwrap();
@@ -2455,13 +2460,13 @@ mod tests {
 
     #[test]
     fn test_xml_parse_char_encoding() {
-        let name = b"UTF-8\0".as_ptr() as *const c_char;
+        let name = c"UTF-8".as_ptr() as *const c_char;
         assert_eq!(
             xmlParseCharEncoding(name),
             xmlCharEncoding::XML_CHAR_ENCODING_UTF8 as c_int
         );
 
-        let name = b"ISO-8859-1\0".as_ptr() as *const c_char;
+        let name = c"ISO-8859-1".as_ptr() as *const c_char;
         assert_eq!(
             xmlParseCharEncoding(name),
             xmlCharEncoding::XML_CHAR_ENCODING_8859_1 as c_int
@@ -2475,7 +2480,7 @@ mod tests {
 
     #[test]
     fn test_xml_new_and_del_encoding_handler() {
-        let name = b"TestEnc\0".as_ptr() as *const c_char;
+        let name = c"TestEnc".as_ptr() as *const c_char;
         let handler = xmlNewCharEncodingHandler(
             name,
             utf8_input_func as xmlCharEncodingInputFunc,
@@ -2496,7 +2501,7 @@ mod tests {
     fn test_xml_init_and_cleanup() {
         xmlInitCharEncodingHandlers();
 
-        let name: *const xmlChar = b"UTF-8\0".as_ptr();
+        let name: *const xmlChar = c"UTF-8".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(name).is_null());
 
         xmlCleanupCharEncodingHandlers();

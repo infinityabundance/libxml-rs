@@ -120,7 +120,7 @@ unsafe fn get_utf8_char(utf: *const xmlChar, len: *mut c_int) -> c_int {
                     c = (c & 0xf) << 12;
                     c |= ((*utf.add(1) & 0x3f) as u32) << 6;
                     c |= (*utf.add(2) & 0x3f) as u32;
-                    if (c < 0x800) || ((c >= 0xd800) && (c < 0xe000)) {
+                    if (c < 0x800) || (0xd800..0xe000).contains(&c) {
                         *len = 0;
                         return -1;
                     }
@@ -135,7 +135,7 @@ unsafe fn get_utf8_char(utf: *const xmlChar, len: *mut c_int) -> c_int {
                     c |= ((*utf.add(1) & 0x3f) as u32) << 12;
                     c |= ((*utf.add(2) & 0x3f) as u32) << 6;
                     c |= (*utf.add(3) & 0x3f) as u32;
-                    if (c < 0x10000) || (c >= 0x110000) {
+                    if !(0x10000..0x110000).contains(&c) {
                         *len = 0;
                         return -1;
                     }
@@ -153,7 +153,7 @@ unsafe fn get_utf8_char(utf: *const xmlChar, len: *mut c_int) -> c_int {
 /// # SAFETY
 ///
 /// - `utf` must be a valid null-terminated byte string or NULL.
-unsafe fn utf8_strsize(utf: *const xmlChar, len: c_int) -> c_int {
+const unsafe fn utf8_strsize(utf: *const xmlChar, len: c_int) -> c_int {
     if utf.is_null() || len <= 0 {
         return 0;
     }
@@ -221,7 +221,7 @@ fn is_xml_char(c: u32) -> bool {
 }
 
 /// Content of the five predefined entities (upstream `xmlGetPredefinedEntity`).
-fn predefined_entity_content(name: *const xmlChar) -> Option<&'static [u8]> {
+const fn predefined_entity_content(name: *const xmlChar) -> Option<&'static [u8]> {
     if name.is_null() {
         return None;
     }
@@ -624,20 +624,18 @@ unsafe fn expand_entity_into(
                  * before '<' is still flushed by the tail below. */
                 break 'scan;
             }
-            if c <= 0x20 {
-                if c < 0x20 {
-                    /* whitespace is converted to space (normalize == 0) */
-                    if chunk != str {
-                        out.extend_from_slice(slice::from_raw_parts(
-                            chunk,
-                            str.offset_from(chunk) as usize,
-                        ));
-                    }
-                    out.push(b' ');
-                    chunk = str.add(1);
+            if c < 0x20 {
+                /* whitespace is converted to space (normalize == 0) */
+                if chunk != str {
+                    out.extend_from_slice(slice::from_raw_parts(
+                        chunk,
+                        str.offset_from(chunk) as usize,
+                    ));
                 }
-                /* c == 0x20 is kept inside the chunk */
+                out.push(b' ');
+                chunk = str.add(1);
             }
+            /* c == 0x20 is kept inside the chunk */
             str = str.add(1);
         } else if *str.add(1) == b'#' {
             /* numeric character reference */
@@ -1031,7 +1029,7 @@ unsafe fn node_parse_att_value(
                     }
                     remaining -= 1;
                 }
-                if remaining <= 0 || unsafe { *cur } == 0 {
+                if remaining == 0 || unsafe { *cur } == 0 {
                     break 'scan;
                 }
                 if cur != q {
@@ -1256,7 +1254,7 @@ pub unsafe extern "C" fn xmlUTF8Charcmp(utf1: *const xmlChar, utf2: *const xmlCh
 ///
 /// - `utf` must be a valid NUL-terminated byte string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlUTF8Strsize(utf: *const xmlChar, len: c_int) -> c_int {
+pub const unsafe extern "C" fn xmlUTF8Strsize(utf: *const xmlChar, len: c_int) -> c_int {
     unsafe { utf8_strsize(utf, len) }
 }
 
@@ -1308,7 +1306,7 @@ pub unsafe extern "C" fn xmlUTF8Strndup(utf: *const xmlChar, len: c_int) -> *mut
 ///
 /// - `utf` must be a valid NUL-terminated byte string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlUTF8Strpos(utf: *const xmlChar, pos: c_int) -> *const xmlChar {
+pub const unsafe extern "C" fn xmlUTF8Strpos(utf: *const xmlChar, pos: c_int) -> *const xmlChar {
     if utf.is_null() || pos < 0 {
         return ptr::null();
     }

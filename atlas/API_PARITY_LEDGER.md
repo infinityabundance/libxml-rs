@@ -2,16 +2,16 @@
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1400, candidate headers 1396, candidate DSO 1906, reconciled all four 1327, oracle-only 10, candidate-only 559
-- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 60, reconciled all four 18, oracle-only 0, candidate-only 39
+- functions: oracle headers 1408, oracle DSO 1400, candidate headers 1396, candidate DSO 1980, reconciled all four 1374, oracle-only 5, candidate-only 573
+- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 67, reconciled all four 18, oracle-only 0, candidate-only 46
 
 ## libxslt
 
-- functions: oracle headers 244, oracle DSO 232, candidate headers 251, candidate DSO 1906, reconciled all four 232, oracle-only 0, candidate-only 1674
-- data: oracle headers 11, oracle DSO 12, candidate headers 11, candidate DSO 60, reconciled all four 8, oracle-only 1, candidate-only 52
+- functions: oracle headers 244, oracle DSO 232, candidate headers 250, candidate DSO 1980, reconciled all four 232, oracle-only 0, candidate-only 1743
+- data: oracle headers 11, oracle DSO 12, candidate headers 11, candidate DSO 67, reconciled all four 10, oracle-only 0, candidate-only 56
 
 ## libexslt
 
-- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 1906, reconciled all four 1, oracle-only 0, candidate-only 1905
-- data: oracle headers 4, oracle DSO 4, candidate headers 4, candidate DSO 60, reconciled all four 0, oracle-only 0, candidate-only 60
+- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 1980, reconciled all four 13, oracle-only 0, candidate-only 1966
+- data: oracle headers 4, oracle DSO 4, candidate headers 4, candidate DSO 67, reconciled all four 4, oracle-only 0, candidate-only 63
 

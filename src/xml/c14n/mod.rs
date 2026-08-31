@@ -79,7 +79,7 @@ pub enum C14nMode {
 
 impl C14nMode {
     /// Returns true if this mode includes comments in the output.
-    fn with_comments(self) -> bool {
+    const fn with_comments(self) -> bool {
         matches!(
             self,
             C14nMode::XML_C14N_1_0_WITH_COMMENTS
@@ -89,7 +89,7 @@ impl C14nMode {
     }
 
     /// Returns true if this mode is exclusive.
-    fn is_exclusive(self) -> bool {
+    const fn is_exclusive(self) -> bool {
         matches!(
             self,
             C14nMode::XML_C14N_EXCLUSIVE_1_0 | C14nMode::XML_C14N_EXCLUSIVE_1_0_WITH_COMMENTS
@@ -97,7 +97,7 @@ impl C14nMode {
     }
 
     /// Returns true if this mode is C14N 1.0 (inclusive).
-    fn is_1_0(self) -> bool {
+    const fn is_1_0(self) -> bool {
         matches!(
             self,
             C14nMode::XML_C14N_1_0 | C14nMode::XML_C14N_1_0_WITH_COMMENTS
@@ -221,7 +221,7 @@ impl C14nContext {
     /// callback checks node-set membership of a stack copy of the xmlNs
     /// struct, which can never match — so with a subset, namespace nodes are
     /// never visible (c14n.c xmlC14NIsNodeInNodeset).
-    fn is_visible_ns(&self) -> bool {
+    const fn is_visible_ns(&self) -> bool {
         self.visible_set.is_none()
     }
 
@@ -779,19 +779,9 @@ unsafe fn c14n_collect_namespaces(
 
         // 4. Process xmlns="".
         if visible
-            && has_visibly_utilized_empty_ns
             && !has_empty_ns
-            && !has_empty_ns_in_inclusive_list
+            && (has_visibly_utilized_empty_ns || has_empty_ns_in_inclusive_list)
         {
-            let empty_prefix: Vec<u8> = Vec::new();
-            let empty_href: Vec<u8> = Vec::new();
-            if !ctx.already_rendered(&empty_prefix, &empty_href, false) {
-                collected.push(CollectedNs {
-                    prefix: ptr::null(),
-                    href: ptr::null(),
-                });
-            }
-        } else if visible && !has_empty_ns && has_empty_ns_in_inclusive_list {
             let empty_prefix: Vec<u8> = Vec::new();
             let empty_href: Vec<u8> = Vec::new();
             if !ctx.already_rendered(&empty_prefix, &empty_href, false) {
@@ -1242,7 +1232,7 @@ unsafe fn c14n_serialize_attributes(
                     && unsafe {
                         crate::abi::exports_xml2::xmlStrEqual(
                             a.name,
-                            b"lang\0".as_ptr() as *const xmlChar,
+                            c"lang".as_ptr() as *const xmlChar,
                         ) != 0
                     }
                 {
@@ -1255,7 +1245,7 @@ unsafe fn c14n_serialize_attributes(
                     && unsafe {
                         crate::abi::exports_xml2::xmlStrEqual(
                             a.name,
-                            b"space\0".as_ptr() as *const xmlChar,
+                            c"space".as_ptr() as *const xmlChar,
                         ) != 0
                     }
                 {
@@ -1268,7 +1258,7 @@ unsafe fn c14n_serialize_attributes(
                     && unsafe {
                         crate::abi::exports_xml2::xmlStrEqual(
                             a.name,
-                            b"base\0".as_ptr() as *const xmlChar,
+                            c"base".as_ptr() as *const xmlChar,
                         ) != 0
                     }
                 {
@@ -1508,7 +1498,7 @@ unsafe fn doc_has_relative_ns(doc: *mut _xmlDoc) -> bool {
 
 /// Whether a NUL-terminated URI has a scheme (`scheme:` prefix) — upstream
 /// xmlParseURISafe's `scheme == NULL` check.
-unsafe fn has_uri_scheme_bytes(uri: *const xmlChar) -> bool {
+const unsafe fn has_uri_scheme_bytes(uri: *const xmlChar) -> bool {
     unsafe {
         let mut i: usize = 0;
         while *uri.add(i) != 0 {

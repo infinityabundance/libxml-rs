@@ -37,203 +37,794 @@ pub static xmlIsPubidChar_tab: [u8; 256] = [
 /// Upstream `xmlIsBaseChar_srng[]` — 197 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsBaseChar_srng: [xmlChSRange; 197] = [
-    xmlChSRange { low: 0x100, high: 0x131 },
-    xmlChSRange { low: 0x134, high: 0x13e },
-    xmlChSRange { low: 0x141, high: 0x148 },
-    xmlChSRange { low: 0x14a, high: 0x17e },
-    xmlChSRange { low: 0x180, high: 0x1c3 },
-    xmlChSRange { low: 0x1cd, high: 0x1f0 },
-    xmlChSRange { low: 0x1f4, high: 0x1f5 },
-    xmlChSRange { low: 0x1fa, high: 0x217 },
-    xmlChSRange { low: 0x250, high: 0x2a8 },
-    xmlChSRange { low: 0x2bb, high: 0x2c1 },
-    xmlChSRange { low: 0x386, high: 0x386 },
-    xmlChSRange { low: 0x388, high: 0x38a },
-    xmlChSRange { low: 0x38c, high: 0x38c },
-    xmlChSRange { low: 0x38e, high: 0x3a1 },
-    xmlChSRange { low: 0x3a3, high: 0x3ce },
-    xmlChSRange { low: 0x3d0, high: 0x3d6 },
-    xmlChSRange { low: 0x3da, high: 0x3da },
-    xmlChSRange { low: 0x3dc, high: 0x3dc },
-    xmlChSRange { low: 0x3de, high: 0x3de },
-    xmlChSRange { low: 0x3e0, high: 0x3e0 },
-    xmlChSRange { low: 0x3e2, high: 0x3f3 },
-    xmlChSRange { low: 0x401, high: 0x40c },
-    xmlChSRange { low: 0x40e, high: 0x44f },
-    xmlChSRange { low: 0x451, high: 0x45c },
-    xmlChSRange { low: 0x45e, high: 0x481 },
-    xmlChSRange { low: 0x490, high: 0x4c4 },
-    xmlChSRange { low: 0x4c7, high: 0x4c8 },
-    xmlChSRange { low: 0x4cb, high: 0x4cc },
-    xmlChSRange { low: 0x4d0, high: 0x4eb },
-    xmlChSRange { low: 0x4ee, high: 0x4f5 },
-    xmlChSRange { low: 0x4f8, high: 0x4f9 },
-    xmlChSRange { low: 0x531, high: 0x556 },
-    xmlChSRange { low: 0x559, high: 0x559 },
-    xmlChSRange { low: 0x561, high: 0x586 },
-    xmlChSRange { low: 0x5d0, high: 0x5ea },
-    xmlChSRange { low: 0x5f0, high: 0x5f2 },
-    xmlChSRange { low: 0x621, high: 0x63a },
-    xmlChSRange { low: 0x641, high: 0x64a },
-    xmlChSRange { low: 0x671, high: 0x6b7 },
-    xmlChSRange { low: 0x6ba, high: 0x6be },
-    xmlChSRange { low: 0x6c0, high: 0x6ce },
-    xmlChSRange { low: 0x6d0, high: 0x6d3 },
-    xmlChSRange { low: 0x6d5, high: 0x6d5 },
-    xmlChSRange { low: 0x6e5, high: 0x6e6 },
-    xmlChSRange { low: 0x905, high: 0x939 },
-    xmlChSRange { low: 0x93d, high: 0x93d },
-    xmlChSRange { low: 0x958, high: 0x961 },
-    xmlChSRange { low: 0x985, high: 0x98c },
-    xmlChSRange { low: 0x98f, high: 0x990 },
-    xmlChSRange { low: 0x993, high: 0x9a8 },
-    xmlChSRange { low: 0x9aa, high: 0x9b0 },
-    xmlChSRange { low: 0x9b2, high: 0x9b2 },
-    xmlChSRange { low: 0x9b6, high: 0x9b9 },
-    xmlChSRange { low: 0x9dc, high: 0x9dd },
-    xmlChSRange { low: 0x9df, high: 0x9e1 },
-    xmlChSRange { low: 0x9f0, high: 0x9f1 },
-    xmlChSRange { low: 0xa05, high: 0xa0a },
-    xmlChSRange { low: 0xa0f, high: 0xa10 },
-    xmlChSRange { low: 0xa13, high: 0xa28 },
-    xmlChSRange { low: 0xa2a, high: 0xa30 },
-    xmlChSRange { low: 0xa32, high: 0xa33 },
-    xmlChSRange { low: 0xa35, high: 0xa36 },
-    xmlChSRange { low: 0xa38, high: 0xa39 },
-    xmlChSRange { low: 0xa59, high: 0xa5c },
-    xmlChSRange { low: 0xa5e, high: 0xa5e },
-    xmlChSRange { low: 0xa72, high: 0xa74 },
-    xmlChSRange { low: 0xa85, high: 0xa8b },
-    xmlChSRange { low: 0xa8d, high: 0xa8d },
-    xmlChSRange { low: 0xa8f, high: 0xa91 },
-    xmlChSRange { low: 0xa93, high: 0xaa8 },
-    xmlChSRange { low: 0xaaa, high: 0xab0 },
-    xmlChSRange { low: 0xab2, high: 0xab3 },
-    xmlChSRange { low: 0xab5, high: 0xab9 },
-    xmlChSRange { low: 0xabd, high: 0xabd },
-    xmlChSRange { low: 0xae0, high: 0xae0 },
-    xmlChSRange { low: 0xb05, high: 0xb0c },
-    xmlChSRange { low: 0xb0f, high: 0xb10 },
-    xmlChSRange { low: 0xb13, high: 0xb28 },
-    xmlChSRange { low: 0xb2a, high: 0xb30 },
-    xmlChSRange { low: 0xb32, high: 0xb33 },
-    xmlChSRange { low: 0xb36, high: 0xb39 },
-    xmlChSRange { low: 0xb3d, high: 0xb3d },
-    xmlChSRange { low: 0xb5c, high: 0xb5d },
-    xmlChSRange { low: 0xb5f, high: 0xb61 },
-    xmlChSRange { low: 0xb85, high: 0xb8a },
-    xmlChSRange { low: 0xb8e, high: 0xb90 },
-    xmlChSRange { low: 0xb92, high: 0xb95 },
-    xmlChSRange { low: 0xb99, high: 0xb9a },
-    xmlChSRange { low: 0xb9c, high: 0xb9c },
-    xmlChSRange { low: 0xb9e, high: 0xb9f },
-    xmlChSRange { low: 0xba3, high: 0xba4 },
-    xmlChSRange { low: 0xba8, high: 0xbaa },
-    xmlChSRange { low: 0xbae, high: 0xbb5 },
-    xmlChSRange { low: 0xbb7, high: 0xbb9 },
-    xmlChSRange { low: 0xc05, high: 0xc0c },
-    xmlChSRange { low: 0xc0e, high: 0xc10 },
-    xmlChSRange { low: 0xc12, high: 0xc28 },
-    xmlChSRange { low: 0xc2a, high: 0xc33 },
-    xmlChSRange { low: 0xc35, high: 0xc39 },
-    xmlChSRange { low: 0xc60, high: 0xc61 },
-    xmlChSRange { low: 0xc85, high: 0xc8c },
-    xmlChSRange { low: 0xc8e, high: 0xc90 },
-    xmlChSRange { low: 0xc92, high: 0xca8 },
-    xmlChSRange { low: 0xcaa, high: 0xcb3 },
-    xmlChSRange { low: 0xcb5, high: 0xcb9 },
-    xmlChSRange { low: 0xcde, high: 0xcde },
-    xmlChSRange { low: 0xce0, high: 0xce1 },
-    xmlChSRange { low: 0xd05, high: 0xd0c },
-    xmlChSRange { low: 0xd0e, high: 0xd10 },
-    xmlChSRange { low: 0xd12, high: 0xd28 },
-    xmlChSRange { low: 0xd2a, high: 0xd39 },
-    xmlChSRange { low: 0xd60, high: 0xd61 },
-    xmlChSRange { low: 0xe01, high: 0xe2e },
-    xmlChSRange { low: 0xe30, high: 0xe30 },
-    xmlChSRange { low: 0xe32, high: 0xe33 },
-    xmlChSRange { low: 0xe40, high: 0xe45 },
-    xmlChSRange { low: 0xe81, high: 0xe82 },
-    xmlChSRange { low: 0xe84, high: 0xe84 },
-    xmlChSRange { low: 0xe87, high: 0xe88 },
-    xmlChSRange { low: 0xe8a, high: 0xe8a },
-    xmlChSRange { low: 0xe8d, high: 0xe8d },
-    xmlChSRange { low: 0xe94, high: 0xe97 },
-    xmlChSRange { low: 0xe99, high: 0xe9f },
-    xmlChSRange { low: 0xea1, high: 0xea3 },
-    xmlChSRange { low: 0xea5, high: 0xea5 },
-    xmlChSRange { low: 0xea7, high: 0xea7 },
-    xmlChSRange { low: 0xeaa, high: 0xeab },
-    xmlChSRange { low: 0xead, high: 0xeae },
-    xmlChSRange { low: 0xeb0, high: 0xeb0 },
-    xmlChSRange { low: 0xeb2, high: 0xeb3 },
-    xmlChSRange { low: 0xebd, high: 0xebd },
-    xmlChSRange { low: 0xec0, high: 0xec4 },
-    xmlChSRange { low: 0xf40, high: 0xf47 },
-    xmlChSRange { low: 0xf49, high: 0xf69 },
-    xmlChSRange { low: 0x10a0, high: 0x10c5 },
-    xmlChSRange { low: 0x10d0, high: 0x10f6 },
-    xmlChSRange { low: 0x1100, high: 0x1100 },
-    xmlChSRange { low: 0x1102, high: 0x1103 },
-    xmlChSRange { low: 0x1105, high: 0x1107 },
-    xmlChSRange { low: 0x1109, high: 0x1109 },
-    xmlChSRange { low: 0x110b, high: 0x110c },
-    xmlChSRange { low: 0x110e, high: 0x1112 },
-    xmlChSRange { low: 0x113c, high: 0x113c },
-    xmlChSRange { low: 0x113e, high: 0x113e },
-    xmlChSRange { low: 0x1140, high: 0x1140 },
-    xmlChSRange { low: 0x114c, high: 0x114c },
-    xmlChSRange { low: 0x114e, high: 0x114e },
-    xmlChSRange { low: 0x1150, high: 0x1150 },
-    xmlChSRange { low: 0x1154, high: 0x1155 },
-    xmlChSRange { low: 0x1159, high: 0x1159 },
-    xmlChSRange { low: 0x115f, high: 0x1161 },
-    xmlChSRange { low: 0x1163, high: 0x1163 },
-    xmlChSRange { low: 0x1165, high: 0x1165 },
-    xmlChSRange { low: 0x1167, high: 0x1167 },
-    xmlChSRange { low: 0x1169, high: 0x1169 },
-    xmlChSRange { low: 0x116d, high: 0x116e },
-    xmlChSRange { low: 0x1172, high: 0x1173 },
-    xmlChSRange { low: 0x1175, high: 0x1175 },
-    xmlChSRange { low: 0x119e, high: 0x119e },
-    xmlChSRange { low: 0x11a8, high: 0x11a8 },
-    xmlChSRange { low: 0x11ab, high: 0x11ab },
-    xmlChSRange { low: 0x11ae, high: 0x11af },
-    xmlChSRange { low: 0x11b7, high: 0x11b8 },
-    xmlChSRange { low: 0x11ba, high: 0x11ba },
-    xmlChSRange { low: 0x11bc, high: 0x11c2 },
-    xmlChSRange { low: 0x11eb, high: 0x11eb },
-    xmlChSRange { low: 0x11f0, high: 0x11f0 },
-    xmlChSRange { low: 0x11f9, high: 0x11f9 },
-    xmlChSRange { low: 0x1e00, high: 0x1e9b },
-    xmlChSRange { low: 0x1ea0, high: 0x1ef9 },
-    xmlChSRange { low: 0x1f00, high: 0x1f15 },
-    xmlChSRange { low: 0x1f18, high: 0x1f1d },
-    xmlChSRange { low: 0x1f20, high: 0x1f45 },
-    xmlChSRange { low: 0x1f48, high: 0x1f4d },
-    xmlChSRange { low: 0x1f50, high: 0x1f57 },
-    xmlChSRange { low: 0x1f59, high: 0x1f59 },
-    xmlChSRange { low: 0x1f5b, high: 0x1f5b },
-    xmlChSRange { low: 0x1f5d, high: 0x1f5d },
-    xmlChSRange { low: 0x1f5f, high: 0x1f7d },
-    xmlChSRange { low: 0x1f80, high: 0x1fb4 },
-    xmlChSRange { low: 0x1fb6, high: 0x1fbc },
-    xmlChSRange { low: 0x1fbe, high: 0x1fbe },
-    xmlChSRange { low: 0x1fc2, high: 0x1fc4 },
-    xmlChSRange { low: 0x1fc6, high: 0x1fcc },
-    xmlChSRange { low: 0x1fd0, high: 0x1fd3 },
-    xmlChSRange { low: 0x1fd6, high: 0x1fdb },
-    xmlChSRange { low: 0x1fe0, high: 0x1fec },
-    xmlChSRange { low: 0x1ff2, high: 0x1ff4 },
-    xmlChSRange { low: 0x1ff6, high: 0x1ffc },
-    xmlChSRange { low: 0x2126, high: 0x2126 },
-    xmlChSRange { low: 0x212a, high: 0x212b },
-    xmlChSRange { low: 0x212e, high: 0x212e },
-    xmlChSRange { low: 0x2180, high: 0x2182 },
-    xmlChSRange { low: 0x3041, high: 0x3094 },
-    xmlChSRange { low: 0x30a1, high: 0x30fa },
-    xmlChSRange { low: 0x3105, high: 0x312c },
-    xmlChSRange { low: 0xac00, high: 0xd7a3 },
+    xmlChSRange {
+        low: 0x100,
+        high: 0x131,
+    },
+    xmlChSRange {
+        low: 0x134,
+        high: 0x13e,
+    },
+    xmlChSRange {
+        low: 0x141,
+        high: 0x148,
+    },
+    xmlChSRange {
+        low: 0x14a,
+        high: 0x17e,
+    },
+    xmlChSRange {
+        low: 0x180,
+        high: 0x1c3,
+    },
+    xmlChSRange {
+        low: 0x1cd,
+        high: 0x1f0,
+    },
+    xmlChSRange {
+        low: 0x1f4,
+        high: 0x1f5,
+    },
+    xmlChSRange {
+        low: 0x1fa,
+        high: 0x217,
+    },
+    xmlChSRange {
+        low: 0x250,
+        high: 0x2a8,
+    },
+    xmlChSRange {
+        low: 0x2bb,
+        high: 0x2c1,
+    },
+    xmlChSRange {
+        low: 0x386,
+        high: 0x386,
+    },
+    xmlChSRange {
+        low: 0x388,
+        high: 0x38a,
+    },
+    xmlChSRange {
+        low: 0x38c,
+        high: 0x38c,
+    },
+    xmlChSRange {
+        low: 0x38e,
+        high: 0x3a1,
+    },
+    xmlChSRange {
+        low: 0x3a3,
+        high: 0x3ce,
+    },
+    xmlChSRange {
+        low: 0x3d0,
+        high: 0x3d6,
+    },
+    xmlChSRange {
+        low: 0x3da,
+        high: 0x3da,
+    },
+    xmlChSRange {
+        low: 0x3dc,
+        high: 0x3dc,
+    },
+    xmlChSRange {
+        low: 0x3de,
+        high: 0x3de,
+    },
+    xmlChSRange {
+        low: 0x3e0,
+        high: 0x3e0,
+    },
+    xmlChSRange {
+        low: 0x3e2,
+        high: 0x3f3,
+    },
+    xmlChSRange {
+        low: 0x401,
+        high: 0x40c,
+    },
+    xmlChSRange {
+        low: 0x40e,
+        high: 0x44f,
+    },
+    xmlChSRange {
+        low: 0x451,
+        high: 0x45c,
+    },
+    xmlChSRange {
+        low: 0x45e,
+        high: 0x481,
+    },
+    xmlChSRange {
+        low: 0x490,
+        high: 0x4c4,
+    },
+    xmlChSRange {
+        low: 0x4c7,
+        high: 0x4c8,
+    },
+    xmlChSRange {
+        low: 0x4cb,
+        high: 0x4cc,
+    },
+    xmlChSRange {
+        low: 0x4d0,
+        high: 0x4eb,
+    },
+    xmlChSRange {
+        low: 0x4ee,
+        high: 0x4f5,
+    },
+    xmlChSRange {
+        low: 0x4f8,
+        high: 0x4f9,
+    },
+    xmlChSRange {
+        low: 0x531,
+        high: 0x556,
+    },
+    xmlChSRange {
+        low: 0x559,
+        high: 0x559,
+    },
+    xmlChSRange {
+        low: 0x561,
+        high: 0x586,
+    },
+    xmlChSRange {
+        low: 0x5d0,
+        high: 0x5ea,
+    },
+    xmlChSRange {
+        low: 0x5f0,
+        high: 0x5f2,
+    },
+    xmlChSRange {
+        low: 0x621,
+        high: 0x63a,
+    },
+    xmlChSRange {
+        low: 0x641,
+        high: 0x64a,
+    },
+    xmlChSRange {
+        low: 0x671,
+        high: 0x6b7,
+    },
+    xmlChSRange {
+        low: 0x6ba,
+        high: 0x6be,
+    },
+    xmlChSRange {
+        low: 0x6c0,
+        high: 0x6ce,
+    },
+    xmlChSRange {
+        low: 0x6d0,
+        high: 0x6d3,
+    },
+    xmlChSRange {
+        low: 0x6d5,
+        high: 0x6d5,
+    },
+    xmlChSRange {
+        low: 0x6e5,
+        high: 0x6e6,
+    },
+    xmlChSRange {
+        low: 0x905,
+        high: 0x939,
+    },
+    xmlChSRange {
+        low: 0x93d,
+        high: 0x93d,
+    },
+    xmlChSRange {
+        low: 0x958,
+        high: 0x961,
+    },
+    xmlChSRange {
+        low: 0x985,
+        high: 0x98c,
+    },
+    xmlChSRange {
+        low: 0x98f,
+        high: 0x990,
+    },
+    xmlChSRange {
+        low: 0x993,
+        high: 0x9a8,
+    },
+    xmlChSRange {
+        low: 0x9aa,
+        high: 0x9b0,
+    },
+    xmlChSRange {
+        low: 0x9b2,
+        high: 0x9b2,
+    },
+    xmlChSRange {
+        low: 0x9b6,
+        high: 0x9b9,
+    },
+    xmlChSRange {
+        low: 0x9dc,
+        high: 0x9dd,
+    },
+    xmlChSRange {
+        low: 0x9df,
+        high: 0x9e1,
+    },
+    xmlChSRange {
+        low: 0x9f0,
+        high: 0x9f1,
+    },
+    xmlChSRange {
+        low: 0xa05,
+        high: 0xa0a,
+    },
+    xmlChSRange {
+        low: 0xa0f,
+        high: 0xa10,
+    },
+    xmlChSRange {
+        low: 0xa13,
+        high: 0xa28,
+    },
+    xmlChSRange {
+        low: 0xa2a,
+        high: 0xa30,
+    },
+    xmlChSRange {
+        low: 0xa32,
+        high: 0xa33,
+    },
+    xmlChSRange {
+        low: 0xa35,
+        high: 0xa36,
+    },
+    xmlChSRange {
+        low: 0xa38,
+        high: 0xa39,
+    },
+    xmlChSRange {
+        low: 0xa59,
+        high: 0xa5c,
+    },
+    xmlChSRange {
+        low: 0xa5e,
+        high: 0xa5e,
+    },
+    xmlChSRange {
+        low: 0xa72,
+        high: 0xa74,
+    },
+    xmlChSRange {
+        low: 0xa85,
+        high: 0xa8b,
+    },
+    xmlChSRange {
+        low: 0xa8d,
+        high: 0xa8d,
+    },
+    xmlChSRange {
+        low: 0xa8f,
+        high: 0xa91,
+    },
+    xmlChSRange {
+        low: 0xa93,
+        high: 0xaa8,
+    },
+    xmlChSRange {
+        low: 0xaaa,
+        high: 0xab0,
+    },
+    xmlChSRange {
+        low: 0xab2,
+        high: 0xab3,
+    },
+    xmlChSRange {
+        low: 0xab5,
+        high: 0xab9,
+    },
+    xmlChSRange {
+        low: 0xabd,
+        high: 0xabd,
+    },
+    xmlChSRange {
+        low: 0xae0,
+        high: 0xae0,
+    },
+    xmlChSRange {
+        low: 0xb05,
+        high: 0xb0c,
+    },
+    xmlChSRange {
+        low: 0xb0f,
+        high: 0xb10,
+    },
+    xmlChSRange {
+        low: 0xb13,
+        high: 0xb28,
+    },
+    xmlChSRange {
+        low: 0xb2a,
+        high: 0xb30,
+    },
+    xmlChSRange {
+        low: 0xb32,
+        high: 0xb33,
+    },
+    xmlChSRange {
+        low: 0xb36,
+        high: 0xb39,
+    },
+    xmlChSRange {
+        low: 0xb3d,
+        high: 0xb3d,
+    },
+    xmlChSRange {
+        low: 0xb5c,
+        high: 0xb5d,
+    },
+    xmlChSRange {
+        low: 0xb5f,
+        high: 0xb61,
+    },
+    xmlChSRange {
+        low: 0xb85,
+        high: 0xb8a,
+    },
+    xmlChSRange {
+        low: 0xb8e,
+        high: 0xb90,
+    },
+    xmlChSRange {
+        low: 0xb92,
+        high: 0xb95,
+    },
+    xmlChSRange {
+        low: 0xb99,
+        high: 0xb9a,
+    },
+    xmlChSRange {
+        low: 0xb9c,
+        high: 0xb9c,
+    },
+    xmlChSRange {
+        low: 0xb9e,
+        high: 0xb9f,
+    },
+    xmlChSRange {
+        low: 0xba3,
+        high: 0xba4,
+    },
+    xmlChSRange {
+        low: 0xba8,
+        high: 0xbaa,
+    },
+    xmlChSRange {
+        low: 0xbae,
+        high: 0xbb5,
+    },
+    xmlChSRange {
+        low: 0xbb7,
+        high: 0xbb9,
+    },
+    xmlChSRange {
+        low: 0xc05,
+        high: 0xc0c,
+    },
+    xmlChSRange {
+        low: 0xc0e,
+        high: 0xc10,
+    },
+    xmlChSRange {
+        low: 0xc12,
+        high: 0xc28,
+    },
+    xmlChSRange {
+        low: 0xc2a,
+        high: 0xc33,
+    },
+    xmlChSRange {
+        low: 0xc35,
+        high: 0xc39,
+    },
+    xmlChSRange {
+        low: 0xc60,
+        high: 0xc61,
+    },
+    xmlChSRange {
+        low: 0xc85,
+        high: 0xc8c,
+    },
+    xmlChSRange {
+        low: 0xc8e,
+        high: 0xc90,
+    },
+    xmlChSRange {
+        low: 0xc92,
+        high: 0xca8,
+    },
+    xmlChSRange {
+        low: 0xcaa,
+        high: 0xcb3,
+    },
+    xmlChSRange {
+        low: 0xcb5,
+        high: 0xcb9,
+    },
+    xmlChSRange {
+        low: 0xcde,
+        high: 0xcde,
+    },
+    xmlChSRange {
+        low: 0xce0,
+        high: 0xce1,
+    },
+    xmlChSRange {
+        low: 0xd05,
+        high: 0xd0c,
+    },
+    xmlChSRange {
+        low: 0xd0e,
+        high: 0xd10,
+    },
+    xmlChSRange {
+        low: 0xd12,
+        high: 0xd28,
+    },
+    xmlChSRange {
+        low: 0xd2a,
+        high: 0xd39,
+    },
+    xmlChSRange {
+        low: 0xd60,
+        high: 0xd61,
+    },
+    xmlChSRange {
+        low: 0xe01,
+        high: 0xe2e,
+    },
+    xmlChSRange {
+        low: 0xe30,
+        high: 0xe30,
+    },
+    xmlChSRange {
+        low: 0xe32,
+        high: 0xe33,
+    },
+    xmlChSRange {
+        low: 0xe40,
+        high: 0xe45,
+    },
+    xmlChSRange {
+        low: 0xe81,
+        high: 0xe82,
+    },
+    xmlChSRange {
+        low: 0xe84,
+        high: 0xe84,
+    },
+    xmlChSRange {
+        low: 0xe87,
+        high: 0xe88,
+    },
+    xmlChSRange {
+        low: 0xe8a,
+        high: 0xe8a,
+    },
+    xmlChSRange {
+        low: 0xe8d,
+        high: 0xe8d,
+    },
+    xmlChSRange {
+        low: 0xe94,
+        high: 0xe97,
+    },
+    xmlChSRange {
+        low: 0xe99,
+        high: 0xe9f,
+    },
+    xmlChSRange {
+        low: 0xea1,
+        high: 0xea3,
+    },
+    xmlChSRange {
+        low: 0xea5,
+        high: 0xea5,
+    },
+    xmlChSRange {
+        low: 0xea7,
+        high: 0xea7,
+    },
+    xmlChSRange {
+        low: 0xeaa,
+        high: 0xeab,
+    },
+    xmlChSRange {
+        low: 0xead,
+        high: 0xeae,
+    },
+    xmlChSRange {
+        low: 0xeb0,
+        high: 0xeb0,
+    },
+    xmlChSRange {
+        low: 0xeb2,
+        high: 0xeb3,
+    },
+    xmlChSRange {
+        low: 0xebd,
+        high: 0xebd,
+    },
+    xmlChSRange {
+        low: 0xec0,
+        high: 0xec4,
+    },
+    xmlChSRange {
+        low: 0xf40,
+        high: 0xf47,
+    },
+    xmlChSRange {
+        low: 0xf49,
+        high: 0xf69,
+    },
+    xmlChSRange {
+        low: 0x10a0,
+        high: 0x10c5,
+    },
+    xmlChSRange {
+        low: 0x10d0,
+        high: 0x10f6,
+    },
+    xmlChSRange {
+        low: 0x1100,
+        high: 0x1100,
+    },
+    xmlChSRange {
+        low: 0x1102,
+        high: 0x1103,
+    },
+    xmlChSRange {
+        low: 0x1105,
+        high: 0x1107,
+    },
+    xmlChSRange {
+        low: 0x1109,
+        high: 0x1109,
+    },
+    xmlChSRange {
+        low: 0x110b,
+        high: 0x110c,
+    },
+    xmlChSRange {
+        low: 0x110e,
+        high: 0x1112,
+    },
+    xmlChSRange {
+        low: 0x113c,
+        high: 0x113c,
+    },
+    xmlChSRange {
+        low: 0x113e,
+        high: 0x113e,
+    },
+    xmlChSRange {
+        low: 0x1140,
+        high: 0x1140,
+    },
+    xmlChSRange {
+        low: 0x114c,
+        high: 0x114c,
+    },
+    xmlChSRange {
+        low: 0x114e,
+        high: 0x114e,
+    },
+    xmlChSRange {
+        low: 0x1150,
+        high: 0x1150,
+    },
+    xmlChSRange {
+        low: 0x1154,
+        high: 0x1155,
+    },
+    xmlChSRange {
+        low: 0x1159,
+        high: 0x1159,
+    },
+    xmlChSRange {
+        low: 0x115f,
+        high: 0x1161,
+    },
+    xmlChSRange {
+        low: 0x1163,
+        high: 0x1163,
+    },
+    xmlChSRange {
+        low: 0x1165,
+        high: 0x1165,
+    },
+    xmlChSRange {
+        low: 0x1167,
+        high: 0x1167,
+    },
+    xmlChSRange {
+        low: 0x1169,
+        high: 0x1169,
+    },
+    xmlChSRange {
+        low: 0x116d,
+        high: 0x116e,
+    },
+    xmlChSRange {
+        low: 0x1172,
+        high: 0x1173,
+    },
+    xmlChSRange {
+        low: 0x1175,
+        high: 0x1175,
+    },
+    xmlChSRange {
+        low: 0x119e,
+        high: 0x119e,
+    },
+    xmlChSRange {
+        low: 0x11a8,
+        high: 0x11a8,
+    },
+    xmlChSRange {
+        low: 0x11ab,
+        high: 0x11ab,
+    },
+    xmlChSRange {
+        low: 0x11ae,
+        high: 0x11af,
+    },
+    xmlChSRange {
+        low: 0x11b7,
+        high: 0x11b8,
+    },
+    xmlChSRange {
+        low: 0x11ba,
+        high: 0x11ba,
+    },
+    xmlChSRange {
+        low: 0x11bc,
+        high: 0x11c2,
+    },
+    xmlChSRange {
+        low: 0x11eb,
+        high: 0x11eb,
+    },
+    xmlChSRange {
+        low: 0x11f0,
+        high: 0x11f0,
+    },
+    xmlChSRange {
+        low: 0x11f9,
+        high: 0x11f9,
+    },
+    xmlChSRange {
+        low: 0x1e00,
+        high: 0x1e9b,
+    },
+    xmlChSRange {
+        low: 0x1ea0,
+        high: 0x1ef9,
+    },
+    xmlChSRange {
+        low: 0x1f00,
+        high: 0x1f15,
+    },
+    xmlChSRange {
+        low: 0x1f18,
+        high: 0x1f1d,
+    },
+    xmlChSRange {
+        low: 0x1f20,
+        high: 0x1f45,
+    },
+    xmlChSRange {
+        low: 0x1f48,
+        high: 0x1f4d,
+    },
+    xmlChSRange {
+        low: 0x1f50,
+        high: 0x1f57,
+    },
+    xmlChSRange {
+        low: 0x1f59,
+        high: 0x1f59,
+    },
+    xmlChSRange {
+        low: 0x1f5b,
+        high: 0x1f5b,
+    },
+    xmlChSRange {
+        low: 0x1f5d,
+        high: 0x1f5d,
+    },
+    xmlChSRange {
+        low: 0x1f5f,
+        high: 0x1f7d,
+    },
+    xmlChSRange {
+        low: 0x1f80,
+        high: 0x1fb4,
+    },
+    xmlChSRange {
+        low: 0x1fb6,
+        high: 0x1fbc,
+    },
+    xmlChSRange {
+        low: 0x1fbe,
+        high: 0x1fbe,
+    },
+    xmlChSRange {
+        low: 0x1fc2,
+        high: 0x1fc4,
+    },
+    xmlChSRange {
+        low: 0x1fc6,
+        high: 0x1fcc,
+    },
+    xmlChSRange {
+        low: 0x1fd0,
+        high: 0x1fd3,
+    },
+    xmlChSRange {
+        low: 0x1fd6,
+        high: 0x1fdb,
+    },
+    xmlChSRange {
+        low: 0x1fe0,
+        high: 0x1fec,
+    },
+    xmlChSRange {
+        low: 0x1ff2,
+        high: 0x1ff4,
+    },
+    xmlChSRange {
+        low: 0x1ff6,
+        high: 0x1ffc,
+    },
+    xmlChSRange {
+        low: 0x2126,
+        high: 0x2126,
+    },
+    xmlChSRange {
+        low: 0x212a,
+        high: 0x212b,
+    },
+    xmlChSRange {
+        low: 0x212e,
+        high: 0x212e,
+    },
+    xmlChSRange {
+        low: 0x2180,
+        high: 0x2182,
+    },
+    xmlChSRange {
+        low: 0x3041,
+        high: 0x3094,
+    },
+    xmlChSRange {
+        low: 0x30a1,
+        high: 0x30fa,
+    },
+    xmlChSRange {
+        low: 0x3105,
+        high: 0x312c,
+    },
+    xmlChSRange {
+        low: 0xac00,
+        high: 0xd7a3,
+    },
 ];
 
 /// Upstream `const xmlChRangeGroup xmlIsBaseCharGroup`.
@@ -248,15 +839,22 @@ pub static xmlIsBaseCharGroup: xmlChRangeGroup = xmlChRangeGroup {
 /// Upstream `xmlIsChar_srng[]` — 2 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsChar_srng: [xmlChSRange; 2] = [
-    xmlChSRange { low: 0x100, high: 0xd7ff },
-    xmlChSRange { low: 0xe000, high: 0xfffd },
+    xmlChSRange {
+        low: 0x100,
+        high: 0xd7ff,
+    },
+    xmlChSRange {
+        low: 0xe000,
+        high: 0xfffd,
+    },
 ];
 
 /// Upstream `xmlIsChar_lrng[]` — 1 xmlChLRange ranges (2.15.0).
 #[no_mangle]
-pub static xmlIsChar_lrng: [xmlChLRange; 1] = [
-    xmlChLRange { low: 0x10000, high: 0x10ffff },
-];
+pub static xmlIsChar_lrng: [xmlChLRange; 1] = [xmlChLRange {
+    low: 0x10000,
+    high: 0x10ffff,
+}];
 
 /// Upstream `const xmlChRangeGroup xmlIsCharGroup`.
 #[no_mangle]
@@ -270,101 +868,386 @@ pub static xmlIsCharGroup: xmlChRangeGroup = xmlChRangeGroup {
 /// Upstream `xmlIsCombining_srng[]` — 95 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsCombining_srng: [xmlChSRange; 95] = [
-    xmlChSRange { low: 0x300, high: 0x345 },
-    xmlChSRange { low: 0x360, high: 0x361 },
-    xmlChSRange { low: 0x483, high: 0x486 },
-    xmlChSRange { low: 0x591, high: 0x5a1 },
-    xmlChSRange { low: 0x5a3, high: 0x5b9 },
-    xmlChSRange { low: 0x5bb, high: 0x5bd },
-    xmlChSRange { low: 0x5bf, high: 0x5bf },
-    xmlChSRange { low: 0x5c1, high: 0x5c2 },
-    xmlChSRange { low: 0x5c4, high: 0x5c4 },
-    xmlChSRange { low: 0x64b, high: 0x652 },
-    xmlChSRange { low: 0x670, high: 0x670 },
-    xmlChSRange { low: 0x6d6, high: 0x6dc },
-    xmlChSRange { low: 0x6dd, high: 0x6df },
-    xmlChSRange { low: 0x6e0, high: 0x6e4 },
-    xmlChSRange { low: 0x6e7, high: 0x6e8 },
-    xmlChSRange { low: 0x6ea, high: 0x6ed },
-    xmlChSRange { low: 0x901, high: 0x903 },
-    xmlChSRange { low: 0x93c, high: 0x93c },
-    xmlChSRange { low: 0x93e, high: 0x94c },
-    xmlChSRange { low: 0x94d, high: 0x94d },
-    xmlChSRange { low: 0x951, high: 0x954 },
-    xmlChSRange { low: 0x962, high: 0x963 },
-    xmlChSRange { low: 0x981, high: 0x983 },
-    xmlChSRange { low: 0x9bc, high: 0x9bc },
-    xmlChSRange { low: 0x9be, high: 0x9be },
-    xmlChSRange { low: 0x9bf, high: 0x9bf },
-    xmlChSRange { low: 0x9c0, high: 0x9c4 },
-    xmlChSRange { low: 0x9c7, high: 0x9c8 },
-    xmlChSRange { low: 0x9cb, high: 0x9cd },
-    xmlChSRange { low: 0x9d7, high: 0x9d7 },
-    xmlChSRange { low: 0x9e2, high: 0x9e3 },
-    xmlChSRange { low: 0xa02, high: 0xa02 },
-    xmlChSRange { low: 0xa3c, high: 0xa3c },
-    xmlChSRange { low: 0xa3e, high: 0xa3e },
-    xmlChSRange { low: 0xa3f, high: 0xa3f },
-    xmlChSRange { low: 0xa40, high: 0xa42 },
-    xmlChSRange { low: 0xa47, high: 0xa48 },
-    xmlChSRange { low: 0xa4b, high: 0xa4d },
-    xmlChSRange { low: 0xa70, high: 0xa71 },
-    xmlChSRange { low: 0xa81, high: 0xa83 },
-    xmlChSRange { low: 0xabc, high: 0xabc },
-    xmlChSRange { low: 0xabe, high: 0xac5 },
-    xmlChSRange { low: 0xac7, high: 0xac9 },
-    xmlChSRange { low: 0xacb, high: 0xacd },
-    xmlChSRange { low: 0xb01, high: 0xb03 },
-    xmlChSRange { low: 0xb3c, high: 0xb3c },
-    xmlChSRange { low: 0xb3e, high: 0xb43 },
-    xmlChSRange { low: 0xb47, high: 0xb48 },
-    xmlChSRange { low: 0xb4b, high: 0xb4d },
-    xmlChSRange { low: 0xb56, high: 0xb57 },
-    xmlChSRange { low: 0xb82, high: 0xb83 },
-    xmlChSRange { low: 0xbbe, high: 0xbc2 },
-    xmlChSRange { low: 0xbc6, high: 0xbc8 },
-    xmlChSRange { low: 0xbca, high: 0xbcd },
-    xmlChSRange { low: 0xbd7, high: 0xbd7 },
-    xmlChSRange { low: 0xc01, high: 0xc03 },
-    xmlChSRange { low: 0xc3e, high: 0xc44 },
-    xmlChSRange { low: 0xc46, high: 0xc48 },
-    xmlChSRange { low: 0xc4a, high: 0xc4d },
-    xmlChSRange { low: 0xc55, high: 0xc56 },
-    xmlChSRange { low: 0xc82, high: 0xc83 },
-    xmlChSRange { low: 0xcbe, high: 0xcc4 },
-    xmlChSRange { low: 0xcc6, high: 0xcc8 },
-    xmlChSRange { low: 0xcca, high: 0xccd },
-    xmlChSRange { low: 0xcd5, high: 0xcd6 },
-    xmlChSRange { low: 0xd02, high: 0xd03 },
-    xmlChSRange { low: 0xd3e, high: 0xd43 },
-    xmlChSRange { low: 0xd46, high: 0xd48 },
-    xmlChSRange { low: 0xd4a, high: 0xd4d },
-    xmlChSRange { low: 0xd57, high: 0xd57 },
-    xmlChSRange { low: 0xe31, high: 0xe31 },
-    xmlChSRange { low: 0xe34, high: 0xe3a },
-    xmlChSRange { low: 0xe47, high: 0xe4e },
-    xmlChSRange { low: 0xeb1, high: 0xeb1 },
-    xmlChSRange { low: 0xeb4, high: 0xeb9 },
-    xmlChSRange { low: 0xebb, high: 0xebc },
-    xmlChSRange { low: 0xec8, high: 0xecd },
-    xmlChSRange { low: 0xf18, high: 0xf19 },
-    xmlChSRange { low: 0xf35, high: 0xf35 },
-    xmlChSRange { low: 0xf37, high: 0xf37 },
-    xmlChSRange { low: 0xf39, high: 0xf39 },
-    xmlChSRange { low: 0xf3e, high: 0xf3e },
-    xmlChSRange { low: 0xf3f, high: 0xf3f },
-    xmlChSRange { low: 0xf71, high: 0xf84 },
-    xmlChSRange { low: 0xf86, high: 0xf8b },
-    xmlChSRange { low: 0xf90, high: 0xf95 },
-    xmlChSRange { low: 0xf97, high: 0xf97 },
-    xmlChSRange { low: 0xf99, high: 0xfad },
-    xmlChSRange { low: 0xfb1, high: 0xfb7 },
-    xmlChSRange { low: 0xfb9, high: 0xfb9 },
-    xmlChSRange { low: 0x20d0, high: 0x20dc },
-    xmlChSRange { low: 0x20e1, high: 0x20e1 },
-    xmlChSRange { low: 0x302a, high: 0x302f },
-    xmlChSRange { low: 0x3099, high: 0x3099 },
-    xmlChSRange { low: 0x309a, high: 0x309a },
+    xmlChSRange {
+        low: 0x300,
+        high: 0x345,
+    },
+    xmlChSRange {
+        low: 0x360,
+        high: 0x361,
+    },
+    xmlChSRange {
+        low: 0x483,
+        high: 0x486,
+    },
+    xmlChSRange {
+        low: 0x591,
+        high: 0x5a1,
+    },
+    xmlChSRange {
+        low: 0x5a3,
+        high: 0x5b9,
+    },
+    xmlChSRange {
+        low: 0x5bb,
+        high: 0x5bd,
+    },
+    xmlChSRange {
+        low: 0x5bf,
+        high: 0x5bf,
+    },
+    xmlChSRange {
+        low: 0x5c1,
+        high: 0x5c2,
+    },
+    xmlChSRange {
+        low: 0x5c4,
+        high: 0x5c4,
+    },
+    xmlChSRange {
+        low: 0x64b,
+        high: 0x652,
+    },
+    xmlChSRange {
+        low: 0x670,
+        high: 0x670,
+    },
+    xmlChSRange {
+        low: 0x6d6,
+        high: 0x6dc,
+    },
+    xmlChSRange {
+        low: 0x6dd,
+        high: 0x6df,
+    },
+    xmlChSRange {
+        low: 0x6e0,
+        high: 0x6e4,
+    },
+    xmlChSRange {
+        low: 0x6e7,
+        high: 0x6e8,
+    },
+    xmlChSRange {
+        low: 0x6ea,
+        high: 0x6ed,
+    },
+    xmlChSRange {
+        low: 0x901,
+        high: 0x903,
+    },
+    xmlChSRange {
+        low: 0x93c,
+        high: 0x93c,
+    },
+    xmlChSRange {
+        low: 0x93e,
+        high: 0x94c,
+    },
+    xmlChSRange {
+        low: 0x94d,
+        high: 0x94d,
+    },
+    xmlChSRange {
+        low: 0x951,
+        high: 0x954,
+    },
+    xmlChSRange {
+        low: 0x962,
+        high: 0x963,
+    },
+    xmlChSRange {
+        low: 0x981,
+        high: 0x983,
+    },
+    xmlChSRange {
+        low: 0x9bc,
+        high: 0x9bc,
+    },
+    xmlChSRange {
+        low: 0x9be,
+        high: 0x9be,
+    },
+    xmlChSRange {
+        low: 0x9bf,
+        high: 0x9bf,
+    },
+    xmlChSRange {
+        low: 0x9c0,
+        high: 0x9c4,
+    },
+    xmlChSRange {
+        low: 0x9c7,
+        high: 0x9c8,
+    },
+    xmlChSRange {
+        low: 0x9cb,
+        high: 0x9cd,
+    },
+    xmlChSRange {
+        low: 0x9d7,
+        high: 0x9d7,
+    },
+    xmlChSRange {
+        low: 0x9e2,
+        high: 0x9e3,
+    },
+    xmlChSRange {
+        low: 0xa02,
+        high: 0xa02,
+    },
+    xmlChSRange {
+        low: 0xa3c,
+        high: 0xa3c,
+    },
+    xmlChSRange {
+        low: 0xa3e,
+        high: 0xa3e,
+    },
+    xmlChSRange {
+        low: 0xa3f,
+        high: 0xa3f,
+    },
+    xmlChSRange {
+        low: 0xa40,
+        high: 0xa42,
+    },
+    xmlChSRange {
+        low: 0xa47,
+        high: 0xa48,
+    },
+    xmlChSRange {
+        low: 0xa4b,
+        high: 0xa4d,
+    },
+    xmlChSRange {
+        low: 0xa70,
+        high: 0xa71,
+    },
+    xmlChSRange {
+        low: 0xa81,
+        high: 0xa83,
+    },
+    xmlChSRange {
+        low: 0xabc,
+        high: 0xabc,
+    },
+    xmlChSRange {
+        low: 0xabe,
+        high: 0xac5,
+    },
+    xmlChSRange {
+        low: 0xac7,
+        high: 0xac9,
+    },
+    xmlChSRange {
+        low: 0xacb,
+        high: 0xacd,
+    },
+    xmlChSRange {
+        low: 0xb01,
+        high: 0xb03,
+    },
+    xmlChSRange {
+        low: 0xb3c,
+        high: 0xb3c,
+    },
+    xmlChSRange {
+        low: 0xb3e,
+        high: 0xb43,
+    },
+    xmlChSRange {
+        low: 0xb47,
+        high: 0xb48,
+    },
+    xmlChSRange {
+        low: 0xb4b,
+        high: 0xb4d,
+    },
+    xmlChSRange {
+        low: 0xb56,
+        high: 0xb57,
+    },
+    xmlChSRange {
+        low: 0xb82,
+        high: 0xb83,
+    },
+    xmlChSRange {
+        low: 0xbbe,
+        high: 0xbc2,
+    },
+    xmlChSRange {
+        low: 0xbc6,
+        high: 0xbc8,
+    },
+    xmlChSRange {
+        low: 0xbca,
+        high: 0xbcd,
+    },
+    xmlChSRange {
+        low: 0xbd7,
+        high: 0xbd7,
+    },
+    xmlChSRange {
+        low: 0xc01,
+        high: 0xc03,
+    },
+    xmlChSRange {
+        low: 0xc3e,
+        high: 0xc44,
+    },
+    xmlChSRange {
+        low: 0xc46,
+        high: 0xc48,
+    },
+    xmlChSRange {
+        low: 0xc4a,
+        high: 0xc4d,
+    },
+    xmlChSRange {
+        low: 0xc55,
+        high: 0xc56,
+    },
+    xmlChSRange {
+        low: 0xc82,
+        high: 0xc83,
+    },
+    xmlChSRange {
+        low: 0xcbe,
+        high: 0xcc4,
+    },
+    xmlChSRange {
+        low: 0xcc6,
+        high: 0xcc8,
+    },
+    xmlChSRange {
+        low: 0xcca,
+        high: 0xccd,
+    },
+    xmlChSRange {
+        low: 0xcd5,
+        high: 0xcd6,
+    },
+    xmlChSRange {
+        low: 0xd02,
+        high: 0xd03,
+    },
+    xmlChSRange {
+        low: 0xd3e,
+        high: 0xd43,
+    },
+    xmlChSRange {
+        low: 0xd46,
+        high: 0xd48,
+    },
+    xmlChSRange {
+        low: 0xd4a,
+        high: 0xd4d,
+    },
+    xmlChSRange {
+        low: 0xd57,
+        high: 0xd57,
+    },
+    xmlChSRange {
+        low: 0xe31,
+        high: 0xe31,
+    },
+    xmlChSRange {
+        low: 0xe34,
+        high: 0xe3a,
+    },
+    xmlChSRange {
+        low: 0xe47,
+        high: 0xe4e,
+    },
+    xmlChSRange {
+        low: 0xeb1,
+        high: 0xeb1,
+    },
+    xmlChSRange {
+        low: 0xeb4,
+        high: 0xeb9,
+    },
+    xmlChSRange {
+        low: 0xebb,
+        high: 0xebc,
+    },
+    xmlChSRange {
+        low: 0xec8,
+        high: 0xecd,
+    },
+    xmlChSRange {
+        low: 0xf18,
+        high: 0xf19,
+    },
+    xmlChSRange {
+        low: 0xf35,
+        high: 0xf35,
+    },
+    xmlChSRange {
+        low: 0xf37,
+        high: 0xf37,
+    },
+    xmlChSRange {
+        low: 0xf39,
+        high: 0xf39,
+    },
+    xmlChSRange {
+        low: 0xf3e,
+        high: 0xf3e,
+    },
+    xmlChSRange {
+        low: 0xf3f,
+        high: 0xf3f,
+    },
+    xmlChSRange {
+        low: 0xf71,
+        high: 0xf84,
+    },
+    xmlChSRange {
+        low: 0xf86,
+        high: 0xf8b,
+    },
+    xmlChSRange {
+        low: 0xf90,
+        high: 0xf95,
+    },
+    xmlChSRange {
+        low: 0xf97,
+        high: 0xf97,
+    },
+    xmlChSRange {
+        low: 0xf99,
+        high: 0xfad,
+    },
+    xmlChSRange {
+        low: 0xfb1,
+        high: 0xfb7,
+    },
+    xmlChSRange {
+        low: 0xfb9,
+        high: 0xfb9,
+    },
+    xmlChSRange {
+        low: 0x20d0,
+        high: 0x20dc,
+    },
+    xmlChSRange {
+        low: 0x20e1,
+        high: 0x20e1,
+    },
+    xmlChSRange {
+        low: 0x302a,
+        high: 0x302f,
+    },
+    xmlChSRange {
+        low: 0x3099,
+        high: 0x3099,
+    },
+    xmlChSRange {
+        low: 0x309a,
+        high: 0x309a,
+    },
 ];
 
 /// Upstream `const xmlChRangeGroup xmlIsCombiningGroup`.
@@ -379,20 +1262,62 @@ pub static xmlIsCombiningGroup: xmlChRangeGroup = xmlChRangeGroup {
 /// Upstream `xmlIsDigit_srng[]` — 14 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsDigit_srng: [xmlChSRange; 14] = [
-    xmlChSRange { low: 0x660, high: 0x669 },
-    xmlChSRange { low: 0x6f0, high: 0x6f9 },
-    xmlChSRange { low: 0x966, high: 0x96f },
-    xmlChSRange { low: 0x9e6, high: 0x9ef },
-    xmlChSRange { low: 0xa66, high: 0xa6f },
-    xmlChSRange { low: 0xae6, high: 0xaef },
-    xmlChSRange { low: 0xb66, high: 0xb6f },
-    xmlChSRange { low: 0xbe7, high: 0xbef },
-    xmlChSRange { low: 0xc66, high: 0xc6f },
-    xmlChSRange { low: 0xce6, high: 0xcef },
-    xmlChSRange { low: 0xd66, high: 0xd6f },
-    xmlChSRange { low: 0xe50, high: 0xe59 },
-    xmlChSRange { low: 0xed0, high: 0xed9 },
-    xmlChSRange { low: 0xf20, high: 0xf29 },
+    xmlChSRange {
+        low: 0x660,
+        high: 0x669,
+    },
+    xmlChSRange {
+        low: 0x6f0,
+        high: 0x6f9,
+    },
+    xmlChSRange {
+        low: 0x966,
+        high: 0x96f,
+    },
+    xmlChSRange {
+        low: 0x9e6,
+        high: 0x9ef,
+    },
+    xmlChSRange {
+        low: 0xa66,
+        high: 0xa6f,
+    },
+    xmlChSRange {
+        low: 0xae6,
+        high: 0xaef,
+    },
+    xmlChSRange {
+        low: 0xb66,
+        high: 0xb6f,
+    },
+    xmlChSRange {
+        low: 0xbe7,
+        high: 0xbef,
+    },
+    xmlChSRange {
+        low: 0xc66,
+        high: 0xc6f,
+    },
+    xmlChSRange {
+        low: 0xce6,
+        high: 0xcef,
+    },
+    xmlChSRange {
+        low: 0xd66,
+        high: 0xd6f,
+    },
+    xmlChSRange {
+        low: 0xe50,
+        high: 0xe59,
+    },
+    xmlChSRange {
+        low: 0xed0,
+        high: 0xed9,
+    },
+    xmlChSRange {
+        low: 0xf20,
+        high: 0xf29,
+    },
 ];
 
 /// Upstream `const xmlChRangeGroup xmlIsDigitGroup`.
@@ -407,16 +1332,46 @@ pub static xmlIsDigitGroup: xmlChRangeGroup = xmlChRangeGroup {
 /// Upstream `xmlIsExtender_srng[]` — 10 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsExtender_srng: [xmlChSRange; 10] = [
-    xmlChSRange { low: 0x2d0, high: 0x2d0 },
-    xmlChSRange { low: 0x2d1, high: 0x2d1 },
-    xmlChSRange { low: 0x387, high: 0x387 },
-    xmlChSRange { low: 0x640, high: 0x640 },
-    xmlChSRange { low: 0xe46, high: 0xe46 },
-    xmlChSRange { low: 0xec6, high: 0xec6 },
-    xmlChSRange { low: 0x3005, high: 0x3005 },
-    xmlChSRange { low: 0x3031, high: 0x3035 },
-    xmlChSRange { low: 0x309d, high: 0x309e },
-    xmlChSRange { low: 0x30fc, high: 0x30fe },
+    xmlChSRange {
+        low: 0x2d0,
+        high: 0x2d0,
+    },
+    xmlChSRange {
+        low: 0x2d1,
+        high: 0x2d1,
+    },
+    xmlChSRange {
+        low: 0x387,
+        high: 0x387,
+    },
+    xmlChSRange {
+        low: 0x640,
+        high: 0x640,
+    },
+    xmlChSRange {
+        low: 0xe46,
+        high: 0xe46,
+    },
+    xmlChSRange {
+        low: 0xec6,
+        high: 0xec6,
+    },
+    xmlChSRange {
+        low: 0x3005,
+        high: 0x3005,
+    },
+    xmlChSRange {
+        low: 0x3031,
+        high: 0x3035,
+    },
+    xmlChSRange {
+        low: 0x309d,
+        high: 0x309e,
+    },
+    xmlChSRange {
+        low: 0x30fc,
+        high: 0x30fe,
+    },
 ];
 
 /// Upstream `const xmlChRangeGroup xmlIsExtenderGroup`.
@@ -431,9 +1386,18 @@ pub static xmlIsExtenderGroup: xmlChRangeGroup = xmlChRangeGroup {
 /// Upstream `xmlIsIdeographic_srng[]` — 3 xmlChSRange ranges (2.15.0).
 #[no_mangle]
 pub static xmlIsIdeographic_srng: [xmlChSRange; 3] = [
-    xmlChSRange { low: 0x3007, high: 0x3007 },
-    xmlChSRange { low: 0x3021, high: 0x3029 },
-    xmlChSRange { low: 0x4e00, high: 0x9fa5 },
+    xmlChSRange {
+        low: 0x3007,
+        high: 0x3007,
+    },
+    xmlChSRange {
+        low: 0x3021,
+        high: 0x3029,
+    },
+    xmlChSRange {
+        low: 0x4e00,
+        high: 0x9fa5,
+    },
 ];
 
 /// Upstream `const xmlChRangeGroup xmlIsIdeographicGroup`.
@@ -444,4 +1408,3 @@ pub static xmlIsIdeographicGroup: xmlChRangeGroup = xmlChRangeGroup {
     shortRange: &xmlIsIdeographic_srng as *const xmlChSRange,
     longRange: core::ptr::null(),
 };
-

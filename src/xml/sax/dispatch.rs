@@ -56,6 +56,7 @@ impl SaxDispatcher {
     /// - `sax` must be a valid pointer to an initialized `_xmlSAXHandler`.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn is_standalone(sax: &_xmlSAXHandler, ctx: *mut c_void) -> c_int {
         if let Some(cb) = sax.isStandalone {
             // SAFETY: Caller guarantees the callback is safe to call with `ctx`.
@@ -74,6 +75,7 @@ impl SaxDispatcher {
     /// - `sax` must be a valid pointer to an initialized `_xmlSAXHandler`.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn has_internal_subset(sax: &_xmlSAXHandler, ctx: *mut c_void) -> c_int {
         if let Some(cb) = sax.hasInternalSubset {
             // SAFETY: Caller guarantees the callback is safe to call with `ctx`.
@@ -92,6 +94,7 @@ impl SaxDispatcher {
     /// - `sax` must be a valid pointer to an initialized `_xmlSAXHandler`.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn has_external_subset(sax: &_xmlSAXHandler, ctx: *mut c_void) -> c_int {
         if let Some(cb) = sax.hasExternalSubset {
             // SAFETY: Caller guarantees the callback is safe to call with `ctx`.
@@ -111,6 +114,7 @@ impl SaxDispatcher {
     /// - `pub_id`, `sys_id` must be valid null-terminated strings or NULL.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn resolve_entity(
         sax: &_xmlSAXHandler,
         ctx: *mut c_void,
@@ -200,6 +204,7 @@ impl SaxDispatcher {
     /// - `sax` must be a valid pointer to an initialized `_xmlSAXHandler`.
     /// - All pointer arguments must be valid null-terminated strings or NULL.
     /// - `ctx` must be a valid context pointer.
+    #[allow(clippy::too_many_arguments)]
     #[inline]
     pub unsafe fn attribute_decl(
         sax: &_xmlSAXHandler,
@@ -316,8 +321,11 @@ impl SaxDispatcher {
     /// - `ctx` must be a valid context pointer.
     /// - All pointer arguments must satisfy the requirements of whichever callback
     ///   is actually invoked (SAX1 or SAX2).
+    ///
     /// SAX1 start-element entry (upstream SAX2.c `xmlSAX2StartElement`):
+    ///
     /// invokes the handler's SAX1 `startElement` callback with the given name
+    ///
     /// and SAX1 attribute array.
     ///
     /// # SAFETY
@@ -365,6 +373,7 @@ impl SaxDispatcher {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline]
     pub unsafe fn start_element(
         sax: &_xmlSAXHandler,
@@ -528,6 +537,7 @@ impl SaxDispatcher {
     /// uses `va_list` internally. C callers pass additional variadic arguments
     /// directly on the stack per the platform ABI.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn warning(sax: &_xmlSAXHandler, ctx: *mut c_void, msg: *const c_char) {
         if let Some(cb) = sax.warning {
             // SAFETY: Caller guarantees the callback arguments are valid.
@@ -543,6 +553,7 @@ impl SaxDispatcher {
     /// - `msg` must be a valid null-terminated C string.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn error(sax: &_xmlSAXHandler, ctx: *mut c_void, msg: *const c_char) {
         if let Some(cb) = sax.error {
             // SAFETY: Caller guarantees the callback arguments are valid.
@@ -558,6 +569,7 @@ impl SaxDispatcher {
     /// - `msg` must be a valid null-terminated C string.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn fatal_error(sax: &_xmlSAXHandler, ctx: *mut c_void, msg: *const c_char) {
         if let Some(cb) = sax.fatalError {
             // SAFETY: Caller guarantees the callback arguments are valid.
@@ -652,6 +664,7 @@ impl SaxDispatcher {
     /// - `error` must be a valid pointer to an `_xmlError`.
     /// - `ctx` must be a valid context pointer.
     #[inline]
+    #[allow(dead_code)]
     pub unsafe fn structured_error(sax: &_xmlSAXHandler, ctx: *mut c_void, error: *mut _xmlError) {
         if let Some(cb) = sax.serror {
             // SAFETY: Caller guarantees the callback arguments are valid.

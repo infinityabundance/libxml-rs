@@ -20,7 +20,7 @@
 //! | 7 | schematron validation failure |
 
 use std::ffi::c_void;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int};
 use std::ptr;
 
 use libxml_rs::abi::exports_xml2::*;
@@ -33,25 +33,20 @@ const XML_PARSE_RECOVER: c_int = 1 << 0;
 const XML_PARSE_NOENT: c_int = 1 << 1;
 const XML_PARSE_DTDLOAD: c_int = 1 << 2;
 const XML_PARSE_DTDATTR: c_int = 1 << 3;
-const XML_PARSE_DTDVALID: c_int = 1 << 4;
-const XML_PARSE_NOERROR: c_int = 1 << 5;
-const XML_PARSE_NOWARNING: c_int = 1 << 6;
 const XML_PARSE_PEDANTIC: c_int = 1 << 7;
 const XML_PARSE_NOBLANKS: c_int = 1 << 8;
-const XML_PARSE_SAX1: c_int = 1 << 9;
-const XML_PARSE_XINCLUDE: c_int = 1 << 10;
 const XML_PARSE_NONET: c_int = 1 << 11;
-const XML_PARSE_NODICT: c_int = 1 << 12;
-const XML_PARSE_NSCLEAN: c_int = 1 << 13;
 const XML_PARSE_NOCDATA: c_int = 1 << 14;
-const XML_PARSE_NOXINCNODE: c_int = 1 << 15;
 const XML_PARSE_COMPACT: c_int = 1 << 16;
 const XML_PARSE_OLD10: c_int = 1 << 17;
-const XML_PARSE_NOBASEFIX: c_int = 1 << 18;
 const XML_PARSE_HUGE: c_int = 1 << 19;
-const XML_PARSE_OLDSAX: c_int = 1 << 20;
 const XML_PARSE_IGNORE_ENC: c_int = 1 << 21;
 const XML_PARSE_BIG_LINES: c_int = 1 << 22;
+
+// The remaining upstream XML_PARSE_* bits (DTDVALID, NOERROR, NOWARNING,
+// SAX1, XINCLUDE, NODICT, NSCLEAN, NOXINCNODE, NOBASEFIX, OLDSAX) are not
+// surfaced by this CLI; see archaeology/libxml2-git/parser.h for their
+// values.
 
 /// CLI state (mirrors upstream xmllint.c file-scope globals).
 struct Cli {
@@ -61,7 +56,6 @@ struct Cli {
     recover: bool,
     noout: bool,
     nonet: bool,
-    novalid: bool,
     nocompact: bool,
     loaddtd: bool,
     dtdattr: bool,
@@ -126,7 +120,6 @@ impl Default for Cli {
             recover: false,
             noout: false,
             nonet: false,
-            novalid: false,
             nocompact: false,
             loaddtd: false,
             dtdattr: false,
@@ -274,25 +267,16 @@ fn write_stdout(bytes: &[u8]) {
     }
 }
 
-/// Write a NUL-terminated C string to a FILE*.
-unsafe fn write_cstr(fp: *mut libc::FILE, s: *const c_char) {
-    if s.is_null() {
-        return;
-    }
-    let len = libc::strlen(s);
-    libc::fwrite(s as *const c_void, 1, len, fp);
-}
-
 /// Get the output FILE*: a file named by --output, or stdout.
 unsafe fn get_output_file(cli: &Cli) -> *mut libc::FILE {
     match &cli.output {
         Some(name) => {
             let cname = cstr_alloc(name);
-            let fp = libc::fopen(cname, b"w\0".as_ptr() as *const c_char);
+            let fp = libc::fopen(cname, c"w".as_ptr() as *const c_char);
             free_cstr(cname);
             fp
         }
-        None => libc::fdopen(1, b"w\0".as_ptr() as *const c_char),
+        None => libc::fdopen(1, c"w".as_ptr() as *const c_char),
     }
 }
 
@@ -470,11 +454,11 @@ unsafe fn dump_document(cli: &mut Cli, doc: *mut _xmlDoc, filename: &str) {
     let _ = filename;
 }
 
-/// Capture validity messages reported through the validation context's error
-/// callback so the CLI can render them in the upstream location format.
+// Capture validity messages reported through the validation context's error
+// callback so the CLI can render them in the upstream location format.
 thread_local! {
     static CAPTURED_VALIDITY: std::cell::RefCell<Vec<Vec<u8>>> =
-        std::cell::RefCell::new(Vec::new());
+        const { std::cell::RefCell::new(Vec::new()) };
 }
 
 unsafe extern "C" fn capture_validity_msg(_ctx: *mut c_void, msg: *const c_char) {
@@ -543,7 +527,7 @@ unsafe fn print_validity_error(
     out.push(b'\n');
     out.extend_from_slice(&context);
     out.push(b'\n');
-    out.extend(std::iter::repeat(b' ').take(caret_spaces));
+    out.extend(std::iter::repeat_n(b' ', caret_spaces));
     out.push(b'^');
     out.push(b'\n');
     libc::write(2, out.as_ptr() as *const c_void, out.len());
@@ -843,7 +827,7 @@ unsafe fn eval_xpath_expr(cli: &Cli, expr: &str, doc: *mut _xmlDoc) -> c_int {
 /// Parse and process one XML file.
 unsafe fn process_file(cli: &mut Cli, filename: &str) {
     let start = std::time::Instant::now();
-    let mut doc = parse_document(cli, filename);
+    let doc = parse_document(cli, filename);
     if doc.is_null() {
         // UPSTREAM-PARITY: "Can't open" is printed only when the source file
         // itself cannot be opened. A hard parse error already printed the
@@ -957,7 +941,7 @@ unsafe fn process_file(cli: &mut Cli, filename: &str) {
 
 /// Minimal interactive shell (upstream xmllint shell has many commands; the
 /// core navigation commands are implemented).
-unsafe fn shell_loop(cli: &Cli, doc: *mut _xmlDoc) {
+unsafe fn shell_loop(_cli: &Cli, doc: *mut _xmlDoc) {
     use std::io::Write;
     let mut current: *mut _xmlNode = if doc.is_null() {
         ptr::null_mut()
@@ -1028,7 +1012,7 @@ unsafe fn shell_loop(cli: &Cli, doc: *mut _xmlDoc) {
             }
             "dir" => {
                 if !current.is_null() {
-                    let fp = libc::fdopen(1, b"w\0".as_ptr() as *const c_char);
+                    let fp = libc::fdopen(1, c"w".as_ptr() as *const c_char);
                     if !fp.is_null() {
                         libxml_rs::xml::debug::xmlDebugDumpNode(fp, current, 0);
                     }
@@ -1065,7 +1049,7 @@ unsafe fn make_auto_doc() -> *mut _xmlDoc {
     xmlReadMemory(
         src.as_ptr() as *const c_char,
         (src.len() - 1) as c_int,
-        b"auto.xml\0".as_ptr() as *const c_char,
+        c"auto.xml".as_ptr() as *const c_char,
         ptr::null(),
         0,
     )

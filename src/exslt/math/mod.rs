@@ -183,7 +183,7 @@ fn random_fn(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue
     // reproducible within a run while still varying across runs.
     use std::cell::Cell;
     thread_local! {
-        static STATE: Cell<u64> = Cell::new(0x9E3779B97F4A7C15);
+        static STATE: Cell<u64> = const { Cell::new(0x9E3779B97F4A7C15) };
     }
     let r = STATE.with(|s| {
         let mut x = s.get();

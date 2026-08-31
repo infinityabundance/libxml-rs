@@ -275,6 +275,7 @@ pub type endElementNsSAX2Func = unsafe extern "C" fn(
 ///     int      (*getColumnNumber)(void *ctx);
 /// };
 /// ```
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xmlSAXLocator {
     /// Get the public ID of the current document position.

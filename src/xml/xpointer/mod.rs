@@ -324,10 +324,8 @@ unsafe fn walk_for_id(node: *mut _xmlNode, id: &str) -> Option<*mut _xmlNode> {
 
     // Check if this node is an element with a matching ID attribute
     let ty = unsafe { (*node).type_ };
-    if ty == XML_ELEMENT_NODE as std::os::raw::c_int {
-        if unsafe { element_has_id(node, id) } {
-            return Some(node);
-        }
+    if ty == XML_ELEMENT_NODE as std::os::raw::c_int && unsafe { element_has_id(node, id) } {
+        return Some(node);
     }
 
     // Recurse into children

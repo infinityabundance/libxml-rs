@@ -82,7 +82,7 @@ fn line_number_fn(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVa
         cur = owner;
     }
     // SAFETY: cur is valid.
-    let line = unsafe { crate::abi::exports_xml2::xmlGetLineNo(cur) };
+    let line = { crate::abi::exports_xml2::xmlGetLineNo(cur) };
     Ok(XPathValue::Number(line as f64))
 }
 

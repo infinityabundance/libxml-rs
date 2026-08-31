@@ -40,7 +40,9 @@ use crate::xml::xpath::lexer::Token;
 /// Errors that can occur during parsing.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParseError {
+    /// Human-readable description of what went wrong
     pub message: String,
+    /// Token index at which the error was detected
     pub pos: usize,
 }
 
@@ -58,13 +60,19 @@ impl std::fmt::Display for ParseError {
 // Parser
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Recursive-descent parser for XPath 1.0 expressions.
+///
+/// Consumes the token stream produced by the lexer and builds the
+/// expression AST defined in `crate::xml::xpath::ast`.
+#[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    /// Create a parser over a token stream produced by the lexer.
+    pub const fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, pos: 0 }
     }
 
@@ -72,7 +80,7 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Expr, ParseError> {
         let expr = self.parse_or_expr()?;
         if !self.is_eof() {
-            return Err(self.error(format!("Unexpected token: {}", self.current())))?;
+            Err(self.error(format!("Unexpected token: {}", self.current())))?;
         }
         Ok(expr)
     }
@@ -95,7 +103,7 @@ impl Parser {
         }
     }
 
-    fn advance(&mut self) {
+    const fn advance(&mut self) {
         if self.pos < self.tokens.len() {
             self.pos += 1;
         }
@@ -105,7 +113,7 @@ impl Parser {
         matches!(self.current(), Token::Eof)
     }
 
-    fn error(&self, msg: String) -> ParseError {
+    const fn error(&self, msg: String) -> ParseError {
         ParseError {
             message: msg,
             pos: self.pos,
@@ -588,7 +596,7 @@ impl Parser {
                             }
                             self.expect(&Token::RParen)?;
                             // Wrap in a step with a name test
-                            return Ok(NodeTest::NameTest(NameTest::LocalName(name)));
+                            Ok(NodeTest::NameTest(NameTest::LocalName(name)))
                         }
                     }
                 } else {

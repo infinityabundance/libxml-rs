@@ -251,10 +251,10 @@ def main():
         block = [
             "",
             "/* [11.1-S] begin: oracle-extracted declarations",
-            * Extracted verbatim from the upstream headers (11.1-S header-surface
-            * audit: every function the oracle headers declare must be declared by the
-            * drop-in headers — source-compatibility contract). Signatures are the
-            * upstream ABI contract.
+            " * Extracted verbatim from the upstream headers (11.1-S header-surface",
+            " * audit: every function the oracle headers declare must be declared by the",
+            " * drop-in headers \u2014 the source-compatibility contract. Signatures are the",
+            " * upstream ABI contract.",
             " */",
         ]
         for name, decl in items:

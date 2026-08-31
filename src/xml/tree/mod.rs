@@ -35,19 +35,15 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_ulong};
 
 use crate::abi::allocator;
 use crate::abi::constants::*;
 use crate::abi::structs::*;
-use crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_CDATA;
 use crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8;
-use crate::abi::types::xmlDocProperties::{
-    XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_USERBUILT, XML_DOC_WELLFORMED,
-};
+use crate::abi::types::xmlDocProperties::XML_DOC_USERBUILT;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
-use crate::xml::globals;
 use crate::xml::io;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -82,6 +78,7 @@ unsafe fn dup_xml_str(str: *const xmlChar) -> *mut xmlChar {
 }
 
 /// Copy an xmlChar string into an already-allocated buffer, or return NULL.
+#[allow(dead_code)]
 unsafe fn copy_xml_str_content(dest: *mut xmlChar, src: *const xmlChar, max_len: usize) -> bool {
     if src.is_null() || dest.is_null() || max_len == 0 {
         return false;
@@ -98,7 +95,22 @@ unsafe fn copy_xml_str_content(dest: *mut xmlChar, src: *const xmlChar, max_len:
 }
 
 /// Get the length of a null-terminated xmlChar string.
-pub unsafe fn xml_strlen(str: *const xmlChar) -> c_int {
+///
+/// # SAFETY
+///
+///
+/// - `str` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
+pub const unsafe fn xml_strlen(str: *const xmlChar) -> c_int {
     if str.is_null() {
         return 0;
     }
@@ -476,6 +488,21 @@ unsafe fn get_line_no_internal(node: *const _xmlNode, depth: c_int) -> c_long {
 /// - Returns NULL on error, empty string for empty nodes.
 ///
 /// Returns a newly allocated string; caller frees with `xmlFree`.
+///
+/// # SAFETY
+///
+/// - `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
     if node.is_null() {
         return ptr::null_mut();
@@ -1323,10 +1350,8 @@ pub unsafe fn add_sibling_before(cur: *mut _xmlNode, elem: *mut _xmlNode) -> *mu
 
     // Update doc-level children if node is a direct doc child
     let doc = c.doc;
-    if !doc.is_null() && parent.is_null() {
-        if unsafe { (*doc).children } == cur {
-            unsafe { (*doc).children = elem };
-        }
+    if !doc.is_null() && parent.is_null() && unsafe { (*doc).children } == cur {
+        unsafe { (*doc).children = elem };
     }
 
     // Update doc
@@ -1626,7 +1651,7 @@ pub unsafe fn set_ns(node: *mut _xmlNode, ns: *mut _xmlNs) {
 ///
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
-pub unsafe fn get_ns_list(doc: *mut _xmlDoc, node: *mut _xmlNode) -> *mut *mut _xmlNs {
+pub unsafe fn get_ns_list(_doc: *mut _xmlDoc, node: *mut _xmlNode) -> *mut *mut _xmlNs {
     // Phase 1: basic implementation
     // A more complete implementation would walk the node's ancestors
     // and collect all in-scope namespaces.
@@ -1715,7 +1740,7 @@ pub unsafe fn get_ns_list(doc: *mut _xmlDoc, node: *mut _xmlNode) -> *mut *mut _
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `nameSpace` must be a valid null-terminated string or NULL.
 pub unsafe fn search_ns(
-    doc: *mut _xmlDoc,
+    _doc: *mut _xmlDoc,
     node: *mut _xmlNode,
     name_space: *const xmlChar,
 ) -> *mut _xmlNs {
@@ -1763,7 +1788,7 @@ pub unsafe fn search_ns(
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `href` must be a valid null-terminated string or NULL.
 pub unsafe fn search_ns_by_href(
-    doc: *mut _xmlDoc,
+    _doc: *mut _xmlDoc,
     node: *mut _xmlNode,
     href: *const xmlChar,
 ) -> *mut _xmlNs {
@@ -1836,7 +1861,7 @@ pub unsafe fn set_prop(
             if !attr.children.is_null() {
                 free_node_list(attr.children);
                 // SAFETY: We need to mutate const fields
-                let attr_mut = existing as *mut _xmlAttr;
+                let attr_mut = existing;
                 unsafe { (*attr_mut).children = ptr::null_mut() };
                 unsafe { (*attr_mut).last = ptr::null_mut() };
             }
@@ -1844,7 +1869,7 @@ pub unsafe fn set_prop(
             if !value.is_null() {
                 let text = new_text(value);
                 if !text.is_null() {
-                    let attr_mut = existing as *mut _xmlAttr;
+                    let attr_mut = existing;
                     unsafe {
                         (*attr_mut).children = text;
                         (*attr_mut).last = text;
@@ -2095,12 +2120,13 @@ pub unsafe fn has_ns_prop(
                 if attr.ns.is_null() {
                     return cur;
                 }
-            } else if !attr.ns.is_null() && !(*attr.ns).href.is_null() {
-                if unsafe {
+            } else if !attr.ns.is_null()
+                && !(*attr.ns).href.is_null()
+                && unsafe {
                     crate::abi::exports_xml2::xmlStrEqual((*attr.ns).href, name_space) != 0
-                } {
-                    return cur;
                 }
+            {
+                return cur;
             }
         }
         cur = unsafe { (*cur).next };
@@ -2319,7 +2345,7 @@ pub unsafe fn text_merge(text: *mut _xmlNode, ntext: *mut _xmlNode) -> *mut _xml
 /// ```c
 /// xmlDtdPtr xmlGetIntSubset(xmlDocPtr doc);
 /// ```
-pub fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
+pub const fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
     if doc.is_null() {
         return ptr::null_mut();
     }
@@ -2367,10 +2393,8 @@ pub unsafe fn new_dtd(
         // exposes NULL table pointers.
 
         // Attach to document
-        if !doc.is_null() {
-            if (*doc).intSubset.is_null() {
-                (*doc).intSubset = dtd;
-            }
+        if !doc.is_null() && (*doc).intSubset.is_null() {
+            (*doc).intSubset = dtd;
         }
     }
 
@@ -2387,7 +2411,7 @@ unsafe fn free_dtd(dtd: *mut _xmlDtd) {
         return;
     }
 
-    let d = unsafe { &mut *dtd };
+    let _d = unsafe { &mut *dtd };
     let d = &mut *dtd;
 
     // UPSTREAM-PARITY (tree.c xmlFreeDtd): element/attribute/entity
@@ -2568,7 +2592,7 @@ pub unsafe fn add_doc_entity(
         if dtd.is_null() {
             dtd = new_dtd(
                 doc,
-                b"internal\0".as_ptr() as *const xmlChar,
+                c"internal".as_ptr() as *const xmlChar,
                 ptr::null(),
                 ptr::null(),
             );
@@ -2603,7 +2627,7 @@ pub unsafe fn add_dtd_entity(
         if dtd.is_null() {
             dtd = new_dtd(
                 doc,
-                b"internal\0".as_ptr() as *const xmlChar,
+                c"internal".as_ptr() as *const xmlChar,
                 ptr::null(),
                 ptr::null(),
             );
@@ -2669,6 +2693,7 @@ const ENTITY_LT: &[xmlChar] = b"&lt;";
 const ENTITY_GT: &[xmlChar] = b"&gt;";
 const ENTITY_AMP: &[xmlChar] = b"&amp;";
 const ENTITY_QUOT: &[xmlChar] = b"&quot;";
+#[allow(dead_code)]
 const ENTITY_APOS: &[xmlChar] = b"&apos;";
 
 /// Indentation string (libxml2's default `xmlTreeIndentString`).
@@ -2844,7 +2869,7 @@ unsafe fn is_noenc_text(node: *mut _xmlNode) -> bool {
 }
 
 /// Compare a NUL-terminated xmlChar string with a byte slice.
-unsafe fn c_str_eq_bytes(s: *const xmlChar, b: &[u8]) -> bool {
+const unsafe fn c_str_eq_bytes(s: *const xmlChar, b: &[u8]) -> bool {
     let mut i = 0usize;
     while i < b.len() {
         if unsafe { *s.add(i) } != b[i] {
@@ -2877,7 +2902,7 @@ struct DumpState {
 }
 
 impl DumpState {
-    fn new(format: c_int) -> Self {
+    const fn new(format: c_int) -> Self {
         let f = if format != 0 { 1 } else { 0 };
         DumpState {
             format: f,
@@ -2896,7 +2921,7 @@ impl DumpState {
     ///
     /// - `indent` must be NULL or a valid NUL-terminated string that stays
     ///   alive for the whole dump.
-    unsafe fn with_indent(format: c_int, indent: *const xmlChar, no_decl: c_int) -> Self {
+    const unsafe fn with_indent(format: c_int, indent: *const xmlChar, no_decl: c_int) -> Self {
         let f = if format != 0 { 1 } else { 0 };
         let (ptr, len) = if indent.is_null() {
             (INDENT.as_ptr(), INDENT.len() as c_int)
@@ -3094,9 +3119,9 @@ unsafe fn dump_element_content(buf: *mut _xmlBuffer, content: *mut _xmlElementCo
                 return;
             }
             let p = unsafe { &*parent };
-            if ((ccur.type_ == XML_ELEMENT_CONTENT_OR as c_int
+            if (ccur.type_ == XML_ELEMENT_CONTENT_OR as c_int
                 || ccur.type_ == XML_ELEMENT_CONTENT_SEQ as c_int)
-                && (ccur.type_ != p.type_ || ccur.ocur != XML_ELEMENT_CONTENT_ONCE as c_int))
+                && (ccur.type_ != p.type_ || ccur.ocur != XML_ELEMENT_CONTENT_ONCE as c_int)
             {
                 io::buf_ccat(buf, b')');
             }
@@ -3310,14 +3335,12 @@ unsafe fn dump_entity_decl(buf: *mut _xmlBuffer, ent: *mut _xmlEntity) {
         write_quoted_string(buf, e.SystemID);
     }
 
-    if e.etype == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int {
-        if !e.content.is_null() {
-            io::buf_add(buf, b" NDATA " as *const u8, 7);
-            if !e.orig.is_null() {
-                io::buf_cat(buf, e.orig);
-            } else if !e.content.is_null() {
-                io::buf_cat(buf, e.content);
-            }
+    if e.etype == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int && !e.content.is_null() {
+        io::buf_add(buf, b" NDATA " as *const u8, 7);
+        if !e.orig.is_null() {
+            io::buf_cat(buf, e.orig);
+        } else if !e.content.is_null() {
+            io::buf_cat(buf, e.content);
         }
     }
 
@@ -3951,7 +3974,8 @@ pub(crate) unsafe fn save_doc_to_filename(
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
 /// - `fd` must be a valid open file descriptor.
-pub(crate) unsafe fn save_doc_to_fd(doc: *mut _xmlDoc, fd: c_int, compression: c_int) -> c_int {
+#[allow(dead_code)]
+pub(crate) unsafe fn save_doc_to_fd(doc: *mut _xmlDoc, fd: c_int, _compression: c_int) -> c_int {
     if doc.is_null() || fd < 0 {
         return -1;
     }
@@ -3984,6 +4008,7 @@ pub(crate) unsafe fn save_doc_to_fd(doc: *mut _xmlDoc, fd: c_int, compression: c
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+#[allow(dead_code)]
 pub(crate) unsafe fn save_doc_to_buf(
     doc: *mut _xmlDoc,
     buf: *mut _xmlBuffer,
@@ -4003,6 +4028,7 @@ pub(crate) unsafe fn save_doc_to_buf(
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+#[allow(dead_code)]
 pub(crate) unsafe fn save_format_doc_to_buf(
     doc: *mut _xmlDoc,
     buf: *mut _xmlBuffer,
@@ -4031,6 +4057,7 @@ pub(crate) unsafe fn save_format_doc_to_buf(
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an `_xmlNode`, or NULL.
+#[allow(dead_code)]
 pub(crate) unsafe fn dump_node(node: *mut _xmlNode) -> *mut xmlChar {
     if node.is_null() {
         return ptr::null_mut();
@@ -4450,7 +4477,7 @@ mod tests {
             let old = doc_set_root_element(doc, root);
             assert!(old.is_null());
             assert_eq!(doc_get_root_element(doc), root);
-            assert_eq!((*doc).children, root as *mut _xmlNode);
+            assert_eq!((*doc).children, root);
             free_doc(doc);
         }
     }
@@ -4619,7 +4646,7 @@ mod tests {
             let doc = new_doc(ptr::null());
             let root = new_node(ptr::null_mut(), c_str("root"));
             doc_set_root_element(doc, root);
-            let child = new_child(root, ptr::null_mut(), c_str("child"));
+            let _child = new_child(root, ptr::null_mut(), c_str("child"));
 
             let copy = copy_node(root, 1);
             assert!(!copy.is_null());
@@ -4649,12 +4676,12 @@ mod tests {
     #[test]
     fn test_null_handling() {
         unsafe {
-            assert!(new_doc(ptr::null()).is_null() == false); // Should succeed with default version
+            assert!(!new_doc(ptr::null()).is_null()); // Should succeed with default version
             let doc = new_doc(ptr::null());
-            assert!(new_node(ptr::null_mut(), ptr::null()).is_null() == false); // Should succeed
+            assert!(!new_node(ptr::null_mut(), ptr::null()).is_null()); // Should succeed
             free_node(ptr::null_mut()); // Should not crash
             free_doc(ptr::null_mut()); // Should not crash
-            assert!(unlink_node(ptr::null_mut()) == ()); // Should not crash
+            unlink_node(ptr::null_mut()); // Should not crash
             assert!(add_child(ptr::null_mut(), ptr::null_mut()).is_null());
             assert!(add_sibling(ptr::null_mut(), ptr::null_mut()).is_null());
             free_doc(doc);
@@ -4930,7 +4957,7 @@ mod tests {
             assert!(!result.is_null());
 
             let len = xml_strlen(result);
-            let slice = unsafe { core::slice::from_raw_parts(result, len as usize) };
+            let slice = { core::slice::from_raw_parts(result, len as usize) };
             assert_eq!(slice, b"<foo>bar</foo>");
 
             allocator::xmlFreeImpl(result as *mut c_void);
@@ -4949,7 +4976,7 @@ mod tests {
             assert!(!result.is_null());
 
             let len = xml_strlen(result);
-            let slice = unsafe { core::slice::from_raw_parts(result, len as usize) };
+            let slice = { core::slice::from_raw_parts(result, len as usize) };
             let expected = "<?xml version=\"1.0\"?>\n<root/>\n";
             assert_eq!(slice, expected.as_bytes());
 
@@ -4973,7 +5000,7 @@ mod tests {
             assert!(!mem.is_null());
             assert!(size > 0);
 
-            let slice = unsafe { core::slice::from_raw_parts(mem, size as usize) };
+            let slice = { core::slice::from_raw_parts(mem, size as usize) };
             // UPSTREAM-PARITY: xmlDocDumpFormatMemory with a NULL encoding
             // writes no encoding attribute and a newline after each child.
             let expected = "<?xml version=\"1.0\"?>\n<root/>\n";

@@ -205,6 +205,16 @@ pub unsafe fn new_bool(b: bool) -> *mut _xmlXPathObject {
 }
 
 /// Build a number object.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 pub unsafe fn new_number(n: f64) -> *mut _xmlXPathObject {
     let obj = xmlMallocZero(size_of::<_xmlXPathObject>()) as *mut _xmlXPathObject;
     if !obj.is_null() {
@@ -624,11 +634,11 @@ fn compare_node_set_value(
                 (b, ns_bool)
             };
             let ret = if inf && strict {
-                a < b
+                !a & b
             } else if inf && !strict {
                 a <= b
             } else if !inf && strict {
-                a > b
+                a & !b
             } else {
                 a >= b
             };
@@ -718,7 +728,7 @@ pub unsafe fn value_to_object(v: XPathValue) -> *mut _xmlXPathObject {
 }
 
 #[allow(unused)]
-fn _unused(_: *mut _xmlDoc) {}
+const fn _unused(_: *mut _xmlDoc) {}
 
 #[allow(unused)]
-fn _unused_char(_: *const c_char) {}
+const fn _unused_char(_: *const c_char) {}

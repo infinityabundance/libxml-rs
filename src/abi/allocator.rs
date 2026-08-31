@@ -281,6 +281,21 @@ pub unsafe extern "C" fn xmlMemGet(
 /// This is a wrapper around `xmlMemSetup` in modern libxml2.
 /// Historically, it was separate for the GC-allocated memory pool,
 /// but in modern versions both functions do the same thing.
+///
+/// # SAFETY
+///
+///
+/// - `freeFunc`, `mallocFunc`, `reallocFunc`, `strdupFunc` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlGcMemSetup(
     freeFunc: Option<xmlFreeFunc>,
@@ -297,6 +312,21 @@ pub unsafe extern "C" fn xmlGcMemSetup(
 /// # UPSTREAM-PARITY
 ///
 /// Wrapper around `xmlMemGet`.
+///
+/// # SAFETY
+///
+///
+/// - `freeFunc`, `mallocFunc`, `reallocFunc`, `strdupFunc` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlGcMemGet(
     freeFunc: *mut Option<xmlFreeFunc>,
@@ -356,6 +386,16 @@ pub unsafe extern "C" fn xmlMallocImpl(size: usize) -> *mut c_void {
 /// Identical to `xmlMalloc` but hints to the GC that the memory does not
 /// contain pointers. In modern libxml2, this is equivalent to `xmlMalloc`.
 /// Backing the exported `xmlMallocAtomic` data global.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
     // SAFETY: Same as xmlMalloc.
     unsafe { xmlMallocImpl(size) }
@@ -378,6 +418,7 @@ pub unsafe extern "C" fn xmlMallocAtomicImpl(size: usize) -> *mut c_void {
 /// - `ptr` must be a valid pointer from `xmlMalloc`, `xmlMallocAtomic`, or `xmlRealloc`,
 ///   or NULL
 /// - The returned pointer must be freed with `xmlFree`
+///
 /// Backing the exported `xmlRealloc` data global.
 pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c_void {
     // SAFETY: We call the stored realloc function pointer.
@@ -417,6 +458,7 @@ pub unsafe extern "C" fn xmlReallocImpl(ptr: *mut c_void, size: usize) -> *mut c
 /// - `ptr` must be a valid pointer from `xmlMalloc`/`xmlMallocAtomic`/`xmlRealloc`,
 ///   or NULL
 /// - After this call, `ptr` must not be dereferenced
+///
 /// Backing the exported `xmlFree` data global.
 pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
     if ptr.is_null() {
@@ -447,6 +489,7 @@ pub unsafe extern "C" fn xmlFreeImpl(ptr: *mut c_void) {
 ///
 /// - `str` must be a valid null-terminated C string or NULL
 /// - The returned pointer must be freed with `xmlFree`
+///
 /// Backing the exported `xmlMemStrdup` data global.
 pub unsafe extern "C" fn xmlMemStrdupImpl(str: *const c_char) -> *mut c_void {
     if str.is_null() {
@@ -572,6 +615,21 @@ pub unsafe extern "C" fn xmlMemDisplay(fp: *mut c_void) {
 ///
 /// Prints debug memory information for the last `nr` allocations.
 /// With the default allocator, this is a no-op (we don't track allocation history).
+///
+/// # SAFETY
+///
+/// - `fp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemShow(fp: *mut c_void, nr: c_int) {
     // Upstream xmlMemShow(fp, nr) prints the nr most recently allocated
@@ -591,16 +649,12 @@ pub unsafe extern "C" fn xmlMemShow(fp: *mut c_void, nr: c_int) {
         let map = BLOCKS.lock();
         let mut entries: Vec<(usize, &BlockMeta)> = map.iter().map(|(k, v)| (*k, v)).collect();
         entries.sort_by_key(|(k, _)| *k);
-        let mut shown = 0;
-        for (addr, meta) in entries {
-            if nr > 0 && shown >= nr {
-                break;
-            }
+        let take = if nr > 0 { nr as usize } else { usize::MAX };
+        for (addr, meta) in entries.into_iter().take(take) {
             msg.push_str(&format!(
                 "  {:018p} : {:>7} bytes\n",
                 addr as *const c_void, meta.size
             ));
-            shown += 1;
         }
         let bytes = msg.as_bytes();
         libc::fwrite(
@@ -641,6 +695,16 @@ pub unsafe extern "C" fn xmlMallocZero(size: usize) -> *mut c_void {
 /// # UPSTREAM-PARITY
 ///
 /// Like `xmlMallocAtomic` followed by zero-initialization.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocAtomicZero(size: usize) -> *mut c_void {
     // SAFETY: Delegates to xmlMallocAtomicImpl and zeroes the memory.
@@ -691,7 +755,7 @@ pub unsafe extern "C" fn xmlReallocZero(
 /// Initializes the memory subsystem. Returns 0 on success.
 /// This is called automatically by `xmlInitParser`.
 #[no_mangle]
-pub extern "C" fn xmlInitMemory() -> c_int {
+pub const extern "C" fn xmlInitMemory() -> c_int {
     0
 }
 
@@ -703,7 +767,7 @@ pub extern "C" fn xmlInitMemory() -> c_int {
 /// void xmlCleanupMemory(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCleanupMemory() {
+pub const extern "C" fn xmlCleanupMemory() {
     // Phase 1: no cleanup needed for the default allocator.
 }
 
@@ -725,6 +789,16 @@ pub extern "C" fn xmlCleanupMemory() {
 /// ```c
 /// void *xmlMemMalloc(size_t size);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
     // SAFETY: identical contract to xmlMalloc.
@@ -736,6 +810,21 @@ pub unsafe extern "C" fn xmlMemMalloc(size: usize) -> *mut c_void {
 /// ```c
 /// void xmlMemFree(void *ptr);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
     // SAFETY: identical contract to xmlFree.
@@ -747,6 +836,21 @@ pub unsafe extern "C" fn xmlMemFree(ptr: *mut c_void) {
 /// ```c
 /// void *xmlMemRealloc(void *ptr, size_t size);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_void {
     // SAFETY: identical contract to xmlRealloc.
@@ -758,6 +862,21 @@ pub unsafe extern "C" fn xmlMemRealloc(ptr: *mut c_void, size: usize) -> *mut c_
 /// ```c
 /// void *xmlMemoryStrdup(const char *str);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `str` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
     // SAFETY: identical contract to xmlMemStrdup.
@@ -773,6 +892,21 @@ pub unsafe extern "C" fn xmlMemoryStrdup(str: *const c_char) -> *mut c_void {
 /// The default candidate allocator does not track allocation sites (see
 /// residual R-000131); the location arguments are accepted for ABI
 /// compatibility and ignored.
+///
+/// # SAFETY
+///
+///
+/// - `file` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocLoc(
     size: usize,
@@ -791,6 +925,21 @@ pub unsafe extern "C" fn xmlMallocLoc(
 /// ```c
 /// void *xmlMallocAtomicLoc(size_t size, const char *file, int line);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `file` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMallocAtomicLoc(
     size: usize,
@@ -809,6 +958,25 @@ pub unsafe extern "C" fn xmlMallocAtomicLoc(
 /// ```c
 /// void *xmlReallocLoc(void *ptr, size_t size, const char *file, int line);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `file` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReallocLoc(
     ptr: *mut c_void,
@@ -834,6 +1002,21 @@ pub unsafe extern "C" fn xmlReallocLoc(
 /// ```c
 /// void *xmlMemStrdupLoc(const char *str, const char *file, int line);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `str`, `file` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemStrdupLoc(
     str: *const c_char,
@@ -856,6 +1039,21 @@ pub unsafe extern "C" fn xmlMemStrdupLoc(
 ///
 /// Returns the recorded size from the block registry (0 for unknown or
 /// foreign pointers, matching upstream's lookup-miss behavior).
+///
+/// # SAFETY
+///
+/// - `ptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemSize(ptr: *mut c_void) -> usize {
     if ptr.is_null() {
@@ -878,6 +1076,21 @@ pub unsafe extern "C" fn xmlMemSize(ptr: *mut c_void) -> usize {
 /// one line per live block with its address, size and recorded allocation
 /// site, bounded by `nb_bytes` when positive. The aggregate footer matches
 /// upstream's counters.
+///
+/// # SAFETY
+///
+/// - `fp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
     // SAFETY: fp must be a valid FILE* or NULL (stderr used).
@@ -938,6 +1151,16 @@ pub unsafe extern "C" fn xmlMemDisplayLast(fp: *mut c_void, nb_bytes: c_long) {
 ///
 /// Prints the global counters to stderr and returns 0 (no leak detector is
 /// active in the default allocator).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlMemoryDump() -> c_int {
     unsafe {

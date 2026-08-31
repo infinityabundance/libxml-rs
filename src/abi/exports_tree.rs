@@ -100,7 +100,7 @@ unsafe fn str_eq_or_ptr(a: *const xmlChar, b: *const xmlChar) -> bool {
 }
 
 /// Case-insensitive equality against a byte literal (e.g. `"html"`).
-unsafe fn strcasecmp_eq(a: *const xmlChar, lit: &[u8]) -> bool {
+const unsafe fn strcasecmp_eq(a: *const xmlChar, lit: &[u8]) -> bool {
     if a.is_null() {
         return false;
     }
@@ -111,7 +111,7 @@ unsafe fn strcasecmp_eq(a: *const xmlChar, lit: &[u8]) -> bool {
             return ca == 0;
         }
         let cb = lit[i];
-        if ca == 0 || ca.to_ascii_lowercase() != cb.to_ascii_lowercase() {
+        if ca == 0 || !ca.eq_ignore_ascii_case(&cb) {
             return false;
         }
         i += 1;
@@ -120,7 +120,7 @@ unsafe fn strcasecmp_eq(a: *const xmlChar, lit: &[u8]) -> bool {
 
 /// `IS_STR_XML` from upstream tree.c — prefix is the `xml` prefix.
 unsafe fn is_str_xml(s: *const xmlChar) -> bool {
-    unsafe { crate::abi::exports_xml2::xmlStrEqual(s, b"xml\0".as_ptr() as *const xmlChar) != 0 }
+    unsafe { crate::abi::exports_xml2::xmlStrEqual(s, c"xml".as_ptr() as *const xmlChar) != 0 }
 }
 
 /// `xmlStringText` — the canonical name of text nodes.
@@ -255,7 +255,7 @@ unsafe fn new_entity_ref(doc: *mut _xmlDoc, name: *mut xmlChar) -> *mut _xmlNode
 }
 
 /// Look up the content of a predefined entity (lt/gt/amp/quot/apos), or NULL.
-unsafe fn predefined_entity_content(name: *const xmlChar) -> *const xmlChar {
+const unsafe fn predefined_entity_content(name: *const xmlChar) -> *const xmlChar {
     if name.is_null() {
         return ptr::null();
     }
@@ -263,24 +263,24 @@ unsafe fn predefined_entity_content(name: *const xmlChar) -> *const xmlChar {
     let n1 = unsafe { *name.add(1) };
     let n2 = unsafe { *name.add(2) };
     match c {
-        b'l' if n1 == b't' && n2 == 0 => b"<\0".as_ptr() as *const xmlChar,
-        b'g' if n1 == b't' && n2 == 0 => b">\0".as_ptr() as *const xmlChar,
+        b'l' if n1 == b't' && n2 == 0 => c"<".as_ptr() as *const xmlChar,
+        b'g' if n1 == b't' && n2 == 0 => c">".as_ptr() as *const xmlChar,
         b'a' if n1 == b'm' && n2 == b'p' && unsafe { *name.add(3) } == 0 => {
-            b"&\0".as_ptr() as *const xmlChar
+            c"&".as_ptr() as *const xmlChar
         }
         b'q' if n1 == b'u'
             && n2 == b'o'
             && unsafe { *name.add(3) } == b't'
             && unsafe { *name.add(4) } == 0 =>
         {
-            b"\"\0".as_ptr() as *const xmlChar
+            c"\"".as_ptr() as *const xmlChar
         }
         b'a' if n1 == b'p'
             && n2 == b'o'
             && unsafe { *name.add(3) } == b's'
             && unsafe { *name.add(4) } == 0 =>
         {
-            b"'\0".as_ptr() as *const xmlChar
+            c"'".as_ptr() as *const xmlChar
         }
         _ => ptr::null(),
     }
@@ -388,7 +388,7 @@ unsafe fn node_parse_att_value(
                         cur = cur.add(1);
                         remaining -= 1;
                     }
-                    if remaining <= 0 || *cur == 0 {
+                    if remaining == 0 || *cur == 0 {
                         failed = true;
                         break;
                     }
@@ -490,7 +490,7 @@ unsafe fn node_parse_att_value(
                     }
                 }
             } else if head.is_null() {
-                let node = unsafe { new_doc_text(doc, b"\0".as_ptr() as *const xmlChar) };
+                let node = unsafe { new_doc_text(doc, c"".as_ptr() as *const xmlChar) };
                 if node.is_null() {
                     failed = true;
                 } else {
@@ -534,7 +534,7 @@ unsafe fn ensure_xml_decl(doc: *mut _xmlDoc) -> *mut _xmlNs {
         tree::new_ns(
             ptr::null_mut(),
             XML_XML_NAMESPACE.as_ptr() as *const xmlChar,
-            b"xml\0".as_ptr() as *const xmlChar,
+            c"xml".as_ptr() as *const xmlChar,
         )
     };
     if ns.is_null() {
@@ -644,12 +644,12 @@ unsafe fn find_prop_node_internal(
 /// Upstream `xmlGetPropNodeValueInternal` — dup of the attribute's text value.
 unsafe fn get_prop_node_value_internal(prop: *mut _xmlAttr) -> *mut xmlChar {
     if (*prop).children.is_null() {
-        return unsafe { dup_str(b"\0".as_ptr() as *const xmlChar) };
+        return unsafe { dup_str(c"".as_ptr() as *const xmlChar) };
     }
     let text = (*prop).children;
     if (*text).type_ == XML_TEXT_NODE as c_int {
         if (*text).content.is_null() {
-            return unsafe { dup_str(b"\0".as_ptr() as *const xmlChar) };
+            return unsafe { dup_str(c"".as_ptr() as *const xmlChar) };
         }
         return unsafe { dup_str((*text).content) };
     }
@@ -834,14 +834,12 @@ unsafe fn node_set_doc_impl(node: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
                 }
             }
         }
-        t if t == XML_DTD_NODE as u32 => {
-            if !(*node).doc.is_null() {
-                if (*(*node).doc).intSubset == node as *mut _xmlDtd {
-                    (*(*node).doc).intSubset = ptr::null_mut();
-                }
-                if (*(*node).doc).extSubset == node as *mut _xmlDtd {
-                    (*(*node).doc).extSubset = ptr::null_mut();
-                }
+        t if t == XML_DTD_NODE as u32 && !(*node).doc.is_null() => {
+            if (*(*node).doc).intSubset == node as *mut _xmlDtd {
+                (*(*node).doc).intSubset = ptr::null_mut();
+            }
+            if (*(*node).doc).extSubset == node as *mut _xmlDtd {
+                (*(*node).doc).extSubset = ptr::null_mut();
             }
         }
         _ => {}
@@ -858,10 +856,8 @@ unsafe fn set_list_doc_impl(list: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
     }
     let mut cur = list;
     while !cur.is_null() {
-        if (*cur).doc != doc {
-            if unsafe { set_tree_doc_impl(cur, doc) } < 0 {
-                ret = -1;
-            }
+        if (*cur).doc != doc && unsafe { set_tree_doc_impl(cur, doc) } < 0 {
+            ret = -1;
         }
         cur = (*cur).next;
     }
@@ -880,10 +876,10 @@ unsafe fn set_tree_doc_impl(tree: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
     if (*tree).type_ == XML_ELEMENT_NODE as c_int {
         let mut prop = (*tree).properties;
         while !prop.is_null() {
-            if !(*prop).children.is_null() {
-                if unsafe { set_list_doc_impl((*prop).children, doc) } < 0 {
-                    ret = -1;
-                }
+            if !(*prop).children.is_null()
+                && unsafe { set_list_doc_impl((*prop).children, doc) } < 0
+            {
+                ret = -1;
             }
             if unsafe { node_set_doc_impl(prop as *mut _xmlNode, doc) } < 0 {
                 ret = -1;
@@ -891,10 +887,11 @@ unsafe fn set_tree_doc_impl(tree: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
             prop = (*prop).next;
         }
     }
-    if !(*tree).children.is_null() && (*tree).type_ != XML_ENTITY_REF_NODE as c_int {
-        if unsafe { set_list_doc_impl((*tree).children, doc) } < 0 {
-            ret = -1;
-        }
+    if !(*tree).children.is_null()
+        && (*tree).type_ != XML_ENTITY_REF_NODE as c_int
+        && unsafe { set_list_doc_impl((*tree).children, doc) } < 0
+    {
+        ret = -1;
     }
     if unsafe { node_set_doc_impl(tree, doc) } < 0 {
         ret = -1;
@@ -925,10 +922,8 @@ unsafe fn insert_prop(
 
     unsafe { tree::unlink_node(cur) };
 
-    if (*cur).doc != doc {
-        if unsafe { set_tree_doc_impl(cur, doc) } < 0 {
-            return ptr::null_mut();
-        }
+    if (*cur).doc != doc && unsafe { set_tree_doc_impl(cur, doc) } < 0 {
+        return ptr::null_mut();
     }
     (*cur).parent = parent;
     (*cur).prev = prev;
@@ -1014,13 +1009,11 @@ unsafe fn insert_node(
         (*(*cur).prev).next = (*cur).next;
     }
 
-    if (*cur).doc != doc {
-        if unsafe { set_tree_doc_impl(cur, doc) } < 0 {
-            (*cur).parent = ptr::null_mut();
-            (*cur).prev = ptr::null_mut();
-            (*cur).next = ptr::null_mut();
-            return ptr::null_mut();
-        }
+    if (*cur).doc != doc && unsafe { set_tree_doc_impl(cur, doc) } < 0 {
+        (*cur).parent = ptr::null_mut();
+        (*cur).prev = ptr::null_mut();
+        (*cur).next = ptr::null_mut();
+        return ptr::null_mut();
     }
 
     (*cur).parent = parent;
@@ -1095,12 +1088,10 @@ unsafe fn new_elem(
     (*cur).doc = doc;
     (*cur).name = name;
     (*cur).ns = ns;
-    if !content.is_null() {
-        if unsafe { node_parse_att_value(doc, cur, content, usize::MAX) } < 0 {
-            // Don't free name on error.
-            unsafe { xmlFreeImpl(cur as *mut c_void) };
-            return ptr::null_mut();
-        }
+    if !content.is_null() && unsafe { node_parse_att_value(doc, cur, content, usize::MAX) } < 0 {
+        // Don't free name on error.
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
+        return ptr::null_mut();
     }
     cur
 }
@@ -1589,13 +1580,14 @@ unsafe fn declare_ns_forced(
         {
             used = true;
         }
-        if !used && check_shadow != 0 && !(*elem).parent.is_null() {
-            if unsafe {
+        if !used
+            && check_shadow != 0
+            && !(*elem).parent.is_null()
+            && unsafe {
                 search_ns_by_prefix_strict(doc, (*elem).parent, cur_prefix, ptr::null_mut())
             } == 1
-            {
-                used = true;
-            }
+        {
+            used = true;
         }
         if !used {
             let ret = unsafe { tree::new_ns(ptr::null_mut(), ns_name, cur_prefix) };
@@ -1633,6 +1625,7 @@ unsafe fn declare_ns_forced(
 }
 
 /// Upstream `xmlDOMWrapNSNormAcquireNormalizedNs`.
+#[allow(clippy::too_many_arguments)]
 unsafe fn acquire_normalized_ns(
     doc: *mut _xmlDoc,
     elem: *mut _xmlNode,
@@ -2037,11 +2030,11 @@ pub unsafe extern "C" fn xmlNewDocProp(
         return ptr::null_mut();
     }
     (*cur).doc = doc;
-    if !value.is_null() {
-        if unsafe { node_parse_att_value(doc, cur as *mut _xmlNode, value, usize::MAX) } < 0 {
-            unsafe { free_prop_impl(cur) };
-            return ptr::null_mut();
-        }
+    if !value.is_null()
+        && unsafe { node_parse_att_value(doc, cur as *mut _xmlNode, value, usize::MAX) } < 0
+    {
+        unsafe { free_prop_impl(cur) };
+        return ptr::null_mut();
     }
     cur
 }
@@ -2376,7 +2369,7 @@ pub unsafe extern "C" fn xmlNodeSetLang(cur: *mut _xmlNode, lang: *const xmlChar
     if ns.is_null() {
         return -1;
     }
-    let attr = unsafe { set_ns_prop_impl(cur, ns, b"lang\0".as_ptr() as *const xmlChar, lang) };
+    let attr = unsafe { set_ns_prop_impl(cur, ns, c"lang".as_ptr() as *const xmlChar, lang) };
     if attr.is_null() {
         return -1;
     }
@@ -2404,7 +2397,7 @@ pub unsafe extern "C" fn xmlNodeGetLang(cur: *const _xmlNode) -> *mut xmlChar {
         let lang = unsafe {
             get_attr_value(
                 c as *mut _xmlNode,
-                b"lang\0".as_ptr() as *const xmlChar,
+                c"lang".as_ptr() as *const xmlChar,
                 XML_XML_NAMESPACE.as_ptr() as *const xmlChar,
             )
         };
@@ -2445,7 +2438,7 @@ pub unsafe extern "C" fn xmlNodeSetSpacePreserve(cur: *mut _xmlNode, val: c_int)
         set_ns_prop_impl(
             cur,
             ns,
-            b"space\0".as_ptr() as *const xmlChar,
+            c"space".as_ptr() as *const xmlChar,
             string.as_ptr() as *const xmlChar,
         )
     };
@@ -2476,25 +2469,21 @@ pub unsafe extern "C" fn xmlNodeGetSpacePreserve(cur: *const _xmlNode) -> c_int 
         let space = unsafe {
             get_attr_value(
                 c as *mut _xmlNode,
-                b"space\0".as_ptr() as *const xmlChar,
+                c"space".as_ptr() as *const xmlChar,
                 XML_XML_NAMESPACE.as_ptr() as *const xmlChar,
             )
         };
         if !space.is_null() {
             if unsafe {
-                crate::abi::exports_xml2::xmlStrEqual(
-                    space,
-                    b"preserve\0".as_ptr() as *const xmlChar,
-                ) != 0
+                crate::abi::exports_xml2::xmlStrEqual(space, c"preserve".as_ptr() as *const xmlChar)
+                    != 0
             } {
                 unsafe { xmlFreeImpl(space as *mut c_void) };
                 return 1;
             }
             if unsafe {
-                crate::abi::exports_xml2::xmlStrEqual(
-                    space,
-                    b"default\0".as_ptr() as *const xmlChar,
-                ) != 0
+                crate::abi::exports_xml2::xmlStrEqual(space, c"default".as_ptr() as *const xmlChar)
+                    != 0
             } {
                 unsafe { xmlFreeImpl(space as *mut c_void) };
                 return 0;
@@ -2584,7 +2573,7 @@ pub unsafe extern "C" fn xmlNodeSetBase(cur: *mut _xmlNode, uri: *const xmlChar)
     if fixed.is_null() {
         return -1;
     }
-    let attr = unsafe { set_ns_prop_impl(cur, ns, b"base\0".as_ptr() as *const xmlChar, fixed) };
+    let attr = unsafe { set_ns_prop_impl(cur, ns, c"base".as_ptr() as *const xmlChar, fixed) };
     if attr.is_null() {
         unsafe { xmlFreeImpl(fixed as *mut c_void) };
         return -1;
@@ -2642,8 +2631,7 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
                 continue;
             }
             if unsafe { strcasecmp_eq((*c).name, b"base") } {
-                ret =
-                    unsafe { get_attr_value(c, b"href\0".as_ptr() as *const xmlChar, ptr::null()) };
+                ret = unsafe { get_attr_value(c, c"href".as_ptr() as *const xmlChar, ptr::null()) };
                 if ret.is_null() {
                     return 1;
                 }
@@ -2676,7 +2664,7 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
             let base = unsafe {
                 get_attr_value(
                     c as *mut _xmlNode,
-                    b"base\0".as_ptr() as *const xmlChar,
+                    c"base".as_ptr() as *const xmlChar,
                     XML_XML_NAMESPACE.as_ptr() as *const xmlChar,
                 )
             };
@@ -2703,29 +2691,28 @@ pub unsafe extern "C" fn xmlNodeGetBaseSafe(
                     && (unsafe { *ret } == b'h'
                         || unsafe { *ret } == b'f'
                         || unsafe { *ret } == b'u')
-                {
-                    if unsafe {
+                    && (unsafe {
                         crate::abi::exports_xml2::xmlStrncmp(
                             ret,
-                            b"http://\0".as_ptr() as *const xmlChar,
+                            c"http://".as_ptr() as *const xmlChar,
                             7,
                         ) == 0
                     } || unsafe {
                         crate::abi::exports_xml2::xmlStrncmp(
                             ret,
-                            b"ftp://\0".as_ptr() as *const xmlChar,
+                            c"ftp://".as_ptr() as *const xmlChar,
                             6,
                         ) == 0
                     } || unsafe {
                         crate::abi::exports_xml2::xmlStrncmp(
                             ret,
-                            b"urn:\0".as_ptr() as *const xmlChar,
+                            c"urn:".as_ptr() as *const xmlChar,
                             4,
                         ) == 0
-                    } {
-                        *baseOut = ret;
-                        return 0;
-                    }
+                    })
+                {
+                    *baseOut = ret;
+                    return 0;
                 }
             }
         }
@@ -2789,7 +2776,7 @@ pub unsafe extern "C" fn xmlNodeGetBase(doc: *const _xmlDoc, cur: *const _xmlNod
 ///
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlNodeIsText(node: *const _xmlNode) -> c_int {
+pub const unsafe extern "C" fn xmlNodeIsText(node: *const _xmlNode) -> c_int {
     if node.is_null() {
         return 0;
     }
@@ -2911,10 +2898,8 @@ pub unsafe extern "C" fn xmlAddChildList(
     let mut oom = 0;
     let mut iter = cur;
     while !iter.is_null() {
-        if (*iter).doc != (*parent).doc {
-            if unsafe { set_tree_doc_impl(iter, (*parent).doc) } < 0 {
-                oom = 1;
-            }
+        if (*iter).doc != (*parent).doc && unsafe { set_tree_doc_impl(iter, (*parent).doc) } < 0 {
+            oom = 1;
         }
         iter = (*iter).next;
     }
@@ -3283,13 +3268,7 @@ pub unsafe extern "C" fn xmlGetCompressMode() -> c_int {
 /// ```
 #[no_mangle]
 pub unsafe extern "C" fn xmlSetCompressMode(mode: c_int) {
-    let m = if mode < 0 {
-        0
-    } else if mode > 9 {
-        9
-    } else {
-        mode
-    };
+    let m = mode.clamp(0, 9);
     XML_COMPRESS_MODE.store(m, Ordering::Relaxed);
 }
 
@@ -3427,8 +3406,8 @@ pub unsafe extern "C" fn xmlDOMWrapRemoveNode(
                                 ret = -1;
                             }
                         }
-                        if !ns.is_null() {
-                            if unsafe {
+                        if !ns.is_null()
+                            && unsafe {
                                 ns_norm_add_ns_map_item2(
                                     &mut list,
                                     &mut size_list,
@@ -3437,9 +3416,8 @@ pub unsafe extern "C" fn xmlDOMWrapRemoveNode(
                                     ns,
                                 )
                             } == -1
-                            {
-                                ret = -1;
-                            }
+                        {
+                            ret = -1;
                         }
                         (*cur).ns = ns;
                     }
@@ -3449,46 +3427,43 @@ pub unsafe extern "C" fn xmlDOMWrapRemoveNode(
                     continue 'outer;
                 }
             }
-            t if t == XML_ATTRIBUTE_NODE as u32 => {
-                if !(*cur).ns.is_null() {
-                    let mut mapped = false;
-                    if !list.is_null() {
-                        let mut i = 0;
-                        let mut j = 0;
-                        while i < nb_list {
-                            if (*cur).ns == *list.add(j as usize) {
-                                (*cur).ns = *list.add((j + 1) as usize);
-                                mapped = true;
-                                break;
-                            }
-                            i += 1;
-                            j += 2;
+            t if t == XML_ATTRIBUTE_NODE as u32 && !(*cur).ns.is_null() => {
+                let mut mapped = false;
+                if !list.is_null() {
+                    let mut i = 0;
+                    let mut j = 0;
+                    while i < nb_list {
+                        if (*cur).ns == *list.add(j as usize) {
+                            (*cur).ns = *list.add((j + 1) as usize);
+                            mapped = true;
+                            break;
+                        }
+                        i += 1;
+                        j += 2;
+                    }
+                }
+                if !mapped {
+                    let mut ns: *mut _xmlNs = ptr::null_mut();
+                    if ctxt.is_null() {
+                        ns = unsafe { store_ns(doc, (*(*cur).ns).href, (*(*cur).ns).prefix) };
+                        if ns.is_null() {
+                            ret = -1;
                         }
                     }
-                    if !mapped {
-                        let mut ns: *mut _xmlNs = ptr::null_mut();
-                        if ctxt.is_null() {
-                            ns = unsafe { store_ns(doc, (*(*cur).ns).href, (*(*cur).ns).prefix) };
-                            if ns.is_null() {
-                                ret = -1;
-                            }
-                        }
-                        if !ns.is_null() {
-                            if unsafe {
-                                ns_norm_add_ns_map_item2(
-                                    &mut list,
-                                    &mut size_list,
-                                    &mut nb_list,
-                                    (*cur).ns,
-                                    ns,
-                                )
-                            } == -1
-                            {
-                                ret = -1;
-                            }
-                        }
-                        (*cur).ns = ns;
+                    if !ns.is_null()
+                        && unsafe {
+                            ns_norm_add_ns_map_item2(
+                                &mut list,
+                                &mut size_list,
+                                &mut nb_list,
+                                (*cur).ns,
+                                ns,
+                            )
+                        } == -1
+                    {
+                        ret = -1;
                     }
+                    (*cur).ns = ns;
                 }
             }
             _ => {}
@@ -3576,11 +3551,9 @@ pub unsafe extern "C" fn xmlDOMWrapReconcileNamespaces(
                         if parnsdone == 0 {
                             if !(*elem).parent.is_null()
                                 && (*elem).parent != (*(*elem).parent).doc as *mut _xmlNode
+                                && unsafe { gather_in_scope_ns(&mut ns_map, (*elem).parent) } == -1
                             {
-                                if unsafe { gather_in_scope_ns(&mut ns_map, (*elem).parent) } == -1
-                                {
-                                    ret = -1;
-                                }
+                                ret = -1;
                             }
                             parnsdone = 1;
                         }
@@ -3773,6 +3746,7 @@ pub unsafe extern "C" fn xmlDOMWrapReconcileNamespaces(
 
 /// Shared ns-reference handling of xmlDOMWrapReconcileNamespaces (the
 /// `XML_ATTRIBUTE_NODE` case body, also reached by element fall-through).
+#[allow(clippy::too_many_arguments)]
 unsafe fn reconcile_ns_reference(
     doc: *mut _xmlDoc,
     elem: *mut _xmlNode,
@@ -3794,10 +3768,9 @@ unsafe fn reconcile_ns_reference(
         if !elem.is_null()
             && !(*elem).parent.is_null()
             && (*elem).parent != (*(*elem).parent).doc as *mut _xmlNode
+            && unsafe { gather_in_scope_ns(ns_map, (*elem).parent) } == -1
         {
-            if unsafe { gather_in_scope_ns(ns_map, (*elem).parent) } == -1 {
-                *ret = -1;
-            }
+            *ret = -1;
         }
         *parnsdone = 1;
     }
@@ -3882,10 +3855,8 @@ unsafe fn domwrap_adopt_branch(
 
     'outer: loop {
         if !leave {
-            if (*cur).doc != dest_doc {
-                if unsafe { node_set_doc_impl(cur, dest_doc) } < 0 {
-                    ret = -1;
-                }
+            if (*cur).doc != dest_doc && unsafe { node_set_doc_impl(cur, dest_doc) } < 0 {
+                ret = -1;
             }
             match (*cur).type_ as u32 {
                 t if t == XML_XINCLUDE_START as u32 || t == XML_XINCLUDE_END as u32 => {
@@ -4137,10 +4108,9 @@ unsafe fn domwrap_adopt_attr(
     if attr.is_null() || dest_doc.is_null() {
         return -1;
     }
-    if (*attr).doc != dest_doc {
-        if unsafe { set_tree_doc_impl(attr as *mut _xmlNode, dest_doc) } < 0 {
-            ret = -1;
-        }
+    if (*attr).doc != dest_doc && unsafe { set_tree_doc_impl(attr as *mut _xmlNode, dest_doc) } < 0
+    {
+        ret = -1;
     }
     if !(*attr).ns.is_null() {
         let mut ns: *mut _xmlNs = ptr::null_mut();
@@ -4235,10 +4205,8 @@ pub unsafe extern "C" fn xmlDOMWrapAdoptNode(
     } else if (*node).type_ == XML_ATTRIBUTE_NODE as c_int {
         return unsafe { domwrap_adopt_attr(ctxt, node as *mut _xmlAttr, destDoc, destParent) };
     } else {
-        if (*node).doc != destDoc {
-            if unsafe { node_set_doc_impl(node, destDoc) } < 0 {
-                ret = -1;
-            }
+        if (*node).doc != destDoc && unsafe { node_set_doc_impl(node, destDoc) } < 0 {
+            ret = -1;
         }
     }
     ret
@@ -4394,11 +4362,12 @@ pub unsafe extern "C" fn xmlDOMWrapCloneNode(
                     depth += 1;
                     if !(*cur).nsDef.is_null() {
                         if parnsdone == 0 {
-                            if !destParent.is_null() && ctxt.is_null() {
-                                if unsafe { gather_in_scope_ns(&mut ns_map, destParent) } == -1 {
-                                    ret = -1;
-                                    break;
-                                }
+                            if !destParent.is_null()
+                                && ctxt.is_null()
+                                && unsafe { gather_in_scope_ns(&mut ns_map, destParent) } == -1
+                            {
+                                ret = -1;
+                                break;
                             }
                             parnsdone = 1;
                         }
@@ -4507,11 +4476,12 @@ pub unsafe extern "C" fn xmlDOMWrapCloneNode(
             // ns-reference handling (element and attribute nodes).
             if !(*cur).ns.is_null() {
                 if parnsdone == 0 {
-                    if !destParent.is_null() && ctxt.is_null() {
-                        if unsafe { gather_in_scope_ns(&mut ns_map, destParent) } == -1 {
-                            ret = -1;
-                            break;
-                        }
+                    if !destParent.is_null()
+                        && ctxt.is_null()
+                        && unsafe { gather_in_scope_ns(&mut ns_map, destParent) } == -1
+                    {
+                        ret = -1;
+                        break;
                     }
                     parnsdone = 1;
                 }
@@ -4575,14 +4545,14 @@ pub unsafe extern "C" fn xmlDOMWrapCloneNode(
             state = ST_INTO_CONTENT;
             continue 'outer;
         } else if state == ST_INTO_CONTENT {
-            if !(*cur).children.is_null() {
-                if deep != 0 || (*cur).type_ == XML_ATTRIBUTE_NODE as c_int {
-                    prev_clone = ptr::null_mut();
-                    parent_clone = clone;
-                    cur = (*cur).children;
-                    state = ST_NORMAL;
-                    continue 'outer;
-                }
+            if !(*cur).children.is_null()
+                && (deep != 0 || (*cur).type_ == XML_ATTRIBUTE_NODE as c_int)
+            {
+                prev_clone = ptr::null_mut();
+                parent_clone = clone;
+                cur = (*cur).children;
+                state = ST_NORMAL;
+                continue 'outer;
             }
             state = ST_LEAVE;
         }
@@ -5015,7 +4985,7 @@ pub unsafe extern "C" fn xmlNewTextWriterPushParser(
 ///
 /// - All arguments are unused.
 #[no_mangle]
-pub unsafe extern "C" fn xmlNewGlobalNs(
+pub const unsafe extern "C" fn xmlNewGlobalNs(
     _doc: *mut _xmlDoc,
     _href: *const xmlChar,
     _prefix: *const xmlChar,

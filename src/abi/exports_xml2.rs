@@ -47,11 +47,9 @@ use std::ffi::{CStr, CString};
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
 
-use crate::xml::xinclude;
 use crate::xml::xpath::ast::CompiledExpr;
 use crate::xml::xpath::context::{BoxedXPathFunction, XPathContext};
 use crate::xml::xpath::types::{NodeSet, XPathValue};
-use crate::xml::xpointer;
 
 use crate::abi::allocator::*;
 use crate::abi::callbacks::*;
@@ -90,7 +88,7 @@ pub unsafe extern "C" fn xmlInitParser() {
 /// statically/on first use, so this is a no-op that exists for ABI
 /// compatibility.
 #[no_mangle]
-pub unsafe extern "C" fn xmlInitGlobals() {
+pub const unsafe extern "C" fn xmlInitGlobals() {
     // Globals are statically initialized in the candidate.
 }
 
@@ -104,7 +102,7 @@ pub unsafe extern "C" fn xmlInitGlobals() {
 /// void xmlInitializeGlobalState(xmlGlobalStatePtr gs);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
+pub const unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
     // No-op: the candidate's globals are statically initialized.
 }
 
@@ -117,7 +115,7 @@ pub unsafe extern "C" fn xmlInitializeGlobalState(_gs: *mut c_void) {
 /// int xmlInitializeDict(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlInitializeDict() -> c_int {
+pub const extern "C" fn xmlInitializeDict() -> c_int {
     0
 }
 
@@ -131,7 +129,7 @@ pub extern "C" fn xmlInitializeDict() -> c_int {
 /// void xmlInitializePredefinedEntities(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlInitializePredefinedEntities() {
+pub const extern "C" fn xmlInitializePredefinedEntities() {
     // No-op: predefined entities are resolved on demand.
 }
 
@@ -144,7 +142,7 @@ pub extern "C" fn xmlInitializePredefinedEntities() {
 /// void xmlCleanupPredefinedEntities(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCleanupPredefinedEntities() {
+pub const extern "C" fn xmlCleanupPredefinedEntities() {
     // No-op.
 }
 
@@ -159,11 +157,14 @@ pub extern "C" fn xmlCleanupPredefinedEntities() {
 /// void xmlDefaultSAXHandlerInit(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDefaultSAXHandlerInit() {
+pub const extern "C" fn xmlDefaultSAXHandlerInit() {
     // The candidate builds default handlers on demand; the exported
     // xmlDefaultSAXHandler global is part of the R-000135 data closure.
 }
 
+/// The current default SAX version (2), stored as an atomic so callers can
+/// query it without taking a lock.
+static SAX2_DEFAULT_VERSION: core::sync::atomic::AtomicI32 = core::sync::atomic::AtomicI32::new(2);
 /// Set the default SAX version (upstream SAX2.c `xmlSAXDefaultVersion`):
 /// returns the previous default; -1 when the version is not 1 or 2.
 ///
@@ -172,7 +173,6 @@ pub extern "C" fn xmlDefaultSAXHandlerInit() {
 /// ```c
 /// int xmlSAXDefaultVersion(int version);
 /// ```
-static SAX2_DEFAULT_VERSION: core::sync::atomic::AtomicI32 = core::sync::atomic::AtomicI32::new(2);
 #[no_mangle]
 pub extern "C" fn xmlSAXDefaultVersion(version: c_int) -> c_int {
     use core::sync::atomic::Ordering;
@@ -250,7 +250,7 @@ pub extern "C" fn xmlHasFeature(feature: c_int) -> c_int {
 /// keeps globals alive for the process lifetime (repeated init/cleanup is
 /// reference-counted); no-op for ABI compatibility.
 #[no_mangle]
-pub unsafe extern "C" fn xmlCleanupGlobals() {
+pub const unsafe extern "C" fn xmlCleanupGlobals() {
     // The candidate's globals are process-lifetime statics.
 }
 
@@ -374,7 +374,7 @@ pub unsafe extern "C" fn xmlRMutexUnlock(tok: *mut c_void) {
 /// int xmlCheckThreadLocalStorage(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlCheckThreadLocalStorage() -> c_int {
+pub const extern "C" fn xmlCheckThreadLocalStorage() -> c_int {
     0
 }
 
@@ -429,7 +429,7 @@ pub extern "C" fn xmlIsInitialized() -> c_int {
 /// ```
 /// This is an alias.
 #[no_mangle]
-pub unsafe extern "C" fn xmlLockLibrary() {
+pub const unsafe extern "C" fn xmlLockLibrary() {
     crate::xml::threads::lock_library();
 }
 
@@ -441,7 +441,7 @@ pub unsafe extern "C" fn xmlLockLibrary() {
 /// void xmlUnlockLibrary(void);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlUnlockLibrary() {
+pub const unsafe extern "C" fn xmlUnlockLibrary() {
     crate::xml::threads::unlock_library();
 }
 
@@ -519,7 +519,7 @@ pub extern "C" fn xmlGetLastError() -> *mut _xmlError {
 ///
 /// - `from` and `to` must be valid pointers to `_xmlError` structs, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError) -> c_int {
+pub const unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError) -> c_int {
     // SAFETY: Delegates to xml::errors with same safety contract.
     unsafe { crate::xml::errors::copy_error(from, to) }
 }
@@ -536,7 +536,7 @@ pub unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError
 ///
 /// - `err` must be a valid pointer to `_xmlError`, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlResetError(err: *mut _xmlError) {
+pub const unsafe extern "C" fn xmlResetError(err: *mut _xmlError) {
     // SAFETY: Delegates to xml::errors with same safety contract.
     unsafe { crate::xml::errors::reset_error(err) };
 }
@@ -620,7 +620,7 @@ pub unsafe extern "C" fn xmlStrdup(cur: *const xmlChar) -> *mut xmlChar {
         return ptr::null_mut();
     }
     unsafe {
-        ptr::copy_nonoverlapping(cur as *const u8, new_ptr as *mut u8, size as usize);
+        ptr::copy_nonoverlapping(cur, new_ptr as *mut u8, size as usize);
     }
     new_ptr as *mut xmlChar
 }
@@ -647,7 +647,7 @@ pub unsafe extern "C" fn xmlStrndup(cur: *const xmlChar, len: c_int) -> *mut xml
         return ptr::null_mut();
     }
     unsafe {
-        ptr::copy_nonoverlapping(cur as *const u8, new_ptr as *mut u8, len as usize);
+        ptr::copy_nonoverlapping(cur, new_ptr as *mut u8, len as usize);
         *(new_ptr.add(len as usize) as *mut u8) = 0;
     }
     new_ptr as *mut xmlChar
@@ -685,7 +685,7 @@ pub unsafe extern "C" fn xmlStrlen(str: *const xmlChar) -> c_int {
 ///
 /// - `str` must be a valid null-terminated string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlStrchr(str: *const xmlChar, val: xmlChar) -> *const xmlChar {
+pub const unsafe extern "C" fn xmlStrchr(str: *const xmlChar, val: xmlChar) -> *const xmlChar {
     if str.is_null() {
         return ptr::null();
     }
@@ -886,7 +886,7 @@ pub unsafe extern "C" fn xmlSplitQName(
 /// int xmlUTF8Strlen(const xmlChar *utf);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlUTF8Strlen(utf: *const xmlChar) -> c_int {
+pub const unsafe extern "C" fn xmlUTF8Strlen(utf: *const xmlChar) -> c_int {
     crate::xml::string::utf8_strlen(utf)
 }
 
@@ -898,7 +898,7 @@ pub unsafe extern "C" fn xmlUTF8Strlen(utf: *const xmlChar) -> c_int {
 /// int xmlUTF8Size(const xmlChar *utf);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlUTF8Size(utf: *const xmlChar) -> c_int {
+pub const unsafe extern "C" fn xmlUTF8Size(utf: *const xmlChar) -> c_int {
     crate::xml::string::utf8_size(utf)
 }
 
@@ -910,7 +910,7 @@ pub unsafe extern "C" fn xmlUTF8Size(utf: *const xmlChar) -> c_int {
 /// int xmlCheckUTF8(const unsigned char *utf);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlCheckUTF8(utf: *const xmlChar) -> c_int {
+pub const unsafe extern "C" fn xmlCheckUTF8(utf: *const xmlChar) -> c_int {
     crate::xml::string::check_utf8(utf)
 }
 
@@ -998,7 +998,7 @@ pub unsafe extern "C" fn xmlStrcat(cur: *mut xmlChar, add: *const xmlChar) -> *m
         return ptr::null_mut();
     }
     unsafe {
-        ptr::copy_nonoverlapping(add as *const u8, (new_ptr as *mut u8).add(cur_len), add_len);
+        ptr::copy_nonoverlapping(add, (new_ptr as *mut u8).add(cur_len), add_len);
         *((new_ptr as *mut u8).add(cur_len + add_len)) = 0;
     }
     new_ptr as *mut xmlChar
@@ -1035,7 +1035,7 @@ pub unsafe extern "C" fn xmlStrncat(
         return ptr::null_mut();
     }
     unsafe {
-        ptr::copy_nonoverlapping(add as *const u8, (new_ptr as *mut u8).add(cur_len), len);
+        ptr::copy_nonoverlapping(add, (new_ptr as *mut u8).add(cur_len), len);
         *((new_ptr as *mut u8).add(cur_len + len)) = 0;
     }
     new_ptr as *mut xmlChar
@@ -1083,7 +1083,7 @@ pub unsafe extern "C" fn xmlStrcpy(dst: *mut xmlChar, src: *const xmlChar) -> *m
     }
     let len = unsafe { xmlStrlen(src) } as usize + 1;
     unsafe {
-        ptr::copy_nonoverlapping(src as *const u8, dst as *mut u8, len);
+        ptr::copy_nonoverlapping(src, dst, len);
     }
     dst
 }
@@ -1108,7 +1108,7 @@ pub unsafe extern "C" fn xmlStrncpy(
     let src_len = unsafe { xmlStrlen(src) } as usize;
     let copy_len = if src_len < len { src_len } else { len - 1 };
     unsafe {
-        ptr::copy_nonoverlapping(src as *const u8, dst as *mut u8, copy_len);
+        ptr::copy_nonoverlapping(src, dst, copy_len);
         *dst.add(copy_len) = 0;
     }
     dst
@@ -1320,8 +1320,6 @@ pub unsafe extern "C" fn xmlSAX2InitDefaultSAXHandler(
 pub unsafe extern "C" fn xmlSAX2InitHtmlDefaultSAXHandler(
     handler: *mut crate::abi::structs::_xmlSAXHandler,
 ) {
-    use crate::abi::callbacks::*;
-    use crate::abi::structs::_xmlSAXHandler;
     if handler.is_null() {
         return;
     }
@@ -1844,7 +1842,7 @@ pub unsafe extern "C" fn xmlTextMerge(
 /// xmlDtdPtr xmlGetIntSubset(const xmlDoc *doc);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetIntSubset(doc: *const _xmlDoc) -> *mut _xmlDtd {
+pub const extern "C" fn xmlGetIntSubset(doc: *const _xmlDoc) -> *mut _xmlDtd {
     crate::xml::tree::get_int_subset(doc)
 }
 
@@ -2383,7 +2381,7 @@ pub unsafe extern "C" fn xmlEncodeEntities(
                 msg.as_ptr() as *const c_void,
                 1,
                 msg.len(),
-                libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut libc::FILE,
+                libc::fdopen(2, b"w\0" as *const u8 as *const c_char),
             );
         }
     }
@@ -3764,7 +3762,7 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
         c_int,
     ) -> *mut _xmlOutputBuffer,
 > {
-    unsafe { core::ptr::addr_of_mut!(OUTPUT_CREATE_FILENAME_DEFAULT) }
+    core::ptr::addr_of_mut!(OUTPUT_CREATE_FILENAME_DEFAULT)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3780,7 +3778,7 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreate() -> *mut c_void {
-    let d = unsafe { crate::xml::dictionary::dict_create() as *mut c_void };
+    let d = { crate::xml::dictionary::dict_create() as *mut c_void };
     if !d.is_null() {
         // UPSTREAM-PARITY: the creator holds the base reference (count 1);
         // xmlDictReference adds to it and xmlDictFree decrements, freeing
@@ -3863,8 +3861,8 @@ pub unsafe extern "C" fn xmlDictExists(
 /// unsigned int xmlDictSize(const xmlDictPtr dict);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
-    unsafe {
+pub const extern "C" fn xmlDictSize(dict: *const c_void) -> c_uint {
+    {
         crate::xml::dictionary::dict_size(dict as *const crate::xml::dictionary::Dict) as c_uint
     }
 }
@@ -3912,7 +3910,7 @@ pub extern "C" fn xmlDictFree(dict: *mut c_void) {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: c_uint) -> c_uint {
-    unsafe {
+    {
         crate::xml::dictionary::dict_set_limit(
             dict as *mut crate::xml::dictionary::Dict,
             limit as usize,
@@ -3929,7 +3927,7 @@ pub extern "C" fn xmlDictSetLimit(dict: *mut c_void, limit: c_uint) -> c_uint {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictGetUsage(dict: *const c_void) -> c_uint {
-    unsafe {
+    {
         crate::xml::dictionary::dict_get_usage(dict as *mut crate::xml::dictionary::Dict) as c_uint
     }
 }
@@ -3947,7 +3945,7 @@ pub extern "C" fn xmlDictGetUsage(dict: *const c_void) -> c_uint {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlHashCreate(size: c_int) -> *mut c_void {
-    unsafe { crate::xml::hash::hash_create(size) as *mut c_void }
+    crate::xml::hash::hash_create(size) as *mut c_void
 }
 
 /// Create a new hash table with a dictionary.
@@ -3959,7 +3957,7 @@ pub extern "C" fn xmlHashCreate(size: c_int) -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlHashCreateDict(size: c_int, dict: *mut c_void) -> *mut c_void {
-    unsafe { crate::xml::hash::hash_create_dict(size, dict) as *mut c_void }
+    crate::xml::hash::hash_create_dict(size, dict) as *mut c_void
 }
 
 /// Free a hash table.
@@ -4165,7 +4163,7 @@ pub unsafe extern "C" fn xmlHashLookup3(
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlHashSize(table: *mut c_void) -> c_int {
-    unsafe { crate::xml::hash::hash_size(table as *mut crate::xml::hash::HashTable) }
+    crate::xml::hash::hash_size(table as *mut crate::xml::hash::HashTable)
 }
 
 /// Remove an entry.
@@ -4281,7 +4279,7 @@ pub extern "C" fn xmlListCreate(
     deallocator: Option<unsafe extern "C" fn(*mut c_void)>,
     compare: Option<unsafe extern "C" fn(*const c_void, *const c_void) -> c_int>,
 ) -> *mut c_void {
-    unsafe { crate::xml::list::list_create(deallocator, compare) as *mut c_void }
+    crate::xml::list::list_create(deallocator, compare) as *mut c_void
 }
 
 /// Delete a list.
@@ -4411,7 +4409,7 @@ pub extern "C" fn xmlListClear(list: *mut c_void) {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListEmpty(list: *mut c_void) -> c_int {
-    unsafe { crate::xml::list::list_empty(list as *mut crate::xml::list::List) }
+    crate::xml::list::list_empty(list as *mut crate::xml::list::List)
 }
 
 /// Get front element.
@@ -4423,7 +4421,7 @@ pub extern "C" fn xmlListEmpty(list: *mut c_void) -> c_int {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListFront(list: *mut c_void) -> *mut c_void {
-    unsafe { crate::xml::list::list_front(list as *mut crate::xml::list::List) }
+    crate::xml::list::list_front(list as *mut crate::xml::list::List)
 }
 
 /// Get back element.
@@ -4435,7 +4433,7 @@ pub extern "C" fn xmlListFront(list: *mut c_void) -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListBack(list: *mut c_void) -> *mut c_void {
-    unsafe { crate::xml::list::list_back(list as *mut crate::xml::list::List) }
+    crate::xml::list::list_back(list as *mut crate::xml::list::List)
 }
 
 /// Get list size.
@@ -4447,7 +4445,7 @@ pub extern "C" fn xmlListBack(list: *mut c_void) -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlListSize(list: *mut c_void) -> c_int {
-    unsafe { crate::xml::list::list_size(list as *mut crate::xml::list::List) }
+    crate::xml::list::list_size(list as *mut crate::xml::list::List)
 }
 
 /// Sort a list.
@@ -4967,7 +4965,7 @@ pub unsafe extern "C" fn xmlUTF8ToIsolat1(
             if c < 0x80 {
                 *o = c;
                 o = o.add(1);
-            } else if c >= 0xC2 && c <= 0xC3 {
+            } else if (0xC2..=0xC3).contains(&c) {
                 if (inend as usize) - (cur as usize) < 2 {
                     break;
                 }
@@ -5001,7 +4999,7 @@ pub extern "C" fn xmlGetCharEncodingName(enc: c_int) -> *const c_char {
     /* Values outside the local enum resolve against the upstream
      * defaultHandlers table (XML_CHAR_ENCODING_UTF16=23, HTML=24,
      * WINDOWS_1252=31); anything else is unknown (NULL). */
-    if enc < -1 || enc > 22 {
+    if !(-1..=22).contains(&enc) {
         return match enc {
             23 => c"UTF-16".as_ptr(),
             24 => c"HTML".as_ptr(),
@@ -5842,11 +5840,9 @@ pub unsafe extern "C" fn xmlXPathFreeObject(obj: *mut _xmlXPathObject) {
     }
     let typ = (*obj).type_;
     // Free string storage.
-    if typ == xmlXPathObjectType::XPATH_STRING as c_int {
-        if !(*obj).stringval.is_null() {
-            xmlFreeImpl((*obj).stringval as *mut c_void);
-            (*obj).stringval = ptr::null_mut();
-        }
+    if typ == xmlXPathObjectType::XPATH_STRING as c_int && !(*obj).stringval.is_null() {
+        xmlFreeImpl((*obj).stringval as *mut c_void);
+        (*obj).stringval = ptr::null_mut();
     }
     // Free node-set storage.
     if typ == xmlXPathObjectType::XPATH_NODESET as c_int {
@@ -6057,12 +6053,12 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
     let mut n = node1;
     while !n.is_null() {
         chain1.push(n);
-        n = (*n).parent as *mut _xmlNode;
+        n = (*n).parent;
     }
     let mut n = node2;
     while !n.is_null() {
         chain2.push(n);
-        n = (*n).parent as *mut _xmlNode;
+        n = (*n).parent;
     }
     // Distinct documents (or entities) case.
     if chain1[chain1.len() - 1] != chain2[chain2.len() - 1] {
@@ -6088,8 +6084,8 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
     let mut b = chain2[j - 1];
     // Climb to the same level.
     while !a.is_null() && !b.is_null() {
-        let pa = (*a).parent as *mut _xmlNode;
-        let pb = (*b).parent as *mut _xmlNode;
+        let pa = (*a).parent;
+        let pb = (*b).parent;
         if pa == pb {
             break;
         }
@@ -6097,7 +6093,7 @@ pub unsafe extern "C" fn xmlXPathCmpNodes(node1: *mut _xmlNode, node2: *mut _xml
         b = pb;
     }
     // Walk forward from the first child of the common parent.
-    let parent = (*a).parent as *mut _xmlNode;
+    let parent = (*a).parent;
     let mut child = if parent.is_null() {
         ptr::null_mut()
     } else {
@@ -6258,7 +6254,7 @@ pub unsafe extern "C" fn xmlXPathRegisterNs(
     // owned C strings, matching upstream ownership (strdup'd in nsHash,
     // freed by xmlXPathRegisteredNsCleanup / xmlXPathFreeContext).
     let map: &mut HashMap<String, CString> = if (*ctxt).nsHash.is_null() {
-        let b: Box<HashMap<String, CString>> = Box::new(HashMap::new());
+        let b: Box<HashMap<String, CString>> = Box::default();
         (*ctxt).nsHash = Box::into_raw(b) as *mut c_void;
         &mut *((*ctxt).nsHash as *mut HashMap<String, CString>)
     } else {
@@ -6687,7 +6683,7 @@ pub unsafe extern "C" fn xmlCatalogSave(filename: *const c_char) -> c_int {
     crate::xml::tree::xmlDocDumpFormatMemory(doc, &mut mem, &mut size, 1);
     let mut ret: c_int = -1;
     if !mem.is_null() {
-        let fp = libc::fopen(filename, b"w\0".as_ptr() as *const c_char);
+        let fp = libc::fopen(filename, c"w".as_ptr() as *const c_char);
         if !fp.is_null() {
             let written = libc::fwrite(mem as *const c_void, 1, size as usize, fp);
             ret = if written == size as usize { 0 } else { -1 };
@@ -6736,7 +6732,7 @@ pub extern "C" fn xmlCatalogConvert() -> *mut _xmlDoc {
 /// htmlDocPtr htmlParseFile(const char *filename, const char *encoding);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlParseFile(
+pub const unsafe extern "C" fn htmlParseFile(
     _filename: *const c_char,
     _encoding: *const c_char,
 ) -> *mut _xmlDoc {
@@ -6752,7 +6748,10 @@ pub unsafe extern "C" fn htmlParseFile(
 /// htmlDocPtr htmlParseMemory(const char *buffer, int size);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlParseMemory(_buffer: *const c_char, _size: c_int) -> *mut _xmlDoc {
+pub const unsafe extern "C" fn htmlParseMemory(
+    _buffer: *const c_char,
+    _size: c_int,
+) -> *mut _xmlDoc {
     // Phase 1: STUB
     ptr::null_mut()
 }
@@ -6765,7 +6764,7 @@ pub unsafe extern "C" fn htmlParseMemory(_buffer: *const c_char, _size: c_int) -
 /// htmlDocPtr htmlParseDoc(const xmlChar *cur, const char *encoding);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlParseDoc(
+pub const unsafe extern "C" fn htmlParseDoc(
     _cur: *const xmlChar,
     _encoding: *const c_char,
 ) -> *mut _xmlDoc {
@@ -6782,7 +6781,7 @@ pub unsafe extern "C" fn htmlParseDoc(
 ///                                            const char *encoding);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlCreateFileParserCtxt(
+pub const unsafe extern "C" fn htmlCreateFileParserCtxt(
     _filename: *const c_char,
     _encoding: *const c_char,
 ) -> *mut c_void {
@@ -6810,7 +6809,7 @@ pub extern "C" fn htmlFreeParserCtxt(ctxt: *mut c_void) {
 /// void htmlInitParser(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn htmlInitParser() {
+pub const extern "C" fn htmlInitParser() {
     // Phase 1: STUB
 }
 
@@ -6822,7 +6821,7 @@ pub extern "C" fn htmlInitParser() {
 /// void htmlCleanupParser(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn htmlCleanupParser() {
+pub const extern "C" fn htmlCleanupParser() {
     // Phase 1: STUB
 }
 
@@ -7167,7 +7166,7 @@ pub unsafe extern "C" fn xmlValidateElementDecl(
 ///                             xmlNotationPtr nota);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlValidateNotationDecl(
+pub const unsafe extern "C" fn xmlValidateNotationDecl(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
     nota: *mut _xmlNotation,
@@ -7663,7 +7662,6 @@ pub unsafe extern "C" fn xmlValidateEnumeration(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Dump a document to a file for debugging.
-
 /// Get the path to the current executable.
 ///
 /// # UPSTREAM-PARITY
@@ -7672,7 +7670,7 @@ pub unsafe extern "C" fn xmlValidateEnumeration(
 /// char *xmlGetBinaryPath(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetBinaryPath() -> *mut c_char {
+pub const extern "C" fn xmlGetBinaryPath() -> *mut c_char {
     // Phase 1: STUB
     ptr::null_mut()
 }
@@ -7685,7 +7683,7 @@ pub extern "C" fn xmlGetBinaryPath() -> *mut c_char {
 /// char *xmlGetHomeOfBinary(void);
 /// ```
 #[no_mangle]
-pub extern "C" fn xmlGetHomeOfBinary() -> *mut c_char {
+pub const extern "C" fn xmlGetHomeOfBinary() -> *mut c_char {
     // Phase 1: STUB
     ptr::null_mut()
 }
@@ -7825,7 +7823,7 @@ pub unsafe extern "C" fn xmlSAX2EntityDecl(
 
 /// Upstream SAX2.c `xmlSAX2AttributeDecl` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2AttributeDecl(
+pub const unsafe extern "C" fn xmlSAX2AttributeDecl(
     ctx: *mut c_void,
     elem: *const xmlChar,
     fullname: *const xmlChar,
@@ -7847,7 +7845,7 @@ pub unsafe extern "C" fn xmlSAX2AttributeDecl(
 
 /// Upstream SAX2.c `xmlSAX2ElementDecl` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2ElementDecl(
+pub const unsafe extern "C" fn xmlSAX2ElementDecl(
     ctx: *mut c_void,
     name: *const xmlChar,
     type_: c_int,
@@ -7858,7 +7856,7 @@ pub unsafe extern "C" fn xmlSAX2ElementDecl(
 
 /// Upstream SAX2.c `xmlSAX2NotationDecl` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2NotationDecl(
+pub const unsafe extern "C" fn xmlSAX2NotationDecl(
     ctx: *mut c_void,
     name: *const xmlChar,
     publicId: *const xmlChar,
@@ -7869,7 +7867,7 @@ pub unsafe extern "C" fn xmlSAX2NotationDecl(
 
 /// Upstream SAX2.c `xmlSAX2UnparsedEntityDecl` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2UnparsedEntityDecl(
+pub const unsafe extern "C" fn xmlSAX2UnparsedEntityDecl(
     ctx: *mut c_void,
     name: *const xmlChar,
     publicId: *const xmlChar,
@@ -7887,7 +7885,7 @@ pub unsafe extern "C" fn xmlSAX2UnparsedEntityDecl(
 
 /// Upstream SAX2.c `xmlSAX2ResolveEntity` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2ResolveEntity(
+pub const unsafe extern "C" fn xmlSAX2ResolveEntity(
     ctx: *mut c_void,
     publicId: *const xmlChar,
     systemId: *const xmlChar,
@@ -7897,7 +7895,7 @@ pub unsafe extern "C" fn xmlSAX2ResolveEntity(
 
 /// Upstream SAX2.c `xmlSAX2IsStandalone` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2IsStandalone(ctx: *mut c_void) -> c_int {
+pub const unsafe extern "C" fn xmlSAX2IsStandalone(ctx: *mut c_void) -> c_int {
     crate::xml::sax::default::default_sax_handler::isStandalone(ctx)
 }
 
@@ -7946,7 +7944,7 @@ pub unsafe extern "C" fn xmlSAX2GetColumnNumber(ctx: *mut c_void) -> c_int {
 
 /// Upstream SAX2.c `xmlSAX2GetPublicId`.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2GetPublicId(ctx: *mut c_void) -> *const xmlChar {
+pub const unsafe extern "C" fn xmlSAX2GetPublicId(ctx: *mut c_void) -> *const xmlChar {
     crate::xml::sax::default::default_sax_handler::getPublicId(ctx)
 }
 
@@ -7979,7 +7977,7 @@ pub unsafe extern "C" fn xmlSAX2EndElement(ctx: *mut c_void, name: *const xmlCha
 
 /// Upstream SAX2.c `xmlSAX2SetDocumentLocator` — public entry point of the default handler.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSAX2SetDocumentLocator(
+pub const unsafe extern "C" fn xmlSAX2SetDocumentLocator(
     ctx: *mut c_void,
     loc: *mut crate::abi::callbacks::_xmlSAXLocator,
 ) {
@@ -8001,6 +7999,7 @@ mod tests {
     /// differential corpora. Cases here are exact doubles or
     /// rounding-robust formats (parser-dependent literals are covered by the
     /// differential corpora, not unit tests).
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_xml_number_to_string_parity_cases() {
         let cases: &[(f64, &str)] = &[

@@ -19,6 +19,21 @@ use crate::xml::xpath::types::NodeSet;
 ///
 /// Returns nodes in document order (or reverse document order for
 /// reverse axes: ancestor, ancestor-or-self, preceding, preceding-sibling).
+///
+/// # SAFETY
+///
+/// - `context_node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn traverse_axis(
     context_node: *mut _xmlNode,
     axis: Axis,
@@ -233,7 +248,7 @@ unsafe fn attribute_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
 }
 
 /// namespace axis: namespaces of context node.
-unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut NodeSet) {
+unsafe fn namespace_axis(node: *mut _xmlNode, _node_test: &NodeTest, _result: &mut NodeSet) {
     if node.is_null() {
         return;
     }
@@ -296,7 +311,7 @@ unsafe fn traverse_subtree_reverse(
     }
 
     // First traverse children in reverse
-    let mut child = (*node).children;
+    let child = (*node).children;
     if !child.is_null() {
         // Find last child
         let mut last = child;
@@ -320,6 +335,21 @@ unsafe fn traverse_subtree_reverse(
 }
 
 /// Check if a node matches a node test.
+///
+/// # SAFETY
+///
+/// - `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn matches_node_test(node: *mut _xmlNode, node_test: &NodeTest) -> bool {
     if node.is_null() {
         return false;
@@ -400,7 +430,7 @@ unsafe fn matches_name_test(node: *mut _xmlNode, name_test: &NameTest) -> bool {
 }
 
 /// Check if any node test would match (for traversal boundary detection).
-unsafe fn matches_node_test_for_any(_node: *mut _xmlNode) -> bool {
+const unsafe fn matches_node_test_for_any(_node: *mut _xmlNode) -> bool {
     true
 }
 
@@ -410,8 +440,8 @@ unsafe fn matches_node_test_for_any(_node: *mut _xmlNode) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::xml::xpath::ast::{NameTest, NodeTest};
+
+    use crate::xml::xpath::ast::NodeTest;
 
     #[test]
     fn test_node_test_matches() {

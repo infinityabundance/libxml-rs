@@ -23,10 +23,15 @@ use std::os::raw::c_int;
 use std::ptr;
 
 /// A strip-space / preserve-space rule entry.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltStripSpace {
+    /// Next rule in the strip/preserve-space list.
     pub next: *mut _xsltStripSpace,
+    /// Element name pattern (QName) the rule matches.
     pub name: *mut xmlChar,
+    /// Import depth of the stylesheet that defined the rule, used for
+    /// precedence between strip-space and preserve-space rules.
     pub depth: c_int,
 }
 
@@ -200,19 +205,19 @@ unsafe fn strip_recursive(style: *mut _xsltStylesheet, node: *mut _xmlNode) {
     if node.is_null() {
         return;
     }
-    if (*node).type_ == XML_ELEMENT_NODE as c_int && !(*node).name.is_null() {
-        if xsltShouldStripSpace(style, (*node).name) != 0 {
-            // Remove whitespace-only text children.
-            let mut child = (*node).children;
-            while !child.is_null() {
-                let next = (*child).next;
-                if (*child).type_ == XML_TEXT_NODE as c_int && is_whitespace_only((*child).content)
-                {
-                    crate::xml::tree::unlink_node(child);
-                    crate::xml::tree::free_node(child);
-                }
-                child = next;
+    if (*node).type_ == XML_ELEMENT_NODE as c_int
+        && !(*node).name.is_null()
+        && xsltShouldStripSpace(style, (*node).name) != 0
+    {
+        // Remove whitespace-only text children.
+        let mut child = (*node).children;
+        while !child.is_null() {
+            let next = (*child).next;
+            if (*child).type_ == XML_TEXT_NODE as c_int && is_whitespace_only((*child).content) {
+                crate::xml::tree::unlink_node(child);
+                crate::xml::tree::free_node(child);
             }
+            child = next;
         }
     }
     // Recurse into children.
@@ -256,33 +261,33 @@ mod tests {
             let style = make_style();
             // No rules: preserve by default.
             assert_eq!(
-                xsltShouldStripSpace(style, b"foo\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"foo".as_ptr() as *const xmlChar),
                 0
             );
             // Strip rule for "foo".
-            xsltAddStripSpace(style, b"foo\0".as_ptr() as *const xmlChar, 1);
+            xsltAddStripSpace(style, c"foo".as_ptr() as *const xmlChar, 1);
             assert_eq!(
-                xsltShouldStripSpace(style, b"foo\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"foo".as_ptr() as *const xmlChar),
                 1
             );
             assert_eq!(
-                xsltShouldStripSpace(style, b"bar\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"bar".as_ptr() as *const xmlChar),
                 0
             );
             // Preserve rule overrides strip (same depth).
-            xsltAddStripSpace(style, b"foo\0".as_ptr() as *const xmlChar, 0);
+            xsltAddStripSpace(style, c"foo".as_ptr() as *const xmlChar, 0);
             assert_eq!(
-                xsltShouldStripSpace(style, b"foo\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"foo".as_ptr() as *const xmlChar),
                 0
             );
             // Wildcard rule strips everything not preserved.
-            xsltAddStripSpace(style, b"*\0".as_ptr() as *const xmlChar, 1);
+            xsltAddStripSpace(style, c"*".as_ptr() as *const xmlChar, 1);
             assert_eq!(
-                xsltShouldStripSpace(style, b"bar\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"bar".as_ptr() as *const xmlChar),
                 1
             );
             assert_eq!(
-                xsltShouldStripSpace(style, b"foo\0".as_ptr() as *const xmlChar),
+                xsltShouldStripSpace(style, c"foo".as_ptr() as *const xmlChar),
                 0 // preserved
             );
             xsltFreeStripSpaces(style);

@@ -1,3 +1,11 @@
+// Lint policy (11.1-Z seal): `missing_docs` and
+// `missing_debug_implementations` are allowed here — the fields mirror
+// upstream C structs whose canonical documentation is the C header itself
+// (the same rationale bindgen applies to generated bindings). The exported
+// `#[repr(C)]` layout is the contract, verified byte-for-byte by the
+// data-abi courts; the Rust doc surface adds nothing to it.
+#![allow(missing_docs, missing_debug_implementations)]
+
 //! C ABI struct definitions — exact upstream layout (§14, §17).
 //!
 //! Every struct in this module is laid out to match the corresponding
@@ -308,6 +316,7 @@ pub struct _xmlEntity {
 
 /// Structured error information.
 #[repr(C)]
+#[derive(Debug)]
 pub struct _xmlError {
     pub domain: c_int,        // Error domain
     pub code: c_int,          // Error code
@@ -842,18 +851,10 @@ pub struct _xmlNodeSet {
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Layout matches upstream `_xsltStylesheet` from xsltInternals.h (libxslt 1.1.45).
-/// Field order and types match the C struct exactly for ABI compatibility.
-///
-/// Courts: XSLT-STYLESHEET-*
-#[repr(C)]
-/// XSLT stylesheet (compiled).
-///
-/// # ABI
-///
-/// Layout mirrors upstream `struct _xsltStylesheet` (libxslt 1.1.42
-/// xsltInternals.h, verbatim in include/libxslt/xsltInternals.h). Verified by
-/// the RUST-MIRROR-ABI court (tools/abi/rust_mirror_court.py).
+/// Layout matches upstream `_xsltStylesheet` from xsltInternals.h (libxslt
+/// 1.1.45); field order and types match the C struct exactly for ABI
+/// compatibility. Verified by the RUST-MIRROR-ABI court
+/// (tools/abi/rust_mirror_court.py). Courts: XSLT-STYLESHEET-*
 #[repr(C)]
 pub struct _xsltStylesheet {
     pub parent: *mut _xsltStylesheet,   // parent stylesheet (imports)

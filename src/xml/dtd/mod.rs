@@ -9,12 +9,10 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::os::raw::c_int;
 
 use crate::abi::allocator;
 use crate::abi::structs::*;
-use crate::abi::types::xmlAttributeDefault::*;
-use crate::abi::types::xmlAttributeType::*;
 use crate::abi::types::xmlElementContentOccur::*;
 use crate::abi::types::xmlElementContentType::*;
 use crate::abi::types::xmlElementType::*;
@@ -22,6 +20,11 @@ use crate::abi::types::xmlElementTypeVal::*;
 use crate::abi::types::*;
 use crate::xml::hash;
 use crate::xml::string;
+
+#[cfg(test)]
+use crate::abi::types::xmlAttributeDefault::*;
+#[cfg(test)]
+use crate::abi::types::xmlAttributeType::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DTD Access
@@ -36,7 +39,7 @@ use crate::xml::string;
 /// ```
 ///
 /// Returns a pointer to the DTD, or NULL if none.
-pub fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
+pub const fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
     if doc.is_null() {
         return ptr::null_mut();
     }
@@ -1520,8 +1523,7 @@ unsafe fn valid_content_model_or(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFreeImpl;
-    use crate::abi::structs::*;
+
     use core::ffi::c_void;
     use core::ptr;
 
@@ -1551,7 +1553,7 @@ mod tests {
 
     #[test]
     fn test_get_int_subset_null() {
-        unsafe {
+        {
             assert!(get_int_subset(ptr::null()).is_null());
         }
     }

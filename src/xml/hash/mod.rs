@@ -36,6 +36,7 @@ use crate::abi::types::xmlChar;
 const HASH_INIT_SIZE: usize = 16;
 
 /// Maximum load factor (entries/buckets) before resize.
+#[allow(dead_code)]
 const MAX_LOAD_FACTOR: f64 = 0.75;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -43,6 +44,7 @@ const MAX_LOAD_FACTOR: f64 = 0.75;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// A hash table entry.
+#[derive(Debug)]
 struct HashEntry {
     /// The key string(s), stored as raw C string pointers.
     key1: *const xmlChar,
@@ -53,6 +55,7 @@ struct HashEntry {
 }
 
 /// The hash table struct.
+#[derive(Debug)]
 pub struct HashTable {
     /// Buckets (each is a vector of entries).
     buckets: Vec<Vec<HashEntry>>,
@@ -71,7 +74,7 @@ pub struct HashTable {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Simple FNV-1a hash for xmlChar strings.
-fn hash_xml_str(s: *const xmlChar) -> u64 {
+const fn hash_xml_str(s: *const xmlChar) -> u64 {
     if s.is_null() {
         return 0;
     }
@@ -91,7 +94,7 @@ fn hash_xml_str(s: *const xmlChar) -> u64 {
 }
 
 /// Compute combined hash for 1-3 keys.
-fn combined_hash(key1: *const xmlChar, key2: *const xmlChar, key3: *const xmlChar) -> u64 {
+const fn combined_hash(key1: *const xmlChar, key2: *const xmlChar, key3: *const xmlChar) -> u64 {
     let mut h = hash_xml_str(key1);
     h = h.wrapping_mul(31).wrapping_add(hash_xml_str(key2));
     h = h.wrapping_mul(31).wrapping_add(hash_xml_str(key3));
@@ -327,6 +330,29 @@ pub unsafe fn hash_update_entry(
 }
 
 /// Update an entry with two keys.
+///
+/// # SAFETY
+///
+/// - `table`, `userdata` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `name2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// - `f` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn hash_update_entry2(
     table: *mut HashTable,
     name: *const xmlChar,
@@ -405,6 +431,25 @@ pub unsafe fn hash_lookup(table: *mut HashTable, name: *const xmlChar) -> *mut c
 }
 
 /// Look up an entry by two keys.
+///
+/// # SAFETY
+///
+/// - `table` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `name2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn hash_lookup2(
     table: *mut HashTable,
     name: *const xmlChar,
@@ -504,6 +549,29 @@ pub unsafe fn hash_remove_entry(
 }
 
 /// Remove an entry by two keys.
+///
+/// # SAFETY
+///
+/// - `table` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `name2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// - `f` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn hash_remove_entry2(
     table: *mut HashTable,
     name: *const xmlChar,
@@ -711,7 +779,7 @@ pub unsafe fn hash_copy(table: *mut HashTable, f: Option<xmlHashCopier>) -> *mut
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Compare two xmlChar strings for equality (null-safe).
-fn keys_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
+const fn keys_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
     if a.is_null() && b.is_null() {
         return true;
     }

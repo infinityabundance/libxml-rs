@@ -36,7 +36,6 @@ use std::os::raw::{c_char, c_int};
 use crate::abi::allocator;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
-use crate::abi::types::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RELAX NG Name Class
@@ -142,7 +141,7 @@ pub struct RelaxNgPattern {
 
 impl RelaxNgPattern {
     /// Create a new pattern with the given type.
-    pub fn new(pattern_type: RelaxNgPatternType) -> Self {
+    pub const fn new(pattern_type: RelaxNgPatternType) -> Self {
         Self {
             pattern_type,
             name_class: None,
@@ -170,17 +169,17 @@ impl RelaxNgPattern {
     }
 
     /// Create a text pattern.
-    pub fn text() -> Self {
+    pub const fn text() -> Self {
         Self::new(RelaxNgPatternType::Text)
     }
 
     /// Create an empty pattern.
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self::new(RelaxNgPatternType::Empty)
     }
 
     /// Create a notAllowed pattern.
-    pub fn not_allowed() -> Self {
+    pub const fn not_allowed() -> Self {
         Self::new(RelaxNgPatternType::NotAllowed)
     }
 }
@@ -216,7 +215,7 @@ pub struct RelaxNgGrammar {
 }
 
 impl RelaxNgGrammar {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             defines: Vec::new(),
             start: None,
@@ -263,7 +262,7 @@ pub struct RelaxNgSchema {
 }
 
 impl RelaxNgSchema {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             grammar: RelaxNgGrammar::new(),
             errors: Vec::new(),
@@ -303,7 +302,7 @@ pub struct RelaxNgValidCtxt {
 }
 
 impl RelaxNgValidCtxt {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             schema: None,
             errors: Vec::new(),
@@ -384,18 +383,17 @@ unsafe fn get_node_text(node: *mut _xmlNode) -> String {
     unsafe {
         let mut child = (*node).children;
         while !child.is_null() {
-            if (*child).type_ == XML_TEXT_NODE as c_int
-                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int
+            if ((*child).type_ == XML_TEXT_NODE as c_int
+                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int)
+                && !(*child).content.is_null()
             {
-                if !(*child).content.is_null() {
-                    let content = (*child).content;
-                    let mut len = 0;
-                    while *content.add(len) != 0 {
-                        len += 1;
-                    }
-                    let slice = std::slice::from_raw_parts(content, len);
-                    result.push_str(&String::from_utf8_lossy(slice));
+                let content = (*child).content;
+                let mut len = 0;
+                while *content.add(len) != 0 {
+                    len += 1;
                 }
+                let slice = std::slice::from_raw_parts(content, len);
+                result.push_str(&String::from_utf8_lossy(slice));
             }
             child = (*child).next;
         }
@@ -510,6 +508,7 @@ unsafe fn get_attr(node: *mut _xmlNode, name: &str) -> Option<String> {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
+#[allow(dead_code)]
 unsafe fn node_is(node: *mut _xmlNode, local_name: &str) -> bool {
     if node.is_null() {
         return false;
@@ -553,7 +552,7 @@ pub fn rng_parse(xml_doc: &str) -> Result<RelaxNgSchema, String> {
         crate::abi::exports_xml2::xmlReadMemory(
             xml_doc.as_ptr() as *const c_char,
             xml_doc.len() as c_int,
-            b"schema.rng\0".as_ptr() as *const c_char,
+            c"schema.rng".as_ptr() as *const c_char,
             ptr::null(),
             0,
         )
@@ -1280,7 +1279,7 @@ fn rng_validate_children(
     schema: &RelaxNgSchema,
     ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         if pattern.children.is_empty() {
             return true;
         }
@@ -1368,7 +1367,7 @@ fn rng_validate_element_pattern(
 fn rng_validate_attribute_pattern(
     pattern: &RelaxNgPattern,
     node: *mut _xmlNode,
-    schema: &RelaxNgSchema,
+    _schema: &RelaxNgSchema,
     ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
     unsafe {
@@ -1484,8 +1483,8 @@ fn rng_validate_attribute_pattern(
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
-fn rng_validate_text_pattern(node: *mut _xmlNode, _ctxt: &mut RelaxNgValidCtxt) -> bool {
-    unsafe {
+const fn rng_validate_text_pattern(node: *mut _xmlNode, _ctxt: &mut RelaxNgValidCtxt) -> bool {
+    {
         if node.is_null() {
             return false;
         }
@@ -1741,7 +1740,7 @@ fn rng_validate_zero_or_more(
         }
 
         let child_pat = &pattern.children[0];
-        let mut valid = true;
+        let valid = true;
 
         // Match as many child nodes as possible against the pattern
         let mut child = (*node).children;
@@ -1832,7 +1831,7 @@ fn rng_validate_optional_pattern(
     schema: &RelaxNgSchema,
     ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         if pattern.children.is_empty() {
             return true;
         }
@@ -1862,8 +1861,8 @@ fn rng_validate_optional_pattern(
 fn rng_validate_list_pattern(
     pattern: &RelaxNgPattern,
     node: *mut _xmlNode,
-    schema: &RelaxNgSchema,
-    ctxt: &mut RelaxNgValidCtxt,
+    _schema: &RelaxNgSchema,
+    _ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
     unsafe {
         if node.is_null() {
@@ -1903,7 +1902,7 @@ fn rng_validate_group_pattern(
     schema: &RelaxNgSchema,
     ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         // Group is similar to sequence — validate children in order
         rng_validate_sequence_pattern(pattern, node, schema, ctxt)
     }
@@ -1984,7 +1983,7 @@ fn rng_validate_ref_pattern(
     schema: &RelaxNgSchema,
     ctxt: &mut RelaxNgValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         let ref_name = pattern.name.as_deref().unwrap_or("");
 
         if ref_name.is_empty() {
@@ -2161,8 +2160,8 @@ pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_v
     }
 
     // Return empty context for later parsing
-    let ctxt = allocator::xmlMallocZero(size_of::<RelaxNgSchema>() as usize);
-    ctxt
+
+    allocator::xmlMallocZero(size_of::<RelaxNgSchema>() as usize)
 }
 
 /// Create a new RELAX NG parser context from a memory buffer.
@@ -2210,7 +2209,7 @@ pub unsafe extern "C" fn xmlRelaxNGNewMemParserCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRelaxNGParse(ctxt: *mut c_void) -> *mut c_void {
+pub const unsafe extern "C" fn xmlRelaxNGParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
@@ -2593,7 +2592,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2623,7 +2622,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2657,7 +2656,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2690,7 +2689,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2732,7 +2731,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2771,7 +2770,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2815,7 +2814,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2849,7 +2848,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2883,7 +2882,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2917,7 +2916,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2952,7 +2951,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2991,7 +2990,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3036,7 +3035,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3066,7 +3065,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3096,7 +3095,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3126,7 +3125,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3156,7 +3155,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3186,7 +3185,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3227,7 +3226,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3257,7 +3256,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3392,7 +3391,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3433,7 +3432,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3540,7 +3539,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3581,7 +3580,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3615,7 +3614,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3729,7 +3728,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )

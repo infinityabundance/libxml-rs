@@ -1,0 +1,149 @@
+{
+ "schema": "phase-seal-verdict-1",
+ "receipt_id": "PHASE-11-1-Z-SEAL-VERDICT",
+ "phase": "11.1-Z",
+ "title": "Phase 11.1 seal — final verdict receipt (11.1-Z)",
+ "date": "2026-08-31",
+ "generator": "manual + generated evidence (see sources)",
+ "candidate": {
+  "project": "libxml-rs",
+  "crate": "libxml-rs",
+  "version": "0.1.0-alpha.31",
+  "git_head": "SEAL_COMMIT_PLACEHOLDER",
+  "manifest_commit": "9a6bff35f45a7692e3cca14e43324e408acb2091 (0.1.0-alpha.31 release of 11.1-X seal + 11.1-Y census)",
+  "language": "Rust (edition 2021)",
+  "dsos": {
+   "libxml2": "target/debug/libxml2.so.16",
+   "libxslt": "target/debug/libxslt.so.1",
+   "libexslt": "target/debug/libexslt.so.0"
+  },
+  "soname_abi": "libxml2.so.16 / libxslt.so.1 / libexslt.so.0 (upstream sonames)"
+ },
+ "tools": {
+  "rustc": "1.98.0 (88d9e12ae 2026-08-18)",
+  "cargo": "1.98.0 (797e8a9bc 2026-08-05)",
+  "gcc": "gcc (GCC) 16.2.1 20260810",
+  "clang": "clang version 22.1.8",
+  "python": "Python 3.14.7",
+  "doxygen": "1.18.0",
+  "git": "git version 2.55.0",
+  "nm": "GNU nm (GNU Binutils) 2.47",
+  "readelf": "GNU readelf (GNU Binutils) 2.47"
+ },
+ "oracle_identity": {
+  "libxml2": "2.15.3 (system /usr/lib/libxml2.so.16, xmllint 21503-GITv2.15.3)",
+  "libxslt": "1.1.45 (system /usr/lib/libxslt.so.1, xsltproc 10145-GITv1.1.45)",
+  "libexslt": "0.8.25 (system /usr/lib/libexslt.so.0, 825-GITv1.1.45)",
+  "xmllint_features": "Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib"
+ },
+ "doxygen_identity": {
+  "doxygen_version": "1.18.0",
+  "libxml2_inventory": "oracle/historical/doxygen/libxml2-system/inventory-public.json (sha256 237b9d8ff2ab2bfdffd20e3d3d02c56246a280bfa4816a1d8198cf31f3a3015e)",
+  "libxslt_inventory": "oracle/historical/doxygen/libxslt-system/inventory-public.json (sha256 6f44be15dbbc7695a488cd45ffe103e913b079a1b1e974d460ea00a247a79aeb)"
+ },
+ "configuration_hashes": {
+  "oracle_manifests": {
+   "count": 18,
+   "aggregate_sha256": "9e6783361d73e1f6f5fe16e1263b3d907ec885730658b63d2ffd53e022db09ef"
+  },
+  "oracle_dso_libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
+  "oracle_dso_libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
+  "oracle_dso_libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613"
+ },
+ "processed_historical_versions": {
+  "libxml2": ["2.6.32 (FAILED build, documented)", "2.7.8", "2.8.0", "2.9.4", "2.9.10", "2.9.14", "2.10.4", "2.11.5", "2.12.6", "2.13.0", "2.13.5", "2.14.1", "2.15.0", "system 2.15.3"],
+  "libxslt": ["1.1.26", "1.1.32", "1.1.35", "1.1.38", "1.1.42", "system 1.1.45"],
+  "branches": "v2.7.8..v2.15.0 tags + system DSO; semantic epochs HIST-EPOCH-0001..0008 classified (matrix receipt binds 18 manifests)"
+ },
+ "api_abi_census": {
+  "parity_matrix_libxml2": {
+   "public_functions": {"oracle_dso": 1400, "candidate_dso": 1980, "fully_reconciled": 1400, "unresolved_oracle_only": 0},
+   "exported_data": {"oracle_dso": 22, "candidate_dso": 67, "fully_reconciled": 22, "unresolved_oracle_only": 0}
+  },
+  "abi_ledger": {
+   "libxml2": {"structs_probed": 43, "enums_probed": 41, "entities": 658, "mismatch_count": 0, "verdict": "PASS"},
+   "libxslt": {"structs_probed": 14, "enums_probed": 7, "entities": 279, "mismatch_count": 0, "verdict": "PASS"}
+  },
+  "obligations": {
+   "libxml2": {"MISSING": 0, "STUB": 0, "INTENTIONAL_NOOP": 23},
+   "libxslt": {"MISSING": 0, "STUB": 0, "INTENTIONAL_NOOP": 6},
+   "libexslt": {"MISSING": 0, "STUB": 0, "INTENTIONAL_NOOP": 0}
+  },
+  "subsystem_census": {"subsystems": 85, "verdict_totals": {"IMPLEMENTED_UNVERIFIED": 76, "PARTIAL": 1, "UNOBLIGATED": 8}, "uncategorized": 0},
+  "rust_mirror": {"structs_unions": 45, "enums": 14, "measurable": 50, "mismatches": 0, "verdict": "PASS"}
+ },
+ "residuals": {
+  "total": 75,
+  "fixed": 73,
+  "open": 2,
+  "open_ids": ["R-000157", "R-000168"],
+  "open_disposition": "both are bounded obligations documented in the ledger: R-000157 (iconv/ICU-on-other-platforms encoding handlers) and R-000168 (platform surface outside Linux x86-64: Windows DLL ABI, macOS dylib naming, BSD). Acceptance: open candidate-parity residuals = 0; the two OPEN entries are platform/backend obligations with no externally relevant parity gap on the executed platform."
+ },
+ "clean_build": {
+  "cargo_fmt_check": "PASS (0 diffs)",
+  "cargo_check_all_features": "PASS (0 errors, 0 warnings)",
+  "cargo_test_lib_all_features": "PASS (1177 passed, 0 failed, 1 ignored)",
+  "cargo_test_all_features": "PASS",
+  "cargo_clippy_all_targets_all_features_Dwarnings": "PASS (exit 0)"
+ },
+ "test_results": {
+  "lib": {"passed": 1177, "failed": 0, "ignored": 1},
+  "evidence_source": "atlas/TEST_COUNTS.json (tools/evidence/test_counts.py)"
+ },
+ "court_results": {
+  "cli_xmllint": {"pass": 47, "fail": 0},
+  "cli_xsltproc": {"pass": 19, "fail": 0},
+  "cli_xmlcatalog": {"pass": 11, "fail": 0},
+  "header_compile": {"pass": 595, "fail": 0},
+  "dso_loader": {"pass": 25, "fail": 0},
+  "build_pkgconfig": {"pass": 11, "fail": 0},
+  "build_config_script": {"pass": 28, "fail": 0},
+  "install_layout": {"pass": 73, "fail": 0},
+  "sanity": {"pass": 6, "fail": 0},
+  "abi_probes": {
+   "data_globals": "PASS byte-identical",
+   "globals_threading": "PASS byte-identical",
+   "security_limits": "PASS",
+   "tree_structure": "PASS byte-identical",
+   "callback_family": "PASS byte-identical",
+   "catalog_family": "PASS byte-identical",
+   "encoding_family": "PASS byte-identical",
+   "error_family": "PASS byte-identical",
+   "reader_family": "PASS byte-identical",
+   "save_family": "PASS byte-identical",
+   "writer_family": "PASS byte-identical",
+   "xpath_family": "PASS byte-identical",
+   "xslt_family": "PASS byte-identical",
+   "c14n_api_probe": "PASS 39/39 byte-identical",
+   "ns_binding_probe": "PASS 10/10 byte-identical",
+   "rust_mirror": "PASS"
+  },
+  "header_surface_audit": {"oracle_declared": "1640 functions, 33 vars", "candidate_declared": "1659 functions, 53 vars", "oracle_undeclared_in_candidate": "0 functions, 0 vars"},
+  "evidence_integrity": "PASS (75 residuals, 2 open, Markdown byte-identical)",
+  "matrix_receipt_court": "PASS (receipt byte-identical, manifests valid)"
+ },
+ "contamination_proof": {
+  "dso_loader": "25/25 exported symbols resolve from the built candidate DSO (target/debug/liblibxml_rs.so) with no link against system libxml2/libxslt/libexslt; loader court binds the candidate identity",
+  "oracle_identity": "18 oracle manifests hashed + validated; all oracle --version fingerprints distinct; no candidate DSO in oracle paths",
+  "abi_probes": "all differential probes compiled against candidate headers + candidate DSO only"
+ },
+ "artifact_hashes": {
+  "candidate_libxml_rs_so": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
+  "candidate_libxml2_so16": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
+  "candidate_libxslt_so1": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
+  "candidate_libexslt_so0": "5e92adb7021c2cec0ed45499c8ad49fe61aafbd962f4d70c1f9fda1dd889a943",
+  "note": "SONAME symlinks are hardlinks to the same DSO, hence identical hashes"
+ },
+ "unexecuted_platforms": [
+  "Windows (DLL ABI, export table) — R-000168",
+  "macOS (dylib naming/install names) — R-000168",
+  "BSD variants — R-000168",
+  "32-bit architectures — R-000168",
+  "All oracle/candidate differential execution performed on Linux x86-64 (glibc)"
+ ],
+ "stub_disposition": {
+  "note": "11.1-Z completed the R-000138 disposition: all 14 libxml2 no-op exports (htmlDefaultSAXHandlerInit, htmlElementAllowedHere, htmlInitAutoClose, htmlParseCharRef, xmlDictCleanup, xmlFileMatch, xmlParserInputRead, xmlRelaxNGCleanupTypes, xmlRelaxNGInitTypes, xmlSchemaCleanupTypes, xmlSchemaFreeWildcard, xmlSprintfElementContent, xmlXPathInit, xmlXPathRegisterAllFunctions) mapped in PARITY_OBLIGATIONS DOCUMENTED_NOOPS; upstream bodies verified empty/trivial byte-for-byte; STUB census = 0 across libxml2/libxslt/libexslt",
+  "stub_count": {"libxml2": 0, "libxslt": 0, "libexslt": 0}
+ },
+ "final_verdict": "PASS — Phase 11.1 sealed. No externally relevant stubs (STUB=0); all current/historical surfaces classified (unresolved_oracle_only=0 functions, 0 vars); ABI/data/layout proven (658+279 entities, 0 mismatches; probes byte-identical); evidence reproducible (EVIDENCE-INTEGRITY and MATRIX-RECEIPT courts PASS); open candidate-parity residuals = 0 with 2 documented bounded obligations (R-000157, R-000168); unexecuted platforms listed explicitly."
+}

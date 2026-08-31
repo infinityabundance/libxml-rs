@@ -60,7 +60,7 @@ extern "C" {
 /// - The returned pointer is owned by `buf` and must not be freed by the
 ///   caller.
 #[no_mangle]
-pub unsafe extern "C" fn xmlBufContent(buf: *const _xmlBuf) -> *mut xmlChar {
+pub const unsafe extern "C" fn xmlBufContent(buf: *const _xmlBuf) -> *mut xmlChar {
     if buf.is_null() || unsafe { (*buf).error != 0 } {
         return ptr::null_mut();
     }

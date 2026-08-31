@@ -15,10 +15,8 @@
 //! Each parameter is converted to a string value and bound as a global
 //! variable with the `XSLT_VAR_PARAM` flag.
 
-use crate::abi::allocator::xmlFree;
 use crate::abi::structs::*;
 use crate::abi::types::*;
-use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
@@ -118,9 +116,7 @@ pub unsafe fn xsltParseStylesheetParam(
         return ptr::null_mut();
     }
 
-    xmlFree_alloc_stack_elem(nm, ns_uri, value_bytes.to_vec())
-        .map(|p| p as *mut _xsltStackElem)
-        .unwrap_or(ptr::null_mut())
+    xmlFree_alloc_stack_elem(nm, ns_uri, value_bytes.to_vec()).unwrap_or(ptr::null_mut())
 }
 
 /// Allocate a stack element with owned (heap) name/select/value strings.
@@ -195,7 +191,7 @@ pub unsafe fn xsltFreeParams(params: *mut _xsltStackElem) {
 ///
 /// - `ctxt` must be a valid `_xsltTransformContext`.
 /// - `inst` must be a valid instruction node.
-pub unsafe fn xsltApplyParams(
+pub const unsafe fn xsltApplyParams(
     ctxt: *mut _xsltTransformContext,
     inst: *mut _xmlNode,
     params: *mut _xsltStackElem,
@@ -240,16 +236,12 @@ pub unsafe fn xsltPopParam(ctxt: *mut _xsltTransformContext) -> *mut _xsltStackE
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::structs::*;
+
     use core::ptr;
     use std::os::raw::c_char;
 
     fn make_style() -> *mut _xsltStylesheet {
-        unsafe {
-            let s =
-                libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
-            s
-        }
+        unsafe { libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet }
     }
 
     fn c(s: &[u8]) -> *const c_char {

@@ -293,7 +293,7 @@ impl XPathContext {
                 // For now, free the object and return a placeholder.
                 // In a full implementation this would inspect result.type_
                 // and extract the appropriate value.
-                unsafe {
+                {
                     // We cannot easily convert without more ABI support.
                     // Return None for now — the C callback path is for
                     // interop scenarios where the caller handles conversion.
@@ -493,7 +493,7 @@ impl XPathContext {
     }
 
     /// Returns `true` if a context node is set (non-null).
-    pub fn has_context_node(&self) -> bool {
+    pub const fn has_context_node(&self) -> bool {
         !self.context_node.is_null()
     }
 
@@ -514,14 +514,14 @@ impl XPathContext {
     /// Returns the current proximity position (1-based).
     ///
     /// Equivalent to the XPath `position()` function.
-    pub fn position(&self) -> i32 {
+    pub const fn position(&self) -> i32 {
         self.proximity_position
     }
 
     /// Returns the context size.
     ///
     /// Equivalent to the XPath `last()` function.
-    pub fn last(&self) -> i32 {
+    pub const fn last(&self) -> i32 {
         self.context_size
     }
 
@@ -529,13 +529,13 @@ impl XPathContext {
     ///
     /// Called when iterating over the context list during predicate
     /// evaluation.
-    pub fn advance_position(&mut self) {
+    pub const fn advance_position(&mut self) {
         self.proximity_position += 1;
         self.context_position = self.proximity_position;
     }
 
     /// Rewind the proximity position to 1.
-    pub fn reset_position(&mut self) {
+    pub const fn reset_position(&mut self) {
         self.proximity_position = 1;
         self.context_position = 1;
     }
@@ -558,7 +558,7 @@ impl Default for XPathContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::xml::xpath::ast::Expr;
+
     use crate::xml::xpath::types::NodeSet;
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -664,7 +664,7 @@ mod tests {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
         // Set a non-null node first.
         // SAFETY: We use a dangling pointer as a sentinel — it won't be dereferenced.
-        let sentinel = 1 as *mut _xmlNode;
+        let sentinel = std::ptr::dangling_mut::<_xmlNode>();
         ctx.context_list = vec![sentinel];
         ctx.context_position = 5;
         ctx.context_size = 5;
@@ -728,7 +728,7 @@ mod tests {
         let ctx = XPathContext::new(std::ptr::null_mut());
         assert!(ctx.resolve_variable("nonexistent").is_none());
     }
-
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_register_variable_number() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
@@ -952,7 +952,7 @@ mod tests {
 
     #[test]
     fn test_position_and_last() {
-        let mut ctx = XPathContext::new(std::ptr::null_mut());
+        let ctx = XPathContext::new(std::ptr::null_mut());
         assert_eq!(ctx.position(), 1);
         assert_eq!(ctx.last(), 1);
     }
@@ -1032,8 +1032,8 @@ mod tests {
         ctx.context_position = 5;
         ctx.context_size = 10;
         ctx.recursion_depth = 3;
-        unsafe {
-            let sentinel = 1 as *mut _xmlNode;
+        {
+            let sentinel = std::ptr::dangling_mut::<_xmlNode>();
             ctx.context_list = vec![sentinel];
         }
 

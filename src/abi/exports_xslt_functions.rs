@@ -147,7 +147,7 @@ unsafe fn is_real_node(node: *mut _xmlNode) -> bool {
 /// Returns `(prefix, local)`: `prefix` is NULL when `name` has no prefix
 /// (or starts with ':'), otherwise it points at the prefix inside `name`;
 /// `local` points at the local part.
-unsafe fn split_qname_ref(name: *const xmlChar) -> (*const xmlChar, *const xmlChar) {
+const unsafe fn split_qname_ref(name: *const xmlChar) -> (*const xmlChar, *const xmlChar) {
     if name.is_null() {
         return (ptr::null(), ptr::null());
     }
@@ -318,6 +318,7 @@ unsafe fn cleanup_source_doc(doc: *mut _xmlDoc) {
 }
 
 /// `xsltNextImport` (imports.c).
+#[allow(dead_code)]
 unsafe fn next_import(cur: *mut _xsltStylesheet) -> *mut _xsltStylesheet {
     if cur.is_null() {
         return ptr::null_mut();
@@ -501,7 +502,7 @@ pub unsafe extern "C" fn xsltDocumentFunction(ctxt: *mut c_void, nargs: c_int) {
     let mut new_uri: *mut xmlChar = ptr::null_mut();
     let mut fragment: *mut xmlChar = ptr::null_mut();
 
-    if (nargs < 1) || (nargs > 2) {
+    if !(1..=2).contains(&nargs) {
         xslt_error(
             transform_context_from_parser(ctxt),
             b"document() : invalid number of args %d\n\0",
@@ -965,7 +966,7 @@ pub unsafe extern "C" fn xsltUnparsedEntityURIFunction(ctxt: *mut c_void, nargs:
             ptr::null_mut(),
             ptr::null_mut(),
             ptr::null_mut(),
-            b"unparsed-entity-uri() : expects one string arg\n\0".as_ptr() as *const c_char,
+            c"unparsed-entity-uri() : expects one string arg\n".as_ptr() as *const c_char,
         );
         (*pc).error = XPATH_INVALID_ARITY as c_int;
         return;
@@ -1137,7 +1138,7 @@ unsafe fn number_format_decimal(
             {
                 if (pointer as usize)
                     .checked_sub(grouping_character_len as usize)
-                    .map_or(true, |p| p < temp_string.as_ptr() as usize)
+                    .is_none_or(|p| p < temp_string.as_ptr() as usize)
                 {
                     i = -1; // flag error
                     break;
@@ -1160,7 +1161,7 @@ unsafe fn number_format_decimal(
                 let len = copy_char_multibyte(temp_char.as_mut_ptr() as *mut xmlChar, val);
                 if (pointer as usize)
                     .checked_sub(len as usize)
-                    .map_or(true, |p| p < temp_string.as_ptr() as usize)
+                    .is_none_or(|p| p < temp_string.as_ptr() as usize)
                 {
                     i = -1;
                     break;
@@ -1277,7 +1278,7 @@ unsafe fn format_number_conversion(
         let mut nprefix_length: c_int = 0;
         let mut nsuffix_length: c_int = 0;
         let mut len: c_int = 0;
-        let mut j: c_int;
+        let j: c_int;
         let mut info = FormatNumberInfo::default();
         let mut delayed_multiplier: c_int = 0;
         let mut default_sign: c_int = 0;
@@ -1293,7 +1294,7 @@ unsafe fn format_number_conversion(
         *result = ptr::null_mut();
         if crate::xml::xpath::exports::xmlXPathIsNaN(number) != 0 {
             *result = if self_.is_null() || (*self_).noNumber.is_null() {
-                crate::abi::exports_xml2::xmlStrdup(b"NaN\0".as_ptr() as *const xmlChar)
+                crate::abi::exports_xml2::xmlStrdup(c"NaN".as_ptr() as *const xmlChar)
             } else {
                 crate::abi::exports_xml2::xmlStrdup((*self_).noNumber)
             };
@@ -1567,13 +1568,13 @@ unsafe fn format_number_conversion(
             -1 => {
                 // Intentional fall-through: minus sign then infinity.
                 let minus = if (*self_).minusSign.is_null() {
-                    b"-\0".as_ptr() as *const xmlChar
+                    c"-".as_ptr() as *const xmlChar
                 } else {
                     (*self_).minusSign
                 };
                 let mut res = crate::abi::exports_xml2::xmlStrdup(minus);
                 let inf = if self_.is_null() || (*self_).infinity.is_null() {
-                    b"Infinity\0".as_ptr() as *const xmlChar
+                    c"Infinity".as_ptr() as *const xmlChar
                 } else {
                     (*self_).infinity
                 };
@@ -1583,7 +1584,7 @@ unsafe fn format_number_conversion(
             }
             1 => {
                 let inf = if self_.is_null() || (*self_).infinity.is_null() {
-                    b"Infinity\0".as_ptr() as *const xmlChar
+                    c"Infinity".as_ptr() as *const xmlChar
                 } else {
                     (*self_).infinity
                 };
@@ -1900,7 +1901,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
     let mut cur: *mut _xmlNode = ptr::null_mut();
     let mut obj: *mut _xmlXPathObject = ptr::null_mut();
     let mut ns_prefix: *const xmlChar = ptr::null();
-    let mut id: c_ulong;
+    let id: c_ulong;
     let mut ns_prefix_size: usize = 0;
 
     let tctxt = transform_context_from_parser(ctxt);
@@ -1968,7 +1969,7 @@ pub unsafe extern "C" fn xsltGenerateIdFunction(ctxt: *mut c_void, nargs: c_int)
         let ns = cur as *mut _xmlNs;
         ns_prefix = (*ns).prefix;
         if ns_prefix.is_null() {
-            ns_prefix = b"\0".as_ptr() as *const xmlChar;
+            ns_prefix = c"".as_ptr() as *const xmlChar;
         }
         ns_prefix_size = crate::abi::exports_xml2::xmlStrlen(ns_prefix) as usize;
         // For "ns" and the hex-encoded string.
@@ -2117,7 +2118,7 @@ pub unsafe extern "C" fn xsltSystemPropertyFunction(ctxt: *mut c_void, nargs: c_
         if crate::abi::exports_xml2::xmlStrEqual(ns_uri, XSLT_NAMESPACE.as_ptr() as *const xmlChar)
             != 0
         {
-            if xml_chars_equal(name, b"vendor\0".as_ptr() as *const xmlChar) {
+            if xml_chars_equal(name, c"vendor".as_ptr() as *const xmlChar) {
                 // DOCBOOK_XSL_HACK (functions.c): DocBook XSL uses the vendor
                 // string to detect chunking support.
                 let tctxt = transform_context_from_parser(ctxt);
@@ -2125,12 +2126,12 @@ pub unsafe extern "C" fn xsltSystemPropertyFunction(ctxt: *mut c_void, nargs: c_
                     && !(*tctxt).inst.is_null()
                     && xml_chars_equal(
                         (*(*tctxt).inst).name,
-                        b"variable\0".as_ptr() as *const xmlChar,
+                        c"variable".as_ptr() as *const xmlChar,
                     )
                     && !(*(*tctxt).inst).parent.is_null()
                     && xml_chars_equal(
                         (*(*(*tctxt).inst).parent).name,
-                        b"template\0".as_ptr() as *const xmlChar,
+                        c"template".as_ptr() as *const xmlChar,
                     ) {
                     (*tctxt).style
                 } else {
@@ -2141,14 +2142,14 @@ pub unsafe extern "C" fn xsltSystemPropertyFunction(ctxt: *mut c_void, nargs: c_
                     && !(*(*sheet).doc).URL.is_null()
                     && !crate::abi::exports_string::xmlStrstr(
                         (*(*sheet).doc).URL as *const xmlChar,
-                        b"chunk\0".as_ptr() as *const xmlChar,
+                        c"chunk".as_ptr() as *const xmlChar,
                     )
                     .is_null()
                 {
                     value_push(
                         pc,
                         xmlXPathNewString(
-                            b"libxslt (SAXON 6.2 compatible)\0".as_ptr() as *const xmlChar
+                            c"libxslt (SAXON 6.2 compatible)".as_ptr() as *const xmlChar
                         ),
                     );
                 } else {
@@ -2157,12 +2158,12 @@ pub unsafe extern "C" fn xsltSystemPropertyFunction(ctxt: *mut c_void, nargs: c_
                         xmlXPathNewString(XSLT_DEFAULT_VENDOR.as_ptr() as *const xmlChar),
                     );
                 }
-            } else if xml_chars_equal(name, b"version\0".as_ptr() as *const xmlChar) {
+            } else if xml_chars_equal(name, c"version".as_ptr() as *const xmlChar) {
                 value_push(
                     pc,
                     xmlXPathNewString(XSLT_DEFAULT_VERSION.as_ptr() as *const xmlChar),
                 );
-            } else if xml_chars_equal(name, b"vendor-url\0".as_ptr() as *const xmlChar) {
+            } else if xml_chars_equal(name, c"vendor-url".as_ptr() as *const xmlChar) {
                 value_push(
                     pc,
                     xmlXPathNewString(XSLT_DEFAULT_URL.as_ptr() as *const xmlChar),
@@ -2236,7 +2237,7 @@ unsafe fn xslt_ext_element_lookup(
         for e in XSLT_ELEMENTS {
             if xml_chars_equal(name, e.as_ptr() as *const xmlChar) {
                 // Only a non-NULL presence marker is tested by the caller.
-                return 1usize as *mut c_void;
+                return std::ptr::dangling_mut::<c_void>();
             }
         }
     }
@@ -2520,10 +2521,7 @@ unsafe fn mirror_context_for_eval(
             // keep the existing context list; position/size are mirrored above
         }
         // Temporarily replace the namespace map with the nsList contents.
-        saved = std::mem::replace(
-            &mut (*internal).namespaces,
-            std::collections::HashMap::new(),
-        );
+        saved = std::mem::take(&mut (*internal).namespaces);
         if !ns_list.is_null() {
             let mut i: c_int = 0;
             while i < ns_nr {
@@ -2995,47 +2993,47 @@ pub unsafe extern "C" fn xsltRegisterAllFunctions(ctxt: *mut _xmlXPathContext) {
     // implementations (the stubs cannot be invoked from the Rust engine).
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"current\0".as_ptr() as *const xmlChar,
+        c"current".as_ptr() as *const xmlChar,
         Some(xslt_current_function),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"document\0".as_ptr() as *const xmlChar,
+        c"document".as_ptr() as *const xmlChar,
         Some(xsltDocumentFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"key\0".as_ptr() as *const xmlChar,
+        c"key".as_ptr() as *const xmlChar,
         Some(xsltKeyFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"unparsed-entity-uri\0".as_ptr() as *const xmlChar,
+        c"unparsed-entity-uri".as_ptr() as *const xmlChar,
         Some(xsltUnparsedEntityURIFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"format-number\0".as_ptr() as *const xmlChar,
+        c"format-number".as_ptr() as *const xmlChar,
         Some(xsltFormatNumberFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"generate-id\0".as_ptr() as *const xmlChar,
+        c"generate-id".as_ptr() as *const xmlChar,
         Some(xsltGenerateIdFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"system-property\0".as_ptr() as *const xmlChar,
+        c"system-property".as_ptr() as *const xmlChar,
         Some(xsltSystemPropertyFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"element-available\0".as_ptr() as *const xmlChar,
+        c"element-available".as_ptr() as *const xmlChar,
         Some(xsltElementAvailableFunction),
     );
     crate::abi::exports_xml2::xmlXPathRegisterFunc(
         ctxt,
-        b"function-available\0".as_ptr() as *const xmlChar,
+        c"function-available".as_ptr() as *const xmlChar,
         Some(xsltFunctionAvailableFunction),
     );
 

@@ -6,7 +6,7 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong};
+use std::os::raw::{c_int, c_uint, c_ulong};
 
 use crate::abi::allocator;
 use crate::abi::structs::*;
@@ -368,14 +368,14 @@ unsafe fn free_entity_internal(entity: *mut _xmlEntity, free_children: bool) {
 
 /// Check if an entity type is a parameter entity.
 #[inline]
-pub fn is_parameter_entity(etype: c_int) -> bool {
+pub const fn is_parameter_entity(etype: c_int) -> bool {
     etype == XML_INTERNAL_PARAMETER_ENTITY as c_int
         || etype == XML_EXTERNAL_PARAMETER_ENTITY as c_int
 }
 
 /// Check if an entity type is an external entity.
 #[inline]
-pub fn is_external_entity(etype: c_int) -> bool {
+pub const fn is_external_entity(etype: c_int) -> bool {
     etype == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
         || etype == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int
         || etype == XML_EXTERNAL_PARAMETER_ENTITY as c_int
@@ -383,7 +383,7 @@ pub fn is_external_entity(etype: c_int) -> bool {
 
 /// Check if an entity type is a predefined entity.
 #[inline]
-pub fn is_predefined_entity(etype: c_int) -> bool {
+pub const fn is_predefined_entity(etype: c_int) -> bool {
     etype == XML_INTERNAL_PREDEFINED_ENTITY as c_int
 }
 
@@ -422,7 +422,7 @@ pub unsafe fn encode_entities_reentrant(_doc: *mut _xmlDoc, input: *const xmlCha
                 b'&' => out_len += 5,  // &amp;
                 b'"' => out_len += 6,  // &quot;
                 b'\'' => out_len += 6, // &apos;
-                c => out_len += 1,
+                _c => out_len += 1,
             }
         }
 
@@ -573,7 +573,7 @@ pub unsafe fn string_decode_entities(
                 }
 
                 // General entity reference: &name;
-                let mut entity_name_start = i;
+                let entity_name_start = i;
                 while i < len
                     && *input.add(i) != b';'
                     && *input.add(i) != b'&'
@@ -671,7 +671,11 @@ pub unsafe fn string_decode_entities(
 /// Decode a numeric character reference (`&#NNN;` or `&#xHHH;`).
 ///
 /// Returns the decoded character and the number of additional characters consumed.
-unsafe fn decode_numeric_ref(input: *const xmlChar, pos: &mut usize, len: usize) -> (u32, usize) {
+const unsafe fn decode_numeric_ref(
+    input: *const xmlChar,
+    pos: &mut usize,
+    len: usize,
+) -> (u32, usize) {
     unsafe {
         let mut consumed: usize = 0;
 
@@ -877,13 +881,7 @@ unsafe fn lookup_predefined_entity(name: *const xmlChar) -> *mut _xmlEntity {
                     return ptr::null_mut();
                 }
             }
-            'q' => {
-                if string::xml_strcmp(name, b"quot\0" as *const u8 as *const xmlChar) == 0 {
-                    3
-                } else {
-                    return ptr::null_mut();
-                }
-            }
+            'q' if string::xml_strcmp(name, b"quot\0" as *const u8 as *const xmlChar) == 0 => 3,
             _ => return ptr::null_mut(),
         };
 
@@ -921,7 +919,7 @@ pub unsafe fn get_entity_content(entity: *mut _xmlEntity) -> *mut xmlChar {
 /// Check if entity expansion exceeds limits.
 ///
 /// Returns 0 if within limits, -1 if exceeded.
-pub fn check_entity_expansion_limit(expanded_size: c_ulong) -> c_int {
+pub const fn check_entity_expansion_limit(expanded_size: c_ulong) -> c_int {
     if expanded_size > XML_ENTITY_CONTENT_EXPANSION_MAX as c_ulong {
         -1
     } else {
@@ -932,7 +930,7 @@ pub fn check_entity_expansion_limit(expanded_size: c_ulong) -> c_int {
 /// Check if entity recursion depth exceeds limits.
 ///
 /// Returns 0 if within limits, -1 if exceeded.
-pub fn check_entity_recursion_depth(depth: c_int) -> c_int {
+pub const fn check_entity_recursion_depth(depth: c_int) -> c_int {
     if depth > XML_ENTITY_CONTENT_DEPTH_MAX {
         -1
     } else {
@@ -947,7 +945,7 @@ pub fn check_entity_recursion_depth(depth: c_int) -> c_int {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFreeImpl;
+
     use core::ffi::c_void;
     use core::ptr;
 

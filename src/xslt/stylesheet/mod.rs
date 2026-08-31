@@ -21,13 +21,11 @@
 //! - `xsltSetStylesheetDoc` transfers document ownership into the
 //!   stylesheet, freeing any previously held document.
 
-use crate::abi::allocator::xmlFree;
 use crate::abi::exports_xml2::{xmlReadFile, xmlReadMemory};
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::tree::free_doc;
-use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
@@ -408,8 +406,8 @@ pub unsafe extern "C" fn xsltLoadStylesheetPI(doc: *mut _xmlDoc) -> *mut _xsltSt
     }
     let mut url = href_bytes;
     url.push(0);
-    let style = xsltParseStylesheetFile(url.as_ptr() as *const xmlChar);
-    style
+
+    xsltParseStylesheetFile(url.as_ptr() as *const xmlChar)
 }
 
 /// Parse a stylesheet from a memory buffer.
@@ -509,7 +507,7 @@ pub unsafe extern "C" fn xsltSetStylesheetDoc(style: *mut _xsltStylesheet, doc: 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::xml::tree::*;
+
     use core::ptr;
 
     #[test]

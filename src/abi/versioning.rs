@@ -26,12 +26,9 @@
 #![allow(non_upper_case_globals)]
 
 use core::ffi::c_char;
-use core::ptr;
 use core::sync::atomic::AtomicBool;
 use core::sync::atomic::Ordering;
 use std::os::raw::c_int;
-
-use crate::abi::types::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Target Version Constants
@@ -109,7 +106,7 @@ pub fn is_initialized() -> bool {
 /// ```
 ///
 /// Oracle behavior (2.15.3): returns 21503.
-pub fn xmlLibxmlVersion() -> c_int {
+pub const fn xmlLibxmlVersion() -> c_int {
     LIBXML2_VERSION_NUM
 }
 
@@ -122,7 +119,7 @@ pub fn xmlLibxmlVersion() -> c_int {
 /// ```
 ///
 /// Oracle behavior (2.15.3): returns pointer to "2.15.3".
-pub fn xmlLibxmlVersionString() -> *const c_char {
+pub const fn xmlLibxmlVersionString() -> *const c_char {
     LIBXML2_VERSION_STRING.as_ptr() as *const c_char
 }
 
@@ -133,7 +130,7 @@ pub fn xmlLibxmlVersionString() -> *const c_char {
 /// ```c
 /// const char *xmlParserVersion(void);
 /// ```
-pub fn xmlParserVersion() -> *const c_char {
+pub const fn xmlParserVersion() -> *const c_char {
     xmlLibxmlVersionString()
 }
 
@@ -152,8 +149,18 @@ pub fn xmlParserVersion() -> *const c_char {
 ///
 /// Oracle behavior: compares LIBXML2_VERSION (compiled-in) against `version`.
 /// Returns 0 if compatible, -1 if not.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlCheckVersion(version: c_int) -> c_int {
+pub const unsafe extern "C" fn xmlCheckVersion(version: c_int) -> c_int {
     if LIBXML2_VERSION_NUM >= version {
         0
     } else {
@@ -174,7 +181,7 @@ pub unsafe extern "C" fn xmlCheckVersion(version: c_int) -> c_int {
 /// ```c
 /// int xsltLibxsltVersion(void);
 /// ```
-pub fn xsltLibxsltVersion() -> c_int {
+pub const fn xsltLibxsltVersion() -> c_int {
     LIBXSLT_VERSION_NUM
 }
 
@@ -185,7 +192,7 @@ pub fn xsltLibxsltVersion() -> c_int {
 /// ```c
 /// const char *xsltLibxsltVersionString(void);
 /// ```
-pub fn xsltLibxsltVersionString() -> *const c_char {
+pub const fn xsltLibxsltVersionString() -> *const c_char {
     LIBXSLT_VERSION_STRING.as_ptr() as *const c_char
 }
 
@@ -214,7 +221,7 @@ pub unsafe fn c_str_to_bytes<'a>(ptr: *const c_char) -> Option<&'a [u8]> {
 /// ```c
 /// int xsltCheckVersion(int version);
 /// ```
-pub fn xsltCheckVersion(version: c_int) -> c_int {
+pub const fn xsltCheckVersion(version: c_int) -> c_int {
     if LIBXSLT_VERSION_NUM >= version {
         0
     } else {

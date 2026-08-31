@@ -15,13 +15,11 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::collections::HashMap;
 use std::os::raw::{c_char, c_int};
 
 use crate::abi::allocator;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
-use crate::abi::types::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // XSD Component Types
@@ -34,30 +32,56 @@ use crate::abi::types::*;
 /// libxml2 defines these as `xmlSchemaTypeType` in `include/schemas/internals.h`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum XsdComponentType {
+    /// The `xs:schema` root declaration. Also used as a fallback kind for
+    /// unrecognized elements during parsing.
     Schema,
+    /// An `xs:element` declaration.
     Element,
+    /// An `xs:attribute` declaration.
     Attribute,
+    /// An `xs:complexType` definition (element/attribute content, possibly mixed).
     ComplexType,
+    /// An `xs:simpleType` definition (a constrained built-in or derived simple type).
     SimpleType,
+    /// An `xs:simpleContent` model on a complex type (text-only content).
     SimpleContent,
+    /// An `xs:complexContent` model on a complex type (restriction or extension).
     ComplexContent,
+    /// An `xs:sequence` model group whose children must appear in order.
     Sequence,
+    /// An `xs:choice` model group of which exactly one child is allowed.
     Choice,
+    /// An `xs:all` model group whose children may appear in any order.
     All,
+    /// An `xs:restriction`, deriving a type by constraining its base type.
     Restriction,
+    /// An `xs:extension`, deriving a type by adding content to its base type.
     Extension,
+    /// An `xs:list` simple type (a whitespace-separated list of an item type).
     List,
+    /// An `xs:union` simple type whose value must match one of its member types.
     Union,
+    /// An `xs:annotation` (documentation/appinfo). Skipped during schema parsing.
     Annotation,
+    /// An `xs:any` wildcard that matches any element.
     Any,
+    /// An `xs:anyAttribute` wildcard that matches any attribute.
     AnyAttribute,
+    /// An `xs:group` named model group (used either as a definition or a reference).
     Group,
+    /// An `xs:attributeGroup` named attribute group (definition or reference).
     AttributeGroup,
+    /// An `xs:notation` declaration binding a notation name to a system/resource.
     Notation,
+    /// An `xs:unique` identity constraint.
     Unique,
+    /// An `xs:key` identity constraint.
     Key,
+    /// An `xs:keyref` identity constraint that references a key or unique constraint.
     KeyRef,
+    /// An `xs:selector`, the XPath selection of an identity constraint.
     Selector,
+    /// An `xs:field`, the XPath field of an identity constraint.
     Field,
 }
 
@@ -74,64 +98,132 @@ pub enum XsdComponentType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum XsdDatatypeKind {
     // Primitive types
+    /// XSD built-in type `xs:string` — any sequence of characters.
     String,
+    /// XSD built-in type `xs:boolean` — lexical forms `true`, `false`, `1`, and `0`.
     Boolean,
+    /// XSD built-in type `xs:decimal` — an arbitrary-precision decimal number
+    /// (optional sign, digits, optional decimal point).
     Decimal,
+    /// XSD built-in type `xs:float` — IEEE single-precision floating point,
+    /// including the special values `INF`, `-INF`, and `NaN`.
     Float,
+    /// XSD built-in type `xs:double` — IEEE double-precision floating point,
+    /// including the special values `INF`, `-INF`, and `NaN`.
     Double,
+    /// XSD built-in type `xs:duration` — an ISO 8601 duration of the form
+    /// `[-]P[nY][nM][nD][T[nH][nM][nS]]`.
     Duration,
+    /// XSD built-in type `xs:dateTime` — `YYYY-MM-DDThh:mm:ss[.sss][Z|±hh:mm]`.
     DateTime,
+    /// XSD built-in type `xs:time` — `hh:mm:ss[.sss][Z|±hh:mm]`.
     Time,
+    /// XSD built-in type `xs:date` — `YYYY-MM-DD[Z|±hh:mm]`.
     Date,
+    /// XSD built-in type `xs:gYearMonth` — a Gregorian year and month, `YYYY-MM[Z|±hh:mm]`.
     GYearMonth,
+    /// XSD built-in type `xs:gYear` — a Gregorian year, `YYYY[Z|±hh:mm]`.
     GYear,
+    /// XSD built-in type `xs:gMonthDay` — a Gregorian month and day, `--MM-DD[Z|±hh:mm]`.
     GMonthDay,
+    /// XSD built-in type `xs:gDay` — a Gregorian day of the month, `---DD[Z|±hh:mm]`.
     GDay,
+    /// XSD built-in type `xs:gMonth` — a Gregorian month, `--MM[Z|±hh:mm]`.
     GMonth,
+    /// XSD built-in type `xs:hexBinary` — binary data encoded as hexadecimal
+    /// digits (an even number of digits).
     HexBinary,
+    /// XSD built-in type `xs:base64Binary` — binary data encoded in base64.
     Base64Binary,
+    /// XSD built-in type `xs:anyURI` — a URI reference (validated here as non-empty).
     AnyURI,
+    /// XSD built-in type `xs:QName` — a qualified name (`NCName` or `prefix:NCName`).
     QName,
+    /// XSD built-in type `xs:NOTATION` — a reference to a notation declaration,
+    /// lexically a QName.
     Notation,
     // Derived string types
+    /// XSD built-in type `xs:normalizedString` — a `string` with no tabs,
+    /// newlines, or carriage returns.
     NormalizedString,
+    /// XSD built-in type `xs:token` — a `normalizedString` with no leading or
+    /// trailing whitespace and no consecutive internal whitespace.
     Token,
+    /// XSD built-in type `xs:language` — a natural language identifier per
+    /// RFC 4646/BCP 47 (simplified here to `[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*`).
     Language,
+    /// XSD built-in type `xs:NMTOKEN` — a sequence of XML name characters.
     Nmtoken,
+    /// XSD built-in type `xs:NMTOKENS` — a whitespace-separated list of `NMTOKEN`s.
     Nmtokens,
+    /// XSD built-in type `xs:Name` — an XML Name.
     Name,
+    /// XSD built-in type `xs:NCName` — an XML Name without colons.
     NCName,
+    /// XSD built-in type `xs:ID` — an `NCName` used as a document-wide identifier.
     Id,
+    /// XSD built-in type `xs:IDREF` — an `NCName` referencing an `ID` value.
     Idref,
+    /// XSD built-in type `xs:IDREFS` — a whitespace-separated list of `IDREF`s.
     Idrefs,
+    /// XSD built-in type `xs:ENTITY` — an `NCName` referencing an unparsed entity.
     Entity,
+    /// XSD built-in type `xs:ENTITIES` — a whitespace-separated list of `ENTITY`s.
     Entities,
     // Numeric derived types
+    /// XSD built-in type `xs:integer` — whole numbers (no decimal point).
     Integer,
+    /// XSD built-in type `xs:nonPositiveInteger` — integers less than or equal to zero.
     NonPositiveInteger,
+    /// XSD built-in type `xs:negativeInteger` — integers less than zero.
     NegativeInteger,
+    /// XSD built-in type `xs:long` — integers in the range of a signed 64-bit value.
     Long,
+    /// XSD built-in type `xs:int` — integers in the range of a signed 32-bit value.
     Int,
+    /// XSD built-in type `xs:short` — integers in the range of a signed 16-bit value.
     Short,
+    /// XSD built-in type `xs:byte` — integers in the range of a signed 8-bit value.
     Byte,
+    /// XSD built-in type `xs:nonNegativeInteger` — integers greater than or equal to zero.
     NonNegativeInteger,
+    /// XSD built-in type `xs:unsignedLong` — integers in the range of an unsigned 64-bit value.
     UnsignedLong,
+    /// XSD built-in type `xs:unsignedInt` — integers in the range of an unsigned 32-bit value.
     UnsignedInt,
+    /// XSD built-in type `xs:unsignedShort` — integers in the range of an unsigned 16-bit value.
     UnsignedShort,
+    /// XSD built-in type `xs:unsignedByte` — integers in the range of an unsigned 8-bit value.
     UnsignedByte,
+    /// XSD built-in type `xs:positiveInteger` — integers greater than zero.
     PositiveInteger,
     // Facet types (used internally)
+    /// The `pattern` facet — a regular expression the value must match.
     FacetPattern,
+    /// The `enumeration` facet — the value must equal at least one listed
+    /// literal (OR semantics).
     FacetEnumeration,
+    /// The `minInclusive` facet — the value must be greater than or equal to the bound.
     FacetMinInclusive,
+    /// The `maxInclusive` facet — the value must be less than or equal to the bound.
     FacetMaxInclusive,
+    /// The `minExclusive` facet — the value must be strictly greater than the bound.
     FacetMinExclusive,
+    /// The `maxExclusive` facet — the value must be strictly less than the bound.
     FacetMaxExclusive,
+    /// The `minLength` facet — a minimum length in characters.
     FacetMinLength,
+    /// The `maxLength` facet — a maximum length in characters.
     FacetMaxLength,
+    /// The `length` facet — an exact length in characters.
     FacetLength,
+    /// The `whiteSpace` facet — the whitespace normalization policy
+    /// (`preserve`, `replace`, or `collapse`).
     FacetWhiteSpace,
+    /// The `fractionDigits` facet — the maximum number of digits after the
+    /// decimal point.
     FacetFractionDigits,
+    /// The `totalDigits` facet — the maximum number of digits in the value.
     FacetTotalDigits,
 }
 
@@ -145,27 +237,53 @@ pub enum XsdDatatypeKind {
 /// Components form a tree via the `children` and `attributes` vectors.
 #[derive(Debug, Clone)]
 pub struct XsdComponent {
+    /// The kind of XSD component this declaration represents.
     pub component_type: XsdComponentType,
+    /// The component's local name (from the `name` attribute); `None` for
+    /// anonymous components.
     pub name: Option<String>,
+    /// The namespace the component is declared in.
     pub target_namespace: Option<String>,
+    /// Child components — model group children, inline type definitions, etc.
     pub children: Vec<XsdComponent>,
+    /// Attribute declarations belonging to this component (complex types).
     pub attributes: Vec<XsdComponent>,
+    /// The resolved built-in datatype kind, when the component is typed with a
+    /// built-in XSD type.
     pub datatype: Option<XsdDatatypeKind>,
+    /// Facets constraining the type, stored as (facet kind, facet value) pairs.
     pub facets: Vec<(XsdDatatypeKind, String)>,
+    /// The base type of a derived type (restriction/extension/list/union), or
+    /// the unresolved `type` name for elements/attributes with a named type.
     pub base: Option<String>,
+    /// Minimum occurrence count (default 1; 0 for optional). Also reused for
+    /// the `use` attribute of attribute declarations.
     pub min_occurs: i32,
-    pub max_occurs: i32, // -1 for unbounded
+    /// Maximum occurrence count; `-1` for unbounded.
+    pub max_occurs: i32,
+    /// For references: the name of the referenced element/attribute (from the
+    /// `ref` attribute).
     pub ref_name: Option<String>,
+    /// The name of the substitution group this element belongs to.
     pub substitution_group: Option<String>,
+    /// Whether the component is declared `abstract` (cannot be used directly).
     pub is_abstract: bool,
+    /// Whether the component is declared `final` (cannot be derived from).
     pub is_final: bool,
+    /// The `block` attribute: derivation methods disallowed for the type.
     pub block: Vec<String>,
+    /// Whether the type allows mixed element content (`xs:complexType mixed`).
     pub mixed: bool,
+    /// The `form` attribute (`qualified`/`unqualified`) for this component,
+    /// overriding the schema's `elementFormDefault`/`attributeFormDefault`.
     pub form: Option<String>,
 }
 
 impl XsdComponent {
-    pub fn new(component_type: XsdComponentType) -> Self {
+    /// Create a new component with the given type and default field values.
+    ///
+    /// Defaults: `min_occurs = 1`, `max_occurs = 1`, all optional fields `None`.
+    pub const fn new(component_type: XsdComponentType) -> Self {
         Self {
             component_type,
             name: None,
@@ -197,15 +315,21 @@ impl XsdComponent {
 /// Holds the top-level component declarations and schema-level settings.
 #[derive(Debug, Clone)]
 pub struct XsdSchema {
+    /// Top-level component declarations of the schema.
     pub components: Vec<XsdComponent>,
+    /// The `targetNamespace` attribute of the schema.
     pub target_namespace: Option<String>,
+    /// The `elementFormDefault` attribute (`qualified`/`unqualified`).
     pub element_form_default: Option<String>,
+    /// The `attributeFormDefault` attribute (`qualified`/`unqualified`).
     pub attribute_form_default: Option<String>,
+    /// Errors collected while parsing or validating against this schema.
     pub errors: Vec<String>,
 }
 
 impl XsdSchema {
-    pub fn new() -> Self {
+    /// Create an empty schema with no components, namespace, or errors.
+    pub const fn new() -> Self {
         Self {
             components: Vec::new(),
             target_namespace: None,
@@ -232,13 +356,17 @@ impl Default for XsdSchema {
 /// a schema. Mirrors libxml2's `xmlSchemaValidCtxt`.
 #[derive(Debug)]
 pub struct XsdValidCtxt {
+    /// The schema being validated against.
     pub schema: Option<XsdSchema>,
+    /// Error messages collected during validation.
     pub errors: Vec<String>,
+    /// The total number of validation errors recorded.
     pub nb_errors: i32,
 }
 
 impl XsdValidCtxt {
-    pub fn new() -> Self {
+    /// Create a new validation context with no schema bound and no errors.
+    pub const fn new() -> Self {
         Self {
             schema: None,
             errors: Vec::new(),
@@ -270,18 +398,17 @@ unsafe fn get_node_text(node: *mut _xmlNode) -> String {
     unsafe {
         let mut child = (*node).children;
         while !child.is_null() {
-            if (*child).type_ == XML_TEXT_NODE as c_int
-                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int
+            if ((*child).type_ == XML_TEXT_NODE as c_int
+                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int)
+                && !(*child).content.is_null()
             {
-                if !(*child).content.is_null() {
-                    let content = (*child).content;
-                    let mut len = 0;
-                    while *content.add(len) != 0 {
-                        len += 1;
-                    }
-                    let slice = std::slice::from_raw_parts(content, len);
-                    result.push_str(&String::from_utf8_lossy(slice));
+                let content = (*child).content;
+                let mut len = 0;
+                while *content.add(len) != 0 {
+                    len += 1;
                 }
+                let slice = std::slice::from_raw_parts(content, len);
+                result.push_str(&String::from_utf8_lossy(slice));
             }
             child = (*child).next;
         }
@@ -339,6 +466,7 @@ unsafe fn get_attr_bool(node: *mut _xmlNode, name: &str) -> bool {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
+#[allow(dead_code)]
 unsafe fn get_attr_int(node: *mut _xmlNode, name: &str, default: i32) -> i32 {
     unsafe {
         match get_attr(node, name) {
@@ -494,7 +622,7 @@ pub fn xsd_parse(xml_doc: &str) -> Result<XsdSchema, String> {
         crate::abi::exports_xml2::xmlReadMemory(
             xml_doc.as_ptr() as *const c_char,
             xml_doc.len() as c_int,
-            b"schema.xsd\0".as_ptr() as *const c_char,
+            c"schema.xsd".as_ptr() as *const c_char,
             ptr::null(),
             0,
         )
@@ -606,10 +734,7 @@ unsafe fn xsd_parse_component(node: *mut _xmlNode, schema: &XsdSchema) -> XsdCom
             "union" => xsd_parse_union(node, schema),
             "annotation" => xsd_parse_annotation(node),
             "any" => xsd_parse_any(node, schema),
-            "anyAttribute" => {
-                let mut comp = XsdComponent::new(XsdComponentType::AnyAttribute);
-                comp
-            }
+            "anyAttribute" => XsdComponent::new(XsdComponentType::AnyAttribute),
             "group" => xsd_parse_group(node, schema),
             "attributeGroup" => xsd_parse_attribute_group(node, schema),
             "unique" => xsd_parse_identity_constraint(node, XsdComponentType::Unique, schema),
@@ -742,14 +867,11 @@ unsafe fn xsd_parse_attribute_node(node: *mut _xmlNode, schema: &XsdSchema) -> X
         while !child.is_null() {
             if (*child).type_ == XML_ELEMENT_NODE as c_int {
                 let child_comp = xsd_parse_component(child, schema);
-                match child_comp.component_type {
-                    XsdComponentType::SimpleType => {
-                        if let Some(ref name) = child_comp.name {
-                            comp.base = Some(name.clone());
-                        }
-                        comp.children.push(child_comp);
+                if child_comp.component_type == XsdComponentType::SimpleType {
+                    if let Some(ref name) = child_comp.name {
+                        comp.base = Some(name.clone());
                     }
-                    _ => {}
+                    comp.children.push(child_comp);
                 }
             }
             child = (*child).next;
@@ -1021,13 +1143,10 @@ unsafe fn xsd_parse_list(node: *mut _xmlNode, schema: &XsdSchema) -> XsdComponen
         while !child.is_null() {
             if (*child).type_ == XML_ELEMENT_NODE as c_int {
                 let child_comp = xsd_parse_component(child, schema);
-                match child_comp.component_type {
-                    XsdComponentType::SimpleType => {
-                        comp.datatype = child_comp.datatype;
-                        comp.base = child_comp.base;
-                        comp.facets = child_comp.facets;
-                    }
-                    _ => {}
+                if child_comp.component_type == XsdComponentType::SimpleType {
+                    comp.datatype = child_comp.datatype;
+                    comp.base = child_comp.base;
+                    comp.facets = child_comp.facets;
                 }
             }
             child = (*child).next;
@@ -1054,11 +1173,8 @@ unsafe fn xsd_parse_union(node: *mut _xmlNode, schema: &XsdSchema) -> XsdCompone
         while !child.is_null() {
             if (*child).type_ == XML_ELEMENT_NODE as c_int {
                 let child_comp = xsd_parse_component(child, schema);
-                match child_comp.component_type {
-                    XsdComponentType::SimpleType => {
-                        comp.children.push(child_comp);
-                    }
-                    _ => {}
+                if child_comp.component_type == XsdComponentType::SimpleType {
+                    comp.children.push(child_comp);
                 }
             }
             child = (*child).next;
@@ -1079,12 +1195,12 @@ unsafe fn xsd_parse_annotation(node: *mut _xmlNode) -> XsdComponent {
 
         let mut child = (*node).children;
         while !child.is_null() {
-            if (*child).type_ == XML_ELEMENT_NODE as c_int {
-                if node_is(child, "documentation") || node_is(child, "appinfo") {
-                    let text = get_node_text(child);
-                    if !text.is_empty() {
-                        comp.facets.push((XsdDatatypeKind::String, text));
-                    }
+            if (*child).type_ == XML_ELEMENT_NODE as c_int
+                && (node_is(child, "documentation") || node_is(child, "appinfo"))
+            {
+                let text = get_node_text(child);
+                if !text.is_empty() {
+                    comp.facets.push((XsdDatatypeKind::String, text));
                 }
             }
             child = (*child).next;
@@ -1526,7 +1642,7 @@ fn simple_glob_match(pattern: &str, value: &str) -> bool {
 }
 
 /// Check if a character is an XML NameStartChar.
-fn is_name_start_char(c: char) -> bool {
+const fn is_name_start_char(c: char) -> bool {
     c.is_ascii_alphabetic()
         || c == '_'
         || c == ':'
@@ -1544,7 +1660,7 @@ fn is_name_start_char(c: char) -> bool {
 }
 
 /// Check if a character is an XML NameChar.
-fn is_name_char(c: char) -> bool {
+const fn is_name_char(c: char) -> bool {
     is_name_start_char(c)
         || c.is_ascii_digit()
         || c == '-'
@@ -1752,11 +1868,7 @@ fn validate_base_type(kind: &XsdDatatypeKind, value: &str) -> bool {
             if !value.starts_with('-') && !value.starts_with('P') {
                 return false;
             }
-            let dur = if value.starts_with('-') {
-                &value[1..]
-            } else {
-                value
-            };
+            let dur = value.strip_prefix('-').unwrap_or(value);
             if !dur.starts_with('P') {
                 return false;
             }
@@ -1765,7 +1877,7 @@ fn validate_base_type(kind: &XsdDatatypeKind, value: &str) -> bool {
                 return false;
             }
             let has_t = rest.contains('T');
-            let date_part = if has_t {
+            let _date_part = if has_t {
                 &rest[..rest.find('T').unwrap()]
             } else {
                 rest
@@ -1838,7 +1950,7 @@ fn validate_base_type(kind: &XsdDatatypeKind, value: &str) -> bool {
             value.starts_with("--") && value.len() >= 3
         }
         XsdDatatypeKind::HexBinary => {
-            if value.len() % 2 != 0 {
+            if !value.len().is_multiple_of(2) {
                 return false;
             }
             value.chars().all(|c| c.is_ascii_hexdigit())
@@ -1870,33 +1982,6 @@ fn validate_base_type(kind: &XsdDatatypeKind, value: &str) -> bool {
             // Same as QName
             !value.is_empty()
         }
-        XsdDatatypeKind::NormalizedString => {
-            // No tab, newline, or carriage return
-            !value.contains('\t') && !value.contains('\n') && !value.contains('\r')
-        }
-        XsdDatatypeKind::Token => {
-            // NormalizedString + no leading/trailing whitespace, no internal double spaces
-            validate_base_type(&XsdDatatypeKind::NormalizedString, value)
-                && !value.starts_with(' ')
-                && !value.ends_with(' ')
-                && !value.contains("  ")
-        }
-        XsdDatatypeKind::Language => {
-            // [a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*
-            if value.is_empty() {
-                return false;
-            }
-            let parts: Vec<&str> = value.split('-').collect();
-            if parts.is_empty() {
-                return false;
-            }
-            if parts[0].len() > 8 || !parts[0].chars().all(|c| c.is_ascii_alphabetic()) {
-                return false;
-            }
-            parts.iter().skip(1).all(|p| {
-                !p.is_empty() && p.len() <= 8 && p.chars().all(|c| c.is_ascii_alphanumeric())
-            })
-        }
         XsdDatatypeKind::Nmtoken => !value.is_empty() && value.chars().all(is_name_char),
         XsdDatatypeKind::Nmtokens => {
             !value.is_empty()
@@ -1904,16 +1989,8 @@ fn validate_base_type(kind: &XsdDatatypeKind, value: &str) -> bool {
                     .split_whitespace()
                     .all(|t| !t.is_empty() && t.chars().all(is_name_char))
         }
-        XsdDatatypeKind::Name => {
-            !value.is_empty() && {
-                let first = value.chars().next().unwrap();
-                is_name_start_char(first) && value.chars().skip(1).all(is_name_char)
-            }
-        }
-        XsdDatatypeKind::NCName => is_ncname(value),
-        XsdDatatypeKind::Id | XsdDatatypeKind::Idref | XsdDatatypeKind::Entity => is_ncname(value),
         XsdDatatypeKind::Idrefs | XsdDatatypeKind::Entities => {
-            !value.is_empty() && value.split_whitespace().all(|t| is_ncname(t))
+            !value.is_empty() && value.split_whitespace().all(is_ncname)
         }
         // Facet types are always "valid" as values
         XsdDatatypeKind::FacetPattern
@@ -1957,7 +2034,7 @@ pub fn xsd_validate(schema: &XsdSchema, doc: &str) -> Result<(), Vec<String>> {
         crate::abi::exports_xml2::xmlReadMemory(
             doc.as_ptr() as *const c_char,
             doc.len() as c_int,
-            b"doc.xml\0".as_ptr() as *const c_char,
+            c"doc.xml".as_ptr() as *const c_char,
             ptr::null(),
             0,
         )
@@ -2123,7 +2200,7 @@ fn xsd_validate_complex_type(
     schema: &XsdSchema,
     ctxt: &mut XsdValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         let mut valid = true;
 
         // Validate attributes
@@ -2168,7 +2245,7 @@ fn xsd_validate_complex_type(
 fn xsd_validate_model_group(
     component: &XsdComponent,
     node: *mut _xmlNode,
-    schema: &XsdSchema,
+    _schema: &XsdSchema,
     ctxt: &mut XsdValidCtxt,
 ) -> bool {
     unsafe {
@@ -2199,13 +2276,10 @@ fn xsd_validate_model_group(
                         let child_node = child_nodes[child_idx];
                         let child_name = get_node_qname(child_node);
 
-                        if part.component_type == XsdComponentType::Any {
-                            count += 1;
-                            child_idx += 1;
-                        } else if !match_name.is_empty() && child_name == match_name {
-                            count += 1;
-                            child_idx += 1;
-                        } else if !match_ref.is_empty() && child_name == match_ref {
+                        if part.component_type == XsdComponentType::Any
+                            || (!match_name.is_empty() && child_name == match_name)
+                            || (!match_ref.is_empty() && child_name == match_ref)
+                        {
                             count += 1;
                             child_idx += 1;
                         } else if count >= min {
@@ -2319,11 +2393,8 @@ fn xsd_validate_restriction_extension(
 
         // Validate attributes
         for attr in &component.attributes {
-            match attr.component_type {
-                XsdComponentType::Attribute => {
-                    valid &= xsd_validate_attribute(attr, node, schema, ctxt);
-                }
-                _ => {}
+            if attr.component_type == XsdComponentType::Attribute {
+                valid &= xsd_validate_attribute(attr, node, schema, ctxt);
             }
         }
 
@@ -2417,7 +2488,7 @@ fn xsd_validate_content(
     schema: &XsdSchema,
     ctxt: &mut XsdValidCtxt,
 ) -> bool {
-    unsafe {
+    {
         let mut valid = true;
 
         for child_comp in &component.children {
@@ -2640,7 +2711,7 @@ pub unsafe extern "C" fn xmlSchemaNewMemParserCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchemaParse(ctxt: *mut c_void) -> *mut c_void {
+pub const unsafe extern "C" fn xmlSchemaParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
@@ -3879,7 +3950,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -3918,7 +3989,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )

@@ -20,29 +20,32 @@ use std::os::raw::{c_char, c_int};
 
 /// Check if a byte is a valid URI unreserved character.
 /// Unreserved characters are: ALPHA, DIGIT, '-', '.', '_', '~'
-fn is_unreserved(b: u8) -> bool {
+const fn is_unreserved(b: u8) -> bool {
     b.is_ascii_alphanumeric() || b == b'-' || b == b'.' || b == b'_' || b == b'~'
 }
 
 /// Check if a byte is a valid URI reserved character.
 /// Reserved characters are gen-delims and sub-delims.
-fn is_reserved(b: u8) -> bool {
+#[allow(dead_code)]
+const fn is_reserved(b: u8) -> bool {
     is_gen_delim(b) || is_sub_delim(b)
 }
 
 /// Check if a byte is a valid URI scheme character.
 /// Scheme characters are: ALPHA, DIGIT, '+', '-', '.'
-fn is_scheme_char(b: u8) -> bool {
+const fn is_scheme_char(b: u8) -> bool {
     b.is_ascii_alphanumeric() || b == b'+' || b == b'-' || b == b'.'
 }
 
 /// Check if a byte is a URI gen-delimiter.
-fn is_gen_delim(b: u8) -> bool {
+#[allow(dead_code)]
+const fn is_gen_delim(b: u8) -> bool {
     matches!(b, b':' | b'/' | b'?' | b'#' | b'[' | b']' | b'@')
 }
 
 /// Check if a byte is a URI sub-delimiter.
-fn is_sub_delim(b: u8) -> bool {
+#[allow(dead_code)]
+const fn is_sub_delim(b: u8) -> bool {
     matches!(
         b,
         b'!' | b'$' | b'&' | b'\'' | b'(' | b')' | b'*' | b'+' | b',' | b';' | b'='
@@ -52,7 +55,7 @@ fn is_sub_delim(b: u8) -> bool {
 // ── Percent encoding / decoding ─────────────────────────────────────────────
 
 /// Decode a hex digit character to its numeric value.
-fn hex_val(c: u8) -> Option<u8> {
+const fn hex_val(c: u8) -> Option<u8> {
     match c {
         b'0'..=b'9' => Some(c - b'0'),
         b'a'..=b'f' => Some(c - b'a' + 10),
@@ -84,6 +87,7 @@ fn percent_decode(data: &[u8]) -> Vec<u8> {
 
 /// Percent-encode a byte for use in a URI.
 /// Returns a new `Vec<u8>` with non-unreserved/non-reserved bytes percent-encoded.
+#[allow(dead_code)]
 fn percent_encode(data: &[u8]) -> Vec<u8> {
     let mut result = Vec::with_capacity(data.len());
     for &b in data {
@@ -104,17 +108,18 @@ fn percent_encode(data: &[u8]) -> Vec<u8> {
 /// `xmlURI` struct but using safe Rust types.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct UriParts {
-    pub scheme: Option<Vec<u8>>,     // e.g., "http", "file"
-    pub opaque: Option<Vec<u8>>,     // opaque part (for non-hierarchical URIs)
-    pub authority: Option<Vec<u8>>,  // e.g., "user@host:port"
-    pub server: Option<Vec<u8>>,     // server part of authority
-    pub user: Option<Vec<u8>>,       // user info
-    pub host: Option<Vec<u8>>,       // host
-    pub port: c_int,                 // port number (0 = not specified)
-    pub path: Option<Vec<u8>>,       // path (e.g., "/dir/file.xml")
-    pub query: Option<Vec<u8>>,      // query string (after ?)
-    pub fragment: Option<Vec<u8>>,   // fragment (after #)
-    pub path_raw: Option<Vec<u8>>,   // raw (un-escaped) path
+    pub scheme: Option<Vec<u8>>,    // e.g., "http", "file"
+    pub opaque: Option<Vec<u8>>,    // opaque part (for non-hierarchical URIs)
+    pub authority: Option<Vec<u8>>, // e.g., "user@host:port"
+    pub server: Option<Vec<u8>>,    // server part of authority
+    pub user: Option<Vec<u8>>,      // user info
+    pub host: Option<Vec<u8>>,      // host
+    pub port: c_int,                // port number (0 = not specified)
+    pub path: Option<Vec<u8>>,      // path (e.g., "/dir/file.xml")
+    pub query: Option<Vec<u8>>,     // query string (after ?)
+    pub fragment: Option<Vec<u8>>,  // fragment (after #)
+    pub path_raw: Option<Vec<u8>>,  // raw (un-escaped) path
+    #[allow(dead_code)]
     pub clean_path: Option<Vec<u8>>, // cleaned/normalized path
 }
 
@@ -274,7 +279,7 @@ unsafe fn c_to_parts(uri: *const CXmlUri) -> UriParts {
 /// Find the scheme in a URI string.
 /// Returns `(start_of_scheme, end_of_scheme)` if found.
 /// The scheme must start with a letter and be followed by "://" or ":" (non-hierarchical).
-fn find_scheme(uri: &[u8]) -> Option<(usize, usize)> {
+const fn find_scheme(uri: &[u8]) -> Option<(usize, usize)> {
     if uri.is_empty() {
         return None;
     }
@@ -308,7 +313,7 @@ fn parse_authority(auth: &[u8]) -> (Option<Vec<u8>>, Option<Vec<u8>>, c_int) {
     }
 
     // Split on '@' for user info
-    let (user_part, host_part) = if let Some(at_pos) = auth.iter().position(|&b| b == b'@') {
+    let (user_part, _host_part) = if let Some(at_pos) = auth.iter().position(|&b| b == b'@') {
         user = Some(auth[..at_pos].to_vec());
         (&auth[at_pos + 1..], true)
     } else {
@@ -457,6 +462,7 @@ pub(crate) fn parse_uri(str: &[u8]) -> Option<UriParts> {
 ///
 /// Returns a heap-allocated `UriParts`, or null on failure.
 /// The caller must free the returned pointer with [`free_uri_parts`].
+#[allow(dead_code)]
 pub(crate) fn parse_uri_cstr(str: *const xmlChar) -> *mut UriParts {
     if str.is_null() {
         return ptr::null_mut();
@@ -479,6 +485,7 @@ pub(crate) fn parse_uri_cstr(str: *const xmlChar) -> *mut UriParts {
 /// # Safety
 ///
 /// `parts` must have been allocated by [`parse_uri_cstr`] and not yet freed.
+#[allow(dead_code)]
 pub(crate) unsafe fn free_uri_parts(parts: *mut UriParts) {
     if !parts.is_null() {
         drop(Box::from_raw(parts));
@@ -592,6 +599,7 @@ pub(crate) fn normalize_uri_path(uri: &[u8]) -> Vec<u8> {
 }
 
 /// Get the scheme part of a URI.
+#[allow(dead_code)]
 pub(crate) fn get_scheme(uri: &[u8]) -> Option<Vec<u8>> {
     if let Some((_start, end)) = find_scheme(uri) {
         Some(uri[_start..end].to_vec())
@@ -601,7 +609,7 @@ pub(crate) fn get_scheme(uri: &[u8]) -> Option<Vec<u8>> {
 }
 
 /// Check if a URI is absolute (has a scheme).
-pub(crate) fn is_absolute(uri: &[u8]) -> bool {
+pub(crate) const fn is_absolute(uri: &[u8]) -> bool {
     find_scheme(uri).is_some()
 }
 
@@ -1048,6 +1056,7 @@ pub(crate) unsafe fn xmlURIUnescapeString(
 /// # Safety
 ///
 /// `str` must be a valid null-terminated C string.
+#[allow(dead_code)]
 pub(crate) unsafe fn xmlParseURIRaw(str: *const c_char, _raw: c_int) -> *mut c_void {
     unsafe { xmlParseURI(str) }
 }
@@ -1485,7 +1494,7 @@ mod tests {
     #[test]
     fn test_xml_parse_uri() {
         unsafe {
-            let cstr = b"http://example.com/path\0".as_ptr() as *const c_char;
+            let cstr = c"http://example.com/path".as_ptr() as *const c_char;
             let uri = xmlParseURI(cstr);
             assert!(!uri.is_null());
             let parts = &*(uri as *const CXmlUri);
@@ -1507,7 +1516,7 @@ mod tests {
     #[test]
     fn test_xml_save_uri() {
         unsafe {
-            let cstr = b"http://example.com:8080/path?q=1#f\0".as_ptr() as *const c_char;
+            let cstr = c"http://example.com:8080/path?q=1#f".as_ptr() as *const c_char;
             let uri = xmlParseURI(cstr);
             assert!(!uri.is_null());
             let saved = xmlSaveUri(uri);
@@ -1522,7 +1531,7 @@ mod tests {
     #[test]
     fn test_xml_escape_str() {
         unsafe {
-            let cstr = b"hello world\0".as_ptr() as *const xmlChar;
+            let cstr = c"hello world".as_ptr() as *const xmlChar;
             let result = xmlURIEscapeStr(cstr, ptr::null());
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result as *const c_char);
@@ -1534,8 +1543,8 @@ mod tests {
     #[test]
     fn test_xml_escape_str_with_safe_list() {
         unsafe {
-            let cstr = b"hello world\0".as_ptr() as *const xmlChar;
-            let safe = b" \0".as_ptr() as *const xmlChar;
+            let cstr = c"hello world".as_ptr() as *const xmlChar;
+            let safe = c" ".as_ptr() as *const xmlChar;
             let result = xmlURIEscapeStr(cstr, safe);
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result as *const c_char);
@@ -1547,7 +1556,7 @@ mod tests {
     #[test]
     fn test_xml_unescape_string() {
         unsafe {
-            let cstr = b"hello%20world\0".as_ptr() as *const c_char;
+            let cstr = c"hello%20world".as_ptr() as *const c_char;
             let result = xmlURIUnescapeString(cstr, -1, ptr::null_mut());
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result);
@@ -1559,7 +1568,7 @@ mod tests {
     #[test]
     fn test_xml_unescape_string_with_len() {
         unsafe {
-            let cstr = b"hello%20world\0".as_ptr() as *const c_char;
+            let cstr = c"hello%20world".as_ptr() as *const c_char;
             let result = xmlURIUnescapeString(cstr, 13, ptr::null_mut());
             assert!(!result.is_null());
             let result_str = std::ffi::CStr::from_ptr(result);
@@ -1571,7 +1580,7 @@ mod tests {
     #[test]
     fn test_xml_parse_uri_raw() {
         unsafe {
-            let cstr = b"http://example.com\0".as_ptr() as *const c_char;
+            let cstr = c"http://example.com".as_ptr() as *const c_char;
             let uri = xmlParseURIRaw(cstr, 0);
             assert!(!uri.is_null());
             let parts = &*(uri as *const CXmlUri);
@@ -1678,7 +1687,7 @@ mod tests {
 
     #[test]
     fn test_parse_uri_cstr() {
-        let cstr = b"http://example.com/path\0".as_ptr() as *const xmlChar;
+        let cstr = c"http://example.com/path".as_ptr() as *const xmlChar;
         let ptr = parse_uri_cstr(cstr);
         assert!(!ptr.is_null());
         unsafe {
@@ -1696,7 +1705,7 @@ mod tests {
 
     #[test]
     fn test_parse_uri_cstr_invalid() {
-        let cstr = b"\0".as_ptr() as *const xmlChar;
+        let cstr = c"".as_ptr() as *const xmlChar;
         let ptr = parse_uri_cstr(cstr);
         assert!(ptr.is_null());
     }

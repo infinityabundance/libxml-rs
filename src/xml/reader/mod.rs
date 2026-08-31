@@ -27,6 +27,9 @@
     non_upper_case_globals
 )]
 
+#[cfg(test)]
+use crate::xml::string::xmlstr_to_string;
+
 use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
@@ -42,7 +45,7 @@ use crate::xml::parser::helpers::{
     input_from_memory_named, parse_document, setup_parser_input,
 };
 use crate::xml::parser::input::InputBuffer;
-use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes, xmlstr_to_string};
+use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes};
 use crate::xml::tree;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -77,7 +80,7 @@ use crate::xml::tree;
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
-pub(crate) enum ReaderNodeType {
+pub enum ReaderNodeType {
     NONE = 0,
     ELEMENT = 1,
     ATTRIBUTE = 2,
@@ -115,7 +118,7 @@ pub(crate) enum ReaderNodeType {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
-pub(crate) enum ReadState {
+pub enum ReadState {
     NOT_INITIALIZED = 0,
     INITIALIZED = 1,
     READING = 2,
@@ -138,6 +141,7 @@ pub(crate) enum ReadState {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
+#[allow(dead_code)]
 pub(crate) enum ParserProp {
     LOADDTD = 1,
     DEFAULTATTRS = 2,
@@ -167,6 +171,7 @@ struct TraversalEvent {
 /// # Safety
 ///
 /// `node` must be a valid pointer to a node in a valid tree, or NULL.
+#[allow(dead_code)]
 unsafe fn compute_depth(node: *mut _xmlNode) -> i32 {
     if node.is_null() {
         return 0;
@@ -186,7 +191,7 @@ unsafe fn compute_depth(node: *mut _xmlNode) -> i32 {
 }
 
 /// Convert an `xmlElementType` to the corresponding `ReaderNodeType`.
-fn element_type_to_reader_type(etype: c_int) -> ReaderNodeType {
+const fn element_type_to_reader_type(etype: c_int) -> ReaderNodeType {
     match etype {
         x if x == XML_ELEMENT_NODE as c_int => ReaderNodeType::ELEMENT,
         x if x == XML_ATTRIBUTE_NODE as c_int => ReaderNodeType::ATTRIBUTE,
@@ -229,7 +234,8 @@ enum AttrTarget {
     Prop(*mut _xmlAttr),
 }
 
-pub(crate) struct XmlTextReader {
+#[derive(Debug)]
+pub struct XmlTextReader {
     /// The parsed XML document.
     doc: *mut _xmlDoc,
     /// The parser context used to parse the document (NULL after parsing).
@@ -741,7 +747,7 @@ impl XmlTextReader {
                 v
             };
             let nlen = libc::strlen(name as *const libc::c_char) as usize;
-            let nbytes = core::slice::from_raw_parts(name as *const u8, nlen);
+            let nbytes = core::slice::from_raw_parts(name, nlen);
             if nbytes == &nsname[..nsname.len() - 1] {
                 return i;
             }
@@ -787,6 +793,15 @@ impl XmlTextReader {
     /// Read the next node in document order.
     ///
     /// Returns 1 if a node was read, 0 if no more nodes (EOF), -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Read(&mut self) -> c_int {
         if self.state == ReadState::ERROR || self.state == ReadState::CLOSED {
             return -1;
@@ -855,6 +870,15 @@ impl XmlTextReader {
     /// Skip to the next sibling of the current node.
     ///
     /// Returns 1 on success, 0 if no more siblings, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Next(&mut self) -> c_int {
         if self.state != ReadState::READING || self.cur_node.is_null() {
             return -1;
@@ -883,6 +907,15 @@ impl XmlTextReader {
     /// Move to the parent element (if currently on an attribute).
     ///
     /// Returns 1 on success, 0 if not on an attribute, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToElement(&mut self) -> c_int {
         if self.cur_attribute < 0 {
             return 0;
@@ -900,6 +933,15 @@ impl XmlTextReader {
     /// Move to an attribute by name.
     ///
     /// Returns 1 on success, 0 if attribute not found, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToAttribute(&mut self, name: *const xmlChar) -> c_int {
         if self.cur_node.is_null() {
             return -1;
@@ -926,6 +968,15 @@ impl XmlTextReader {
     /// Move to an attribute by index.
     ///
     /// Returns 1 on success, 0 if index out of range, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToAttributeNo(&mut self, index: c_int) -> c_int {
         if self.cur_node.is_null() || index < 0 {
             return -1;
@@ -953,6 +1004,15 @@ impl XmlTextReader {
     /// Move to the first attribute of the current element.
     ///
     /// Returns 1 on success, 0 if no attributes, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToFirstAttribute(&mut self) -> c_int {
         if self.cur_node.is_null() {
             return -1;
@@ -980,6 +1040,15 @@ impl XmlTextReader {
     /// Move to the next attribute.
     ///
     /// Returns 1 on success, 0 if no more attributes, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToNextAttribute(&mut self) -> c_int {
         if self.cur_attribute < 0 || self.cur_node.is_null() {
             return -1;
@@ -1023,7 +1092,7 @@ impl XmlTextReader {
                 // namespace) whose value is the namespace URI.
                 let n = unsafe { &*ns };
                 if n.prefix.is_null() {
-                    self.name = unsafe { xml_strdup(b"xmlns\0".as_ptr() as *const xmlChar) };
+                    self.name = unsafe { xml_strdup(c"xmlns".as_ptr() as *const xmlChar) };
                 } else {
                     let plen = libc::strlen(n.prefix as *const libc::c_char) as usize;
                     let mut v = Vec::with_capacity(6 + plen);
@@ -1097,6 +1166,15 @@ impl XmlTextReader {
     /// Move to the previous sibling.
     ///
     /// Returns 1 on success, 0 if no previous sibling, -1 on error.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Prev(&mut self) -> c_int {
         if self.state != ReadState::READING || self.cur_node.is_null() {
             return -1;
@@ -1130,12 +1208,12 @@ impl XmlTextReader {
     // ─────────────────────────────────────────────────────────────────────────
 
     /// Get the depth of the current node.
-    pub fn Depth(&self) -> c_int {
+    pub const fn Depth(&self) -> c_int {
         self.depth
     }
 
     /// Get the node type of the current node.
-    pub fn NodeType(&self) -> ReaderNodeType {
+    pub const fn NodeType(&self) -> ReaderNodeType {
         self.node_type
     }
 
@@ -1143,6 +1221,15 @@ impl XmlTextReader {
     ///
     /// Returns a pointer to a newly allocated string (caller must free with `xmlFree`),
     /// or NULL if there is no name.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Name(&self) -> *mut xmlChar {
         if self.name.is_null() {
             return ptr::null_mut();
@@ -1155,6 +1242,15 @@ impl XmlTextReader {
     ///
     /// Returns a pointer to a newly allocated string (caller must free with `xmlFree`),
     /// or NULL if there is no value.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Value(&self) -> *mut xmlChar {
         if self.value.is_null() {
             return ptr::null_mut();
@@ -1167,7 +1263,7 @@ impl XmlTextReader {
     ///
     /// The returned pointer is valid only while the reader is alive and positioned
     /// on the same node.
-    pub fn ConstName(&self) -> *const xmlChar {
+    pub const fn ConstName(&self) -> *const xmlChar {
         self.name as *const xmlChar
     }
 
@@ -1175,12 +1271,12 @@ impl XmlTextReader {
     ///
     /// The returned pointer is valid only while the reader is alive and positioned
     /// on the same node.
-    pub fn ConstValue(&self) -> *const xmlChar {
+    pub const fn ConstValue(&self) -> *const xmlChar {
         self.value as *const xmlChar
     }
 
     /// Check if the current node has a value.
-    pub fn HasValue(&self) -> c_int {
+    pub const fn HasValue(&self) -> c_int {
         if self.value.is_null() {
             0
         } else {
@@ -1232,6 +1328,15 @@ impl XmlTextReader {
     ///
     /// Returns a newly allocated string (caller must free with `xmlFree`),
     /// or NULL if not available.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn BaseUri(&self) -> *mut xmlChar {
         // The base URI is typically the document URL.
         if self.doc.is_null() {
@@ -1250,6 +1355,15 @@ impl XmlTextReader {
     ///
     /// For namespaced names, this strips the prefix.
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn LocalName(&self) -> *mut xmlChar {
         if self.name.is_null() {
             return ptr::null_mut();
@@ -1277,6 +1391,15 @@ impl XmlTextReader {
     /// Get the namespace URI of the current node.
     ///
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn NamespaceUri(&self) -> *mut xmlChar {
         if self.cur_node.is_null() {
             return ptr::null_mut();
@@ -1301,6 +1424,15 @@ impl XmlTextReader {
     /// Get the prefix of the current node.
     ///
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Prefix(&self) -> *mut xmlChar {
         if self.cur_node.is_null() {
             return ptr::null_mut();
@@ -1323,18 +1455,27 @@ impl XmlTextReader {
     }
 
     /// Get the attribute count of the current element.
-    pub fn AttributeCount(&self) -> c_int {
+    pub const fn AttributeCount(&self) -> c_int {
         self.attribute_count
     }
 
     /// Get the read state.
-    pub fn ReadState(&self) -> ReadState {
+    pub const fn ReadState(&self) -> ReadState {
         self.state
     }
 
     /// Get an attribute value by name.
     ///
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn GetAttribute(&self, name: *const xmlChar) -> *mut xmlChar {
         if self.cur_node.is_null() {
             return ptr::null_mut();
@@ -1378,6 +1519,15 @@ impl XmlTextReader {
     /// Get an attribute value by index.
     ///
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn GetAttributeNo(&self, index: c_int) -> *mut xmlChar {
         if self.cur_node.is_null() || index < 0 {
             return ptr::null_mut();
@@ -1416,6 +1566,15 @@ impl XmlTextReader {
     /// Get an attribute value by local name and namespace URI.
     ///
     /// Returns a newly allocated string, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn GetAttributeNs(
         &self,
         localName: *const xmlChar,
@@ -1491,6 +1650,15 @@ impl XmlTextReader {
     /// Look up a namespace by prefix.
     ///
     /// Returns a newly allocated string with the namespace URI, or NULL.
+    ///
+    /// # SAFETY
+    ///
+    /// `self` must be a valid `XmlTextReader` obtained from a reader
+    /// constructor (`xmlReaderForDoc`/`xmlReaderForFile`/`xmlReaderForMemory`/
+    /// `xmlReaderForIO` or `xmlNewTextReader`) and not yet closed or freed.
+    /// The `&mut self` borrow excludes concurrent access from other threads.
+    /// Pointers returned by this method are valid only until the next
+    /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn LookupNamespace(&self, prefix: *const xmlChar) -> *mut xmlChar {
         if self.cur_node.is_null() {
             return ptr::null_mut();
@@ -1540,7 +1708,7 @@ impl XmlTextReader {
     }
 
     /// Get a parser property.
-    pub fn GetParserProp(&self, prop: c_int) -> c_int {
+    pub const fn GetParserProp(&self, prop: c_int) -> c_int {
         match prop {
             1 /* XML_PARSER_LOADDTD */ => {
                 if (self.options & XML_PARSE_DTDLOAD) != 0 { 1 } else { 0 }
@@ -1559,7 +1727,7 @@ impl XmlTextReader {
     }
 
     /// Set a parser property.
-    pub fn SetParserProp(&mut self, prop: c_int, value: c_int) -> c_int {
+    pub const fn SetParserProp(&mut self, prop: c_int, value: c_int) -> c_int {
         match prop {
             1 /* XML_PARSER_LOADDTD */ => {
                 if value != 0 {
@@ -1598,7 +1766,7 @@ impl XmlTextReader {
     }
 
     /// Get the current document.
-    pub fn CurrentDoc(&self) -> *mut _xmlDoc {
+    pub const fn CurrentDoc(&self) -> *mut _xmlDoc {
         self.doc
     }
 }
@@ -3051,7 +3219,9 @@ pub unsafe extern "C" fn xmlTextReaderGetParserLineNumber(reader: *mut XmlTextRe
 ///
 /// `reader` must be a valid pointer or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(reader: *mut XmlTextReader) -> c_int {
+pub const unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(
+    reader: *mut XmlTextReader,
+) -> c_int {
     if reader.is_null() {
         return -1;
     }
@@ -3076,7 +3246,7 @@ pub unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(reader: *mut XmlText
 ///
 /// `reader` must be a valid pointer or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_int {
+pub const unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
         return -1;
     }
@@ -3100,7 +3270,7 @@ pub unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_i
 ///
 /// `reader` must be a valid pointer or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderNormalization(reader: *mut XmlTextReader) -> c_int {
+pub const unsafe extern "C" fn xmlTextReaderNormalization(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
         return -1;
     }
@@ -4294,6 +4464,7 @@ pub const XML_PARSER_SEVERITY_ERROR: c_int = 4;
 
 /// Opaque locator passed to the reader error handler (upstream
 /// `xmlTextReaderLocator`).
+#[derive(Debug)]
 #[repr(C)]
 pub struct XmlTextReaderLocator {
     pub reader: *mut XmlTextReader,
@@ -4328,6 +4499,21 @@ pub unsafe extern "C" fn xmlReaderForDoc(
 }
 
 /// `xmlTextReaderPtr xmlNewTextReaderFilename(const char *URI, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+///
+/// - `URI`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewTextReaderFilename(
     URI: *const c_char,
@@ -4362,6 +4548,25 @@ unsafe fn reader_renew(reader: *mut XmlTextReader, new_reader: *mut XmlTextReade
 }
 
 /// `int xmlReaderNewDoc(xmlTextReaderPtr reader, const xmlChar *cur, const char *URL, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `cur`, `URL`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewDoc(
     reader: *mut XmlTextReader,
@@ -4384,6 +4589,25 @@ pub unsafe extern "C" fn xmlReaderNewDoc(
 }
 
 /// `int xmlReaderNewFile(xmlTextReaderPtr reader, const char *filename, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `filename`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewFile(
     reader: *mut XmlTextReader,
@@ -4403,6 +4627,25 @@ pub unsafe extern "C" fn xmlReaderNewFile(
 }
 
 /// `int xmlReaderNewMemory(xmlTextReaderPtr reader, const char *buffer, int size, const char *URL, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `buffer`, `URL`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewMemory(
     reader: *mut XmlTextReader,
@@ -4424,6 +4667,25 @@ pub unsafe extern "C" fn xmlReaderNewMemory(
 }
 
 /// `int xmlReaderNewFd(xmlTextReaderPtr reader, int fd, const char *URL, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewFd(
     reader: *mut XmlTextReader,
@@ -4444,6 +4706,29 @@ pub unsafe extern "C" fn xmlReaderNewFd(
 }
 
 /// `int xmlReaderNewIO(xmlTextReaderPtr reader, xmlInputReadCallback ioread, xmlInputCloseCallback ioclose, void *ioctx, const char *URL, const char *encoding, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `ioctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// - `ioread`, `ioclose` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewIO(
     reader: *mut XmlTextReader,
@@ -4487,6 +4772,21 @@ pub unsafe extern "C" fn xmlReaderWalker(doc: *mut _xmlDoc) -> *mut XmlTextReade
 }
 
 /// `int xmlReaderNewWalker(xmlTextReaderPtr reader, xmlDocPtr doc)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `doc` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlReaderNewWalker(
     reader: *mut XmlTextReader,
@@ -4508,8 +4808,23 @@ pub unsafe extern "C" fn xmlReaderNewWalker(
 ///
 /// Returns the total bytes consumed from the input (0 when unavailable —
 /// the candidate parses the full input up front; documented divergence).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderByteConsumed(reader: *mut XmlTextReader) -> c_long {
+pub const unsafe extern "C" fn xmlTextReaderByteConsumed(reader: *mut XmlTextReader) -> c_long {
     if reader.is_null() {
         return -1;
     }
@@ -4518,6 +4833,21 @@ pub unsafe extern "C" fn xmlTextReaderByteConsumed(reader: *mut XmlTextReader) -
 
 /// `const xmlChar *xmlTextReaderConstBaseUri(xmlTextReaderPtr reader)` — the
 /// base URI, valid until the reader is freed (no copy).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstBaseUri(reader: *mut XmlTextReader) -> *const xmlChar {
     if reader.is_null() {
@@ -4527,6 +4857,21 @@ pub unsafe extern "C" fn xmlTextReaderConstBaseUri(reader: *mut XmlTextReader) -
 }
 
 /// `const xmlChar *xmlTextReaderConstEncoding(xmlTextReaderPtr reader)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstEncoding(reader: *mut XmlTextReader) -> *const xmlChar {
     if reader.is_null() {
@@ -4547,6 +4892,21 @@ pub unsafe extern "C" fn xmlTextReaderConstEncoding(reader: *mut XmlTextReader) 
 /// UPSTREAM-PARITY: at an attribute position this is the attribute's local
 /// name (or "xmlns"/the prefix for a namespace declaration); at an element
 /// position the tree's local name.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstLocalName(reader: *mut XmlTextReader) -> *const xmlChar {
     if reader.is_null() {
@@ -4565,7 +4925,7 @@ pub unsafe extern "C" fn xmlTextReaderConstLocalName(reader: *mut XmlTextReader)
                 if ns.is_null() {
                     ptr::null()
                 } else if unsafe { (*ns).prefix }.is_null() {
-                    b"xmlns\0".as_ptr() as *const xmlChar
+                    c"xmlns".as_ptr() as *const xmlChar
                 } else {
                     unsafe { (*ns).prefix }
                 }
@@ -4593,6 +4953,21 @@ pub unsafe extern "C" fn xmlTextReaderConstLocalName(reader: *mut XmlTextReader)
 ///
 /// UPSTREAM-PARITY: at an attribute position the namespace comes from the
 /// attribute (or namespace declaration) itself; elsewhere from the node.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstNamespaceUri(
     reader: *mut XmlTextReader,
@@ -4612,7 +4987,7 @@ pub unsafe extern "C" fn xmlTextReaderConstNamespaceUri(
                 // UPSTREAM-PARITY (xmlTextReaderConstNamespaceUri): a
                 // namespace declaration reports the xmlns namespace URI,
                 // not the declared URI.
-                b"http://www.w3.org/2000/xmlns/\0".as_ptr() as *const xmlChar
+                c"http://www.w3.org/2000/xmlns/".as_ptr() as *const xmlChar
             }
             AttrTarget::Prop(p) => {
                 if p.is_null() || unsafe { (*p).ns }.is_null() {
@@ -4637,6 +5012,21 @@ pub unsafe extern "C" fn xmlTextReaderConstNamespaceUri(
 /// UPSTREAM-PARITY: at an attribute position the prefix comes from the
 /// attribute; for a namespace declaration the prefix is reported as "xmlns"
 /// (and NULL for the default declaration) — an upstream quirk reproduced here.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstPrefix(reader: *mut XmlTextReader) -> *const xmlChar {
     if reader.is_null() {
@@ -4654,7 +5044,7 @@ pub unsafe extern "C" fn xmlTextReaderConstPrefix(reader: *mut XmlTextReader) ->
                 if ns.is_null() || unsafe { (*ns).prefix }.is_null() {
                     ptr::null()
                 } else {
-                    b"xmlns\0".as_ptr() as *const xmlChar
+                    c"xmlns".as_ptr() as *const xmlChar
                 }
             }
             AttrTarget::Prop(p) => {
@@ -4678,8 +5068,27 @@ pub unsafe extern "C" fn xmlTextReaderConstPrefix(reader: *mut XmlTextReader) ->
 /// `const xmlChar *xmlTextReaderConstString(xmlTextReaderPtr reader, const xmlChar *str)`
 /// — the reader's dictionary-internalized copy of `str`; the candidate
 /// returns `str` unchanged (dictionary interning is an internal detail).
+///
+/// # SAFETY
+///
+/// - `_reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `str` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderConstString(
+pub const unsafe extern "C" fn xmlTextReaderConstString(
     _reader: *mut XmlTextReader,
     str: *const xmlChar,
 ) -> *const xmlChar {
@@ -4687,6 +5096,21 @@ pub unsafe extern "C" fn xmlTextReaderConstString(
 }
 
 /// `const xmlChar *xmlTextReaderConstXmlLang(xmlTextReaderPtr reader)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstXmlLang(reader: *mut XmlTextReader) -> *const xmlChar {
     if reader.is_null() {
@@ -4727,6 +5151,21 @@ pub unsafe extern "C" fn xmlTextReaderConstXmlLang(reader: *mut XmlTextReader) -
 }
 
 /// `const xmlChar *xmlTextReaderConstXmlVersion(xmlTextReaderPtr reader)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderConstXmlVersion(
     reader: *mut XmlTextReader,
@@ -4747,8 +5186,23 @@ pub unsafe extern "C" fn xmlTextReaderConstXmlVersion(
 /// non-NULL reader (the implementation is a placeholder that does not inspect
 /// the attribute; see the `/* TODO maybe lookup the attribute value */` comment
 /// in xmlreader.c). The candidate reproduces that historical behavior exactly.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderQuoteChar(reader: *mut XmlTextReader) -> c_int {
+pub const unsafe extern "C" fn xmlTextReaderQuoteChar(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
         return -1;
     }
@@ -4759,8 +5213,23 @@ pub unsafe extern "C" fn xmlTextReaderQuoteChar(reader: *mut XmlTextReader) -> c
 /// attribute came from the DTD default. The candidate returns 0 for a valid
 /// reader (DTD default attribute expansion is not annotated; documented
 /// divergence), -1 for a NULL reader (upstream contract).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderIsDefault(reader: *mut XmlTextReader) -> c_int {
+pub const unsafe extern "C" fn xmlTextReaderIsDefault(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
         return -1;
     }
@@ -4769,6 +5238,21 @@ pub unsafe extern "C" fn xmlTextReaderIsDefault(reader: *mut XmlTextReader) -> c
 
 /// `int xmlTextReaderIsNamespaceDecl(xmlTextReaderPtr reader)` — whether the
 /// current attribute position is a namespace declaration.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderIsNamespaceDecl(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
@@ -4821,7 +5305,7 @@ pub unsafe extern "C" fn xmlTextReaderMoveToAttributeNs(
         // default declaration, any other localName is a prefix.
         let is_default = libc::strcmp(
             localName as *const libc::c_char,
-            b"xmlns\0".as_ptr() as *const libc::c_char,
+            c"xmlns".as_ptr() as *const libc::c_char,
         ) == 0;
         let mut ns = unsafe { (*node).nsDef };
         let mut index = 0;
@@ -4885,6 +5369,21 @@ pub unsafe extern "C" fn xmlTextReaderMoveToAttributeNs(
 /// `xmlNodePtr xmlTextReaderPreserve(xmlTextReaderPtr reader)` — the current
 /// node (the candidate's reader owns the whole tree, so no separate
 /// preservation step is needed).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderPreserve(reader: *mut XmlTextReader) -> *mut _xmlNode {
     if reader.is_null() {
@@ -4897,8 +5396,27 @@ pub unsafe extern "C" fn xmlTextReaderPreserve(reader: *mut XmlTextReader) -> *m
 ///
 /// The candidate preserves every node; returns 0 (documented divergence:
 /// pattern-based selective preservation is not tracked).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `_pattern`, `_namespaces` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderPreservePattern(
+pub const unsafe extern "C" fn xmlTextReaderPreservePattern(
     reader: *mut XmlTextReader,
     _pattern: *const xmlChar,
     _namespaces: *mut *const xmlChar,
@@ -4954,6 +5472,25 @@ pub unsafe extern "C" fn xmlTextReaderGetErrorHandler(
 }
 
 /// `void xmlTextReaderSetStructuredErrorHandler(xmlTextReaderPtr reader, xmlStructuredErrorFunc f, void *arg)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `arg` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `f` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderSetStructuredErrorHandler(
     reader: *mut XmlTextReader,
@@ -4973,6 +5510,25 @@ pub unsafe extern "C" fn xmlTextReaderSetStructuredErrorHandler(
 /// xmlResourceLoader loader, void *data)` — install a custom resource
 /// loader; stored on the reader and forwarded to its parser context
 /// (upstream xmlreader.c).
+///
+/// # SAFETY
+///
+/// - `reader`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `loader` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderSetResourceLoader(
     reader: *mut XmlTextReader,
@@ -4993,6 +5549,21 @@ pub unsafe extern "C" fn xmlTextReaderSetResourceLoader(
 /// pointer to the reader's embedded `_xmlError` (upstream returns
 /// `&reader->ctxt->lastError`, which is always present while the reader
 /// exists; valid until the next error is collected).
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderGetLastError(
     reader: *mut XmlTextReader,
@@ -5052,6 +5623,21 @@ pub unsafe extern "C" fn xmlTextReaderLocatorBaseURI(
 }
 
 /// `int xmlTextReaderLocatorLineNumber(xmlTextReaderLocatorPtr locator)`.
+///
+/// # SAFETY
+///
+/// - `locator` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderLocatorLineNumber(
     locator: *mut XmlTextReaderLocator,
@@ -5076,14 +5662,44 @@ pub unsafe extern "C" fn xmlTextReaderLocatorLineNumber(
 ///
 /// Returns NULL — the candidate reads the whole input up front (documented
 /// divergence: no unconsumed input remains).
+///
+/// # SAFETY
+///
+/// - `_reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlTextReaderGetRemainder(
+pub const unsafe extern "C" fn xmlTextReaderGetRemainder(
     _reader: *mut XmlTextReader,
 ) -> *mut crate::abi::structs::_xmlParserInputBuffer {
     ptr::null_mut()
 }
 
 /// `void xmlTextReaderSetMaxAmplification(xmlTextReaderPtr reader, unsigned maxAmpl)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderSetMaxAmplification(
     reader: *mut XmlTextReader,
@@ -5110,10 +5726,8 @@ pub unsafe extern "C" fn xmlTextReaderSchemaValidate(
         return -1;
     }
     // Ensure the document is parsed.
-    if unsafe { (*reader).doc }.is_null() {
-        if unsafe { (*reader).parsed } == false {
-            unsafe { (*reader).Read() };
-        }
+    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
+        unsafe { (*reader).Read() };
     }
     let ctxt = crate::xml::schemas::xmlSchemaNewParserCtxt(xsd);
     if ctxt.is_null() {
@@ -5138,6 +5752,21 @@ pub unsafe extern "C" fn xmlTextReaderSchemaValidate(
 }
 
 /// `int xmlTextReaderSchemaValidateCtxt(xmlTextReaderPtr reader, xmlSchemaValidCtxtPtr ctxt, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderSchemaValidateCtxt(
     reader: *mut XmlTextReader,
@@ -5147,15 +5776,28 @@ pub unsafe extern "C" fn xmlTextReaderSchemaValidateCtxt(
     if reader.is_null() || ctxt.is_null() {
         return -1;
     }
-    if unsafe { (*reader).doc }.is_null() {
-        if unsafe { (*reader).parsed } == false {
-            unsafe { (*reader).Read() };
-        }
+    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
+        unsafe { (*reader).Read() };
     }
     crate::xml::schemas::xmlSchemaValidateDoc(ctxt, unsafe { (*reader).doc })
 }
 
 /// `int xmlTextReaderSetSchema(xmlTextReaderPtr reader, xmlSchemaPtr schema)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `schema` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderSetSchema(
     reader: *mut XmlTextReader,
@@ -5171,6 +5813,25 @@ pub unsafe extern "C" fn xmlTextReaderSetSchema(
 }
 
 /// `int xmlTextReaderRelaxNGValidate(xmlTextReaderPtr reader, const char *rng)`.
+///
+/// # SAFETY
+///
+/// - `reader` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `rng` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderRelaxNGValidate(
     reader: *mut XmlTextReader,
@@ -5179,10 +5840,8 @@ pub unsafe extern "C" fn xmlTextReaderRelaxNGValidate(
     if reader.is_null() || rng.is_null() {
         return -1;
     }
-    if unsafe { (*reader).doc }.is_null() {
-        if unsafe { (*reader).parsed } == false {
-            unsafe { (*reader).Read() };
-        }
+    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
+        unsafe { (*reader).Read() };
     }
     let ctxt = crate::xml::relaxng::xmlRelaxNGNewParserCtxt(rng);
     if ctxt.is_null() {
@@ -5207,6 +5866,21 @@ pub unsafe extern "C" fn xmlTextReaderRelaxNGValidate(
 }
 
 /// `int xmlTextReaderRelaxNGValidateCtxt(xmlTextReaderPtr reader, xmlRelaxNGValidCtxtPtr ctxt, int options)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderRelaxNGValidateCtxt(
     reader: *mut XmlTextReader,
@@ -5216,15 +5890,28 @@ pub unsafe extern "C" fn xmlTextReaderRelaxNGValidateCtxt(
     if reader.is_null() || ctxt.is_null() {
         return -1;
     }
-    if unsafe { (*reader).doc }.is_null() {
-        if unsafe { (*reader).parsed } == false {
-            unsafe { (*reader).Read() };
-        }
+    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
+        unsafe { (*reader).Read() };
     }
     crate::xml::relaxng::xmlRelaxNGValidateDoc(ctxt, unsafe { (*reader).doc })
 }
 
 /// `int xmlTextReaderRelaxNGSetSchema(xmlTextReaderPtr reader, xmlRelaxNGPtr schema)`.
+///
+/// # SAFETY
+///
+/// - `reader`, `schema` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextReaderRelaxNGSetSchema(
     reader: *mut XmlTextReader,

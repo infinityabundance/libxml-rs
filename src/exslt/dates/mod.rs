@@ -35,7 +35,7 @@ struct DateTime {
 }
 
 impl DateTime {
-    fn new() -> Self {
+    const fn new() -> Self {
         DateTime {
             year: 0,
             month: 1,
@@ -50,7 +50,7 @@ impl DateTime {
 
 // ── Civil date algorithms (Howard Hinnant) ────────────────────────────────
 
-fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+const fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     let y = if m <= 2 { y - 1 } else { y };
     let era = if y >= 0 { y } else { y - 399 } / 400;
     let yoe = y - era * 400; // [0, 399]
@@ -60,7 +60,7 @@ fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     era * 146097 + doe - 719468
 }
 
-fn civil_from_days(z: i64) -> (i64, u32, u32) {
+const fn civil_from_days(z: i64) -> (i64, u32, u32) {
     let z = z + 719468;
     let era = if z >= 0 { z } else { z - 146096 } / 146097;
     let doe = z - era * 146097; // [0, 146096]
@@ -73,12 +73,12 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
     (if m <= 2 { y + 1 } else { y }, m as u32, d as u32)
 }
 
-fn is_leap_year(y: i64) -> bool {
+const fn is_leap_year(y: i64) -> bool {
     (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
 }
 
 /// Days in month (1-based month).
-fn days_in_month(y: i64, m: u32) -> u32 {
+const fn days_in_month(y: i64, m: u32) -> u32 {
     match m {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
@@ -95,7 +95,7 @@ fn days_in_month(y: i64, m: u32) -> u32 {
 
 /// Day of the week: 0 = Sunday ... 6 = Saturday (per EXSLT, which numbers
 /// Monday as 1; we convert here).
-fn day_of_week(y: i64, m: u32, d: u32) -> u32 {
+const fn day_of_week(y: i64, m: u32, d: u32) -> u32 {
     // 1970-01-01 was a Thursday.
     let days = days_from_civil(y, m as i64, d as i64);
     let wd = (days + 4).rem_euclid(7); // 0 = Sunday
@@ -107,7 +107,7 @@ fn day_of_week(y: i64, m: u32, d: u32) -> u32 {
 fn iso_week_number(y: i64, m: u32, d: u32) -> u32 {
     let wd = day_of_week(y, m, d); // 0=Sun..6=Sat
                                    // Convert to ISO: 1=Mon..7=Sun
-    let iso_wd = if wd == 0 { 7 } else { wd as i64 };
+    let _iso_wd = if wd == 0 { 7 } else { wd as i64 };
     let jan1_wd = day_of_week(y, 1, 1);
     let jan1_iso = if jan1_wd == 0 { 7 } else { jan1_wd as i64 };
     let doy = days_from_civil(y, m as i64, d as i64) - days_from_civil(y, 1, 1) + 1;
@@ -285,7 +285,7 @@ fn date_arg(args: &[XPathValue]) -> Option<DateTime> {
 }
 
 /// Normalize a DateTime to UTC (apply the timezone offset).
-fn to_utc(dt: &DateTime) -> DateTime {
+const fn to_utc(dt: &DateTime) -> DateTime {
     let mut minutes = days_from_civil(dt.year, dt.month as i64, dt.day as i64) * 1440
         + dt.hour as i64 * 60
         + dt.minute as i64
@@ -597,22 +597,21 @@ fn add_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, St
         Some(v) => v.as_string(),
         None => return Ok(XPathValue::String(String::new())),
     };
-    if let Some((years, months, days, hours, minutes, seconds)) = parse_duration(&dur) {
-        dt.year += years as i64;
+    if let Some((years, months, days, _hours, _minutes, seconds)) = parse_duration(&dur) {
+        dt.year += years;
         // Month arithmetic with clamping.
-        let total_months = dt.year * 12 + (dt.month as i64 - 1) + months as i64;
+        let total_months = dt.year * 12 + (dt.month as i64 - 1) + months;
         dt.year = total_months.div_euclid(12);
         dt.month = (total_months.rem_euclid(12) + 1) as u32;
         dt.day = dt.day.min(days_in_month(dt.year, dt.month));
         // Add days via civil arithmetic.
-        let days_total = days_from_civil(dt.year, dt.month as i64, dt.day as i64) + days as i64;
+        let days_total = days_from_civil(dt.year, dt.month as i64, dt.day as i64) + days;
         let (y, m, d) = civil_from_days(days_total);
         dt.year = y;
         dt.month = m;
         dt.day = d;
         // Time.
-        let mut secs =
-            dt.hour as i64 * 3600 + dt.minute as i64 * 60 + dt.second as i64 + seconds as i64;
+        let mut secs = dt.hour as i64 * 3600 + dt.minute as i64 * 60 + dt.second as i64 + seconds;
         let mut carry_days = 0;
         if secs < 0 {
             carry_days = secs.div_euclid(86400);
@@ -987,54 +986,71 @@ mod tests {
     fn test_component_functions() {
         let mut c = ctx();
         let arg = XPathValue::String("2003-01-04T12:30:45".to_string());
-        assert_eq!(year_fn(&mut c, &[arg.clone()]).unwrap().as_number(), 2003.0);
         assert_eq!(
-            month_in_year_fn(&mut c, &[arg.clone()])
+            year_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_number(),
+            2003.0
+        );
+        assert_eq!(
+            month_in_year_fn(&mut c, std::slice::from_ref(&arg))
                 .unwrap()
                 .as_number(),
             1.0
         );
         assert_eq!(
-            day_in_month_fn(&mut c, &[arg.clone()]).unwrap().as_number(),
+            day_in_month_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_number(),
             4.0
         );
         assert_eq!(
-            hour_in_day_fn(&mut c, &[arg.clone()]).unwrap().as_number(),
+            hour_in_day_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_number(),
             12.0
         );
         assert_eq!(
-            minute_in_hour_fn(&mut c, &[arg.clone()])
+            minute_in_hour_fn(&mut c, std::slice::from_ref(&arg))
                 .unwrap()
                 .as_number(),
             30.0
         );
         assert_eq!(
-            second_in_minute_fn(&mut c, &[arg.clone()])
+            second_in_minute_fn(&mut c, std::slice::from_ref(&arg))
                 .unwrap()
                 .as_number(),
             45.0
         );
         assert_eq!(
-            day_in_year_fn(&mut c, &[arg.clone()]).unwrap().as_number(),
+            day_in_year_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_number(),
             4.0
         );
-        assert!(!leap_year_fn(&mut c, &[arg.clone()]).unwrap().as_boolean());
+        assert!(!leap_year_fn(&mut c, std::slice::from_ref(&arg))
+            .unwrap()
+            .as_boolean());
         assert_eq!(
-            day_name_fn(&mut c, &[arg.clone()]).unwrap().as_string(),
+            day_name_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_string(),
             "Saturday"
         );
         assert_eq!(
-            day_abbreviation_fn(&mut c, &[arg.clone()])
+            day_abbreviation_fn(&mut c, std::slice::from_ref(&arg))
                 .unwrap()
                 .as_string(),
             "Sat"
         );
         assert_eq!(
-            month_name_fn(&mut c, &[arg.clone()]).unwrap().as_string(),
+            month_name_fn(&mut c, std::slice::from_ref(&arg))
+                .unwrap()
+                .as_string(),
             "January"
         );
         assert_eq!(
-            month_abbreviation_fn(&mut c, &[arg.clone()])
+            month_abbreviation_fn(&mut c, std::slice::from_ref(&arg))
                 .unwrap()
                 .as_string(),
             "Jan"

@@ -58,7 +58,6 @@ use crate::abi::exports_xml2::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
-use crate::xml::xpath::exports::xmlXPathNewString;
 
 /// The XSLT namespace URI (upstream `XSLT_NAMESPACE`, xslt.h).
 const XSLT_NAMESPACE: &[u8] = b"http://www.w3.org/1999/XSL/Transform";
@@ -132,12 +131,19 @@ pub type xsltPreComputeFunction = unsafe extern "C" fn(
 ///     xsltElemPreCompDeallocator free; /* the deallocator */
 /// };
 /// ```
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltElemPreComp {
+    /// Next item in the stylesheet's global chained list of precompiled
+    /// elements.
     pub next: *mut _xsltElemPreComp,
+    /// Type of the stylesheet element (`xsltStyleType`).
     pub type_: c_int, // xsltStyleType
+    /// The transform function that executes this instruction.
     pub func: Option<xsltTransformFunction>,
+    /// The stylesheet-tree node corresponding to this item.
     pub inst: *mut _xmlNode,
+    /// The deallocator for this precompiled item.
     pub free: Option<xsltElemPreCompDeallocator>,
 }
 
@@ -212,7 +218,8 @@ unsafe fn is_xslt_name(n: *mut _xmlNode, val: &[u8]) -> bool {
 }
 
 /// IS_BLANK (xsltutils.h): a string made only of XML whitespace.
-unsafe fn is_blank_str(str: *const xmlChar) -> bool {
+#[allow(dead_code)]
+const unsafe fn is_blank_str(str: *const xmlChar) -> bool {
     if str.is_null() {
         return true;
     }
@@ -229,7 +236,7 @@ unsafe fn is_blank_str(str: *const xmlChar) -> bool {
 /// Report a compile-time error (xsltTransformError; the candidate records
 /// the literal message, matching the crate's non-variadic convention).
 /// Render a NUL-terminated C string as a byte slice for `report_error`.
-unsafe fn cbytes(p: *const u8) -> &'static [u8] {
+const unsafe fn cbytes(p: *const u8) -> &'static [u8] {
     if p.is_null() {
         return b"";
     }
@@ -252,7 +259,7 @@ unsafe fn report_error(style: *mut _xsltStylesheet, inst: *mut _xmlNode, msg: &[
 /// Not used by the compile family itself (see `xsltFreeExts`), but kept
 /// for symmetry with the upstream def-list handling.
 #[allow(dead_code)]
-unsafe fn xslt_free_ext_def(entry: *mut c_void) {
+const unsafe fn xslt_free_ext_def(entry: *mut c_void) {
     // The candidate never allocates xsltExtDef lists; this is unreachable
     // and kept only to document the upstream shape.
     let _ = entry;
@@ -281,6 +288,7 @@ unsafe fn ext_element_lookup(
 }
 
 /// Duplicate a NUL-terminated string with the xml allocator.
+#[allow(dead_code)]
 unsafe fn dup_str(s: *const xmlChar) -> *mut xmlChar {
     if s.is_null() {
         return ptr::null_mut();
@@ -309,7 +317,7 @@ unsafe fn xslt_check_read(
     if sec.is_null() {
         return 1;
     }
-    let is_network = !xmlStrstr(url, b"://\0".as_ptr() as *const xmlChar).is_null();
+    let is_network = !xmlStrstr(url, c"://".as_ptr() as *const xmlChar).is_null();
     let option = if is_network {
         XSLT_SECPREF_READ_NETWORK
     } else {
@@ -324,7 +332,7 @@ unsafe fn xslt_check_read(
             } else {
                 report_error(ptr::null_mut(), ptr::null_mut(), b"Local file read for ");
             }
-            report_error(ptr::null_mut(), ptr::null_mut(), cbytes(url as *const u8));
+            report_error(ptr::null_mut(), ptr::null_mut(), cbytes(url));
             report_error(ptr::null_mut(), ptr::null_mut(), b" refused\n");
             return 0;
         }
@@ -378,16 +386,16 @@ pub(crate) unsafe fn xslt_new_decimal_format(
         (*self_).nsUri = nsUri;
         (*self_).name = name;
         // Default values (xslt.c, UTF-8 for U+2030 PER MILLE SIGN).
-        (*self_).digit = xmlStrdup(b"#\0".as_ptr() as *const xmlChar);
-        (*self_).patternSeparator = xmlStrdup(b";\0".as_ptr() as *const xmlChar);
-        (*self_).decimalPoint = xmlStrdup(b".\0".as_ptr() as *const xmlChar);
-        (*self_).grouping = xmlStrdup(b",\0".as_ptr() as *const xmlChar);
-        (*self_).percent = xmlStrdup(b"%\0".as_ptr() as *const xmlChar);
-        (*self_).permille = xmlStrdup("\u{2030}\0".as_ptr() as *const xmlChar);
-        (*self_).zeroDigit = xmlStrdup(b"0\0".as_ptr() as *const xmlChar);
-        (*self_).minusSign = xmlStrdup(b"-\0".as_ptr() as *const xmlChar);
-        (*self_).infinity = xmlStrdup(b"Infinity\0".as_ptr() as *const xmlChar);
-        (*self_).noNumber = xmlStrdup(b"NaN\0".as_ptr() as *const xmlChar);
+        (*self_).digit = xmlStrdup(c"#".as_ptr() as *const xmlChar);
+        (*self_).patternSeparator = xmlStrdup(c";".as_ptr() as *const xmlChar);
+        (*self_).decimalPoint = xmlStrdup(c".".as_ptr() as *const xmlChar);
+        (*self_).grouping = xmlStrdup(c",".as_ptr() as *const xmlChar);
+        (*self_).percent = xmlStrdup(c"%".as_ptr() as *const xmlChar);
+        (*self_).permille = xmlStrdup(c"\u{2030}".as_ptr() as *const xmlChar);
+        (*self_).zeroDigit = xmlStrdup(c"0".as_ptr() as *const xmlChar);
+        (*self_).minusSign = xmlStrdup(c"-".as_ptr() as *const xmlChar);
+        (*self_).infinity = xmlStrdup(c"Infinity".as_ptr() as *const xmlChar);
+        (*self_).noNumber = xmlStrdup(c"NaN".as_ptr() as *const xmlChar);
     }
     self_
 }
@@ -698,7 +706,7 @@ unsafe fn xslt_check_cycle(
         depth += 1;
         if depth >= XSLT_MAX_NESTING {
             report_error(style, cur, b"maximum nesting depth exceeded: ");
-            report_error(style, cur, cbytes(uri as *const u8));
+            report_error(style, cur, cbytes(uri));
             report_error(style, cur, b"\n");
             return -1;
         }
@@ -707,7 +715,7 @@ unsafe fn xslt_check_cycle(
             && xmlStrEqual((*(*ancestor).doc).URL, uri) != 0
         {
             report_error(style, cur, b"recursion detected on imported URL ");
-            report_error(style, cur, cbytes(uri as *const u8));
+            report_error(style, cur, cbytes(uri));
             report_error(style, cur, b"\n");
             return -1;
         }
@@ -718,7 +726,7 @@ unsafe fn xslt_check_cycle(
             depth += 1;
             if depth >= XSLT_MAX_NESTING {
                 report_error(style, cur, b"maximum nesting depth exceeded: ");
-                report_error(style, cur, cbytes(uri as *const u8));
+                report_error(style, cur, cbytes(uri));
                 report_error(style, cur, b"\n");
                 return -1;
             }
@@ -727,7 +735,7 @@ unsafe fn xslt_check_cycle(
                 && xmlStrEqual((*(*docptr).doc).URL, uri) != 0
             {
                 report_error(style, cur, b"recursion detected on included URL ");
-                report_error(style, cur, cbytes(uri as *const u8));
+                report_error(style, cur, cbytes(uri));
                 report_error(style, cur, b"\n");
                 return -1;
             }
@@ -774,7 +782,7 @@ pub unsafe extern "C" fn xsltParseStylesheetImport(
         return ret;
     }
 
-    uriRef = xmlGetNsProp(cur, b"href\0".as_ptr() as *const xmlChar, ptr::null());
+    uriRef = xmlGetNsProp(cur, c"href".as_ptr() as *const xmlChar, ptr::null());
     if uriRef.is_null() {
         report_error(style, cur, b"xsl:import : missing href attribute\n");
         if !uriRef.is_null() {
@@ -938,7 +946,7 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
         return ret;
     }
 
-    uriRef = xmlGetNsProp(cur, b"href\0".as_ptr() as *const xmlChar, ptr::null());
+    uriRef = xmlGetNsProp(cur, c"href".as_ptr() as *const xmlChar, ptr::null());
     if uriRef.is_null() {
         report_error(style, cur, b"xsl:include : missing href attribute\n");
         if !uriRef.is_null() {
@@ -1042,7 +1050,7 @@ pub unsafe extern "C" fn xsltParseStylesheetInclude(
     if !uri.is_null() {
         xmlFreeImpl(uri as *mut c_void);
     }
-    return ret;
+    ret
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1100,7 +1108,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // version
-    let mut prop = xmlGetNsProp(cur, b"version\0".as_ptr() as *const xmlChar, ptr::null());
+    let mut prop = xmlGetNsProp(cur, c"version".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).version.is_null() {
             xmlFreeImpl((*style).version as *mut c_void);
@@ -1110,7 +1118,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // encoding
-    prop = xmlGetNsProp(cur, b"encoding\0".as_ptr() as *const xmlChar, ptr::null());
+    prop = xmlGetNsProp(cur, c"encoding".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).encoding.is_null() {
             xmlFreeImpl((*style).encoding as *mut c_void);
@@ -1120,7 +1128,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // method (relaxed to support xt:document)
-    prop = xmlGetNsProp(cur, b"method\0".as_ptr() as *const xmlChar, ptr::null());
+    prop = xmlGetNsProp(cur, c"method".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).method.is_null() {
             xmlFreeImpl((*style).method as *mut c_void);
@@ -1138,9 +1146,9 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                 (*style).errors += 1;
             }
         } else if uri.is_null() {
-            if xmlStrEqual(method, b"xml\0".as_ptr() as *const xmlChar) != 0
-                || xmlStrEqual(method, b"html\0".as_ptr() as *const xmlChar) != 0
-                || xmlStrEqual(method, b"text\0".as_ptr() as *const xmlChar) != 0
+            if xmlStrEqual(method, c"xml".as_ptr() as *const xmlChar) != 0
+                || xmlStrEqual(method, c"html".as_ptr() as *const xmlChar) != 0
+                || xmlStrEqual(method, c"text".as_ptr() as *const xmlChar) != 0
             {
                 (*style).method = method;
             } else {
@@ -1162,7 +1170,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     // doctype-system
     prop = xmlGetNsProp(
         cur,
-        b"doctype-system\0".as_ptr() as *const xmlChar,
+        c"doctype-system".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -1176,7 +1184,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     // doctype-public
     prop = xmlGetNsProp(
         cur,
-        b"doctype-public\0".as_ptr() as *const xmlChar,
+        c"doctype-public".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -1188,11 +1196,11 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // standalone
-    prop = xmlGetNsProp(cur, b"standalone\0".as_ptr() as *const xmlChar, ptr::null());
+    prop = xmlGetNsProp(cur, c"standalone".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).standalone = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).standalone = 0;
         } else {
             report_error(style, cur, b"invalid value for standalone\n");
@@ -1202,11 +1210,11 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // indent
-    prop = xmlGetNsProp(cur, b"indent\0".as_ptr() as *const xmlChar, ptr::null());
+    prop = xmlGetNsProp(cur, c"indent".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).indent = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).indent = 0;
         } else {
             report_error(style, cur, b"invalid value for indent\n");
@@ -1218,13 +1226,13 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     // omit-xml-declaration
     prop = xmlGetNsProp(
         cur,
-        b"omit-xml-declaration\0".as_ptr() as *const xmlChar,
+        c"omit-xml-declaration".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).omitXmlDeclaration = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).omitXmlDeclaration = 0;
         } else {
             report_error(style, cur, b"invalid value for omit-xml-declaration\n");
@@ -1236,7 +1244,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     // cdata-section-elements
     let elements = xmlGetNsProp(
         cur,
-        b"cdata-section-elements\0".as_ptr() as *const xmlChar,
+        c"cdata-section-elements".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !elements.is_null() {
@@ -1297,7 +1305,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
                             (*style).cdataSection as *mut crate::xml::hash::HashTable,
                             qname,
                             uri,
-                            b"cdata\0".as_ptr() as *const c_void as *mut c_void,
+                            c"cdata".as_ptr() as *const c_void as *mut c_void,
                         );
                         xmlFreeImpl(qname as *mut c_void);
                     }
@@ -1309,7 +1317,7 @@ pub unsafe extern "C" fn xsltParseStylesheetOutput(
     }
 
     // media-type
-    prop = xmlGetNsProp(cur, b"media-type\0".as_ptr() as *const xmlChar, ptr::null());
+    prop = xmlGetNsProp(cur, c"media-type".as_ptr() as *const xmlChar, ptr::null());
     if !prop.is_null() {
         if !(*style).mediaType.is_null() {
             xmlFreeImpl((*style).mediaType as *mut c_void);
@@ -1355,7 +1363,7 @@ pub unsafe extern "C" fn xsltParseStylesheetAttributeSet(
         return;
     }
 
-    let value = xmlGetNsProp(cur, b"name\0".as_ptr() as *const xmlChar, ptr::null());
+    let value = xmlGetNsProp(cur, c"name".as_ptr() as *const xmlChar, ptr::null());
     if value.is_null() || *value == 0 {
         if !value.is_null() {
             xmlFreeImpl(value as *mut c_void);
@@ -1407,7 +1415,7 @@ pub unsafe extern "C" fn xsltParseGlobalVariable(style: *mut _xsltStylesheet, cu
         return;
     }
 
-    let name = xmlGetNsProp(cur, b"name\0".as_ptr() as *const xmlChar, ptr::null());
+    let name = xmlGetNsProp(cur, c"name".as_ptr() as *const xmlChar, ptr::null());
     if name.is_null() {
         report_error(style, cur, b"xsl:variable : missing name attribute\n");
         return;
@@ -1464,7 +1472,7 @@ pub unsafe extern "C" fn xsltParseGlobalParam(style: *mut _xsltStylesheet, cur: 
         return;
     }
 
-    let name = xmlGetNsProp(cur, b"name\0".as_ptr() as *const xmlChar, ptr::null());
+    let name = xmlGetNsProp(cur, c"name".as_ptr() as *const xmlChar, ptr::null());
     if name.is_null() {
         report_error(style, cur, b"xsl:param : missing name attribute\n");
         return;
@@ -1553,11 +1561,9 @@ pub unsafe extern "C" fn xsltParseTemplateContent(
 
         // Descend into children, else next sibling, else pop up to
         // `templ`.
-        if !(*cur).children.is_null() {
-            if (*(*cur).children).type_ != XML_ENTITY_DECL as c_int {
-                cur = (*cur).children;
-                continue;
-            }
+        if !(*cur).children.is_null() && (*(*cur).children).type_ != XML_ENTITY_DECL as c_int {
+            cur = (*cur).children;
+            continue;
         }
         if !(*cur).next.is_null() {
             cur = (*cur).next;
@@ -1831,28 +1837,27 @@ pub unsafe extern "C" fn xsltDocumentComp(
         filename = crate::abi::exports_xslt_avt::xsltEvalStaticAttrValueTemplate(
             style,
             inst,
-            b"file\0".as_ptr() as *const xmlChar,
+            c"file".as_ptr() as *const xmlChar,
             ptr::null(),
             &mut (*comp).has_filename,
         );
     } else if is_xslt_name(inst, b"write") {
         // xalan:write — the filename is interpreted at run time.
     } else if is_xslt_name(inst, b"document") {
-        if !(*inst).ns.is_null() {
-            if xmlStrEqual(
+        if !(*inst).ns.is_null()
+            && xmlStrEqual(
                 (*(*inst).ns).href,
                 XSLT_NAMESPACE.as_ptr() as *const xmlChar,
             ) != 0
-            {
-                // xsl:document from the abandoned XSLT 1.1 draft.
-                (*comp).ver11 = 1;
-            }
-            // exslt:document / xt:document need no extra marking.
+        {
+            // xsl:document from the abandoned XSLT 1.1 draft.
+            (*comp).ver11 = 1;
         }
+        // exslt:document / xt:document need no extra marking.
         filename = crate::abi::exports_xslt_avt::xsltEvalStaticAttrValueTemplate(
             style,
             inst,
-            b"href\0".as_ptr() as *const xmlChar,
+            c"href".as_ptr() as *const xmlChar,
             ptr::null(),
             &mut (*comp).has_filename,
         );
@@ -2058,24 +2063,21 @@ pub unsafe extern "C" fn xsltStylePreCompute(style: *mut _xsltStylesheet, inst: 
                 style,
                 inst,
                 b"apply-templates",
-                b"call-template\0".as_ptr() as *const u8,
+                c"call-template".as_ptr() as *const u8,
             );
             // xsltWithParamComp — lazy.
-        } else if is_xslt_name(inst, b"value-of") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"copy") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"copy-of") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"if") {
+        } else if is_xslt_name(inst, b"value-of")
+            || is_xslt_name(inst, b"copy")
+            || is_xslt_name(inst, b"copy-of")
+            || is_xslt_name(inst, b"if")
+        {
             xslt_check_instruction_element(style, inst);
         } else if is_xslt_name(inst, b"when") {
             xslt_check_parent_element(style, inst, b"choose", ptr::null());
-        } else if is_xslt_name(inst, b"choose") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"for-each") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"apply-imports") {
+        } else if is_xslt_name(inst, b"choose")
+            || is_xslt_name(inst, b"for-each")
+            || is_xslt_name(inst, b"apply-imports")
+        {
             xslt_check_instruction_element(style, inst);
         } else if is_xslt_name(inst, b"attribute") {
             let parent = (*inst).parent;
@@ -2091,82 +2093,54 @@ pub unsafe extern "C" fn xsltStylePreCompute(style: *mut _xsltStylesheet, inst: 
                 xslt_check_instruction_element(style, inst);
             }
             // xsltAttributeComp — lazy.
-        } else if is_xslt_name(inst, b"element") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"text") {
+        } else if is_xslt_name(inst, b"element") || is_xslt_name(inst, b"text") {
             xslt_check_instruction_element(style, inst);
         } else if is_xslt_name(inst, b"sort") {
             xslt_check_parent_element(
                 style,
                 inst,
                 b"apply-templates",
-                b"for-each\0".as_ptr() as *const u8,
+                c"for-each".as_ptr() as *const u8,
             );
-        } else if is_xslt_name(inst, b"comment") {
+        } else if is_xslt_name(inst, b"comment")
+            || is_xslt_name(inst, b"number")
+            || is_xslt_name(inst, b"processing-instruction")
+            || is_xslt_name(inst, b"call-template")
+        {
             xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"number") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"processing-instruction") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"call-template") {
-            xslt_check_instruction_element(style, inst);
-        } else if is_xslt_name(inst, b"param") {
+        } else if is_xslt_name(inst, b"param") || is_xslt_name(inst, b"variable") {
             if xslt_check_top_level_element(style, inst, 0) == 0 {
                 xslt_check_instruction_element(style, inst);
             }
-            // xsltParamComp — lazy.
-        } else if is_xslt_name(inst, b"variable") {
-            if xslt_check_top_level_element(style, inst, 0) == 0 {
-                xslt_check_instruction_element(style, inst);
-            }
-            // xsltVariableComp — lazy.
+            // xsltParamComp / xsltVariableComp — lazy.
         } else if is_xslt_name(inst, b"otherwise") {
             xslt_check_parent_element(style, inst, b"choose", ptr::null());
             xslt_check_instruction_element(style, inst);
-            return;
-        } else if is_xslt_name(inst, b"template") {
+        } else if is_xslt_name(inst, b"template")
+            || is_xslt_name(inst, b"output")
+            || is_xslt_name(inst, b"preserve-space")
+            || is_xslt_name(inst, b"strip-space")
+        {
             xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"output") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"preserve-space") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"strip-space") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
         } else if is_xslt_name(inst, b"stylesheet") || is_xslt_name(inst, b"transform") {
             let parent = (*inst).parent;
             if parent.is_null() || (*parent).type_ != XML_DOCUMENT_NODE as c_int {
                 report_error(style, inst, b"element only allowed only as root element\n");
                 (*style).errors += 1;
             }
-            return;
         } else if is_xslt_name(inst, b"key") {
             xslt_check_top_level_element(style, inst, 1);
-            return;
         } else if is_xslt_name(inst, b"message") {
             xslt_check_instruction_element(style, inst);
-            return;
-        } else if is_xslt_name(inst, b"attribute-set") {
+        } else if is_xslt_name(inst, b"attribute-set")
+            || is_xslt_name(inst, b"namespace-alias")
+            || is_xslt_name(inst, b"include")
+            || is_xslt_name(inst, b"import")
+            || is_xslt_name(inst, b"decimal-format")
+        {
             xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"namespace-alias") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"include") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"import") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
-        } else if is_xslt_name(inst, b"decimal-format") {
-            xslt_check_top_level_element(style, inst, 1);
-            return;
         } else if is_xslt_name(inst, b"fallback") {
             xslt_check_instruction_element(style, inst);
-            return;
         } else if is_xslt_name(inst, b"document") {
             xslt_check_instruction_element(style, inst);
             (*inst).psvi = xsltDocumentComp(style, inst, None) as *mut c_void;
@@ -2346,7 +2320,7 @@ unsafe fn xslt_check_parent_element(
 ///
 /// - `payload` and `data` are only passed through (never dereferenced).
 #[no_mangle]
-pub unsafe extern "C" fn xsltNormalizeCompSteps(
+pub const unsafe extern "C" fn xsltNormalizeCompSteps(
     payload: *mut c_void,
     data: *mut c_void,
     _name: *const xmlChar,
@@ -2448,7 +2422,7 @@ pub unsafe extern "C" fn xsltLoadStyleDocument(
                     ptr::null_mut(),
                     b"xsltLoadStyleDocument: read rights for ",
                 );
-                report_error(ptr::null_mut(), ptr::null_mut(), cbytes(uri as *const u8));
+                report_error(ptr::null_mut(), ptr::null_mut(), cbytes(uri));
                 report_error(ptr::null_mut(), ptr::null_mut(), b" denied\n");
             }
             return ptr::null_mut();
@@ -2613,10 +2587,8 @@ pub unsafe extern "C" fn xsltUninit() {
 ///
 /// - `style` must be a valid `_xsltStylesheet`, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xsltFreeExts(style: *mut _xsltStylesheet) {
-    if style.is_null() {
-        return;
-    }
+pub const unsafe extern "C" fn xsltFreeExts(style: *mut _xsltStylesheet) {
+    if style.is_null() {}
     // See ENGINE-WIRING above: nothing to free in the candidate engine.
 }
 
@@ -2684,7 +2656,7 @@ pub unsafe extern "C" fn xsltShutdownExts(style: *mut _xsltStylesheet) {
 #[no_mangle]
 pub unsafe extern "C" fn xsltDebugDumpExtensions(output: *mut libc::FILE) {
     let out = if output.is_null() {
-        libc::fdopen(1, b"w\0".as_ptr() as *const c_char)
+        libc::fdopen(1, c"w".as_ptr() as *const c_char)
     } else {
         output
     };
@@ -2695,33 +2667,33 @@ pub unsafe extern "C" fn xsltDebugDumpExtensions(output: *mut libc::FILE) {
 
     libc::fprintf(
         out,
-        b"Registered XSLT Extensions\n--------------------------\n\0".as_ptr() as *const c_char,
+        c"Registered XSLT Extensions\n--------------------------\n".as_ptr() as *const c_char,
     );
     libc::fprintf(
         out,
-        b"No registered extension functions\n\0".as_ptr() as *const c_char,
+        c"No registered extension functions\n".as_ptr() as *const c_char,
     );
     libc::fprintf(
         out,
-        b"\nNo registered top-level extension elements\n\0".as_ptr() as *const c_char,
+        c"\nNo registered top-level extension elements\n".as_ptr() as *const c_char,
     );
 
     if XSLT_ELEMENTS_REGISTRY.is_null() {
         libc::fprintf(
             out,
-            b"\nNo registered instruction extension elements\n\0".as_ptr() as *const c_char,
+            c"\nNo registered instruction extension elements\n".as_ptr() as *const c_char,
         );
     } else {
         libc::fprintf(
             out,
-            b"\nRegistered instruction extension elements:\n\0".as_ptr() as *const c_char,
+            c"\nRegistered instruction extension elements:\n".as_ptr() as *const c_char,
         );
         let mut cur = XSLT_ELEMENTS_REGISTRY;
         while !cur.is_null() {
             if !(*cur).URI.is_null() && !(*cur).name.is_null() {
                 libc::fprintf(
                     out,
-                    b"{%s}%s\n\0".as_ptr() as *const c_char,
+                    c"{%s}%s\n".as_ptr() as *const c_char,
                     (*cur).URI as *const c_char,
                     (*cur).name as *const c_char,
                 );
@@ -2733,19 +2705,19 @@ pub unsafe extern "C" fn xsltDebugDumpExtensions(output: *mut libc::FILE) {
     if XSLT_MODULES_REGISTRY.is_null() {
         libc::fprintf(
             out,
-            b"\nNo registered extension modules\n\0".as_ptr() as *const c_char,
+            c"\nNo registered extension modules\n".as_ptr() as *const c_char,
         );
     } else {
         libc::fprintf(
             out,
-            b"\nRegistered extension modules:\n\0".as_ptr() as *const c_char,
+            c"\nRegistered extension modules:\n".as_ptr() as *const c_char,
         );
         let mut cur = XSLT_MODULES_REGISTRY;
         while !cur.is_null() {
             if !(*cur).URI.is_null() {
                 libc::fprintf(
                     out,
-                    b"%s\n\0".as_ptr() as *const c_char,
+                    c"%s\n".as_ptr() as *const c_char,
                     (*cur).URI as *const c_char,
                 );
             }

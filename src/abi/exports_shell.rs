@@ -496,6 +496,21 @@ unsafe fn shell_same_element_name(a: *const _xmlNode, b: *const _xmlNode) -> boo
 /// `void xmlShellPrintXPathError(int errorType, const char *arg)`.
 ///
 /// Print the XPath error to the default error channel (stderr).
+///
+/// # SAFETY
+///
+///
+/// - `arg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellPrintXPathError(errorType: c_int, arg: *const c_char) {
     let default_arg = b"Result\0";
@@ -515,9 +530,9 @@ pub unsafe extern "C" fn xmlShellPrintXPathError(errorType: c_int, arg: *const c
         unsafe { shell_generic_error(arg, b" is a string", b"\n") };
     } else if errorType == xmlXPathObjectType::XPATH_POINT as c_int {
         unsafe { shell_generic_error(arg, b" is a point", b"\n") };
-    } else if errorType == xmlXPathObjectType::XPATH_RANGE as c_int {
-        unsafe { shell_generic_error(arg, b" is a range", b"\n") };
-    } else if errorType == xmlXPathObjectType::XPATH_LOCATIONSET as c_int {
+    } else if errorType == xmlXPathObjectType::XPATH_RANGE as c_int
+        || errorType == xmlXPathObjectType::XPATH_LOCATIONSET as c_int
+    {
         unsafe { shell_generic_error(arg, b" is a range", b"\n") };
     } else if errorType == xmlXPathObjectType::XPATH_USERS as c_int {
         unsafe { shell_generic_error(arg, b" is user-defined", b"\n") };
@@ -556,6 +571,21 @@ unsafe fn xmlShellPrintNodeCtxt(ctxt: *mut _xmlShellCtxt, node: *mut _xmlNode) {
 }
 
 /// `void xmlShellPrintNode(xmlNodePtr node)` — print a node to stdout.
+///
+/// # SAFETY
+///
+/// - `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellPrintNode(node: *mut _xmlNode) {
     unsafe { xmlShellPrintNodeCtxt(ptr::null_mut(), node) };
@@ -565,6 +595,21 @@ pub unsafe extern "C" fn xmlShellPrintNode(node: *mut _xmlNode) {
 ///
 /// Prints an XPath result object to stdout via `xmlXPathDebugDumpObject`
 /// (the same printer the 2.12.x shell loop uses for its `xpath` command).
+///
+/// # SAFETY
+///
+/// - `list` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellPrintXPathResult(list: *mut _xmlXPathObject) {
     unsafe {
@@ -578,6 +623,21 @@ pub unsafe extern "C" fn xmlShellPrintXPathResult(list: *mut _xmlXPathObject) {
 
 /// `int xmlShellList(xmlShellCtxtPtr ctxt, char *arg, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "ls" command.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `_arg`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellList(
     ctxt: *mut _xmlShellCtxt,
@@ -624,6 +684,21 @@ pub unsafe extern "C" fn xmlShellList(
 
 /// `int xmlShellBase(xmlShellCtxtPtr ctxt, char *arg, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "base" command.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `_arg`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellBase(
     ctxt: *mut _xmlShellCtxt,
@@ -659,6 +734,21 @@ pub unsafe extern "C" fn xmlShellBase(
 
 /// `int xmlShellDir(xmlShellCtxtPtr ctxt, char *arg, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "dir" command.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `_arg`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellDir(
     ctxt: *mut _xmlShellCtxt,
@@ -704,6 +794,21 @@ pub unsafe extern "C" fn xmlShellDir(
 /// `int xmlShellCat(xmlShellCtxtPtr ctxt, char *arg, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "cat" command: dump the serialization of
 /// the node (XML or HTML, matching the document type).
+///
+/// # SAFETY
+///
+/// - `ctxt`, `_arg`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellCat(
     ctxt: *mut _xmlShellCtxt,
@@ -743,6 +848,21 @@ pub unsafe extern "C" fn xmlShellCat(
 
 /// `int xmlShellLoad(xmlShellCtxtPtr ctxt, char *filename, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "load" command.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `filename`, `_node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellLoad(
     ctxt: *mut _xmlShellCtxt,
@@ -792,6 +912,21 @@ pub unsafe extern "C" fn xmlShellLoad(
 /// `int xmlShellWrite(xmlShellCtxtPtr ctxt, char *filename, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "write" command: write the subtree under
 /// `node` to `filename`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `filename`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellWrite(
     ctxt: *mut _xmlShellCtxt,
@@ -805,7 +940,7 @@ pub unsafe extern "C" fn xmlShellWrite(
     if filename.is_null() || *filename == 0 {
         unsafe {
             shell_generic_error(
-                b"Write command requires a filename argument\n\0".as_ptr() as *const c_char,
+                c"Write command requires a filename argument\n".as_ptr() as *const c_char,
                 b"",
                 b"",
             );
@@ -815,7 +950,7 @@ pub unsafe extern "C" fn xmlShellWrite(
     // Upstream: `if (access(filename, W_OK))` under `#ifdef W_OK`.
     if libc::access(filename, libc::W_OK) != 0 {
         unsafe {
-            shell_generic_error(b"Cannot write to \0".as_ptr() as *const c_char, b"", b"");
+            shell_generic_error(c"Cannot write to ".as_ptr() as *const c_char, b"", b"");
             shell_generic_error(filename, b"", b"\n");
         }
         return -1;
@@ -825,11 +960,7 @@ pub unsafe extern "C" fn xmlShellWrite(
         match typ {
             t if t == xmlElementType::XML_DOCUMENT_NODE as c_int => {
                 if xmlSaveFile(filename, (*ctxt).doc) < -1 {
-                    shell_generic_error(
-                        b"Failed to write to \0".as_ptr() as *const c_char,
-                        b"",
-                        b"",
-                    );
+                    shell_generic_error(c"Failed to write to ".as_ptr() as *const c_char, b"", b"");
                     shell_generic_error(filename, b"", b"\n");
                     return -1;
                 }
@@ -837,23 +968,15 @@ pub unsafe extern "C" fn xmlShellWrite(
             t if t == xmlElementType::XML_HTML_DOCUMENT_NODE as c_int => {
                 // Upstream htmlSaveFile: serialize the HTML doc to the file.
                 if shell_save_html_doc(filename, (*ctxt).doc) < 0 {
-                    shell_generic_error(
-                        b"Failed to write to \0".as_ptr() as *const c_char,
-                        b"",
-                        b"",
-                    );
+                    shell_generic_error(c"Failed to write to ".as_ptr() as *const c_char, b"", b"");
                     shell_generic_error(filename, b"", b"\n");
                     return -1;
                 }
             }
             _ => {
-                let f = libc::fopen(filename, b"w\0".as_ptr() as *const c_char);
+                let f = libc::fopen(filename, c"w".as_ptr() as *const c_char);
                 if f.is_null() {
-                    shell_generic_error(
-                        b"Failed to write to \0".as_ptr() as *const c_char,
-                        b"",
-                        b"",
-                    );
+                    shell_generic_error(c"Failed to write to ".as_ptr() as *const c_char, b"", b"");
                     shell_generic_error(filename, b"", b"\n");
                     return -1;
                 }
@@ -882,7 +1005,7 @@ unsafe fn shell_save_html_doc(filename: *const c_char, doc: *mut _xmlDoc) -> c_i
     let content = io::buf_content(buf);
     let len = io::buf_length(buf);
     let written = if !content.is_null() && len > 0 {
-        let f = libc::fopen(filename, b"w\0".as_ptr() as *const c_char);
+        let f = libc::fopen(filename, c"w".as_ptr() as *const c_char);
         if f.is_null() {
             io::buf_free(buf);
             return -1;
@@ -900,6 +1023,21 @@ unsafe fn shell_save_html_doc(filename: *const c_char, doc: *mut _xmlDoc) -> c_i
 /// `int xmlShellSave(xmlShellCtxtPtr ctxt, char *filename, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "save" command: write the current document
 /// to `filename`, or to its original name when no filename is given.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `filename`, `_node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellSave(
     ctxt: *mut _xmlShellCtxt,
@@ -920,7 +1058,7 @@ pub unsafe extern "C" fn xmlShellSave(
     // Upstream: `if (access(filename, W_OK))` under `#ifdef W_OK`.
     if libc::access(filename, libc::W_OK) != 0 {
         unsafe {
-            shell_generic_error(b"Cannot save to \0".as_ptr() as *const c_char, b"", b"");
+            shell_generic_error(c"Cannot save to ".as_ptr() as *const c_char, b"", b"");
             shell_generic_error(filename, b"", b"\n");
         }
         return -1;
@@ -930,27 +1068,19 @@ pub unsafe extern "C" fn xmlShellSave(
         match typ {
             t if t == xmlElementType::XML_DOCUMENT_NODE as c_int => {
                 if xmlSaveFile(filename, (*ctxt).doc) < 0 {
-                    shell_generic_error(
-                        b"Failed to save to \0".as_ptr() as *const c_char,
-                        b"",
-                        b"",
-                    );
+                    shell_generic_error(c"Failed to save to ".as_ptr() as *const c_char, b"", b"");
                     shell_generic_error(filename, b"", b"\n");
                 }
             }
             t if t == xmlElementType::XML_HTML_DOCUMENT_NODE as c_int => {
                 if shell_save_html_doc(filename, (*ctxt).doc) < 0 {
-                    shell_generic_error(
-                        b"Failed to save to \0".as_ptr() as *const c_char,
-                        b"",
-                        b"",
-                    );
+                    shell_generic_error(c"Failed to save to ".as_ptr() as *const c_char, b"", b"");
                     shell_generic_error(filename, b"", b"\n");
                 }
             }
             _ => {
                 shell_generic_error(
-                    b"To save to subparts of a document use the 'write' command\n\0".as_ptr()
+                    c"To save to subparts of a document use the 'write' command\n".as_ptr()
                         as *const c_char,
                     b"",
                     b"",
@@ -1118,6 +1248,21 @@ unsafe fn bytes_to_xmlstr(bytes: &[u8]) -> *mut xmlChar {
 
 /// `int xmlShellValidate(xmlShellCtxtPtr ctxt, char *dtd, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "validate" command.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `dtd`, `_node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellValidate(
     ctxt: *mut _xmlShellCtxt,
@@ -1162,6 +1307,21 @@ pub unsafe extern "C" fn xmlShellValidate(
 /// `int xmlShellDu(xmlShellCtxtPtr ctxt, char *arg, xmlNodePtr tree,
 /// xmlNodePtr node2)` — the shell "du" command: show the structure of the
 /// subtree under `tree`, deep-first.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `_arg`, `tree`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellDu(
     ctxt: *mut _xmlShellCtxt,
@@ -1246,6 +1406,21 @@ pub unsafe extern "C" fn xmlShellDu(
 /// `int xmlShellPwd(xmlShellCtxtPtr ctxt, char *buffer, xmlNodePtr node,
 /// xmlNodePtr node2)` — the shell "pwd" command: full path of `node` into
 /// `buffer` (which must hold at least 500 chars).
+///
+/// # SAFETY
+///
+/// - `_ctxt`, `buffer`, `node`, `_node2` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShellPwd(
     _ctxt: *mut _xmlShellCtxt,
@@ -1309,7 +1484,7 @@ unsafe fn xmlShellRegisterNamespace(ctxt: *mut _xmlShellCtxt, arg: *mut c_char) 
             unsafe {
                 out_cstr(
                     (*ctxt).output,
-                    b"setns: prefix=[nsuri] required\n\0".as_ptr() as *const c_char,
+                    c"setns: prefix=[nsuri] required\n".as_ptr() as *const c_char,
                 );
             }
             unsafe {
@@ -1373,7 +1548,7 @@ unsafe fn xmlShellRegisterRootNamespaces(ctxt: *mut _xmlShellCtxt, root: *mut _x
             unsafe {
                 xmlXPathRegisterNs(
                     (*ctxt).pctxt,
-                    b"defaultns\0".as_ptr() as *const xmlChar,
+                    c"defaultns".as_ptr() as *const xmlChar,
                     (*ns).href,
                 );
             }
@@ -1409,18 +1584,18 @@ unsafe fn xmlShellGrep(ctxt: *mut _xmlShellCtxt, arg: *mut c_char, node: *mut _x
                     }
                     xmlShellList(ctxt, ptr::null_mut(), node, ptr::null_mut());
                 }
-            } else if typ == xmlElementType::XML_TEXT_NODE as c_int {
-                if !xmlStrstr((*node).content, arg as *const xmlChar).is_null() {
-                    let path = shell_get_node_path((*node).parent);
-                    if !path.is_null() {
-                        let mut line = Vec::new();
-                        push_cstr(&mut line, path as *const c_char);
-                        line.extend_from_slice(b" : ");
-                        out_bytes((*ctxt).output, &line);
-                        xmlFreeImpl(path as *mut c_void);
-                    }
-                    xmlShellList(ctxt, ptr::null_mut(), (*node).parent, ptr::null_mut());
+            } else if typ == xmlElementType::XML_TEXT_NODE as c_int
+                && !xmlStrstr((*node).content, arg as *const xmlChar).is_null()
+            {
+                let path = shell_get_node_path((*node).parent);
+                if !path.is_null() {
+                    let mut line = Vec::new();
+                    push_cstr(&mut line, path as *const c_char);
+                    line.extend_from_slice(b" : ");
+                    out_bytes((*ctxt).output, &line);
+                    xmlFreeImpl(path as *mut c_void);
                 }
+                xmlShellList(ctxt, ptr::null_mut(), (*node).parent, ptr::null_mut());
             }
 
             /*
@@ -1468,9 +1643,9 @@ unsafe fn shell_result_type_error(arg: *const c_char, typ: c_int) {
         unsafe { shell_generic_error(arg, b" is a string", b"\n") };
     } else if typ == xmlXPathObjectType::XPATH_POINT as c_int {
         unsafe { shell_generic_error(arg, b" is a point", b"\n") };
-    } else if typ == xmlXPathObjectType::XPATH_RANGE as c_int {
-        unsafe { shell_generic_error(arg, b" is a range", b"\n") };
-    } else if typ == xmlXPathObjectType::XPATH_LOCATIONSET as c_int {
+    } else if typ == xmlXPathObjectType::XPATH_RANGE as c_int
+        || typ == xmlXPathObjectType::XPATH_LOCATIONSET as c_int
+    {
         unsafe { shell_generic_error(arg, b" is a range", b"\n") };
     } else if typ == xmlXPathObjectType::XPATH_USERS as c_int {
         unsafe { shell_generic_error(arg, b" is user-defined", b"\n") };
@@ -1546,6 +1721,21 @@ unsafe fn shell_print_help(ctxt: *mut _xmlShellCtxt) {
 /// `void xmlShell(xmlDocPtr doc, char *filename, xmlShellReadlineFunc input,
 /// FILE *output)` — the XML shell: an interactive loop allowing to load,
 /// validate, view, modify and save a document.
+///
+/// # SAFETY
+///
+/// - `doc`, `filename`, `output` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlShell(
     doc: *mut _xmlDoc,
@@ -1660,7 +1850,7 @@ pub unsafe extern "C" fn xmlShell(
             if arg.is_empty() {
                 unsafe {
                     shell_generic_error(
-                        b"Write command requires a filename argument\n\0".as_ptr() as *const c_char,
+                        c"Write command requires a filename argument\n".as_ptr() as *const c_char,
                         b"",
                         b"",
                     );
@@ -1732,7 +1922,7 @@ pub unsafe extern "C" fn xmlShell(
             unsafe {
                 if arg.is_empty() {
                     shell_generic_error(
-                        b"setns: prefix=[nsuri] required\n\0".as_ptr() as *const c_char,
+                        c"setns: prefix=[nsuri] required\n".as_ptr() as *const c_char,
                         b"",
                         b"",
                     );
@@ -1749,7 +1939,7 @@ pub unsafe extern "C" fn xmlShell(
             unsafe {
                 if arg.is_empty() {
                     shell_generic_error(
-                        b"xpath: expression required\n\0".as_ptr() as *const c_char,
+                        c"xpath: expression required\n".as_ptr() as *const c_char,
                         b"",
                         b"",
                     );
@@ -1864,7 +2054,7 @@ pub unsafe extern "C" fn xmlShell(
                                             == xmlElementType::XML_NAMESPACE_DECL as c_int
                                     {
                                         shell_generic_error(
-                                            b"cannot cd to namespace\n\0".as_ptr() as *const c_char,
+                                            c"cannot cd to namespace\n".as_ptr() as *const c_char,
                                             b"",
                                             b"",
                                         );

@@ -39,8 +39,6 @@
     clippy::missing_safety_doc
 )]
 
-use crate::abi::structs::*;
-use crate::abi::types::*;
 use std::ffi::{c_char, c_void};
 use std::os::raw::c_int;
 use std::ptr;
@@ -72,6 +70,7 @@ pub type xsltSecurityCheck = unsafe extern "C" fn(*mut c_void, *mut c_void, *con
 /// # ABI
 /// The structure is private in upstream (defined only in security.c); the
 /// Rust representation is opaque to C consumers, so the layout is internal.
+#[derive(Debug)]
 #[repr(C)]
 pub struct XsltSecurityPrefs {
     pub(crate) readFile: Option<xsltSecurityCheck>,
@@ -262,6 +261,10 @@ mod tests {
     /// Registering a callback per option and reading it back works, and the
     /// upstream WRITE_FILE -> createFile slot quirk is preserved.
     #[test]
+    // UPSTREAM-PARITY: the round-trip asserts compare the stored callback
+    // against the registered one by address (the C API contract); on ELF
+    // platforms a symbol's address is stable within the DSO.
+    #[allow(renamed_and_removed_lints, clippy::fn_address_comparisons)]
     fn test_set_get_registered_callback() {
         unsafe extern "C" fn forbid(
             _sec: *mut c_void,

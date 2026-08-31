@@ -12,9 +12,8 @@ oracle functions: 1400, oracle data: 22, candidate functions: 1714
 
 | overall status | count |
 |---|---|
-| STUB | 15 |
-| INTENTIONAL_NOOP | 9 |
-| IMPLEMENTED_UNVERIFIED | 1113 |
+| INTENTIONAL_NOOP | 23 |
+| IMPLEMENTED_UNVERIFIED | 1114 |
 | CURRENT_PARITY_VERIFIED | 263 |
 | DATA_EXPORTED_UNVERIFIED | 22 |
 
@@ -35,7 +34,6 @@ oracle functions: 13, oracle data: 4, candidate functions: 14
 
 | overall status | count |
 |---|---|
-| STUB | 1 |
-| IMPLEMENTED_UNVERIFIED | 12 |
+| IMPLEMENTED_UNVERIFIED | 13 |
 | DATA_EXPORTED_UNVERIFIED | 4 |
 

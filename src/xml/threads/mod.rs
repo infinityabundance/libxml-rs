@@ -73,7 +73,7 @@ pub fn threads_initialized() -> bool {
 /// a no-op because Rust's type system prevents data races. However,
 /// for FFI safety with C callers that may manipulate shared state,
 /// a real mutex would be needed. This will be enhanced in Phase 2+.
-pub fn lock_library() {
+pub const fn lock_library() {
     // Phase 1: no-op — Rust's type system handles data races for internal code.
     // For C callers going through FFI, this is a best-effort approach.
 }
@@ -85,7 +85,7 @@ pub fn lock_library() {
 /// ```c
 /// void xmlUnlockLibrary(void);
 /// ```
-pub fn unlock_library() {
+pub const fn unlock_library() {
     // Phase 1: no-op
 }
 
@@ -93,7 +93,7 @@ pub fn unlock_library() {
 ///
 /// Returns the number of active threads, or 0 if unknown.
 /// This is a compatibility stub — upstream doesn't expose this directly.
-pub fn get_thread_count() -> c_int {
+pub const fn get_thread_count() -> c_int {
     1
 }
 
@@ -105,6 +105,10 @@ pub fn get_thread_count() -> c_int {
 // parking_lot mutex (a `Mutex<()>` for the simple mutex, a reentrant
 // `ReentrantMutex` for the recursive mutex) so lock/unlock round-trips
 // through the FFI boundary with real exclusion semantics.
+//
+// The `RawMutex` trait import brings the manual `lock`/`unlock` methods
+// into scope for the raw-mutex lock/unlock used below.
+use parking_lot::lock_api::RawMutex as _;
 
 /// Create a simple mutex (upstream threads.h `xmlNewMutex`).
 ///
@@ -136,8 +140,12 @@ pub unsafe fn mutex_lock(tok: *mut c_void) {
     if tok.is_null() {
         return;
     }
-    // SAFETY: tok is a valid handle; the guard is dropped at scope end.
-    unsafe { (*(tok as *mut parking_lot::Mutex<()>)).lock() };
+    // SAFETY: tok is a valid handle from xmlNewMutex. The raw lock blocks
+    // until the mutex is acquired and stays held until the matching
+    // mutex_unlock (parking_lot lock_api RawMutex manual API). The previous
+    // guard-based code dropped the guard immediately, providing no
+    // exclusion; the 11.1-Z seal fixed this to real lock semantics.
+    unsafe { (*(tok as *mut parking_lot::Mutex<()>)).raw().lock() };
 }
 
 /// Unlock a simple mutex (upstream threads.h `xmlMutexUnlock`).
@@ -150,10 +158,9 @@ pub unsafe fn mutex_unlock(tok: *mut c_void) {
     if tok.is_null() {
         return;
     }
-    // SAFETY: tok is a valid handle locked by this thread.
-    unsafe {
-        drop((*(tok as *mut parking_lot::Mutex<()>)).lock());
-    }
+    // SAFETY: tok must be a handle from xmlNewMutex locked by this thread
+    // via mutex_lock; unlocking releases the raw mutex.
+    unsafe { (*(tok as *mut parking_lot::Mutex<()>)).raw().unlock() };
 }
 
 /// Create a recursive mutex (upstream threads.h `xmlNewRMutex`).
@@ -185,8 +192,13 @@ pub unsafe fn rmutex_lock(tok: *mut c_void) {
     if tok.is_null() {
         return;
     }
-    // SAFETY: tok is a valid handle; reentrant locking is permitted.
-    unsafe { (*(tok as *mut parking_lot::ReentrantMutex<()>)).lock() };
+    // SAFETY: tok is a valid handle from xmlNewRMutex; reentrant locking is
+    // permitted, and the raw lock stays held until rmutex_unlock.
+    unsafe {
+        (*(tok as *mut parking_lot::ReentrantMutex<()>))
+            .raw()
+            .lock()
+    };
 }
 
 /// Unlock a recursive mutex (upstream threads.h `xmlRMutexUnlock`).
@@ -198,10 +210,13 @@ pub unsafe fn rmutex_unlock(tok: *mut c_void) {
     if tok.is_null() {
         return;
     }
-    // SAFETY: tok is a valid handle locked by this thread.
+    // SAFETY: tok must be a handle from xmlNewRMutex locked by this thread
+    // via rmutex_lock; unlocking releases the raw reentrant mutex.
     unsafe {
-        drop((*(tok as *mut parking_lot::ReentrantMutex<()>)).lock());
-    }
+        (*(tok as *mut parking_lot::ReentrantMutex<()>))
+            .raw()
+            .unlock()
+    };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

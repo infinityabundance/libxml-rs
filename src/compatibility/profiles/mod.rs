@@ -119,14 +119,24 @@ pub enum XslTransform {
 /// Every capability the profiles module tracks, with its resolved value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capabilities {
+    /// Resolved E-001 capability: how `xmllint --xpath` serializes node-sets.
     pub xpath_node_set_serialization: XPathNodeSetSerialization,
+    /// Resolved E-002 capability: parse-error diagnostic behavior.
     pub parser_diagnostic: ParserDiagnostic,
+    /// Resolved E-004 capability: entity content storage in debug output.
     pub entity_compact_storage: EntityCompactStorage,
+    /// Resolved E-005 capability: parser/validation exit codes.
     pub validation_exit: ValidationExit,
+    /// Resolved E-003 capability: exit code for empty `xpath-attr` node-sets.
     pub xpath_attr_empty_exit: XpathAttrEmptyExit,
+    /// Resolved E-007 capability: HTML dump newline behavior.
     pub html_serializer: HtmlSerializer,
+    /// Resolved E-006 capability: `--valid` exit code without a DTD.
     pub validation_no_dtd_exit: ValidationNoDtdExit,
+    /// Resolved capability: eager vs. lazy global-state initialisation
+    /// (2.12 rework).
     pub global_state_init: GlobalStateInit,
+    /// Resolved E-008 capability: libxslt transform output stability.
     pub xsl_transform: XslTransform,
 }
 

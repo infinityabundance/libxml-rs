@@ -36,15 +36,25 @@ pub const XML_SAVE_NO_DECL: c_int = 1 << 1;
 pub const XML_SAVE_NO_EMPTY: c_int = 1 << 2;
 
 /// Candidate-internal save context (opaque upstream).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xmlSaveCtxt {
+    /// The output buffer the context serializes into.
     pub buf: *mut _xmlOutputBuffer,
+    /// The `XML_SAVE_*` option bitmask passed to `xmlSaveTo*`.
     pub options: c_int,
+    /// Whether `XML_SAVE_FORMAT` (newlines + indentation) is enabled.
     pub format: c_int,
+    /// Whether the XML declaration is suppressed (`XML_SAVE_NO_DECL`).
     pub no_decl: c_int,
+    /// Whether empty elements must be written with an explicit end tag
+    /// (`XML_SAVE_NO_EMPTY`).
     pub no_empty: c_int,
+    /// Optional indentation string used when formatting is enabled.
     pub indent: *mut xmlChar,
+    /// Character-escaping callback for text content (deprecated upstream).
     pub escape: Option<xmlCharEncodingOutputFunc>,
+    /// Character-escaping callback for attribute values (deprecated upstream).
     pub attrEscape: Option<xmlCharEncodingOutputFunc>,
 }
 
@@ -442,9 +452,9 @@ mod tests {
 
     fn doc_with_root() -> *mut _xmlDoc {
         unsafe {
-            let doc = new_doc(b"1.0\0".as_ptr() as *const xmlChar);
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
             let root =
-                crate::xml::tree::new_node(ptr::null_mut(), b"root\0".as_ptr() as *const xmlChar);
+                crate::xml::tree::new_node(ptr::null_mut(), c"root".as_ptr() as *const xmlChar);
             crate::xml::tree::doc_set_root_element(doc, root);
             doc
         }
@@ -492,13 +502,13 @@ mod tests {
         unsafe {
             let doc = doc_with_root();
             let child =
-                crate::xml::tree::new_node(ptr::null_mut(), b"child\0".as_ptr() as *const xmlChar);
+                crate::xml::tree::new_node(ptr::null_mut(), c"child".as_ptr() as *const xmlChar);
             crate::xml::tree::add_child(crate::xml::tree::doc_get_root_element(doc), child);
             let buf = io::buf_create(-1);
             let ctxt = xmlSaveToBuffer(buf, ptr::null(), XML_SAVE_FORMAT);
             assert!(!ctxt.is_null());
             assert_eq!(
-                xmlSaveSetIndentString(ctxt, b"\t\0".as_ptr() as *const c_char),
+                xmlSaveSetIndentString(ctxt, c"\t".as_ptr() as *const c_char),
                 0
             );
             xmlSaveDoc(ctxt, doc);

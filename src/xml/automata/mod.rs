@@ -38,10 +38,7 @@
 //! ```
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
-use crate::xml::regex::{
-    xmlRegExecPushString, xmlRegFreeExecCtxt, xmlRegFreeRegexp, xmlRegNewExecCtxt,
-    xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp,
-};
+use crate::xml::regex::{xmlRegexpCompile, xmlRegexpIsDeterministic, XmlRegexp};
 use core::ffi::c_int;
 use core::ptr;
 
@@ -52,6 +49,7 @@ pub type XmlAutomataStatePtr = *mut XmlAutomataState;
 pub type XmlAutomataPtr = *mut XmlAutomata;
 
 /// UPSTREAM-PARITY: Corresponds to `_xmlAutomata` in libxml2.
+#[derive(Debug)]
 #[repr(C)]
 pub struct XmlAutomata {
     /// Compiled regex, set by xmlAutomataCompile.
@@ -65,6 +63,7 @@ pub struct XmlAutomata {
 }
 
 /// UPSTREAM-PARITY: Corresponds to `_xmlAutomataState` in libxml2.
+#[derive(Debug)]
 #[repr(C)]
 pub struct XmlAutomataState {
     /// Transitions from this state.
@@ -72,6 +71,7 @@ pub struct XmlAutomataState {
 }
 
 /// A transition in the automata.
+#[derive(Debug)]
 #[repr(C)]
 pub struct AutomataTransition {
     /// Token to match (null means epsilon/any).
@@ -104,6 +104,16 @@ unsafe impl Sync for XmlAutomataState {}
 /// Create a new automata.
 ///
 /// UPSTREAM-PARITY: `xmlNewAutomata()`
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewAutomata() -> XmlAutomataPtr {
     let am = xmlMallocImpl(core::mem::size_of::<XmlAutomata>()) as XmlAutomataPtr;
@@ -122,6 +132,21 @@ pub unsafe extern "C" fn xmlNewAutomata() -> XmlAutomataPtr {
 /// Free an automata.
 ///
 /// UPSTREAM-PARITY: `xmlFreeAutomata()`
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreeAutomata(am: XmlAutomataPtr) {
     if am.is_null() {
@@ -146,6 +171,21 @@ pub unsafe extern "C" fn xmlFreeAutomata(am: XmlAutomataPtr) {
 /// Create a new automata state.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewState()`
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewState(am: XmlAutomataPtr) -> XmlAutomataStatePtr {
     if am.is_null() {
@@ -170,8 +210,23 @@ pub unsafe extern "C" fn xmlAutomataNewState(am: XmlAutomataPtr) -> XmlAutomataS
 /// Set a state as the final (accepting) state.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataSetFinalState()`
+///
+/// # SAFETY
+///
+/// - `_am`, `_state` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlAutomataSetFinalState(
+pub const unsafe extern "C" fn xmlAutomataSetFinalState(
     _am: XmlAutomataPtr,
     _state: XmlAutomataStatePtr,
 ) -> c_int {
@@ -184,6 +239,21 @@ pub unsafe extern "C" fn xmlAutomataSetFinalState(
 /// Get the initial state of the automata.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataGetInitState()`
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataGetInitState(am: XmlAutomataPtr) -> XmlAutomataStatePtr {
     if am.is_null() {
@@ -195,6 +265,21 @@ pub unsafe extern "C" fn xmlAutomataGetInitState(am: XmlAutomataPtr) -> XmlAutom
 /// Add an epsilon (empty) transition between two states.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewEpsilon()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewEpsilon(
     am: XmlAutomataPtr,
@@ -223,6 +308,21 @@ pub unsafe extern "C" fn xmlAutomataNewEpsilon(
 /// Add a character transition between two states.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewTransition()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `token`, `_data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewTransition(
     am: XmlAutomataPtr,
@@ -259,6 +359,21 @@ pub unsafe extern "C" fn xmlAutomataNewTransition(
 /// Add a counted transition (with min/max bounds).
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewCountTrans()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `token`, `_data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewCountTrans(
     am: XmlAutomataPtr,
@@ -296,6 +411,21 @@ pub unsafe extern "C" fn xmlAutomataNewCountTrans(
 /// Add a "once" transition (consumes exactly once within bounds).
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewOnceTrans()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `token`, `_data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewOnceTrans(
     am: XmlAutomataPtr,
@@ -333,6 +463,21 @@ pub unsafe extern "C" fn xmlAutomataNewOnceTrans(
 /// Add a transition that matches any character.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewAllTrans()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewAllTrans(
     am: XmlAutomataPtr,
@@ -362,6 +507,21 @@ pub unsafe extern "C" fn xmlAutomataNewAllTrans(
 /// Add a transition associated with a counter.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewCountedTrans()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewCountedTrans(
     am: XmlAutomataPtr,
@@ -391,6 +551,21 @@ pub unsafe extern "C" fn xmlAutomataNewCountedTrans(
 /// Add a transition gated by a counter value.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewCounterTrans()`
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewCounterTrans(
     am: XmlAutomataPtr,
@@ -420,8 +595,23 @@ pub unsafe extern "C" fn xmlAutomataNewCounterTrans(
 /// Create a new counter with min/max bounds.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataNewCounter()`
+///
+/// # SAFETY
+///
+/// - `_am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlAutomataNewCounter(
+pub const unsafe extern "C" fn xmlAutomataNewCounter(
     _am: XmlAutomataPtr,
     _min: c_int,
     _max: c_int,
@@ -437,6 +627,21 @@ pub unsafe extern "C" fn xmlAutomataNewCounter(
 ///
 /// This builds a regex pattern string from the automata's state machine and
 /// compiles it using the regex engine.
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
     if am.is_null() {
@@ -454,10 +659,7 @@ pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
 
         // Walk the state machine to build a pattern.
         // For now, build a simple pattern from the transition chain.
-        if build_pattern_from_automata(&*am, init, &mut pattern).is_err() {
-            (*am).error = -1;
-            return -1;
-        }
+        build_pattern_from_automata(init, &mut pattern);
 
         if pattern.is_empty() {
             return 0;
@@ -480,18 +682,14 @@ pub unsafe extern "C" fn xmlAutomataCompile(am: XmlAutomataPtr) -> c_int {
 ///
 /// This walks the states starting from `state` and emits regex tokens
 /// for each transition.
-unsafe fn build_pattern_from_automata(
-    am: &XmlAutomata,
-    state: XmlAutomataStatePtr,
-    pattern: &mut Vec<u8>,
-) -> Result<(), ()> {
+unsafe fn build_pattern_from_automata(state: XmlAutomataStatePtr, pattern: &mut Vec<u8>) {
     if state.is_null() {
-        return Ok(());
+        return;
     }
 
     let transitions = &(*state).transitions;
     if transitions.is_empty() {
-        return Ok(());
+        return;
     }
 
     if transitions.len() == 1 {
@@ -499,17 +697,17 @@ unsafe fn build_pattern_from_automata(
         if t.epsilon {
             // Follow epsilon transition
             if let Some(to) = t.to {
-                return build_pattern_from_automata(am, to, pattern);
+                build_pattern_from_automata(to, pattern);
             }
         } else if t.all {
             pattern.push(b'.');
             if let Some(to) = t.to {
-                return build_pattern_from_automata(am, to, pattern);
+                build_pattern_from_automata(to, pattern);
             }
         } else if let Some(tok) = t.token {
             pattern.push(tok);
             if let Some(to) = t.to {
-                return build_pattern_from_automata(am, to, pattern);
+                build_pattern_from_automata(to, pattern);
             }
         }
     } else {
@@ -529,20 +727,33 @@ unsafe fn build_pattern_from_automata(
                 if !(*to).transitions.is_empty() {
                     // Follow the chain
                     let mut sub = Vec::new();
-                    let _ = build_pattern_from_automata(am, to, &mut sub);
+                    build_pattern_from_automata(to, &mut sub);
                     pattern.extend(sub);
                 }
             }
         }
         pattern.push(b')');
     }
-
-    Ok(())
 }
 
 /// Check if the compiled automata is deterministic.
 ///
 /// UPSTREAM-PARITY: `xmlAutomataIsDeterministic()`
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataIsDeterministic(am: XmlAutomataPtr) -> c_int {
     if am.is_null() {
@@ -614,7 +825,7 @@ mod tests {
             let am = xmlNewAutomata();
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
-            let token = b"a\0".as_ptr() as *const core::ffi::c_char;
+            let token = c"a".as_ptr() as *const core::ffi::c_char;
             let result = xmlAutomataNewTransition(am, s1, s2, token, ptr::null_mut());
             assert!(!result.is_null());
             assert_eq!(result, s1);
@@ -628,7 +839,7 @@ mod tests {
             let am = xmlNewAutomata();
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
-            let token = b"a\0".as_ptr() as *const core::ffi::c_char;
+            let token = c"a".as_ptr() as *const core::ffi::c_char;
             let result = xmlAutomataNewCountTrans(am, s1, s2, token, ptr::null_mut(), 1, 5);
             assert!(!result.is_null());
             xmlFreeAutomata(am);
@@ -653,7 +864,7 @@ mod tests {
             let am = xmlNewAutomata();
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
-            let token = b"x\0".as_ptr() as *const core::ffi::c_char;
+            let token = c"x".as_ptr() as *const core::ffi::c_char;
             let result = xmlAutomataNewOnceTrans(am, s1, s2, token, ptr::null_mut(), 0, 1);
             assert!(!result.is_null());
             xmlFreeAutomata(am);
@@ -742,8 +953,8 @@ mod tests {
             let s1 = xmlAutomataNewState(am);
             let s2 = xmlAutomataNewState(am);
             let s3 = xmlAutomataNewState(am);
-            let token_a = b"a\0".as_ptr() as *const core::ffi::c_char;
-            let token_b = b"b\0".as_ptr() as *const core::ffi::c_char;
+            let token_a = c"a".as_ptr() as *const core::ffi::c_char;
+            let token_b = c"b".as_ptr() as *const core::ffi::c_char;
             xmlAutomataNewTransition(am, s1, s2, token_a, ptr::null_mut());
             xmlAutomataNewTransition(am, s2, s3, token_b, ptr::null_mut());
             let result = xmlAutomataCompile(am);

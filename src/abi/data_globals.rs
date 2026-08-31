@@ -223,8 +223,8 @@ pub static mut xmlStructuredErrorContext: *mut c_void = core::ptr::null_mut();
 /// shims and `exports_xslt_util.rs`.
 #[cfg(target_arch = "x86_64")]
 #[repr(C)]
-#[derive(Clone, Copy)]
-struct VaListTag {
+#[derive(Clone, Copy, Debug)]
+pub struct VaListTag {
     gp_offset: c_uint,
     fp_offset: c_uint,
     overflow_arg_area: *mut c_void,
@@ -253,6 +253,25 @@ unsafe fn stderr_file() -> *mut c_void {
 
 /// Variadic receiver for the `xmlGenericErrorDefaultFunc` shim (upstream
 /// error.c semantics: default the context to stderr, then `vfprintf`).
+///
+/// # SAFETY
+///
+/// - `_ctx`, `ap` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `msg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xmlGenericErrorDefaultFuncV(
@@ -278,6 +297,16 @@ pub unsafe extern "C" fn xmlGenericErrorDefaultFuncV(
 ///
 /// 2 fixed args (ctx=rdi, msg=rsi) → `gp_offset` 16; the va_list pointer is
 /// passed as the 3rd arg (rdx) of the receiver.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[cfg(target_arch = "x86_64")]
 pub unsafe extern "C" fn xmlGenericErrorDefaultFunc() -> c_int {
     unsafe {
@@ -327,6 +356,25 @@ const XML_GENERIC_ERROR_DEFAULT: xmlGenericErrorFunc = unsafe {
 
 /// Variadic receiver for the `xsltGenericErrorDefaultFunc` shim (upstream
 /// xsltutils.c semantics: default the context to stderr, then `vfprintf`).
+///
+/// # SAFETY
+///
+/// - `_ctx`, `ap` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `msg` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[cfg(target_arch = "x86_64")]
 #[no_mangle]
 pub unsafe extern "C" fn xsltGenericErrorDefaultFuncV(
@@ -348,6 +396,16 @@ pub unsafe extern "C" fn xsltGenericErrorDefaultFuncV(
 
 /// `xsltGenericErrorDefaultFunc(void *ctx, const char *msg, ...)` — the
 /// upstream default XSLT error handler (xsltutils.c).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[cfg(target_arch = "x86_64")]
 pub unsafe extern "C" fn xsltGenericErrorDefaultFunc() -> c_int {
     unsafe {
@@ -418,8 +476,7 @@ pub static xmlStringText: [xmlChar; 5] = [b't', b'e', b'x', b't', 0];
 
 /// `const xmlChar xmlStringTextNoenc[]` — "textnoenc"
 #[no_mangle]
-pub static xmlStringTextNoenc: [xmlChar; 9] =
-    [b't', b'e', b'x', b't', b'n', b'o', b'e', b'n', b'c'];
+pub static xmlStringTextNoenc: [xmlChar; 9] = *b"textnoenc";
 
 /// `const xmlChar xmlStringComment[]` — "comment"
 #[no_mangle]
@@ -794,6 +851,16 @@ unsafe fn dup_cstr(s: *const u8) -> *mut c_char {
 // return, see upstream globals.c / parser.c).
 
 /// Upstream `xmlKeepBlanksDefault(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlKeepBlanksDefault(v: c_int) -> c_int {
     unsafe {
@@ -805,6 +872,16 @@ pub unsafe extern "C" fn xmlKeepBlanksDefault(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlLineNumbersDefault(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlLineNumbersDefault(v: c_int) -> c_int {
     unsafe {
@@ -816,6 +893,16 @@ pub unsafe extern "C" fn xmlLineNumbersDefault(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlSubstituteEntitiesDefault(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSubstituteEntitiesDefault(v: c_int) -> c_int {
     unsafe {
@@ -827,6 +914,16 @@ pub unsafe extern "C" fn xmlSubstituteEntitiesDefault(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlPedanticParserDefault(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPedanticParserDefault(v: c_int) -> c_int {
     unsafe {
@@ -840,8 +937,22 @@ pub unsafe extern "C" fn xmlPedanticParserDefault(v: c_int) -> c_int {
 /// Upstream `xmlDoValidityCheckingDefaultValue` accessor is the global
 /// itself; `xmlGetWarningsDefaultValue` likewise (no accessor functions
 /// exist for those in upstream 2.15).
-
 /// Upstream `xmlRegisterNodeDefault(xmlRegisterNodeFunc func)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
@@ -858,6 +969,21 @@ pub unsafe extern "C" fn xmlRegisterNodeDefault(
 }
 
 /// Upstream `xmlDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlDeregisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
@@ -875,23 +1001,53 @@ pub unsafe extern "C" fn xmlDeregisterNodeDefault(
 
 /// Upstream `__xmlIndentTreeOutput(void)` (parser.h) — returns a pointer to
 /// the `xmlIndentTreeOutput` global.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlIndentTreeOutput() -> *mut c_int {
-    unsafe { core::ptr::addr_of_mut!(xmlIndentTreeOutput) }
+    core::ptr::addr_of_mut!(xmlIndentTreeOutput)
 }
 
 /// Upstream `__xmlSaveNoEmptyTags(void)` (parser.h) — returns a pointer to
 /// the `xmlSaveNoEmptyTags` global.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlSaveNoEmptyTags() -> *mut c_int {
-    unsafe { core::ptr::addr_of_mut!(xmlSaveNoEmptyTags) }
+    core::ptr::addr_of_mut!(xmlSaveNoEmptyTags)
 }
 
 /// Upstream `__xmlTreeIndentString(void)` (parser.h) — returns a pointer to
 /// the `xmlTreeIndentString` global.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlTreeIndentString() -> *mut *const xmlChar {
-    unsafe { core::ptr::addr_of_mut!(xmlTreeIndentString) }
+    core::ptr::addr_of_mut!(xmlTreeIndentString)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -905,6 +1061,16 @@ pub unsafe extern "C" fn __xmlTreeIndentString() -> *mut *const xmlChar {
 // conditional-set-and-return on the global (see upstream globals.c).
 
 /// Upstream `xmlThrDefDoValidityCheckingDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefDoValidityCheckingDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -916,6 +1082,16 @@ pub unsafe extern "C" fn xmlThrDefDoValidityCheckingDefaultValue(v: c_int) -> c_
 }
 
 /// Upstream `xmlThrDefGetWarningsDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefGetWarningsDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -927,6 +1103,16 @@ pub unsafe extern "C" fn xmlThrDefGetWarningsDefaultValue(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefLoadExtDtdDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefLoadExtDtdDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -938,6 +1124,16 @@ pub unsafe extern "C" fn xmlThrDefLoadExtDtdDefaultValue(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefPedanticParserDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefPedanticParserDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -949,6 +1145,16 @@ pub unsafe extern "C" fn xmlThrDefPedanticParserDefaultValue(v: c_int) -> c_int 
 }
 
 /// Upstream `xmlThrDefLineNumbersDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefLineNumbersDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -960,6 +1166,16 @@ pub unsafe extern "C" fn xmlThrDefLineNumbersDefaultValue(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefKeepBlanksDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefKeepBlanksDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -971,6 +1187,16 @@ pub unsafe extern "C" fn xmlThrDefKeepBlanksDefaultValue(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefSubstituteEntitiesDefaultValue(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSubstituteEntitiesDefaultValue(v: c_int) -> c_int {
     unsafe {
@@ -982,6 +1208,16 @@ pub unsafe extern "C" fn xmlThrDefSubstituteEntitiesDefaultValue(v: c_int) -> c_
 }
 
 /// Upstream `xmlThrDefParserDebugEntities(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefParserDebugEntities(v: c_int) -> c_int {
     unsafe {
@@ -993,6 +1229,16 @@ pub unsafe extern "C" fn xmlThrDefParserDebugEntities(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefIndentTreeOutput(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefIndentTreeOutput(v: c_int) -> c_int {
     unsafe {
@@ -1005,6 +1251,21 @@ pub unsafe extern "C" fn xmlThrDefIndentTreeOutput(v: c_int) -> c_int {
 
 /// Upstream `xmlThrDefTreeIndentString(const char *v)` — sets the indent
 /// string when non-NULL and returns the current pointer.
+///
+/// # SAFETY
+///
+///
+/// - `v` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefTreeIndentString(v: *const c_char) -> *const c_char {
     unsafe {
@@ -1016,6 +1277,16 @@ pub unsafe extern "C" fn xmlThrDefTreeIndentString(v: *const c_char) -> *const c
 }
 
 /// Upstream `xmlThrDefSaveNoEmptyTags(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSaveNoEmptyTags(v: c_int) -> c_int {
     unsafe {
@@ -1027,6 +1298,21 @@ pub unsafe extern "C" fn xmlThrDefSaveNoEmptyTags(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefRegisterNodeDefault(xmlRegisterNodeFunc func)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefRegisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
@@ -1040,6 +1326,21 @@ pub unsafe extern "C" fn xmlThrDefRegisterNodeDefault(
 }
 
 /// Upstream `xmlThrDefDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefDeregisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
@@ -1053,6 +1354,25 @@ pub unsafe extern "C" fn xmlThrDefDeregisterNodeDefault(
 }
 
 /// Upstream `xmlThrDefSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc func)`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSetGenericErrorFunc(
     ctx: *mut c_void,
@@ -1065,6 +1385,25 @@ pub unsafe extern "C" fn xmlThrDefSetGenericErrorFunc(
 }
 
 /// Upstream `xmlThrDefSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc func)`.
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSetStructuredErrorFunc(
     ctx: *mut c_void,
@@ -1077,6 +1416,16 @@ pub unsafe extern "C" fn xmlThrDefSetStructuredErrorFunc(
 }
 
 /// Upstream `xmlThrDefDefaultBufferSize(int v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefDefaultBufferSize(v: c_int) -> c_int {
     unsafe {
@@ -1088,6 +1437,16 @@ pub unsafe extern "C" fn xmlThrDefDefaultBufferSize(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefBufferAllocScheme(xmlBufferAllocationScheme v)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefBufferAllocScheme(v: c_int) -> c_int {
     unsafe {
@@ -1099,6 +1458,21 @@ pub unsafe extern "C" fn xmlThrDefBufferAllocScheme(v: c_int) -> c_int {
 }
 
 /// Upstream `xmlThrDefParserInputBufferCreateFilenameDefault(...)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefParserInputBufferCreateFilenameDefault(
     func: Option<
@@ -1119,6 +1493,21 @@ pub unsafe extern "C" fn xmlThrDefParserInputBufferCreateFilenameDefault(
 }
 
 /// Upstream `xmlThrDefOutputBufferCreateFilenameDefault(...)`.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefOutputBufferCreateFilenameDefault(
     func: Option<
@@ -1150,87 +1539,197 @@ pub unsafe extern "C" fn xmlThrDefOutputBufferCreateFilenameDefault(
 // global; each returns a pointer to the global so callers can read/write it.
 
 /// Upstream `__xmlBufferAllocScheme(void)` — returns a pointer to `xmlBufferAllocScheme`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlBufferAllocScheme() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlBufferAllocScheme) }
+    core::ptr::addr_of_mut!(xmlBufferAllocScheme)
 }
 
 /// Upstream `__xmlDefaultBufferSize(void)` — returns a pointer to `xmlDefaultBufferSize`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlDefaultBufferSize() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlDefaultBufferSize) }
+    core::ptr::addr_of_mut!(xmlDefaultBufferSize)
 }
 
 /// Upstream `__xmlDeregisterNodeDefaultValue(void)` — returns a pointer to `xmlDeregisterNodeDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlDeregisterNodeDefaultValue(
 ) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlDeregisterNodeDefaultValue) }
+    core::ptr::addr_of_mut!(xmlDeregisterNodeDefaultValue)
 }
 
 /// Upstream `__xmlDoValidityCheckingDefaultValue(void)` — returns a pointer to `xmlDoValidityCheckingDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlDoValidityCheckingDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlDoValidityCheckingDefaultValue) }
+    core::ptr::addr_of_mut!(xmlDoValidityCheckingDefaultValue)
 }
 
 /// Upstream `__xmlGenericError(void)` — returns a pointer to `xmlGenericError`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlGenericError() -> *mut Option<xmlGenericErrorFunc> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlGenericError) }
+    core::ptr::addr_of_mut!(xmlGenericError)
 }
 
 /// Upstream `__xmlGenericErrorContext(void)` — returns a pointer to `xmlGenericErrorContext`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlGenericErrorContext() -> *mut *mut c_void {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlGenericErrorContext) }
+    core::ptr::addr_of_mut!(xmlGenericErrorContext)
 }
 
 /// Upstream `__xmlGetWarningsDefaultValue(void)` — returns a pointer to `xmlGetWarningsDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlGetWarningsDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlGetWarningsDefaultValue) }
+    core::ptr::addr_of_mut!(xmlGetWarningsDefaultValue)
 }
 
 /// Upstream `__xmlKeepBlanksDefaultValue(void)` — returns a pointer to `xmlKeepBlanksDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlKeepBlanksDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlKeepBlanksDefaultValue) }
+    core::ptr::addr_of_mut!(xmlKeepBlanksDefaultValue)
 }
 
 /// Upstream `__xmlLineNumbersDefaultValue(void)` — returns a pointer to `xmlLineNumbersDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlLineNumbersDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlLineNumbersDefaultValue) }
+    core::ptr::addr_of_mut!(xmlLineNumbersDefaultValue)
 }
 
 /// Upstream `__xmlLoadExtDtdDefaultValue(void)` — returns a pointer to `xmlLoadExtDtdDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlLoadExtDtdDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlLoadExtDtdDefaultValue) }
+    core::ptr::addr_of_mut!(xmlLoadExtDtdDefaultValue)
 }
 
 /// Upstream `__xmlOutputBufferCreateFilenameValue(void)` — returns a pointer to `xmlOutputBufferCreateFilenameValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlOutputBufferCreateFilenameValue() -> *mut Option<
     unsafe extern "C" fn(
@@ -1241,74 +1740,154 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilenameValue() -> *mut Option<
 > {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlOutputBufferCreateFilenameValue) }
+    core::ptr::addr_of_mut!(xmlOutputBufferCreateFilenameValue)
 }
 
 /// Upstream `__xmlParserDebugEntities(void)` — returns a pointer to `xmlParserDebugEntities`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlParserDebugEntities() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlParserDebugEntities) }
+    core::ptr::addr_of_mut!(xmlParserDebugEntities)
 }
 
 /// Upstream `__xmlParserInputBufferCreateFilenameValue(void)` — returns a pointer to `xmlParserInputBufferCreateFilenameValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlParserInputBufferCreateFilenameValue() -> *mut Option<
     unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
 > {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlParserInputBufferCreateFilenameValue) }
+    core::ptr::addr_of_mut!(xmlParserInputBufferCreateFilenameValue)
 }
 
 /// Upstream `__xmlParserVersion(void)` — returns a pointer to `xmlParserVersion`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlParserVersion() -> *mut *const c_char {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlParserVersion) }
+    core::ptr::addr_of_mut!(xmlParserVersion)
 }
 
 /// Upstream `__xmlPedanticParserDefaultValue(void)` — returns a pointer to `xmlPedanticParserDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlPedanticParserDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlPedanticParserDefaultValue) }
+    core::ptr::addr_of_mut!(xmlPedanticParserDefaultValue)
 }
 
 /// Upstream `__xmlRegisterNodeDefaultValue(void)` — returns a pointer to `xmlRegisterNodeDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlRegisterNodeDefaultValue(
 ) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlRegisterNodeDefaultValue) }
+    core::ptr::addr_of_mut!(xmlRegisterNodeDefaultValue)
 }
 
 /// Upstream `__xmlStructuredError(void)` — returns a pointer to `xmlStructuredError`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlStructuredError() -> *mut Option<xmlStructuredErrorFunc> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlStructuredError) }
+    core::ptr::addr_of_mut!(xmlStructuredError)
 }
 
 /// Upstream `__xmlStructuredErrorContext(void)` — returns a pointer to `xmlStructuredErrorContext`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlStructuredErrorContext() -> *mut *mut c_void {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlStructuredErrorContext) }
+    core::ptr::addr_of_mut!(xmlStructuredErrorContext)
 }
 
 /// Upstream `__xmlSubstituteEntitiesDefaultValue(void)` — returns a pointer to `xmlSubstituteEntitiesDefaultValue`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlSubstituteEntitiesDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    unsafe { core::ptr::addr_of_mut!(xmlSubstituteEntitiesDefaultValue) }
+    core::ptr::addr_of_mut!(xmlSubstituteEntitiesDefaultValue)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

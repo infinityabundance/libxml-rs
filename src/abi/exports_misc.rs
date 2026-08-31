@@ -2,16 +2,16 @@
 //!
 //! C ABI exports for the "miscellaneous" families:
 //!
-//! 1. getset     — xmlGet*/xmlSet* legacy accessors (features, threads,
-//!                 globals, tree navigation, entities, buffers)
-//! 2. module     — xmlModule* dynamic-loading API (dlopen/dlsym/dlclose)
-//! 3. ucs        — legacy `xmlUCSIsBlock`/`xmlUCSIsCat` name-table lookups
-//!                 plus the `xmlUCSIsCatCc` control-character test
-//! 4. valid      — validation helpers (attribute-value normalization,
-//!                 potential-children / valid-elements enumeration)
-//! 5. misc2      — `__xml*` aliases, parser-context error helpers,
-//!                 xmlFormatError, tree node constructors, content-model
-//!                 serialization, deprecated stubs
+//! 1. getset — xmlGet*/xmlSet* legacy accessors (features, threads,
+//!    globals, tree navigation, entities, buffers)
+//! 2. module — xmlModule* dynamic-loading API (dlopen/dlsym/dlclose)
+//! 3. ucs — legacy `xmlUCSIsBlock`/`xmlUCSIsCat` name-table lookups
+//!    plus the `xmlUCSIsCatCc` control-character test
+//! 4. valid — validation helpers (attribute-value normalization,
+//!    potential-children / valid-elements enumeration)
+//! 5. misc2 — `__xml*` aliases, parser-context error helpers,
+//!    xmlFormatError, tree node constructors, content-model
+//!    serialization, deprecated stubs
 //!
 //! Every function here mirrors an exported symbol of the oracle DSO
 //! (`nm -D /usr/lib/libxml2.so.2`); signatures follow the installed
@@ -49,7 +49,7 @@ use crate::abi::types::*;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// strlen for a NUL-terminated byte string.
-unsafe fn cstr_len(s: *const c_char) -> usize {
+const unsafe fn cstr_len(s: *const c_char) -> usize {
     if s.is_null() {
         return 0;
     }
@@ -61,7 +61,7 @@ unsafe fn cstr_len(s: *const c_char) -> usize {
 }
 
 /// Compare a C string against a byte literal (with implicit NUL).
-unsafe fn cstr_eq(s: *const c_char, lit: &[u8]) -> bool {
+const unsafe fn cstr_eq(s: *const c_char, lit: &[u8]) -> bool {
     if s.is_null() {
         return false;
     }
@@ -77,7 +77,7 @@ unsafe fn cstr_eq(s: *const c_char, lit: &[u8]) -> bool {
 }
 
 /// strcmp ordering between a C string and a byte literal.
-unsafe fn cstr_cmp(s: *const c_char, lit: &[u8]) -> core::cmp::Ordering {
+const unsafe fn cstr_cmp(s: *const c_char, lit: &[u8]) -> core::cmp::Ordering {
     let b = s as *const u8;
     let mut i = 0usize;
     loop {
@@ -118,7 +118,7 @@ unsafe fn append_xmlstr(v: &mut Vec<u8>, s: *const xmlChar) {
     if s.is_null() {
         return;
     }
-    let b = s as *const u8;
+    let b = s;
     let mut i = 0usize;
     loop {
         let c = unsafe { *b.add(i) };
@@ -156,7 +156,7 @@ unsafe fn cstr_cat_xmlstr(buf: *mut c_char, s: *const xmlChar) {
     let mut i = cstr_len(buf);
     let mut j = 0usize;
     let b = buf as *mut u8;
-    let sb = s as *const u8;
+    let sb = s;
     loop {
         let c = unsafe { *sb.add(j) };
         if c == 0 {
@@ -210,7 +210,7 @@ fn append_int(v: &mut Vec<u8>, n: i32) {
 }
 
 /// Upper-case hex digit for a nibble.
-fn hex_digit(v: u8) -> u8 {
+const fn hex_digit(v: u8) -> u8 {
     if v < 10 {
         b'0' + v
     } else {
@@ -346,9 +346,9 @@ pub unsafe extern "C" fn xmlGetFeaturesList(len: *mut c_int, result: *mut *const
         }
     }
     if cnt > 0 {
-        for i in 0..cnt as usize {
+        for (i, f) in XML_FEATURES.iter().take(cnt as usize).enumerate() {
             unsafe {
-                *result.add(i) = XML_FEATURES[i].as_ptr() as *const c_char;
+                *result.add(i) = f.as_ptr() as *const c_char;
             }
         }
     }
@@ -574,7 +574,7 @@ pub unsafe extern "C" fn xmlSetFeature(
 /// Deprecated (globals.c): returns the global state, which the candidate
 /// does not keep — the oracle DSO itself returns NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlGetGlobalState() -> *mut c_void {
+pub const unsafe extern "C" fn xmlGetGlobalState() -> *mut c_void {
     ptr::null_mut()
 }
 
@@ -584,7 +584,7 @@ pub unsafe extern "C" fn xmlGetGlobalState() -> *mut c_void {
 /// xmlNodePtr xmlGetLastChild(const xmlNode *parent);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlGetLastChild(parent: *const _xmlNode) -> *mut _xmlNode {
+pub const unsafe extern "C" fn xmlGetLastChild(parent: *const _xmlNode) -> *mut _xmlNode {
     if parent.is_null() || unsafe { (*parent).type_ == XML_NAMESPACE_DECL as c_int } {
         return ptr::null_mut();
     }
@@ -632,9 +632,9 @@ unsafe fn dtd_default_attr(
     }
     // Build the element QName for the DTD lookup.
     let mut tmp: *mut xmlChar = ptr::null_mut();
-    let elem_qname: *const xmlChar;
+
     let ns = unsafe { (*node).ns };
-    if !ns.is_null() && !unsafe { (*ns).prefix.is_null() } {
+    let elem_qname: *const xmlChar = if !ns.is_null() && !unsafe { (*ns).prefix.is_null() } {
         tmp = unsafe { crate::abi::exports_xml2::xmlStrdup((*ns).prefix) };
         if !tmp.is_null() {
             let colon = b":\0";
@@ -648,10 +648,10 @@ unsafe fn dtd_default_attr(
         if tmp.is_null() {
             return ptr::null_mut();
         }
-        elem_qname = tmp;
+        tmp
     } else {
-        elem_qname = unsafe { (*node).name };
-    }
+        unsafe { (*node).name }
+    };
 
     let mut attr_decl: *mut _xmlAttribute = ptr::null_mut();
     let doc = unsafe { &*doc };
@@ -1134,7 +1134,7 @@ pub unsafe extern "C" fn xmlGetPredefinedEntity(name: *const xmlChar) -> *mut _x
 /// Upstream returns `pthread_self()` (or 0 when single-threaded); the
 /// candidate is single-threaded, so 0 matches the oracle's common path.
 #[no_mangle]
-pub extern "C" fn xmlGetThreadId() -> c_int {
+pub const extern "C" fn xmlGetThreadId() -> c_int {
     0
 }
 
@@ -1185,7 +1185,7 @@ pub unsafe extern "C" fn xmlGetUTF8Char(utf: *const u8, len: *mut c_int) -> c_in
                     c = (c & 0x0f) << 12;
                     c |= ((*utf.add(1) & 0x3f) as u32) << 6;
                     c |= (*utf.add(2) & 0x3f) as u32;
-                    if c < 0x800 || (c >= 0xd800 && c < 0xe000) {
+                    if c < 0x800 || (0xd800..0xe000).contains(&c) {
                         *len = 0;
                         return -1;
                     }
@@ -1199,7 +1199,7 @@ pub unsafe extern "C" fn xmlGetUTF8Char(utf: *const u8, len: *mut c_int) -> c_in
                     c |= ((*utf.add(1) & 0x3f) as u32) << 12;
                     c |= ((*utf.add(2) & 0x3f) as u32) << 6;
                     c |= (*utf.add(3) & 0x3f) as u32;
-                    if c < 0x10000 || c >= 0x110000 {
+                    if !(0x10000..0x110000).contains(&c) {
                         *len = 0;
                         return -1;
                     }
@@ -1252,10 +1252,10 @@ pub unsafe extern "C" fn xmlSetListDoc(list: *mut _xmlNode, doc: *mut _xmlDoc) -
     let mut ret = 0;
     let mut cur = list;
     while !cur.is_null() {
-        if unsafe { (*cur).doc != doc } {
-            if unsafe { crate::abi::exports_tree::xmlSetTreeDoc(cur, doc) } < 0 {
-                ret = -1;
-            }
+        if unsafe { (*cur).doc != doc }
+            && unsafe { crate::abi::exports_tree::xmlSetTreeDoc(cur, doc) } < 0
+        {
+            ret = -1;
         }
         cur = unsafe { (*cur).next };
     }
@@ -1267,6 +1267,7 @@ pub unsafe extern "C" fn xmlSetListDoc(list: *mut _xmlNode, doc: *mut _xmlDoc) -
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Module handle (upstream `struct _xmlModule`, xmlmodule.c).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xmlModule {
     pub name: *mut xmlChar,
@@ -1512,7 +1513,6 @@ static XML_UCS_BLOCKS: &[(&str, &[(u32, u32)])] = &[
 ];
 
 #[rustfmt::skip]
-
 static XML_UCS_CATS: &[(&str, &[(u32, u32)])] = &[
     ("C", &[(0,31),(127,159),(173,173),(1536,1539),(1757,1757),(1807,1807),(6068,6069),(8203,8207),(8234,8238),(8288,8291),(8298,8303),(55296,55296),(56191,56192),(56319,56320),(57343,57344),(63743,63743),(65279,65279),(65529,65531),(119155,119162),(917505,917505),(917536,917631),(983040,983040),(1048573,1048573),(1048576,1048576),(1114109,1114109)]),
     ("Cc", &[(0,31),(127,159)]),
@@ -1624,7 +1624,7 @@ pub unsafe extern "C" fn xmlUCSIsCat(code: c_int, cat: *const c_char) -> c_int {
 ///
 /// Control characters (C0 + DEL + C1).
 #[no_mangle]
-pub extern "C" fn xmlUCSIsCatCc(code: c_int) -> c_int {
+pub const extern "C" fn xmlUCSIsCatCc(code: c_int) -> c_int {
     if (code >= 0x0 && code <= 0x1f) || (code >= 0x7f && code <= 0x9f) {
         1
     } else {
@@ -1700,7 +1700,7 @@ unsafe fn v_err_memory(ctxt: *mut _xmlValidCtxt) {
             ptr::null(),
             0,
             0,
-            b"Memory allocation failed : \n\0".as_ptr() as *const c_char,
+            c"Memory allocation failed : \n".as_ptr() as *const c_char,
         );
     }
 }
@@ -1877,7 +1877,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
                     extsubset = 1;
                 }
             }
-            if elemname as *const xmlChar != (*elem).name {
+            if !std::ptr::eq(elemname, (*elem).name) {
                 xmlFreeImpl(elemname as *mut c_void);
             }
         }
@@ -1924,7 +1924,7 @@ pub unsafe extern "C" fn xmlValidCtxtNormalizeAttributeValue(
                 ctxt,
                 elem,
                 XML_DTD_NOT_STANDALONE,
-                b"standalone: %s on %s value had to be normalized based on external subset declaration\n\0"
+                c"standalone: %s on %s value had to be normalized based on external subset declaration\n"
                     .as_ptr() as *const c_char,
                 name,
                 (*elem).name,
@@ -1994,7 +1994,7 @@ pub unsafe extern "C" fn xmlValidGetPotentialChildren(
 
 /// Dummy validity error handler that suppresses messages (upstream
 /// `xmlNoValidityErr`).
-unsafe extern "C" fn xml_no_validity_err(_ctx: *mut c_void, _msg: *const c_char) {}
+const unsafe extern "C" fn xml_no_validity_err(_ctx: *mut c_void, _msg: *const c_char) {}
 
 /// # UPSTREAM-PARITY
 ///
@@ -2764,7 +2764,7 @@ pub unsafe extern "C" fn xmlNodeGetAttrValue(
 ///
 /// Deprecated; upstream (2.13+) ships this as an empty stub.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSprintfElementContent(
+pub const unsafe extern "C" fn xmlSprintfElementContent(
     _buf: *mut c_char,
     _content: *mut _xmlElementContent,
     _englob: c_int,
@@ -2897,6 +2897,6 @@ pub unsafe extern "C" fn xmlSnprintfElementContent(
 /// Deprecated (legacy.c): modern documents no longer carry old-style
 /// namespace declarations, so this is a no-op returning 0.
 #[no_mangle]
-pub unsafe extern "C" fn xmlUpgradeOldNs(_doc: *mut _xmlDoc) -> c_int {
+pub const unsafe extern "C" fn xmlUpgradeOldNs(_doc: *mut _xmlDoc) -> c_int {
     0
 }

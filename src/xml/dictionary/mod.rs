@@ -29,7 +29,6 @@
 
 use core::ffi::c_void;
 use core::hash::Hasher;
-use core::num::NonZeroUsize;
 use core::ptr;
 use std::os::raw::c_int;
 
@@ -44,7 +43,9 @@ use crate::abi::types::xmlChar;
 const DICT_INIT_SIZE: usize = 64;
 
 /// Maximum load factor numerator (upstream uses 0.75 ≈ 3/4).
+#[allow(dead_code)]
 const MAX_LOAD_NUM: usize = 3;
+#[allow(dead_code)]
 const MAX_LOAD_DEN: usize = 4;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -52,6 +53,7 @@ const MAX_LOAD_DEN: usize = 4;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// A reference-counted interned string.
+#[derive(Debug)]
 struct DictEntry {
     /// Reference count. 0 means the entry is unused/freed.
     ref_count: usize,
@@ -61,6 +63,7 @@ struct DictEntry {
     /// Length of the string (excluding null terminator).
     len: usize,
     /// Hash of the string.
+    #[allow(dead_code)]
     hash: u64,
 }
 
@@ -91,6 +94,7 @@ type DictTable = hashbrown::HashTable<(u64, usize)>; // (hash, entry_index)
 /// declaration in the public header). Users only interact with it through
 /// pointer. Our `_xmlDict` is defined in `structs.rs` as opaque. Here we
 /// define the actual internal representation.
+#[derive(Debug)]
 pub struct Dict {
     /// The hash table: maps hash values to entry indices.
     table: DictTable,
@@ -106,12 +110,13 @@ pub struct Dict {
     is_sub: bool,
     /// The opaque C pointer for this dictionary.
     /// Used to track which dictionary owns which entries.
+    #[allow(dead_code)]
     opaque_id: usize,
 }
 
 /// A reference-counted handle to a Dict.
 /// Used for parent references in sub-dictionaries.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct DictRef {
     ptr: *mut Dict,
 }
@@ -268,7 +273,7 @@ pub unsafe fn dict_lookup(dict: *mut Dict, name: *const xmlChar, len: c_int) -> 
             // by looking it up in the parent's table
             let entry = &parent.entries[found];
             // Increment refcount
-            let entry_ref = &parent.entries[found];
+            let _entry_ref = &parent.entries[found];
             // We need to modify the parent's entry. This is safe because
             // sub-dictionaries share the parent's entries by reference.
             // SAFETY: The parent entry's ref_count is behind a shared reference,
@@ -294,7 +299,7 @@ pub unsafe fn dict_lookup(dict: *mut Dict, name: *const xmlChar, len: c_int) -> 
         return ptr::null();
     }
     unsafe {
-        ptr::copy_nonoverlapping(name as *const u8, data_copy, s_len);
+        ptr::copy_nonoverlapping(name, data_copy, s_len);
         *data_copy.add(s_len) = 0;
     }
 
@@ -376,7 +381,7 @@ pub unsafe fn dict_exists(dict: *mut Dict, name: *const xmlChar, len: c_int) -> 
 /// ```
 ///
 /// Returns the number of active entries, or -1 if dict is NULL.
-pub fn dict_size(dict: *const Dict) -> c_int {
+pub const fn dict_size(dict: *const Dict) -> c_int {
     if dict.is_null() {
         return -1;
     }
@@ -467,7 +472,7 @@ impl Dict {
     /// Find an entry by hash and content.
     fn find_entry(&self, hash: u64, name: *const xmlChar, len: usize) -> Option<usize> {
         // SAFETY: name must be valid for len bytes.
-        let name_slice = unsafe { core::slice::from_raw_parts(name as *const u8, len) };
+        let name_slice = unsafe { core::slice::from_raw_parts(name, len) };
 
         self.table
             .find(hash, |(entry_hash, entry_idx)| {

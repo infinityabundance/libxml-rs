@@ -13,7 +13,6 @@
 //! XPATH-TYPES-*
 
 use crate::abi::structs::_xmlNode;
-use crate::abi::types::xmlChar;
 use std::cmp::Ordering;
 use std::ptr;
 
@@ -24,15 +23,25 @@ use std::ptr;
 /// XPath type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum XPathType {
+    /// A node-set: an ordered, deduplicated collection of document nodes
     NodeSet,
+    /// A string
     String,
+    /// A number (IEEE 754 double)
     Number,
+    /// A boolean
     Boolean,
+    /// A single point in the tree: a node plus a position within it
     Point,
+    /// A range of nodes in the tree
     Range,
+    /// A set of points and ranges
     LocationSet,
+    /// A user-defined value type
     Users,
+    /// An XSLT tree fragment (result tree fragment)
     XsltTree,
+    /// No type assigned yet (uninitialized value)
     Undefined,
 }
 
@@ -85,40 +94,49 @@ pub struct NodeSet {
 }
 
 impl NodeSet {
-    pub fn new() -> Self {
+    /// Create an empty node-set.
+    pub const fn new() -> Self {
         Self { nodes: Vec::new() }
     }
 
+    /// Create a node-set containing exactly one node.
     pub fn singleton(node: *mut _xmlNode) -> Self {
         Self {
             nodes: vec![XPathNode(node)],
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    /// Return `true` if the node-set contains no nodes.
+    pub const fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }
 
-    pub fn len(&self) -> usize {
+    /// Return the number of nodes in the node-set.
+    pub const fn len(&self) -> usize {
         self.nodes.len()
     }
 
+    /// Iterate over the nodes in document order.
     pub fn iter(&self) -> impl Iterator<Item = *mut _xmlNode> + '_ {
         self.nodes.iter().map(|n| n.0)
     }
 
+    /// Return the node at `index` in document order, or `None` if out of bounds.
     pub fn get(&self, index: usize) -> Option<*mut _xmlNode> {
         self.nodes.get(index).map(|n| n.0)
     }
 
+    /// Return the first node in document order.
     pub fn first(&self) -> Option<*mut _xmlNode> {
         self.nodes.first().map(|n| n.0)
     }
 
+    /// Return the last node in document order.
     pub fn last(&self) -> Option<*mut _xmlNode> {
         self.nodes.last().map(|n| n.0)
     }
 
+    /// Return `true` if the given node is in the node-set.
     pub fn contains(&self, node: *mut _xmlNode) -> bool {
         self.nodes.iter().any(|n| n.0 == node)
     }
@@ -158,6 +176,16 @@ impl NodeSet {
     ///
     /// SAFETY: The returned pointer must be freed with xmlXPathFreeNodeSet
     /// or the owning XPath object must be freed.
+    ///
+    /// # SAFETY
+    ///
+    /// The function touches crate-global state only; it is safe
+    /// as long as the caller respects the library's global
+    /// initialization/cleanup ordering (xmlInitParser before use,
+    /// xmlCleanupParser only after all users are done).
+    ///
+    /// Violating the global lifecycle ordering, or calling this after
+    /// teardown or from a signal handler, is undefined behavior.
     pub unsafe fn to_raw(&self) -> *mut crate::abi::structs::_xmlNodeSet {
         let node_max = self.nodes.len();
         let node_tab = if node_max > 0 {
@@ -205,15 +233,19 @@ impl Default for NodeSet {
 /// XPath runtime value.
 #[derive(Debug, Clone)]
 pub enum XPathValue {
+    /// A node-set value
     NodeSet(NodeSet),
+    /// A string value
     String(String),
+    /// A number value (IEEE 754 double)
     Number(f64),
+    /// A boolean value
     Boolean(bool),
 }
 
 impl XPathValue {
     /// Get the XPath type of this value.
-    pub fn xpath_type(&self) -> XPathType {
+    pub const fn xpath_type(&self) -> XPathType {
         match self {
             XPathValue::NodeSet(_) => XPathType::NodeSet,
             XPathValue::String(_) => XPathType::String,
@@ -304,8 +336,7 @@ pub fn node_string_value(node: *mut _xmlNode) -> String {
     unsafe {
         let node_ref = &*node;
         match node_ref.type_ {
-            1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19
-            | 20 => {}
+            1..=20 => {}
             _ => return String::new(),
         }
 
@@ -567,6 +598,21 @@ pub fn number_to_string(n: f64) -> String {
 /// - `Ordering::Equal` if `a == b`
 ///
 /// UPSTREAM-PARITY: Uses the `xmlXPathCmpNodes` algorithm.
+///
+/// # SAFETY
+///
+/// - `a`, `b` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn compare_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> Ordering {
     if a.is_null() && b.is_null() {
         return Ordering::Equal;
@@ -637,7 +683,7 @@ pub unsafe fn compare_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> Orde
     }
 
     // Now parent_a and parent_b are siblings. Find which comes first.
-    let mut n = (*parent_a).parent;
+    let n = (*parent_a).parent;
     if n.is_null() {
         return a.cmp(&b);
     }
@@ -674,7 +720,7 @@ unsafe fn node_depth(node: *mut _xmlNode) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_string_to_number() {
         assert!(string_to_number("").is_nan());
@@ -687,7 +733,7 @@ mod tests {
         assert!(string_to_number("false").is_nan());
         assert_eq!(string_to_number("0"), 0.0);
     }
-
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_number_to_string() {
         assert_eq!(number_to_string(f64::NAN), "NaN");
@@ -704,20 +750,20 @@ mod tests {
         let v = XPathValue::Number(42.0);
         assert_eq!(v.as_number(), 42.0);
         assert_eq!(v.as_string(), "42");
-        assert_eq!(v.as_boolean(), true);
+        assert!(v.as_boolean());
 
         let v = XPathValue::Number(0.0);
-        assert_eq!(v.as_boolean(), false);
+        assert!(!v.as_boolean());
 
         let v = XPathValue::Number(f64::NAN);
-        assert_eq!(v.as_boolean(), false);
+        assert!(!v.as_boolean());
 
         let v = XPathValue::String("hello".into());
         assert_eq!(v.as_string(), "hello");
-        assert_eq!(v.as_boolean(), true);
+        assert!(v.as_boolean());
 
         let v = XPathValue::String("".into());
-        assert_eq!(v.as_boolean(), false);
+        assert!(!v.as_boolean());
 
         let v = XPathValue::Boolean(true);
         assert_eq!(v.as_number(), 1.0);
@@ -730,7 +776,7 @@ mod tests {
 
     #[test]
     fn test_node_set() {
-        let mut ns = NodeSet::new();
+        let ns = NodeSet::new();
         assert!(ns.is_empty());
         assert_eq!(ns.len(), 0);
     }

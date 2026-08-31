@@ -13,12 +13,10 @@
 //! XPATH-EVAL-*
 
 use crate::abi::structs::_xmlNode;
-use crate::xml::xpath::ast::{Axis, BinaryOp, Expr, NameTest, NodeTest, Step};
+use crate::xml::xpath::ast::{BinaryOp, Expr, Step};
 use crate::xml::xpath::axes;
 use crate::xml::xpath::context::XPathContext;
-use crate::xml::xpath::functions;
 use crate::xml::xpath::types::{node_string_value, string_to_number, NodeSet, XPathValue};
-use std::collections::HashMap;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Evaluation
@@ -62,7 +60,7 @@ fn eval_absolute_path(ctx: &mut XPathContext, expr: &Expr) -> Result<XPathValue,
         return Ok(XPathValue::NodeSet(NodeSet::new()));
     }
 
-    unsafe {
+    {
         // The document node is the _xmlDoc cast to _xmlNode (type 9).
         // Absolute paths like `/root/item` select relative to the
         // document node itself, NOT the root element. This matches
@@ -418,7 +416,7 @@ fn eval_union(ctx: &mut XPathContext, left: &Expr, right: &Expr) -> Result<XPath
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Compare two XPath values for equality (XPath 1.0 §3.4).
-fn compare_equal(ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> bool {
+fn compare_equal(_ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> bool {
     match (a, b) {
         // If both are node-sets, compare by set intersection
         (XPathValue::NodeSet(ns_a), XPathValue::NodeSet(ns_b)) => {
@@ -437,10 +435,10 @@ fn compare_equal(ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> bool
         (XPathValue::NodeSet(ns), other) | (other, XPathValue::NodeSet(ns)) => {
             for node in ns.iter() {
                 let node_str = node_string_value(node);
-                let other_val = match other {
+                match other {
                     XPathValue::Boolean(_) => {
                         // Compare boolean(node-set) == other
-                        return (ns.len() > 0) == other.as_boolean();
+                        return (!ns.is_empty()) == other.as_boolean();
                     }
                     XPathValue::Number(_) => {
                         let node_num = string_to_number(&node_str);
@@ -480,7 +478,7 @@ fn compare_equal(ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> bool
 }
 
 /// Compare two XPath values for ordering (XPath 1.0 §3.4).
-fn compare_ordered(ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> std::cmp::Ordering {
+fn compare_ordered(_ctx: &mut XPathContext, a: &XPathValue, b: &XPathValue) -> std::cmp::Ordering {
     match (a, b) {
         // If both are node-sets, compare pairwise
         (XPathValue::NodeSet(ns_a), XPathValue::NodeSet(ns_b)) => {
@@ -549,6 +547,7 @@ pub fn eval_xpath(ctx: &mut XPathContext, expression: &str) -> Result<XPathValue
 mod tests {
     use super::*;
     use crate::xml::xpath::context::XPathContext;
+    use crate::xml::xpath::functions;
 
     fn setup_context() -> XPathContext {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
@@ -612,83 +611,53 @@ mod tests {
     #[test]
     fn test_eval_equality() {
         let mut ctx = setup_context();
-        assert_eq!(eval_xpath(&mut ctx, "1 = 1").unwrap().as_boolean(), true);
-        assert_eq!(eval_xpath(&mut ctx, "1 = 2").unwrap().as_boolean(), false);
-        assert_eq!(eval_xpath(&mut ctx, "1 != 2").unwrap().as_boolean(), true);
+        assert!(eval_xpath(&mut ctx, "1 = 1").unwrap().as_boolean());
+        assert!(!eval_xpath(&mut ctx, "1 = 2").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "1 != 2").unwrap().as_boolean());
     }
 
     #[test]
     fn test_eval_comparison() {
         let mut ctx = setup_context();
-        assert_eq!(eval_xpath(&mut ctx, "1 < 2").unwrap().as_boolean(), true);
-        assert_eq!(eval_xpath(&mut ctx, "2 > 1").unwrap().as_boolean(), true);
-        assert_eq!(eval_xpath(&mut ctx, "1 <= 1").unwrap().as_boolean(), true);
-        assert_eq!(eval_xpath(&mut ctx, "2 >= 2").unwrap().as_boolean(), true);
+        assert!(eval_xpath(&mut ctx, "1 < 2").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "2 > 1").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "1 <= 1").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "2 >= 2").unwrap().as_boolean());
     }
 
     #[test]
     fn test_eval_and_or() {
         let mut ctx = setup_context();
-        assert_eq!(
-            eval_xpath(&mut ctx, "true() and true()")
-                .unwrap()
-                .as_boolean(),
-            true
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "true() and false()")
-                .unwrap()
-                .as_boolean(),
-            false
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "true() or false()")
-                .unwrap()
-                .as_boolean(),
-            true
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "false() or false()")
-                .unwrap()
-                .as_boolean(),
-            false
-        );
+        assert!(eval_xpath(&mut ctx, "true() and true()")
+            .unwrap()
+            .as_boolean());
+        assert!(!eval_xpath(&mut ctx, "true() and false()")
+            .unwrap()
+            .as_boolean());
+        assert!(eval_xpath(&mut ctx, "true() or false()")
+            .unwrap()
+            .as_boolean());
+        assert!(!eval_xpath(&mut ctx, "false() or false()")
+            .unwrap()
+            .as_boolean());
     }
 
     #[test]
     fn test_eval_not() {
         let mut ctx = setup_context();
-        assert_eq!(
-            eval_xpath(&mut ctx, "not(true())").unwrap().as_boolean(),
-            false
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "not(false())").unwrap().as_boolean(),
-            true
-        );
+        assert!(!eval_xpath(&mut ctx, "not(true())").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "not(false())").unwrap().as_boolean());
     }
 
     #[test]
     fn test_eval_boolean() {
         let mut ctx = setup_context();
-        assert_eq!(
-            eval_xpath(&mut ctx, "boolean('hello')")
-                .unwrap()
-                .as_boolean(),
-            true
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "boolean('')").unwrap().as_boolean(),
-            false
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "boolean(0)").unwrap().as_boolean(),
-            false
-        );
-        assert_eq!(
-            eval_xpath(&mut ctx, "boolean(1)").unwrap().as_boolean(),
-            true
-        );
+        assert!(eval_xpath(&mut ctx, "boolean('hello')")
+            .unwrap()
+            .as_boolean());
+        assert!(!eval_xpath(&mut ctx, "boolean('')").unwrap().as_boolean());
+        assert!(!eval_xpath(&mut ctx, "boolean(0)").unwrap().as_boolean());
+        assert!(eval_xpath(&mut ctx, "boolean(1)").unwrap().as_boolean());
     }
 
     #[test]
@@ -723,23 +692,17 @@ mod tests {
     #[test]
     fn test_eval_starts_with() {
         let mut ctx = setup_context();
-        assert_eq!(
-            eval_xpath(&mut ctx, "starts-with('hello', 'he')")
-                .unwrap()
-                .as_boolean(),
-            true
-        );
+        assert!(eval_xpath(&mut ctx, "starts-with('hello', 'he')")
+            .unwrap()
+            .as_boolean());
     }
 
     #[test]
     fn test_eval_contains() {
         let mut ctx = setup_context();
-        assert_eq!(
-            eval_xpath(&mut ctx, "contains('hello', 'ell')")
-                .unwrap()
-                .as_boolean(),
-            true
-        );
+        assert!(eval_xpath(&mut ctx, "contains('hello', 'ell')")
+            .unwrap()
+            .as_boolean());
     }
 
     #[test]
@@ -849,8 +812,8 @@ mod tests {
     #[test]
     fn test_eval_true_false() {
         let mut ctx = setup_context();
-        assert_eq!(eval_xpath(&mut ctx, "true()").unwrap().as_boolean(), true);
-        assert_eq!(eval_xpath(&mut ctx, "false()").unwrap().as_boolean(), false);
+        assert!(eval_xpath(&mut ctx, "true()").unwrap().as_boolean());
+        assert!(!eval_xpath(&mut ctx, "false()").unwrap().as_boolean());
     }
 
     #[test]

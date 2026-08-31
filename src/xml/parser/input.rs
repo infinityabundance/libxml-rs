@@ -56,7 +56,7 @@ pub(crate) enum Encoding {
 
 impl Encoding {
     /// Convert to the C ABI [`xmlCharEncoding`] value.
-    pub(crate) fn to_xml_char_encoding(&self) -> xmlCharEncoding {
+    pub(crate) const fn to_xml_char_encoding(&self) -> xmlCharEncoding {
         match self {
             Self::None => xmlCharEncoding::XML_CHAR_ENCODING_NONE,
             Self::Utf8 => xmlCharEncoding::XML_CHAR_ENCODING_UTF8,
@@ -171,7 +171,7 @@ impl InputSource {
     }
 
     /// Get the filename/URI if available.
-    fn filename(&self) -> Option<&str> {
+    const fn filename(&self) -> Option<&str> {
         match self {
             InputSource::File { path, .. } => Some(path.as_str()),
             _ => None,
@@ -590,7 +590,7 @@ impl InputBuffer {
     }
 
     /// Determine the byte length of a UTF-8 character from its leading byte.
-    fn utf8_char_len(leading: u8) -> usize {
+    const fn utf8_char_len(leading: u8) -> usize {
         if leading & 0x80 == 0 {
             1
         } else if leading & 0xE0 == 0xC0 {
@@ -698,12 +698,12 @@ impl InputBuffer {
     /// Return the current position as `(line, col, byte_offset)`.
     ///
     /// Line and column are 1-based. Byte offset is 0-based.
-    pub fn pos(&self) -> (usize, usize, usize) {
+    pub const fn pos(&self) -> (usize, usize, usize) {
         (self.line, self.col, self.pos)
     }
 
     /// Check if the input has been fully consumed.
-    pub fn is_eof(&self) -> bool {
+    pub const fn is_eof(&self) -> bool {
         self.pos >= self.data.len()
     }
 
@@ -718,7 +718,7 @@ impl InputBuffer {
     }
 
     /// Return the total length of the buffered data in bytes.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.data.len()
     }
 
@@ -728,12 +728,12 @@ impl InputBuffer {
     }
 
     /// Return the detected encoding.
-    pub fn encoding(&self) -> &Encoding {
+    pub const fn encoding(&self) -> &Encoding {
         &self.encoding
     }
 
     /// Return whether a BOM was detected and consumed.
-    pub fn bom_was_consumed(&self) -> bool {
+    pub const fn bom_was_consumed(&self) -> bool {
         self.bom_consumed
     }
 
@@ -774,7 +774,7 @@ impl InputBuffer {
     /// Like [`populate_parser_input`](Self::populate_parser_input) but leaves
     /// `filename` untouched: the caller owns a duplicated C string instead of
     /// borrowing the Rust-side filename (which the parser moves/drops).
-    pub unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
+    pub const unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
         let data_ptr = self.data.as_ptr();
         let base = data_ptr as *const crate::abi::types::xmlChar;
         let cur = unsafe { data_ptr.add(self.pos) as *const crate::abi::types::xmlChar };
@@ -912,7 +912,7 @@ impl InputStack {
     /// Returns the depth of the stack (number of nested inputs).
     ///
     /// A stack with only the base input has depth 1.
-    pub fn depth(&self) -> usize {
+    pub const fn depth(&self) -> usize {
         self.inputs.len()
     }
 

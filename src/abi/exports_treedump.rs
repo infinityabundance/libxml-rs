@@ -123,7 +123,7 @@ const XML_ESCAPE_QUOT: c_int = 1 << 3;
 /// # SAFETY
 ///
 /// - `s` must be a valid NUL-terminated string or NULL (NULL never matches).
-unsafe fn c_str_eq_bytes(s: *const xmlChar, b: &[u8]) -> bool {
+const unsafe fn c_str_eq_bytes(s: *const xmlChar, b: &[u8]) -> bool {
     if s.is_null() {
         return false;
     }
@@ -426,7 +426,7 @@ unsafe fn escape_text_flags(str: *const xmlChar, flags: c_int) -> *mut xmlChar {
 /// Offset into the escape-content table for byte `c` under `flags`
 /// (upstream codegen/escape.inc `xmlEscapeTab*`), or -1 when the byte is
 /// emitted verbatim.
-fn escape_tab_offset(c: u8, flags: c_int) -> c_int {
+const fn escape_tab_offset(c: u8, flags: c_int) -> c_int {
     if (flags & XML_ESCAPE_HTML) != 0 {
         return match c {
             b'&' => 33,
@@ -469,7 +469,7 @@ fn escape_tab_offset(c: u8, flags: c_int) -> c_int {
 
 /// Replacement string for an escape-content offset (upstream
 /// `xmlEscapeContent`).
-fn escape_replacement(offset: c_int) -> &'static [u8] {
+const fn escape_replacement(offset: c_int) -> &'static [u8] {
     match offset {
         9 => b"&#9;",
         14 => b"&#10;",
@@ -786,7 +786,7 @@ unsafe fn node_parse_att_value(
                     }
                     remaining -= 1;
                 }
-                if remaining <= 0 || unsafe { *cur } == 0 {
+                if remaining == 0 || unsafe { *cur } == 0 {
                     break 'scan;
                 }
                 if cur != q {
@@ -1135,7 +1135,7 @@ unsafe fn static_copy_node(
                 }
                 unsafe { (*ret).ns = newns };
             } else {
-                let newns = new_reconciled_ns(doc, ret, unsafe { (*n).ns });
+                let newns = new_reconciled_ns(doc, ret, unsafe { n.ns });
                 if newns.is_null() {
                     free_node(ret);
                     return ptr::null_mut();
@@ -1202,7 +1202,7 @@ unsafe fn static_copy_node(
                     }
                     cur = (*cur).parent;
                     insert = (*insert).parent;
-                    if cur as *const _xmlNode == node {
+                    if std::ptr::eq(cur, node) {
                         cur = ptr::null_mut();
                         break;
                     }
@@ -1847,44 +1847,44 @@ unsafe fn copy_dtd_internal(dtd: *mut _xmlDtd) -> *mut _xmlDtd {
             return ptr::null_mut();
         }
         if !d.entities.is_null() {
-            let t = xmlCopyEntitiesTable(d.entities as *mut c_void);
+            let t = xmlCopyEntitiesTable(d.entities);
             if t.is_null() {
                 free_dtd_internal(ret);
                 return ptr::null_mut();
             }
-            (*ret).entities = t as *mut c_void;
+            (*ret).entities = t;
         }
         if !d.notations.is_null() {
-            let t = xmlCopyNotationTable(d.notations as *mut c_void);
+            let t = xmlCopyNotationTable(d.notations);
             if t.is_null() {
                 free_dtd_internal(ret);
                 return ptr::null_mut();
             }
-            (*ret).notations = t as *mut c_void;
+            (*ret).notations = t;
         }
         if !d.elements.is_null() {
-            let t = xmlCopyElementTable(d.elements as *mut c_void);
+            let t = xmlCopyElementTable(d.elements);
             if t.is_null() {
                 free_dtd_internal(ret);
                 return ptr::null_mut();
             }
-            (*ret).elements = t as *mut c_void;
+            (*ret).elements = t;
         }
         if !d.attributes.is_null() {
-            let t = xmlCopyAttributeTable(d.attributes as *mut c_void);
+            let t = xmlCopyAttributeTable(d.attributes);
             if t.is_null() {
                 free_dtd_internal(ret);
                 return ptr::null_mut();
             }
-            (*ret).attributes = t as *mut c_void;
+            (*ret).attributes = t;
         }
         if !d.pentities.is_null() {
-            let t = xmlCopyEntitiesTable(d.pentities as *mut c_void);
+            let t = xmlCopyEntitiesTable(d.pentities);
             if t.is_null() {
                 free_dtd_internal(ret);
                 return ptr::null_mut();
             }
-            (*ret).pentities = t as *mut c_void;
+            (*ret).pentities = t;
         }
 
         /* Link the copy's children to the declarations in the copied
@@ -2422,13 +2422,7 @@ pub unsafe extern "C" fn xmlNodeDumpOutput(
     if buf.is_null() || cur.is_null() {
         return;
     }
-    let level = if level < 0 {
-        0
-    } else if level > 100 {
-        100
-    } else {
-        level
-    };
+    let level = level.clamp(0, 100);
     let tmp = io::buf_create(-1);
     if tmp.is_null() {
         return;
@@ -2645,7 +2639,7 @@ pub unsafe extern "C" fn xmlDocDumpMemoryEnc(
 /// Debug error helper (upstream xmlDebugErr): `ERROR <code>: <msg>`.
 unsafe fn debug_err(f: *mut _IO_FILE, errors: &mut c_int, code: c_int, msg: *const c_char) {
     *errors += 1;
-    libc::fprintf(f, b"ERROR %d: %s\0".as_ptr() as *const c_char, code, msg);
+    libc::fprintf(f, c"ERROR %d: %s".as_ptr() as *const c_char, code, msg);
 }
 
 /// Debug error helper with a `%s` substitution (upstream xmlDebugErr3).
@@ -2657,7 +2651,7 @@ unsafe fn debug_err_str(
     extra: *const c_char,
 ) {
     *errors += 1;
-    libc::fprintf(f, b"ERROR %d: \0".as_ptr() as *const c_char, code);
+    libc::fprintf(f, c"ERROR %d: ".as_ptr() as *const c_char, code);
     libc::fprintf(f, msg, extra);
 }
 
@@ -2670,7 +2664,7 @@ unsafe fn debug_err_int(
     extra: c_int,
 ) {
     *errors += 1;
-    libc::fprintf(f, b"ERROR %d: \0".as_ptr() as *const c_char, code);
+    libc::fprintf(f, c"ERROR %d: ".as_ptr() as *const c_char, code);
     libc::fprintf(f, msg, extra);
 }
 
@@ -2748,14 +2742,14 @@ unsafe fn ns_check_scope_report(
                 f,
                 errors,
                 XML_CHECK_NS_SCOPE,
-                b"Reference to default namespace not in scope\n\0".as_ptr() as *const c_char,
+                c"Reference to default namespace not in scope\n".as_ptr() as *const c_char,
             );
         } else {
             debug_err_str(
                 f,
                 errors,
                 XML_CHECK_NS_SCOPE,
-                b"Reference to namespace '%s' not in scope\n\0".as_ptr() as *const c_char,
+                c"Reference to namespace '%s' not in scope\n".as_ptr() as *const c_char,
                 unsafe { (*ns).prefix } as *const c_char,
             );
         }
@@ -2766,14 +2760,14 @@ unsafe fn ns_check_scope_report(
                 f,
                 errors,
                 XML_CHECK_NS_ANCESTOR,
-                b"Reference to default namespace not on ancestor\n\0".as_ptr() as *const c_char,
+                c"Reference to default namespace not on ancestor\n".as_ptr() as *const c_char,
             );
         } else {
             debug_err_str(
                 f,
                 errors,
                 XML_CHECK_NS_ANCESTOR,
-                b"Reference to namespace '%s' not on ancestor\n\0".as_ptr() as *const c_char,
+                c"Reference to namespace '%s' not on ancestor\n".as_ptr() as *const c_char,
                 unsafe { (*ns).prefix } as *const c_char,
             );
         }
@@ -2790,7 +2784,7 @@ unsafe fn check_string(f: *mut _IO_FILE, errors: &mut c_int, str: *const xmlChar
             f,
             errors,
             XML_CHECK_NOT_UTF8,
-            b"String is not UTF-8 %s\0".as_ptr() as *const c_char,
+            c"String is not UTF-8 %s".as_ptr() as *const c_char,
             str as *const c_char,
         );
     }
@@ -2806,7 +2800,7 @@ unsafe fn check_name(f: *mut _IO_FILE, errors: &mut c_int, name: *const xmlChar)
             f,
             errors,
             XML_CHECK_NO_NAME,
-            b"Name is NULL\0".as_ptr() as *const c_char,
+            c"Name is NULL".as_ptr() as *const c_char,
         );
         return;
     }
@@ -2815,7 +2809,7 @@ unsafe fn check_name(f: *mut _IO_FILE, errors: &mut c_int, name: *const xmlChar)
             f,
             errors,
             XML_CHECK_NOT_NCNAME,
-            b"Name is not an NCName '%s'\0".as_ptr() as *const c_char,
+            c"Name is not an NCName '%s'".as_ptr() as *const c_char,
             name as *const c_char,
         );
     }
@@ -2833,7 +2827,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                 f,
                 errors,
                 XML_CHECK_NO_PARENT,
-                b"Node has no parent\n\0".as_ptr() as *const c_char,
+                c"Node has no parent\n".as_ptr() as *const c_char,
             );
         }
         if (*node).doc.is_null() {
@@ -2841,7 +2835,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                 f,
                 errors,
                 XML_CHECK_NO_DOC,
-                b"Node has no doc\n\0".as_ptr() as *const c_char,
+                c"Node has no doc\n".as_ptr() as *const c_char,
             );
         }
         if !(*node).parent.is_null()
@@ -2852,7 +2846,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                 f,
                 errors,
                 XML_CHECK_WRONG_DOC,
-                b"Node doc differs from parent's one\n\0".as_ptr() as *const c_char,
+                c"Node doc differs from parent's one\n".as_ptr() as *const c_char,
             );
         }
         if (*node).prev.is_null() {
@@ -2864,8 +2858,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                         f,
                         errors,
                         XML_CHECK_NO_PREV,
-                        b"Attr has no prev and not first of attr list\n\0".as_ptr()
-                            as *const c_char,
+                        c"Attr has no prev and not first of attr list\n".as_ptr() as *const c_char,
                     );
                 }
             } else if !(*node).parent.is_null() && (*(*node).parent).children != node {
@@ -2873,7 +2866,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_NO_PREV,
-                    b"Node has no prev and not first of parent list\n\0".as_ptr() as *const c_char,
+                    c"Node has no prev and not first of parent list\n".as_ptr() as *const c_char,
                 );
             }
         } else if (*(*node).prev).next != node {
@@ -2881,7 +2874,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                 f,
                 errors,
                 XML_CHECK_WRONG_PREV,
-                b"Node prev->next : back link wrong\n\0".as_ptr() as *const c_char,
+                c"Node prev->next : back link wrong\n".as_ptr() as *const c_char,
             );
         }
         if (*node).next.is_null() {
@@ -2894,7 +2887,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_NO_NEXT,
-                    b"Node has no next and not last of parent list\n\0".as_ptr() as *const c_char,
+                    c"Node has no next and not last of parent list\n".as_ptr() as *const c_char,
                 );
             }
         } else {
@@ -2903,7 +2896,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_WRONG_NEXT,
-                    b"Node next->prev : forward link wrong\n\0".as_ptr() as *const c_char,
+                    c"Node next->prev : forward link wrong\n".as_ptr() as *const c_char,
                 );
             }
             if (*(*node).next).parent != (*node).parent {
@@ -2912,7 +2905,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_WRONG_PARENT,
-                    b"Node next->prev : forward link wrong\n\0".as_ptr() as *const c_char,
+                    c"Node next->prev : forward link wrong\n".as_ptr() as *const c_char,
                 );
             }
         }
@@ -2925,10 +2918,8 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
             if !(*node).ns.is_null() {
                 ns_check_scope_report(f, errors, node, (*node).ns);
             }
-        } else if (*node).type_ == XML_ATTRIBUTE_NODE as c_int {
-            if !(*node).ns.is_null() {
-                ns_check_scope_report(f, errors, node, (*node).ns);
-            }
+        } else if (*node).type_ == XML_ATTRIBUTE_NODE as c_int && !(*node).ns.is_null() {
+            ns_check_scope_report(f, errors, node, (*node).ns);
         }
 
         if (*node).type_ != XML_ELEMENT_NODE as c_int
@@ -2938,10 +2929,9 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
             && (*node).type_ != XML_DTD_NODE as c_int
             && (*node).type_ != XML_HTML_DOCUMENT_NODE as c_int
             && (*node).type_ != XML_DOCUMENT_NODE as c_int
+            && !(*node).content.is_null()
         {
-            if !(*node).content.is_null() {
-                check_string(f, errors, (*node).content);
-            }
+            check_string(f, errors, (*node).content);
         }
         let _ = doc;
         if (*node).type_ == XML_ELEMENT_NODE as c_int
@@ -2955,7 +2945,7 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_WRONG_NAME,
-                    b"Text node has wrong name '%s'\0".as_ptr() as *const c_char,
+                    c"Text node has wrong name '%s'".as_ptr() as *const c_char,
                     (*node).name as *const c_char,
                 );
             }
@@ -2965,22 +2955,20 @@ unsafe fn generic_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _x
                     f,
                     errors,
                     XML_CHECK_WRONG_NAME,
-                    b"Comment node has wrong name '%s'\0".as_ptr() as *const c_char,
+                    c"Comment node has wrong name '%s'".as_ptr() as *const c_char,
                     (*node).name as *const c_char,
                 );
             }
         } else if (*node).type_ == XML_PI_NODE as c_int {
             check_name(f, errors, (*node).name);
-        } else if (*node).type_ == XML_CDATA_SECTION_NODE as c_int {
-            if !(*node).name.is_null() {
-                debug_err_str(
-                    f,
-                    errors,
-                    XML_CHECK_NAME_NOT_NULL,
-                    b"CData section has non NULL name '%s'\0".as_ptr() as *const c_char,
-                    (*node).name as *const c_char,
-                );
-            }
+        } else if (*node).type_ == XML_CDATA_SECTION_NODE as c_int && !(*node).name.is_null() {
+            debug_err_str(
+                f,
+                errors,
+                XML_CHECK_NAME_NOT_NULL,
+                c"CData section has non NULL name '%s'".as_ptr() as *const c_char,
+                (*node).name as *const c_char,
+            );
         }
     }
 }
@@ -2996,7 +2984,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_ELEMENT,
-                    b"Misplaced ELEMENT node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced ELEMENT node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_ATTRIBUTE_NODE as c_int => {
@@ -3004,7 +2992,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_ATTRIBUTE,
-                    b"Misplaced ATTRIBUTE node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced ATTRIBUTE node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_TEXT_NODE as c_int => {
@@ -3012,7 +3000,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_TEXT,
-                    b"Misplaced TEXT node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced TEXT node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_CDATA_SECTION_NODE as c_int => {
@@ -3020,7 +3008,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_CDATA,
-                    b"Misplaced CDATA node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced CDATA node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_ENTITY_REF_NODE as c_int => {
@@ -3028,7 +3016,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_ENTITYREF,
-                    b"Misplaced ENTITYREF node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced ENTITYREF node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_ENTITY_NODE as c_int => {
@@ -3036,7 +3024,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_ENTITY,
-                    b"Misplaced ENTITY node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced ENTITY node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_PI_NODE as c_int => {
@@ -3044,7 +3032,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_PI,
-                    b"Misplaced PI node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced PI node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_COMMENT_NODE as c_int => {
@@ -3052,17 +3040,17 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_COMMENT,
-                    b"Misplaced COMMENT node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced COMMENT node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_DOCUMENT_NODE as c_int => {
                 if check == 0 {
-                    libc::fprintf(f, b"DOCUMENT\n\0".as_ptr() as *const c_char);
+                    libc::fprintf(f, c"DOCUMENT\n".as_ptr() as *const c_char);
                 }
             }
             t if t == XML_HTML_DOCUMENT_NODE as c_int => {
                 if check == 0 {
-                    libc::fprintf(f, b"HTML DOCUMENT\n\0".as_ptr() as *const c_char);
+                    libc::fprintf(f, c"HTML DOCUMENT\n".as_ptr() as *const c_char);
                 }
             }
             t if t == XML_DOCUMENT_TYPE_NODE as c_int => {
@@ -3070,7 +3058,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_DOCTYPE,
-                    b"Misplaced DOCTYPE node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced DOCTYPE node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_DOCUMENT_FRAG_NODE as c_int => {
@@ -3078,7 +3066,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_FRAGMENT,
-                    b"Misplaced FRAGMENT node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced FRAGMENT node\n".as_ptr() as *const c_char,
                 );
             }
             t if t == XML_NOTATION_NODE as c_int => {
@@ -3086,7 +3074,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_FOUND_NOTATION,
-                    b"Misplaced NOTATION node\n\0".as_ptr() as *const c_char,
+                    c"Misplaced NOTATION node\n".as_ptr() as *const c_char,
                 );
             }
             _ => {
@@ -3094,7 +3082,7 @@ unsafe fn dump_doc_head(f: *mut _IO_FILE, errors: &mut c_int, doc: *mut _xmlDoc,
                     f,
                     errors,
                     XML_CHECK_UNKNOWN_NODE,
-                    b"Unknown node type %d\n\0".as_ptr() as *const c_char,
+                    c"Unknown node type %d\n".as_ptr() as *const c_char,
                     (*doc).type_ as c_int,
                 );
             }
@@ -3116,62 +3104,54 @@ unsafe extern "C" fn dump_entity_callback(
     let f = data as *mut _IO_FILE;
     let mut errors: c_int = 0;
     unsafe {
-        libc::fprintf(f, b"%s : \0".as_ptr() as *const c_char, (*cur).name);
+        libc::fprintf(f, c"%s : ".as_ptr() as *const c_char, (*cur).name);
         match (*cur).etype {
             t if t == XML_INTERNAL_GENERAL_ENTITY as c_int => {
-                libc::fprintf(f, b"INTERNAL GENERAL, \0".as_ptr() as *const c_char);
+                libc::fprintf(f, c"INTERNAL GENERAL, ".as_ptr() as *const c_char);
             }
             t if t == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int => {
-                libc::fprintf(f, b"EXTERNAL PARSED, \0".as_ptr() as *const c_char);
+                libc::fprintf(f, c"EXTERNAL PARSED, ".as_ptr() as *const c_char);
             }
             t if t == XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int => {
-                libc::fprintf(f, b"EXTERNAL UNPARSED, \0".as_ptr() as *const c_char);
+                libc::fprintf(f, c"EXTERNAL UNPARSED, ".as_ptr() as *const c_char);
             }
             t if t == XML_INTERNAL_PARAMETER_ENTITY as c_int => {
-                libc::fprintf(f, b"INTERNAL PARAMETER, \0".as_ptr() as *const c_char);
+                libc::fprintf(f, c"INTERNAL PARAMETER, ".as_ptr() as *const c_char);
             }
             t if t == XML_EXTERNAL_PARAMETER_ENTITY as c_int => {
-                libc::fprintf(f, b"EXTERNAL PARAMETER, \0".as_ptr() as *const c_char);
+                libc::fprintf(f, c"EXTERNAL PARAMETER, ".as_ptr() as *const c_char);
             }
             _ => {
                 debug_err_int(
                     f,
                     &mut errors,
                     XML_CHECK_ENTITY_TYPE,
-                    b"Unknown entity type %d\n\0".as_ptr() as *const c_char,
+                    c"Unknown entity type %d\n".as_ptr() as *const c_char,
                     (*cur).etype as c_int,
                 );
             }
         }
         if !(*cur).ExternalID.is_null() {
-            libc::fprintf(
-                f,
-                b"ID \"%s\"\0".as_ptr() as *const c_char,
-                (*cur).ExternalID,
-            );
+            libc::fprintf(f, c"ID \"%s\"".as_ptr() as *const c_char, (*cur).ExternalID);
         }
         if !(*cur).SystemID.is_null() {
             libc::fprintf(
                 f,
-                b"SYSTEM \"%s\"\0".as_ptr() as *const c_char,
+                c"SYSTEM \"%s\"".as_ptr() as *const c_char,
                 (*cur).SystemID,
             );
         }
         if !(*cur).orig.is_null() {
-            libc::fprintf(
-                f,
-                b"\n orig \"%s\"\0".as_ptr() as *const c_char,
-                (*cur).orig,
-            );
+            libc::fprintf(f, c"\n orig \"%s\"".as_ptr() as *const c_char, (*cur).orig);
         }
         if (*cur).type_ != XML_ELEMENT_NODE as c_int && !(*cur).content.is_null() {
             libc::fprintf(
                 f,
-                b"\n content \"%s\"\0".as_ptr() as *const c_char,
+                c"\n content \"%s\"".as_ptr() as *const c_char,
                 (*cur).content,
             );
         }
-        libc::fprintf(f, b"\n\0".as_ptr() as *const c_char);
+        libc::fprintf(f, c"\n".as_ptr() as *const c_char);
     }
 }
 
@@ -3200,7 +3180,7 @@ pub unsafe extern "C" fn xmlDebugDumpEntities(output: *mut _IO_FILE, doc: *mut _
         {
             libc::fprintf(
                 output,
-                b"Entities in internal subset\n\0".as_ptr() as *const c_char,
+                c"Entities in internal subset\n".as_ptr() as *const c_char,
             );
             crate::xml::hash::hash_scan(
                 (*int_subset).entities as *mut crate::xml::hash::HashTable,
@@ -3210,7 +3190,7 @@ pub unsafe extern "C" fn xmlDebugDumpEntities(output: *mut _IO_FILE, doc: *mut _
         } else {
             libc::fprintf(
                 output,
-                b"No entities in internal subset\n\0".as_ptr() as *const c_char,
+                c"No entities in internal subset\n".as_ptr() as *const c_char,
             );
         }
         if !ext_subset.is_null()
@@ -3221,7 +3201,7 @@ pub unsafe extern "C" fn xmlDebugDumpEntities(output: *mut _IO_FILE, doc: *mut _
         {
             libc::fprintf(
                 output,
-                b"Entities in external subset\n\0".as_ptr() as *const c_char,
+                c"Entities in external subset\n".as_ptr() as *const c_char,
             );
             crate::xml::hash::hash_scan(
                 (*ext_subset).entities as *mut crate::xml::hash::HashTable,
@@ -3231,7 +3211,7 @@ pub unsafe extern "C" fn xmlDebugDumpEntities(output: *mut _IO_FILE, doc: *mut _
         } else {
             libc::fprintf(
                 output,
-                b"No entities in external subset\n\0".as_ptr() as *const c_char,
+                c"No entities in external subset\n".as_ptr() as *const c_char,
             );
         }
     }
@@ -3253,34 +3233,34 @@ pub unsafe extern "C" fn xmlDebugDumpDTD(output: *mut _IO_FILE, dtd: *mut _xmlDt
         output
     };
     if dtd.is_null() {
-        libc::fprintf(output, b"DTD is NULL\n\0".as_ptr() as *const c_char);
+        libc::fprintf(output, c"DTD is NULL\n".as_ptr() as *const c_char);
         return;
     }
     unsafe {
         // xmlCtxtDumpDtdNode: depth is 0 here, so no indentation.
         if !(*dtd).name.is_null() {
-            libc::fprintf(output, b"DTD(%s)\0".as_ptr() as *const c_char, (*dtd).name);
+            libc::fprintf(output, c"DTD(%s)".as_ptr() as *const c_char, (*dtd).name);
         } else {
-            libc::fprintf(output, b"DTD\0".as_ptr() as *const c_char);
+            libc::fprintf(output, c"DTD".as_ptr() as *const c_char);
         }
         if !(*dtd).ExternalID.is_null() {
             libc::fprintf(
                 output,
-                b", PUBLIC %s\0".as_ptr() as *const c_char,
+                c", PUBLIC %s".as_ptr() as *const c_char,
                 (*dtd).ExternalID,
             );
         }
         if !(*dtd).SystemID.is_null() {
             libc::fprintf(
                 output,
-                b", SYSTEM %s\0".as_ptr() as *const c_char,
+                c", SYSTEM %s".as_ptr() as *const c_char,
                 (*dtd).SystemID,
             );
         }
-        libc::fprintf(output, b"\n\0".as_ptr() as *const c_char);
+        libc::fprintf(output, c"\n".as_ptr() as *const c_char);
 
         if (*dtd).children.is_null() {
-            libc::fprintf(output, b"    DTD is empty\n\0".as_ptr() as *const c_char);
+            libc::fprintf(output, c"    DTD is empty\n".as_ptr() as *const c_char);
         } else {
             crate::xml::debug::xmlDebugDumpNodeList(output, (*dtd).children, 1);
         }
@@ -3298,16 +3278,13 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
             t if t == XML_ATTRIBUTE_NODE as c_int => {
                 libc::fprintf(
                     f,
-                    b"Error, ATTRIBUTE found here\n\0".as_ptr() as *const c_char,
+                    c"Error, ATTRIBUTE found here\n".as_ptr() as *const c_char,
                 );
                 generic_node_check(f, errors, node);
                 return;
             }
             t if t == XML_DOCUMENT_NODE as c_int || t == XML_HTML_DOCUMENT_NODE as c_int => {
-                libc::fprintf(
-                    f,
-                    b"Error, DOCUMENT found here\n\0".as_ptr() as *const c_char,
-                );
+                libc::fprintf(f, c"Error, DOCUMENT found here\n".as_ptr() as *const c_char);
                 generic_node_check(f, errors, node);
                 return;
             }
@@ -3317,7 +3294,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NOT_DTD,
-                        b"Node is not a DTD\0".as_ptr() as *const c_char,
+                        c"Node is not a DTD".as_ptr() as *const c_char,
                     );
                 }
                 generic_node_check(f, errors, node);
@@ -3330,7 +3307,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NOT_ELEM_DECL,
-                        b"Node is not an element declaration\0".as_ptr() as *const c_char,
+                        c"Node is not an element declaration".as_ptr() as *const c_char,
                     );
                 }
                 if (*elem).name.is_null() {
@@ -3338,7 +3315,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NO_NAME,
-                        b"Element declaration has no name\0".as_ptr() as *const c_char,
+                        c"Element declaration has no name".as_ptr() as *const c_char,
                     );
                 }
                 generic_node_check(f, errors, node);
@@ -3351,7 +3328,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NOT_ATTR_DECL,
-                        b"Node is not an attribute declaration\0".as_ptr() as *const c_char,
+                        c"Node is not an attribute declaration".as_ptr() as *const c_char,
                     );
                 }
                 if (*attr).name.is_null() {
@@ -3359,7 +3336,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NO_NAME,
-                        b"Node attribute declaration has no name\0".as_ptr() as *const c_char,
+                        c"Node attribute declaration has no name".as_ptr() as *const c_char,
                     );
                 }
                 if (*attr).elem.is_null() {
@@ -3367,8 +3344,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NO_ELEM,
-                        b"Node attribute declaration has no element name\0".as_ptr()
-                            as *const c_char,
+                        c"Node attribute declaration has no element name".as_ptr() as *const c_char,
                     );
                 }
                 generic_node_check(f, errors, node);
@@ -3381,7 +3357,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NOT_ENTITY_DECL,
-                        b"Node is not an entity declaration\0".as_ptr() as *const c_char,
+                        c"Node is not an entity declaration".as_ptr() as *const c_char,
                     );
                 }
                 if (*ent).name.is_null() {
@@ -3389,7 +3365,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NO_NAME,
-                        b"Entity declaration has no name\0".as_ptr() as *const c_char,
+                        c"Entity declaration has no name".as_ptr() as *const c_char,
                     );
                 }
                 generic_node_check(f, errors, node);
@@ -3402,7 +3378,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                         f,
                         errors,
                         XML_CHECK_NOT_NS_DECL,
-                        b"Node is not a namespace declaration\0".as_ptr() as *const c_char,
+                        c"Node is not a namespace declaration".as_ptr() as *const c_char,
                     );
                 }
                 if (*ns).href.is_null() {
@@ -3411,7 +3387,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                             f,
                             errors,
                             XML_CHECK_NO_HREF,
-                            b"Incomplete namespace %s href=NULL\n\0".as_ptr() as *const c_char,
+                            c"Incomplete namespace %s href=NULL\n".as_ptr() as *const c_char,
                             (*ns).prefix as *const c_char,
                         );
                     } else {
@@ -3419,7 +3395,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
                             f,
                             errors,
                             XML_CHECK_NO_HREF,
-                            b"Incomplete default namespace href=NULL\n\0".as_ptr() as *const c_char,
+                            c"Incomplete default namespace href=NULL\n".as_ptr() as *const c_char,
                         );
                     }
                 }
@@ -3432,7 +3408,7 @@ unsafe fn dump_one_node_check(f: *mut _IO_FILE, errors: &mut c_int, node: *mut _
         }
 
         if (*node).doc.is_null() {
-            libc::fprintf(f, b"PBM: doc == NULL !!!\n\0".as_ptr() as *const c_char);
+            libc::fprintf(f, c"PBM: doc == NULL !!!\n".as_ptr() as *const c_char);
         }
 
         /* entity-ref expansion is print-only upstream and inert in check

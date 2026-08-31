@@ -48,7 +48,12 @@
 //!   side table (the internal I/O layer does not yet consult them) and
 //!   `xmlRegisterHTTPPostCallbacks` is a no-op (no HTTP support).
 
-#![allow(missing_docs, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    missing_docs,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
 
 use core::ffi::c_void;
 use core::ptr;
@@ -76,15 +81,16 @@ use crate::xml::regex::{xmlRegExecPushString, xmlRegexpIsDeterministic, RegExecC
 
 /// Build the atom value exactly like upstream `xmlautomata.c` /
 /// `xmlregexp.c`: `token` if `token2` is NULL/empty, else `token|token2`.
-unsafe fn build_token2_value(
-    token: *const xmlChar,
-    token2: *const xmlChar,
-) -> Option<Vec<u8>> {
+unsafe fn build_token2_value(token: *const xmlChar, token2: *const xmlChar) -> Option<Vec<u8>> {
     if token.is_null() {
         return None;
     }
     let lenp = cstr_len(token);
-    let lenn = if token2.is_null() { 0 } else { cstr_len(token2) };
+    let lenn = if token2.is_null() {
+        0
+    } else {
+        cstr_len(token2)
+    };
     if lenn == 0 {
         let mut v = Vec::with_capacity(lenp + 1);
         v.extend_from_slice(unsafe { core::slice::from_raw_parts(token, lenp) });
@@ -101,6 +107,21 @@ unsafe fn build_token2_value(
 
 /// Upstream `int xmlAutomataIsDeterminist(xmlAutomata *am)` — delegates to
 /// the engine's `xmlAutomataIsDeterministic` (compiled regex determinism).
+///
+/// # SAFETY
+///
+/// - `am` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataIsDeterminist(am: XmlAutomataPtr) -> c_int {
     xmlAutomataIsDeterministic(am)
@@ -112,6 +133,25 @@ pub unsafe extern "C" fn xmlAutomataIsDeterminist(am: XmlAutomataPtr) -> c_int {
 /// state and returns it). The `token`/`token2` pair is folded into one
 /// atom value (`token|token2`) like upstream, then wired through the
 /// internal single-token transition builder.
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `token`, `token2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewTransition2(
     am: XmlAutomataPtr,
@@ -146,6 +186,25 @@ pub unsafe extern "C" fn xmlAutomataNewTransition2(
 /// Upstream creates a negated atom (`atom->neg = 1`, `valuep2 = "not X"`).
 /// The internal engine has no negated transitions, so this degrades to a
 /// plain `token|token2` transition (see module docs).
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `token`, `token2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewNegTrans(
     am: XmlAutomataPtr,
@@ -161,6 +220,25 @@ pub unsafe extern "C" fn xmlAutomataNewNegTrans(
 /// Upstream `xmlAutomataState * xmlAutomataNewCountTrans2(...)` — same
 /// atom-value folding as upstream, with the same argument validation
 /// (`min < 0`, `max < min`, `max < 1` → NULL).
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `token`, `token2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewCountTrans2(
     am: XmlAutomataPtr,
@@ -194,12 +272,39 @@ pub unsafe extern "C" fn xmlAutomataNewCountTrans2(
     } else {
         to
     };
-    xmlAutomataNewCountTrans(am, from, target, value.as_ptr() as *const c_char, data, min, max);
+    xmlAutomataNewCountTrans(
+        am,
+        from,
+        target,
+        value.as_ptr() as *const c_char,
+        data,
+        min,
+        max,
+    );
     target
 }
 
 /// Upstream `xmlAutomataState * xmlAutomataNewOnceTrans2(...)` — validation
 /// is `min < 1` or `max < min` → NULL (matches upstream `xmlregexp.c`).
+///
+/// # SAFETY
+///
+/// - `am`, `from`, `to`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `token`, `token2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAutomataNewOnceTrans2(
     am: XmlAutomataPtr,
@@ -233,7 +338,15 @@ pub unsafe extern "C" fn xmlAutomataNewOnceTrans2(
     } else {
         to
     };
-    xmlAutomataNewOnceTrans(am, from, target, value.as_ptr() as *const c_char, data, min, max);
+    xmlAutomataNewOnceTrans(
+        am,
+        from,
+        target,
+        value.as_ptr() as *const c_char,
+        data,
+        min,
+        max,
+    );
     target
 }
 
@@ -257,6 +370,25 @@ static EXEC_STATE: Lazy<Mutex<HashMap<usize, ExecState>>> =
 /// Concatenates `value`, the string separator (`|`) and `value2` into one
 /// token and pushes it (exactly the strategy of upstream `xmlregexp.c`).
 /// `value2 == NULL` behaves like `xmlRegExecPushString(exec, value, data)`.
+///
+/// # SAFETY
+///
+/// - `exec`, `_data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `value`, `value2` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegExecPushString2(
     exec: *mut RegExecCtxt,
@@ -269,7 +401,9 @@ pub unsafe extern "C" fn xmlRegExecPushString2(
     }
     if value2.is_null() || value.is_null() {
         let ret = xmlRegExecPushString(exec, value);
-        EXEC_STATE.lock().insert(exec as usize, ExecState { last_ret: ret });
+        EXEC_STATE
+            .lock()
+            .insert(exec as usize, ExecState { last_ret: ret });
         return ret;
     }
     let lenp = cstr_len(value);
@@ -280,7 +414,9 @@ pub unsafe extern "C" fn xmlRegExecPushString2(
     buf.extend_from_slice(unsafe { core::slice::from_raw_parts(value2, lenn) });
     buf.push(0);
     let ret = xmlRegExecPushString(exec, buf.as_ptr());
-    EXEC_STATE.lock().insert(exec as usize, ExecState { last_ret: ret });
+    EXEC_STATE
+        .lock()
+        .insert(exec as usize, ExecState { last_ret: ret });
     ret
 }
 
@@ -290,6 +426,21 @@ pub unsafe extern "C" fn xmlRegExecPushString2(
 /// the transition table needed to enumerate the acceptable next tokens, so
 /// this returns success with an empty value list; `terminal` reflects the
 /// last push result (1 if the last push completed a match).
+///
+/// # SAFETY
+///
+/// - `exec`, `nbval`, `nbneg`, `values`, `terminal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegExecNextValues(
     exec: *mut RegExecCtxt,
@@ -321,6 +472,25 @@ pub unsafe extern "C" fn xmlRegExecNextValues(
 /// Best-effort error-info extraction: reports no error string and an empty
 /// value list (see `xmlRegExecNextValues` for why the value enumeration is
 /// unavailable).
+///
+/// # SAFETY
+///
+/// - `exec`, `nbval`, `nbneg`, `values`, `terminal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `string` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegExecErrInfo(
     exec: *mut RegExecCtxt,
@@ -341,8 +511,23 @@ pub unsafe extern "C" fn xmlRegExecErrInfo(
 
 /// Upstream `int xmlRegexpIsDeterminist(xmlRegexp *comp)` — delegates to
 /// the engine's `xmlRegexpIsDeterministic`.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRegexpIsDeterminist(comp: *const XmlRegexp) -> c_int {
+pub const unsafe extern "C" fn xmlRegexpIsDeterminist(comp: *const XmlRegexp) -> c_int {
     xmlRegexpIsDeterministic(comp)
 }
 
@@ -353,6 +538,21 @@ pub unsafe extern "C" fn xmlRegexpIsDeterminist(comp: *const XmlRegexp) -> c_int
 /// Upstream `void xmlRegisterCharEncodingHandler(xmlCharEncodingHandler *handler)`.
 ///
 /// Registers the handler in the encoding subsystem's global table.
+///
+/// # SAFETY
+///
+/// - `handler` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterCharEncodingHandler(handler: *mut _xmlCharEncodingHandler) {
     encoding::add_encoding_handler(handler);
@@ -377,6 +577,7 @@ pub type xmlOutputOpenCallback =
 
 /// One registered input-callback set (upstream `xmlInputCallbackTable[]`).
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 struct InputCallbackSet {
     match_cb: Option<xmlInputMatchCallback>,
     open_cb: Option<xmlInputOpenCallback>,
@@ -386,6 +587,7 @@ struct InputCallbackSet {
 
 /// One registered output-callback set (upstream `xmlOutputCallbackTable[]`).
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 struct OutputCallbackSet {
     match_cb: Option<xmlOutputMatchCallback>,
     open_cb: Option<xmlOutputOpenCallback>,
@@ -393,32 +595,40 @@ struct OutputCallbackSet {
     close_cb: Option<xmlOutputCloseCallback>,
 }
 
+#[allow(dead_code)]
 static INPUT_CALLBACKS: Lazy<Mutex<Vec<InputCallbackSet>>> = Lazy::new(|| Mutex::new(Vec::new()));
+#[allow(dead_code)]
 static OUTPUT_CALLBACKS: Lazy<Mutex<Vec<OutputCallbackSet>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 /// The compiled-in default match callback (upstream `xmlIODefaultMatch`):
 /// matches every filename.
-unsafe extern "C" fn xml_io_default_match(_context: *mut c_void, _filename: *const c_char) -> c_int {
+#[allow(dead_code)]
+const unsafe extern "C" fn xml_io_default_match(
+    _context: *mut c_void,
+    _filename: *const c_char,
+) -> c_int {
     1
 }
 
-/// Upstream `int xmlRegisterInputCallbacks(...)` — returns the registered
-/// Upstream `int xmlRegisterOutputCallbacks(...)` — returns the registered
-/// Upstream `void xmlRegisterHTTPPostCallbacks(void)`.
-///
-/// No-op: this build has no HTTP transport (upstream gates it behind
+// Upstream `int xmlRegisterInputCallbacks(...)` — returns the registered
+// Upstream `int xmlRegisterOutputCallbacks(...)` — returns the registered
+// Upstream `void xmlRegisterHTTPPostCallbacks(void)`.
+//
+// No-op: this build has no HTTP transport (upstream gates it behind
 // ═══════════════════════════════════════════════════════════════════════════════
 // 4. xmlPattern* / xmlStream* — pattern compiler, matcher and stream engine
 //    (port of archaeology/libxml2-git/pattern.c)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Opaque pattern handle type (`pattern.h`: `typedef struct _xmlPattern xmlPattern`).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xmlPattern {
     _opaque: [u8; 0],
 }
 
 /// Opaque stream-context handle type (`pattern.h`: `_xmlStreamCtxt`).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xmlStreamCtxt {
     _opaque: [u8; 0],
@@ -429,6 +639,7 @@ pub type xmlStreamCtxtPtr = *mut _xmlStreamCtxt;
 
 // ── Pattern flags (pattern.h + private pattern.c bits) ────────────────────
 
+#[allow(dead_code)]
 const XML_PATTERN_DEFAULT: c_int = 0;
 const XML_PATTERN_XPATH: c_int = 1 << 0;
 const XML_PATTERN_XSSEL: c_int = 1 << 1;
@@ -530,7 +741,7 @@ static NEXT_STREAM_KEY: Lazy<Mutex<usize>> = Lazy::new(|| Mutex::new(1));
 // ── Small string helpers ───────────────────────────────────────────────────
 
 /// Length of a null-terminated xmlChar string.
-unsafe fn cstr_len(s: *const xmlChar) -> usize {
+const unsafe fn cstr_len(s: *const xmlChar) -> usize {
     if s.is_null() {
         return 0;
     }
@@ -542,7 +753,7 @@ unsafe fn cstr_len(s: *const xmlChar) -> usize {
 }
 
 /// Compare an owned byte slice with a null-terminated C string.
-unsafe fn cstr_eq_opt(s: Option<&[u8]>, cstr: *const xmlChar) -> bool {
+const unsafe fn cstr_eq_opt(s: Option<&[u8]>, cstr: *const xmlChar) -> bool {
     match s {
         None => cstr.is_null(),
         Some(bytes) => {
@@ -575,9 +786,9 @@ unsafe fn pat_match(comp: &CompiledPattern, mut node: *mut _xmlNode) -> c_int {
     let mut states: Vec<(isize, *mut _xmlNode)> = Vec::new();
 
     loop {
-        // The step-processing loop; `break 'process` performs the C code's
+        // The step-processing block; `break 'process` performs the C code's
         // `goto rollback`.
-        'process: loop {
+        'process: {
             while (i as usize) < comp.steps.len() {
                 let op = comp.steps[i as usize].op;
                 match op {
@@ -612,12 +823,11 @@ unsafe fn pat_match(comp: &CompiledPattern, mut node: *mut _xmlNode) -> c_int {
                                 break 'process;
                             }
                             // Namespace test.
-                            let ns_href: *const xmlChar =
-                                if unsafe { (*node).ns }.is_null() {
-                                    ptr::null()
-                                } else {
-                                    unsafe { (*(*node).ns).href }
-                                };
+                            let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
+                                ptr::null()
+                            } else {
+                                unsafe { (*(*node).ns).href }
+                            };
                             if ns_href.is_null() {
                                 if value2.is_some() {
                                     break 'process;
@@ -634,89 +844,50 @@ unsafe fn pat_match(comp: &CompiledPattern, mut node: *mut _xmlNode) -> c_int {
                         i += 1;
                         continue;
                     }
-                XML_OP_CHILD => {
-                    let t = unsafe { (*node).type_ };
-                    if t != XML_ELEMENT_NODE
-                        && t != XML_DOCUMENT_NODE
-                        && t != XML_HTML_DOCUMENT_NODE
-                    {
-                        break 'process;
-                    }
-                    let value = comp.steps[i as usize].value.clone();
-                    let mut lst = unsafe { (*node).children };
-                    if let Some(value) = value {
-                        while !lst.is_null() {
-                            let lt = unsafe { (*lst).type_ };
-                            let ln = unsafe { (*lst).name };
-                            if lt == XML_ELEMENT_NODE
-                                && !ln.is_null()
-                                && value[0] == *ln
-                                && cstr_eq_opt(Some(&value), ln)
-                            {
-                                break;
+                    XML_OP_CHILD => {
+                        let t = unsafe { (*node).type_ };
+                        if t != XML_ELEMENT_NODE
+                            && t != XML_DOCUMENT_NODE
+                            && t != XML_HTML_DOCUMENT_NODE
+                        {
+                            break 'process;
+                        }
+                        let value = comp.steps[i as usize].value.clone();
+                        let mut lst = unsafe { (*node).children };
+                        if let Some(value) = value {
+                            while !lst.is_null() {
+                                let lt = unsafe { (*lst).type_ };
+                                let ln = unsafe { (*lst).name };
+                                if lt == XML_ELEMENT_NODE
+                                    && !ln.is_null()
+                                    && value[0] == *ln
+                                    && cstr_eq_opt(Some(&value), ln)
+                                {
+                                    break;
+                                }
+                                lst = unsafe { (*lst).next };
                             }
-                            lst = unsafe { (*lst).next };
+                            if !lst.is_null() {
+                                i += 1;
+                                continue;
+                            }
                         }
-                        if !lst.is_null() {
-                            i += 1;
-                            continue;
-                        }
-                    }
-                    break 'process;
-                }
-                XML_OP_ATTR => {
-                    if unsafe { (*node).type_ } != XML_ATTRIBUTE_NODE {
                         break 'process;
                     }
-                    let value = comp.steps[i as usize].value.clone();
-                    let value2 = comp.steps[i as usize].value2.clone();
-                    if let Some(value) = value {
-                        let nm = unsafe { (*node).name };
-                        if nm.is_null() || value[0] != *nm {
+                    XML_OP_ATTR => {
+                        if unsafe { (*node).type_ } != XML_ATTRIBUTE_NODE {
                             break 'process;
                         }
-                        if !cstr_eq_opt(Some(&value), nm) {
-                            break 'process;
-                        }
-                    }
-                    let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
-                        ptr::null()
-                    } else {
-                        unsafe { (*(*node).ns).href }
-                    };
-                    if ns_href.is_null() {
-                        if value2.is_some() {
-                            break 'process;
-                        }
-                    } else if value2.is_some() {
-                        if !cstr_eq_opt(value2.as_deref(), ns_href) {
-                            break 'process;
-                        }
-                    }
-                    i += 1;
-                    continue;
-                }
-                XML_OP_PARENT => {
-                    let t = unsafe { (*node).type_ };
-                    if t == XML_DOCUMENT_NODE
-                        || t == XML_HTML_DOCUMENT_NODE
-                        || t == XML_NAMESPACE_DECL
-                    {
-                        break 'process;
-                    }
-                    node = unsafe { (*node).parent };
-                    if node.is_null() {
-                        break 'process;
-                    }
-                    let value = comp.steps[i as usize].value.clone();
-                    let value2 = comp.steps[i as usize].value2.clone();
-                    if let Some(value) = value {
-                        let nm = unsafe { (*node).name };
-                        if nm.is_null() || value[0] != *nm {
-                            break 'process;
-                        }
-                        if !cstr_eq_opt(Some(&value), nm) {
-                            break 'process;
+                        let value = comp.steps[i as usize].value.clone();
+                        let value2 = comp.steps[i as usize].value2.clone();
+                        if let Some(value) = value {
+                            let nm = unsafe { (*node).name };
+                            if nm.is_null() || value[0] != *nm {
+                                break 'process;
+                            }
+                            if !cstr_eq_opt(Some(&value), nm) {
+                                break 'process;
+                            }
                         }
                         let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
                             ptr::null()
@@ -727,145 +898,183 @@ unsafe fn pat_match(comp: &CompiledPattern, mut node: *mut _xmlNode) -> c_int {
                             if value2.is_some() {
                                 break 'process;
                             }
-                        } else if unsafe { *ns_href } != 0 {
-                            if value2.is_none() {
-                                break 'process;
-                            }
-                            if !cstr_eq_opt(value2.as_deref(), ns_href) {
-                                break 'process;
-                            }
+                        } else if value2.is_some() && !cstr_eq_opt(value2.as_deref(), ns_href) {
+                            break 'process;
                         }
-                    }
-                    i += 1;
-                    continue;
-                }
-                XML_OP_ANCESTOR => {
-                    let mut value = comp.steps[i as usize].value.clone();
-                    let mut value2 = comp.steps[i as usize].value2.clone();
-                    let mut step_op = comp.steps[i as usize].op;
-                    if value.is_none() {
                         i += 1;
-                        if (i as usize) >= comp.steps.len() {
-                            break 'process;
-                        }
-                        step_op = comp.steps[i as usize].op;
-                        if step_op == XML_OP_ROOT {
-                            return 1;
-                        }
-                        if step_op != XML_OP_ELEM {
-                            break 'process;
-                        }
-                        value = comp.steps[i as usize].value.clone();
-                        value2 = comp.steps[i as usize].value2.clone();
-                        if value.is_none() {
-                            return -1;
-                        }
+                        continue;
                     }
-                    if node.is_null() {
-                        break 'process;
-                    }
-                    let t = unsafe { (*node).type_ };
-                    if t == XML_DOCUMENT_NODE
-                        || t == XML_HTML_DOCUMENT_NODE
-                        || t == XML_NAMESPACE_DECL
-                    {
-                        break 'process;
-                    }
-                    node = unsafe { (*node).parent };
-                    let value = match value {
-                        Some(v) => v,
-                        None => break 'process,
-                    };
-                    while !node.is_null() {
-                        let nt = unsafe { (*node).type_ };
-                        let nn = unsafe { (*node).name };
-                        if nt == XML_ELEMENT_NODE
-                            && !nn.is_null()
-                            && value[0] == *nn
-                            && cstr_eq_opt(Some(&value), nn)
+                    XML_OP_PARENT => {
+                        let t = unsafe { (*node).type_ };
+                        if t == XML_DOCUMENT_NODE
+                            || t == XML_HTML_DOCUMENT_NODE
+                            || t == XML_NAMESPACE_DECL
                         {
-                            // Namespace test.
+                            break 'process;
+                        }
+                        node = unsafe { (*node).parent };
+                        if node.is_null() {
+                            break 'process;
+                        }
+                        let value = comp.steps[i as usize].value.clone();
+                        let value2 = comp.steps[i as usize].value2.clone();
+                        if let Some(value) = value {
+                            let nm = unsafe { (*node).name };
+                            if nm.is_null() || value[0] != *nm {
+                                break 'process;
+                            }
+                            if !cstr_eq_opt(Some(&value), nm) {
+                                break 'process;
+                            }
                             let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
                                 ptr::null()
                             } else {
                                 unsafe { (*(*node).ns).href }
                             };
                             if ns_href.is_null() {
-                                if value2.is_none() {
-                                    break;
+                                if value2.is_some() {
+                                    break 'process;
                                 }
                             } else if unsafe { *ns_href } != 0 {
-                                if value2.is_some() && cstr_eq_opt(value2.as_deref(), ns_href) {
-                                    break;
+                                if value2.is_none() {
+                                    break 'process;
+                                }
+                                if !cstr_eq_opt(value2.as_deref(), ns_href) {
+                                    break 'process;
                                 }
                             }
                         }
-                        node = unsafe { (*node).parent };
+                        i += 1;
+                        continue;
                     }
-                    if node.is_null() {
-                        break 'process;
-                    }
-                    // Prepare a potential rollback from this ancestor.
-                    if step_op == XML_OP_ANCESTOR {
-                        states.push((i, node));
-                    } else {
-                        states.push((i - 1, node));
-                    }
-                    i += 1;
-                    continue;
-                }
-                XML_OP_NS => {
-                    if unsafe { (*node).type_ } != XML_ELEMENT_NODE {
-                        break 'process;
-                    }
-                    let value = comp.steps[i as usize].value.clone();
-                    let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
-                        ptr::null()
-                    } else {
-                        unsafe { (*(*node).ns).href }
-                    };
-                    if ns_href.is_null() {
-                        if value.is_some() {
-                            break 'process;
-                        }
-                    } else if unsafe { *ns_href } != 0 {
+                    XML_OP_ANCESTOR => {
+                        let mut value = comp.steps[i as usize].value.clone();
+                        let mut value2 = comp.steps[i as usize].value2.clone();
+                        let mut step_op = comp.steps[i as usize].op;
                         if value.is_none() {
+                            i += 1;
+                            if (i as usize) >= comp.steps.len() {
+                                break 'process;
+                            }
+                            step_op = comp.steps[i as usize].op;
+                            if step_op == XML_OP_ROOT {
+                                return 1;
+                            }
+                            if step_op != XML_OP_ELEM {
+                                break 'process;
+                            }
+                            value = comp.steps[i as usize].value.clone();
+                            value2 = comp.steps[i as usize].value2.clone();
+                            if value.is_none() {
+                                return -1;
+                            }
+                        }
+                        if node.is_null() {
                             break 'process;
                         }
-                        if !cstr_eq_opt(value.as_deref(), ns_href) {
+                        let t = unsafe { (*node).type_ };
+                        if t == XML_DOCUMENT_NODE
+                            || t == XML_HTML_DOCUMENT_NODE
+                            || t == XML_NAMESPACE_DECL
+                        {
                             break 'process;
                         }
+                        node = unsafe { (*node).parent };
+                        let value = match value {
+                            Some(v) => v,
+                            None => break 'process,
+                        };
+                        while !node.is_null() {
+                            let nt = unsafe { (*node).type_ };
+                            let nn = unsafe { (*node).name };
+                            if nt == XML_ELEMENT_NODE
+                                && !nn.is_null()
+                                && value[0] == *nn
+                                && cstr_eq_opt(Some(&value), nn)
+                            {
+                                // Namespace test.
+                                let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
+                                    ptr::null()
+                                } else {
+                                    unsafe { (*(*node).ns).href }
+                                };
+                                if ns_href.is_null() {
+                                    if value2.is_none() {
+                                        break;
+                                    }
+                                } else if unsafe { *ns_href } != 0
+                                    && value2.is_some()
+                                    && cstr_eq_opt(value2.as_deref(), ns_href)
+                                {
+                                    break;
+                                }
+                            }
+                            node = unsafe { (*node).parent };
+                        }
+                        if node.is_null() {
+                            break 'process;
+                        }
+                        // Prepare a potential rollback from this ancestor.
+                        if step_op == XML_OP_ANCESTOR {
+                            states.push((i, node));
+                        } else {
+                            states.push((i - 1, node));
+                        }
+                        i += 1;
+                        continue;
                     }
-                    i += 1;
-                    continue;
-                }
-                XML_OP_ALL => {
-                    if unsafe { (*node).type_ } != XML_ELEMENT_NODE {
-                        break 'process;
+                    XML_OP_NS => {
+                        if unsafe { (*node).type_ } != XML_ELEMENT_NODE {
+                            break 'process;
+                        }
+                        let value = comp.steps[i as usize].value.clone();
+                        let ns_href: *const xmlChar = if unsafe { (*node).ns }.is_null() {
+                            ptr::null()
+                        } else {
+                            unsafe { (*(*node).ns).href }
+                        };
+                        if ns_href.is_null() {
+                            if value.is_some() {
+                                break 'process;
+                            }
+                        } else if unsafe { *ns_href } != 0 {
+                            if value.is_none() {
+                                break 'process;
+                            }
+                            if !cstr_eq_opt(value.as_deref(), ns_href) {
+                                break 'process;
+                            }
+                        }
+                        i += 1;
+                        continue;
                     }
-                    i += 1;
-                    continue;
-                }
-                _ => {
-                    // Unknown op: treat like upstream's default (no case) —
-                    // falls to the for-loop increment.
-                    i += 1;
+                    XML_OP_ALL => {
+                        if unsafe { (*node).type_ } != XML_ELEMENT_NODE {
+                            break 'process;
+                        }
+                        i += 1;
+                        continue;
+                    }
+                    _ => {
+                        // Unknown op: treat like upstream's default (no case) —
+                        // falls to the for-loop increment.
+                        i += 1;
+                    }
                 }
             }
+            // fell out of the step loop: found.
+            return 1;
         }
-        // fell out of the step loop: found.
-        return 1;
-    }
-    // rollback: try the saved ancestor state, if any.
-    match states.pop() {
-        None => return 0,
-        Some((si, sn)) => {
-            i = si;
-            node = sn;
-            // Continue the outer loop to restart matching from the saved
-            // ancestor state (upstream `goto restart`).
+        // rollback: try the saved ancestor state, if any.
+        match states.pop() {
+            None => return 0,
+            Some((si, sn)) => {
+                i = si;
+                node = sn;
+                // Continue the outer loop to restart matching from the saved
+                // ancestor state (upstream `goto restart`).
+            }
         }
-    }
     }
 }
 
@@ -880,23 +1089,23 @@ struct PatCtxt<'a> {
     namespaces: Vec<(Vec<u8>, Vec<u8>)>,
 }
 
-fn is_blank(c: u8) -> bool {
+const fn is_blank(c: u8) -> bool {
     c == 0x20 || c == 0x9 || c == 0xA || c == 0xD
 }
 
-fn is_name_start(c: u8) -> bool {
+const fn is_name_start(c: u8) -> bool {
     c >= 0x80 || c == b'_' || c == b':' || c.is_ascii_alphabetic()
 }
 
-fn is_name_char(c: u8) -> bool {
+const fn is_name_char(c: u8) -> bool {
     c >= 0x80 || c.is_ascii_alphanumeric() || c == b'.' || c == b'-' || c == b'_' || c == b':'
 }
 
-fn is_ncname_start(c: u8) -> bool {
+const fn is_ncname_start(c: u8) -> bool {
     c >= 0x80 || c == b'_' || c.is_ascii_alphabetic()
 }
 
-fn is_ncname_char(c: u8) -> bool {
+const fn is_ncname_char(c: u8) -> bool {
     c >= 0x80 || c.is_ascii_alphanumeric() || c == b'.' || c == b'-' || c == b'_'
 }
 
@@ -910,11 +1119,11 @@ impl<'a> PatCtxt<'a> {
     }
 
     fn is_blank_cur(&self) -> bool {
-        self.cur_byte().map_or(false, is_blank)
+        self.cur_byte().is_some_and(is_blank)
     }
 
     fn skip_blanks(&mut self) {
-        while self.cur_byte().map_or(false, is_blank) {
+        while self.cur_byte().is_some_and(is_blank) {
             self.cur += 1;
         }
     }
@@ -924,11 +1133,11 @@ impl<'a> PatCtxt<'a> {
         self.skip_blanks();
         let start = self.cur;
         let mut cur = start;
-        if self.base.get(cur).map_or(false, |&c| !is_name_start(c)) {
+        if self.base.get(cur).is_some_and(|&c| !is_name_start(c)) {
             return None;
         }
         cur += 1;
-        while self.base.get(cur).map_or(false, |&c| is_name_char(c)) {
+        while self.base.get(cur).is_some_and(|&c| is_name_char(c)) {
             cur += 1;
         }
         if cur == start {
@@ -944,11 +1153,11 @@ impl<'a> PatCtxt<'a> {
         self.skip_blanks();
         let start = self.cur;
         let mut cur = start;
-        if self.base.get(cur).map_or(false, |&c| !is_ncname_start(c)) {
+        if self.base.get(cur).is_some_and(|&c| !is_ncname_start(c)) {
             return None;
         }
         cur += 1;
-        while self.base.get(cur).map_or(false, |&c| is_ncname_char(c)) {
+        while self.base.get(cur).is_some_and(|&c| is_ncname_char(c)) {
             cur += 1;
         }
         if cur == start {
@@ -1174,25 +1383,19 @@ fn compile_step_pattern(ctxt: &mut PatCtxt, comp: &mut CompiledPattern) {
                 value: Some(name),
                 value2: None,
             });
-            return;
         } else if name == b"attribute" {
             if comp.flags & XML_PATTERN_XSSEL != 0 {
                 ctxt.error = 1;
                 return;
             }
             compile_attribute_test(ctxt, comp);
-            if ctxt.error != 0 {
-                return;
-            }
-            return;
+            if ctxt.error != 0 {}
         } else {
             ctxt.error = 1;
-            return;
         }
     } else if ctxt.cur_byte() == Some(b'*') {
         // Unreachable with a scanned name in practice: `foo*` is invalid.
         ctxt.error = 1;
-        return;
     } else {
         comp.steps.push(StepOp {
             op: XML_OP_ELEM,
@@ -1455,7 +1658,13 @@ fn stream_compile(comp: &mut CompiledPattern) -> Result<Option<StreamComp>, ()> 
                 root = 1;
             }
             XML_OP_NS => {
-                s = stream_comp_add_step(&mut stream, None, step.value.clone(), XML_ELEMENT_NODE, flags);
+                s = stream_comp_add_step(
+                    &mut stream,
+                    None,
+                    step.value.clone(),
+                    XML_ELEMENT_NODE,
+                    flags,
+                );
                 if s < 0 {
                     return Err(());
                 }
@@ -1541,12 +1750,10 @@ fn stream_compile(comp: &mut CompiledPattern) -> Result<Option<StreamComp>, ()> 
                 flags = 0;
             }
             XML_OP_PARENT => {}
-            XML_OP_ANCESTOR => {
-                if (flags & XML_STREAM_STEP_DESC) == 0 {
-                    flags |= XML_STREAM_STEP_DESC;
-                    if (stream.flags & XML_STREAM_DESC) == 0 {
-                        stream.flags |= XML_STREAM_DESC;
-                    }
+            XML_OP_ANCESTOR if (flags & XML_STREAM_STEP_DESC) == 0 => {
+                flags |= XML_STREAM_STEP_DESC;
+                if (stream.flags & XML_STREAM_DESC) == 0 {
+                    stream.flags |= XML_STREAM_DESC;
                 }
             }
             _ => {}
@@ -1653,10 +1860,8 @@ unsafe fn pattern_compile_safe_impl(
                 if t & PAT_FROM_CUR != 0 {
                     streamable = 0;
                 }
-            } else if pat_type == PAT_FROM_CUR {
-                if t & PAT_FROM_ROOT != 0 {
-                    streamable = 0;
-                }
+            } else if pat_type == PAT_FROM_CUR && t & PAT_FROM_ROOT != 0 {
+                streamable = 0;
             }
         }
         if streamable != 0 {
@@ -1699,6 +1904,25 @@ unsafe fn pattern_compile_safe_impl(
 
 /// Upstream `xmlPattern * xmlPatterncompile(const xmlChar *pattern,
 /// xmlDict *dict, int flags, const xmlChar **namespaces)`.
+///
+/// # SAFETY
+///
+/// - `dict` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `pattern`, `namespaces` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatterncompile(
     pattern: *const xmlChar,
@@ -1716,6 +1940,25 @@ pub unsafe extern "C" fn xmlPatterncompile(
 
 /// Upstream `int xmlPatternCompileSafe(const xmlChar *pattern, xmlDict *dict,
 /// int flags, const xmlChar **namespaces, xmlPattern **patternOut)`.
+///
+/// # SAFETY
+///
+/// - `dict`, `patternOut` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `pattern`, `namespaces` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternCompileSafe(
     pattern: *const xmlChar,
@@ -1728,6 +1971,21 @@ pub unsafe extern "C" fn xmlPatternCompileSafe(
 }
 
 /// Upstream `int xmlPatternMatch(xmlPattern *comp, xmlNode *node)`.
+///
+/// # SAFETY
+///
+/// - `comp`, `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternMatch(comp: xmlPatternPtr, node: *mut _xmlNode) -> c_int {
     if comp.is_null() || node.is_null() {
@@ -1748,12 +2006,42 @@ pub unsafe extern "C" fn xmlPatternMatch(comp: xmlPatternPtr, node: *mut _xmlNod
 }
 
 /// Upstream `void xmlFreePattern(xmlPattern *comp)`.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreePattern(comp: xmlPatternPtr) {
     xmlFreePatternList(comp);
 }
 
 /// Upstream `void xmlFreePatternList(xmlPattern *comp)`.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreePatternList(comp: xmlPatternPtr) {
     if comp.is_null() {
@@ -1763,6 +2051,21 @@ pub unsafe extern "C" fn xmlFreePatternList(comp: xmlPatternPtr) {
 }
 
 /// Upstream `int xmlPatternStreamable(xmlPattern *comp)`.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternStreamable(comp: xmlPatternPtr) -> c_int {
     if comp.is_null() {
@@ -1780,6 +2083,21 @@ pub unsafe extern "C" fn xmlPatternStreamable(comp: xmlPatternPtr) -> c_int {
 
 /// Upstream `int xmlPatternMaxDepth(xmlPattern *comp)` — -2 if unlimited
 /// (uses `//`), else the maximum step count, -1 on error.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternMaxDepth(comp: xmlPatternPtr) -> c_int {
     if comp.is_null() {
@@ -1808,6 +2126,21 @@ pub unsafe extern "C" fn xmlPatternMaxDepth(comp: xmlPatternPtr) -> c_int {
 
 /// Upstream `int xmlPatternMinDepth(xmlPattern *comp)` — the minimum depth
 /// reachable by the pattern (0 means `/` or `.` are part of the set).
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternMinDepth(comp: xmlPatternPtr) -> c_int {
     if comp.is_null() {
@@ -1833,6 +2166,21 @@ pub unsafe extern "C" fn xmlPatternMinDepth(comp: xmlPatternPtr) -> c_int {
 }
 
 /// Upstream `int xmlPatternFromRoot(xmlPattern *comp)`.
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternFromRoot(comp: xmlPatternPtr) -> c_int {
     if comp.is_null() {
@@ -1857,6 +2205,21 @@ pub unsafe extern "C" fn xmlPatternFromRoot(comp: xmlPatternPtr) -> c_int {
 
 /// Port of `xmlNewStreamCtxt` + chain building done by
 /// `xmlPatternGetStreamCtxt` (pattern.c).
+///
+/// # SAFETY
+///
+/// - `comp` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPatternGetStreamCtxt(comp: xmlPatternPtr) -> xmlStreamCtxtPtr {
     if comp.is_null() {
@@ -1931,6 +2294,21 @@ fn stream_ctxt_free_chain(head: Option<usize>) {
 }
 
 /// Upstream `void xmlFreeStreamCtxt(xmlStreamCtxt *stream)`.
+///
+/// # SAFETY
+///
+/// - `stream` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFreeStreamCtxt(stream: xmlStreamCtxtPtr) {
     if stream.is_null() {
@@ -1975,17 +2353,16 @@ unsafe fn stream_push_internal(
             st.level = 0;
             st.block_level = -1;
             if st.comp.flags & XML_STREAM_FROM_ROOT != 0 {
-                if st.comp.nb_step == 0 {
-                    ret = 1;
-                } else if st.comp.nb_step == 1
-                    && st.comp.steps[0].node_type == XML_STREAM_ANY_NODE
-                    && st.comp.steps[0].flags & XML_STREAM_STEP_DESC != 0
+                if st.comp.nb_step == 0
+                    || (st.comp.nb_step == 1
+                        && st.comp.steps[0].node_type == XML_STREAM_ANY_NODE
+                        && st.comp.steps[0].flags & XML_STREAM_STEP_DESC != 0)
                 {
                     ret = 1;
-                } else if st.comp.steps[0].flags & XML_STREAM_STEP_ROOT != 0 {
-                    if stream_ctxt_add_state(st, 0, 0) < 0 {
-                        return -1;
-                    }
+                } else if st.comp.steps[0].flags & XML_STREAM_STEP_ROOT != 0
+                    && stream_ctxt_add_state(st, 0, 0) < 0
+                {
+                    return -1;
                 }
             }
             cur = next;
@@ -2121,9 +2498,9 @@ unsafe fn stream_push_internal(
                     continue;
                 }
                 true
-            } else if desc {
-                true
-            } else if st.level == 2 && st.flags & (XML_PATTERN_XSSEL | XML_PATTERN_XSFIELD) != 0 {
+            } else if desc
+                || (st.level == 2 && st.flags & (XML_PATTERN_XSSEL | XML_PATTERN_XSFIELD) != 0)
+            {
                 true
             } else {
                 cur = next;
@@ -2134,14 +2511,11 @@ unsafe fn stream_push_internal(
         };
 
         if do_compare {
-            if step0.node_type != node_type {
-                if node_type == XML_ATTRIBUTE_NODE {
-                    cur = next;
-                    continue;
-                } else if step0.node_type != XML_STREAM_ANY_NODE {
-                    cur = next;
-                    continue;
-                }
+            if step0.node_type != node_type
+                && (node_type == XML_ATTRIBUTE_NODE || step0.node_type != XML_STREAM_ANY_NODE)
+            {
+                cur = next;
+                continue;
             }
             let mut match_ = false;
             if step0.node_type == XML_STREAM_ANY_NODE {
@@ -2183,6 +2557,25 @@ unsafe fn stream_push_internal(
 
 /// Upstream `int xmlStreamPush(xmlStreamCtxt *stream, const xmlChar *name,
 /// const xmlChar *ns)`.
+///
+/// # SAFETY
+///
+/// - `stream` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `ns` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStreamPush(
     stream: xmlStreamCtxtPtr,
@@ -2197,6 +2590,25 @@ pub unsafe extern "C" fn xmlStreamPush(
 
 /// Upstream `int xmlStreamPushAttr(xmlStreamCtxt *stream, const xmlChar *name,
 /// const xmlChar *ns)`.
+///
+/// # SAFETY
+///
+/// - `stream` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `ns` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStreamPushAttr(
     stream: xmlStreamCtxtPtr,
@@ -2211,6 +2623,25 @@ pub unsafe extern "C" fn xmlStreamPushAttr(
 
 /// Upstream `int xmlStreamPushNode(xmlStreamCtxt *stream, const xmlChar *name,
 /// const xmlChar *ns, int nodeType)`.
+///
+/// # SAFETY
+///
+/// - `stream` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `ns` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStreamPushNode(
     stream: xmlStreamCtxtPtr,
@@ -2225,6 +2656,21 @@ pub unsafe extern "C" fn xmlStreamPushNode(
 }
 
 /// Upstream `int xmlStreamPop(xmlStreamCtxt *stream)`.
+///
+/// # SAFETY
+///
+/// - `stream` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStreamPop(stream: xmlStreamCtxtPtr) -> c_int {
     if stream.is_null() {
@@ -2264,6 +2710,21 @@ pub unsafe extern "C" fn xmlStreamPop(stream: xmlStreamCtxtPtr) -> c_int {
 
 /// Upstream `int xmlStreamWantsAnyNode(xmlStreamCtxt *streamCtxt)` — 1 if the
 /// pattern needs text/cdata/comment/PI nodes pushed as well.
+///
+/// # SAFETY
+///
+/// - `streamCtxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStreamWantsAnyNode(streamCtxt: xmlStreamCtxtPtr) -> c_int {
     if streamCtxt.is_null() {

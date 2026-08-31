@@ -29,19 +29,14 @@ use std::os::raw::{c_char, c_double, c_int, c_uint, c_void};
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::exports_buffer::xmlBufferCCat;
 use crate::abi::exports_html::{htmlNewDoc, htmlNewDocNoDtD};
-use crate::abi::exports_string::{xmlStrstr, xmlUTF8Strloc, xmlUTF8Strpos, xmlUTF8Strsize};
 use crate::abi::exports_uri::xmlBuildURI;
 use crate::abi::exports_xml2::{
-    xmlBufferAdd, xmlBufferCat, xmlBufferContent, xmlBufferCreate, xmlBufferFree,
-    xmlCreateIntSubset, xmlDocGetRootElement, xmlNewComment, xmlNewDoc, xmlStrEqual, xmlStrcat,
-    xmlStrcmp, xmlStrdup, xmlStrlen, xmlStrncmp, xmlStrndup, xmlXPathCastStringToNumber,
-    xmlXPathCastToString, xmlXPathCmpNodes, xmlXPathEvalExpression, xmlXPathFreeObject,
-    xmlXPathNodeSetCreate,
+    xmlBufferCat, xmlBufferContent, xmlBufferCreate, xmlBufferFree, xmlCreateIntSubset,
+    xmlDocGetRootElement, xmlNewDoc, xmlStrEqual, xmlStrdup, xmlStrndup,
+    xmlXPathCastStringToNumber, xmlXPathCastToString, xmlXPathCmpNodes, xmlXPathFreeObject,
 };
 use crate::abi::exports_xslt_apply::_xsltCompMatch;
-use crate::abi::exports_xslt_avt::{
-    xsltEvalAttrValueTemplate, xsltGetQNameURI, xsltGetUTF8Char as xmlGetUTF8Char,
-};
+use crate::abi::exports_xslt_avt::{xsltEvalAttrValueTemplate, xsltGetQNameURI};
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -109,6 +104,7 @@ unsafe fn emit_generic_error(msg: &[u8]) {
 }
 
 /// Compare two NUL-terminated xmlChar strings for equality.
+#[allow(dead_code)]
 unsafe fn xml_chars_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
     if a.is_null() || b.is_null() {
         return false;
@@ -168,7 +164,7 @@ unsafe fn xslt_get_utf8_char_z(utf: *const xmlChar, len: *mut c_int) -> c_int {
 }
 
 /// `xsltIsDigitZero` (numbers.c): is `ch` a Unicode digit-zero character?
-unsafe fn xslt_is_digit_zero(ch: c_int) -> c_int {
+const unsafe fn xslt_is_digit_zero(ch: c_int) -> c_int {
     match ch {
         0x0030 | 0x0660 | 0x06f0 | 0x0966 | 0x09e6 | 0x0a66 | 0x0ae6 | 0x0b66 | 0x0c66 | 0x0ce6
         | 0x0d66 | 0x0e50 | 0x0ed0 | 0x0f20 => 1,
@@ -177,7 +173,7 @@ unsafe fn xslt_is_digit_zero(ch: c_int) -> c_int {
 }
 
 /// `IS_DIGIT_ONE(x)` = `xsltIsDigitZero(x - 1)` (numbers.c).
-unsafe fn xslt_is_digit_one(ch: c_int) -> c_int {
+const unsafe fn xslt_is_digit_one(ch: c_int) -> c_int {
     xslt_is_digit_zero(ch - 1)
 }
 
@@ -261,20 +257,34 @@ unsafe fn xslt_test_comp_match_count(
 ///     struct _xsltCompMatch *fromPat;
 /// };
 /// ```
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltNumberData {
+    /// The `level` attribute (`"single"`, `"multiple"`, or `"any"`).
     pub level: *const xmlChar,
+    /// The `count` attribute: match pattern selecting the nodes to count.
     pub count: *const xmlChar,
+    /// The `from` attribute: match pattern bounding the counting range.
     pub from: *const xmlChar,
+    /// The `value` attribute: XPath expression yielding the number directly.
     pub value: *const xmlChar,
+    /// The `format` attribute: number-formatting picture string.
     pub format: *const xmlChar,
+    /// Whether a `format` attribute was specified.
     pub has_format: c_int,
+    /// Digit-grouping size (0 when no grouping is requested).
     pub digitsPerGroup: c_int,
+    /// The grouping separator character (0 when none).
     pub groupingCharacter: c_int,
+    /// UTF-8 byte length of `groupingCharacter`.
     pub groupingCharacterLen: c_int,
+    /// The document in which the number is evaluated.
     pub doc: *mut _xmlDoc,
+    /// The context node for the evaluation.
     pub node: *mut _xmlNode,
+    /// Compiled form of the `count` pattern.
     pub countPat: *mut _xsltCompMatch,
+    /// Compiled form of the `from` pattern.
     pub fromPat: *mut _xsltCompMatch,
 }
 
@@ -311,7 +321,7 @@ unsafe fn xslt_copy_char_multi_byte(mut out: *mut xmlChar, val: c_int) -> c_int 
         return 0;
     }
     if val >= 0x80 {
-        let mut savedout = out;
+        let savedout = out;
         let mut bits: c_int;
         if val < 0x800 {
             *out = ((val >> 6) | 0xC0) as xmlChar;
@@ -484,7 +494,7 @@ unsafe fn xslt_number_format_roman(
             s.to_ascii_lowercase()
         }
     };
-    let mut ccat_hi = |s: &[u8], n: &mut f64, dec: f64| {
+    let ccat_hi = |s: &[u8], n: &mut f64, dec: f64| {
         xmlBufferCCat(buffer, hi(s).as_ptr() as *const c_char);
         *n -= dec;
     };
@@ -665,7 +675,7 @@ unsafe fn xslt_number_format_insert_numbers(
                 ptr::null_mut(),
                 ptr::null_mut(),
                 ptr::null_mut(),
-                b"xsl-number : negative value\n\0".as_ptr() as *const c_char,
+                c"xsl-number : negative value\n".as_ptr() as *const c_char,
             );
             /* Recover by treating negative values as zero. */
             number = 0.0;
@@ -696,17 +706,17 @@ unsafe fn xslt_number_format_insert_numbers(
             if !token.separator.is_null() {
                 xmlBufferCat(buffer, token.separator);
             } else {
-                xmlBufferCCat(buffer, b".\0".as_ptr() as *const c_char);
+                xmlBufferCCat(buffer, c".".as_ptr() as *const c_char);
             }
         }
 
         let inf = xmlXPathIsInf(number as c_double);
         if inf == -1 {
-            xmlBufferCCat(buffer, b"-Infinity\0".as_ptr() as *const c_char);
+            xmlBufferCCat(buffer, c"-Infinity".as_ptr() as *const c_char);
         } else if inf == 1 {
-            xmlBufferCCat(buffer, b"Infinity\0".as_ptr() as *const c_char);
+            xmlBufferCCat(buffer, c"Infinity".as_ptr() as *const c_char);
         } else if xmlXPathIsNaN(number as c_double) != 0 {
-            xmlBufferCCat(buffer, b"NaN\0".as_ptr() as *const c_char);
+            xmlBufferCCat(buffer, c"NaN".as_ptr() as *const c_char);
         } else {
             match token.token {
                 /* 'A' */
@@ -875,9 +885,9 @@ unsafe fn xslt_number_format_get_value(
     let mut amount: c_int = 0;
     let pattern = xmlBufferCreate();
     if !pattern.is_null() {
-        xmlBufferCCat(pattern, b"number(\0".as_ptr() as *const c_char);
+        xmlBufferCCat(pattern, c"number(".as_ptr() as *const c_char);
         xmlBufferCat(pattern, value);
-        xmlBufferCCat(pattern, b")\0".as_ptr() as *const c_char);
+        xmlBufferCCat(pattern, c")".as_ptr() as *const c_char);
         let old_node = (*context).node;
         (*context).node = node;
         let obj = crate::xslt::transform::eval_xpath(context, xmlBufferContent(pattern));
@@ -1411,7 +1421,7 @@ pub unsafe extern "C" fn xsltNumberFormat(
         let format = xsltEvalAttrValueTemplate(
             ctxt,
             (*data).node,
-            b"format\0".as_ptr() as *const xmlChar,
+            c"format".as_ptr() as *const xmlChar,
             XSLT_NAMESPACE_URI.as_ptr() as *const xmlChar,
         );
         if format.is_null() {
@@ -1438,7 +1448,7 @@ pub unsafe extern "C" fn xsltNumberFormat(
             xslt_number_format_insert_numbers(data, &mut number, 1, &mut tokens, output);
         }
     } else if !(*data).level.is_null() {
-        if xmlStrEqual((*data).level, b"single\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual((*data).level, c"single".as_ptr() as *const xmlChar) != 0 {
             let mut number: f64 = 0.0;
             let amount = xslt_number_format_get_multiple_level(
                 ctxt,
@@ -1451,7 +1461,7 @@ pub unsafe extern "C" fn xsltNumberFormat(
             if amount == 1 {
                 xslt_number_format_insert_numbers(data, &mut number, 1, &mut tokens, output);
             }
-        } else if xmlStrEqual((*data).level, b"multiple\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual((*data).level, c"multiple".as_ptr() as *const xmlChar) != 0 {
             let mut numarray: [f64; 1024] = [0.0; 1024];
             let max = (numarray.len()) as c_int;
             let amount = xslt_number_format_get_multiple_level(
@@ -1471,7 +1481,7 @@ pub unsafe extern "C" fn xsltNumberFormat(
                     output,
                 );
             }
-        } else if xmlStrEqual((*data).level, b"any\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual((*data).level, c"any".as_ptr() as *const xmlChar) != 0 {
             let mut number: f64 = 0.0;
             let amount = xslt_number_format_get_any_level(
                 ctxt,
@@ -1701,7 +1711,7 @@ pub unsafe extern "C" fn xsltSort(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"xsl:sort : compilation failed\n\0".as_ptr() as *const c_char,
+            c"xsl:sort : compilation failed\n".as_ptr() as *const c_char,
         );
         return;
     }
@@ -1709,7 +1719,7 @@ pub unsafe extern "C" fn xsltSort(
         ctxt,
         ptr::null_mut(),
         inst,
-        b"xsl:sort : improper use this should not be reached\n\0".as_ptr() as *const c_char,
+        c"xsl:sort : improper use this should not be reached\n".as_ptr() as *const c_char,
     );
 }
 
@@ -2100,7 +2110,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     let mut redirect_write_append: c_int = 0;
 
     let inst_name = (*inst).name;
-    if xmlStrEqual(inst_name, b"output\0".as_ptr() as *const xmlChar) != 0 {
+    if xmlStrEqual(inst_name, c"output".as_ptr() as *const xmlChar) != 0 {
         /*
          * The element "output" is in the namespace XSLT_SAXON_NAMESPACE
          * (http://icl.com/saxon); the @file attribute is in no namespace.
@@ -2108,22 +2118,22 @@ pub unsafe extern "C" fn xsltDocumentElem(
         URL = xsltEvalAttrValueTemplate(
             ctxt,
             inst,
-            b"file\0".as_ptr() as *const xmlChar,
+            c"file".as_ptr() as *const xmlChar,
             XSLT_SAXON_NAMESPACE.as_ptr() as *const xmlChar,
         );
         if URL.is_null() {
             URL = xsltEvalAttrValueTemplate(
                 ctxt,
                 inst,
-                b"href\0".as_ptr() as *const xmlChar,
+                c"href".as_ptr() as *const xmlChar,
                 XSLT_SAXON_NAMESPACE.as_ptr() as *const xmlChar,
             );
         }
-    } else if xmlStrEqual(inst_name, b"write\0".as_ptr() as *const xmlChar) != 0 {
+    } else if xmlStrEqual(inst_name, c"write".as_ptr() as *const xmlChar) != 0 {
         URL = xsltEvalAttrValueTemplate(
             ctxt,
             inst,
-            b"select\0".as_ptr() as *const xmlChar,
+            c"select".as_ptr() as *const xmlChar,
             XSLT_XALAN_NAMESPACE.as_ptr() as *const xmlChar,
         );
         if !URL.is_null() {
@@ -2147,7 +2157,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             URL = xsltEvalAttrValueTemplate(
                 ctxt,
                 inst,
-                b"file\0".as_ptr() as *const xmlChar,
+                c"file".as_ptr() as *const xmlChar,
                 XSLT_XALAN_NAMESPACE.as_ptr() as *const xmlChar,
             );
         }
@@ -2155,17 +2165,13 @@ pub unsafe extern "C" fn xsltDocumentElem(
             URL = xsltEvalAttrValueTemplate(
                 ctxt,
                 inst,
-                b"href\0".as_ptr() as *const xmlChar,
+                c"href".as_ptr() as *const xmlChar,
                 XSLT_XALAN_NAMESPACE.as_ptr() as *const xmlChar,
             );
         }
-    } else if xmlStrEqual(inst_name, b"document\0".as_ptr() as *const xmlChar) != 0 {
-        URL = xsltEvalAttrValueTemplate(
-            ctxt,
-            inst,
-            b"href\0".as_ptr() as *const xmlChar,
-            ptr::null(),
-        );
+    } else if xmlStrEqual(inst_name, c"document".as_ptr() as *const xmlChar) != 0 {
+        URL =
+            xsltEvalAttrValueTemplate(ctxt, inst, c"href".as_ptr() as *const xmlChar, ptr::null());
     }
 
     if URL.is_null() {
@@ -2173,7 +2179,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"xsltDocumentElem: href/URI-Reference not found\n\0".as_ptr() as *const c_char,
+            c"xsltDocumentElem: href/URI-Reference not found\n".as_ptr() as *const c_char,
         );
         return;
     }
@@ -2183,7 +2189,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
      */
     filename = xmlBuildURI(URL as *const c_char, (*ctxt).outputFile);
     if filename.is_null() {
-        let esc_url = xmlURIEscapeStr(URL, b":/.?,\0".as_ptr() as *const xmlChar);
+        let esc_url = xmlURIEscapeStr(URL, c":/.?,".as_ptr() as *const xmlChar);
         if !esc_url.is_null() {
             filename = xmlBuildURI(esc_url as *const c_char, (*ctxt).outputFile);
             xmlFreeImpl(esc_url as *mut c_void);
@@ -2194,7 +2200,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"xsltDocumentElem: URL computation failed\n\0".as_ptr() as *const c_char,
+            c"xsltDocumentElem: URL computation failed\n".as_ptr() as *const c_char,
         );
         xmlFreeImpl(URL as *mut c_void);
         return;
@@ -2218,7 +2224,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                     ctxt,
                     ptr::null_mut(),
                     inst,
-                    b"xsltDocumentElem: write rights denied\n\0".as_ptr() as *const c_char,
+                    c"xsltDocumentElem: write rights denied\n".as_ptr() as *const c_char,
                 );
             }
             xmlFreeImpl(URL as *mut c_void);
@@ -2239,7 +2245,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"xsltDocumentElem: out of memory\n\0".as_ptr() as *const c_char,
+            c"xsltDocumentElem: out of memory\n".as_ptr() as *const c_char,
         );
         goto_error(
             ctxt,
@@ -2262,7 +2268,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"version\0".as_ptr() as *const xmlChar,
+        c"version".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -2274,7 +2280,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"encoding\0".as_ptr() as *const xmlChar,
+        c"encoding".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -2286,7 +2292,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"method\0".as_ptr() as *const xmlChar,
+        c"method".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -2295,9 +2301,9 @@ pub unsafe extern "C" fn xsltDocumentElem(
         if method_name.is_null() {
             (*style).errors += 1;
         } else if uri.is_null() {
-            if xmlStrEqual(method_name, b"xml\0".as_ptr() as *const xmlChar) != 0
-                || xmlStrEqual(method_name, b"html\0".as_ptr() as *const xmlChar) != 0
-                || xmlStrEqual(method_name, b"text\0".as_ptr() as *const xmlChar) != 0
+            if xmlStrEqual(method_name, c"xml".as_ptr() as *const xmlChar) != 0
+                || xmlStrEqual(method_name, c"html".as_ptr() as *const xmlChar) != 0
+                || xmlStrEqual(method_name, c"text".as_ptr() as *const xmlChar) != 0
             {
                 (*style).method = method_name;
             } else {
@@ -2305,7 +2311,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                     ctxt,
                     ptr::null_mut(),
                     inst,
-                    b"invalid value for method\n\0".as_ptr() as *const c_char,
+                    c"invalid value for method\n".as_ptr() as *const c_char,
                 );
                 (*style).warnings += 1;
                 xmlFreeImpl(method_name as *mut c_void);
@@ -2318,7 +2324,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"doctype-system\0".as_ptr() as *const xmlChar,
+        c"doctype-system".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -2330,7 +2336,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"doctype-public\0".as_ptr() as *const xmlChar,
+        c"doctype-public".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
@@ -2342,20 +2348,20 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"standalone\0".as_ptr() as *const xmlChar,
+        c"standalone".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).standalone = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).standalone = 0;
         } else {
             crate::xslt::errors::xsltTransformError(
                 ctxt,
                 ptr::null_mut(),
                 inst,
-                b"invalid value for standalone\n\0".as_ptr() as *const c_char,
+                c"invalid value for standalone\n".as_ptr() as *const c_char,
             );
             (*style).warnings += 1;
         }
@@ -2364,20 +2370,20 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"indent\0".as_ptr() as *const xmlChar,
+        c"indent".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).indent = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).indent = 0;
         } else {
             crate::xslt::errors::xsltTransformError(
                 ctxt,
                 ptr::null_mut(),
                 inst,
-                b"invalid value for indent\n\0".as_ptr() as *const c_char,
+                c"invalid value for indent\n".as_ptr() as *const c_char,
             );
             (*style).warnings += 1;
         }
@@ -2386,20 +2392,20 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"omit-xml-declaration\0".as_ptr() as *const xmlChar,
+        c"omit-xml-declaration".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0 {
+        if xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0 {
             (*style).omitXmlDeclaration = 1;
-        } else if xmlStrEqual(prop, b"no\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(prop, c"no".as_ptr() as *const xmlChar) != 0 {
             (*style).omitXmlDeclaration = 0;
         } else {
             crate::xslt::errors::xsltTransformError(
                 ctxt,
                 ptr::null_mut(),
                 inst,
-                b"invalid value for omit-xml-declaration\n\0".as_ptr() as *const c_char,
+                c"invalid value for omit-xml-declaration\n".as_ptr() as *const c_char,
             );
             (*style).warnings += 1;
         }
@@ -2414,7 +2420,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     let elements = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"cdata-section-elements\0".as_ptr() as *const xmlChar,
+        c"cdata-section-elements".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !elements.is_null() {
@@ -2441,7 +2447,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                         (*style).stripSpaces as *mut crate::xml::hash::HashTable,
                         el,
                         uri,
-                        b"cdata\0".as_ptr() as *mut c_void,
+                        c"cdata".as_ptr() as *mut c_void,
                     );
                     xmlFreeImpl(el as *mut c_void);
                 }
@@ -2460,24 +2466,24 @@ pub unsafe extern "C" fn xsltDocumentElem(
     let version: *const xmlChar = (*style).version;
     let encoding: *const xmlChar = (*style).encoding;
 
-    if !method.is_null() && xmlStrEqual(method, b"xml\0".as_ptr() as *const xmlChar) == 0 {
-        if xmlStrEqual(method, b"html\0".as_ptr() as *const xmlChar) != 0 {
+    if !method.is_null() && xmlStrEqual(method, c"xml".as_ptr() as *const xmlChar) == 0 {
+        if xmlStrEqual(method, c"html".as_ptr() as *const xmlChar) != 0 {
             (*ctxt).type_ = XSLT_OUTPUT_HTML;
             if !doctype_public.is_null() || !doctype_system.is_null() {
                 res = htmlNewDoc(doctype_system, doctype_public);
             } else {
                 res = htmlNewDocNoDtD(doctype_system, doctype_public);
             }
-        } else if xmlStrEqual(method, b"xhtml\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(method, c"xhtml".as_ptr() as *const xmlChar) != 0 {
             crate::xslt::errors::xsltTransformError(
                 ctxt,
                 ptr::null_mut(),
                 inst,
-                b"xsltDocumentElem: unsupported method xhtml\n\0".as_ptr() as *const c_char,
+                c"xsltDocumentElem: unsupported method xhtml\n".as_ptr() as *const c_char,
             );
             (*ctxt).type_ = XSLT_OUTPUT_HTML;
             res = htmlNewDocNoDtD(doctype_system, doctype_public);
-        } else if xmlStrEqual(method, b"text\0".as_ptr() as *const xmlChar) != 0 {
+        } else if xmlStrEqual(method, c"text".as_ptr() as *const xmlChar) != 0 {
             (*ctxt).type_ = XSLT_OUTPUT_TEXT;
             res = xmlNewDoc(version);
         } else {
@@ -2485,7 +2491,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
                 ctxt,
                 ptr::null_mut(),
                 inst,
-                b"xsltDocumentElem: unsupported method\n\0".as_ptr() as *const c_char,
+                c"xsltDocumentElem: unsupported method\n".as_ptr() as *const c_char,
             );
             goto_error(
                 ctxt,
@@ -2534,25 +2540,20 @@ pub unsafe extern "C" fn xsltDocumentElem(
     if !root.is_null() {
         let mut doctype: *const xmlChar = ptr::null();
 
-        if !(*root).ns.is_null() && !(*(*root).ns).prefix.is_null() {
-            if !(*ctxt).dict.is_null() {
-                /* xmlDictQLookup: intern "prefix:name" in the dict. */
-                let plen = crate::xml::string::xml_strlen((*(*root).ns).prefix);
-                let nlen = crate::xml::string::xml_strlen((*root).name);
-                let mut qn = Vec::with_capacity(plen + 1 + nlen);
-                qn.extend_from_slice(core::slice::from_raw_parts(
-                    (*(*root).ns).prefix as *const u8,
-                    plen,
-                ));
-                qn.push(b':');
-                qn.extend_from_slice(core::slice::from_raw_parts((*root).name as *const u8, nlen));
-                qn.push(0);
-                doctype = crate::xml::dictionary::dict_lookup(
-                    (*ctxt).dict as *mut crate::xml::dictionary::Dict,
-                    qn.as_ptr() as *const xmlChar,
-                    (plen + 1 + nlen) as c_int,
-                );
-            }
+        if !(*root).ns.is_null() && !(*(*root).ns).prefix.is_null() && !(*ctxt).dict.is_null() {
+            /* xmlDictQLookup: intern "prefix:name" in the dict. */
+            let plen = crate::xml::string::xml_strlen((*(*root).ns).prefix);
+            let nlen = crate::xml::string::xml_strlen((*root).name);
+            let mut qn = Vec::with_capacity(plen + 1 + nlen);
+            qn.extend_from_slice(core::slice::from_raw_parts((*(*root).ns).prefix, plen));
+            qn.push(b':');
+            qn.extend_from_slice(core::slice::from_raw_parts((*root).name, nlen));
+            qn.push(0);
+            doctype = crate::xml::dictionary::dict_lookup(
+                (*ctxt).dict as *mut crate::xml::dictionary::Dict,
+                qn.as_ptr() as *const xmlChar,
+                (plen + 1 + nlen) as c_int,
+            );
         }
         if doctype.is_null() {
             doctype = (*root).name;
@@ -2565,7 +2566,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             && (*root).ns.is_null()
             && libc::strcasecmp(
                 (*root).name as *const c_char,
-                b"html\0".as_ptr() as *const c_char,
+                c"html".as_ptr() as *const c_char,
             ) == 0
         {
             let mut tmp = (*res).children;
@@ -2589,10 +2590,10 @@ pub unsafe extern "C" fn xsltDocumentElem(
                 }
             }
         }
-        if (*ctxt).type_ == XSLT_OUTPUT_XML {
-            if !doctype_public.is_null() || !doctype_system.is_null() {
-                (*res).intSubset = xmlCreateIntSubset(res, doctype, doctype_public, doctype_system);
-            }
+        if (*ctxt).type_ == XSLT_OUTPUT_XML
+            && (!doctype_public.is_null() || !doctype_system.is_null())
+        {
+            (*res).intSubset = xmlCreateIntSubset(res, doctype, doctype_public, doctype_system);
         }
     }
 
@@ -2604,12 +2605,12 @@ pub unsafe extern "C" fn xsltDocumentElem(
     prop = xsltEvalAttrValueTemplate(
         ctxt,
         inst,
-        b"append\0".as_ptr() as *const xmlChar,
+        c"append".as_ptr() as *const xmlChar,
         ptr::null(),
     );
     if !prop.is_null() {
-        if xmlStrEqual(prop, b"true\0".as_ptr() as *const xmlChar) != 0
-            || xmlStrEqual(prop, b"yes\0".as_ptr() as *const xmlChar) != 0
+        if xmlStrEqual(prop, c"true".as_ptr() as *const xmlChar) != 0
+            || xmlStrEqual(prop, c"yes".as_ptr() as *const xmlChar) != 0
         {
             (*style).omitXmlDeclaration = 1;
             redirect_write_append = 1;
@@ -2620,7 +2621,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
     }
 
     if redirect_write_append != 0 {
-        let f = libc::fopen(filename as *const c_char, b"ab\0".as_ptr() as *const c_char);
+        let f = libc::fopen(filename as *const c_char, c"ab".as_ptr() as *const c_char);
         if f.is_null() {
             ret = -1;
         } else {
@@ -2640,7 +2641,7 @@ pub unsafe extern "C" fn xsltDocumentElem(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"xsltDocumentElem: unable to save result\n\0".as_ptr() as *const c_char,
+            c"xsltDocumentElem: unable to save result\n".as_ptr() as *const c_char,
         );
     }
 

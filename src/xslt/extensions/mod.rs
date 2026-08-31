@@ -14,27 +14,36 @@
 //! Registration is per-context; functions are looked up at call time via
 //! the context's XPath function lookup mechanism.
 
-use crate::abi::allocator::xmlFree;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 use std::os::raw::c_int;
 use std::ptr;
 
 /// A registered extension function.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltExtFunction {
+    /// Next entry in the linked list of registered functions.
     pub next: *mut _xsltExtFunction,
+    /// Local name of the function (e.g. `"node-set"`).
     pub name: *mut xmlChar,
+    /// Namespace URI of the extension (e.g. `http://exslt.org/common`).
     pub ns: *mut xmlChar,
+    /// The extension function implementation pointer.
     pub func: *mut c_void,
 }
 
 /// A registered extension element.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltExtElement {
+    /// Next entry in the linked list of registered elements.
     pub next: *mut _xsltExtElement,
+    /// Local name of the element.
     pub name: *mut xmlChar,
+    /// Namespace URI of the extension element.
     pub ns: *mut xmlChar,
+    /// The extension element transform function.
     pub func: *mut c_void,
 }
 
@@ -255,22 +264,22 @@ mod tests {
             assert_eq!(
                 xsltRegisterExtFunction(
                     ctxt,
-                    b"myfunc\0".as_ptr() as *const xmlChar,
-                    b"http://example.com/ext\0".as_ptr() as *const xmlChar,
+                    c"myfunc".as_ptr() as *const xmlChar,
+                    c"http://example.com/ext".as_ptr() as *const xmlChar,
                     Some(dummy),
                 ),
                 0
             );
             let found = xsltFindExtFunction(
                 ctxt,
-                b"myfunc\0".as_ptr() as *const xmlChar,
-                b"http://example.com/ext\0".as_ptr() as *const xmlChar,
+                c"myfunc".as_ptr() as *const xmlChar,
+                c"http://example.com/ext".as_ptr() as *const xmlChar,
             );
             assert_eq!(found, dummy as *mut c_void);
             let not_found = xsltFindExtFunction(
                 ctxt,
-                b"other\0".as_ptr() as *const xmlChar,
-                b"http://example.com/ext\0".as_ptr() as *const xmlChar,
+                c"other".as_ptr() as *const xmlChar,
+                c"http://example.com/ext".as_ptr() as *const xmlChar,
             );
             assert!(not_found.is_null());
             xsltFreeExts(ctxt);

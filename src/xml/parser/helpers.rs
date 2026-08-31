@@ -314,7 +314,7 @@ pub(crate) unsafe fn input_from_io(
     // SAFETY: The callbacks are used immediately to read all data. The caller
     // guarantees the function pointers and context are valid for the duration
     // of this call.
-    match unsafe { InputBuffer::from_callback(read, close, ioctx) } {
+    match InputBuffer::from_callback(read, close, ioctx) {
         Ok(buf) => buf,
         Err(_) => {
             // Return an empty buffer on failure.
@@ -452,7 +452,7 @@ pub(crate) unsafe fn parse_chunk(
     };
 
     // Take ownership of the stashed InputBuffer (if any).
-    let stored_buf: Option<Box<InputBuffer>> = unsafe {
+    let stored_buf: Option<Box<InputBuffer>> = {
         let ptr = take_stashed_input_buffer(ctxt);
         if ptr.is_null() {
             None

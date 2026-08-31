@@ -1,11 +1,11 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod debug_test {
-    use crate::abi::structs::*;
+
     use crate::xml::parser::helpers;
     use crate::xml::parser::input::InputBuffer;
     use crate::xml::parser::input::InputStack;
     use crate::xml::parser::tokenizer::{XmlToken, XmlTokenizer};
-    use core::ptr;
 
     #[test]
     fn test_tokenizer_simple() {
@@ -84,7 +84,7 @@ mod debug_test {
 
             // And with a stashed parse input present, private stays intact:
             let ctxt = helpers::create_parser_ctxt();
-            let input = helpers::input_from_memory(b"<a/>\0".as_ptr() as *const i8, 5);
+            let input = helpers::input_from_memory(c"<a/>".as_ptr(), 5);
             helpers::setup_parser_input(ctxt, input);
             crate::abi::exports_parserint::xmlCtxtSetPrivate(
                 ctxt,

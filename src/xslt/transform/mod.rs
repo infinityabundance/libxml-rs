@@ -35,9 +35,7 @@ use std::ffi::c_void;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
-use super::compiler::{
-    get_element_name, get_element_ns, is_xslt_element, is_xslt_namespace, XSLT_NAMESPACE,
-};
+use super::compiler::{get_element_name, get_element_ns, is_xslt_element, is_xslt_namespace};
 
 /// Maximum template recursion depth (matches upstream XSLT_MAX_DEPTH).
 pub const XSLT_MAX_DEPTH: c_int = 3000;
@@ -47,6 +45,7 @@ pub const XSLT_MAX_INSERT_DEPTH: c_int = 50;
 
 /// State flags for the transform context.
 pub const XSLT_STATE_OK: c_int = 0;
+/// The transform context is in an error state after a fatal error.
 pub const XSLT_STATE_ERROR: c_int = 1;
 
 /// The transformation was stopped (e.g. xsl:message terminate="yes").
@@ -77,6 +76,16 @@ pub unsafe extern "C" fn xsltSetXIncludeDefault(xinclude: c_int) {
 }
 
 /// Get the current XInclude default (upstream `xsltGetXIncludeDefault`).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xsltGetXIncludeDefault() -> c_int {
     unsafe { XSLT_XINCLUDE_DEFAULT }
@@ -279,7 +288,7 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
         return ptr::null_mut();
     }
     (*result).type_ = XML_DOCUMENT_NODE as c_int;
-    (*result).version = crate::xml::string::xml_strdup(b"1.0\0".as_ptr() as *const xmlChar);
+    (*result).version = crate::xml::string::xml_strdup(c"1.0".as_ptr() as *const xmlChar);
     (*result).doc = result;
     // Copy output settings from the stylesheet. These are heap-copied so
     // that free_doc (which frees version/encoding with xmlFree) is safe
@@ -449,6 +458,7 @@ pub unsafe extern "C" fn xsltRunStylesheet(
 /// # SAFETY
 ///
 /// - All pointers must be valid.
+#[allow(dead_code)]
 pub(crate) unsafe fn apply_root_template(
     ctxt: *mut _xsltTransformContext,
     doc: *mut _xmlDoc,
@@ -792,13 +802,13 @@ fn str_to_cstr(s: &str) -> Vec<u8> {
 ///
 /// - All pointers must be valid.
 unsafe fn process_exsl_document(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let href = get_prop(inst, b"href\0".as_ptr() as *const xmlChar);
+    let href = get_prop(inst, c"href".as_ptr() as *const xmlChar);
     if href.is_null() {
         crate::xslt::errors::xsltTransformError(
             ctxt,
             (*ctxt).style,
             inst,
-            b"exsl:document: missing href attribute\0".as_ptr() as *const c_char,
+            c"exsl:document: missing href attribute".as_ptr() as *const c_char,
         );
         return;
     }
@@ -825,7 +835,7 @@ unsafe fn process_exsl_document(ctxt: *mut _xsltTransformContext, inst: *mut _xm
         let cpath = str_to_cstr(&path);
         let out = libc::fopen(
             cpath.as_ptr() as *const c_char,
-            b"wb\0".as_ptr() as *const c_char,
+            c"wb".as_ptr() as *const c_char,
         );
         if !out.is_null() {
             let buf = crate::xml::io::buf_create(-1);
@@ -1006,9 +1016,9 @@ pub(crate) unsafe fn process_apply_templates(
     inst: *mut _xmlNode,
 ) {
     // mode attribute.
-    let mode = get_prop(inst, b"mode\0".as_ptr() as *const xmlChar);
+    let mode = get_prop(inst, c"mode".as_ptr() as *const xmlChar);
     // select attribute (default: all children).
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     // with-param children.
     let params = collect_with_params(ctxt, inst);
 
@@ -1051,8 +1061,7 @@ pub(crate) unsafe fn process_apply_templates(
         }
         // Sort if requested.
         if !sort.is_null() {
-            let mut sorted =
-                libc::calloc(1, core::mem::size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
+            let sorted = libc::calloc(1, core::mem::size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
             if !sorted.is_null() {
                 (*sorted).nodeNr = node_ptrs.len() as c_int;
                 (*sorted).nodeMax = node_ptrs.len() as c_int;
@@ -1061,7 +1070,7 @@ pub(crate) unsafe fn process_apply_templates(
                 (*sorted).nodeTab = tab;
                 for (idx, n) in node_ptrs.iter().enumerate() {
                     if !tab.is_null() {
-                        *tab.offset(idx as isize) = *n;
+                        *tab.add(idx) = *n;
                     }
                 }
                 crate::xslt::sorting::xsltSortNodeSet(ctxt, sorted, sort);
@@ -1255,11 +1264,11 @@ pub(crate) unsafe fn evaluate_with_param(
     ctxt: *mut _xsltTransformContext,
     inst: *mut _xmlNode,
 ) -> *mut _xsltStackElem {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return ptr::null_mut();
     }
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     let param = libc::calloc(1, core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
     if param.is_null() {
         libc::free(name as *mut libc::c_void);
@@ -1330,8 +1339,9 @@ pub(crate) unsafe fn eval_content_fragment(
 /// # SAFETY
 ///
 /// - All pointers must be valid.
+#[allow(clippy::while_immutable_condition)]
 pub(crate) unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return;
     }
@@ -1466,7 +1476,7 @@ pub(crate) unsafe fn process_apply_imports(ctxt: *mut _xsltTransformContext, ins
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     if select.is_null() {
         return;
     }
@@ -1509,7 +1519,7 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
 
     if !sort.is_null() {
         // Build a temporary node-set and sort it.
-        let mut sorted = libc::calloc(1, core::mem::size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
+        let sorted = libc::calloc(1, core::mem::size_of::<_xmlNodeSet>()) as *mut _xmlNodeSet;
         if !sorted.is_null() {
             (*sorted).nodeNr = node_ptrs.len() as c_int;
             (*sorted).nodeMax = node_ptrs.len() as c_int;
@@ -1518,7 +1528,7 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
             (*sorted).nodeTab = tab;
             for (idx, n) in node_ptrs.iter().enumerate() {
                 if !tab.is_null() {
-                    *tab.offset(idx as isize) = *n;
+                    *tab.add(idx) = *n;
                 }
             }
             crate::xslt::sorting::xsltSortNodeSet(ctxt, sorted, sort);
@@ -1607,7 +1617,7 @@ unsafe fn find_sort_children(
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_value_of(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     if select.is_null() {
         return;
     }
@@ -1634,7 +1644,7 @@ pub(crate) unsafe fn process_value_of(ctxt: *mut _xsltTransformContext, inst: *m
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_copy_of(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     if select.is_null() {
         return;
     }
@@ -1882,13 +1892,11 @@ pub(crate) unsafe fn process_copy(ctxt: *mut _xsltTransformContext, inst: *mut _
         if !(*node).name.is_null() {
             append_pi_node(ctxt, (*node).name, (*node).content);
         }
-    } else if typ == XML_ATTRIBUTE_NODE as c_int {
-        if !(*node).children.is_null() {
-            let val = node_get_content((*node).children);
-            if !val.is_null() {
-                append_text_node(ctxt, val);
-                libc::free(val as *mut libc::c_void);
-            }
+    } else if typ == XML_ATTRIBUTE_NODE as c_int && !(*node).children.is_null() {
+        let val = node_get_content((*node).children);
+        if !val.is_null() {
+            append_text_node(ctxt, val);
+            libc::free(val as *mut libc::c_void);
         }
     }
     // Process children (attributes and content).
@@ -1902,7 +1910,7 @@ pub(crate) unsafe fn process_copy(ctxt: *mut _xsltTransformContext, inst: *mut _
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name_attr = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name_attr = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name_attr.is_null() {
         return;
     }
@@ -1913,7 +1921,7 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
         return;
     }
     // Check for the namespace attribute.
-    let ns_attr = get_prop(inst, b"namespace\0".as_ptr() as *const xmlChar);
+    let ns_attr = get_prop(inst, c"namespace".as_ptr() as *const xmlChar);
     let ns_str = if !ns_attr.is_null() {
         let v = eval_avt(ctxt, ns_attr);
         libc::free(ns_attr as *mut libc::c_void);
@@ -1950,7 +1958,7 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name_attr = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name_attr = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name_attr.is_null() {
         return;
     }
@@ -1989,11 +1997,9 @@ pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *
     let mut value: Vec<u8> = Vec::new();
     let mut child = (*frag_doc).children;
     while !child.is_null() {
-        if (*child).type_ == XML_TEXT_NODE as c_int {
-            if !(*child).content.is_null() {
-                let len = libc::strlen((*child).content as *const libc::c_char) as usize;
-                value.extend_from_slice(core::slice::from_raw_parts((*child).content, len));
-            }
+        if (*child).type_ == XML_TEXT_NODE as c_int && !(*child).content.is_null() {
+            let len = libc::strlen((*child).content as *const libc::c_char) as usize;
+            value.extend_from_slice(core::slice::from_raw_parts((*child).content, len));
         }
         child = (*child).next;
     }
@@ -2015,10 +2021,7 @@ pub(crate) unsafe fn process_attribute(ctxt: *mut _xsltTransformContext, inst: *
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_text(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
     // disable-output-escaping attribute.
-    let doe = get_prop(
-        inst,
-        b"disable-output-escaping\0".as_ptr() as *const xmlChar,
-    );
+    let doe = get_prop(inst, c"disable-output-escaping".as_ptr() as *const xmlChar);
     if !doe.is_null() {
         libc::free(doe as *mut libc::c_void);
     }
@@ -2051,7 +2054,7 @@ pub(crate) unsafe fn process_comment(ctxt: *mut _xsltTransformContext, inst: *mu
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_pi(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name_attr = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name_attr = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name_attr.is_null() {
         return;
     }
@@ -2075,7 +2078,7 @@ pub(crate) unsafe fn process_pi(ctxt: *mut _xsltTransformContext, inst: *mut _xm
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_number(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let value_attr = get_prop(inst, b"value\0".as_ptr() as *const xmlChar);
+    let value_attr = get_prop(inst, c"value".as_ptr() as *const xmlChar);
     let mut number: f64 = f64::NAN;
     if !value_attr.is_null() {
         let obj = eval_xpath(ctxt, value_attr);
@@ -2104,7 +2107,7 @@ pub(crate) unsafe fn process_number(ctxt: *mut _xsltTransformContext, inst: *mut
         }
     }
     // Format the number: format attribute with tokens.
-    let format = get_prop(inst, b"format\0".as_ptr() as *const xmlChar);
+    let format = get_prop(inst, c"format".as_ptr() as *const xmlChar);
     let formatted = crate::xslt::numbering::xsltFormatNumber(number, format);
     if !format.is_null() {
         libc::free(format as *mut libc::c_void);
@@ -2154,7 +2157,7 @@ pub(crate) unsafe fn process_choose(ctxt: *mut _xsltTransformContext, inst: *mut
     while !child.is_null() {
         let next = (*child).next;
         if is_xslt_element(child, "when") {
-            let test = get_prop(child, b"test\0".as_ptr() as *const xmlChar);
+            let test = get_prop(child, c"test".as_ptr() as *const xmlChar);
             if !test.is_null() {
                 let obj = eval_xpath(ctxt, test);
                 libc::free(test as *mut libc::c_void);
@@ -2170,11 +2173,9 @@ pub(crate) unsafe fn process_choose(ctxt: *mut _xsltTransformContext, inst: *mut
                     break;
                 }
             }
-        } else if is_xslt_element(child, "otherwise") {
-            if !executed {
-                execute_content(ctxt, (*child).children);
-                executed = true;
-            }
+        } else if is_xslt_element(child, "otherwise") && !executed {
+            execute_content(ctxt, (*child).children);
+            executed = true;
         }
         child = next;
     }
@@ -2186,7 +2187,7 @@ pub(crate) unsafe fn process_choose(ctxt: *mut _xsltTransformContext, inst: *mut
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_if(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let test = get_prop(inst, b"test\0".as_ptr() as *const xmlChar);
+    let test = get_prop(inst, c"test".as_ptr() as *const xmlChar);
     if test.is_null() {
         return;
     }
@@ -2212,11 +2213,11 @@ pub(crate) unsafe fn process_if(ctxt: *mut _xsltTransformContext, inst: *mut _xm
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_variable(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return;
     }
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     let var = libc::calloc(1, core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
     if var.is_null() {
         libc::free(name as *mut libc::c_void);
@@ -2253,7 +2254,7 @@ pub(crate) unsafe fn process_variable(ctxt: *mut _xsltTransformContext, inst: *m
 ///
 /// - All pointers must be valid.
 pub(crate) unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut _xmlNode) {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return;
     }
@@ -2281,7 +2282,7 @@ pub(crate) unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut 
         libc::free(name as *mut libc::c_void);
         return;
     }
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     let var = libc::calloc(1, core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
     if var.is_null() {
         libc::free(name as *mut libc::c_void);
@@ -2324,11 +2325,11 @@ pub(crate) unsafe fn process_message(ctxt: *mut _xsltTransformContext, inst: *mu
         let len = libc::strlen(content as *const libc::c_char) as usize;
         let _ = libc::write(2, content as *const libc::c_void, len);
         // terminate attribute: if "yes", stop the transformation.
-        let terminate = get_prop(inst, b"terminate\0".as_ptr() as *const xmlChar);
+        let terminate = get_prop(inst, c"terminate".as_ptr() as *const xmlChar);
         if !terminate.is_null() {
             if libc::strcmp(
                 terminate as *const libc::c_char,
-                b"yes\0".as_ptr() as *const libc::c_char,
+                c"yes".as_ptr() as *const libc::c_char,
             ) == 0
             {
                 (*ctxt).state = XSLT_STATE_ERROR;
@@ -2472,15 +2473,18 @@ pub(crate) unsafe fn process_literal_element(
 /// # SAFETY
 ///
 /// - `ctxt` must be a valid transform context.
+///
 /// Emit a transform error through the XSLT error machinery with the given
+///
 /// transform context (so the context line carries the current instruction's
+///
 /// file/line/element, matching upstream xsltTransformError(ctxt, ...)).
 ///
 /// # SAFETY
 ///
 /// - `tctxt` may be NULL; `msg` must not contain interior NUL bytes.
 unsafe fn emit_transform_error_with_ctxt(tctxt: *mut _xsltTransformContext, msg: &[u8]) {
-    unsafe {
+    {
         let mut buf = msg.to_vec();
         buf.push(0);
         crate::xslt::errors::xsltTransformError(
@@ -2601,7 +2605,7 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             return Ok(XPathValue::String(String::new()));
         }
         // SAFETY: node must be valid.
-        let id = unsafe { format!("id{:p}", node) };
+        let id = { format!("id{:p}", node) };
         Ok(XPathValue::String(id))
     });
 
@@ -2876,9 +2880,7 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
     // extensions.c). The C callback runs through the same synthesized
     // parser-context bridge used by xmlXPathRegisterFunc.
     internal.function_lookup = Some(Box::new(|ctx: &XPathContext, name: &str| {
-        let Some((prefix, local)) = name.split_once(':') else {
-            return None;
-        };
+        let (prefix, local) = name.split_once(':')?;
         let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
         if tctxt.is_null() {
             return None;
@@ -2935,7 +2937,7 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
 }
 
 /// The set of EXSLT element names recognized by `element-available()`.
-pub fn exslt_element_names() -> &'static [&'static str] {
+pub const fn exslt_element_names() -> &'static [&'static str] {
     &[
         "exsl:document",
         "exsl:node-set",

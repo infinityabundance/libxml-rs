@@ -41,9 +41,7 @@
 
 #![allow(dead_code)]
 
-use core::ffi::c_void;
 use core::marker::PhantomData;
-use core::ops::Deref;
 use core::ptr::NonNull;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,6 +60,7 @@ use core::ptr::NonNull;
 /// - The pointer was allocated by libxml2's allocator
 /// - No other code holds a mutable reference to the pointed-to data
 /// - The pointer is not freed twice
+#[derive(Debug)]
 pub struct Owned<T: ?Sized> {
     ptr: NonNull<T>,
     _marker: PhantomData<T>,
@@ -77,6 +76,7 @@ pub struct Owned<T: ?Sized> {
 /// The borrower must ensure:
 /// - The pointer remains valid for the duration of the borrow
 /// - No mutable access occurs through a shared borrow
+#[derive(Debug)]
 pub struct Borrowed<T: ?Sized> {
     ptr: *const T,
     _marker: PhantomData<T>,
@@ -86,6 +86,7 @@ pub struct Borrowed<T: ?Sized> {
 ///
 /// A `Transferred<T>` wraps a `*mut T` that is being transferred
 /// between caller and callee. The recipient assumes ownership.
+#[derive(Debug)]
 pub struct Transferred<T: ?Sized> {
     ptr: *mut T,
     _marker: PhantomData<T>,
@@ -423,6 +424,7 @@ pub const XSLT_APPLY_OWNERSHIP: &str =
 ///
 /// This is an internal helper for the ABI membrane. It should not be
 /// exposed to external callers.
+#[derive(Debug)]
 pub struct UniquePtr<T> {
     ptr: Option<NonNull<T>>,
     drop_fn: unsafe fn(*mut T),

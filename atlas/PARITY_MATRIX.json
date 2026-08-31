@@ -14,10 +14,10 @@
      "oracle_headers": 1408,
      "oracle_dso": 1400,
      "candidate_headers": 1396,
-     "candidate_dso": 1906,
-     "fully_reconciled": 1348,
-     "unresolved_oracle_only": 52,
-     "candidate_extra": 558
+     "candidate_dso": 1980,
+     "fully_reconciled": 1400,
+     "unresolved_oracle_only": 0,
+     "candidate_extra": 580
     },
     "exported_data": {
      "oracle_doxygen": 625,
@@ -25,10 +25,10 @@
      "oracle_headers": 18,
      "oracle_dso": 22,
      "candidate_headers": 38,
-     "candidate_dso": 60,
+     "candidate_dso": 67,
      "fully_reconciled": 22,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 38
+     "candidate_extra": 45
     },
     "struct_fields": {
      "abi_ledger_measurable": 658,
@@ -72,11 +72,11 @@
      "oracle_clang_ast": 231,
      "oracle_headers": 244,
      "oracle_dso": 232,
-     "candidate_headers": 251,
-     "candidate_dso": 1906,
+     "candidate_headers": 250,
+     "candidate_dso": 1980,
      "fully_reconciled": 232,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 1674
+     "candidate_extra": 1748
     },
     "exported_data": {
      "oracle_doxygen": 279,
@@ -84,10 +84,10 @@
      "oracle_headers": 11,
      "oracle_dso": 12,
      "candidate_headers": 11,
-     "candidate_dso": 60,
-     "fully_reconciled": 8,
-     "unresolved_oracle_only": 4,
-     "candidate_extra": 52
+     "candidate_dso": 67,
+     "fully_reconciled": 11,
+     "unresolved_oracle_only": 1,
+     "candidate_extra": 56
     },
     "struct_fields": {
      "abi_ledger_measurable": 279,
@@ -132,10 +132,10 @@
      "oracle_headers": 14,
      "oracle_dso": 13,
      "candidate_headers": 14,
-     "candidate_dso": 1906,
-     "fully_reconciled": 1,
-     "unresolved_oracle_only": 12,
-     "candidate_extra": 1905
+     "candidate_dso": 1980,
+     "fully_reconciled": 13,
+     "unresolved_oracle_only": 0,
+     "candidate_extra": 1967
     },
     "exported_data": {
      "oracle_doxygen": 4,
@@ -143,10 +143,10 @@
      "oracle_headers": 4,
      "oracle_dso": 4,
      "candidate_headers": 4,
-     "candidate_dso": 60,
-     "fully_reconciled": 0,
-     "unresolved_oracle_only": 4,
-     "candidate_extra": 60
+     "candidate_dso": 67,
+     "fully_reconciled": 4,
+     "unresolved_oracle_only": 0,
+     "candidate_extra": 63
     },
     "struct_fields": {
      "abi_ledger_measurable": null,

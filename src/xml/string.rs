@@ -3,7 +3,7 @@
 //! Provides operations on `xmlChar*` (i.e. `*mut u8`) strings compatible
 //! with upstream libxml2's string handling.
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlReallocImpl};
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
 use crate::abi::types::xmlChar;
 use core::ffi::c_void;
 use core::ptr;
@@ -20,7 +20,7 @@ use std::slice;
 ///
 /// `str` must point to a null-terminated sequence of bytes.
 #[inline]
-pub(crate) unsafe fn xml_strlen(str: *const xmlChar) -> usize {
+pub(crate) const unsafe fn xml_strlen(str: *const xmlChar) -> usize {
     if str.is_null() {
         return 0;
     }
@@ -97,7 +97,7 @@ pub(crate) unsafe fn bytes_to_xmlstr(bytes: &[u8]) -> *mut xmlChar {
 /// `str` must be NULL or point to a null-terminated sequence of bytes.
 /// The returned slice borrows from the original memory.
 #[inline]
-pub(crate) unsafe fn xmlstr_to_bytes(str: *const xmlChar) -> &'static [u8] {
+pub(crate) const unsafe fn xmlstr_to_bytes(str: *const xmlChar) -> &'static [u8] {
     if str.is_null() {
         return &[];
     }
@@ -145,6 +145,7 @@ pub(crate) unsafe fn xml_strcmp(str1: *const xmlChar, str2: *const xmlChar) -> i
 ///
 /// Both strings must be null-terminated or NULL.
 #[inline]
+#[allow(dead_code)]
 pub(crate) unsafe fn xml_strcat(str1: *const xmlChar, str2: *const xmlChar) -> *mut xmlChar {
     let len1 = xml_strlen(str1);
     let len2 = xml_strlen(str2);
@@ -319,7 +320,7 @@ pub unsafe fn split_qname3(name: *const xmlChar, len: *mut c_int) -> c_int {
 /// # Safety
 ///
 /// - `utf` must be a valid null-terminated UTF-8 string.
-pub unsafe fn utf8_strlen(utf: *const xmlChar) -> c_int {
+pub const unsafe fn utf8_strlen(utf: *const xmlChar) -> c_int {
     if utf.is_null() {
         return 0;
     }
@@ -353,7 +354,7 @@ pub unsafe fn utf8_strlen(utf: *const xmlChar) -> c_int {
 /// # Safety
 ///
 /// - `utf` must be a valid pointer into a UTF-8 string.
-pub unsafe fn utf8_size(utf: *const xmlChar) -> c_int {
+pub const unsafe fn utf8_size(utf: *const xmlChar) -> c_int {
     if utf.is_null() {
         return -1;
     }
@@ -382,7 +383,7 @@ pub unsafe fn utf8_size(utf: *const xmlChar) -> c_int {
 /// # Safety
 ///
 /// - `utf` must be a valid null-terminated byte string.
-pub unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
+pub const unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
     if utf.is_null() {
         return 0;
     }
@@ -422,7 +423,10 @@ pub unsafe fn check_utf8(utf: *const xmlChar) -> c_int {
     }
 }
 #[inline]
-pub(crate) unsafe fn xml_str_starts_with(str: *const xmlChar, prefix: *const xmlChar) -> bool {
+pub(crate) const unsafe fn xml_str_starts_with(
+    str: *const xmlChar,
+    prefix: *const xmlChar,
+) -> bool {
     if str.is_null() || prefix.is_null() {
         return false;
     }

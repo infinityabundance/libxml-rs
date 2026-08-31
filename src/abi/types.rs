@@ -1,3 +1,11 @@
+// Lint policy (11.1-Z seal): `missing_docs` and
+// `missing_debug_implementations` are allowed here — the enums/constants
+// mirror upstream C typedefs and #define values whose canonical
+// documentation is the C header itself (the same rationale bindgen
+// applies to generated bindings). The numeric values are the contract,
+// verified against the oracle by the data-abi courts.
+#![allow(missing_docs, missing_debug_implementations)]
+
 //! C ABI type definitions — matching upstream libxml2/libxslt (§14).
 //!
 //! This module defines all public C-compatible types with exact layout,
@@ -19,8 +27,7 @@
 //! All types derived from SRC-LIBXML2-2.15.3-TREE-H and related headers.
 //! See atlas/SOURCES.md and atlas/api/ for the complete declaration inventory.
 
-use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::c_int;
 
 // ── Fundamental libxml2 types ───────────────────────────────────────────
 

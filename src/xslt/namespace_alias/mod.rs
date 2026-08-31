@@ -158,31 +158,31 @@ mod tests {
             assert_eq!(
                 xsltAddNsAlias(
                     style,
-                    b"http://example.com/result\0".as_ptr() as *const xmlChar,
-                    b"http://example.com/style\0".as_ptr() as *const xmlChar,
+                    c"http://example.com/result".as_ptr() as *const xmlChar,
+                    c"http://example.com/style".as_ptr() as *const xmlChar,
                 ),
                 0
             );
             let resolved = xsltResolveNsAlias(
                 style,
-                b"http://example.com/style\0".as_ptr() as *const xmlChar,
+                c"http://example.com/style".as_ptr() as *const xmlChar,
             );
             assert_eq!(
                 libc::strcmp(
                     resolved as *const libc::c_char,
-                    b"http://example.com/result\0".as_ptr() as *const libc::c_char
+                    c"http://example.com/result".as_ptr() as *const libc::c_char
                 ),
                 0
             );
             // Unaliased URI passes through.
             let other = xsltResolveNsAlias(
                 style,
-                b"http://example.com/other\0".as_ptr() as *const xmlChar,
+                c"http://example.com/other".as_ptr() as *const xmlChar,
             );
             assert_eq!(
                 libc::strcmp(
                     other as *const libc::c_char,
-                    b"http://example.com/other\0".as_ptr() as *const libc::c_char
+                    c"http://example.com/other".as_ptr() as *const libc::c_char
                 ),
                 0
             );

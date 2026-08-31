@@ -142,7 +142,7 @@ fn find_target_dir(out_dir: &Path) -> PathBuf {
     // Walk up to find the target directory
     let mut current = out_dir.to_path_buf();
     loop {
-        if current.ends_with("target") || current.file_name().map_or(false, |n| n == "target") {
+        if current.ends_with("target") || current.file_name().is_some_and(|n| n == "target") {
             return current;
         }
         if !current.pop() {

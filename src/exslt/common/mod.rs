@@ -19,8 +19,10 @@
 
 use super::{register, ExsltFunction};
 use crate::xml::xpath::context::XPathContext;
-use crate::xml::xpath::types::{node_string_value, NodeSet, XPathValue};
+use crate::xml::xpath::types::{NodeSet, XPathValue};
 
+#[cfg(test)]
+use crate::xml::xpath::types::node_string_value;
 /// exsl:node-set(object) — convert an RTF (or other value) to a node-set.
 fn node_set_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let arg = match args.first() {
@@ -93,7 +95,7 @@ mod tests {
     fn test_node_set_node_set_passthrough() {
         let mut ns = NodeSet::new();
         let n = unsafe {
-            crate::xml::tree::new_text(b"x\0".as_ptr() as *const crate::abi::types::xmlChar)
+            crate::xml::tree::new_text(c"x".as_ptr() as *const crate::abi::types::xmlChar)
         };
         ns.push(n);
         let mut c = ctx();

@@ -1,0 +1,18 @@
+{
+ "court": "NS-BINDING-PROBE",
+ "phase": "11.1-Z",
+ "timestamp": "2026-08-31T16:59:00Z",
+ "probe": "courts/suites/data-abi/ns-binding-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "fixtures": 10
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so"
+ },
+ "cases_total": 10,
+ "cases_passed": 10,
+ "cases_failed": 0,
+ "fails": [],
+ "verdict": "PASS"
+}

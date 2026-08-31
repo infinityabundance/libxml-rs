@@ -47,9 +47,11 @@ use crate::xml::xpointer;
 const XINCLUDE_NS: &[u8] = b"http://www.w3.org/2001/XInclude\0";
 
 /// The XInclude local element name.
+#[allow(dead_code)]
 const XINCLUDE_INCLUDE: &[u8] = b"include\0";
 
 /// The fallback element local name.
+#[allow(dead_code)]
 const XINCLUDE_FALLBACK: &[u8] = b"fallback\0";
 
 /// The `href` attribute name.
@@ -75,6 +77,7 @@ const ATTR_ACCEPT_LANGUAGE: &[u8] = b"accept-language\0";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Success.
+#[allow(dead_code)]
 const XINCLUDE_SUCCESS: c_int = 0;
 
 /// General failure.
@@ -88,6 +91,7 @@ const XINCLUDE_NO_NODES: c_int = 0;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Do not process XInclude.
+#[allow(dead_code)]
 const XML_XINCLUDE_NO_INCLUDE: c_int = 0;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -957,7 +961,7 @@ unsafe fn xml_str_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
 mod tests {
     use super::*;
     use crate::abi::allocator;
-    use crate::abi::structs::*;
+
     use crate::xml::tree;
     use std::os::raw::{c_char, c_int};
 
@@ -966,6 +970,7 @@ mod tests {
     // ═══════════════════════════════════════════════════════════════════════════
 
     /// Create a simple XML document from a string.
+    #[allow(dead_code)]
     unsafe fn create_doc_from_xml(xml: &[u8]) -> *mut _xmlDoc {
         let doc = unsafe {
             crate::abi::exports_xml2::xmlReadMemory(
@@ -990,7 +995,7 @@ mod tests {
         let root = tree::new_child(
             doc as *mut _xmlNode,
             ptr::null_mut(),
-            b"root\0".as_ptr() as *const xmlChar,
+            c"root".as_ptr() as *const xmlChar,
         );
         assert!(!root.is_null(), "Failed to create root");
 
@@ -1013,12 +1018,12 @@ mod tests {
         let root = tree::new_child(
             doc as *mut _xmlNode,
             ptr::null_mut(),
-            b"root\0".as_ptr() as *const xmlChar,
+            c"root".as_ptr() as *const xmlChar,
         );
         assert!(!root.is_null());
         create_ns(
             root,
-            b"xi\0".as_ptr() as *const xmlChar,
+            c"xi".as_ptr() as *const xmlChar,
             XINCLUDE_NS.as_ptr() as *const xmlChar,
         );
         (doc, root)
@@ -1032,10 +1037,10 @@ mod tests {
     ) -> *mut _xmlNode {
         let ns = create_ns(
             parent,
-            b"xi\0".as_ptr() as *const xmlChar,
+            c"xi".as_ptr() as *const xmlChar,
             XINCLUDE_NS.as_ptr() as *const xmlChar,
         );
-        let elem = tree::new_child(parent, ns, b"include\0".as_ptr() as *const xmlChar);
+        let elem = tree::new_child(parent, ns, c"include".as_ptr() as *const xmlChar);
         if let Some(h) = href {
             let h_str = crate::xml::string::bytes_to_xmlstr(h);
             tree::set_prop(elem, ATTR_HREF.as_ptr() as *const xmlChar, h_str);
@@ -1053,12 +1058,12 @@ mod tests {
     unsafe fn create_fallback_child(parent: *mut _xmlNode) -> *mut _xmlNode {
         let ns = create_ns(
             parent,
-            b"xi\0".as_ptr() as *const xmlChar,
+            c"xi".as_ptr() as *const xmlChar,
             XINCLUDE_NS.as_ptr() as *const xmlChar,
         );
-        tree::new_child(parent, ns, b"fallback\0".as_ptr() as *const xmlChar)
+        tree::new_child(parent, ns, c"fallback".as_ptr() as *const xmlChar)
     }
-
+    #[allow(dead_code)]
     /// Find the first element by name in the document.
     unsafe fn find_element(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut _xmlNode {
         if doc.is_null() {
@@ -1075,6 +1080,7 @@ mod tests {
         ptr::null_mut()
     }
 
+    #[allow(dead_code)]
     unsafe fn find_element_recursive(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlNode {
         if node.is_null() {
             return ptr::null_mut();
@@ -1157,11 +1163,8 @@ mod tests {
             assert!(is_xinclude_element(include), "Should detect xi:include");
 
             // A regular child should not be detected as xinclude.
-            let regular = tree::new_child(
-                root,
-                ptr::null_mut(),
-                b"regular\0".as_ptr() as *const xmlChar,
-            );
+            let regular =
+                tree::new_child(root, ptr::null_mut(), c"regular".as_ptr() as *const xmlChar);
             assert!(!regular.is_null());
             assert!(!is_xinclude_element(regular), "Regular elem not xinclude");
 
@@ -1192,19 +1195,19 @@ mod tests {
     fn test_xml_str_equal() {
         unsafe {
             assert!(xml_str_equal(
-                b"hello\0".as_ptr() as *const xmlChar,
-                b"hello\0".as_ptr() as *const xmlChar,
+                c"hello".as_ptr() as *const xmlChar,
+                c"hello".as_ptr() as *const xmlChar,
             ));
             assert!(!xml_str_equal(
-                b"hello\0".as_ptr() as *const xmlChar,
-                b"world\0".as_ptr() as *const xmlChar,
+                c"hello".as_ptr() as *const xmlChar,
+                c"world".as_ptr() as *const xmlChar,
             ));
             assert!(!xml_str_equal(
                 ptr::null(),
-                b"hello\0".as_ptr() as *const xmlChar
+                c"hello".as_ptr() as *const xmlChar
             ));
             assert!(!xml_str_equal(
-                b"hello\0".as_ptr() as *const xmlChar,
+                c"hello".as_ptr() as *const xmlChar,
                 ptr::null()
             ));
             assert!(xml_str_equal(ptr::null(), ptr::null()));
@@ -1249,11 +1252,11 @@ mod tests {
             let fb_child = tree::new_child(
                 fb,
                 ptr::null_mut(),
-                b"fallback-elem\0".as_ptr() as *const xmlChar,
+                c"fallback-elem".as_ptr() as *const xmlChar,
             );
             assert!(!fb_child.is_null());
 
-            let before = count_elements(doc, b"fallback-elem\0".as_ptr() as *const xmlChar);
+            let before = count_elements(doc, c"fallback-elem".as_ptr() as *const xmlChar);
             assert!(before > 0, "Should have fallback-elem before processing");
 
             let result = xinclude_process(doc);
@@ -1327,11 +1330,10 @@ mod tests {
             let parent = tree::new_child(
                 doc as *mut _xmlNode,
                 ptr::null_mut(),
-                b"parent\0".as_ptr() as *const xmlChar,
+                c"parent".as_ptr() as *const xmlChar,
             );
             assert!(!parent.is_null());
-            let detached =
-                tree::new_node(ptr::null_mut(), b"detached\0".as_ptr() as *const xmlChar);
+            let detached = tree::new_node(ptr::null_mut(), c"detached".as_ptr() as *const xmlChar);
             assert!(!detached.is_null());
             assert!((*detached).doc.is_null());
             set_doc_recursive(detached, doc);
@@ -1452,12 +1454,12 @@ mod tests {
             let root = tree::new_child(
                 doc as *mut _xmlNode,
                 ptr::null_mut(),
-                b"root\0".as_ptr() as *const xmlChar,
+                c"root".as_ptr() as *const xmlChar,
             );
             assert!(!root.is_null());
             create_ns(
                 root,
-                b"xi\0".as_ptr() as *const xmlChar,
+                c"xi".as_ptr() as *const xmlChar,
                 XINCLUDE_NS.as_ptr() as *const xmlChar,
             );
 
@@ -1468,7 +1470,7 @@ mod tests {
             tree::new_child(
                 fb2,
                 ptr::null_mut(),
-                b"fallback-content\0".as_ptr() as *const xmlChar,
+                c"fallback-content".as_ptr() as *const xmlChar,
             );
 
             create_include_child(root, Some(b"nonexistent3.txt"), Some(b"text"));
@@ -1506,10 +1508,8 @@ mod tests {
             assert!(!root.is_null());
 
             // Create a sentinel XML_XINCLUDE_START node attached to root.
-            let sentinel = tree::new_node(
-                ptr::null_mut(),
-                b"XIncludeStart\0".as_ptr() as *const xmlChar,
-            );
+            let sentinel =
+                tree::new_node(ptr::null_mut(), c"XIncludeStart".as_ptr() as *const xmlChar);
             assert!(!sentinel.is_null());
             (*sentinel).type_ = XML_XINCLUDE_START as c_int;
             (*sentinel).doc = doc;
@@ -1530,7 +1530,7 @@ mod tests {
             }
 
             let mut visited = Vec::new();
-            let count = unsafe { process_node_tree(root, doc, &mut visited) };
+            let count = { process_node_tree(root, doc, &mut visited) };
             assert_eq!(count, 0, "Should not process sentinel nodes");
 
             // Unlink sentinel before freeing

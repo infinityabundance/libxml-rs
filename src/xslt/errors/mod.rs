@@ -139,6 +139,25 @@ static mut XSLT_GENERIC_DEBUG: Option<
 ///
 /// With a NULL handler, messages go to `stderr`; with a NULL context they
 /// are suppressed (upstream's default debug handler checks the context).
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `handler` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xsltSetGenericDebugFunc(
     ctx: *mut std::ffi::c_void,
@@ -155,6 +174,21 @@ pub unsafe extern "C" fn xsltSetGenericDebugFunc(
 static mut XSLT_GENERIC_DEBUG_CONTEXT: *mut std::ffi::c_void = std::ptr::null_mut();
 
 /// Emit a generic debug message (upstream xsltGenericDebug).
+///
+/// # SAFETY
+///
+/// - `ctx`, `msg` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xsltGenericDebug(
     ctx: *mut std::ffi::c_void,
@@ -176,7 +210,7 @@ pub unsafe extern "C" fn xsltGenericDebug(
 /// # Parameters
 ///
 /// * `ctxt`   — The transform context, or `std::ptr::null_mut()` for the
-///              global handler.
+///   global handler.
 /// * `ctx`    — Opaque user-data pointer passed to the handler.
 /// * `handler` — The error handler function, or `None` to reset.
 pub fn xsltSetTransformErrorFunc(
@@ -304,9 +338,9 @@ fn print_error_context(
             // SAFETY: doc->URL is a valid NUL-terminated string or NULL.
             file = unsafe { (*doc).URL } as *const std::os::raw::c_char;
         } else {
-            line = unsafe { crate::abi::exports_xml2::xmlGetLineNo(node) as i64 };
+            line = crate::abi::exports_xml2::xmlGetLineNo(node) as i64;
             // SAFETY: node->doc must be valid while the node is alive.
-            let doc = unsafe { (*node_ref).doc };
+            let doc = { node_ref.doc };
             if !doc.is_null() {
                 file = unsafe { (*doc).URL } as *const std::os::raw::c_char;
             }

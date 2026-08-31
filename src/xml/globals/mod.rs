@@ -29,14 +29,12 @@
 use core::cell::RefCell;
 use core::ffi::c_void;
 use core::ptr;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::os::raw::c_int;
 
 use crate::abi::allocator;
 use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
 use crate::abi::structs::_xmlError;
-use crate::abi::types::xmlErrorLevel::XML_ERR_NONE;
-use crate::abi::types::*;
 use crate::abi::versioning;
 
 /// Serializes the exported error-handler slot pairs
@@ -264,7 +262,7 @@ pub unsafe fn set_generic_error_func(ctx: *mut c_void, handler: Option<xmlGeneri
     // pair is written atomically under ERROR_HANDLER_LOCK.
     let resolved = match handler {
         Some(h) => Some(h),
-        None => unsafe { crate::abi::data_globals::default_generic_error_func() },
+        None => crate::abi::data_globals::default_generic_error_func(),
     };
     let _guard = ERROR_HANDLER_LOCK.lock();
     unsafe {
@@ -554,6 +552,8 @@ pub fn init_ref_count() -> c_int {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::abi::types::xmlErrorLevel::XML_ERR_NONE;
+    use crate::abi::types::*;
 
     #[test]
     fn test_parser_defaults_initial_values() {

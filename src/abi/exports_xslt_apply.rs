@@ -263,6 +263,7 @@ pub unsafe extern "C" fn xsltProcessOneNode(
 /// # SAFETY
 ///
 /// - `ctxt` and `list` must be valid pointers; `params` may be NULL.
+#[allow(clippy::while_immutable_condition)]
 #[no_mangle]
 pub unsafe extern "C" fn xsltApplyOneTemplate(
     ctxt: *mut _xsltTransformContext,
@@ -531,7 +532,7 @@ pub unsafe extern "C" fn xsltFreeAttributeSetsHashes(style: *mut _xsltStylesheet
 ///
 /// - `node` may be any pointer; it is only null-checked.
 #[no_mangle]
-pub unsafe extern "C" fn xsltTemplateProcess(
+pub const unsafe extern "C" fn xsltTemplateProcess(
     ctxt: *mut _xsltTransformContext,
     node: *mut _xmlNode,
 ) -> *mut *mut _xmlNode {
@@ -657,7 +658,7 @@ pub unsafe extern "C" fn xsltGetTemplate(
 ///
 /// - `style` may be any pointer; it is unused.
 #[no_mangle]
-pub unsafe extern "C" fn xsltCleanupTemplates(style: *mut _xsltStylesheet) {
+pub const unsafe extern "C" fn xsltCleanupTemplates(style: *mut _xsltStylesheet) {
     let _ = style;
 }
 
@@ -916,6 +917,7 @@ pub unsafe extern "C" fn xsltFindElemSpaceHandling(
 /// pointer. The candidate wraps the engine's compiled `_xsltPattern`
 /// (which already handles union patterns internally) behind this handle;
 /// the layout is opaque to callers.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltCompMatch {
     /// The candidate's compiled pattern (opaque to callers).
@@ -991,13 +993,11 @@ pub unsafe extern "C" fn xsltCompilePattern(
 ///
 /// - `ctxt` and `comp` may be any pointers; both are only null-checked.
 #[no_mangle]
-pub unsafe extern "C" fn xsltCompMatchClearCache(
+pub const unsafe extern "C" fn xsltCompMatchClearCache(
     ctxt: *mut _xsltTransformContext,
     comp: xsltCompMatchPtr,
 ) {
-    if ctxt.is_null() || comp.is_null() {
-        return;
-    }
+    if ctxt.is_null() || comp.is_null() {}
     // No per-context match cache in the candidate (see above).
 }
 

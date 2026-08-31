@@ -101,7 +101,7 @@ unsafe fn import_chain_int(
 }
 
 /// Case-insensitive string comparison against a byte literal.
-unsafe fn cstr_eq_ignore_case(s: *const xmlChar, lit: &[u8]) -> bool {
+const unsafe fn cstr_eq_ignore_case(s: *const xmlChar, lit: &[u8]) -> bool {
     if s.is_null() {
         return lit.is_empty();
     }
@@ -109,7 +109,7 @@ unsafe fn cstr_eq_ignore_case(s: *const xmlChar, lit: &[u8]) -> bool {
     while i < lit.len() {
         let c = unsafe { *s.add(i) };
         let l = lit[i];
-        if c.to_ascii_lowercase() != l.to_ascii_lowercase() {
+        if !c.eq_ignore_ascii_case(&l) {
             return false;
         }
         i += 1;
@@ -178,7 +178,7 @@ pub(crate) unsafe fn save_result_to_vec(
                 let enc: *const xmlChar = if !encoding.is_null() {
                     encoding
                 } else {
-                    b"UTF-8\0".as_ptr() as *const xmlChar
+                    c"UTF-8".as_ptr() as *const xmlChar
                 };
                 (*result).encoding =
                     crate::abi::allocator::xmlMemStrdupImpl(enc as *const c_char) as *mut xmlChar;
@@ -484,7 +484,7 @@ pub unsafe extern "C" fn xsltSaveResultToFilename(
     if result_is_empty(result) {
         return 0;
     }
-    let file = libc::fopen(URL, b"wb\0".as_ptr() as *const c_char);
+    let file = libc::fopen(URL, c"wb".as_ptr() as *const c_char);
     if file.is_null() {
         return -1;
     }
@@ -557,10 +557,10 @@ mod tests {
     #[test]
     fn test_save_result_to_string() {
         unsafe {
-            let doc = new_doc(b"1.0\0".as_ptr() as *const xmlChar);
-            let root = new_node(ptr::null_mut(), b"root\0".as_ptr() as *const xmlChar);
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
+            let root = new_node(ptr::null_mut(), c"root".as_ptr() as *const xmlChar);
             doc_set_root_element(doc, root);
-            let text = new_text(b"hello\0".as_ptr() as *const xmlChar);
+            let text = new_text(c"hello".as_ptr() as *const xmlChar);
             add_child(root, text);
             let style = crate::xslt::stylesheet::xsltStylesheetCreate();
             let mut txt: *mut xmlChar = ptr::null_mut();
@@ -584,8 +584,8 @@ mod tests {
         // UPSTREAM-PARITY: `indent == -1` (unset) writes the trailing
         // newline while `indent == 0` (indent="no") does not.
         unsafe {
-            let doc = new_doc(b"1.0\0".as_ptr() as *const xmlChar);
-            let root = new_node(ptr::null_mut(), b"root\0".as_ptr() as *const xmlChar);
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
+            let root = new_node(ptr::null_mut(), c"root".as_ptr() as *const xmlChar);
             doc_set_root_element(doc, root);
             let style = crate::xslt::stylesheet::xsltStylesheetCreate();
             (*style).indent = 0;
@@ -603,14 +603,14 @@ mod tests {
     #[test]
     fn test_save_result_text_method() {
         unsafe {
-            let doc = new_doc(b"1.0\0".as_ptr() as *const xmlChar);
-            let root = new_node(ptr::null_mut(), b"root\0".as_ptr() as *const xmlChar);
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
+            let root = new_node(ptr::null_mut(), c"root".as_ptr() as *const xmlChar);
             doc_set_root_element(doc, root);
-            let text = new_text(b"a\0".as_ptr() as *const xmlChar);
+            let text = new_text(c"a".as_ptr() as *const xmlChar);
             add_child(root, text);
             let style = crate::xslt::stylesheet::xsltStylesheetCreate();
             let method = libc::malloc(5) as *mut xmlChar;
-            core::ptr::copy_nonoverlapping(b"text\0".as_ptr(), method, 5);
+            core::ptr::copy_nonoverlapping(c"text".as_ptr() as *const xmlChar, method, 5);
             (*style).method = method;
             let mut txt: *mut xmlChar = ptr::null_mut();
             let mut len: c_int = 0;

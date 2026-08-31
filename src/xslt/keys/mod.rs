@@ -421,7 +421,7 @@ unsafe fn add_key_entry(table: *mut _xsltKeyTable, value: *const xmlChar, node: 
     while i < (*data).nb {
         let obj = *(*data).table.offset(i as isize);
         if !obj.is_null()
-            && (*obj).stringval != ptr::null_mut()
+            && !(*obj).stringval.is_null()
             && libc::strcmp(
                 (*obj).stringval as *const libc::c_char,
                 value as *const libc::c_char,
@@ -606,7 +606,7 @@ unsafe fn add_to_node_set(ns: *mut _xmlNodeSet, node: *mut _xmlNode) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::structs::*;
+
     use core::ptr;
 
     #[test]

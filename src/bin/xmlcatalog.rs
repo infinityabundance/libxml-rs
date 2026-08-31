@@ -27,14 +27,9 @@ use std::os::raw::{c_char, c_int};
 use std::ptr;
 
 use libxml_rs::abi::exports_xml2::*;
-use libxml_rs::abi::structs::*;
 use libxml_rs::abi::types::*;
 
-const CATALOG_NS: &[u8] = b"urn:oasis:names:tc:entity:xmlns:xml:catalog\0";
-const CATALOG_DTD_PUBLIC: &[u8] = b"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN\0";
-const CATALOG_DTD_SYSTEM: &[u8] =
-    b"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd\0";
-
+#[derive(Default)]
 struct Cli {
     sgml: bool,
     shell: bool,
@@ -44,25 +39,7 @@ struct Cli {
     verbose: bool,
     add: Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, // (type, orig, replace); SGML add uses 1 arg
     del: Vec<Vec<u8>>,
-    catalog_file: Option<String>,
     entities: Vec<String>,
-}
-
-impl Default for Cli {
-    fn default() -> Self {
-        Cli {
-            sgml: false,
-            shell: false,
-            create: false,
-            noout: false,
-            no_super_update: false,
-            verbose: false,
-            add: Vec::new(),
-            del: Vec::new(),
-            catalog_file: None,
-            entities: Vec::new(),
-        }
-    }
 }
 
 fn usage() {
@@ -105,16 +82,9 @@ unsafe fn free_cstr(p: *mut c_char) {
     }
 }
 
-/// Build the catalog document (XML declaration + DOCTYPE + <catalog> root
-/// with entries) for dumping or saving. Ownership of the returned document
-/// transfers to the caller (free with xmlFreeDoc).
-unsafe fn build_catalog_doc() -> *mut _xmlDoc {
-    libxml_rs::xml::catalog::dump_doc()
-}
-
 /// Serialize the catalog to stdout (upstream xmlCatalogDump format).
 unsafe fn dump_catalog() {
-    let fp = libc::fdopen(1, b"w\0".as_ptr() as *const c_char);
+    let fp = libc::fdopen(1, c"w".as_ptr() as *const c_char);
     if !fp.is_null() {
         xmlCatalogDump(fp as *mut c_void, ptr::null_mut());
         // Flush so the output is not delayed past subsequent shell prompts.

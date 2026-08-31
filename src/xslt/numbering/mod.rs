@@ -58,6 +58,7 @@ struct FormatNumberInfo {
 /// `xsltNewDecimalFormat`, xslt.c). These are the fallback values used when
 /// `self` is NULL or a field is NULL — the same characters upstream's
 /// default `xsltDecimalFormat` carries.
+#[allow(dead_code)]
 static DEF_DIGIT: [u8; 2] = *b"#\0";
 static DEF_PATTERN_SEP: [u8; 2] = *b";\0";
 static DEF_MINUS: [u8; 2] = *b"-\0";
@@ -109,7 +110,7 @@ unsafe fn utf8_char_cmp(cur: *const xmlChar, s: *const xmlChar) -> bool {
 /// (upstream IS_SPECIAL: zeroDigit, digit, decimalPoint, grouping,
 /// patternSeparator).
 unsafe fn is_special(
-    fmt: *mut _xsltDecimalFormat,
+    _fmt: *mut _xsltDecimalFormat,
     cur: *const xmlChar,
     decimal_point: *const xmlChar,
     grouping: *const xmlChar,
@@ -130,6 +131,7 @@ unsafe fn is_special(
 /// `xsltFormatNumberPreSuffix`, numbers.c); returns the length in **bytes**
 /// (excluding quote characters) or -1 on error. `format` is advanced past
 /// the consumed characters.
+#[allow(clippy::too_many_arguments)]
 unsafe fn pre_suffix(
     fmt: *mut _xsltDecimalFormat,
     format: &mut *const xmlChar,
@@ -189,8 +191,8 @@ unsafe fn pre_suffix(
 
 /// Encode a Unicode code point as UTF-8 (upstream `xsltCopyCharMultiByte`).
 /// Returns the number of bytes written (0 for invalid code points).
-unsafe fn encode_utf8(out: &mut [u8], val: u32) -> usize {
-    unsafe {
+const unsafe fn encode_utf8(out: &mut [u8], val: u32) -> usize {
+    {
         if val < 0x80 {
             out[0] = val as u8;
             1
@@ -219,7 +221,7 @@ unsafe fn encode_utf8(out: &mut [u8], val: u32) -> usize {
 /// returns the code point, or -1 on error. `*len` receives the byte length
 /// of the character.
 unsafe fn get_utf8_char(p: *const xmlChar, len: &mut c_int) -> c_int {
-    unsafe { crate::abi::exports_misc::xmlGetUTF8Char(p as *const u8, len as *mut c_int) }
+    unsafe { crate::abi::exports_misc::xmlGetUTF8Char(p, len as *mut c_int) }
 }
 
 /// Append the decimal rendering of `number` (upstream
@@ -251,10 +253,13 @@ unsafe fn number_format_decimal(
             if i >= width && number.abs() < 1.0 {
                 break;
             }
-            if i > 0 && grouping_char != 0 && digits_per_group > 0 && (i % digits_per_group) == 0 {
-                if g_len > 0 {
-                    stack.extend_from_slice(&gbuf[..g_len]);
-                }
+            if i > 0
+                && grouping_char != 0
+                && digits_per_group > 0
+                && (i % digits_per_group) == 0
+                && g_len > 0
+            {
+                stack.extend_from_slice(&gbuf[..g_len]);
             }
             let val = digit_zero as i32 + (number % 10.0) as i32;
             let mut cb = [0u8; 4];
@@ -274,7 +279,7 @@ unsafe fn number_format_decimal(
 /// same observable output upstream produces (message without a trailing
 /// newline; the error channel appends one).
 unsafe fn emit_transform_error(msg: &[u8]) {
-    unsafe {
+    {
         let mut buf = msg.to_vec();
         buf.push(0);
         crate::xslt::errors::xsltTransformError(
@@ -934,6 +939,21 @@ pub(crate) unsafe fn decimal_format_by_qname(
 /// ```
 ///
 /// Simplified single-number formatting used by the transform engine.
+///
+/// # SAFETY
+///
+///
+/// - `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn xsltFormatNumber(number: f64, format: *const xmlChar) -> *mut xmlChar {
     if format.is_null() {
         return alloc_result(&format_decimal(number, 1));
@@ -1113,19 +1133,18 @@ mod tests {
         unsafe {
             let f = libc::calloc(1, core::mem::size_of::<_xsltDecimalFormat>())
                 as *mut _xsltDecimalFormat;
-            (*f).digit = crate::xml::string::xml_strdup(b"#\0".as_ptr() as *const xmlChar);
-            (*f).patternSeparator =
-                crate::xml::string::xml_strdup(b";\0".as_ptr() as *const xmlChar);
-            (*f).minusSign = crate::xml::string::xml_strdup(b"-\0".as_ptr() as *const xmlChar);
+            (*f).digit = crate::xml::string::xml_strdup(c"#".as_ptr() as *const xmlChar);
+            (*f).patternSeparator = crate::xml::string::xml_strdup(c";".as_ptr() as *const xmlChar);
+            (*f).minusSign = crate::xml::string::xml_strdup(c"-".as_ptr() as *const xmlChar);
             let mut d = decimal.to_vec();
             d.push(0);
             (*f).decimalPoint = crate::xml::string::xml_strdup(d.as_ptr() as *const xmlChar);
             let mut g = grouping.to_vec();
             g.push(0);
             (*f).grouping = crate::xml::string::xml_strdup(g.as_ptr() as *const xmlChar);
-            (*f).percent = crate::xml::string::xml_strdup(b"%\0".as_ptr() as *const xmlChar);
-            (*f).permille = crate::xml::string::xml_strdup("‰\0".as_ptr() as *const xmlChar);
-            (*f).zeroDigit = crate::xml::string::xml_strdup(b"0\0".as_ptr() as *const xmlChar);
+            (*f).percent = crate::xml::string::xml_strdup(c"%".as_ptr() as *const xmlChar);
+            (*f).permille = crate::xml::string::xml_strdup(c"‰".as_ptr() as *const xmlChar);
+            (*f).zeroDigit = crate::xml::string::xml_strdup(c"0".as_ptr() as *const xmlChar);
             let mut inf = infinity.to_vec();
             inf.push(0);
             (*f).infinity = crate::xml::string::xml_strdup(inf.as_ptr() as *const xmlChar);
@@ -1217,7 +1236,7 @@ mod tests {
             assert_eq!(to_string(f64::NEG_INFINITY, b"0.00"), "-Infinity");
         }
     }
-
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_padding_and_java_quirks() {
         unsafe {
@@ -1294,7 +1313,7 @@ mod tests {
     fn test_format_alphabetic() {
         unsafe {
             // The xsl:number token formatter (not the picture parser).
-            let p = xsltFormatNumber(27.0, b"a\0".as_ptr() as *const xmlChar);
+            let p = xsltFormatNumber(27.0, c"a".as_ptr() as *const xmlChar);
             assert_eq!(String::from_utf8_lossy(unsafe_bytes(p)), "aa");
             free_str(p);
         }
@@ -1303,7 +1322,7 @@ mod tests {
     #[test]
     fn test_format_roman() {
         unsafe {
-            let p = xsltFormatNumber(2024.0, b"I\0".as_ptr() as *const xmlChar);
+            let p = xsltFormatNumber(2024.0, c"I".as_ptr() as *const xmlChar);
             assert_eq!(String::from_utf8_lossy(unsafe_bytes(p)), "MMXXIV");
             free_str(p);
         }

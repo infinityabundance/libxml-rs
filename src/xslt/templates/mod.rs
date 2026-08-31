@@ -28,9 +28,6 @@ use std::os::raw::{c_int, c_void};
 use std::ptr;
 
 // ── Re-export xmlElementType variants for readability ────────────────────
-use crate::abi::types::xmlElementType::{
-    XML_CDATA_SECTION_NODE, XML_COMMENT_NODE, XML_PI_NODE, XML_TEXT_NODE,
-};
 
 // ── Template flags ───────────────────────────────────────────────────────
 
@@ -370,10 +367,8 @@ pub unsafe extern "C" fn xsltLookupTemplate(
     // Search this stylesheet's template list.
     let mut templ: *mut _xsltTemplate = (*style).templates;
     while !templ.is_null() {
-        if !(*templ).name.is_null() {
-            if xml_strcmp((*templ).name, name) == 0 {
-                return templ;
-            }
+        if !(*templ).name.is_null() && xml_strcmp((*templ).name, name) == 0 {
+            return templ;
         }
         templ = (*templ).next;
     }
@@ -413,7 +408,7 @@ pub unsafe extern "C" fn xsltLookupTemplate(
 /// `match_node` must be a valid pointer to a compiled pattern node, or
 /// null.
 #[no_mangle]
-pub unsafe extern "C" fn xsltDefaultPriorityFromNode(match_node: *mut _xmlNode) -> f64 {
+pub const unsafe extern "C" fn xsltDefaultPriorityFromNode(match_node: *mut _xmlNode) -> f64 {
     if match_node.is_null() {
         return 0.5;
     }
@@ -455,10 +450,8 @@ pub unsafe extern "C" fn xsltDefaultPriorityFromNode(match_node: *mut _xmlNode) 
 ///
 /// `style` must be a valid pointer to a compiled stylesheet.
 #[no_mangle]
-pub unsafe extern "C" fn xsltInitTemplateLookup(style: *mut _xsltStylesheet) {
-    if style.is_null() {
-        return;
-    }
+pub const unsafe extern "C" fn xsltInitTemplateLookup(style: *mut _xsltStylesheet) {
+    if style.is_null() {}
 
     // Phase 8: stub — a future implementation will:
     //

@@ -77,6 +77,7 @@ def parse_inc(path: Path):
 
 def fmt_table(name, pairs, ty):
     lines = [f"/// Upstream `{name}[]` — {len(pairs)} {ty} ranges (2.15.0)."]
+    lines.append(f"#[rustfmt::skip]")
     lines.append(f"#[no_mangle]")
     lines.append(f"pub static {name}: [{ty}; {len(pairs)}] = [")
     row = []
@@ -110,10 +111,16 @@ def main():
     out.append("// The tables are immutable const data; the #[no_mangle] exports")
     out.append("// match the upstream `const xmlChRangeGroup xmlIs*Group` and")
     out.append("// `const unsigned char xmlIsPubidChar_tab[256]` symbols (data ABI).")
+    out.append("//")
+    out.append("// The statics carry #[rustfmt::skip]: the tables are generated verbatim")
+    out.append("// one-range-per-line from upstream ranges.inc; rustfmt would expand")
+    out.append("// every range into a five-line block, destroying reviewability. This")
+    out.append("// is the standard rustfmt exemption for generated data (rustfmt::skip).")
     out.append("")
     out.append("use crate::abi::structs::{xmlChLRange, xmlChRangeGroup, xmlChSRange};")
     out.append("")
     out.append("/// Upstream `const unsigned char xmlIsPubidChar_tab[256]`.")
+    out.append("#[rustfmt::skip]")
     out.append("#[no_mangle]")
     out.append("pub static xmlIsPubidChar_tab: [u8; 256] = [")
     for i in range(0, 256, 16):
@@ -130,6 +137,7 @@ def main():
             out.append(fmt_table(gname.replace("Group", "_lrng"), lr, "xmlChLRange"))
             out.append("")
         out.append(f"/// Upstream `const xmlChRangeGroup {gname}`.")
+        out.append("#[rustfmt::skip]")
         out.append("#[no_mangle]")
         sr_ref = f"&{sname} as *const xmlChSRange" if sr else "core::ptr::null()"
         lr_ref = f"&{gname.replace('Group', '_lrng')} as *const xmlChLRange" if lr else "core::ptr::null()"
@@ -141,7 +149,7 @@ def main():
         out.append("};")
         out.append("")
     dst = ROOT / "src/xml/unicode_tables.rs"
-    dst.write_text("\n".join(out) + "\n")
+    dst.write_text("\n".join(out).rstrip("\n") + "\n")
     print(f"wrote {dst.relative_to(ROOT)} (pubid=256, groups={len(groups)})")
     print(f"input: {rel} sha256={src_hash}")
 

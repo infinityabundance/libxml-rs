@@ -20,9 +20,9 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_double, c_int, c_long, c_uint};
+use std::os::raw::{c_char, c_int, c_long, c_uint};
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
+use crate::abi::allocator::xmlMallocImpl;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 
@@ -50,7 +50,7 @@ use libc::LC_ALL_MASK;
 ///
 /// Always returns 1 (allowed).
 #[no_mangle]
-pub unsafe extern "C" fn xsltSecurityAllow(
+pub const unsafe extern "C" fn xsltSecurityAllow(
     _sec: *mut c_void,
     _ctxt: *mut _xsltTransformContext,
     _value: *const c_char,
@@ -70,7 +70,7 @@ pub unsafe extern "C" fn xsltSecurityAllow(
 ///
 /// Always returns 0 (forbidden).
 #[no_mangle]
-pub unsafe extern "C" fn xsltSecurityForbid(
+pub const unsafe extern "C" fn xsltSecurityForbid(
     _sec: *mut c_void,
     _ctxt: *mut _xsltTransformContext,
     _value: *const c_char,
@@ -143,12 +143,10 @@ pub unsafe extern "C" fn xsltCheckRead(
         }
         None => false,
     };
-    if is_network {
-        if !sec.is_null() {
-            let prefs = sec as *mut crate::xslt::security::XsltSecurityPrefs;
-            if let Some(cb) = (*prefs).readNet {
-                return cb(sec, ctxt as *mut c_void, URL as *const c_char);
-            }
+    if is_network && !sec.is_null() {
+        let prefs = sec as *mut crate::xslt::security::XsltSecurityPrefs;
+        if let Some(cb) = (*prefs).readNet {
+            return cb(sec, ctxt as *mut c_void, URL as *const c_char);
         }
     }
     1
@@ -191,12 +189,10 @@ pub unsafe extern "C" fn xsltCheckWrite(
         }
         None => false,
     };
-    if is_network {
-        if !sec.is_null() {
-            let prefs = sec as *mut crate::xslt::security::XsltSecurityPrefs;
-            if let Some(cb) = (*prefs).writeNet {
-                return cb(sec, ctxt as *mut c_void, URL as *const c_char);
-            }
+    if is_network && !sec.is_null() {
+        let prefs = sec as *mut crate::xslt::security::XsltSecurityPrefs;
+        if let Some(cb) = (*prefs).writeNet {
+            return cb(sec, ctxt as *mut c_void, URL as *const c_char);
         }
     }
     1
@@ -323,8 +319,8 @@ pub unsafe extern "C" fn xsltTransformError() -> c_int {
 /// The System V AMD64 `__va_list_tag` (24 bytes) — same layout as the
 /// writer module's shims.
 #[repr(C)]
-#[derive(Clone, Copy)]
-struct VaListTag {
+#[derive(Clone, Copy, Debug)]
+pub struct VaListTag {
     gp_offset: c_uint,
     fp_offset: c_uint,
     overflow_arg_area: *mut c_void,
@@ -452,7 +448,7 @@ pub unsafe extern "C" fn xsltTimestamp() -> c_long {
 pub unsafe extern "C" fn xsltCalibrateAdjust(delta: c_long) {
     // Upstream stores a process-lifetime calibration offset; the candidate
     // applies it to the monotonic clock read.
-    CALIBRATION_OFFSET.fetch_add(delta as i64, core::sync::atomic::Ordering::Relaxed);
+    CALIBRATION_OFFSET.fetch_add(delta, core::sync::atomic::Ordering::Relaxed);
 }
 
 static CALIBRATION_OFFSET: core::sync::atomic::AtomicI64 = core::sync::atomic::AtomicI64::new(0);
@@ -509,7 +505,7 @@ pub unsafe extern "C" fn xsltNewLocale(
         name.push(0);
         let locale = libc::newlocale(LC_ALL_MASK, name.as_ptr() as *const c_char, ptr::null_mut());
         if !locale.is_null() {
-            return locale as *mut c_void;
+            return locale;
         }
         // Continue without the country code.
         name.truncate(llen);
@@ -519,7 +515,7 @@ pub unsafe extern "C" fn xsltNewLocale(
     name.push(0);
     let locale = libc::newlocale(LC_ALL_MASK, name.as_ptr() as *const c_char, ptr::null_mut());
     if !locale.is_null() {
-        return locale as *mut c_void;
+        return locale;
     }
     // For two-letter languages upstream consults xsltDefaultRegion; the
     // candidate keeps the common ISO-3166 fallbacks. Divergence: languages
@@ -550,7 +546,7 @@ pub unsafe extern "C" fn xsltNewLocale(
             let locale =
                 libc::newlocale(LC_ALL_MASK, rn.as_ptr() as *const c_char, ptr::null_mut());
             if !locale.is_null() {
-                return locale as *mut c_void;
+                return locale;
             }
         }
     }
@@ -581,7 +577,7 @@ pub unsafe extern "C" fn xsltFreeLocale(locale: *mut c_void) {
 /// void xsltFreeLocales(void);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xsltFreeLocales() {}
+pub const unsafe extern "C" fn xsltFreeLocales() {}
 
 /// `xsltLocaleStrcmp` (xsltlocale.c): compare two strings in a collation
 /// locale (upstream uses strcoll).
@@ -629,7 +625,7 @@ pub unsafe extern "C" fn xsltStrxfrm(locale: *mut c_void, string: *const xmlChar
         string as *const c_char,
         len + 1,
     );
-    if n >= len + 1 {
+    if n > len {
         // Buffer too small (should not happen with len+1): return a copy.
         let mut copy = vec![0u8; n + 1];
         libc::strxfrm(
@@ -666,7 +662,7 @@ pub unsafe extern "C" fn xsltStrxfrm(locale: *mut c_void, string: *const xmlChar
 ///
 /// The candidate has no debugger; always returns 0.
 #[no_mangle]
-pub unsafe extern "C" fn xsltGetDebuggerStatus() -> c_int {
+pub const unsafe extern "C" fn xsltGetDebuggerStatus() -> c_int {
     0
 }
 
@@ -714,7 +710,7 @@ pub unsafe extern "C" fn xsltSaveProfiling(
     output: *mut libc::FILE,
 ) {
     let out = if output.is_null() {
-        libc::fdopen(1, b"w\0".as_ptr() as *const c_char)
+        libc::fdopen(1, c"w".as_ptr() as *const c_char)
     } else {
         output
     };
@@ -744,7 +740,7 @@ pub unsafe extern "C" fn xsltProfileStylesheet(
         return ptr::null_mut();
     }
     let out = if output.is_null() {
-        libc::fdopen(1, b"w\0".as_ptr() as *const c_char)
+        libc::fdopen(1, c"w".as_ptr() as *const c_char)
     } else {
         output
     };
@@ -774,7 +770,7 @@ unsafe fn write_profiling_report(ctxt: *mut _xsltTransformContext, out: *mut lib
     let _ = ctxt;
     libc::fprintf(
         out,
-        b"libxslt profiling results\n========================\n\0".as_ptr() as *const c_char,
+        c"libxslt profiling results\n========================\n".as_ptr() as *const c_char,
     );
     // The candidate engine does not track per-template timings; report a
     // single total line using the transform state (documented divergence:
@@ -782,7 +778,7 @@ unsafe fn write_profiling_report(ctxt: *mut _xsltTransformContext, out: *mut lib
     let calls: c_int = if (*ctxt).state == 0 { 1 } else { 0 };
     libc::fprintf(
         out,
-        b"  %8d  %8.4fs  template\n\0".as_ptr() as *const c_char,
+        c"  %8d  %8.4fs  template\n".as_ptr() as *const c_char,
         calls,
         0.0f64,
     );
@@ -797,7 +793,7 @@ unsafe fn write_profiling_report(ctxt: *mut _xsltTransformContext, out: *mut lib
 /// xmlDocPtr xsltGetProfileInformation(xsltTransformContextPtr ctxt);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xsltGetProfileInformation(
+pub const unsafe extern "C" fn xsltGetProfileInformation(
     ctxt: *mut _xsltTransformContext,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() {

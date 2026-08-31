@@ -27,8 +27,9 @@
   "exsltStrXpathCtxtRegister"
  ],
  "verdict_totals": {
-  "IMPLEMENTED_UNVERIFIED": 44,
-  "PARTIAL": 41
+  "IMPLEMENTED_UNVERIFIED": 76,
+  "PARTIAL": 1,
+  "UNOBLIGATED": 8
  },
  "uncategorized_oracle_functions": [],
  "subsystems": {
@@ -110,18 +111,15 @@
    "missing_symbols": [],
    "obligations_total": 13,
    "obligations": {
-    "STUB": 1,
-    "IMPLEMENTED": 11,
-    "INTENTIONAL_NOOP": 1
+    "INTENTIONAL_NOOP": 2,
+    "IMPLEMENTED": 11
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "xmlDictCleanup"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "hashes": {
@@ -383,18 +381,16 @@
    "obligations_total": 71,
    "obligations": {
     "IMPLEMENTED": 70,
-    "STUB": 1
+    "INTENTIONAL_NOOP": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 1,
-   "stub_symbols": [
-    "xmlSprintfElementContent"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
     "TREE-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xml-parser": {
@@ -413,94 +409,18 @@
    "oracle_dso_functions": 109,
    "oracle_dso_globals": 3,
    "header_only_functions": 0,
-   "candidate_functions": 77,
-   "missing_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "candidate_functions": 112,
+   "missing_symbols": [],
    "obligations_total": 112,
    "obligations": {
-    "IMPLEMENTED": 71,
-    "INTENTIONAL_NOOP": 2,
-    "UNKNOWN": 35,
-    "NOT_APPLICABLE": 3,
-    "STUB": 1
+    "IMPLEMENTED": 106,
+    "INTENTIONAL_NOOP": 3,
+    "NOT_APPLICABLE": 3
    },
    "obligation_gap": 0,
    "semantic_verified": 7,
-   "stub_symbols": [
-    "xmlParserInputRead"
-   ],
-   "unknown_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [
     "CALLBACK-001",
     "ERROR-001",
@@ -509,7 +429,7 @@
     "TREE-001",
     "XPATH-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "parser-internals": {
@@ -527,28 +447,21 @@
    "oracle_dso_functions": 75,
    "oracle_dso_globals": 3,
    "header_only_functions": 0,
-   "candidate_functions": 76,
-   "missing_symbols": [
-    "xmlCtxtPopInput",
-    "xmlCtxtPushInput"
-   ],
+   "candidate_functions": 78,
+   "missing_symbols": [],
    "obligations_total": 78,
    "obligations": {
-    "IMPLEMENTED": 73,
-    "UNKNOWN": 2,
+    "IMPLEMENTED": 75,
     "NOT_APPLICABLE": 3
    },
    "obligation_gap": 0,
    "semantic_verified": 1,
    "stub_symbols": [],
-   "unknown_symbols": [
-    "xmlCtxtPopInput",
-    "xmlCtxtPushInput"
-   ],
+   "unknown_symbols": [],
    "courts": [
     "DATA-GLOBALS-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "push-parser": {
@@ -567,94 +480,18 @@
    "oracle_dso_functions": 130,
    "oracle_dso_globals": 3,
    "header_only_functions": 0,
-   "candidate_functions": 98,
-   "missing_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "candidate_functions": 133,
+   "missing_symbols": [],
    "obligations_total": 133,
    "obligations": {
-    "IMPLEMENTED": 92,
-    "INTENTIONAL_NOOP": 2,
-    "UNKNOWN": 35,
-    "NOT_APPLICABLE": 3,
-    "STUB": 1
+    "IMPLEMENTED": 127,
+    "INTENTIONAL_NOOP": 3,
+    "NOT_APPLICABLE": 3
    },
    "obligation_gap": 0,
    "semantic_verified": 7,
-   "stub_symbols": [
-    "xmlParserInputRead"
-   ],
-   "unknown_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [
     "CALLBACK-001",
     "ERROR-001",
@@ -663,7 +500,7 @@
     "TREE-001",
     "XPATH-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "sax1": {
@@ -713,18 +550,15 @@
    "missing_symbols": [],
    "obligations_total": 36,
    "obligations": {
-    "STUB": 1,
-    "INTENTIONAL_NOOP": 1,
+    "INTENTIONAL_NOOP": 2,
     "IMPLEMENTED": 34
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "htmlDefaultSAXHandlerInit"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "html-parser": {
@@ -742,31 +576,20 @@
    "oracle_dso_functions": 45,
    "oracle_dso_globals": 1,
    "header_only_functions": 0,
-   "candidate_functions": 44,
-   "missing_symbols": [
-    "htmlCtxtSetOptions",
-    "htmlUTF8ToHtml"
-   ],
+   "candidate_functions": 46,
+   "missing_symbols": [],
    "obligations_total": 46,
    "obligations": {
-    "IMPLEMENTED": 40,
-    "UNKNOWN": 2,
+    "IMPLEMENTED": 42,
     "NOT_APPLICABLE": 1,
-    "STUB": 3
+    "INTENTIONAL_NOOP": 3
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "htmlElementAllowedHere",
-    "htmlInitAutoClose",
-    "htmlParseCharRef"
-   ],
-   "unknown_symbols": [
-    "htmlCtxtSetOptions",
-    "htmlUTF8ToHtml"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "html-tree": {
@@ -818,18 +641,16 @@
    "obligations_total": 50,
    "obligations": {
     "IMPLEMENTED": 49,
-    "STUB": 1
+    "INTENTIONAL_NOOP": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 7,
-   "stub_symbols": [
-    "xmlFileMatch"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
     "SAVE-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "resource-loading": {
@@ -946,28 +767,21 @@
    "oracle_dso_functions": 32,
    "oracle_dso_globals": 7,
    "header_only_functions": 0,
-   "candidate_functions": 37,
-   "missing_symbols": [
-    "xmlIsolat1ToUTF8",
-    "xmlUTF8ToIsolat1"
-   ],
+   "candidate_functions": 39,
+   "missing_symbols": [],
    "obligations_total": 39,
    "obligations": {
-    "IMPLEMENTED": 30,
-    "NOT_APPLICABLE": 7,
-    "UNKNOWN": 2
+    "IMPLEMENTED": 32,
+    "NOT_APPLICABLE": 7
    },
    "obligation_gap": 0,
    "semantic_verified": 6,
    "stub_symbols": [],
-   "unknown_symbols": [
-    "xmlIsolat1ToUTF8",
-    "xmlUTF8ToIsolat1"
-   ],
+   "unknown_symbols": [],
    "courts": [
     "ENCODING-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "serialization": {
@@ -1052,20 +866,18 @@
    "obligations_total": 44,
    "obligations": {
     "IMPLEMENTED": 40,
-    "STUB": 1,
+    "INTENTIONAL_NOOP": 1,
     "NOT_APPLICABLE": 3
    },
    "obligation_gap": 0,
    "semantic_verified": 18,
-   "stub_symbols": [
-    "xmlXPathInit"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
     "GLOBALS-THREADING-001",
     "XPATH-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xpath-internals": {
@@ -1087,21 +899,18 @@
    "missing_symbols": [],
    "obligations_total": 117,
    "obligations": {
-    "IMPLEMENTED": 115,
-    "STUB": 2
+    "IMPLEMENTED": 116,
+    "INTENTIONAL_NOOP": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 87,
-   "stub_symbols": [
-    "xmlXPathNodeSetFreeNs",
-    "xmlXPathRegisterAllFunctions"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [
     "CALLBACK-001",
     "XPATH-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xpointer": {
@@ -1148,23 +957,18 @@
    "oracle_dso_functions": 13,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 12,
-   "missing_symbols": [
-    "xmlXIncludeSetResourceLoader"
-   ],
+   "candidate_functions": 13,
+   "missing_symbols": [],
    "obligations_total": 13,
    "obligations": {
-    "IMPLEMENTED": 12,
-    "UNKNOWN": 1
+    "IMPLEMENTED": 13
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [],
-   "unknown_symbols": [
-    "xmlXIncludeSetResourceLoader"
-   ],
+   "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xlink": {
@@ -1180,30 +984,18 @@
    "oracle_dso_functions": 5,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "xlinkGetDefaultDetect",
-    "xlinkGetDefaultHandler",
-    "xlinkIsLink",
-    "xlinkSetDefaultDetect",
-    "xlinkSetDefaultHandler"
-   ],
+   "candidate_functions": 5,
+   "missing_symbols": [],
    "obligations_total": 5,
    "obligations": {
-    "UNKNOWN": 5
+    "IMPLEMENTED": 5
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
    "stub_symbols": [],
-   "unknown_symbols": [
-    "xlinkGetDefaultDetect",
-    "xlinkGetDefaultHandler",
-    "xlinkIsLink",
-    "xlinkSetDefaultDetect",
-    "xlinkSetDefaultHandler"
-   ],
+   "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": "xlink.h functions are exported but undocumented (absent from the Doxygen public inventory)."
   },
   "xsd": {
@@ -1222,26 +1014,19 @@
    "oracle_dso_functions": 30,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 29,
-   "missing_symbols": [
-    "xmlSchemaSetResourceLoader"
-   ],
+   "candidate_functions": 30,
+   "missing_symbols": [],
    "obligations_total": 30,
    "obligations": {
-    "IMPLEMENTED": 28,
-    "STUB": 1,
-    "UNKNOWN": 1
+    "IMPLEMENTED": 29,
+    "INTENTIONAL_NOOP": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "xmlSchemaFreeWildcard"
-   ],
-   "unknown_symbols": [
-    "xmlSchemaSetResourceLoader"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xsd-datatypes": {
@@ -1264,16 +1049,14 @@
    "obligations_total": 34,
    "obligations": {
     "IMPLEMENTED": 33,
-    "STUB": 1
+    "INTENTIONAL_NOOP": 1
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "xmlSchemaCleanupTypes"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "relaxng": {
@@ -1291,31 +1074,19 @@
    "oracle_dso_functions": 27,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 24,
-   "missing_symbols": [
-    "xmlRelaxNGSetResourceLoader",
-    "xmlRelaxNGValidCtxtClearErrors",
-    "xmlRelaxParserSetIncLImit"
-   ],
+   "candidate_functions": 27,
+   "missing_symbols": [],
    "obligations_total": 27,
    "obligations": {
-    "STUB": 2,
-    "IMPLEMENTED": 22,
-    "UNKNOWN": 3
+    "INTENTIONAL_NOOP": 2,
+    "IMPLEMENTED": 25
    },
    "obligation_gap": 0,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "xmlRelaxNGCleanupTypes",
-    "xmlRelaxNGInitTypes"
-   ],
-   "unknown_symbols": [
-    "xmlRelaxNGSetResourceLoader",
-    "xmlRelaxNGValidCtxtClearErrors",
-    "xmlRelaxParserSetIncLImit"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "schematron": {
@@ -1450,25 +1221,20 @@
    "oracle_dso_functions": 89,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 88,
-   "missing_symbols": [
-    "xmlTextReaderSetResourceLoader"
-   ],
+   "candidate_functions": 89,
+   "missing_symbols": [],
    "obligations_total": 89,
    "obligations": {
-    "IMPLEMENTED": 88,
-    "UNKNOWN": 1
+    "IMPLEMENTED": 89
    },
    "obligation_gap": 0,
    "semantic_verified": 31,
    "stub_symbols": [],
-   "unknown_symbols": [
-    "xmlTextReaderSetResourceLoader"
-   ],
+   "unknown_symbols": [],
    "courts": [
     "READER-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "writer": {
@@ -1688,98 +1454,18 @@
    "oracle_dso_functions": 377,
    "oracle_dso_globals": 6,
    "header_only_functions": 0,
-   "candidate_functions": 346,
-   "missing_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtPopInput",
-    "xmlCtxtPushInput",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "candidate_functions": 383,
+   "missing_symbols": [],
    "obligations_total": 383,
    "obligations": {
-    "IMPLEMENTED": 337,
-    "INTENTIONAL_NOOP": 2,
-    "UNKNOWN": 37,
-    "NOT_APPLICABLE": 6,
-    "STUB": 1
+    "IMPLEMENTED": 374,
+    "INTENTIONAL_NOOP": 3,
+    "NOT_APPLICABLE": 6
    },
    "obligation_gap": 0,
    "semantic_verified": 50,
-   "stub_symbols": [
-    "xmlParserInputRead"
-   ],
-   "unknown_symbols": [
-    "xmlCtxtGetCatalogs",
-    "xmlCtxtGetDeclaredEncoding",
-    "xmlCtxtGetDict",
-    "xmlCtxtGetDocTypeDecl",
-    "xmlCtxtGetDocument",
-    "xmlCtxtGetInputPosition",
-    "xmlCtxtGetInputWindow",
-    "xmlCtxtGetNode",
-    "xmlCtxtGetOptions",
-    "xmlCtxtGetPrivate",
-    "xmlCtxtGetSaxHandler",
-    "xmlCtxtGetStandalone",
-    "xmlCtxtGetStatus",
-    "xmlCtxtGetUserData",
-    "xmlCtxtGetValidCtxt",
-    "xmlCtxtGetVersion",
-    "xmlCtxtIsHtml",
-    "xmlCtxtIsInSubset",
-    "xmlCtxtIsStopped",
-    "xmlCtxtParseContent",
-    "xmlCtxtParseDtd",
-    "xmlCtxtPopInput",
-    "xmlCtxtPushInput",
-    "xmlCtxtSetCatalogs",
-    "xmlCtxtSetCharEncConvImpl",
-    "xmlCtxtSetDict",
-    "xmlCtxtSetPrivate",
-    "xmlCtxtSetResourceLoader",
-    "xmlCtxtSetSaxHandler",
-    "xmlCtxtValidateDocument",
-    "xmlCtxtValidateDtd",
-    "xmlInputSetEncodingHandler",
-    "xmlNewInputFromFd",
-    "xmlNewInputFromIO",
-    "xmlNewInputFromMemory",
-    "xmlNewInputFromString",
-    "xmlNewInputFromUrl"
-   ],
+   "stub_symbols": [],
+   "unknown_symbols": [],
    "courts": [
     "CALLBACK-001",
     "DATA-GLOBALS-001",
@@ -1792,7 +1478,7 @@
     "WRITER-001",
     "XPATH-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": "Legacy 1.x/2.0-era entry points. The DOCB parser family (xmlDocb*, xmlParseDocTypeDecl-era DOCB paths) was removed from libxml2 in 2.12 and is historical surface only; it is tracked by the historical epoch atlases."
   },
   "feature-version": {
@@ -1843,10 +1529,8 @@
    "oracle_dso_functions": 40,
    "oracle_dso_globals": 9,
    "header_only_functions": 5,
-   "candidate_functions": 48,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 52,
+   "missing_symbols": [],
    "obligations_total": 49,
    "obligations": {
     "NOT_APPLICABLE": 9,
@@ -1860,7 +1544,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-compilation": {
@@ -1938,10 +1622,8 @@
    "oracle_dso_functions": 69,
    "oracle_dso_globals": 5,
    "header_only_functions": 6,
-   "candidate_functions": 73,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 77,
+   "missing_symbols": [],
    "obligations_total": 74,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -1955,7 +1637,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-templates": {
@@ -2033,10 +1715,8 @@
    "oracle_dso_functions": 46,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 50,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 54,
+   "missing_symbols": [],
    "obligations_total": 51,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2050,7 +1730,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-variables": {
@@ -2098,10 +1778,8 @@
    "oracle_dso_functions": 35,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 39,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 43,
+   "missing_symbols": [],
    "obligations_total": 40,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2115,7 +1793,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-rvt": {
@@ -2135,10 +1813,8 @@
    "oracle_dso_functions": 51,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 55,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 59,
+   "missing_symbols": [],
    "obligations_total": 56,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2152,7 +1828,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-keys": {
@@ -2200,10 +1876,8 @@
    "oracle_dso_functions": 34,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 38,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 42,
+   "missing_symbols": [],
    "obligations_total": 39,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2217,7 +1891,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-numbering": {
@@ -2266,10 +1940,8 @@
    "oracle_dso_functions": 34,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 38,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 42,
+   "missing_symbols": [],
    "obligations_total": 39,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2283,7 +1955,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-namespace-alias": {
@@ -2360,10 +2032,8 @@
    "oracle_dso_functions": 35,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 39,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 43,
+   "missing_symbols": [],
    "obligations_total": 40,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2377,7 +2047,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-documents": {
@@ -2427,10 +2097,8 @@
    "oracle_dso_functions": 43,
    "oracle_dso_globals": 9,
    "header_only_functions": 5,
-   "candidate_functions": 51,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 55,
+   "missing_symbols": [],
    "obligations_total": 52,
    "obligations": {
     "NOT_APPLICABLE": 9,
@@ -2445,7 +2113,7 @@
     "CALLBACK-001",
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-transform-exec": {
@@ -2595,10 +2263,8 @@
    "oracle_dso_functions": 66,
    "oracle_dso_globals": 5,
    "header_only_functions": 6,
-   "candidate_functions": 70,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 74,
+   "missing_symbols": [],
    "obligations_total": 71,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2612,7 +2278,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-profiling": {
@@ -2630,10 +2296,8 @@
    "oracle_dso_functions": 34,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 38,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 42,
+   "missing_symbols": [],
    "obligations_total": 39,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2647,7 +2311,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-errors": {
@@ -2666,10 +2330,8 @@
    "oracle_dso_functions": 33,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 37,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 41,
+   "missing_symbols": [],
    "obligations_total": 38,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2683,7 +2345,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-global-state": {
@@ -2704,10 +2366,8 @@
    "oracle_dso_functions": 44,
    "oracle_dso_globals": 9,
    "header_only_functions": 5,
-   "candidate_functions": 52,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 56,
+   "missing_symbols": [],
    "obligations_total": 53,
    "obligations": {
     "NOT_APPLICABLE": 9,
@@ -2722,7 +2382,7 @@
     "CALLBACK-001",
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-loader-hooks": {
@@ -2770,10 +2430,8 @@
    "oracle_dso_functions": 33,
    "oracle_dso_globals": 5,
    "header_only_functions": 5,
-   "candidate_functions": 37,
-   "missing_symbols": [
-    "xslDebugStatus"
-   ],
+   "candidate_functions": 41,
+   "missing_symbols": [],
    "obligations_total": 38,
    "obligations": {
     "NOT_APPLICABLE": 5,
@@ -2787,7 +2445,7 @@
    "courts": [
     "XSLT-001"
    ],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "xslt-extra": {
@@ -2868,10 +2526,8 @@
    "oracle_dso_functions": 1,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltCommonRegister"
-   ],
+   "candidate_functions": 1,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 1,
@@ -2879,7 +2535,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-math": {
@@ -2895,11 +2551,8 @@
    "oracle_dso_functions": 2,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltMathRegister",
-    "exsltMathXpathCtxtRegister"
-   ],
+   "candidate_functions": 2,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 2,
@@ -2907,7 +2560,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-sets": {
@@ -2923,11 +2576,8 @@
    "oracle_dso_functions": 2,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltSetsRegister",
-    "exsltSetsXpathCtxtRegister"
-   ],
+   "candidate_functions": 2,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 2,
@@ -2935,7 +2585,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-strings": {
@@ -2951,11 +2601,8 @@
    "oracle_dso_functions": 2,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltStrRegister",
-    "exsltStrXpathCtxtRegister"
-   ],
+   "candidate_functions": 2,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 2,
@@ -2963,7 +2610,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-dynamic": {
@@ -2979,10 +2626,8 @@
    "oracle_dso_functions": 1,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltDynRegister"
-   ],
+   "candidate_functions": 1,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 1,
@@ -2990,7 +2635,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-dates": {
@@ -3006,11 +2651,8 @@
    "oracle_dso_functions": 2,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltDateRegister",
-    "exsltDateXpathCtxtRegister"
-   ],
+   "candidate_functions": 2,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 2,
@@ -3018,7 +2660,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-functions": {
@@ -3034,10 +2676,8 @@
    "oracle_dso_functions": 1,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 0,
-   "missing_symbols": [
-    "exsltFuncRegister"
-   ],
+   "candidate_functions": 1,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 1,
@@ -3045,7 +2685,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   },
   "exslt-registry": {
@@ -3061,21 +2701,8 @@
    "oracle_dso_functions": 13,
    "oracle_dso_globals": 0,
    "header_only_functions": 0,
-   "candidate_functions": 1,
-   "missing_symbols": [
-    "exsltCommonRegister",
-    "exsltDateRegister",
-    "exsltDateXpathCtxtRegister",
-    "exsltDynRegister",
-    "exsltFuncRegister",
-    "exsltMathRegister",
-    "exsltMathXpathCtxtRegister",
-    "exsltSaxonRegister",
-    "exsltSetsRegister",
-    "exsltSetsXpathCtxtRegister",
-    "exsltStrRegister",
-    "exsltStrXpathCtxtRegister"
-   ],
+   "candidate_functions": 13,
+   "missing_symbols": [],
    "obligations_total": 0,
    "obligations": {},
    "obligation_gap": 13,
@@ -3083,7 +2710,7 @@
    "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "UNOBLIGATED",
    "note": ""
   }
  }

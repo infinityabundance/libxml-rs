@@ -46,6 +46,7 @@ struct ListNode {
 }
 
 /// The linked list struct.
+#[derive(Debug)]
 pub struct List {
     front: *mut ListNode,
     back: *mut ListNode,
@@ -586,6 +587,21 @@ pub unsafe fn list_insert(l: *mut List, data: *mut c_void) -> c_int {
 /// ```c
 /// int xmlListAppend(xmlListPtr l, void *data);
 /// ```
+///
+/// # SAFETY
+///
+/// - `l`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 pub unsafe fn list_append(l: *mut List, data: *mut c_void) -> c_int {
     // UPSTREAM-PARITY (list.c xmlListAppend): with a comparator the new
     // element is inserted in sorted order (before the first node whose data
@@ -995,9 +1011,10 @@ pub unsafe fn list_reverse(l: *mut List) {
 
     let list = unsafe { &mut *l };
 
+    // `cur` keeps the old front (the new back): the walk below traverses the
+    // old-next chain to the old back, swapping each node's links.
     let mut cur = list.front;
-    list.front = list.back;
-    list.back = cur;
+    std::mem::swap(&mut list.front, &mut list.back);
 
     while !cur.is_null() {
         let next = unsafe { (*cur).next };

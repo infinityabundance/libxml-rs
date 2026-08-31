@@ -2,7 +2,7 @@
  "schema": "standards-reconciliation-1",
  "generator": "tools/evidence/standards_reconciliation.py",
  "phase": "11.1-P",
- "generated": "2026-08-30T16:38:51Z",
+ "generated": "2026-08-31T17:01:20Z",
  "policy": "For drop-in parity the upstream observable behavior takes precedence unless a documented safety constraint requires a safe divergence. Upstream-vs-spec differences are recorded, not silently corrected.",
  "areas": [
   {

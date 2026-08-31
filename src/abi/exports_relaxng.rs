@@ -154,7 +154,7 @@ unsafe fn write_to_stream(output: *mut c_void, text: &str) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// RELAX NG pattern-kind names (the XML element names from the RELAX NG syntax).
-fn pattern_kind_name(t: &RelaxNgPatternType) -> &'static str {
+const fn pattern_kind_name(t: &RelaxNgPatternType) -> &'static str {
     match t {
         RelaxNgPatternType::Element => "element",
         RelaxNgPatternType::Attribute => "attribute",
@@ -293,8 +293,18 @@ fn render_schema(schema: &RelaxNgSchema, tree_mode: bool) -> String {
 /// Returns 0 on success, -1 on error. The candidate's datatype checking is
 /// compiled into the internal engine and needs no global initialization, so
 /// this always succeeds.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRelaxNGInitTypes() -> c_int {
+pub const unsafe extern "C" fn xmlRelaxNGInitTypes() -> c_int {
     0
 }
 
@@ -307,8 +317,18 @@ pub unsafe extern "C" fn xmlRelaxNGInitTypes() -> c_int {
 /// ```
 ///
 /// No-op: the candidate keeps no global datatype state.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlRelaxNGCleanupTypes() {
+pub const unsafe extern "C" fn xmlRelaxNGCleanupTypes() {
     // No-op: no global datatype state to tear down.
 }
 
@@ -736,7 +756,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidatePushElement(
 /// - `ctxt` must be a valid validation context pointer.
 /// - `data` must be a valid buffer of `len` bytes (or NULL when `len` is 0).
 #[no_mangle]
-pub unsafe extern "C" fn xmlRelaxNGValidatePushCData(
+pub const unsafe extern "C" fn xmlRelaxNGValidatePushCData(
     ctxt: *mut c_void,
     data: *const xmlChar,
     len: c_int,

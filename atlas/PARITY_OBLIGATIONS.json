@@ -66,9 +66,9 @@
    "candidate_functions": 1714,
    "counts": {
     "MISSING": 0,
-    "STUB": 15,
-    "INTENTIONAL_NOOP": 9,
-    "IMPLEMENTED_UNVERIFIED": 1113,
+    "STUB": 0,
+    "INTENTIONAL_NOOP": 23,
+    "IMPLEMENTED_UNVERIFIED": 1114,
     "CURRENT_PARITY_VERIFIED": 263,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
@@ -82,9 +82,9 @@
      "EXPORTED": 1422
     },
     "implementation_status": {
-     "STUB": 15,
-     "INTENTIONAL_NOOP": 9,
-     "IMPLEMENTED": 1363,
+     "STUB": 0,
+     "INTENTIONAL_NOOP": 23,
+     "IMPLEMENTED": 1364,
      "UNKNOWN": 13,
      "NOT_APPLICABLE": 22
     },
@@ -698,15 +698,17 @@
      "candidate_symbol": "htmlDefaultSAXHandlerInit",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:htmlDocContentDumpFormatOutput",
@@ -794,15 +796,17 @@
      "candidate_symbol": "htmlElementAllowedHere",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:htmlElementStatusHere",
@@ -922,15 +926,17 @@
      "candidate_symbol": "htmlInitAutoClose",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:htmlIsAutoClosed",
@@ -1146,15 +1152,17 @@
      "candidate_symbol": "htmlParseCharRef",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:htmlParseChunk",
@@ -5227,15 +5235,17 @@
      "candidate_symbol": "xmlDictCleanup",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlDictCreate",
@@ -5780,15 +5790,17 @@
      "candidate_symbol": "xmlFileMatch",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlFileOpen",
@@ -12181,15 +12193,17 @@
      "candidate_symbol": "xmlParserInputRead",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlParserInputShrink",
@@ -13274,15 +13288,17 @@
      "candidate_symbol": "xmlRelaxNGCleanupTypes",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlRelaxNGDump",
@@ -13402,15 +13418,17 @@
      "candidate_symbol": "xmlRelaxNGInitTypes",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlRelaxNGNewDocParserCtxt",
@@ -14828,15 +14846,17 @@
      "candidate_symbol": "xmlSchemaCleanupTypes",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlSchemaCollapseString",
@@ -15020,15 +15040,17 @@
      "candidate_symbol": "xmlSchemaFreeWildcard",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlSchemaGetBuiltInListSimpleTypeItemType",
@@ -16317,15 +16339,17 @@
      "candidate_symbol": "xmlSprintfElementContent",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlStopParser",
@@ -21586,15 +21610,17 @@
      "candidate_symbol": "xmlXPathInit",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlXPathIntersection",
@@ -22381,15 +22407,15 @@
      "candidate_symbol": "xmlXPathNodeSetFreeNs",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "IMPLEMENTED",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "has logic",
      "courts": [],
      "residuals": [],
-     "overall": "STUB"
+     "overall": "IMPLEMENTED_UNVERIFIED"
     },
     {
      "entity_id": "libxml2:xmlXPathNodeSetMerge",
@@ -22761,17 +22787,19 @@
      "candidate_symbol": "xmlXPathRegisterAllFunctions",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "PASS",
      "semantic_status": "PASS",
      "ownership_status": "PASS",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000138)",
      "courts": [
       "XPATH-001"
      ],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000138"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlXPathRegisterFunc",
@@ -27515,9 +27543,9 @@
    "candidate_functions": 14,
    "counts": {
     "MISSING": 0,
-    "STUB": 1,
+    "STUB": 0,
     "INTENTIONAL_NOOP": 0,
-    "IMPLEMENTED_UNVERIFIED": 12,
+    "IMPLEMENTED_UNVERIFIED": 13,
     "CURRENT_PARITY_VERIFIED": 0,
     "HISTORICAL_PARITY_VERIFIED": 0,
     "CUSTODIAN_VERIFIED": 0,
@@ -27531,9 +27559,9 @@
      "EXPORTED": 17
     },
     "implementation_status": {
-     "STUB": 1,
+     "STUB": 0,
      "INTENTIONAL_NOOP": 0,
-     "IMPLEMENTED": 12,
+     "IMPLEMENTED": 13,
      "UNKNOWN": 0,
      "NOT_APPLICABLE": 4
     },
@@ -27763,15 +27791,15 @@
      "candidate_symbol": "exsltSaxonRegister",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "IMPLEMENTED",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "has logic",
      "courts": [],
      "residuals": [],
-     "overall": "STUB"
+     "overall": "IMPLEMENTED_UNVERIFIED"
     },
     {
      "entity_id": "libexslt:exsltSetsRegister",

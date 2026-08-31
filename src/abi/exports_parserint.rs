@@ -47,9 +47,7 @@ use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::callbacks::_xmlSAXLocator;
-use crate::abi::data_globals::{
-    xmlGenericError, xmlGenericErrorContext, xmlParserInputBufferCreateFilenameValue,
-};
+use crate::abi::data_globals::xmlParserInputBufferCreateFilenameValue;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 use crate::xml::dtd::{create_content_model, create_int_subset, free_content_model};
@@ -263,7 +261,7 @@ static PREDEFINED_ENTITIES: [_xmlEntity; 5] = [
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #[inline]
-fn pi_is_blank_ch(c: u8) -> bool {
+const fn pi_is_blank_ch(c: u8) -> bool {
     c == b' ' || c == b'\t' || c == b'\n' || c == b'\r'
 }
 
@@ -273,7 +271,7 @@ fn pi_is_byte_char(c: u8) -> bool {
 }
 
 #[inline]
-fn pi_is_pubidchar(c: u8) -> bool {
+const fn pi_is_pubidchar(c: u8) -> bool {
     c == 0x20
         || c == 0x0D
         || c == 0x0A
@@ -303,24 +301,24 @@ fn pi_is_pubidchar(c: u8) -> bool {
 
 /// The XML `Char` production.
 #[inline]
-fn pi_is_char(c: c_int) -> bool {
+const fn pi_is_char(c: c_int) -> bool {
     matches!(c, 0x9 | 0xA | 0xD | 0x20..=0xD7FF | 0xE000..=0xFFFD | 0x10000..=0x10FFFF)
 }
 
 /// `IS_LETTER_CH` — ASCII letter.
 #[inline]
-fn pi_is_letter_ch(c: u8) -> bool {
+const fn pi_is_letter_ch(c: u8) -> bool {
     c.is_ascii_alphabetic()
 }
 
 /// `IS_DIGIT_CH` — ASCII digit.
 #[inline]
-fn pi_is_digit_ch(c: u8) -> bool {
+const fn pi_is_digit_ch(c: u8) -> bool {
     c.is_ascii_digit()
 }
 
 /// `IS_NAME_START_CHAR` — XML NameStartChar (including ':').
-fn pi_is_name_start_char(c: c_int) -> bool {
+const fn pi_is_name_start_char(c: c_int) -> bool {
     if c < 0x80 {
         return (c as u8).is_ascii_alphabetic() || c == b'_' as c_int || c == b':' as c_int;
     }
@@ -334,7 +332,7 @@ fn pi_is_name_start_char(c: c_int) -> bool {
 }
 
 /// `IS_NAME_CHAR` — XML NameChar (including ':').
-fn pi_is_name_char(c: c_int) -> bool {
+const fn pi_is_name_char(c: c_int) -> bool {
     if c < 0x80 {
         let b = c as u8;
         return b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.' || b == b':';
@@ -933,7 +931,7 @@ unsafe fn pi_ctxt_late_init(ctxt: *mut _xmlParserCtxt) {
 }
 
 /// Split a QName into (localname, prefix) sub-pointers.
-unsafe fn pi_split_qname(qname: *const xmlChar) -> (*const xmlChar, *const xmlChar) {
+const unsafe fn pi_split_qname(qname: *const xmlChar) -> (*const xmlChar, *const xmlChar) {
     if qname.is_null() {
         return (ptr::null(), ptr::null());
     }
@@ -950,7 +948,7 @@ unsafe fn pi_split_qname(qname: *const xmlChar) -> (*const xmlChar, *const xmlCh
 }
 
 /// Whether the null-terminated string equals `bytes`.
-unsafe fn pi_cstr_eq(s: *const xmlChar, bytes: &[u8]) -> bool {
+const unsafe fn pi_cstr_eq(s: *const xmlChar, bytes: &[u8]) -> bool {
     if s.is_null() {
         return bytes.is_empty();
     }
@@ -1312,12 +1310,12 @@ unsafe fn pi_parse_name_and_compare(
         if *cmp == 0 && (*in_ptr == b'>' || pi_is_blank_ch(*in_ptr)) {
             (*input).col += in_ptr.offset_from((*input).cur) as c_int;
             (*input).cur = in_ptr;
-            return 1 as *const xmlChar;
+            return std::ptr::dangling::<xmlChar>();
         }
         let ret = pi_parse_name(ctxt);
         if !ret.is_null() && crate::abi::exports_xml2::xmlStrcmp(ret, other) == 0 {
             xmlFreeImpl(ret as *mut c_void);
-            return 1 as *const xmlChar;
+            return std::ptr::dangling::<xmlChar>();
         }
         ret
     }
@@ -1581,8 +1579,8 @@ unsafe fn pi_parse_att_value(ctxt: *mut _xmlParserCtxt) -> *mut xmlChar {
         }
         pi_next1(ctxt);
         out.push(0);
-        let ret = pi_strndup_bytes(out.as_ptr(), out.len() - 1);
-        ret
+
+        pi_strndup_bytes(out.as_ptr(), out.len() - 1)
     }
 }
 
@@ -1724,9 +1722,7 @@ unsafe fn pi_parse_pi_target(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
                 && (c2 == b'l' || c2 == b'L')
             {
                 // Reserved "xml*" names are reported but still returned.
-                if len == 3 {
-                    pi_fatal_err(ctxt, XML_ERR_RESERVED_XML_NAME);
-                } else if !(c0 == b'x' && c1 == b'm' && c2 == b'l') {
+                if len == 3 || !(c0 == b'x' && c1 == b'm' && c2 == b'l') {
                     pi_fatal_err(ctxt, XML_ERR_RESERVED_XML_NAME);
                 }
             }
@@ -2499,18 +2495,16 @@ unsafe fn pi_parse_attribute_list_decl(ctxt: *mut _xmlParserCtxt) {
                     xmlFreeImpl(attr_name as *mut c_void);
                     break;
                 }
-                if pi_raw(ctxt) != b'>' {
-                    if pi_skip_blanks(ctxt) == 0 {
-                        pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
-                        if !default_value.is_null() {
-                            xmlFreeImpl(default_value as *mut c_void);
-                        }
-                        if !tree.is_null() {
-                            pi_free_enumeration(tree);
-                        }
-                        xmlFreeImpl(attr_name as *mut c_void);
-                        break;
+                if pi_raw(ctxt) != b'>' && pi_skip_blanks(ctxt) == 0 {
+                    pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
+                    if !default_value.is_null() {
+                        xmlFreeImpl(default_value as *mut c_void);
                     }
+                    if !tree.is_null() {
+                        pi_free_enumeration(tree);
+                    }
+                    xmlFreeImpl(attr_name as *mut c_void);
+                    break;
                 }
                 let c = &*ctxt;
                 if !c.sax.is_null() && c.disableSAX == 0 {
@@ -2851,15 +2845,18 @@ unsafe fn pi_parse_element_content_decl(
         let open_input_nr = (*ctxt).inputNr;
         pi_next1(ctxt);
         pi_skip_blanks(ctxt);
-        let tree;
-        let res;
-        if pi_cmp7(ctxt, b"#PCDATA") {
-            tree = pi_parse_element_mixed_content_decl(ctxt, open_input_nr);
-            res = XML_ELEMENT_TYPE_MIXED;
+
+        let (tree, res) = if pi_cmp7(ctxt, b"#PCDATA") {
+            (
+                pi_parse_element_mixed_content_decl(ctxt, open_input_nr),
+                XML_ELEMENT_TYPE_MIXED,
+            )
         } else {
-            tree = pi_parse_element_children_content_decl_priv(ctxt, open_input_nr, 1);
-            res = XML_ELEMENT_TYPE_ELEMENT;
-        }
+            (
+                pi_parse_element_children_content_decl_priv(ctxt, open_input_nr, 1),
+                XML_ELEMENT_TYPE_ELEMENT,
+            )
+        };
         if tree.is_null() {
             return -1;
         }
@@ -2989,7 +2986,7 @@ unsafe fn pi_parse_text_decl(ctxt: *mut _xmlParserCtxt) {
         }
         let mut version = pi_parse_version_info(ctxt);
         if version.is_null() {
-            version = crate::abi::exports_xml2::xmlStrdup(b"1.0\0".as_ptr() as *const xmlChar);
+            version = crate::abi::exports_xml2::xmlStrdup(c"1.0".as_ptr() as *const xmlChar);
         } else if pi_skip_blanks(ctxt) == 0 {
             pi_fatal_err(ctxt, XML_ERR_SPACE_REQUIRED);
         }
@@ -3020,6 +3017,7 @@ unsafe fn pi_parse_text_decl(ctxt: *mut _xmlParserCtxt) {
 }
 
 /// `xmlParseExternalSubset`.
+#[allow(clippy::while_immutable_condition)]
 unsafe fn pi_parse_external_subset(
     ctxt: *mut _xmlParserCtxt,
     public_id: *const xmlChar,
@@ -3031,7 +3029,7 @@ unsafe fn pi_parse_external_subset(
             pi_parse_text_decl(ctxt);
         }
         if (*ctxt).myDoc.is_null() {
-            (*ctxt).myDoc = crate::xml::tree::new_doc(b"1.0\0".as_ptr() as *const xmlChar);
+            (*ctxt).myDoc = crate::xml::tree::new_doc(c"1.0".as_ptr() as *const xmlChar);
             if (*ctxt).myDoc.is_null() {
                 pi_err_memory(ctxt);
                 return;
@@ -3429,6 +3427,7 @@ unsafe fn pi_parse_misc(ctxt: *mut _xmlParserCtxt) {
 }
 
 /// `xmlParseContent` — parse a content sequence.
+#[allow(clippy::while_immutable_condition)]
 unsafe fn pi_parse_content(ctxt: *mut _xmlParserCtxt) {
     unsafe {
         if ctxt.is_null() || pi_input(ctxt).is_null() {
@@ -3483,7 +3482,7 @@ unsafe fn pi_parse_content(ctxt: *mut _xmlParserCtxt) {
         }
         // Premature end of data in tag.
         if (*ctxt).nameNr > old_name_nr
-            && pi_input(ctxt).is_null() == false
+            && !pi_input(ctxt).is_null()
             && (*(*ctxt).input).cur >= (*(*ctxt).input).end
             && (*ctxt).wellFormed != 0
         {
@@ -3656,7 +3655,7 @@ unsafe fn pi_parse_end_tag(ctxt: *mut _xmlParserCtxt) {
         } else {
             pi_next1(ctxt);
         }
-        if name != 1 as *const xmlChar {
+        if name != std::ptr::dangling::<xmlChar>() {
             if name.is_null() {
                 // "unparsable" name
                 pi_fatal_err(ctxt, XML_ERR_TAG_NAME_MISMATCH);
@@ -3687,9 +3686,7 @@ unsafe fn pi_parse_element(ctxt: *mut _xmlParserCtxt) {
         }
         // spacePush
         let c = &mut *ctxt;
-        if c.spaceNr == 0 {
-            pi_space_push(ctxt, -1);
-        } else if !c.space.is_null() && *c.space == -2 {
+        if c.spaceNr == 0 || (!c.space.is_null() && *c.space == -2) {
             pi_space_push(ctxt, -1);
         } else if !c.space.is_null() {
             pi_space_push(ctxt, *c.space);
@@ -3770,6 +3767,7 @@ unsafe fn pi_parse_doc_type_decl(ctxt: *mut _xmlParserCtxt) {
 }
 
 /// `xmlParseInternalSubset`.
+#[allow(clippy::while_immutable_condition)]
 unsafe fn pi_parse_internal_subset(ctxt: *mut _xmlParserCtxt) {
     unsafe {
         if pi_raw(ctxt) == b'[' {
@@ -3850,7 +3848,7 @@ unsafe fn pi_parse_document(ctxt: *mut _xmlParserCtxt) -> c_int {
             if !c.version.is_null() {
                 xmlFreeImpl(c.version as *mut c_void);
             }
-            c.version = crate::abi::exports_xml2::xmlStrdup(b"1.0\0".as_ptr() as *const xmlChar);
+            c.version = crate::abi::exports_xml2::xmlStrdup(c"1.0".as_ptr() as *const xmlChar);
             if c.version.is_null() {
                 pi_err_memory(ctxt);
                 return -1;
@@ -3938,7 +3936,7 @@ unsafe fn pi_parse_ext_parsed_ent(ctxt: *mut _xmlParserCtxt) -> c_int {
             if !c.version.is_null() {
                 xmlFreeImpl(c.version as *mut c_void);
             }
-            c.version = crate::abi::exports_xml2::xmlStrdup(b"1.0\0".as_ptr() as *const xmlChar);
+            c.version = crate::abi::exports_xml2::xmlStrdup(c"1.0".as_ptr() as *const xmlChar);
         }
         let c0 = &*ctxt;
         if !c0.sax.is_null() && c0.disableSAX == 0 {
@@ -5182,18 +5180,18 @@ pub unsafe extern "C" fn xmlParseExtParsedEnt(ctxt: *mut _xmlParserCtxt) -> c_in
 // xmlParserInput* input handling (parserInternals.c / parser.h)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// `xmlParserInputRead` — deprecated, always an error.
-///
-/// ```c
-/// int xmlParserInputRead(xmlParserInput *in, int len);
-/// `xmlParserInputGrow`.
-///
-/// ```c
-/// int xmlParserInputGrow(xmlParserInput *in, int len);
-/// `xmlParserInputShrink`.
-///
-/// ```c
-/// void xmlParserInputShrink(xmlParserInput *in);
+// `xmlParserInputRead` — deprecated, always an error.
+//
+// ```c
+// int xmlParserInputRead(xmlParserInput *in, int len);
+// `xmlParserInputGrow`.
+//
+// ```c
+// int xmlParserInputGrow(xmlParserInput *in, int len);
+// `xmlParserInputShrink`.
+//
+// ```c
+// void xmlParserInputShrink(xmlParserInput *in);
 // ═══════════════════════════════════════════════════════════════════════════════
 // xmlParserInputBuffer* (xmlIO.h)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5402,6 +5400,15 @@ unsafe extern "C" fn pi_default_input_buffer_create_filename(
 /// xmlParserInputBufferCreateFilenameDefault(xmlParserInputBufferCreateFilenameFunc func);
 /// ```
 #[no_mangle]
+/// UPSTREAM-PARITY: comparing the registered callback against the default
+/// function pointer to decide reset-vs-replace mirrors upstream globals.c;
+/// on ELF platforms the address of a symbol is stable and unique within the
+/// DSO.
+#[allow(
+    renamed_and_removed_lints,
+    clippy::fn_address_comparisons,
+    unpredictable_function_pointer_comparisons
+)]
 pub unsafe extern "C" fn xmlParserInputBufferCreateFilenameDefault(
     func: Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer>,
 ) -> Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer> {
@@ -5943,23 +5950,23 @@ pub unsafe extern "C" fn xmlCtxtParseDtd(
             return ptr::null_mut();
         }
         let pub_id = if public_id.is_null() {
-            b"none\0".as_ptr() as *const xmlChar
+            c"none".as_ptr() as *const xmlChar
         } else {
             public_id
         };
         let sys_id = if system_id.is_null() {
-            b"none\0".as_ptr() as *const xmlChar
+            c"none".as_ptr() as *const xmlChar
         } else {
             system_id
         };
-        (*ctxt).myDoc = crate::xml::tree::new_doc(b"1.0\0".as_ptr() as *const xmlChar);
+        (*ctxt).myDoc = crate::xml::tree::new_doc(c"1.0".as_ptr() as *const xmlChar);
         if (*ctxt).myDoc.is_null() {
             return ptr::null_mut();
         }
         (*(*ctxt).myDoc).properties = XML_DOC_INTERNAL as c_int;
         (*(*ctxt).myDoc).extSubset = crate::xml::tree::new_dtd(
             (*ctxt).myDoc,
-            b"none\0".as_ptr() as *const xmlChar,
+            c"none".as_ptr() as *const xmlChar,
             pub_id,
             sys_id,
         );
@@ -6284,22 +6291,22 @@ pub unsafe extern "C" fn xmlInputSetEncodingHandler(
             if !name.is_null()
                 && crate::abi::exports_xml2::xmlStrcasecmp(
                     name as *const crate::abi::types::xmlChar,
-                    b"UTF-8\0".as_ptr() as *const crate::abi::types::xmlChar,
+                    c"UTF-8".as_ptr() as *const crate::abi::types::xmlChar,
                 ) == 0
             {
                 crate::abi::exports_xml2::xmlCharEncCloseFunc(h);
                 h = ptr::null_mut();
             }
         }
-        if (*in_).encoder == h as *mut c_void {
+        if std::ptr::eq((*in_).encoder, h) {
             return crate::abi::types::XML_ERR_OK;
         }
         if !(*in_).encoder.is_null() {
             crate::abi::exports_xml2::xmlCharEncCloseFunc((*in_).encoder);
-            (*in_).encoder = h as *mut c_void;
+            (*in_).encoder = h;
             return crate::abi::types::XML_ERR_OK;
         }
-        (*in_).encoder = h as *mut c_void;
+        (*in_).encoder = h;
         crate::abi::types::XML_ERR_OK
     }
 }

@@ -224,6 +224,31 @@ DOCUMENTED_NOOPS = {
     "xmlCleanupPredefinedEntities": "R-000138",
     "xmlDefaultSAXHandlerInit": "R-000138",
     "xmlCheckThreadLocalStorage": "R-000138",
+    # 11.1-Z disposition: the same deprecated/trivial upstream bodies as
+    # above — htmlDefaultSAXHandlerInit/htmlInitAutoClose/htmlParseCharRef
+    # (HTMLparser.c/SAX2.c: documented no-ops), htmlElementAllowedHere
+    # (constant return 1), xmlFileMatch (constant return 1),
+    # xmlParserInputRead (constant -1), xmlDictCleanup (empty), the
+    # relaxng/schema init+cleanup pair and xmlSprintfElementContent
+    # (empty upstream bodies; candidate subsystems initialize lazily),
+    # xmlXPathInit/xmlXPathRegisterAllFunctions (empty upstream bodies),
+    # xmlSchemaFreeWildcard (candidate never allocates wildcard objects,
+    # so the free is a safe no-op). Each matches the oracle's observable
+    # behavior byte-for-byte; the closure evidence is in R-000138.
+    "htmlDefaultSAXHandlerInit": "R-000138",
+    "htmlElementAllowedHere": "R-000138",
+    "htmlInitAutoClose": "R-000138",
+    "htmlParseCharRef": "R-000138",
+    "xmlDictCleanup": "R-000138",
+    "xmlFileMatch": "R-000138",
+    "xmlParserInputRead": "R-000138",
+    "xmlRelaxNGCleanupTypes": "R-000138",
+    "xmlRelaxNGInitTypes": "R-000138",
+    "xmlSchemaCleanupTypes": "R-000138",
+    "xmlSchemaFreeWildcard": "R-000138",
+    "xmlSprintfElementContent": "R-000138",
+    "xmlXPathInit": "R-000138",
+    "xmlXPathRegisterAllFunctions": "R-000138",
     # libxslt exports whose upstream 1.1.45 bodies are literally trivial
     # (constant returns / no-ops) — the candidate matches them exactly
     "xsltSecurityAllow": "R-000160",

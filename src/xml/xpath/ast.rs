@@ -20,18 +20,31 @@ use std::fmt;
 /// XPath 1.0 axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Axis {
+    /// `ancestor` — all ancestors of the context node (parent, grandparent, …)
     Ancestor,
+    /// `ancestor-or-self` — all ancestors plus the context node itself
     AncestorOrSelf,
+    /// `attribute` — the attributes of the context node
     Attribute,
+    /// `child` — the children of the context node
     Child,
+    /// `descendant` — all descendants of the context node (children, grandchildren, …)
     Descendant,
+    /// `descendant-or-self` — all descendants plus the context node itself
     DescendantOrSelf,
+    /// `following` — every node after the context node in document order, excluding descendants
     Following,
+    /// `following-sibling` — the siblings that follow the context node
     FollowingSibling,
+    /// `namespace` — the namespace nodes of the context node
     Namespace,
+    /// `parent` — the parent of the context node (at most one node)
     Parent,
+    /// `preceding` — every node before the context node in document order, excluding ancestors
     Preceding,
+    /// `preceding-sibling` — the siblings that precede the context node
     PrecedingSibling,
+    /// `self` — the context node itself
     Self_,
 }
 
@@ -53,7 +66,9 @@ impl Axis {
         Axis::Self_,
     ];
 
-    pub fn as_str(&self) -> &'static str {
+    /// Return the axis name as written in an XPath expression
+    /// (e.g. `"ancestor-or-self"`).
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Axis::Ancestor => "ancestor",
             Axis::AncestorOrSelf => "ancestor-or-self",
@@ -107,7 +122,12 @@ pub enum NameTest {
     /// Just a local name: "para"
     LocalName(String),
     /// Qualified name: "xslt:template"
-    QName { prefix: String, local: String },
+    QName {
+        /// Namespace prefix, e.g. `xslt` in `xslt:template`
+        prefix: String,
+        /// Local part, e.g. `template` in `xslt:template`
+        local: String,
+    },
     /// Wildcard name: *
     Any,
 }
@@ -140,8 +160,11 @@ impl fmt::Display for NodeTest {
 /// A single location step: axis::node-test[predicates]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Step {
+    /// Axis the step traverses (defaults to `child` for abbreviated steps)
     pub axis: Axis,
+    /// Node test selecting which nodes the step matches
     pub node_test: NodeTest,
+    /// Predicates filtering the selected nodes, applied left to right
     pub predicates: Vec<Expr>,
 }
 
@@ -149,6 +172,7 @@ pub struct Step {
 // Binary Operators
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// XPath 1.0 binary operator.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BinaryOp {
     /// `|` — union
@@ -205,11 +229,19 @@ pub enum Expr {
     /// Boolean literal
     BooleanLiteral(bool),
     /// Function call: `name(arg1, arg2)`
-    FunctionCall { name: String, args: Vec<Expr> },
+    FunctionCall {
+        /// Function name (a QName, possibly with a namespace prefix)
+        name: String,
+        /// Argument expressions, evaluated in order
+        args: Vec<Expr>,
+    },
     /// Binary operation: `left op right`
     BinaryOp {
+        /// The operator applied to the two operands
         op: BinaryOp,
+        /// Left operand
         left: Box<Expr>,
+        /// Right operand
         right: Box<Expr>,
     },
     /// Unary minus: `-expr`
@@ -220,7 +252,7 @@ pub enum Expr {
 
 impl Expr {
     /// Check if this expression is a location path (returns nodeset).
-    pub fn is_location_path(&self) -> bool {
+    pub const fn is_location_path(&self) -> bool {
         matches!(
             self,
             Expr::AbsolutePath(_) | Expr::RelativePath(_, _) | Expr::Step(_) | Expr::Filter(_, _)
@@ -228,7 +260,7 @@ impl Expr {
     }
 
     /// Check if this is a constant value (no evaluation needed).
-    pub fn is_constant(&self) -> bool {
+    pub const fn is_constant(&self) -> bool {
         matches!(
             self,
             Expr::StringLiteral(_) | Expr::NumberLiteral(_) | Expr::BooleanLiteral(_)
@@ -245,12 +277,15 @@ impl Expr {
 /// Internal representation, not the C ABI `xmlXPathCompExprPtr`.
 #[derive(Debug, Clone)]
 pub struct CompiledExpr {
+    /// The original XPath expression source text
     pub original: String,
+    /// The parsed expression tree
     pub expr: Expr,
 }
 
 impl CompiledExpr {
-    pub fn new(original: String, expr: Expr) -> Self {
+    /// Create a compiled expression from its source text and parsed AST.
+    pub const fn new(original: String, expr: Expr) -> Self {
         Self { original, expr }
     }
 }

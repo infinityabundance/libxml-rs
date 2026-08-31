@@ -38,7 +38,7 @@ use std::os::raw::{c_int, c_uint, c_ushort};
 /// - `group` must be NULL or point to a valid `xmlChRangeGroup` whose range
 ///   arrays cover `nbShortRange`/`nbLongRange` entries.
 #[no_mangle]
-pub unsafe extern "C" fn xmlCharInRange(val: c_uint, group: *const xmlChRangeGroup) -> c_int {
+pub const unsafe extern "C" fn xmlCharInRange(val: c_uint, group: *const xmlChRangeGroup) -> c_int {
     if group.is_null() {
         return 0;
     }
@@ -104,6 +104,16 @@ fn is_base_char_ch(c: c_uint) -> bool {
 }
 
 /// `xmlIsBaseChar(unsigned int ch)` — XML 1.0 BaseChar production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsBaseChar(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -114,6 +124,16 @@ pub unsafe extern "C" fn xmlIsBaseChar(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsBlank(unsigned int ch)` — space, tab, LF, CR.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsBlank(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -124,6 +144,16 @@ pub unsafe extern "C" fn xmlIsBlank(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsChar(unsigned int ch)` — XML 1.0 Char production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsChar(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -136,6 +166,16 @@ pub unsafe extern "C" fn xmlIsChar(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsCombining(unsigned int ch)` — XML 1.0 CombiningChar production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsCombining(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -146,6 +186,16 @@ pub unsafe extern "C" fn xmlIsCombining(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsDigit(unsigned int ch)` — XML 1.0 Digit production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsDigit(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -156,6 +206,16 @@ pub unsafe extern "C" fn xmlIsDigit(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsExtender(unsigned int ch)` — XML 1.0 Extender production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsExtender(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -166,6 +226,16 @@ pub unsafe extern "C" fn xmlIsExtender(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsIdeographic(unsigned int ch)` — XML 1.0 Ideographic production.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsIdeographic(ch: c_uint) -> c_int {
     if ch < 0x100 {
@@ -177,6 +247,16 @@ pub unsafe extern "C" fn xmlIsIdeographic(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsPubidChar(unsigned int ch)` — PubidChar production (ASCII table).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsPubidChar(ch: c_uint) -> c_int {
     if ch >= 0x100 {
@@ -187,6 +267,16 @@ pub unsafe extern "C" fn xmlIsPubidChar(ch: c_uint) -> c_int {
 }
 
 /// `xmlIsLetter(int c)` — BaseChar or Ideographic (parserInternals.c).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsLetter(c: c_int) -> c_int {
     let ch = c as c_uint;

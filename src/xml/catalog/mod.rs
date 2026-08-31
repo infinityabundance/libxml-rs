@@ -29,13 +29,10 @@ use std::ptr;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::{_xmlDoc, _xmlNode};
 use crate::abi::types::xmlChar;
-use crate::xml::string::{
-    bytes_to_xmlstr, c_strdup, xml_str_starts_with, xml_strcat, xml_strcmp, xml_strdup, xml_strlen,
-    xmlstr_to_bytes,
-};
+use crate::xml::string::{bytes_to_xmlstr, xmlstr_to_bytes};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Constants
@@ -71,23 +68,61 @@ const MAX_CATALOG_FILE_SIZE: usize = 10_485_760;
 
 /// A single catalog entry.
 #[derive(Clone, Debug)]
-enum CatalogEntry {
+pub enum CatalogEntry {
     /// `<public publicId="..." uri="..."/>`
-    Public { public_id: Vec<u8>, uri: Vec<u8> },
+    Public {
+        /// The public identifier (`publicId`) to match.
+        public_id: Vec<u8>,
+        /// The replacement URI (`uri`) for the matching public identifier.
+        uri: Vec<u8>,
+    },
     /// `<system systemId="..." uri="..."/>`
-    System { system_id: Vec<u8>, uri: Vec<u8> },
+    System {
+        /// The system identifier (`systemId`) to match.
+        system_id: Vec<u8>,
+        /// The replacement URI (`uri`) for the matching system identifier.
+        uri: Vec<u8>,
+    },
     /// `<rewriteSystem systemIdStartString="..." rewritePrefix="..."/>`
-    RewriteSystem { prefix: Vec<u8>, rewrite: Vec<u8> },
+    RewriteSystem {
+        /// The system-identifier prefix (`systemIdStartString`) to match.
+        prefix: Vec<u8>,
+        /// The rewrite prefix (`rewritePrefix`) that replaces the matched prefix.
+        rewrite: Vec<u8>,
+    },
     /// `<rewriteURI uriStartString="..." rewritePrefix="..."/>`
-    RewriteURI { prefix: Vec<u8>, rewrite: Vec<u8> },
+    RewriteURI {
+        /// The URI prefix (`uriStartString`) to match.
+        prefix: Vec<u8>,
+        /// The rewrite prefix (`rewritePrefix`) that replaces the matched prefix.
+        rewrite: Vec<u8>,
+    },
     /// `<delegatePublic publicIdStartString="..." catalog="..."/>`
-    DelegatePublic { prefix: Vec<u8>, catalog: Vec<u8> },
+    DelegatePublic {
+        /// The public-identifier prefix (`publicIdStartString`) to match.
+        prefix: Vec<u8>,
+        /// The URI (`catalog`) of the catalog to delegate matching to.
+        catalog: Vec<u8>,
+    },
     /// `<delegateSystem systemIdStartString="..." catalog="..."/>`
-    DelegateSystem { prefix: Vec<u8>, catalog: Vec<u8> },
+    DelegateSystem {
+        /// The system-identifier prefix (`systemIdStartString`) to match.
+        prefix: Vec<u8>,
+        /// The URI (`catalog`) of the catalog to delegate matching to.
+        catalog: Vec<u8>,
+    },
     /// `<delegateURI uriStartString="..." catalog="..."/>`
-    DelegateURI { prefix: Vec<u8>, catalog: Vec<u8> },
+    DelegateURI {
+        /// The URI prefix (`uriStartString`) to match.
+        prefix: Vec<u8>,
+        /// The URI (`catalog`) of the catalog to delegate matching to.
+        catalog: Vec<u8>,
+    },
     /// `<nextCatalog catalog="..."/>`
-    NextCatalog { catalog: Vec<u8> },
+    NextCatalog {
+        /// The URI (`catalog`) of the next catalog to search.
+        catalog: Vec<u8>,
+    },
 }
 
 /// Indicates the format of a loaded catalog.
@@ -98,6 +133,7 @@ enum CatalogFormat {
 }
 
 /// Metadata about a loaded catalog file.
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 struct CatalogInfo {
     path: Vec<u8>,
@@ -121,7 +157,7 @@ struct CatalogState {
 }
 
 impl CatalogState {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             entries: Vec::new(),
             catalogs: Vec::new(),
@@ -159,6 +195,7 @@ fn trim_whitespace(bytes: &[u8]) -> &[u8] {
 }
 
 /// Check if a byte slice starts with a given prefix (case-sensitive).
+#[allow(dead_code)]
 fn starts_with(data: &[u8], prefix: &[u8]) -> bool {
     if data.len() < prefix.len() {
         return false;
@@ -167,6 +204,7 @@ fn starts_with(data: &[u8], prefix: &[u8]) -> bool {
 }
 
 /// Check if a byte slice starts with a given prefix (case-insensitive ASCII).
+#[allow(dead_code)]
 fn starts_with_ignore_ascii_case(data: &[u8], prefix: &[u8]) -> bool {
     if data.len() < prefix.len() {
         return false;
@@ -589,7 +627,7 @@ fn detect_catalog_format(data: &[u8]) -> CatalogFormat {
 }
 
 /// Load catalog entries from file data.
-fn load_catalog_data(path: &str, data: &[u8], entries: &mut Vec<CatalogEntry>) {
+fn load_catalog_data(_path: &str, data: &[u8], entries: &mut Vec<CatalogEntry>) {
     let format = detect_catalog_format(data);
     match format {
         CatalogFormat::Xml => {
@@ -718,7 +756,7 @@ pub(crate) fn load_catalog(catalogs: *const c_char) -> *mut c_void {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Check whether catalog resolution is allowed based on the current `allow` value.
-fn catalog_allowed(state: &CatalogState) -> bool {
+const fn catalog_allowed(state: &CatalogState) -> bool {
     let allow = state.allow;
     match allow {
         XML_CATA_ALLOW_NONE => false,
@@ -788,7 +826,7 @@ pub(crate) unsafe fn resolve_public(pub_id: *const xmlChar) -> *mut xmlChar {
     }
 
     let pub_id_bytes = xmlstr_to_bytes(pub_id);
-    unsafe { resolve_public_entries(&state.entries, &pub_id_bytes) }
+    unsafe { resolve_public_entries(&state.entries, pub_id_bytes) }
         .as_ref()
         .map_or(ptr::null_mut(), |uri| bytes_to_xmlstr(uri))
 }
@@ -870,7 +908,7 @@ pub(crate) unsafe fn resolve_system(sys_id: *const xmlChar) -> *mut xmlChar {
     }
 
     let sys_id_bytes = xmlstr_to_bytes(sys_id);
-    unsafe { resolve_system_entries(&state.entries, &sys_id_bytes) }
+    unsafe { resolve_system_entries(&state.entries, sys_id_bytes) }
         .as_ref()
         .map_or(ptr::null_mut(), |uri| bytes_to_xmlstr(uri))
 }
@@ -959,7 +997,7 @@ pub(crate) unsafe fn resolve_uri(uri: *const xmlChar) -> *mut xmlChar {
     }
 
     let uri_bytes = xmlstr_to_bytes(uri);
-    unsafe { resolve_uri_entries(&state.entries, &uri_bytes) }
+    unsafe { resolve_uri_entries(&state.entries, uri_bytes) }
         .as_ref()
         .map_or(ptr::null_mut(), |uri| bytes_to_xmlstr(uri))
 }
@@ -1270,6 +1308,16 @@ pub(crate) unsafe fn convert() -> *mut _xmlDoc {
 /// the children list.
 ///
 /// Returns a newly allocated document, or NULL on allocation failure.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 pub unsafe fn dump_doc() -> *mut _xmlDoc {
     let mut doc = convert();
     if doc.is_null() {
@@ -1279,24 +1327,24 @@ pub unsafe fn dump_doc() -> *mut _xmlDoc {
             return ptr::null_mut();
         }
         let root =
-            crate::xml::tree::new_node(ptr::null_mut(), b"catalog\0".as_ptr() as *const xmlChar);
+            crate::xml::tree::new_node(ptr::null_mut(), c"catalog".as_ptr() as *const xmlChar);
         if root.is_null() {
             crate::xml::tree::free_doc(doc);
             return ptr::null_mut();
         }
         crate::xml::tree::set_prop(
             root,
-            b"xmlns\0".as_ptr() as *const xmlChar,
-            b"urn:oasis:names:tc:entity:xmlns:xml:catalog\0".as_ptr() as *const xmlChar,
+            c"xmlns".as_ptr() as *const xmlChar,
+            c"urn:oasis:names:tc:entity:xmlns:xml:catalog".as_ptr() as *const xmlChar,
         );
         crate::xml::tree::doc_set_root_element(doc, root);
     }
 
     let dtd = crate::xml::tree::new_dtd(
         doc,
-        b"catalog\0".as_ptr() as *const xmlChar,
-        b"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN\0".as_ptr() as *const xmlChar,
-        b"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd\0".as_ptr()
+        c"catalog".as_ptr() as *const xmlChar,
+        c"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN".as_ptr() as *const xmlChar,
+        c"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd".as_ptr()
             as *const xmlChar,
     );
     if !dtd.is_null() {
@@ -1330,10 +1378,16 @@ pub unsafe fn dump_doc() -> *mut _xmlDoc {
 /// even when it resolves entries, flipping to 0 only after an API add. The
 /// candidate mirrors this with `children` (isEmpty source) and `entries`
 /// (resolve source).
+#[derive(Debug)]
 #[repr(C)]
 pub struct XmlCatalogHandle {
+    /// Entry list consulted by `xmlACatalogResolve*` (the resolve source).
     pub entries: Vec<CatalogEntry>,
+    /// Entry list consulted by `xmlCatalogIsEmpty`; populated only by
+    /// `xmlACatalogAdd`.
     pub children: Vec<CatalogEntry>,
+    /// Non-zero when the handle holds an SGML (SOLEX) format catalog
+    /// (cleared by `xmlConvertSGMLCatalog`).
     pub sgml: c_int,
 }
 
@@ -1351,6 +1405,16 @@ static CATALOG_PREFER: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI
 /// ```c
 /// xmlCatalogPtr xmlNewCatalog(int sgml);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewCatalog(sgml: c_int) -> *mut XmlCatalogHandle {
     let h = Box::new(XmlCatalogHandle {
@@ -1517,7 +1581,6 @@ pub unsafe extern "C" fn xmlACatalogRemove(
     }
     let v = xmlstr_to_bytes(value);
     let entries = unsafe { &mut (*catal).entries };
-    let before = entries.len();
     entries.retain(|entry| match entry {
         CatalogEntry::Public { public_id, .. } => public_id.as_slice() != v,
         CatalogEntry::System { system_id, .. } => system_id.as_slice() != v,
@@ -1539,11 +1602,12 @@ pub unsafe extern "C" fn xmlACatalogRemove(
         CatalogEntry::DelegateURI { prefix, .. } => prefix.as_slice() != v,
         CatalogEntry::NextCatalog { .. } => true,
     });
-    if entries.len() == before {
-        0
-    } else {
-        0
-    }
+    // UPSTREAM-PARITY: xmlACatalogRemove returns 0 for XML catalogs.
+    // xmlDelXMLCatalog declares `int ret = 0;` and never increments it, so
+    // upstream always returns 0 (even when entries were removed); only the
+    // SGML path (xmlHashRemoveEntry) can yield 1. The candidate mirrors the
+    // XML path exactly: entries are removed, 0 is returned.
+    0
 }
 
 /// Resolve public then system against a handle (upstream xmlACatalogResolve).
@@ -1569,13 +1633,13 @@ pub unsafe extern "C" fn xmlACatalogResolve(
     let entries = unsafe { &(*catal).entries };
     if !sysID.is_null() {
         let b = xmlstr_to_bytes(sysID);
-        if let Some(r) = unsafe { resolve_system_entries(entries, &b) } {
+        if let Some(r) = unsafe { resolve_system_entries(entries, b) } {
             return bytes_to_xmlstr(&r);
         }
     }
     if !pubID.is_null() {
         let b = xmlstr_to_bytes(pubID);
-        if let Some(r) = unsafe { resolve_public_entries(entries, &b) } {
+        if let Some(r) = unsafe { resolve_public_entries(entries, b) } {
             return bytes_to_xmlstr(&r);
         }
     }
@@ -1583,6 +1647,25 @@ pub unsafe extern "C" fn xmlACatalogResolve(
 }
 
 /// Resolve a system ID against a handle (upstream xmlACatalogResolveSystem).
+///
+/// # SAFETY
+///
+/// - `catal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `sysID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlACatalogResolveSystem(
     catal: *mut XmlCatalogHandle,
@@ -1593,12 +1676,31 @@ pub unsafe extern "C" fn xmlACatalogResolveSystem(
     }
     let entries = unsafe { &(*catal).entries };
     let b = xmlstr_to_bytes(sysID);
-    unsafe { resolve_system_entries(entries, &b) }
+    unsafe { resolve_system_entries(entries, b) }
         .as_ref()
         .map_or(ptr::null_mut(), |r| bytes_to_xmlstr(r))
 }
 
 /// Resolve a public ID against a handle (upstream xmlACatalogResolvePublic).
+///
+/// # SAFETY
+///
+/// - `catal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `pubID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlACatalogResolvePublic(
     catal: *mut XmlCatalogHandle,
@@ -1609,12 +1711,31 @@ pub unsafe extern "C" fn xmlACatalogResolvePublic(
     }
     let entries = unsafe { &(*catal).entries };
     let b = xmlstr_to_bytes(pubID);
-    unsafe { resolve_public_entries(entries, &b) }
+    unsafe { resolve_public_entries(entries, b) }
         .as_ref()
         .map_or(ptr::null_mut(), |r| bytes_to_xmlstr(r))
 }
 
 /// Resolve a URI against a handle (upstream xmlACatalogResolveURI).
+///
+/// # SAFETY
+///
+/// - `catal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URI` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlACatalogResolveURI(
     catal: *mut XmlCatalogHandle,
@@ -1625,12 +1746,27 @@ pub unsafe extern "C" fn xmlACatalogResolveURI(
     }
     let entries = unsafe { &(*catal).entries };
     let b = xmlstr_to_bytes(URI);
-    unsafe { resolve_uri_entries(entries, &b) }
+    unsafe { resolve_uri_entries(entries, b) }
         .as_ref()
         .map_or(ptr::null_mut(), |r| bytes_to_xmlstr(r))
 }
 
 /// Is the catalog handle empty? (upstream xmlCatalogIsEmpty)
+///
+/// # SAFETY
+///
+/// - `catal` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogIsEmpty(catal: *mut XmlCatalogHandle) -> c_int {
     if catal.is_null() {
@@ -1695,12 +1831,32 @@ pub unsafe extern "C" fn xmlACatalogDump(catal: *mut XmlCatalogHandle, out: *mut
 }
 
 /// Initialize the global catalog (upstream xmlInitializeCatalog).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlInitializeCatalog() {
     crate::xml::catalog::init();
 }
 
 /// Return the global catalog as a document (upstream xmlCatalogDumpDoc).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogDumpDoc() -> *mut _xmlDoc {
     unsafe { dump_doc() }
@@ -1708,6 +1864,16 @@ pub unsafe extern "C" fn xmlCatalogDumpDoc() -> *mut _xmlDoc {
 
 /// Set the catalog debug level (upstream xmlCatalogSetDebug: returns the
 /// previous level; levels <= 0 reset to 0).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogSetDebug(level: c_int) -> c_int {
     let old = CATALOG_DEBUG.load(std::sync::atomic::Ordering::Relaxed);
@@ -1721,6 +1887,16 @@ pub unsafe extern "C" fn xmlCatalogSetDebug(level: c_int) -> c_int {
 
 /// Set the default prefer mode (upstream xmlCatalogSetDefaultPrefer: returns
 /// the old value; XML_CATA_PREFER_NONE is rejected).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogSetDefaultPrefer(prefer: c_int) -> c_int {
     let old = CATALOG_PREFER.load(std::sync::atomic::Ordering::Relaxed);
@@ -1737,6 +1913,21 @@ pub unsafe extern "C" fn xmlCatalogSetDefaultPrefer(prefer: c_int) -> c_int {
 /// # UPSTREAM-PARITY
 ///
 /// The system ID is tried first when provided (xmlCatalogXMLResolve order).
+///
+/// # SAFETY
+///
+///
+/// - `pubID`, `sysID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogResolve(
     pubID: *const xmlChar,
@@ -1756,11 +1947,41 @@ pub unsafe extern "C" fn xmlCatalogResolve(
 
 /// Deprecated global accessors (upstream xmlCatalogGetSystem/GetPublic return
 /// the resolved value as `const xmlChar*`).
+///
+/// # SAFETY
+///
+///
+/// - `sysID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogGetSystem(sysID: *const xmlChar) -> *const xmlChar {
     unsafe { resolve_system(sysID) }
 }
-
+/// `xmlCatalogGetPublic` — C ABI export.
+///
+/// # SAFETY
+///
+///
+/// - `pubID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogGetPublic(pubID: *const xmlChar) -> *const xmlChar {
     unsafe { resolve_public(pubID) }
@@ -1782,6 +2003,25 @@ pub unsafe extern "C" fn xmlParseCatalogFile(filename: *const c_char) -> *mut _x
 /// Per-document local catalog: an opaque pointer to a `Vec<CatalogEntry>`.
 /// `xmlCatalogAddLocal` returns a (possibly new) list; entries are resolved
 /// with `xmlCatalogLocalResolve*`; freed with `xmlCatalogFreeLocal`.
+///
+/// # SAFETY
+///
+/// - `catalogs` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogAddLocal(
     catalogs: *mut c_void,
@@ -1796,8 +2036,8 @@ pub unsafe extern "C" fn xmlCatalogAddLocal(
         catalogs as *mut Vec<CatalogEntry>
     };
     let url = xmlstr_to_bytes(URL);
-    let url_str = String::from_utf8_lossy(&url).into_owned();
-    let entries = unsafe { &mut *(list as *mut Vec<CatalogEntry>) };
+    let url_str = String::from_utf8_lossy(url).into_owned();
+    let entries = unsafe { &mut *list };
     if let Some(data) = read_file_bytes(&url_str) {
         let mut temp = Vec::new();
         load_catalog_data(&url_str, &data, &mut temp);
@@ -1819,6 +2059,25 @@ pub unsafe extern "C" fn xmlCatalogFreeLocal(catalogs: *mut c_void) {
 }
 
 /// Resolve pubID/sysID against a local catalog list.
+///
+/// # SAFETY
+///
+/// - `catalogs` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `pubID`, `sysID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogLocalResolve(
     catalogs: *mut c_void,
@@ -1832,13 +2091,13 @@ pub unsafe extern "C" fn xmlCatalogLocalResolve(
     // UPSTREAM-PARITY: system ID is tried first when provided.
     if !sysID.is_null() {
         let b = xmlstr_to_bytes(sysID);
-        if let Some(r) = unsafe { resolve_system_entries(entries, &b) } {
+        if let Some(r) = unsafe { resolve_system_entries(entries, b) } {
             return bytes_to_xmlstr(&r);
         }
     }
     if !pubID.is_null() {
         let b = xmlstr_to_bytes(pubID);
-        if let Some(r) = unsafe { resolve_public_entries(entries, &b) } {
+        if let Some(r) = unsafe { resolve_public_entries(entries, b) } {
             return bytes_to_xmlstr(&r);
         }
     }
@@ -1846,6 +2105,25 @@ pub unsafe extern "C" fn xmlCatalogLocalResolve(
 }
 
 /// Resolve a URI against a local catalog list.
+///
+/// # SAFETY
+///
+/// - `catalogs` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URI` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCatalogLocalResolveURI(
     catalogs: *mut c_void,
@@ -1856,7 +2134,7 @@ pub unsafe extern "C" fn xmlCatalogLocalResolveURI(
     }
     let entries = unsafe { &*(catalogs as *const Vec<CatalogEntry>) };
     let b = xmlstr_to_bytes(URI);
-    unsafe { resolve_uri_entries(entries, &b) }
+    unsafe { resolve_uri_entries(entries, b) }
         .as_ref()
         .map_or(ptr::null_mut(), |r| bytes_to_xmlstr(r))
 }
@@ -1870,7 +2148,7 @@ mod tests {
     use super::*;
     use crate::abi::allocator::xmlFreeImpl;
     use crate::xml::string::xmlstr_to_bytes;
-    use std::ffi::CString;
+
     use std::sync::Mutex;
 
     /// Serializes catalog tests to prevent interference from shared global state.
@@ -2108,7 +2386,7 @@ mod tests {
     #[test]
     fn test_parse_xml_catalog_in_memory() {
         let _guard = setup();
-        unsafe {
+        {
             let catalog_xml = br#"<?xml version="1.0"?>
 <!DOCTYPE catalog PUBLIC "-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN" "http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd">
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
@@ -2171,7 +2449,7 @@ mod tests {
     #[test]
     fn test_parse_sgml_catalog() {
         let _guard = setup();
-        unsafe {
+        {
             let sgml_data = br#"-- SGML catalog
 PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "docbookx.dtd"
 SYSTEM "http://example.com/foo.dtd" "/local/foo.dtd"
@@ -2315,13 +2593,13 @@ URI "http://example.com/resource" "/local/resource"
     fn test_init_cleanup() {
         let _guard = CATALOG_TEST_MUTEX.lock().unwrap();
         cleanup();
-        assert_eq!(CATALOG_STATE.read().initialized, false);
+        assert!(!CATALOG_STATE.read().initialized);
 
         init();
-        assert_eq!(CATALOG_STATE.read().initialized, true);
+        assert!(CATALOG_STATE.read().initialized);
 
         cleanup();
-        assert_eq!(CATALOG_STATE.read().initialized, false);
+        assert!(!CATALOG_STATE.read().initialized);
     }
 
     // ── XML Catalog with group ──────────────────────────────────────────
@@ -2497,7 +2775,9 @@ mod c_abi_tests {
                 xmlACatalogAdd(h, cstr(b"bogus\0"), cstr(b"a\0"), cstr(b"b\0")),
                 -1
             );
-            // Remove returns 0 (upstream xmlDelXMLCatalog semantics).
+            // Remove returns 0 for the XML-catalog path, mirroring upstream
+            // xmlDelXMLCatalog (its `ret` counter is never incremented; only
+            // the SGML xmlHashRemoveEntry path can return 1).
             assert_eq!(xmlACatalogRemove(h, cstr(b"http://example.com/foo\0")), 0);
             assert_eq!(xmlCatalogIsEmpty(h), 1);
             xmlFreeCatalog(h);

@@ -24,20 +24,20 @@
 //! Complete — all memory functions delegate to the ABI allocator layer.
 
 pub use crate::abi::allocator::{
-    xmlFreeImpl, xmlInitMemory, xmlMallocImpl, xmlMallocAtomicImpl, xmlMallocAtomicZero, xmlMallocZero,
-    xmlMemBlocks, xmlMemDisplay, xmlMemGet, xmlMemSetup, xmlMemShow, xmlMemStrdupImpl, xmlMemUsed,
-    xmlReallocImpl, xmlReallocZero,
+    xmlFreeImpl, xmlInitMemory, xmlMallocAtomicImpl, xmlMallocAtomicZero, xmlMallocImpl,
+    xmlMallocZero, xmlMemBlocks, xmlMemDisplay, xmlMemGet, xmlMemSetup, xmlMemShow,
+    xmlMemStrdupImpl, xmlMemUsed, xmlReallocImpl, xmlReallocZero,
 };
 
 /// Initialize the memory subsystem.
 ///
 /// Called during `xmlInitParser`. Returns 0 on success.
-pub fn init_memory() -> i32 {
+pub const fn init_memory() -> i32 {
     xmlInitMemory()
 }
 
 /// Clean up the memory subsystem.
-pub fn cleanup_memory() {
+pub const fn cleanup_memory() {
     // Phase 1: no cleanup needed for the default allocator.
 }
 
@@ -48,7 +48,6 @@ pub fn cleanup_memory() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::ffi::c_void;
 
     #[test]
     fn test_memory_module_delegates_to_allocator() {

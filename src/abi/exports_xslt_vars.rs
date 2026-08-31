@@ -25,7 +25,6 @@ use std::collections::HashMap;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_void};
 
-use crate::abi::allocator::{xmlFree, xmlMalloc};
 use crate::abi::exports_xslt_compile::_xsltElemPreComp;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
@@ -67,7 +66,7 @@ pub unsafe extern "C" fn xsltVariableLookup(
     let mut cur = (*ctxt).vars;
     while !cur.is_null() {
         if (*cur).name == name
-            || ((*cur).name != ptr::null()
+            || (!(*cur).name.is_null()
                 && libc::strcmp((*cur).name as *const c_char, name as *const c_char) == 0)
         {
             let cur_ns = if (*cur).nameURI.is_null() {
@@ -84,7 +83,7 @@ pub unsafe extern "C" fn xsltVariableLookup(
     // Global variables.
     let mut g = (*ctxt).globalVars as *mut _xsltStackElem;
     while !g.is_null() {
-        if (*g).name != ptr::null()
+        if !(*g).name.is_null()
             && libc::strcmp((*g).name as *const c_char, name as *const c_char) == 0
         {
             let g_ns = if (*g).nameURI.is_null() {
@@ -1034,10 +1033,8 @@ pub unsafe extern "C" fn xsltAllocateExtraCtxt(ctxt: *mut _xsltTransformContext)
         } else {
             (*ctxt).extrasMax * 2
         };
-        let new_extras = libc::realloc(
-            (*ctxt).extras as *mut libc::c_void,
-            (new_max as usize) * size_of::<c_void>(),
-        ) as *mut *mut c_void;
+        let new_extras = libc::realloc((*ctxt).extras, (new_max as usize) * size_of::<c_void>())
+            as *mut *mut c_void;
         if new_extras.is_null() {
             return -1;
         }
@@ -1067,7 +1064,7 @@ pub unsafe extern "C" fn xsltAllocateExtraCtxt(ctxt: *mut _xsltTransformContext)
 /// Upstream 1.1.45 body is literally `return(0)` ("It isn't necessary to
 /// call this function in newer releases of libxslt").
 #[no_mangle]
-pub unsafe extern "C" fn xsltExtensionInstructionResultRegister(
+pub const unsafe extern "C" fn xsltExtensionInstructionResultRegister(
     _ctxt: *mut _xsltTransformContext,
     _obj: *mut _xmlXPathObject,
 ) -> c_int {
@@ -1094,7 +1091,7 @@ pub unsafe extern "C" fn xsltExtensionInstructionResultFinalize(
         ptr::null_mut(),
         ptr::null_mut(),
         ptr::null_mut(),
-        b"xsltExtensionInstructionResultFinalize is unsupported in this release of libxslt.\n\0"
+        c"xsltExtensionInstructionResultFinalize is unsupported in this release of libxslt.\n"
             .as_ptr() as *const c_char,
     );
     -1

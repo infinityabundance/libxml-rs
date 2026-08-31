@@ -71,6 +71,7 @@ enum WriterState {
     /// Inside a DTD entity declaration after content.
     DTDEntityText,
     /// Inside a DTD notation declaration.
+    #[allow(dead_code)]
     DTDNotation,
     /// Writing XML declaration.
     XMLDecl,
@@ -88,6 +89,7 @@ enum WriterState {
 /// underlying output buffer on demand. It maintains a stack of element names
 /// for proper nesting, a state machine for content-type tracking, and optional
 /// indentation.
+#[derive(Debug)]
 pub struct XmlTextWriter {
     /// The output buffer where serialized XML is written.
     output: *mut _xmlOutputBuffer,
@@ -290,7 +292,8 @@ impl XmlTextWriter {
     }
 
     /// Check if the writer is in a state where element/attribute content can be written.
-    fn can_write_content(&self) -> bool {
+    #[allow(dead_code)]
+    const fn can_write_content(&self) -> bool {
         matches!(
             self.state,
             WriterState::None
@@ -601,6 +604,7 @@ pub unsafe extern "C" fn xmlTextWriterStartDocument(
 /// # SAFETY
 ///
 /// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
+#[allow(clippy::while_immutable_condition)]
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterEndDocument(writer: *mut XmlTextWriter) -> c_int {
     if writer.is_null() {
@@ -1101,7 +1105,7 @@ pub unsafe extern "C" fn xmlTextWriterWriteAttributeNS(
 /// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
 /// - `name` must be a valid null-terminated string.
 #[no_mangle]
-
+///
 /// Start an attribute (to be written incrementally).
 ///
 /// # UPSTREAM-PARITY
@@ -1114,7 +1118,6 @@ pub unsafe extern "C" fn xmlTextWriterWriteAttributeNS(
 ///
 /// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
 /// - `name` must be a valid null-terminated string or NULL.
-#[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterStartAttribute(
     writer: *mut XmlTextWriter,
     name: *const xmlChar,
@@ -1493,7 +1496,7 @@ pub unsafe extern "C" fn xmlTextWriterWriteRawLen(
 ///
 /// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
 #[no_mangle]
-
+///
 /// Write Base64-encoded data.
 ///
 /// # UPSTREAM-PARITY
@@ -1509,7 +1512,6 @@ pub unsafe extern "C" fn xmlTextWriterWriteRawLen(
 ///
 /// - `writer` must be a valid pointer to an `XmlTextWriter` or NULL.
 /// - `data` must be a valid pointer to `start + len` bytes or NULL.
-#[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteBase64(
     writer: *mut XmlTextWriter,
     data: *const c_char,
@@ -2725,6 +2727,21 @@ pub unsafe extern "C" fn xmlTextWriterSetIndentString(
 /// ```
 ///
 /// Only `'` and `'\"'` are accepted; anything else returns -1.
+///
+/// # SAFETY
+///
+/// - `writer` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterSetQuoteChar(
     writer: *mut XmlTextWriter,
@@ -2778,15 +2795,15 @@ pub unsafe extern "C" fn xmlTextWriterClose(writer: *mut XmlTextWriter) -> c_int
 /// pointer to this structure, which is exactly what the VFormat exports and
 /// the Format shims exchange.
 #[repr(C)]
-#[derive(Clone, Copy)]
-struct VaListTag {
+#[derive(Clone, Copy, Debug)]
+pub struct VaListTag {
     gp_offset: c_uint,
     fp_offset: c_uint,
     overflow_arg_area: *mut c_void,
     reg_save_area: *mut c_void,
 }
 
-/// The platform `vsnprintf` (system libc — not an oracle dependency).
+// The platform `vsnprintf` (system libc — not an oracle dependency).
 unsafe extern "C" {
     fn vsnprintf(s: *mut c_char, n: usize, format: *const c_char, ap: *mut VaListTag) -> c_int;
 }
@@ -2822,7 +2839,26 @@ unsafe fn vformat_buf(format: *const c_char, args: *mut VaListTag) -> Result<Vec
 
 // The VFormat functions have heterogeneous fixed-arg lists, so each is written
 // explicitly rather than through a macro (mirroring the upstream C).
-
+/// `xmlTextWriterWriteVFormatRaw` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatRaw(
     writer: *mut XmlTextWriter,
@@ -2838,7 +2874,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatRaw(
     };
     unsafe { xmlTextWriterWriteRaw(writer, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatString` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatString(
     writer: *mut XmlTextWriter,
@@ -2854,7 +2909,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatString(
     };
     unsafe { xmlTextWriterWriteString(writer, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatComment` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatComment(
     writer: *mut XmlTextWriter,
@@ -2870,7 +2944,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatComment(
     };
     unsafe { xmlTextWriterWriteComment(writer, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatCDATA` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatCDATA(
     writer: *mut XmlTextWriter,
@@ -2886,7 +2979,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatCDATA(
     };
     unsafe { xmlTextWriterWriteCDATA(writer, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatPI` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `target`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatPI(
     writer: *mut XmlTextWriter,
@@ -2903,7 +3015,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatPI(
     };
     unsafe { xmlTextWriterWritePI(writer, target, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatElement` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatElement(
     writer: *mut XmlTextWriter,
@@ -2920,7 +3051,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatElement(
     };
     unsafe { xmlTextWriterWriteElement(writer, name, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatElementNS` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `prefix`, `name`, `namespaceURI`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatElementNS(
     writer: *mut XmlTextWriter,
@@ -2947,7 +3097,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatElementNS(
         )
     }
 }
-
+/// `xmlTextWriterWriteVFormatAttribute` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttribute(
     writer: *mut XmlTextWriter,
@@ -2964,7 +3133,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttribute(
     };
     unsafe { xmlTextWriterWriteAttribute(writer, name, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatAttributeNS` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `prefix`, `name`, `namespaceURI`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttributeNS(
     writer: *mut XmlTextWriter,
@@ -2991,7 +3179,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatAttributeNS(
         )
     }
 }
-
+/// `xmlTextWriterWriteVFormatDTD` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `pubid`, `sysid`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTD(
     writer: *mut XmlTextWriter,
@@ -3010,7 +3217,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTD(
     };
     unsafe { xmlTextWriterWriteDTD(writer, name, pubid, sysid, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatDTDElement` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDElement(
     writer: *mut XmlTextWriter,
@@ -3027,7 +3253,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDElement(
     };
     unsafe { xmlTextWriterWriteDTDElement(writer, name, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatDTDAttlist` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDAttlist(
     writer: *mut XmlTextWriter,
@@ -3044,7 +3289,26 @@ pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDAttlist(
     };
     unsafe { xmlTextWriterWriteDTDAttlist(writer, name, buf.as_ptr() as *const xmlChar) }
 }
-
+/// `xmlTextWriterWriteVFormatDTDInternalEntity` — C ABI export.
+///
+/// # SAFETY
+///
+/// - `writer`, `argptr` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `name`, `format` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlTextWriterWriteVFormatDTDInternalEntity(
     writer: *mut XmlTextWriter,
@@ -3303,7 +3567,7 @@ unsafe fn c_str_to_vec(s: *const u8) -> Vec<u8> {
 /// Base64 encode a byte slice.
 fn base64_encode(data: &[u8]) -> Vec<u8> {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut result = Vec::with_capacity((data.len() + 2) / 3 * 4);
+    let mut result = Vec::with_capacity(data.len().div_ceil(3) * 4);
     for chunk in data.chunks(3) {
         let b0 = chunk[0];
         let b1 = chunk.get(1).copied().unwrap_or(0);

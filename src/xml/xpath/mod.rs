@@ -27,7 +27,7 @@ pub mod parser;
 pub mod parser_context;
 pub mod types;
 
-use ast::{CompiledExpr, Expr};
+use ast::CompiledExpr;
 use context::XPathContext;
 use parser::parse_xpath;
 use types::XPathValue;

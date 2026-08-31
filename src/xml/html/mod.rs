@@ -16,10 +16,8 @@ use core::ptr;
 use core::slice;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
-use crate::abi::constants::XML_DEFAULT_VERSION;
+use crate::abi::allocator::{xmlFreeImpl, xmlMallocZero};
 use crate::abi::structs::*;
-use crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8;
 use crate::abi::types::xmlDocProperties::XML_DOC_WELLFORMED;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -47,6 +45,7 @@ const HTML_BODY: u32 = 0x100;
 const HTML_HEADSTRUCK: u32 = 0x200;
 const HTML_VALID: u32 = 0x400;
 const HTML_NO_END: u32 = 0x800; // end tag optional
+#[allow(dead_code)]
 const HTML_IMPLIED: u32 = 0x1000; // implied/auto-created
 
 /// Information about an HTML element.
@@ -704,6 +703,7 @@ struct HtmlParserCtxt {
     /// Line number tracking
     line: c_int,
     /// Error flag
+    #[allow(dead_code)]
     err: bool,
     /// Filename (for file parsing)
     filename: *mut c_char,
@@ -712,7 +712,7 @@ struct HtmlParserCtxt {
 }
 
 impl HtmlParserCtxt {
-    fn new() -> Self {
+    const fn new() -> Self {
         HtmlParserCtxt {
             doc: ptr::null_mut(),
             current: ptr::null_mut(),
@@ -785,7 +785,7 @@ impl HtmlParserCtxt {
     }
 
     /// Check if we've reached end of input.
-    fn is_eof(&self) -> bool {
+    const fn is_eof(&self) -> bool {
         self.input_pos >= self.input_len
     }
 
@@ -814,6 +814,7 @@ fn is_heading(name: &str) -> bool {
 
 /// Get the parent element of a node, walking up to find the nearest element.
 /// Returns the current node's parent if it's an element, or walks up.
+#[allow(dead_code)]
 unsafe fn get_parent_element(node: *mut _xmlNode) -> *mut _xmlNode {
     if node.is_null() {
         return ptr::null_mut();
@@ -844,7 +845,7 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         Err(_) => return,
     };
 
-    let info = html_tag_lookup(&tag_lower_str);
+    let info = html_tag_lookup(tag_lower_str);
 
     let mut current = ctxt.current;
 
@@ -853,30 +854,26 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
     let mut cur = current;
     while !cur.is_null() {
         let ctype = unsafe { (*cur).type_ };
-        if ctype == XML_ELEMENT_NODE as c_int {
-            if !unsafe { (*cur).name.is_null() } {
-                let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
-                open_names.push(name_bytes.to_vec());
-            }
+        if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur).name.is_null() } {
+            let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
+            open_names.push(name_bytes.to_vec());
         }
         cur = unsafe { (*cur).parent };
     }
 
     // Rule 1: <p> auto-closes before another <p>, and before block elements
-    if tag_lower_str == "p" || info.map_or(false, |i| i.flags & HTML_BLOCK != 0) {
+    if tag_lower_str == "p" || info.is_some_and(|i| i.flags & HTML_BLOCK != 0) {
         // Close any open <p> elements
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str.eq_ignore_ascii_case("p") {
-                        // Close this <p> by moving current up past it
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str.eq_ignore_ascii_case("p") {
+                    // Close this <p> by moving current up past it
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -884,18 +881,16 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
     }
 
     // Rule 2: Headings (h1-h6) auto-close other headings
-    if is_heading(&tag_lower_str) {
+    if is_heading(tag_lower_str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if is_heading(name_str) {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if is_heading(name_str) {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -907,14 +902,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str.eq_ignore_ascii_case("li") {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str.eq_ignore_ascii_case("li") {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -926,14 +919,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "dt" || name_str == "dd" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "dt" || name_str == "dd" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -948,14 +939,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "tr" || name_str == "td" || name_str == "th" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "tr" || name_str == "td" || name_str == "th" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -964,14 +953,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "td" || name_str == "th" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "td" || name_str == "th" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -983,14 +970,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "thead" || name_str == "tbody" || name_str == "tfoot" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "thead" || name_str == "tbody" || name_str == "tfoot" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -1002,14 +987,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "colgroup" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "colgroup" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -1021,14 +1004,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str == "caption" {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str == "caption" {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -1040,14 +1021,12 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         let mut cur2 = current;
         while !cur2.is_null() {
             let ctype = unsafe { (*cur2).type_ };
-            if ctype == XML_ELEMENT_NODE as c_int {
-                if !unsafe { (*cur2).name.is_null() } {
-                    let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
-                    let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                    if name_str.eq_ignore_ascii_case("form") {
-                        current = unsafe { (*cur2).parent };
-                        break;
-                    }
+            if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
+                let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
+                let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
+                if name_str.eq_ignore_ascii_case("form") {
+                    current = unsafe { (*cur2).parent };
+                    break;
                 }
             }
             cur2 = unsafe { (*cur2).parent };
@@ -1071,7 +1050,7 @@ unsafe fn ensure_html(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
     if html_node.is_null() {
         return ptr::null_mut();
     }
-    unsafe {
+    {
         // Set HTML_IMPLIED flag concept - mark as auto-created
         // (We track this via a separate flag rather than modifying the node structure)
     }
@@ -1134,6 +1113,7 @@ unsafe fn ensure_body(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
 }
 
 /// Transition from head to body when body content is encountered.
+#[allow(dead_code)]
 unsafe fn transition_to_body(ctxt: &mut HtmlParserCtxt) {
     if ctxt.in_head && !ctxt.seen_body_content {
         ctxt.seen_body_content = true;
@@ -1150,6 +1130,7 @@ unsafe fn transition_to_body(ctxt: &mut HtmlParserCtxt) {
 struct HtmlAttr {
     name: Vec<u8>,
     value: Vec<u8>,
+    #[allow(dead_code)]
     quoted: bool,
 }
 
@@ -1216,13 +1197,12 @@ fn parse_attributes(ctxt: &mut HtmlParserCtxt) -> Vec<HtmlAttr> {
 
         match ctxt.peek() {
             Some(b'>') | None => break,
-            Some(b'/') => {
+            Some(b'/')
                 // Could be self-closing tag like <br/>
-                if ctxt.peek_at(1) == Some(b'>') {
+                if ctxt.peek_at(1) == Some(b'>') => {
                     break;
                 }
                 // Otherwise it's part of a minimized attribute or path
-            }
             _ => {}
         }
 
@@ -1277,7 +1257,7 @@ fn resolve_numeric_entity(value: &str, is_hex: bool) -> Vec<u8> {
     let codepoint = if is_hex {
         u32::from_str_radix(value, 16).unwrap_or(0xFFFD)
     } else {
-        u32::from_str_radix(value, 10).unwrap_or(0xFFFD)
+        value.parse::<u32>().unwrap_or(0xFFFD)
     };
 
     if codepoint == 0 {
@@ -1441,10 +1421,10 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
     let info = html_tag_lookup(tag_str);
 
     // Determine tag category
-    let is_head_tag = info.map_or(false, |i| i.flags & HTML_HEAD != 0);
-    let is_body_tag = info.map_or(false, |i| i.flags & HTML_BODY != 0);
-    let is_empty = info.map_or(false, |i| i.flags & HTML_EMPTY != 0);
-    let is_block = info.map_or(false, |i| i.flags & HTML_BLOCK != 0);
+    let is_head_tag = info.is_some_and(|i| i.flags & HTML_HEAD != 0);
+    let _is_body_tag = info.is_some_and(|i| i.flags & HTML_BODY != 0);
+    let is_empty = info.is_some_and(|i| i.flags & HTML_EMPTY != 0);
+    let _is_block = info.is_some_and(|i| i.flags & HTML_BLOCK != 0);
 
     // Handle special elements
     if tag_str == "html" {
@@ -1659,7 +1639,7 @@ unsafe fn handle_end_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8]) {
 
     // For elements with no end tag (void elements or optional end tags),
     // just ignore the end tag.
-    if info.map_or(false, |i| i.flags & HTML_EMPTY != 0) {
+    if info.is_some_and(|i| i.flags & HTML_EMPTY != 0) {
         return;
     }
 
@@ -1684,14 +1664,12 @@ unsafe fn handle_end_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8]) {
     let mut cur = ctxt.current;
     while !cur.is_null() {
         let ctype = unsafe { (*cur).type_ };
-        if ctype == XML_ELEMENT_NODE as c_int {
-            if !unsafe { (*cur).name.is_null() } {
-                let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
-                if name_bytes.eq_ignore_ascii_case(tag_name) {
-                    // Found the matching element - close by moving current to parent
-                    ctxt.current = unsafe { (*cur).parent };
-                    return;
-                }
+        if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur).name.is_null() } {
+            let name_bytes = unsafe { xmlstr_to_bytes((*cur).name) };
+            if name_bytes.eq_ignore_ascii_case(tag_name) {
+                // Found the matching element - close by moving current to parent
+                ctxt.current = unsafe { (*cur).parent };
+                return;
             }
         }
         cur = unsafe { (*cur).parent };
@@ -1833,7 +1811,7 @@ unsafe fn html_parse_buffer(
             // Check for <!DOCTYPE
             if ctxt.peek() == Some(b'!') {
                 ctxt.next(); // consume '!'
-                let rest = ctxt.read_while(|ch| ch != b'>');
+                let _rest = ctxt.read_while(|ch| ch != b'>');
                 if ctxt.peek() == Some(b'>') {
                     ctxt.next(); // consume '>'
                 }
@@ -1890,7 +1868,7 @@ unsafe fn html_parse_buffer(
 
             if tag_name.is_empty() {
                 // Just a bare '<' with no tag name, treat as text
-                handle_text(ctxt, &[b'<']);
+                handle_text(ctxt, b"<");
                 continue;
             }
 
@@ -2069,7 +2047,7 @@ pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *m
 
     let mut ctxt = HtmlParserCtxt::new();
     if !encoding.is_null() {
-        let enc_cstr = unsafe { std::ffi::CStr::from_ptr(encoding) };
+        let _enc_cstr = unsafe { std::ffi::CStr::from_ptr(encoding) };
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
 
@@ -2143,6 +2121,7 @@ pub(crate) unsafe fn parse_doc(cur: *const xmlChar, encoding: *const c_char) -> 
 ///
 /// - `filename` must be a valid null-terminated C string or NULL.
 /// - `encoding` must be a valid null-terminated C string or NULL.
+#[allow(dead_code)]
 pub(crate) unsafe fn create_file_parser_ctxt(
     filename: *const c_char,
     encoding: *const c_char,
@@ -2198,7 +2177,8 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut c_void) {
 /// # UPSTREAM-PARITY
 ///
 /// Equivalent to `htmlInitParser` in libxml2.
-pub(crate) fn init_parser() {
+#[allow(dead_code)]
+pub(crate) const fn init_parser() {
     // Currently a no-op. In the future, may initialize HTML-specific
     // entity tables or other global state.
 }
@@ -2208,7 +2188,8 @@ pub(crate) fn init_parser() {
 /// # UPSTREAM-PARITY
 ///
 /// Equivalent to `htmlCleanupParser` in libxml2.
-pub(crate) fn cleanup_parser() {
+#[allow(dead_code)]
+pub(crate) const fn cleanup_parser() {
     // Currently a no-op. In the future, may free HTML-specific
     // global state.
 }
@@ -2293,6 +2274,7 @@ fn is_html_void(name: &str) -> bool {
 }
 
 /// Check if an element has optional end tag in HTML.
+#[allow(dead_code)]
 fn has_optional_end_tag(name: &str) -> bool {
     matches!(
         name.to_ascii_lowercase().as_str(),
@@ -2384,8 +2366,9 @@ unsafe fn html_serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar)
 /// - Case-insensitive tag names preserved as-is
 /// - No namespace declarations
 /// - Elements with optional end tags may omit them
-
+///
 /// Whether the head element already contains a <meta> element (so the
+///
 /// serializer does not insert a duplicate charset declaration).
 ///
 /// # SAFETY
@@ -2431,7 +2414,7 @@ pub(crate) unsafe fn serialize_node(
             // formatted (name[0] == 'p'), and unknown elements are treated
             // as inline (info == NULL).
             let info = html_tag_lookup(name);
-            let is_inline = info.map_or(true, |i| i.flags & HTML_INLINE != 0);
+            let is_inline = info.is_none_or(|i| i.flags & HTML_INLINE != 0);
             let no_format = is_inline || name.starts_with('p');
 
             // Write start tag
@@ -2517,7 +2500,7 @@ pub(crate) unsafe fn serialize_node(
 
                 if let Some(enc) = &meta_bytes {
                     io::buf_add(buf, b"<meta charset=\"" as *const u8, 15);
-                    io::buf_add(buf, enc.as_ptr() as *const u8, enc.len() as c_int);
+                    io::buf_add(buf, enc.as_ptr(), enc.len() as c_int);
                     io::buf_add(buf, b"\">" as *const u8, 2);
                     // UPSTREAM-PARITY (line 983): a newline follows the
                     // inserted meta when the next real child is not text.
@@ -2547,7 +2530,7 @@ pub(crate) unsafe fn serialize_node(
                                 }
                             };
                             let cinfo = html_tag_lookup(cname);
-                            let c_inline = cinfo.map_or(true, |i| i.flags & HTML_INLINE != 0);
+                            let c_inline = cinfo.is_none_or(|i| i.flags & HTML_INLINE != 0);
                             if !c_inline {
                                 io::buf_ccat(buf, b'\n');
                             }
@@ -2686,10 +2669,11 @@ pub(crate) unsafe fn doc_dump(buf: *mut _xmlBuffer, doc: *mut _xmlDoc) -> c_int 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::xmlFreeImpl;
+
     use crate::xml::io;
 
     /// Helper: create a null-terminated xmlChar* from a byte slice.
+    #[allow(dead_code)]
     unsafe fn to_xmlstr(s: &[u8]) -> *mut xmlChar {
         bytes_to_xmlstr(s)
     }
@@ -2702,7 +2686,7 @@ mod tests {
         let content = io::buf_content(buf);
         let s = if !content.is_null() {
             let len = xml_strlen(content);
-            let slice = slice::from_raw_parts(content, len as usize);
+            let slice = slice::from_raw_parts(content, len);
             String::from_utf8_lossy(slice).to_string()
         } else {
             String::new()

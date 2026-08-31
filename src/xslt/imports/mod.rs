@@ -89,7 +89,7 @@ pub unsafe fn xsltProcessImports(style: *mut _xsltStylesheet, doc: *mut _xmlDoc)
                         if name == "import" {
                             let href = crate::xml::tree::get_prop(
                                 child,
-                                b"href\0".as_ptr() as *const xmlChar,
+                                c"href".as_ptr() as *const xmlChar,
                             );
                             if !href.is_null() {
                                 import_stylesheet(style, href);
@@ -166,7 +166,7 @@ pub unsafe fn xsltProcessIncludes(style: *mut _xsltStylesheet, doc: *mut _xmlDoc
                         if name == "include" {
                             let href = crate::xml::tree::get_prop(
                                 child,
-                                b"href\0".as_ptr() as *const xmlChar,
+                                c"href".as_ptr() as *const xmlChar,
                             );
                             if !href.is_null() {
                                 // Phase 8: parse the included stylesheet and

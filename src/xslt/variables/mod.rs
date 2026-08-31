@@ -22,13 +22,14 @@ use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{xmlXPathFreeObject, xmlXPathObjectCopy};
 use crate::abi::structs::*;
 use crate::abi::types::*;
-use std::ffi::c_void;
 use std::os::raw::c_int;
 use std::ptr;
 
 /// Stack element flags
 pub const XSLT_VAR_GLOBAL: c_int = 1 << 0;
+/// The variable is a stylesheet or template parameter (`xsl:param`).
 pub const XSLT_VAR_PARAM: c_int = 1 << 1;
+/// The variable is created internally by the engine (not user-visible).
 pub const XSLT_VAR_INTERNAL: c_int = 1 << 2;
 
 /// Push a variable onto the variable stack.
@@ -68,11 +69,11 @@ pub unsafe fn xsltPushVariable(
     }
     // Chain the new variable onto the existing stack head.
     (*var).next = if ctx.varsNr > 0 {
-        *((ctx.varsTab as *mut *mut _xsltStackElem).offset((ctx.varsNr - 1) as isize))
+        *(ctx.varsTab.offset((ctx.varsNr - 1) as isize))
     } else {
         ptr::null_mut()
     };
-    *((ctx.varsTab as *mut *mut _xsltStackElem).offset(ctx.varsNr as isize)) = var;
+    *(ctx.varsTab.offset(ctx.varsNr as isize)) = var;
     ctx.varsNr = new_vars_nr;
 
     // Register the variable in the internal XPath context's variable hash
@@ -113,10 +114,10 @@ pub unsafe fn xsltPopVariable(ctxt: *mut _xsltTransformContext) -> *mut _xsltSta
         return ptr::null_mut();
     }
     ctx.varsNr -= 1;
-    let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(ctx.varsNr as isize));
+    let var = *(ctx.varsTab.offset(ctx.varsNr as isize));
     // Unlink from the chain.
     if ctx.varsNr > 0 {
-        let prev = *((ctx.varsTab as *mut *mut _xsltStackElem).offset((ctx.varsNr - 1) as isize));
+        let prev = *(ctx.varsTab.offset((ctx.varsNr - 1) as isize));
         (*prev).next = ptr::null_mut();
     }
     (*var).next = ptr::null_mut();
@@ -157,7 +158,7 @@ pub unsafe fn xsltLookupVariable(
     let mut i = ctx.varsNr;
     while i > 0 {
         i -= 1;
-        let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize));
+        let var = *(ctx.varsTab.offset(i as isize));
         if var.is_null() {
             continue;
         }
@@ -169,14 +170,14 @@ pub unsafe fn xsltLookupVariable(
         if libc::strcmp(vname as *const libc::c_char, name as *const libc::c_char) != 0 {
             continue;
         }
-        if !ns_uri.is_null() && !(*var).nameURI.is_null() {
-            if libc::strcmp(
+        if !ns_uri.is_null()
+            && !(*var).nameURI.is_null()
+            && libc::strcmp(
                 (*var).nameURI as *const libc::c_char,
                 ns_uri as *const libc::c_char,
             ) != 0
-            {
-                continue;
-            }
+        {
+            continue;
         }
         return var;
     }
@@ -258,10 +259,10 @@ pub unsafe fn xsltFreeGlobalVariables(ctxt: *mut _xsltTransformContext) {
     let ctx = &mut *ctxt;
     let mut i = 0;
     while i < ctx.varsNr {
-        let var = *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize));
+        let var = *(ctx.varsTab.offset(i as isize));
         if !var.is_null() {
             xsltFreeStackElem(var);
-            *((ctx.varsTab as *mut *mut _xsltStackElem).offset(i as isize)) = ptr::null_mut();
+            *(ctx.varsTab.offset(i as isize)) = ptr::null_mut();
         }
         i += 1;
     }
@@ -491,8 +492,8 @@ unsafe fn register_global_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl};
-    use crate::abi::structs::*;
+    use crate::abi::allocator::xmlFreeImpl;
+
     use core::ptr;
 
     fn make_stack_elem(name: &[u8]) -> *mut _xsltStackElem {
@@ -556,10 +557,10 @@ mod tests {
             let v2 = make_stack_elem(b"bar\0");
             xsltPushVariable(ctxt, v1);
             xsltPushVariable(ctxt, v2);
-            let found = xsltLookupVariable(ctxt, b"bar\0".as_ptr() as *const xmlChar, ptr::null());
+            let found = xsltLookupVariable(ctxt, c"bar".as_ptr() as *const xmlChar, ptr::null());
             assert_eq!(found, v2);
             let not_found =
-                xsltLookupVariable(ctxt, b"baz\0".as_ptr() as *const xmlChar, ptr::null());
+                xsltLookupVariable(ctxt, c"baz".as_ptr() as *const xmlChar, ptr::null());
             assert!(not_found.is_null());
             xsltFreeStackElem(v1);
             xsltFreeStackElem(v2);
@@ -571,7 +572,7 @@ mod tests {
     fn test_lookup_empty_stack() {
         unsafe {
             let ctxt = make_ctxt();
-            let found = xsltLookupVariable(ctxt, b"foo\0".as_ptr() as *const xmlChar, ptr::null());
+            let found = xsltLookupVariable(ctxt, c"foo".as_ptr() as *const xmlChar, ptr::null());
             assert!(found.is_null());
             xmlFreeImpl(ctxt as *mut libc::c_void);
         }

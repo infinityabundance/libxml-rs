@@ -125,7 +125,7 @@ const DATA_SCRIPT: c_int = 4;
 
 /// HTML whitespace predicate `IS_WS_HTML` (include/private/html.h).
 #[inline]
-fn is_ws_html(c: u8) -> bool {
+const fn is_ws_html(c: u8) -> bool {
     c == 0x20 || (c >= 0x09 && c <= 0x0d && c != 0x0b)
 }
 
@@ -137,6 +137,7 @@ fn is_ws_html(c: u8) -> bool {
 /// field layout. Only `name`, `endTag`, `empty`, `isinline` and `desc` are
 /// read by the exported functions; the deprecated pointer fields are kept
 /// NULL for layout parity.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _htmlElemDesc {
     pub name: *const c_char,
@@ -860,6 +861,7 @@ pub unsafe extern "C" fn htmlTagLookup(tag: *const xmlChar) -> *const _htmlElemD
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Rust mirror of `struct _htmlEntityDesc` (HTMLparser.h).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _htmlEntityDesc {
     pub value: c_uint,
@@ -1993,7 +1995,7 @@ pub unsafe extern "C" fn htmlIsScriptAttribute(name: *const xmlChar) -> c_int {
 ///
 /// Upstream is a deprecated stub returning 1 unconditionally.
 #[no_mangle]
-pub unsafe extern "C" fn htmlElementAllowedHere(
+pub const unsafe extern "C" fn htmlElementAllowedHere(
     _parent: *const _htmlElemDesc,
     _elt: *const xmlChar,
 ) -> c_int {
@@ -2008,7 +2010,7 @@ pub unsafe extern "C" fn htmlElementAllowedHere(
 ///
 /// Upstream is a deprecated stub returning HTML_VALID unconditionally.
 #[no_mangle]
-pub unsafe extern "C" fn htmlElementStatusHere(
+pub const unsafe extern "C" fn htmlElementStatusHere(
     _parent: *const _htmlElemDesc,
     _elt: *const _htmlElemDesc,
 ) -> c_int {
@@ -2023,7 +2025,7 @@ pub unsafe extern "C" fn htmlElementStatusHere(
 ///
 /// Upstream is a deprecated stub returning HTML_VALID unconditionally.
 #[no_mangle]
-pub unsafe extern "C" fn htmlAttrAllowed(
+pub const unsafe extern "C" fn htmlAttrAllowed(
     _elt: *const _htmlElemDesc,
     _attr: *const xmlChar,
     _legacy: c_int,
@@ -2039,7 +2041,7 @@ pub unsafe extern "C" fn htmlAttrAllowed(
 ///
 /// Upstream is a deprecated stub returning HTML_VALID unconditionally.
 #[no_mangle]
-pub unsafe extern "C" fn htmlNodeStatus(_node: *mut _xmlNode, _legacy: c_int) -> c_int {
+pub const unsafe extern "C" fn htmlNodeStatus(_node: *mut _xmlNode, _legacy: c_int) -> c_int {
     HTML_VALID
 }
 
@@ -2080,10 +2082,10 @@ pub unsafe extern "C" fn htmlEncodeEntities(
 
     while in_ptr < inend {
         let mut c: c_uint;
-        let d: c_uint;
+
         let mut trailing: c_int;
 
-        d = unsafe { *(in_ptr as *const u8) as c_uint };
+        let d: c_uint = unsafe { *(in_ptr as *const u8) as c_uint };
         in_ptr += 1;
         if d < 0x80 {
             c = d;
@@ -2214,7 +2216,7 @@ pub unsafe extern "C" fn htmlDecodeEntities(
                 msg.as_ptr() as *const c_void,
                 1,
                 msg.len(),
-                libc::fdopen(2, b"w\0" as *const u8 as *const c_char) as *mut libc::FILE,
+                libc::fdopen(2, b"w\0" as *const u8 as *const c_char),
             );
         }
     }
@@ -2322,7 +2324,7 @@ pub unsafe extern "C" fn htmlHandleOmittedElem(val: c_int) -> c_int {
 /// void htmlInitAutoClose(void);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlInitAutoClose() {
+pub const unsafe extern "C" fn htmlInitAutoClose() {
     // Deprecated no-op (HTMLparser.c).
 }
 
@@ -2337,7 +2339,7 @@ pub unsafe extern "C" fn htmlInitAutoClose() {
 /// void htmlDefaultSAXHandlerInit(void);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlDefaultSAXHandlerInit() {
+pub const unsafe extern "C" fn htmlDefaultSAXHandlerInit() {
     // The exported htmlDefaultSAXHandler global is statically initialized.
 }
 
@@ -2353,7 +2355,7 @@ pub unsafe extern "C" fn htmlDefaultSAXHandlerInit() {
 /// const htmlEntityDesc *htmlParseEntityRef(htmlParserCtxt *ctxt, const xmlChar **str);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlParseEntityRef(
+pub const unsafe extern "C" fn htmlParseEntityRef(
     _ctxt: *mut c_void,
     _str: *mut *const xmlChar,
 ) -> *const _htmlEntityDesc {
@@ -2368,7 +2370,7 @@ pub unsafe extern "C" fn htmlParseEntityRef(
 /// int htmlParseCharRef(htmlParserCtxt *ctxt);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn htmlParseCharRef(_ctxt: *mut c_void) -> c_int {
+pub const unsafe extern "C" fn htmlParseCharRef(_ctxt: *mut c_void) -> c_int {
     0
 }
 
@@ -2389,6 +2391,7 @@ pub unsafe extern "C" fn htmlParseCharRef(_ctxt: *mut c_void) -> c_int {
 /// `filename`/`encoding` at the same byte offsets as the internal struct
 /// (64 / 72 on 64-bit; verified empirically). The trailing fields are ABI
 /// state that the internal module never touches.
+#[allow(dead_code)]
 struct HtmlOpaqueCtxt {
     // ── prefix mirroring xml::html::HtmlParserCtxt ──────────────────────
     doc: *mut _xmlDoc,

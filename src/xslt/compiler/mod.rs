@@ -20,7 +20,6 @@
 //! 5. Templates are inserted into the stylesheet's ordered list,
 //!    sorted by priority (highest first).
 
-use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
@@ -179,9 +178,9 @@ unsafe fn validate_one_select(style: *mut _xsltStylesheet, inst: *mut _xmlNode) 
         }
     }
     let attr = if is_if || is_when {
-        b"test\0".as_ptr() as *const xmlChar
+        c"test".as_ptr() as *const xmlChar
     } else {
-        b"select\0".as_ptr() as *const xmlChar
+        c"select".as_ptr() as *const xmlChar
     };
     let prop = get_prop(inst, attr);
     if prop.is_null() {
@@ -248,6 +247,7 @@ unsafe fn validate_one_select(style: *mut _xsltStylesheet, inst: *mut _xmlNode) 
 }
 
 /// Get the document URL (or NULL).
+#[allow(dead_code)]
 unsafe fn doc_URL(doc: *mut _xmlDoc) -> *const xmlChar {
     if doc.is_null() || (*doc).URL.is_null() {
         return ptr::null();
@@ -270,7 +270,7 @@ pub(crate) unsafe fn compile_top_level(
     while !child.is_null() {
         let next = (*child).next;
         if is_xslt_element(child, "import") {
-            let href = get_prop(child, b"href\0".as_ptr() as *const xmlChar);
+            let href = get_prop(child, c"href".as_ptr() as *const xmlChar);
             if !href.is_null() {
                 let imported = crate::xslt::stylesheet::xsltParseStylesheetFile(href);
                 if !imported.is_null() {
@@ -302,7 +302,7 @@ pub(crate) unsafe fn compile_top_level(
         match name.as_deref() {
             Some("import") => {} // already handled
             Some("include") => {
-                let href = get_prop(child, b"href\0".as_ptr() as *const xmlChar);
+                let href = get_prop(child, c"href".as_ptr() as *const xmlChar);
                 if !href.is_null() {
                     let included = crate::xslt::stylesheet::xsltParseStylesheetFile(href);
                     if !included.is_null() {
@@ -460,7 +460,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
     }
 
     /// True when every byte is a whitespace character (upstream xsltIsBlank).
-    unsafe fn is_blank(content: *const xmlChar) -> bool {
+    const unsafe fn is_blank(content: *const xmlChar) -> bool {
         if content.is_null() {
             return true;
         }
@@ -515,7 +515,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
             (*node).type_ = XML_TEXT_NODE as c_int;
             let name = crate::abi::allocator::xmlMallocImpl(5) as *mut xmlChar;
             if !name.is_null() {
-                core::ptr::copy_nonoverlapping(b"text\0".as_ptr(), name, 5);
+                core::ptr::copy_nonoverlapping(c"text".as_ptr() as *const xmlChar, name, 5);
                 (*node).name = name;
             }
         }
@@ -575,7 +575,7 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
         }
     }
 
-    unsafe fn walk(children: *mut _xmlNode, st: &St, stylesheet_depth: bool, top_level: bool) {
+    unsafe fn walk(children: *mut _xmlNode, st: &St, stylesheet_depth: bool, _top_level: bool) {
         let mut cur = children;
         let mut text_node: *mut _xmlNode = ptr::null_mut();
         let mut delete: Vec<*mut _xmlNode> = Vec::new();
@@ -704,7 +704,7 @@ unsafe fn compile_simplified(style: *mut _xsltStylesheet, root: *mut _xmlNode) {
     *(*templ).r#match = b'/';
     *(*templ).r#match.add(1) = 0;
     let compiled =
-        crate::xslt::patterns::xsltCompilePattern(b"/\0".as_ptr() as *const xmlChar, (*style).doc);
+        crate::xslt::patterns::xsltCompilePattern(c"/".as_ptr() as *const xmlChar, (*style).doc);
     (*templ).params = compiled as *mut c_void;
     // The root element becomes the template content.
     add_template_to_style(style, templ);
@@ -733,7 +733,7 @@ pub(crate) unsafe fn add_template_to_style(style: *mut _xsltStylesheet, templ: *
 pub(crate) unsafe fn compile_template(
     style: *mut _xsltStylesheet,
     inst: *mut _xmlNode,
-    depth: c_int,
+    _depth: c_int,
 ) {
     let templ = libc::calloc(1, core::mem::size_of::<_xsltTemplate>()) as *mut _xsltTemplate;
     if templ.is_null() {
@@ -743,7 +743,7 @@ pub(crate) unsafe fn compile_template(
     (*templ).content = (*inst).children;
 
     // match attribute.
-    let match_str = get_prop(inst, b"match\0".as_ptr() as *const xmlChar);
+    let match_str = get_prop(inst, c"match".as_ptr() as *const xmlChar);
     if !match_str.is_null() {
         // UPSTREAM-PARITY: templ->match holds the match STRING; the compiled
         // pattern is carried in templ->params (candidate-internal pointer).
@@ -757,19 +757,19 @@ pub(crate) unsafe fn compile_template(
     }
 
     // name attribute.
-    let name_str = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name_str = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if !name_str.is_null() {
         (*templ).name = name_str;
     }
 
     // mode attribute.
-    let mode_str = get_prop(inst, b"mode\0".as_ptr() as *const xmlChar);
+    let mode_str = get_prop(inst, c"mode".as_ptr() as *const xmlChar);
     if !mode_str.is_null() {
         (*templ).mode = mode_str;
     }
 
     // priority attribute.
-    let priority_str = get_prop(inst, b"priority\0".as_ptr() as *const xmlChar);
+    let priority_str = get_prop(inst, c"priority".as_ptr() as *const xmlChar);
     if !priority_str.is_null() {
         let p = crate::abi::exports_xml2::xmlXPathCastStringToNumber(priority_str);
         if !p.is_nan() {
@@ -801,11 +801,11 @@ pub(crate) unsafe fn compile_variable(
     (*var).level = depth;
     (*var).flags = if is_param != 0 { 2 } else { 0 }; // PARAM flag
 
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if !name.is_null() {
         (*var).name = name;
     }
-    let select = get_prop(inst, b"select\0".as_ptr() as *const xmlChar);
+    let select = get_prop(inst, c"select".as_ptr() as *const xmlChar);
     if !select.is_null() {
         (*var).select = select;
     }
@@ -823,10 +823,10 @@ pub(crate) unsafe fn compile_variable(
 /// # SAFETY
 ///
 /// - All pointers must be valid.
-pub(crate) unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
-    let match_str = get_prop(inst, b"match\0".as_ptr() as *const xmlChar);
-    let use_str = get_prop(inst, b"use\0".as_ptr() as *const xmlChar);
+pub(crate) unsafe fn compile_key(style: *mut _xsltStylesheet, inst: *mut _xmlNode, _depth: c_int) {
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
+    let match_str = get_prop(inst, c"match".as_ptr() as *const xmlChar);
+    let use_str = get_prop(inst, c"use".as_ptr() as *const xmlChar);
     if name.is_null() || match_str.is_null() || use_str.is_null() {
         if !name.is_null() {
             libc::free(name as *mut libc::c_void);
@@ -872,8 +872,8 @@ pub(crate) unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *
     if style.is_null() || inst.is_null() {
         return;
     }
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
-    let mut fmt: *mut _xsltDecimalFormat;
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
+    let fmt: *mut _xsltDecimalFormat;
     let mut ns_uri: *const xmlChar = ptr::null();
 
     if name.is_null() {
@@ -1001,7 +1001,7 @@ pub(crate) unsafe fn compile_decimal_format(style: *mut _xsltStylesheet, inst: *
 ///
 /// - `style`/`inst` may be NULL.
 unsafe fn emit_compile_error(style: *mut _xsltStylesheet, inst: *mut _xmlNode, msg: &[u8]) {
-    unsafe {
+    {
         let mut buf = msg.to_vec();
         buf.push(0);
         crate::xslt::errors::xsltTransformError(
@@ -1124,8 +1124,8 @@ unsafe fn alloc_str(bytes: &[u8]) -> *mut xmlChar {
 ///
 /// - All pointers must be valid.
 unsafe fn compile_namespace_alias(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
-    let stylesheet_prefix = get_prop(inst, b"stylesheet-prefix\0".as_ptr() as *const xmlChar);
-    let result_prefix = get_prop(inst, b"result-prefix\0".as_ptr() as *const xmlChar);
+    let stylesheet_prefix = get_prop(inst, c"stylesheet-prefix".as_ptr() as *const xmlChar);
+    let result_prefix = get_prop(inst, c"result-prefix".as_ptr() as *const xmlChar);
     if stylesheet_prefix.is_null() || result_prefix.is_null() {
         if !stylesheet_prefix.is_null() {
             libc::free(stylesheet_prefix as *mut libc::c_void);
@@ -1199,7 +1199,7 @@ unsafe fn prefix_to_uri(node: *mut _xmlNode, prefix: *const xmlChar) -> *mut xml
 ///
 /// - All pointers must be valid.
 unsafe fn compile_attribute_set(style: *mut _xsltStylesheet, inst: *mut _xmlNode, depth: c_int) {
-    let name = get_prop(inst, b"name\0".as_ptr() as *const xmlChar);
+    let name = get_prop(inst, c"name".as_ptr() as *const xmlChar);
     if name.is_null() {
         return;
     }
@@ -1227,7 +1227,7 @@ unsafe fn compile_space_rules(
     strip: c_int,
     depth: c_int,
 ) {
-    let elements = get_prop(inst, b"elements\0".as_ptr() as *const xmlChar);
+    let elements = get_prop(inst, c"elements".as_ptr() as *const xmlChar);
     if elements.is_null() {
         return;
     }
@@ -1271,24 +1271,24 @@ unsafe fn compile_space_rules(
 ///
 /// - All pointers must be valid.
 unsafe fn compile_output(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
-    let method = get_prop(inst, b"method\0".as_ptr() as *const xmlChar);
+    let method = get_prop(inst, c"method".as_ptr() as *const xmlChar);
     if !method.is_null() {
         (*style).method = method;
     }
-    let version = get_prop(inst, b"version\0".as_ptr() as *const xmlChar);
+    let version = get_prop(inst, c"version".as_ptr() as *const xmlChar);
     if !version.is_null() {
         (*style).version = version;
     }
-    let encoding = get_prop(inst, b"encoding\0".as_ptr() as *const xmlChar);
+    let encoding = get_prop(inst, c"encoding".as_ptr() as *const xmlChar);
     if !encoding.is_null() {
         (*style).encoding = encoding;
     }
-    let omit = get_prop(inst, b"omit-xml-declaration\0".as_ptr() as *const xmlChar);
+    let omit = get_prop(inst, c"omit-xml-declaration".as_ptr() as *const xmlChar);
     if !omit.is_null() {
         (*style).omitXmlDeclaration = if cstr_eq(omit, b"yes") { 1 } else { 0 };
         libc::free(omit as *mut libc::c_void);
     }
-    let standalone = get_prop(inst, b"standalone\0".as_ptr() as *const xmlChar);
+    let standalone = get_prop(inst, c"standalone".as_ptr() as *const xmlChar);
     if !standalone.is_null() {
         (*style).standalone = if cstr_eq(standalone, b"yes") {
             1
@@ -1299,20 +1299,20 @@ unsafe fn compile_output(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
         };
         libc::free(standalone as *mut libc::c_void);
     }
-    let indent = get_prop(inst, b"indent\0".as_ptr() as *const xmlChar);
+    let indent = get_prop(inst, c"indent".as_ptr() as *const xmlChar);
     if !indent.is_null() {
         (*style).indent = if cstr_eq(indent, b"yes") { 1 } else { 0 };
         libc::free(indent as *mut libc::c_void);
     }
-    let doctype_public = get_prop(inst, b"doctype-public\0".as_ptr() as *const xmlChar);
+    let doctype_public = get_prop(inst, c"doctype-public".as_ptr() as *const xmlChar);
     if !doctype_public.is_null() {
         (*style).doctypePublic = doctype_public;
     }
-    let doctype_system = get_prop(inst, b"doctype-system\0".as_ptr() as *const xmlChar);
+    let doctype_system = get_prop(inst, c"doctype-system".as_ptr() as *const xmlChar);
     if !doctype_system.is_null() {
         (*style).doctypeSystem = doctype_system;
     }
-    let media_type = get_prop(inst, b"media-type\0".as_ptr() as *const xmlChar);
+    let media_type = get_prop(inst, c"media-type".as_ptr() as *const xmlChar);
     if !media_type.is_null() {
         (*style).mediaType = media_type;
     }
@@ -1398,8 +1398,8 @@ mod tests {
     fn test_compile_simplified_stylesheet() {
         unsafe {
             // A simplified stylesheet: literal result element <html>.
-            let doc = new_doc(b"1.0\0".as_ptr() as *const xmlChar);
-            let root = new_node(ptr::null_mut(), b"html\0".as_ptr() as *const xmlChar);
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
+            let root = new_node(ptr::null_mut(), c"html".as_ptr() as *const xmlChar);
             doc_set_root_element(doc, root);
             let style =
                 libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
@@ -1428,7 +1428,7 @@ mod tests {
             let doc = crate::abi::exports_xml2::xmlReadMemory(
                 xsl.as_ptr() as *const c_char,
                 (xsl.len() - 1) as c_int,
-                b"bad.xsl\0".as_ptr() as *const c_char,
+                c"bad.xsl".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             );
@@ -1462,7 +1462,7 @@ mod tests {
             let doc = crate::abi::exports_xml2::xmlReadMemory(
                 xsl.as_ptr() as *const c_char,
                 (xsl.len() - 1) as c_int,
-                b"bad.xsl\0".as_ptr() as *const c_char,
+                c"bad.xsl".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             );

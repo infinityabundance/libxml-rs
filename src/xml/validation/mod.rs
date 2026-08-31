@@ -31,8 +31,6 @@ use std::os::raw::{c_char, c_int, c_uint};
 
 use crate::abi::allocator;
 use crate::abi::callbacks::xmlGenericErrorFunc;
-use crate::abi::callbacks::xmlHashDeallocator;
-use crate::abi::callbacks::xmlHashScannerFull;
 use crate::abi::structs::*;
 use crate::abi::types::xmlAttributeDefault::*;
 use crate::abi::types::xmlAttributeType::*;
@@ -43,7 +41,6 @@ use crate::abi::types::xmlElementTypeVal::*;
 use crate::abi::types::xmlEntityType::*;
 use crate::abi::types::*;
 use crate::xml::dtd;
-use crate::xml::entities;
 use crate::xml::hash;
 use crate::xml::string;
 use crate::xml::tree;
@@ -53,6 +50,7 @@ use crate::xml::tree;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Maximum allowed depth for recursive validation walks.
+#[allow(dead_code)]
 const VALID_CTXT_DEPTH_MAX: c_int = 256;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -68,6 +66,16 @@ const VALID_CTXT_DEPTH_MAX: c_int = 256;
 /// ```
 ///
 /// Returns a new zero-initialized validation context, or NULL on OOM.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 pub unsafe fn new_valid_ctxt() -> *mut _xmlValidCtxt {
     // SAFETY: Allocate zero-initialized memory for the validation context.
     let ctxt = allocator::xmlMallocZero(size_of::<_xmlValidCtxt>() as usize) as *mut _xmlValidCtxt;
@@ -277,7 +285,7 @@ unsafe fn get_valid_dtd(doc: *mut _xmlDoc) -> *mut _xmlDtd {
 ///  [\u{370}-\u{37D}] | [\u{37F}-\u{1FFF}] | [\u{200C}-\u{200D}] |
 ///  [\u{2070}-\u{218F}] | [\u{2C00}-\u{2FEF}] | [\u{3001}-\u{D7FF}] |
 ///  [\u{F900}-\u{FDCF}] | [\u{FDF0}-\u{FFFD}]`
-pub(crate) fn is_xml_name_start(c: char) -> bool {
+pub(crate) const fn is_xml_name_start(c: char) -> bool {
     matches!(c,
         'a'..='z' | 'A'..='Z' | '_' | ':' |
         '\u{C0}'..='\u{D6}' | '\u{D8}'..='\u{F6}' | '\u{F8}'..='\u{2FF}' |
@@ -295,7 +303,7 @@ pub(crate) fn is_xml_name_start(c: char) -> bool {
 ///
 /// Matches NameChar production: NameStartChar | '-' | '.' | [0-9] |
 /// \u{B7} | [\u{0300}-\u{036F}] | [\u{203F}-\u{2040}]
-pub(crate) fn is_xml_name_char(c: char) -> bool {
+pub(crate) const fn is_xml_name_char(c: char) -> bool {
     is_xml_name_start(c)
         || matches!(c,
             '-' | '.' | '0'..='9' | '\u{B7}' |
@@ -713,7 +721,7 @@ pub unsafe fn validate_id(
 pub unsafe fn validate_id_ref(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    node: *mut _xmlNode,
+    _node: *mut _xmlNode,
     value: *const xmlChar,
 ) -> c_int {
     if value.is_null() || doc.is_null() {
@@ -835,7 +843,7 @@ pub unsafe fn validate_id_refs(
 pub unsafe fn validate_attribute_decl(
     ctxt: *mut _xmlValidCtxt,
     doc: *mut _xmlDoc,
-    elem: *mut _xmlNode,
+    _elem: *mut _xmlNode,
     attr: *mut _xmlAttribute,
 ) -> c_int {
     if attr.is_null() {
@@ -847,17 +855,15 @@ pub unsafe fn validate_attribute_decl(
         let atype = a.atype as c_int;
 
         // Validate the default value if present
-        if !a.defaultValue.is_null() {
-            if validate_attribute_value(atype, a.defaultValue) == 0 {
-                let name_str = string::xmlstr_to_string(a.name);
-                let val_str = string::xmlstr_to_string(a.defaultValue);
-                let err_msg = format!(
-                    "Default value '{}' for attribute '{}' is not valid for its type\0",
-                    val_str, name_str
-                );
-                vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
-                return 0;
-            }
+        if !a.defaultValue.is_null() && validate_attribute_value(atype, a.defaultValue) == 0 {
+            let name_str = string::xmlstr_to_string(a.name);
+            let val_str = string::xmlstr_to_string(a.defaultValue);
+            let err_msg = format!(
+                "Default value '{}' for attribute '{}' is not valid for its type\0",
+                val_str, name_str
+            );
+            vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+            return 0;
         }
 
         // Validate enumeration values
@@ -865,14 +871,12 @@ pub unsafe fn validate_attribute_decl(
             // Validate each enumeration value is a valid NMTOKEN
             let mut cur = a.tree;
             while !cur.is_null() {
-                if !(*cur).name.is_null() {
-                    if validate_nmtoken_value((*cur).name) == 0 {
-                        let val_str = string::xmlstr_to_string((*cur).name);
-                        let err_msg =
-                            format!("Enumeration value '{}' is not a valid NMTOKEN\0", val_str);
-                        vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
-                        return 0;
-                    }
+                if !(*cur).name.is_null() && validate_nmtoken_value((*cur).name) == 0 {
+                    let val_str = string::xmlstr_to_string((*cur).name);
+                    let err_msg =
+                        format!("Enumeration value '{}' is not a valid NMTOKEN\0", val_str);
+                    vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+                    return 0;
                 }
                 cur = (*cur).next;
             }
@@ -882,16 +886,14 @@ pub unsafe fn validate_attribute_decl(
         if atype == XML_ATTRIBUTE_NOTATION as c_int && !a.tree.is_null() {
             let mut cur = a.tree;
             while !cur.is_null() {
-                if !(*cur).name.is_null() {
-                    if validate_notation_use(ctxt, doc, (*cur).name) == 0 {
-                        let val_str = string::xmlstr_to_string((*cur).name);
-                        let err_msg = format!(
-                            "NOTATION value '{}' references undeclared notation\0",
-                            val_str
-                        );
-                        vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
-                        return 0;
-                    }
+                if !(*cur).name.is_null() && validate_notation_use(ctxt, doc, (*cur).name) == 0 {
+                    let val_str = string::xmlstr_to_string((*cur).name);
+                    let err_msg = format!(
+                        "NOTATION value '{}' references undeclared notation\0",
+                        val_str
+                    );
+                    vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+                    return 0;
                 }
                 cur = (*cur).next;
             }
@@ -1139,10 +1141,10 @@ pub unsafe fn validate_element(
                         if validate_id_ref(ctxt, doc, elem, attr_value) == 0 {
                             valid = 0;
                         }
-                    } else if atype == XML_ATTRIBUTE_IDREFS as c_int {
-                        if validate_id_refs(ctxt, doc, elem, attr_value) == 0 {
-                            valid = 0;
-                        }
+                    } else if atype == XML_ATTRIBUTE_IDREFS as c_int
+                        && validate_id_refs(ctxt, doc, elem, attr_value) == 0
+                    {
+                        valid = 0;
                     }
                 }
 
@@ -1225,10 +1227,10 @@ pub unsafe fn validate_element(
         // ── Recurse into children ─────────────────────────────────────────
         let mut child = e.children;
         while !child.is_null() {
-            if (*child).type_ == XML_ELEMENT_NODE as c_int {
-                if validate_element(ctxt, doc, child) == 0 {
-                    valid = 0;
-                }
+            if (*child).type_ == XML_ELEMENT_NODE as c_int
+                && validate_element(ctxt, doc, child) == 0
+            {
+                valid = 0;
             }
             child = (*child).next;
         }
@@ -1446,17 +1448,15 @@ pub unsafe fn validate_root(ctxt: *mut _xmlValidCtxt, doc: *mut _xmlDoc) -> c_in
         // UPSTREAM-PARITY: libxml2 checks that the root element name matches
         // the DTD's name (the DOCTYPE name).
         let dtd_ref = &*dtd;
-        if !dtd_ref.name.is_null() {
-            if string::xml_strcmp((*root).name, dtd_ref.name) != 0 {
-                let root_str = string::xmlstr_to_string((*root).name);
-                let dtd_str = string::xmlstr_to_string(dtd_ref.name);
-                let err_msg = format!(
-                    "Root element '{}' does not match DTD root '{}'\0",
-                    root_str, dtd_str
-                );
-                vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
-                return 0;
-            }
+        if !dtd_ref.name.is_null() && string::xml_strcmp((*root).name, dtd_ref.name) != 0 {
+            let root_str = string::xmlstr_to_string((*root).name);
+            let dtd_str = string::xmlstr_to_string(dtd_ref.name);
+            let err_msg = format!(
+                "Root element '{}' does not match DTD root '{}'\0",
+                root_str, dtd_str
+            );
+            vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+            return 0;
         }
 
         c.valid
@@ -1853,12 +1853,12 @@ const XML_SCAN_NC: u32 = 1; // stop at ':'
 const XML_SCAN_NMTOKEN: u32 = 2; // first char may be any NameChar
 
 /// Upstream IS_BLANK_CH: space, tab, LF, CR.
-fn is_blank_byte(b: u8) -> bool {
+const fn is_blank_byte(b: u8) -> bool {
     b == b' ' || b == b'\t' || b == b'\n' || b == b'\r'
 }
 
 /// UTF-8 sequence length from the lead byte (0 when invalid).
-fn utf8_char_len(lead: u8) -> usize {
+const fn utf8_char_len(lead: u8) -> usize {
     if lead < 0x80 {
         1
     } else if lead >= 0xC0 && lead <= 0xDF {
@@ -2437,7 +2437,7 @@ unsafe extern "C" fn free_ref_list_entry(data: *mut c_void) {
 }
 
 /// xmlList comparator (upstream xmlDummyCompare: never equal).
-unsafe extern "C" fn dummy_compare(_a: *const c_void, _b: *const c_void) -> c_int {
+const unsafe extern "C" fn dummy_compare(_a: *const c_void, _b: *const c_void) -> c_int {
     1
 }
 
@@ -2582,7 +2582,7 @@ pub unsafe fn remove_ref(doc: *mut _xmlDoc, attr: *mut _xmlAttr) -> c_int {
                     unsafe {
                         crate::xml::list::list_remove_first(l, cur);
                     }
-                    unsafe { ctx.removed = 0 };
+                    ctx.removed = 0;
                 }
                 cur = next;
             }
@@ -3040,7 +3040,22 @@ pub unsafe fn validate_element_decl(
 /// Upstream `xmlValidateNotationDecl(ctxt, doc, nota)`: modern libxml2 has
 /// no validity constraint on notation declarations and returns 1 always
 /// (verified by disassembly of the system DSO: `mov $1,%eax; ret`).
-pub unsafe fn validate_notation_decl(
+///
+/// # SAFETY
+///
+/// - `_ctxt`, `_doc`, `_nota` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
+pub const unsafe fn validate_notation_decl(
     _ctxt: *mut _xmlValidCtxt,
     _doc: *mut _xmlDoc,
     _nota: *mut _xmlNotation,
@@ -3098,7 +3113,7 @@ pub unsafe fn validate_one_attribute(
             if attr_decl.is_null() && !(*doc).extSubset.is_null() {
                 attr_decl = get_dtd_qattr_desc((*doc).extSubset, fullname, (*attr).name, aprefix);
             }
-            if fullname != (*elem).name as *mut xmlChar {
+            if !std::ptr::eq(fullname, (*elem).name) {
                 allocator::xmlFreeImpl(fullname as *mut c_void);
             }
         }
@@ -3166,41 +3181,39 @@ pub unsafe fn validate_one_attribute(
         }
 
         // [VC: Fixed Attribute Default]
-        if (*attr_decl).def == XML_ATTRIBUTE_FIXED as c_int {
-            if string::xml_strcmp(value, (*attr_decl).defaultValue) != 0 {
-                let msg = format!(
-                    "Value for attribute {} of {} is different from default \"{}\n\0",
-                    string::xmlstr_to_string((*attr).name),
-                    string::xmlstr_to_string((*elem).name),
-                    string::xmlstr_to_string((*attr_decl).defaultValue)
-                );
-                // upstream format: "Value for attribute %s of %s is different from default \"%s\"\n"
-                let msg = format!(
-                    "Value for attribute {} of {} is different from default \"{}\"\0",
-                    string::xmlstr_to_string((*attr).name),
-                    string::xmlstr_to_string((*elem).name),
-                    string::xmlstr_to_string((*attr_decl).defaultValue)
-                );
-                vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
-                ret = 0;
-            }
+        if (*attr_decl).def == XML_ATTRIBUTE_FIXED as c_int
+            && string::xml_strcmp(value, (*attr_decl).defaultValue) != 0
+        {
+            let _msg = format!(
+                "Value for attribute {} of {} is different from default \"{}\n\0",
+                string::xmlstr_to_string((*attr).name),
+                string::xmlstr_to_string((*elem).name),
+                string::xmlstr_to_string((*attr_decl).defaultValue)
+            );
+            // upstream format: "Value for attribute %s of %s is different from default \"%s\"\n"
+            let msg = format!(
+                "Value for attribute {} of {} is different from default \"{}\"\0",
+                string::xmlstr_to_string((*attr).name),
+                string::xmlstr_to_string((*elem).name),
+                string::xmlstr_to_string((*attr_decl).defaultValue)
+            );
+            vctxt_error_node(ctxt, elem, msg.as_ptr() as *const c_char);
+            ret = 0;
         }
 
         // [VC: ID] uniqueness (skipped inside entities)
         const XML_VCTXT_IN_ENTITY: c_uint = 4; // upstream valid.h
         if (*attr_decl).atype == XML_ATTRIBUTE_ID as c_int
             && (ctxt.is_null() || (*ctxt).flags & XML_VCTXT_IN_ENTITY == 0)
+            && add_id(ctxt, doc, value, attr).is_null()
         {
-            if add_id(ctxt, doc, value, attr).is_null() {
-                ret = 0;
-            }
+            ret = 0;
         }
-        if (*attr_decl).atype == XML_ATTRIBUTE_IDREF as c_int
-            || (*attr_decl).atype == XML_ATTRIBUTE_IDREFS as c_int
+        if ((*attr_decl).atype == XML_ATTRIBUTE_IDREF as c_int
+            || (*attr_decl).atype == XML_ATTRIBUTE_IDREFS as c_int)
+            && add_ref(ctxt, doc, value, attr).is_null()
         {
-            if add_ref(ctxt, doc, value, attr).is_null() {
-                ret = 0;
-            }
+            ret = 0;
         }
 
         // [VC: Notation Attributes]
@@ -3366,7 +3379,7 @@ pub unsafe fn validate_one_namespace(
                     );
                 }
             }
-            if fullname != (*elem).name as *mut xmlChar {
+            if !std::ptr::eq(fullname, (*elem).name) {
                 allocator::xmlFreeImpl(fullname as *mut c_void);
             }
         }
@@ -3828,6 +3841,7 @@ unsafe fn prefix_matches(prefix: *const xmlChar, qname: *const xmlChar, len: c_i
 /// Upstream builds the same automaton (xmlValidBuildAContentModel) and then
 /// converts it with xmlRegFromAutomata; the observable push/pop contract is
 /// identical (per-push "Misplaced" errors, completion checks on pop).
+#[derive(Debug)]
 #[repr(C)]
 pub struct ContentModelNfa {
     /// Flat transition list: (from_state, name, to_state); name NULL = epsilon.
@@ -3839,6 +3853,7 @@ pub struct ContentModelNfa {
 }
 
 /// Runtime exec state for one open element's content model.
+#[derive(Debug)]
 #[repr(C)]
 pub struct ContentModelExec {
     /// the compiled NFA
@@ -3854,13 +3869,13 @@ struct NfaBuilder {
 }
 
 impl NfaBuilder {
-    fn new() -> Self {
+    const fn new() -> Self {
         NfaBuilder {
             transitions: Vec::new(),
             n_states: 0,
         }
     }
-    fn new_state(&mut self) -> u32 {
+    const fn new_state(&mut self) -> u32 {
         let s = self.n_states;
         self.n_states += 1;
         s
@@ -3886,7 +3901,7 @@ unsafe fn compile_content_sub(
         return (s, vec![s]);
     }
     let m = unsafe { &*model };
-    let (mut in_s, mut outs) = match m.type_ as u32 {
+    let (mut in_s, outs) = match m.type_ as u32 {
         t if t == XML_ELEMENT_CONTENT_ELEMENT as u32 => {
             let s = b.new_state();
             let to = b.new_state();
@@ -4098,7 +4113,7 @@ unsafe fn vstate_vpush(
                 (*ctxt).vstateMax * 2
             };
             let new_tab = allocator::xmlReallocImpl(
-                (*ctxt).vstateTab as *mut c_void,
+                (*ctxt).vstateTab,
                 (new_max as usize) * size_of::<ValidState>(),
             ) as *mut ValidState;
             if new_tab.is_null() {
@@ -4156,10 +4171,11 @@ unsafe fn vstate_vpop(ctxt: *mut _xmlValidCtxt) -> c_int {
         let elem_decl = (*tab.add(idx)).elem_decl;
         (*tab.add(idx)).elem_decl = ptr::null_mut();
         (*tab.add(idx)).node = ptr::null_mut();
-        if !elem_decl.is_null() && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
-            if !(*tab.add(idx)).exec.is_null() {
-                free_content_exec((*tab.add(idx)).exec);
-            }
+        if !elem_decl.is_null()
+            && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int
+            && !(*tab.add(idx)).exec.is_null()
+        {
+            free_content_exec((*tab.add(idx)).exec);
         }
         (*tab.add(idx)).exec = ptr::null_mut();
         if (*ctxt).vstateNr >= 1 {
@@ -4279,24 +4295,18 @@ pub unsafe fn validate_push_element(
                             }
                         }
                     }
-                    t if t == XML_ELEMENT_TYPE_ELEMENT as u32 => {
-                        if !(*state).exec.is_null() {
-                            ret = content_exec_push((*state).exec, qname);
-                            if ret < 0 {
-                                let msg = format!(
-                                    "Element {} content does not follow the DTD, Misplaced {}\0",
-                                    string::xmlstr_to_string((*(*state).node).name),
-                                    string::xmlstr_to_string(qname)
-                                );
-                                vctxt_error_node(
-                                    ctxt,
-                                    (*state).node,
-                                    msg.as_ptr() as *const c_char,
-                                );
-                                ret = 0;
-                            } else {
-                                ret = 1;
-                            }
+                    t if t == XML_ELEMENT_TYPE_ELEMENT as u32 && !(*state).exec.is_null() => {
+                        ret = content_exec_push((*state).exec, qname);
+                        if ret < 0 {
+                            let msg = format!(
+                                "Element {} content does not follow the DTD, Misplaced {}\0",
+                                string::xmlstr_to_string((*(*state).node).name),
+                                string::xmlstr_to_string(qname)
+                            );
+                            vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                            ret = 0;
+                        } else {
+                            ret = 1;
                         }
                     }
                     _ => {}
@@ -4392,19 +4402,20 @@ pub unsafe fn validate_pop_element(
         if (*ctxt).vstateNr > 0 && !(*ctxt).vstate.is_null() {
             let state = (*ctxt).vstate as *mut ValidState;
             let elem_decl = (*state).elem_decl;
-            if !elem_decl.is_null() && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int {
-                if !(*state).exec.is_null() {
-                    ret = content_exec_push((*state).exec, ptr::null());
-                    if ret <= 0 {
-                        let msg = format!(
-                            "Element {} content does not follow the DTD, Expecting more children\0",
-                            string::xmlstr_to_string((*(*state).node).name)
-                        );
-                        vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
-                        ret = 0;
-                    } else {
-                        ret = 1;
-                    }
+            if !elem_decl.is_null()
+                && (*elem_decl).etype == XML_ELEMENT_TYPE_ELEMENT as c_int
+                && !(*state).exec.is_null()
+            {
+                ret = content_exec_push((*state).exec, ptr::null());
+                if ret <= 0 {
+                    let msg = format!(
+                        "Element {} content does not follow the DTD, Expecting more children\0",
+                        string::xmlstr_to_string((*(*state).node).name)
+                    );
+                    vctxt_error_node(ctxt, (*state).node, msg.as_ptr() as *const c_char);
+                    ret = 0;
+                } else {
+                    ret = 1;
                 }
             }
             let _ = vstate_vpop(ctxt);
@@ -4421,7 +4432,7 @@ pub unsafe fn validate_pop_element(
 mod tests {
     use super::*;
     use crate::abi::allocator;
-    use crate::abi::types::xmlElementTypeVal::*;
+
     use crate::xml::dtd;
     use crate::xml::tree;
 
@@ -4459,8 +4470,7 @@ mod tests {
         elem_type: c_int,
         content: *mut _xmlElementContent,
     ) -> *mut _xmlElement {
-        let result = dtd::add_element_decl(dtd, name, elem_type, content);
-        result
+        dtd::add_element_decl(dtd, name, elem_type, content)
     }
 
     /// Create a root element node.

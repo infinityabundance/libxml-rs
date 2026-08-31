@@ -40,7 +40,7 @@ pub fn register_all() {
 
 /// Marker function (the element forms are handled by the compiler, not as
 /// XPath functions).
-fn func_marker(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn func_marker(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::String(String::new()))
 }
 
@@ -105,13 +105,11 @@ unsafe fn scan_for_functions(ctx: &mut XPathContext, node: *mut crate::abi::stru
 /// # SAFETY
 ///
 /// - `node` must be a valid `func:function` element.
-unsafe fn register_function_def(ctx: &mut XPathContext, node: *mut crate::abi::structs::_xmlNode) {
+unsafe fn register_function_def(_ctx: &mut XPathContext, node: *mut crate::abi::structs::_xmlNode) {
     // The function name is the element's QName (prefix:local). Determine
     // the full name from the prefix binding + local name.
-    let name = crate::xml::tree::get_prop(
-        node,
-        b"name\0".as_ptr() as *const crate::abi::types::xmlChar,
-    );
+    let name =
+        crate::xml::tree::get_prop(node, c"name".as_ptr() as *const crate::abi::types::xmlChar);
     if name.is_null() {
         return;
     }
@@ -126,7 +124,7 @@ unsafe fn register_function_def(ctx: &mut XPathContext, node: *mut crate::abi::s
     // Look for a select attribute carrying the body expression.
     let select = crate::xml::tree::get_prop(
         node,
-        b"select\0".as_ptr() as *const crate::abi::types::xmlChar,
+        c"select".as_ptr() as *const crate::abi::types::xmlChar,
     );
     if let Some(sel) = select.as_mut() {
         let expr = crate::abi::versioning::c_str_to_bytes(*sel as *const std::os::raw::c_char)

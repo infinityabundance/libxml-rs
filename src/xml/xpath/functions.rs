@@ -123,12 +123,12 @@ fn get_first_node(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// last() — context size.
-fn fn_last(ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn fn_last(ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::Number(ctx.last() as f64))
 }
 
 /// position() — context position.
-fn fn_position(ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn fn_position(ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::Number(ctx.position() as f64))
 }
 
@@ -139,7 +139,7 @@ fn fn_count(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, 
 }
 
 /// id(object) — select elements by ID.
-fn fn_id(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn fn_id(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     // id() is complex: requires DTD validation to know which attributes are ID.
     // For now, return empty node-set.
     Ok(XPathValue::NodeSet(NodeSet::new()))
@@ -349,12 +349,12 @@ fn fn_not(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, St
 }
 
 /// true() — constant true.
-fn fn_true(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn fn_true(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::Boolean(true))
 }
 
 /// false() — constant false.
-fn fn_false(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn fn_false(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::Boolean(false))
 }
 
@@ -461,42 +461,30 @@ mod tests {
     #[test]
     fn test_true_false() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        assert_eq!(fn_true(&mut ctx, &[]).unwrap().as_boolean(), true);
-        assert_eq!(fn_false(&mut ctx, &[]).unwrap().as_boolean(), false);
+        assert!(fn_true(&mut ctx, &[]).unwrap().as_boolean());
+        assert!(!fn_false(&mut ctx, &[]).unwrap().as_boolean());
     }
 
     #[test]
     fn test_boolean_conversion() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        assert_eq!(
-            fn_boolean(&mut ctx, &[XPathValue::Boolean(true)])
-                .unwrap()
-                .as_boolean(),
-            true
-        );
-        assert_eq!(
-            fn_boolean(&mut ctx, &[XPathValue::Boolean(false)])
-                .unwrap()
-                .as_boolean(),
-            false
-        );
+        assert!(fn_boolean(&mut ctx, &[XPathValue::Boolean(true)])
+            .unwrap()
+            .as_boolean());
+        assert!(!fn_boolean(&mut ctx, &[XPathValue::Boolean(false)])
+            .unwrap()
+            .as_boolean());
     }
 
     #[test]
     fn test_not() {
         let mut ctx = XPathContext::new(std::ptr::null_mut());
-        assert_eq!(
-            fn_not(&mut ctx, &[XPathValue::Boolean(true)])
-                .unwrap()
-                .as_boolean(),
-            false
-        );
-        assert_eq!(
-            fn_not(&mut ctx, &[XPathValue::Boolean(false)])
-                .unwrap()
-                .as_boolean(),
-            true
-        );
+        assert!(!fn_not(&mut ctx, &[XPathValue::Boolean(true)])
+            .unwrap()
+            .as_boolean());
+        assert!(fn_not(&mut ctx, &[XPathValue::Boolean(false)])
+            .unwrap()
+            .as_boolean());
     }
 
     #[test]
@@ -544,42 +532,33 @@ mod tests {
             .as_string(),
             "abc"
         );
-        assert_eq!(
-            fn_starts_with(
-                &mut ctx,
-                &[
-                    XPathValue::String("hello".into()),
-                    XPathValue::String("he".into())
-                ]
-            )
-            .unwrap()
-            .as_boolean(),
-            true
-        );
-        assert_eq!(
-            fn_starts_with(
-                &mut ctx,
-                &[
-                    XPathValue::String("hello".into()),
-                    XPathValue::String("x".into())
-                ]
-            )
-            .unwrap()
-            .as_boolean(),
-            false
-        );
-        assert_eq!(
-            fn_contains(
-                &mut ctx,
-                &[
-                    XPathValue::String("hello".into()),
-                    XPathValue::String("ell".into())
-                ]
-            )
-            .unwrap()
-            .as_boolean(),
-            true
-        );
+        assert!(fn_starts_with(
+            &mut ctx,
+            &[
+                XPathValue::String("hello".into()),
+                XPathValue::String("he".into())
+            ]
+        )
+        .unwrap()
+        .as_boolean());
+        assert!(!fn_starts_with(
+            &mut ctx,
+            &[
+                XPathValue::String("hello".into()),
+                XPathValue::String("x".into())
+            ]
+        )
+        .unwrap()
+        .as_boolean());
+        assert!(fn_contains(
+            &mut ctx,
+            &[
+                XPathValue::String("hello".into()),
+                XPathValue::String("ell".into())
+            ]
+        )
+        .unwrap()
+        .as_boolean());
         assert_eq!(
             fn_string_length(&mut ctx, &[XPathValue::String("hello".into())])
                 .unwrap()

@@ -22,9 +22,7 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int, c_uint};
 
-use crate::abi::allocator::*;
 use crate::abi::structs::*;
-use crate::abi::types::*;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. Version & Initialization
@@ -103,16 +101,15 @@ pub extern "C" fn xsltCleanupGlobals() {
 // The extension registration functions are declared with #[no_mangle] in
 // `src/xslt/extensions/mod.rs` (xsltRegisterExtFunction, xsltRegisterExtElement).
 
-/// Initialize the EXSLT module.
-///
-/// # UPSTREAM-PARITY
-///
-/// ```c
-/// void exsltRegisterAll(void);
-/// ```
-///
-/// Declared with #[no_mangle] in `src/exslt/mod.rs`.
-
+// Initialize the EXSLT module.
+//
+// # UPSTREAM-PARITY
+//
+// ```c
+// void exsltRegisterAll(void);
+// ```
+//
+// Declared with #[no_mangle] in `src/exslt/mod.rs`.
 // ═══════════════════════════════════════════════════════════════════════════════
 // 6. Save Result to File
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -133,7 +130,7 @@ pub extern "C" fn xsltCleanupGlobals() {
 /// int xsltCheckFeature(int feature);
 /// ```
 #[no_mangle]
-pub extern "C" fn xsltCheckFeature(_feature: c_int) -> c_int {
+pub const extern "C" fn xsltCheckFeature(_feature: c_int) -> c_int {
     // All features reported as available.
     1
 }
@@ -147,7 +144,6 @@ pub extern "C" fn xsltCheckFeature(_feature: c_int) -> c_int {
 /// ```
 ///
 /// Declared with #[no_mangle] in `src/xslt/documents/mod.rs`.
-
 /// Set the transformer error handler.
 ///
 /// # UPSTREAM-PARITY
@@ -209,8 +205,14 @@ static mut XSLT_DEBUGGER_DROP: *const c_void = ptr::null();
 
 /// `xsltSetCtxtLocaleHandlers(ctxt, newLocale, freeLocale, genSortKey)` —
 /// set the locale handlers on a transform context (upstream xsltutils.c).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xsltTransformContext` pointer (or NULL).
+/// - `newLocale`/`freeLocale`/`genSortKey` are stored verbatim; the caller
+///   retains ownership and must keep them valid for the context's lifetime.
 #[no_mangle]
-pub extern "C" fn xsltSetCtxtLocaleHandlers(
+pub unsafe extern "C" fn xsltSetCtxtLocaleHandlers(
     ctxt: *mut _xsltTransformContext,
     new_locale: *mut c_void,
     free_locale: *mut c_void,
@@ -229,8 +231,14 @@ pub extern "C" fn xsltSetCtxtLocaleHandlers(
 /// `unsigned int xsltGetUTF8CharZ(const unsigned char *utf, int *len)` —
 /// decode one UTF-8 code point; returns the code point or -1 on error
 /// (upstream xsltutils.c; the `Z` variant does not tolerate NULs).
+///
+/// # SAFETY
+///
+/// - `utf` must point to at least one byte (and up to 4 for multi-byte
+///   sequences); `len` must be a valid out-pointer. Both may be NULL, in
+///   which case the function returns -1 and leaves `len` untouched.
 #[no_mangle]
-pub extern "C" fn xsltGetUTF8CharZ(utf: *const u8, len: *mut c_int) -> c_uint {
+pub unsafe extern "C" fn xsltGetUTF8CharZ(utf: *const u8, len: *mut c_int) -> c_uint {
     unsafe {
         if utf.is_null() || len.is_null() {
             if !len.is_null() {
@@ -271,7 +279,7 @@ pub extern "C" fn xsltGetUTF8CharZ(utf: *const u8, len: *mut c_int) -> c_uint {
             return c;
         }
         *len = 2;
-        let c = (((c0 & 0x1F) as u32) << 6) | ((*utf.add(1) & 0x3F) as u32);
-        c
+
+        (((c0 & 0x1F) as u32) << 6) | ((*utf.add(1) & 0x3F) as u32)
     }
 }

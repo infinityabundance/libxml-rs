@@ -168,12 +168,12 @@ unsafe fn cmp_nodes(mut node1: *mut _xmlNode, mut node2: *mut _xmlNode) -> c_int
     if (*node1).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int {
         attr1 = 1;
         attr_node1 = node1 as *mut _xmlAttr;
-        node1 = (*node1).parent as *mut _xmlNode;
+        node1 = (*node1).parent;
     }
     if (*node2).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int {
         attr2 = 1;
         attr_node2 = node2 as *mut _xmlAttr;
-        node2 = (*node2).parent as *mut _xmlNode;
+        node2 = (*node2).parent;
     }
     if node1 == node2 {
         if attr1 == attr2 {
@@ -200,31 +200,31 @@ unsafe fn cmp_nodes(mut node1: *mut _xmlNode, mut node2: *mut _xmlNode) -> c_int
     {
         return 1;
     }
-    if node1 == (*node2).prev as *mut _xmlNode {
+    if std::ptr::eq(node1, (*node2).prev) {
         return 1;
     }
-    if node1 == (*node2).next as *mut _xmlNode {
+    if std::ptr::eq(node1, (*node2).next) {
         return -1;
     }
     // Compute depth to root.
     let mut depth2 = 0;
     let mut cur = node2;
     while !(*cur).parent.is_null() {
-        if (*cur).parent as *mut _xmlNode == node1 {
+        if std::ptr::eq((*cur).parent, node1) {
             return 1;
         }
         depth2 += 1;
-        cur = (*cur).parent as *mut _xmlNode;
+        cur = (*cur).parent;
     }
     let root = cur;
     let mut depth1 = 0;
     cur = node1;
     while !(*cur).parent.is_null() {
-        if (*cur).parent as *mut _xmlNode == node2 {
+        if std::ptr::eq((*cur).parent, node2) {
             return -1;
         }
         depth1 += 1;
-        cur = (*cur).parent as *mut _xmlNode;
+        cur = (*cur).parent;
     }
     // Distinct document (or distinct entities) case.
     if root != cur {
@@ -233,33 +233,33 @@ unsafe fn cmp_nodes(mut node1: *mut _xmlNode, mut node2: *mut _xmlNode) -> c_int
     // Get the nearest common ancestor.
     while depth1 > depth2 {
         depth1 -= 1;
-        node1 = (*node1).parent as *mut _xmlNode;
+        node1 = (*node1).parent;
     }
     while depth2 > depth1 {
         depth2 -= 1;
-        node2 = (*node2).parent as *mut _xmlNode;
+        node2 = (*node2).parent;
     }
-    while (*node1).parent as *mut _xmlNode != (*node2).parent as *mut _xmlNode {
-        node1 = (*node1).parent as *mut _xmlNode;
-        node2 = (*node2).parent as *mut _xmlNode;
+    while !std::ptr::eq((*node1).parent, (*node2).parent) {
+        node1 = (*node1).parent;
+        node2 = (*node2).parent;
         // Should not happen but just in case...
         if node1.is_null() || node2.is_null() {
             return -2;
         }
     }
     // Find who's first.
-    if node1 == (*node2).prev as *mut _xmlNode {
+    if std::ptr::eq(node1, (*node2).prev) {
         return 1;
     }
-    if node1 == (*node2).next as *mut _xmlNode {
+    if std::ptr::eq(node1, (*node2).next) {
         return -1;
     }
-    cur = (*node1).next as *mut _xmlNode;
+    cur = (*node1).next;
     while !cur.is_null() {
         if cur == node2 {
             return 1;
         }
-        cur = (*cur).next as *mut _xmlNode;
+        cur = (*cur).next;
     }
     -1 // assume there is no sibling list corruption
 }
@@ -306,12 +306,8 @@ unsafe fn range_check_order(range: *mut _xmlXPathObject) {
             (*range).index2,
         );
         if tmp == -1 {
-            let tmp2 = (*range).user;
-            (*range).user = (*range).user2;
-            (*range).user2 = tmp2;
-            let tmpi = (*range).index;
-            (*range).index = (*range).index2;
-            (*range).index2 = tmpi;
+            std::mem::swap(&mut (*range).user, &mut (*range).user2);
+            std::mem::swap(&mut (*range).index, &mut (*range).index2);
         }
     }
 }
@@ -383,7 +379,7 @@ unsafe fn get_nth_child(mut cur: *mut _xmlNode, no: c_int) -> *mut _xmlNode {
         return cur;
     }
     unsafe {
-        cur = (*cur).children as *mut _xmlNode;
+        cur = (*cur).children;
         let mut i: c_int = 0;
         while i <= no {
             if cur.is_null() {
@@ -399,7 +395,7 @@ unsafe fn get_nth_child(mut cur: *mut _xmlNode, no: c_int) -> *mut _xmlNode {
                     break;
                 }
             }
-            cur = (*cur).next as *mut _xmlNode;
+            cur = (*cur).next;
         }
     }
     cur
@@ -415,25 +411,22 @@ unsafe fn advance_node(mut cur: *mut _xmlNode, _level: *mut c_int) -> *mut _xmlN
             return ptr::null_mut();
         }
         if !(*cur).children.is_null() {
-            cur = (*cur).children as *mut _xmlNode;
+            cur = (*cur).children;
         } else {
             // ---- skip: ----
-            loop {
-                if !(*cur).next.is_null() {
-                    cur = (*cur).next as *mut _xmlNode;
-                    break;
-                }
+            if !(*cur).next.is_null() {
+                cur = (*cur).next;
+            } else {
                 loop {
-                    cur = (*cur).parent as *mut _xmlNode;
+                    cur = (*cur).parent;
                     if cur.is_null() {
                         return ptr::null_mut();
                     }
                     if !(*cur).next.is_null() {
-                        cur = (*cur).next as *mut _xmlNode;
+                        cur = (*cur).next;
                         break;
                     }
                 }
-                break;
             }
         }
         // ---- found: ----
@@ -449,46 +442,40 @@ unsafe fn advance_node(mut cur: *mut _xmlNode, _level: *mut c_int) -> *mut _xmlN
             }
             if t == xmlElementType::XML_ENTITY_REF_NODE as c_int {
                 // goto skip: should not happen, but handle like upstream.
-                loop {
-                    if !(*cur).next.is_null() {
-                        cur = (*cur).next as *mut _xmlNode;
-                        break;
-                    }
+                if !(*cur).next.is_null() {
+                    cur = (*cur).next;
+                } else {
                     loop {
-                        cur = (*cur).parent as *mut _xmlNode;
+                        cur = (*cur).parent;
                         if cur.is_null() {
                             return ptr::null_mut();
                         }
                         if !(*cur).next.is_null() {
-                            cur = (*cur).next as *mut _xmlNode;
+                            cur = (*cur).next;
                             break;
                         }
                     }
-                    break;
                 }
                 continue; // re-check found on the new node
             }
             // goto next
             if !(*cur).children.is_null() {
-                cur = (*cur).children as *mut _xmlNode;
+                cur = (*cur).children;
                 continue;
             }
-            loop {
-                if !(*cur).next.is_null() {
-                    cur = (*cur).next as *mut _xmlNode;
-                    break;
-                }
+            if !(*cur).next.is_null() {
+                cur = (*cur).next;
+            } else {
                 loop {
-                    cur = (*cur).parent as *mut _xmlNode;
+                    cur = (*cur).parent;
                     if cur.is_null() {
                         return ptr::null_mut();
                     }
                     if !(*cur).next.is_null() {
-                        cur = (*cur).next as *mut _xmlNode;
+                        cur = (*cur).next;
                         break;
                     }
                 }
-                break;
             }
         }
     }
@@ -602,7 +589,7 @@ unsafe fn build_range_node_list(range: *mut _xmlXPathObject) -> *mut _xmlNode {
                     cur = get_nth_child(cur, index1 - 1);
                     index1 = 0;
                 } else {
-                    cur = (*cur).children as *mut _xmlNode;
+                    cur = (*cur).children;
                 }
                 continue;
             }
@@ -1285,7 +1272,7 @@ pub unsafe extern "C" fn xmlXPtrBuildNodeList(obj: *mut _xmlXPathObject) -> *mut
                             } else {
                                 add_sibling(last, copy_node(node, 1));
                                 if !(*last).next.is_null() {
-                                    last = (*last).next as *mut _xmlNode;
+                                    last = (*last).next;
                                 }
                             }
                         }
@@ -1310,7 +1297,7 @@ pub unsafe extern "C" fn xmlXPtrBuildNodeList(obj: *mut _xmlXPathObject) -> *mut
                     }
                     if !last.is_null() {
                         while !(*last).next.is_null() {
-                            last = (*last).next as *mut _xmlNode;
+                            last = (*last).next;
                         }
                     }
                 }

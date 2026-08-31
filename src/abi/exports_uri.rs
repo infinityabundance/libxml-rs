@@ -104,14 +104,14 @@ unsafe fn escape_slice(s: &[u8], list: &[u8]) -> *mut xmlChar {
 
 /// `unreserved` per RFC 3986, plus the "unwise" set when `allow_unwise`
 /// mirrors upstream `XML_URI_ALLOW_UNWISE` in `xmlIsUnreserved`.
-fn v_unres(b: u8, allow_unwise: bool) -> bool {
+const fn v_unres(b: u8, allow_unwise: bool) -> bool {
     b.is_ascii_alphanumeric()
         || matches!(b, b'-' | b'.' | b'_' | b'~')
         || (allow_unwise && matches!(b, b'{' | b'}' | b'|' | b'\\' | b'^' | b'[' | b']' | b'`'))
 }
 
 /// `sub-delims` per RFC 3986.
-fn v_sub_delim(b: u8) -> bool {
+const fn v_sub_delim(b: u8) -> bool {
     matches!(
         b,
         b'!' | b'$' | b'&' | b'\'' | b'(' | b')' | b'*' | b'+' | b',' | b';' | b'='
@@ -119,17 +119,17 @@ fn v_sub_delim(b: u8) -> bool {
 }
 
 /// `pct-encoded = "%" HEXDIG HEXDIG` starting at position `i`.
-fn v_pct(s: &[u8], i: usize) -> bool {
+const fn v_pct(s: &[u8], i: usize) -> bool {
     i + 2 < s.len() && s[i] == b'%' && s[i + 1].is_ascii_hexdigit() && s[i + 2].is_ascii_hexdigit()
 }
 
 /// `pchar = unreserved / pct-encoded / sub-delims / ":" / "@"` at position `i`.
-fn v_pchar(s: &[u8], i: usize, allow_unwise: bool) -> bool {
+const fn v_pchar(s: &[u8], i: usize, allow_unwise: bool) -> bool {
     v_unres(s[i], allow_unwise) || v_pct(s, i) || v_sub_delim(s[i]) || s[i] == b':' || s[i] == b'@'
 }
 
 /// Advance over a run of `pchar` bytes.
-fn v_advance_pchar(s: &[u8], i: &mut usize, allow_unwise: bool) {
+const fn v_advance_pchar(s: &[u8], i: &mut usize, allow_unwise: bool) {
     while *i < s.len() && v_pchar(s, *i, allow_unwise) {
         if s[*i] == b'%' {
             *i += 3;
@@ -172,7 +172,7 @@ fn v_authority(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
 }
 
 /// `path-abempty = *( "/" segment )` — empty segments allowed.
-fn v_path_abempty(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
+const fn v_path_abempty(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
     while *i < s.len() && s[*i] == b'/' {
         *i += 1;
         v_advance_pchar(s, i, allow_unwise);
@@ -182,7 +182,7 @@ fn v_path_abempty(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
 
 /// `path-absolute = "/" [ segment-nz *( "/" segment ) ]`, with `i` just
 /// past the leading "/".
-fn v_path_absolute(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
+const fn v_path_absolute(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
     if *i < s.len() && !matches!(s[*i], b'?' | b'#') {
         if !v_pchar(s, *i, allow_unwise) {
             return false;
@@ -193,7 +193,7 @@ fn v_path_absolute(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
 }
 
 /// `path-rootless = segment-nz *( "/" segment )`.
-fn v_path_rootless(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
+const fn v_path_rootless(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
     if *i >= s.len() || !v_pchar(s, *i, allow_unwise) {
         return false;
     }
@@ -203,7 +203,7 @@ fn v_path_rootless(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
 
 /// `path-noscheme = segment-nz-nc *( "/" segment )` — the first segment
 /// must not contain ":".
-fn v_path_noscheme(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
+const fn v_path_noscheme(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
     if *i >= s.len()
         || !(v_unres(s[*i], allow_unwise) || v_pct(s, *i) || v_sub_delim(s[*i]) || s[*i] == b'@')
     {
@@ -256,10 +256,9 @@ fn uri_reference_valid(s: &[u8], allow_unwise: bool) -> bool {
             if !v_path_absolute(s, &mut i, allow_unwise) {
                 return false;
             }
-        } else if i < n && v_pchar(s, i, allow_unwise) {
-            if !v_path_rootless(s, &mut i, allow_unwise) {
-                return false;
-            }
+        } else if i < n && v_pchar(s, i, allow_unwise) && !v_path_rootless(s, &mut i, allow_unwise)
+        {
+            return false;
         }
     } else {
         // relative-ref
@@ -273,10 +272,9 @@ fn uri_reference_valid(s: &[u8], allow_unwise: bool) -> bool {
             if !v_path_absolute(s, &mut i, allow_unwise) {
                 return false;
             }
-        } else if i < n && v_pchar(s, i, allow_unwise) {
-            if !v_path_noscheme(s, &mut i, allow_unwise) {
-                return false;
-            }
+        } else if i < n && v_pchar(s, i, allow_unwise) && !v_path_noscheme(s, &mut i, allow_unwise)
+        {
+            return false;
         }
     }
 
@@ -395,7 +393,7 @@ fn normalize_path(path: &[u8], is_file: bool) -> Vec<u8> {
 
 /// `IS_UNRESERVED` from upstream uri.c: ALPHANUM + mark
 /// (`- _ . ! ~ * ' ( )`).
-fn save_unreserved(b: u8) -> bool {
+const fn save_unreserved(b: u8) -> bool {
     b.is_ascii_alphanumeric()
         || matches!(
             b,
@@ -404,7 +402,7 @@ fn save_unreserved(b: u8) -> bool {
 }
 
 /// `IS_RESERVED` from upstream uri.c: `; / ? : @ & = + $ , [ ]`.
-fn save_reserved(b: u8) -> bool {
+const fn save_reserved(b: u8) -> bool {
     matches!(
         b,
         b';' | b'/' | b'?' | b':' | b'@' | b'&' | b'=' | b'+' | b'$' | b',' | b'[' | b']'
@@ -1159,11 +1157,11 @@ pub unsafe extern "C" fn xmlCheckLanguageID(lang: *const c_char) -> c_int {
     check_language_id(unsafe { cstr_bytes(lang) })
 }
 
-fn lang_is_alpha(c: u8) -> bool {
+const fn lang_is_alpha(c: u8) -> bool {
     c.is_ascii_alphabetic()
 }
 
-fn lang_is_digit(c: u8) -> bool {
+const fn lang_is_digit(c: u8) -> bool {
     c.is_ascii_digit()
 }
 

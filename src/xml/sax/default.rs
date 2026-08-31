@@ -25,15 +25,13 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int};
 
 use crate::abi::allocator;
 use crate::abi::callbacks::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
-use crate::abi::types::xmlDocProperties::{
-    XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_USERBUILT, XML_DOC_WELLFORMED,
-};
+use crate::abi::types::xmlDocProperties::{XML_DOC_DTDVALID, XML_DOC_NSVALID, XML_DOC_WELLFORMED};
 use crate::abi::types::xmlElementType::*;
 use crate::abi::types::XML_PARSE_COMPACT;
 use crate::xml::tree;
@@ -53,7 +51,7 @@ pub(crate) mod default_sax_handler {
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt` that was passed
     ///   as `userData` to the SAX handler.
     /// - The caller must ensure the context is still alive and valid.
-    unsafe fn ctxt_from_ctx(ctx: *mut c_void) -> *mut _xmlParserCtxt {
+    const unsafe fn ctxt_from_ctx(ctx: *mut c_void) -> *mut _xmlParserCtxt {
         ctx as *mut _xmlParserCtxt
     }
 
@@ -158,7 +156,7 @@ pub(crate) mod default_sax_handler {
                 let node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
                 if !node.is_null() {
                     (*node).type_ = XML_TEXT_NODE as c_int;
-                    (*node).name = allocator::xmlMemStrdupImpl(b"text\0".as_ptr() as *const c_char)
+                    (*node).name = allocator::xmlMemStrdupImpl(c"text".as_ptr() as *const c_char)
                         as *mut xmlChar;
                     let inline = std::ptr::addr_of_mut!((*node).properties) as *mut xmlChar;
                     ptr::copy_nonoverlapping(ch, inline, len as usize);
@@ -274,13 +272,13 @@ pub(crate) mod default_sax_handler {
                 if same_name && same_ns {
                     if !attr.children.is_null() {
                         tree::free_node_list(attr.children);
-                        let attr_mut = existing as *mut _xmlAttr;
+                        let attr_mut = existing;
                         (*attr_mut).children = ptr::null_mut();
                         (*attr_mut).last = ptr::null_mut();
                     }
                     let text = parser_new_text_node(ctxt, value, value_len as c_int, had_ref);
                     if !text.is_null() {
-                        let attr_mut = existing as *mut _xmlAttr;
+                        let attr_mut = existing;
                         (*attr_mut).children = text;
                         (*attr_mut).last = text;
                         (*text).parent = existing as *mut _xmlNode;
@@ -411,19 +409,15 @@ pub(crate) mod default_sax_handler {
             let c = &*ctxt;
             if !c.myDoc.is_null() {
                 // Propagate version from context to document.
-                if !c.version.is_null() {
-                    if (*c.myDoc).version.is_null() {
-                        let dup = allocator::xmlMemStrdupImpl(c.version as *const c_char);
-                        (*c.myDoc).version = dup as *mut xmlChar;
-                    }
+                if !c.version.is_null() && (*c.myDoc).version.is_null() {
+                    let dup = allocator::xmlMemStrdupImpl(c.version as *const c_char);
+                    (*c.myDoc).version = dup as *mut xmlChar;
                 }
 
                 // Propagate encoding from context to document.
-                if !c.encoding.is_null() {
-                    if (*c.myDoc).encoding.is_null() {
-                        let dup = allocator::xmlMemStrdupImpl(c.encoding as *const c_char);
-                        (*c.myDoc).encoding = dup as *mut xmlChar;
-                    }
+                if !c.encoding.is_null() && (*c.myDoc).encoding.is_null() {
+                    let dup = allocator::xmlMemStrdupImpl(c.encoding as *const c_char);
+                    (*c.myDoc).encoding = dup as *mut xmlChar;
                 }
 
                 // Mark the document as well-formed if no errors occurred
@@ -466,7 +460,7 @@ pub(crate) mod default_sax_handler {
         nb_namespaces: c_int,
         namespaces: *mut *const xmlChar,
         nb_attributes: c_int,
-        nb_defaulted: c_int,
+        _nb_defaulted: c_int,
         attributes: *mut *const xmlChar,
     ) {
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
@@ -497,14 +491,14 @@ pub(crate) mod default_sax_handler {
             let name_owned: Vec<u8>;
             let (node_name, ns) = if URI.is_null() && !prefix.is_null() {
                 let mut q = Vec::new();
-                q.extend_from_slice(unsafe {
+                q.extend_from_slice({
                     core::slice::from_raw_parts(
                         prefix,
                         crate::xml::tree::xml_strlen(prefix) as usize,
                     )
                 });
                 q.push(b':');
-                q.extend_from_slice(unsafe {
+                q.extend_from_slice({
                     core::slice::from_raw_parts(
                         localname,
                         crate::xml::tree::xml_strlen(localname) as usize,
@@ -586,7 +580,7 @@ pub(crate) mod default_sax_handler {
                         let value_len = if attr_value_end.is_null() {
                             // Compute length from null-terminated string
                             let mut len: isize = 0;
-                            unsafe {
+                            {
                                 while *attr_value_start.offset(len) != 0 {
                                     len += 1;
                                 }
@@ -610,14 +604,14 @@ pub(crate) mod default_sax_handler {
                             let (attr_name_eff, attr_prefix_eff) =
                                 if !attr_prefix.is_null() && attr_uri.is_null() {
                                     let mut q: Vec<u8> = Vec::new();
-                                    q.extend_from_slice(unsafe {
+                                    q.extend_from_slice({
                                         core::slice::from_raw_parts(
                                             attr_prefix,
                                             crate::xml::tree::xml_strlen(attr_prefix) as usize,
                                         )
                                     });
                                     q.push(b':');
-                                    q.extend_from_slice(unsafe {
+                                    q.extend_from_slice({
                                         core::slice::from_raw_parts(
                                             attr_name,
                                             crate::xml::tree::xml_strlen(attr_name) as usize,
@@ -754,9 +748,9 @@ pub(crate) mod default_sax_handler {
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     pub unsafe extern "C" fn endElementNs(
         ctx: *mut c_void,
-        localname: *const xmlChar,
-        prefix: *const xmlChar,
-        URI: *const xmlChar,
+        _localname: *const xmlChar,
+        _prefix: *const xmlChar,
+        _URI: *const xmlChar,
     ) {
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
         if ctxt.is_null() {
@@ -1123,14 +1117,14 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - All pointer arguments must be valid null-terminated strings or NULL.
-    pub unsafe extern "C" fn attributeDecl(
-        ctx: *mut c_void,
-        elem: *const xmlChar,
-        fullname: *const xmlChar,
-        type_: c_int,
-        def: c_int,
-        default_value: *const xmlChar,
-        tree: *mut _xmlEnumeration,
+    pub const unsafe extern "C" fn attributeDecl(
+        _ctx: *mut c_void,
+        _elem: *const xmlChar,
+        _fullname: *const xmlChar,
+        _type_: c_int,
+        _def: c_int,
+        _default_value: *const xmlChar,
+        _tree: *mut _xmlEnumeration,
     ) {
         // In the default handler, attribute declarations are recorded for DTD
         // validation purposes. For now, this is a no-op — the DTD validation
@@ -1152,11 +1146,11 @@ pub(crate) mod default_sax_handler {
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `name` must be a valid null-terminated string.
     /// - `content` must be a valid pointer or NULL.
-    pub unsafe extern "C" fn elementDecl(
-        ctx: *mut c_void,
-        name: *const xmlChar,
-        type_: c_int,
-        content: *mut _xmlElementContent,
+    pub const unsafe extern "C" fn elementDecl(
+        _ctx: *mut c_void,
+        _name: *const xmlChar,
+        _type_: c_int,
+        _content: *mut _xmlElementContent,
     ) {
         // No-op in the default handler — element declaration recording will be
         // implemented alongside DTD validation.
@@ -1170,11 +1164,11 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - All pointer arguments must be valid null-terminated strings or NULL.
-    pub unsafe extern "C" fn notationDecl(
-        ctx: *mut c_void,
-        name: *const xmlChar,
-        pub_id: *const xmlChar,
-        sys_id: *const xmlChar,
+    pub const unsafe extern "C" fn notationDecl(
+        _ctx: *mut c_void,
+        _name: *const xmlChar,
+        _pub_id: *const xmlChar,
+        _sys_id: *const xmlChar,
     ) {
         // No-op in the default handler — notation declarations will be
         // implemented when DTD support is fully operational.
@@ -1188,12 +1182,12 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - All pointer arguments must be valid null-terminated strings or NULL.
-    pub unsafe extern "C" fn unparsedEntityDecl(
-        ctx: *mut c_void,
-        name: *const xmlChar,
-        pub_id: *const xmlChar,
-        sys_id: *const xmlChar,
-        notation: *const xmlChar,
+    pub const unsafe extern "C" fn unparsedEntityDecl(
+        _ctx: *mut c_void,
+        _name: *const xmlChar,
+        _pub_id: *const xmlChar,
+        _sys_id: *const xmlChar,
+        _notation: *const xmlChar,
     ) {
         // No-op in the default handler — unparsed entity declarations will be
         // implemented when DTD support is fully operational.
@@ -1211,10 +1205,10 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `pub_id` and `sys_id` must be valid null-terminated strings or NULL.
-    pub unsafe extern "C" fn resolveEntity(
-        ctx: *mut c_void,
-        pub_id: *const xmlChar,
-        sys_id: *const xmlChar,
+    pub const unsafe extern "C" fn resolveEntity(
+        _ctx: *mut c_void,
+        _pub_id: *const xmlChar,
+        _sys_id: *const xmlChar,
     ) -> *mut _xmlParserInput {
         // Default handler does not resolve entities — return NULL.
         ptr::null_mut()
@@ -1231,7 +1225,7 @@ pub(crate) mod default_sax_handler {
     /// # SAFETY
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
-    pub unsafe extern "C" fn isStandalone(ctx: *mut c_void) -> c_int {
+    pub const unsafe extern "C" fn isStandalone(_ctx: *mut c_void) -> c_int {
         -1
     }
 
@@ -1344,7 +1338,10 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `loc` must be a valid pointer to an `_xmlSAXLocator`.
-    pub unsafe extern "C" fn setDocumentLocator(ctx: *mut c_void, loc: *mut _xmlSAXLocator) {
+    pub const unsafe extern "C" fn setDocumentLocator(
+        _ctx: *mut c_void,
+        _loc: *mut _xmlSAXLocator,
+    ) {
         // No-op in the default handler.
     }
 
@@ -1364,9 +1361,11 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `name` must be a valid null-terminated string.
+    ///
     /// SAX locator callback: public ID (upstream SAX2.c
+    ///
     /// `xmlSAX2GetPublicId` returns NULL).
-    pub unsafe extern "C" fn getPublicId(_ctx: *mut c_void) -> *const xmlChar {
+    pub const unsafe extern "C" fn getPublicId(_ctx: *mut c_void) -> *const xmlChar {
         ptr::null()
     }
 
@@ -1479,6 +1478,7 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `msg` must be a valid null-terminated C string.
+    #[allow(dead_code)]
     pub unsafe extern "C" fn warning(ctx: *mut c_void, msg: *const c_char) {
         // SAFETY: The context is guaranteed valid by the caller.
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
@@ -1527,6 +1527,7 @@ pub(crate) mod default_sax_handler {
     ///
     /// - `ctx` must be a valid pointer to an `_xmlParserCtxt`.
     /// - `msg` must be a valid null-terminated C string.
+    #[allow(dead_code)]
     pub unsafe extern "C" fn fatalError(ctx: *mut c_void, msg: *const c_char) {
         // SAFETY: The context is guaranteed valid by the caller.
         let ctxt = unsafe { ctxt_from_ctx(ctx) };

@@ -37,10 +37,8 @@ use core::ptr;
 use std::collections::HashMap;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
-use crate::abi::types::*;
 use crate::xml::xpath::ast::CompiledExpr;
 use crate::xml::xpath::context::XPathContext;
 use crate::xml::xpath::types::XPathValue;
@@ -320,7 +318,7 @@ pub struct SchematronValidCtxt {
 
 impl SchematronValidCtxt {
     /// Create a new validation context.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             schema: None,
             errors: Vec::new(),
@@ -433,18 +431,17 @@ unsafe fn get_node_text(node: *mut _xmlNode) -> String {
     unsafe {
         let mut child = (*node).children;
         while !child.is_null() {
-            if (*child).type_ == XML_TEXT_NODE as c_int
-                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int
+            if ((*child).type_ == XML_TEXT_NODE as c_int
+                || (*child).type_ == XML_CDATA_SECTION_NODE as c_int)
+                && !(*child).content.is_null()
             {
-                if !(*child).content.is_null() {
-                    let content = (*child).content;
-                    let mut len = 0;
-                    while *content.add(len) != 0 {
-                        len += 1;
-                    }
-                    let slice = std::slice::from_raw_parts(content, len);
-                    result.push_str(&String::from_utf8_lossy(slice));
+                let content = (*child).content;
+                let mut len = 0;
+                while *content.add(len) != 0 {
+                    len += 1;
                 }
+                let slice = std::slice::from_raw_parts(content, len);
+                result.push_str(&String::from_utf8_lossy(slice));
             }
             child = (*child).next;
         }
@@ -488,6 +485,7 @@ unsafe fn get_attr(node: *mut _xmlNode, name: &str) -> Option<String> {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
+#[allow(dead_code)]
 unsafe fn node_is(node: *mut _xmlNode, local_name: &str) -> bool {
     if node.is_null() {
         return false;
@@ -519,6 +517,7 @@ unsafe fn node_is(node: *mut _xmlNode, local_name: &str) -> bool {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode or NULL.
+#[allow(dead_code)]
 unsafe fn child_elements(node: *mut _xmlNode) -> Vec<*mut _xmlNode> {
     let mut children = Vec::new();
     if node.is_null() {
@@ -594,7 +593,7 @@ pub fn schematron_parse(xml_doc: &str) -> Result<SchematronSchema, String> {
         crate::abi::exports_xml2::xmlReadMemory(
             xml_doc.as_ptr() as *const c_char,
             xml_doc.len() as c_int,
-            b"schema.sch\0".as_ptr() as *const c_char,
+            c"schema.sch".as_ptr() as *const c_char,
             ptr::null(),
             0,
         )
@@ -713,7 +712,7 @@ unsafe fn schematron_parse_schema_node(node: *mut _xmlNode) -> SchematronSchema 
                             schema
                                 .pattern_groups
                                 .entry(pid.clone())
-                                .or_insert_with(Vec::new)
+                                .or_default()
                                 .push(rule_id);
                         } else {
                             // No current pattern — create an anonymous pattern group
@@ -721,7 +720,7 @@ unsafe fn schematron_parse_schema_node(node: *mut _xmlNode) -> SchematronSchema 
                             schema
                                 .pattern_groups
                                 .entry(anon_id.clone())
-                                .or_insert_with(Vec::new)
+                                .or_default()
                                 .push(rule_id);
                             if !schema.pattern_order.contains(&anon_id) {
                                 schema.pattern_order.push(anon_id);
@@ -1275,13 +1274,12 @@ unsafe fn find_matching_nodes(
                 xpath_ctxt.set_context_node(root);
                 xpath_ctxt.document = doc;
 
-                match crate::xml::xpath::evaluate(compiled, xpath_ctxt) {
-                    Some(XPathValue::NodeSet(ns)) => {
-                        if !ns.is_empty() {
-                            return ns.iter().collect();
-                        }
+                if let Some(XPathValue::NodeSet(ns)) =
+                    crate::xml::xpath::evaluate(compiled, xpath_ctxt)
+                {
+                    if !ns.is_empty() {
+                        return ns.iter().collect();
                     }
-                    _ => {}
                 }
             }
 
@@ -1312,8 +1310,7 @@ fn simple_context_match(context: &str, root: *mut _xmlNode) -> Vec<*mut _xmlNode
             return nodes;
         }
 
-        if context.starts_with("//") {
-            let name = &context[2..];
+        if let Some(name) = context.strip_prefix("//") {
             if name.is_empty() || name == "*" {
                 let mut nodes = Vec::new();
                 collect_all_elements(root, &mut nodes);
@@ -1542,7 +1539,7 @@ pub unsafe extern "C" fn xmlSchematronNewMemParserCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchematronParse(ctxt: *mut c_void) -> *mut c_void {
+pub const unsafe extern "C" fn xmlSchematronParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
@@ -1704,15 +1701,10 @@ pub type SchematronValidityErrorFunc = unsafe extern "C" fn(ctx: *mut c_void, ms
 /// `xmlSchematronValidityWarningFunc` — printf-style callback (msg only).
 pub type SchematronValidityWarningFunc = unsafe extern "C" fn(ctx: *mut c_void, msg: *const c_char);
 
+#[derive(Clone, Copy)]
 struct SchematronSendPtr(*mut c_void);
 unsafe impl Send for SchematronSendPtr {}
 unsafe impl Sync for SchematronSendPtr {}
-impl Clone for SchematronSendPtr {
-    fn clone(&self) -> Self {
-        SchematronSendPtr(self.0)
-    }
-}
-impl Copy for SchematronSendPtr {}
 impl Default for SchematronSendPtr {
     fn default() -> Self {
         SchematronSendPtr(core::ptr::null_mut())
@@ -1744,6 +1736,25 @@ static SCHEMATRON_VALID_STATE: once_cell::sync::Lazy<
 
 /// Set the parser error callbacks (upstream schematron.c
 /// `xmlSchematronSetParserErrors`).
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `err`, `warn` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronSetParserErrors(
     ctxt: *mut c_void,
@@ -1762,6 +1773,25 @@ pub unsafe extern "C" fn xmlSchematronSetParserErrors(
 }
 
 /// Get the parser error callbacks (upstream `xmlSchematronGetParserErrors`).
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `err`, `warn` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronGetParserErrors(
     ctxt: *mut c_void,
@@ -1787,6 +1817,25 @@ pub unsafe extern "C" fn xmlSchematronGetParserErrors(
 }
 
 /// Set the validation error callbacks (upstream `xmlSchematronSetValidErrors`).
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `err`, `warn` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronSetValidErrors(
     ctxt: *mut c_void,
@@ -1805,6 +1854,25 @@ pub unsafe extern "C" fn xmlSchematronSetValidErrors(
 }
 
 /// Get the validation error callbacks (upstream `xmlSchematronGetValidErrors`).
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `err`, `warn` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronGetValidErrors(
     ctxt: *mut c_void,
@@ -1831,6 +1899,21 @@ pub unsafe extern "C" fn xmlSchematronGetValidErrors(
 
 /// Set the validation options (upstream `xmlSchematronSetValidOptions`);
 /// returns the old options.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronSetValidOptions(ctxt: *mut c_void, options: c_int) -> c_int {
     if ctxt.is_null() {
@@ -1844,6 +1927,21 @@ pub unsafe extern "C" fn xmlSchematronSetValidOptions(ctxt: *mut c_void, options
 }
 
 /// Get the validation options (upstream `xmlSchematronValidCtxtGetOptions`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronValidCtxtGetOptions(ctxt: *mut c_void) -> c_int {
     if ctxt.is_null() {
@@ -1857,8 +1955,23 @@ pub unsafe extern "C" fn xmlSchematronValidCtxtGetOptions(ctxt: *mut c_void) -> 
 
 /// 1 if the last validation was valid, 0 otherwise (upstream
 /// `xmlSchematronIsValid`).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchematronIsValid(ctxt: *mut c_void) -> c_int {
+pub const unsafe extern "C" fn xmlSchematronIsValid(ctxt: *mut c_void) -> c_int {
     if ctxt.is_null() {
         return 0;
     }
@@ -1874,6 +1987,21 @@ pub unsafe extern "C" fn xmlSchematronIsValid(ctxt: *mut c_void) -> c_int {
 
 /// Validate a single element against the schema (upstream
 /// `xmlSchematronValidateOneElement`); 0 if valid, -1 on error.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `elem` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchematronValidateOneElement(
     ctxt: *mut c_void,
@@ -2207,7 +2335,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2241,7 +2369,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2280,7 +2408,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2314,7 +2442,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2352,7 +2480,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2393,7 +2521,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2438,7 +2566,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2472,7 +2600,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2521,7 +2649,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2555,7 +2683,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2656,7 +2784,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2703,7 +2831,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )
@@ -2879,7 +3007,7 @@ mod tests {
             crate::abi::exports_xml2::xmlReadMemory(
                 doc_xml.as_ptr() as *const c_char,
                 doc_xml.len() as c_int,
-                b"test.xml\0".as_ptr() as *const c_char,
+                c"test.xml".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
             )

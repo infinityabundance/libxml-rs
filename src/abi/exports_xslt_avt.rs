@@ -163,9 +163,9 @@ unsafe fn xslt_next_import(cur: *mut _xsltStylesheet) -> *mut _xsltStylesheet {
 ///
 /// - `dict` must be a valid dictionary pointer or NULL.
 unsafe fn dict_empty(dict: *mut c_void) -> *const xmlChar {
-    let e = xmlDictLookup(dict, b"\0".as_ptr() as *const xmlChar, 0);
+    let e = xmlDictLookup(dict, c"".as_ptr() as *const xmlChar, 0);
     if e.is_null() {
-        b"\0".as_ptr() as *const xmlChar
+        c"".as_ptr() as *const xmlChar
     } else {
         e
     }
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn xsltAttrListTemplateProcess(
         if !(*attr).ns.is_null()
             && xmlStrEqual(
                 (*attr).name,
-                b"use-attribute-sets\0".as_ptr() as *const xmlChar,
+                c"use-attribute-sets".as_ptr() as *const xmlChar,
             ) != 0
             && xmlStrEqual(
                 (*(*attr).ns).href,
@@ -296,7 +296,7 @@ pub unsafe extern "C" fn xsltAttrListTemplateProcess(
                     ctxt,
                     ptr::null_mut(),
                     (*attr).parent,
-                    b"Internal error: The children of an attribute node of a literal result element are not in the expected form.\n\0"
+                    c"Internal error: The children of an attribute node of a literal result element are not in the expected form.\n"
                         .as_ptr() as *const c_char,
                 );
                 (*ctxt).insert = old_insert;
@@ -350,41 +350,41 @@ pub unsafe extern "C" fn xsltAttrListTemplateProcess(
                 ctxt,
                 ptr::null_mut(),
                 (*attr).parent,
-                b"Internal error: Failed to create attribute.\n\0".as_ptr() as *const c_char,
+                c"Internal error: Failed to create attribute.\n".as_ptr() as *const c_char,
             );
             (*ctxt).insert = old_insert;
             return ptr::null_mut();
         }
 
         // Set the value.
-        let text: *mut _xmlNode;
-        if (*attr).psvi.is_null() {
+
+        let text: *mut _xmlNode = if (*attr).psvi.is_null() {
             // No precompiled AVT: copy the value verbatim (upstream keeps
             // the dictionary-owned string when internalized).
-            let content: *mut xmlChar;
-            if (*ctxt).internalized != 0
+
+            let content: *mut xmlChar = if (*ctxt).internalized != 0
                 && !(*target).doc.is_null()
                 && (*(*target).doc).dict == (*ctxt).dict
                 && !(*ctxt).dict.is_null()
                 && xmlDictOwns((*ctxt).dict, value) != 0
             {
-                content = value as *mut xmlChar;
+                value as *mut xmlChar
             } else {
-                content = xmlStrdup(value);
-            }
-            text = new_attr_text_node(copy, content);
+                xmlStrdup(value)
+            };
+            new_attr_text_node(copy, content)
         } else {
             // Evaluate the precompiled AVT. In this engine the compiled
             // tree stores AVT strings verbatim (see xsltEvalAVT), so the
             // compiled form is a raw string.
             let value_avt = xsltEvalAVT(ctxt, (*attr).psvi, (*attr).parent);
             let content: *mut xmlChar = if value_avt.is_null() {
-                xmlStrdup(b"\0".as_ptr() as *const xmlChar)
+                xmlStrdup(c"".as_ptr() as *const xmlChar)
             } else {
                 value_avt
             };
-            text = new_attr_text_node(copy, content);
-        }
+            new_attr_text_node(copy, content)
+        };
         if !text.is_null() && xmlIsID((*copy).doc, (*copy).parent, copy) != 0 {
             xmlAddID(ptr::null_mut(), (*copy).doc, (*text).content, copy);
         }
@@ -451,7 +451,7 @@ pub unsafe extern "C" fn xsltAttrTemplateProcess(
                 ctxt,
                 ptr::null_mut(),
                 (*attr).parent,
-                b"Internal error: The children of an attribute node of a literal result element are not in the expected form.\n\0"
+                c"Internal error: The children of an attribute node of a literal result element are not in the expected form.\n"
                     .as_ptr() as *const c_char,
             );
             return ptr::null_mut();
@@ -506,24 +506,23 @@ pub unsafe extern "C" fn xsltAttrTemplateProcess(
     // Set the value.
     if !ret.is_null() {
         if (*attr).psvi.is_null() {
-            let content: *mut xmlChar;
-            if (*ctxt).internalized != 0
+            let content: *mut xmlChar = if (*ctxt).internalized != 0
                 && !target.is_null()
                 && !(*target).doc.is_null()
                 && (*(*target).doc).dict == (*ctxt).dict
                 && !(*ctxt).dict.is_null()
                 && xmlDictOwns((*ctxt).dict, value) != 0
             {
-                content = value as *mut xmlChar;
+                value as *mut xmlChar
             } else {
-                content = xmlStrdup(value);
-            }
+                xmlStrdup(value)
+            };
             let text = new_attr_text_node(ret, content);
             let _ = text;
         } else {
             let val = xsltEvalAVT(ctxt, (*attr).psvi, (*attr).parent);
             let content: *mut xmlChar = if val.is_null() {
-                xmlStrdup(b"\0".as_ptr() as *const xmlChar)
+                xmlStrdup(c"".as_ptr() as *const xmlChar)
             } else {
                 val
             };
@@ -751,7 +750,7 @@ pub unsafe extern "C" fn xsltEvalStaticAttrValueTemplate(
         // Engine deviation: dict_lookup returns NULL for empty strings;
         // fall back to the borrowed literal (caller must not free either
         // way).
-        ret = b"\0".as_ptr() as *const xmlChar;
+        ret = c"".as_ptr() as *const xmlChar;
     }
     xmlFreeImpl(expr as *mut c_void);
     ret
@@ -792,13 +791,13 @@ pub unsafe extern "C" fn xsltEvalTemplateString(
     }
     // Create a temporary element node to collect the resulting content
     // (upstream xmlNewDocNode(ctxt->output, NULL, "fake", NULL)).
-    let insert = crate::xml::tree::new_node(ptr::null_mut(), b"fake\0".as_ptr() as *const xmlChar);
+    let insert = crate::xml::tree::new_node(ptr::null_mut(), c"fake".as_ptr() as *const xmlChar);
     if insert.is_null() {
         crate::xslt::errors::xsltTransformError(
             ctxt,
             ptr::null_mut(),
             inst,
-            b"Failed to create temporary node\n\0".as_ptr() as *const c_char,
+            c"Failed to create temporary node\n".as_ptr() as *const c_char,
         );
         return ptr::null_mut();
     }
@@ -847,7 +846,7 @@ pub unsafe extern "C" fn xsltEvalTemplateString(
 ///
 /// - `avt` may be any pointer; it is never dereferenced.
 #[no_mangle]
-pub unsafe extern "C" fn xsltFreeAVTList(_avt: *mut c_void) {}
+pub const unsafe extern "C" fn xsltFreeAVTList(_avt: *mut c_void) {}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Namespace helpers (namespaces.c / xsltutils.c)
@@ -913,17 +912,15 @@ pub unsafe extern "C" fn xsltGetCNsProp(
     }
     // Check for a default declaration in the internal or external subsets.
     let doc = (*node).doc;
-    if !doc.is_null() {
-        if !(*doc).intSubset.is_null() {
-            let mut attr_decl = xmlGetDtdAttrDesc((*doc).intSubset, (*node).name, name);
-            if attr_decl.is_null() && !(*doc).extSubset.is_null() {
-                attr_decl = xmlGetDtdAttrDesc((*doc).extSubset, (*node).name, name);
-            }
-            if !attr_decl.is_null() && !(*attr_decl).prefix.is_null() {
-                let ns = xmlSearchNs(doc, node, (*attr_decl).prefix);
-                if !ns.is_null() && xmlStrEqual((*ns).href, nameSpace) != 0 {
-                    return xmlDictLookup((*style).dict, (*attr_decl).defaultValue, -1);
-                }
+    if !doc.is_null() && !(*doc).intSubset.is_null() {
+        let mut attr_decl = xmlGetDtdAttrDesc((*doc).intSubset, (*node).name, name);
+        if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+            attr_decl = xmlGetDtdAttrDesc((*doc).extSubset, (*node).name, name);
+        }
+        if !attr_decl.is_null() && !(*attr_decl).prefix.is_null() {
+            let ns = xmlSearchNs(doc, node, (*attr_decl).prefix);
+            if !ns.is_null() && xmlStrEqual((*ns).href, nameSpace) != 0 {
+                return xmlDictLookup((*style).dict, (*attr_decl).defaultValue, -1);
             }
         }
     }
@@ -975,7 +972,7 @@ pub unsafe extern "C" fn xsltGetNsProp(
         if xmlStrEqual((*prop).name, name) != 0 && matches {
             let ret = xmlNodeListGetString((*node).doc, (*prop).children, 1);
             if ret.is_null() {
-                return xmlStrdup(b"\0".as_ptr() as *const xmlChar);
+                return xmlStrdup(c"".as_ptr() as *const xmlChar);
             }
             return ret;
         }
@@ -983,17 +980,15 @@ pub unsafe extern "C" fn xsltGetNsProp(
     }
     // Check for a default declaration in the internal or external subsets.
     let doc = (*node).doc;
-    if !doc.is_null() {
-        if !(*doc).intSubset.is_null() {
-            let mut attr_decl = xmlGetDtdAttrDesc((*doc).intSubset, (*node).name, name);
-            if attr_decl.is_null() && !(*doc).extSubset.is_null() {
-                attr_decl = xmlGetDtdAttrDesc((*doc).extSubset, (*node).name, name);
-            }
-            if !attr_decl.is_null() && !(*attr_decl).prefix.is_null() {
-                let ns = xmlSearchNs(doc, node, (*attr_decl).prefix);
-                if !ns.is_null() && xmlStrEqual((*ns).href, nameSpace) != 0 {
-                    return xmlStrdup((*attr_decl).defaultValue);
-                }
+    if !doc.is_null() && !(*doc).intSubset.is_null() {
+        let mut attr_decl = xmlGetDtdAttrDesc((*doc).intSubset, (*node).name, name);
+        if attr_decl.is_null() && !(*doc).extSubset.is_null() {
+            attr_decl = xmlGetDtdAttrDesc((*doc).extSubset, (*node).name, name);
+        }
+        if !attr_decl.is_null() && !(*attr_decl).prefix.is_null() {
+            let ns = xmlSearchNs(doc, node, (*attr_decl).prefix);
+            if !ns.is_null() && xmlStrEqual((*ns).href, nameSpace) != 0 {
+                return xmlStrdup((*attr_decl).defaultValue);
             }
         }
     }
@@ -1127,7 +1122,7 @@ pub unsafe extern "C" fn xsltGetSpecialNamespace(
                             ctxt,
                             ptr::null_mut(),
                             invocNode,
-                            b"Namespace normalization error: Cannot undeclare the default namespace, since the default namespace is already declared on the result element.\n\0"
+                            c"Namespace normalization error: Cannot undeclare the default namespace, since the default namespace is already declared on the result element.\n"
                                 .as_ptr() as *const c_char,
                         );
                         return ptr::null_mut();
@@ -1154,7 +1149,7 @@ pub unsafe extern "C" fn xsltGetSpecialNamespace(
                 return ptr::null_mut();
             }
             // Undeclare the default namespace.
-            xmlNewNs(target, b"\0".as_ptr() as *const xmlChar, ptr::null());
+            xmlNewNs(target, c"".as_ptr() as *const xmlChar, ptr::null());
             return ptr::null_mut();
         }
         return ptr::null_mut();
@@ -1175,20 +1170,14 @@ pub unsafe extern "C" fn xsltGetSpecialNamespace(
         ns = (*target).nsDef;
         loop {
             let ns_prefix = (*ns).prefix;
-            if (ns_prefix.is_null()) == (nsPrefix.is_null()) {
-                if ns_prefix == nsPrefix {
-                    if xmlStrEqual((*ns).href, nsName) != 0 {
-                        return ns;
-                    }
-                    prefix_occupied = 1;
-                    break;
-                } else if xmlStrEqual(ns_prefix, nsPrefix) != 0 {
-                    if xmlStrEqual((*ns).href, nsName) != 0 {
-                        return ns;
-                    }
-                    prefix_occupied = 1;
-                    break;
+            if (ns_prefix.is_null()) == (nsPrefix.is_null())
+                && (ns_prefix == nsPrefix || xmlStrEqual(ns_prefix, nsPrefix) != 0)
+            {
+                if xmlStrEqual((*ns).href, nsName) != 0 {
+                    return ns;
                 }
+                prefix_occupied = 1;
+                break;
             }
             ns = (*ns).next;
             if ns.is_null() {
@@ -1273,7 +1262,7 @@ unsafe fn xslt_declare_new_prefix(
     target: *mut _xmlNode,
 ) -> *mut _xmlNs {
     let base: *const xmlChar = if nsPrefix.is_null() {
-        b"ns\0".as_ptr() as *const xmlChar
+        c"ns".as_ptr() as *const xmlChar
     } else {
         nsPrefix
     };
@@ -1297,7 +1286,7 @@ unsafe fn xslt_declare_new_prefix(
                 ctxt,
                 ptr::null_mut(),
                 invocNode,
-                b"Internal error in xsltAcquireResultInScopeNs(): Failed to compute a unique ns-prefix for the generated element\0"
+                c"Internal error in xsltAcquireResultInScopeNs(): Failed to compute a unique ns-prefix for the generated element"
                     .as_ptr() as *const c_char,
             );
             return ptr::null_mut();
@@ -1448,23 +1437,23 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
     if style.is_null() || node.is_null() {
         return;
     }
-    let style_prefix = xmlGetProp(node, b"stylesheet-prefix\0".as_ptr() as *const xmlChar);
+    let style_prefix = xmlGetProp(node, c"stylesheet-prefix".as_ptr() as *const xmlChar);
     if style_prefix.is_null() {
         crate::xslt::errors::xsltTransformError(
             ptr::null_mut(),
             style,
             node,
-            b"namespace-alias: stylesheet-prefix attribute missing\n\0".as_ptr() as *const c_char,
+            c"namespace-alias: stylesheet-prefix attribute missing\n".as_ptr() as *const c_char,
         );
         return;
     }
-    let result_prefix = xmlGetProp(node, b"result-prefix\0".as_ptr() as *const xmlChar);
+    let result_prefix = xmlGetProp(node, c"result-prefix".as_ptr() as *const xmlChar);
     if result_prefix.is_null() {
         crate::xslt::errors::xsltTransformError(
             ptr::null_mut(),
             style,
             node,
-            b"namespace-alias: result-prefix attribute missing\n\0".as_ptr() as *const c_char,
+            c"namespace-alias: result-prefix attribute missing\n".as_ptr() as *const c_char,
         );
         xmlFreeImpl(style_prefix as *mut c_void);
         return;
@@ -1473,7 +1462,7 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
     // Resolve the stylesheet-prefix to its namespace.
     let literal_ns: *mut _xmlNs;
     let literal_ns_name: *const xmlChar;
-    if xmlStrEqual(style_prefix, b"#default\0".as_ptr() as *const xmlChar) != 0 {
+    if xmlStrEqual(style_prefix, c"#default".as_ptr() as *const xmlChar) != 0 {
         literal_ns = xmlSearchNs((*node).doc, node, ptr::null());
         if literal_ns.is_null() {
             literal_ns_name = ptr::null();
@@ -1487,7 +1476,7 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
                 ptr::null_mut(),
                 style,
                 node,
-                b"namespace-alias: prefix not bound to any namespace\n\0".as_ptr() as *const c_char,
+                c"namespace-alias: prefix not bound to any namespace\n".as_ptr() as *const c_char,
             );
             xmlFreeImpl(style_prefix as *mut c_void);
             xmlFreeImpl(result_prefix as *mut c_void);
@@ -1501,7 +1490,7 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
     // UNDEFINED_DEFAULT_NS is stored in the nsAliases table.
     let target_ns: *mut _xmlNs;
     let target_ns_name: *const xmlChar;
-    if xmlStrEqual(result_prefix, b"#default\0".as_ptr() as *const xmlChar) != 0 {
+    if xmlStrEqual(result_prefix, c"#default".as_ptr() as *const xmlChar) != 0 {
         target_ns = xmlSearchNs((*node).doc, node, ptr::null());
         if target_ns.is_null() {
             target_ns_name = UNDEFINED_DEFAULT_NS;
@@ -1515,7 +1504,7 @@ pub unsafe extern "C" fn xsltNamespaceAlias(style: *mut _xsltStylesheet, node: *
                 ptr::null_mut(),
                 style,
                 node,
-                b"namespace-alias: prefix not bound to any namespace\n\0".as_ptr() as *const c_char,
+                c"namespace-alias: prefix not bound to any namespace\n".as_ptr() as *const c_char,
             );
             xmlFreeImpl(style_prefix as *mut c_void);
             xmlFreeImpl(result_prefix as *mut c_void);
@@ -1702,7 +1691,7 @@ pub unsafe extern "C" fn xsltCopyTextString(
             ctxt,
             ptr::null_mut(),
             target,
-            b"xsltCopyTextString: text copy failed\n\0".as_ptr() as *const c_char,
+            c"xsltCopyTextString: text copy failed\n".as_ptr() as *const c_char,
         );
         (*ctxt).lasttext = ptr::null();
     }
@@ -1749,7 +1738,7 @@ unsafe fn xslt_add_text_string(
                 ctxt,
                 ptr::null_mut(),
                 target,
-                b"xsltCopyText: text allocation failed\n\0".as_ptr() as *const c_char,
+                c"xsltCopyText: text allocation failed\n".as_ptr() as *const c_char,
             );
             return ptr::null_mut();
         }
@@ -1768,7 +1757,7 @@ unsafe fn xslt_add_text_string(
                     ctxt,
                     ptr::null_mut(),
                     target,
-                    b"xsltCopyText: text allocation failed\n\0".as_ptr() as *const c_char,
+                    c"xsltCopyText: text allocation failed\n".as_ptr() as *const c_char,
                 );
                 return ptr::null_mut();
             }
@@ -2003,7 +1992,7 @@ pub unsafe extern "C" fn xsltGetQNameURI2(
                 ptr::null_mut(),
                 style,
                 node,
-                b"No namespace bound to prefix.\n\0".as_ptr() as *const c_char,
+                c"No namespace bound to prefix.\n".as_ptr() as *const c_char,
             );
             (*style).errors += 1;
         }
@@ -2220,11 +2209,11 @@ mod tests {
             assert!(!local.is_null());
             assert!(!prefix.is_null());
             assert_eq!(
-                libc::strcmp(local as *const c_char, b"local\0".as_ptr() as *const c_char),
+                libc::strcmp(local as *const c_char, c"local".as_ptr() as *const c_char),
                 0
             );
             assert_eq!(
-                libc::strcmp(prefix as *const c_char, b"p\0".as_ptr() as *const c_char),
+                libc::strcmp(prefix as *const c_char, c"p".as_ptr() as *const c_char),
                 0
             );
             // No colon: local only, prefix NULL.
@@ -2254,7 +2243,7 @@ mod tests {
             let r1 = xsltAttrTemplateValueProcess(ctxt, cstr(b"hello"));
             assert!(!r1.is_null());
             assert_eq!(
-                libc::strcmp(r1 as *const c_char, b"hello\0".as_ptr() as *const c_char),
+                libc::strcmp(r1 as *const c_char, c"hello".as_ptr() as *const c_char),
                 0
             );
             free_str(r1);
@@ -2262,7 +2251,7 @@ mod tests {
             let r2 = xsltAttrTemplateValueProcess(ctxt, cstr(b"item-{@n}"));
             assert!(!r2.is_null());
             assert_eq!(
-                libc::strcmp(r2 as *const c_char, b"item-7\0".as_ptr() as *const c_char),
+                libc::strcmp(r2 as *const c_char, c"item-7".as_ptr() as *const c_char),
                 0
             );
             free_str(r2);
@@ -2270,7 +2259,7 @@ mod tests {
             let r3 = xsltAttrTemplateValueProcess(ctxt, cstr(b"{{x}}y}}z"));
             assert!(!r3.is_null());
             assert_eq!(
-                libc::strcmp(r3 as *const c_char, b"{x}y}z\0".as_ptr() as *const c_char),
+                libc::strcmp(r3 as *const c_char, c"{x}y}z".as_ptr() as *const c_char),
                 0
             );
             free_str(r3);
@@ -2300,7 +2289,7 @@ mod tests {
             let v = xsltGetNsProp(root, cstr(b"attr"), cstr(b"urn:test"));
             assert!(!v.is_null());
             assert_eq!(
-                libc::strcmp(v as *const c_char, b"v\0".as_ptr() as *const c_char),
+                libc::strcmp(v as *const c_char, c"v".as_ptr() as *const c_char),
                 0
             );
             free_str(v);
@@ -2329,7 +2318,7 @@ mod tests {
             assert_eq!(found, 1);
             assert!(!r1.is_null());
             assert_eq!(
-                libc::strcmp(r1 as *const c_char, b"static\0".as_ptr() as *const c_char),
+                libc::strcmp(r1 as *const c_char, c"static".as_ptr() as *const c_char),
                 0
             );
             // AVT: static check fails (returns NULL, *found == 1).
@@ -2361,7 +2350,7 @@ mod tests {
             let uri = xsltGetQNameURI(root, &mut name_ptr);
             assert!(!uri.is_null());
             assert_eq!(
-                libc::strcmp(uri as *const c_char, b"urn:q\0".as_ptr() as *const c_char),
+                libc::strcmp(uri as *const c_char, c"urn:q".as_ptr() as *const c_char),
                 0
             );
             free_doc(doc);
@@ -2379,7 +2368,7 @@ mod tests {
             assert_eq!(
                 libc::strcmp(
                     (*copy).href as *const c_char,
-                    b"urn:copy\0".as_ptr() as *const c_char
+                    c"urn:copy".as_ptr() as *const c_char
                 ),
                 0
             );
@@ -2393,7 +2382,7 @@ mod tests {
             assert_eq!(
                 libc::strcmp(
                     (*text).content as *const c_char,
-                    b"text!\0".as_ptr() as *const c_char
+                    c"text!".as_ptr() as *const c_char
                 ),
                 0
             );
@@ -2404,7 +2393,7 @@ mod tests {
             assert_eq!(
                 libc::strcmp(
                     (*noenc).content as *const c_char,
-                    b"<raw>\0".as_ptr() as *const c_char
+                    c"<raw>".as_ptr() as *const c_char
                 ),
                 0
             );

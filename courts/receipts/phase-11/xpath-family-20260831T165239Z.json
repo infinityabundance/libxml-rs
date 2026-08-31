@@ -1,0 +1,17 @@
+{
+ "court": "XPATH-001",
+ "phase": "11.1-I",
+ "timestamp": "2026-08-31T16:52:39Z",
+ "probe": "courts/suites/data-abi/xpath-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "stdout_sha256": "015c99ca36e95452e2f7328657bcd9e6086a8554d630e0e91ff35d83fd47263f"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "015c99ca36e95452e2f7328657bcd9e6086a8554d630e0e91ff35d83fd47263f"
+ },
+ "verdict": "PASS",
+ "mismatch_count": 0,
+ "mismatches": []
+}

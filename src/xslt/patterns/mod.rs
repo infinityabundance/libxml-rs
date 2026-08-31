@@ -63,8 +63,10 @@ pub(crate) struct XsltPattern {
     /// Whether this pattern is absolute (starts with `/`).
     pub is_absolute: bool,
     /// The original pattern string for this branch.
+    #[allow(dead_code)]
     pub original: String,
     /// The parsed XPath expression (kept for predicate evaluation).
+    #[allow(dead_code)]
     pub expr: Expr,
 }
 
@@ -74,6 +76,7 @@ pub(crate) enum PatternStepEntry {
     /// A normal step with axis, node test, and predicates.
     Step(XsltPatternStep),
     /// A `//` separator — matches descendant-or-self::node().
+    #[allow(dead_code)]
     DescendantOrSelf,
 }
 
@@ -93,12 +96,14 @@ pub(crate) struct CompiledPattern {
 /// In the C ABI this is a `typedef struct _xsltPattern xsltPattern`.
 /// The actual data is stored in the internal `CompiledPattern` and accessed
 /// via pointer casts in the implementation functions.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltPattern {
     _unused: [u8; 0],
 }
 
 /// Opaque pattern step structure.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltPatternStep {
     _unused: [u8; 0],
@@ -714,22 +719,20 @@ unsafe fn match_step(
                 return false;
             }
         }
-        Axis::Child | Axis::Self_ => {
+        Axis::Child | Axis::Self_
             // Child and Self axes match elements, text, comments, PIs
             // (all non-document, non-attribute, non-namespace nodes)
-            if node_type == 2 || node_type == 9 || node_type == 13 {
+            if (node_type == 2 || node_type == 9 || node_type == 13)
                 // Skip attributes and document nodes for child:: tests
-                if step.axis == Axis::Child
+                && step.axis == Axis::Child
                     && node_type != 1
                     && node_type != 3
                     && node_type != 4
                     && node_type != 7
                     && node_type != 8
-                {
+                => {
                     return false;
                 }
-            }
-        }
         _ => {
             // Other axes are not typically used in patterns
             // For completeness, accept the node
@@ -1416,7 +1419,7 @@ mod tests {
     #[test]
     fn test_compile_and_free_pattern() {
         unsafe {
-            let pattern_str = "para\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"para".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1434,7 +1437,7 @@ mod tests {
     #[test]
     fn test_compile_empty_pattern() {
         unsafe {
-            let pattern_str = "\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(compiled.is_null());
         }
@@ -1482,7 +1485,7 @@ mod tests {
     #[test]
     fn test_compile_union_pattern() {
         unsafe {
-            let pattern_str = "para | foo\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"para | foo".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1492,7 +1495,7 @@ mod tests {
     #[test]
     fn test_compile_compound_pattern() {
         unsafe {
-            let pattern_str = "foo/bar\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"foo/bar".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1502,7 +1505,7 @@ mod tests {
     #[test]
     fn test_compile_absolute_pattern() {
         unsafe {
-            let pattern_str = "/foo/bar\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"/foo/bar".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1512,7 +1515,7 @@ mod tests {
     #[test]
     fn test_compile_attribute_pattern() {
         unsafe {
-            let pattern_str = "@attr\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"@attr".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1522,7 +1525,7 @@ mod tests {
     #[test]
     fn test_compile_wildcard_pattern() {
         unsafe {
-            let pattern_str = "*\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"*".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1532,7 +1535,7 @@ mod tests {
     #[test]
     fn test_compile_ns_wildcard_pattern() {
         unsafe {
-            let pattern_str = "ns:*\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"ns:*".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1542,7 +1545,7 @@ mod tests {
     #[test]
     fn test_compile_node_test_pattern() {
         unsafe {
-            let pattern_str = "node()\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"node()".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1552,7 +1555,7 @@ mod tests {
     #[test]
     fn test_compile_text_pattern() {
         unsafe {
-            let pattern_str = "text()\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"text()".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1562,7 +1565,7 @@ mod tests {
     #[test]
     fn test_compile_comment_pattern() {
         unsafe {
-            let pattern_str = "comment()\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"comment()".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1572,7 +1575,7 @@ mod tests {
     #[test]
     fn test_compile_pi_pattern() {
         unsafe {
-            let pattern_str = "processing-instruction()\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"processing-instruction()".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1582,7 +1585,7 @@ mod tests {
     #[test]
     fn test_compile_predicate_pattern() {
         unsafe {
-            let pattern_str = "para[1]\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"para[1]".as_ptr() as *const xmlChar;
             let compiled = xsltCompilePattern(pattern_str, ptr::null_mut());
             assert!(!compiled.is_null());
             xsltFreePattern(compiled);
@@ -1727,7 +1730,7 @@ mod tests {
     fn test_compute_priority_on_compiled_pattern() {
         unsafe {
             // Test through the C ABI function
-            let pattern_str = "para\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"para".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
                 (priority - 0.0).abs() < f64::EPSILON,
@@ -1735,7 +1738,7 @@ mod tests {
                 priority
             );
 
-            let pattern_str = "*\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"*".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
                 (priority - (-0.5)).abs() < f64::EPSILON,
@@ -1743,7 +1746,7 @@ mod tests {
                 priority
             );
 
-            let pattern_str = "node()\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"node()".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
                 (priority - (-0.25)).abs() < f64::EPSILON,
@@ -1751,7 +1754,7 @@ mod tests {
                 priority
             );
 
-            let pattern_str = "@attr\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"@attr".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
                 (priority - 0.5).abs() < f64::EPSILON,
@@ -1776,7 +1779,7 @@ mod tests {
     #[test]
     fn test_compute_priority_empty() {
         unsafe {
-            let pattern_str = "\0".as_ptr() as *const xmlChar;
+            let pattern_str = c"".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
                 (priority - 0.5).abs() < f64::EPSILON,

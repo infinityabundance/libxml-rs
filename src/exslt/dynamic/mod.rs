@@ -80,7 +80,7 @@ fn attribute_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
     // Create an element host, set the attribute, and return the attribute
     // node. The host is leaked intentionally (see module docs); the
     // attribute node is what callers consume.
-    let mut host_name = b"host\0".to_vec();
+    let host_name = b"host\0".to_vec();
     // SAFETY: valid NUL-terminated string.
     let host = unsafe {
         crate::xml::tree::new_node(
@@ -119,7 +119,7 @@ fn attribute_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVal
 /// output. The safe function signature lacks the transform context needed
 /// for full template invocation; this returns an empty string and reports
 /// the limitation.
-fn call_fn(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
+const fn call_fn(_ctx: &mut XPathContext, _args: &[XPathValue]) -> Result<XPathValue, String> {
     Ok(XPathValue::String(String::new()))
 }
 

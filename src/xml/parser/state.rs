@@ -7,7 +7,6 @@
 //! `SaxDispatcher` to the handlers registered in the parser context.
 
 use crate::abi::callbacks::*;
-use crate::abi::constants::*;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementContentOccur::*;
 use crate::abi::types::xmlElementContentType::*;
@@ -29,7 +28,9 @@ const XML_PARSER_START: c_int = 0;
 const XML_PARSER_MISC: c_int = 1;
 const XML_PARSER_PROLOG: c_int = 2;
 const XML_PARSER_CONTENT: c_int = 3;
+#[allow(dead_code)]
 const XML_PARSER_CDATA_SECTION: c_int = 4;
+#[allow(dead_code)]
 const XML_PARSER_ENTITY_REF: c_int = 5;
 
 /// XML_WAR_NS_URI_RELATIVE (include/libxml/xmlerror.h:100) — the namespace
@@ -47,7 +48,7 @@ const XML_NS_ERR_UNDEFINED_NAMESPACE: c_int = 201;
 
 /// Whether a namespace URI carries a scheme (`[a-zA-Z][a-zA-Z0-9+.-]*:`
 /// prefix) — upstream xmlParseURISafe's `scheme == NULL` check.
-fn has_uri_scheme(uri: &[u8]) -> bool {
+const fn has_uri_scheme(uri: &[u8]) -> bool {
     let mut i = 0usize;
     if i < uri.len() && uri[i].is_ascii_alphabetic() {
         i += 1;
@@ -71,18 +72,24 @@ fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
 }
 
 /// Whether a SAX `warning` slot holds the candidate's legacy default handler.
+#[allow(dead_code)]
 fn is_legacy_warning_handler(cb: warningSAXFunc) -> bool {
     let ptr = cb as usize;
     ptr == crate::xml::errors::xmlParserWarning as warningSAXFunc as usize
         || ptr == crate::xml::sax::default::default_sax_handler::warning as warningSAXFunc as usize
 }
+#[allow(dead_code)]
 const XML_PARSER_ENTITY_VALUE: c_int = 6;
+#[allow(dead_code)]
 const XML_PARSER_ATTRIBUTE_VALUE: c_int = 7;
 const XML_PARSER_DTD: c_int = 8;
 const XML_PARSER_EOF: c_int = 9;
 const XML_PARSER_EPILOG: c_int = 10;
+#[allow(dead_code)]
 const XML_PARSER_PI: c_int = 11;
+#[allow(dead_code)]
 const XML_PARSER_IGNORE: c_int = 12;
+#[allow(dead_code)]
 const XML_PARSER_COMMENT: c_int = 13;
 const XML_PARSER_XML_DECL: c_int = 14;
 
@@ -103,6 +110,7 @@ pub(crate) struct XmlParser {
     /// Parser options bitmask (from `XML_PARSE_*` constants).
     options: c_int,
     /// Whether the handler uses SAX1 callbacks only.
+    #[allow(dead_code)]
     sax1: bool,
 }
 
@@ -139,7 +147,8 @@ impl XmlParser {
     }
 
     /// Get a mutable reference to the tokenizer.
-    pub fn tokenizer(&mut self) -> &mut XmlTokenizer {
+    #[allow(dead_code)]
+    pub const fn tokenizer(&mut self) -> &mut XmlTokenizer {
         &mut self.tokenizer
     }
 
@@ -148,6 +157,7 @@ impl XmlParser {
     /// # Safety
     ///
     /// The context pointer must remain valid.
+    #[allow(dead_code)]
     pub unsafe fn ctxt(&self) -> &_xmlParserCtxt {
         unsafe { &*self.ctxt }
     }
@@ -157,17 +167,19 @@ impl XmlParser {
     /// # Safety
     ///
     /// The context pointer must remain valid.
+    #[allow(dead_code)]
     pub unsafe fn ctxt_mut(&mut self) -> &mut _xmlParserCtxt {
         unsafe { &mut *self.ctxt }
     }
 
     /// Get the raw parser context pointer.
-    pub fn ctxt_raw(&self) -> *mut _xmlParserCtxt {
+    #[allow(dead_code)]
+    pub const fn ctxt_raw(&self) -> *mut _xmlParserCtxt {
         self.ctxt
     }
 
     /// Return whether the parser is in recovery mode.
-    fn is_recovery(&self) -> bool {
+    const fn is_recovery(&self) -> bool {
         (self.options & XML_PARSE_RECOVER) != 0
     }
 
@@ -238,11 +250,9 @@ impl XmlParser {
         unsafe {
             (*self.ctxt).instate = XML_PARSER_CONTENT;
         }
-        if self.parse_content().is_err() {
-            if !self.is_recovery() {
-                self.sax_end_document();
-                return -1;
-            }
+        if self.parse_content().is_err() && !self.is_recovery() {
+            self.sax_end_document();
+            return -1;
         }
 
         // UPSTREAM-PARITY: a catastrophic stop ends the parse here.
@@ -255,11 +265,9 @@ impl XmlParser {
         unsafe {
             (*self.ctxt).instate = XML_PARSER_EPILOG;
         }
-        if self.parse_epilog().is_err() {
-            if !self.is_recovery() {
-                self.sax_end_document();
-                return -1;
-            }
+        if self.parse_epilog().is_err() && !self.is_recovery() {
+            self.sax_end_document();
+            return -1;
         }
 
         // Mark EOF
@@ -292,6 +300,7 @@ impl XmlParser {
     /// this is the final chunk and the document should be completed.
     ///
     /// Returns 0 on success, -1 on error.
+    #[allow(dead_code)]
     pub fn parse_chunk(&mut self, chunk: &[u8], terminate: bool) -> c_int {
         // In push mode, we append data to the current input buffer
         // and continue parsing from where we left off.
@@ -906,12 +915,8 @@ impl XmlParser {
                 } else {
                     XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
                 };
-                let pub_c = pub_id
-                    .map(|s| Self::vec_to_cstr_null(s))
-                    .unwrap_or(ptr::null());
-                let sys_c = sys_id
-                    .map(|s| Self::vec_to_cstr_null(s))
-                    .unwrap_or(ptr::null());
+                let pub_c = pub_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+                let sys_c = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
                 crate::xml::entities::add_entity(
                     dtd,
                     name_cstr,
@@ -937,9 +942,7 @@ impl XmlParser {
             } else {
                 // Internal: quoted value.
                 let value = read_quoted(tail);
-                let v = value
-                    .map(|s| Self::vec_to_cstr_null(s))
-                    .unwrap_or(ptr::null());
+                let v = value.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
                 crate::xml::entities::add_entity(
                     dtd,
                     name_cstr,
@@ -1026,12 +1029,8 @@ impl XmlParser {
         let name_cstr = Self::vec_to_cstr_null(name);
         unsafe {
             let (pub_id, sys_id) = split_two_quoted(tail);
-            let pub_c = pub_id
-                .map(|s| Self::vec_to_cstr_null(s))
-                .unwrap_or(ptr::null());
-            let sys_c = sys_id
-                .map(|s| Self::vec_to_cstr_null(s))
-                .unwrap_or(ptr::null());
+            let pub_c = pub_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+            let sys_c = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
             crate::xml::dtd::add_notation_decl(dtd, name_cstr, pub_c, sys_c);
             if !pub_c.is_null() {
                 crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
@@ -1056,12 +1055,8 @@ impl XmlParser {
         // Fire externalSubset SAX event
         if !self.is_sax_disabled() {
             let name_cstr = Self::vec_to_cstr_null(_name);
-            let ext_cstr = _ext_id
-                .map(|s| Self::vec_to_cstr_null(s))
-                .unwrap_or(ptr::null());
-            let sys_cstr = _sys_id
-                .map(|s| Self::vec_to_cstr_null(s))
-                .unwrap_or(ptr::null());
+            let ext_cstr = _ext_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+            let sys_cstr = _sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
 
             unsafe {
                 let sax = &*(*self.ctxt).sax;
@@ -1703,7 +1698,7 @@ impl XmlParser {
                         let codepoint = if num.starts_with(b"x") || num.starts_with(b"X") {
                             u32::from_str_radix(&String::from_utf8_lossy(&num[1..]), 16).ok()
                         } else {
-                            u32::from_str_radix(&String::from_utf8_lossy(num), 10).ok()
+                            String::from_utf8_lossy(num).parse::<u32>().ok()
                         };
                         if let Some(cp) = codepoint {
                             if is_valid_xml_char(cp) {
@@ -1732,8 +1727,7 @@ impl XmlParser {
                                         unsafe { crate::xml::entities::get_entity(doc, name_cstr) };
                                     unsafe { libc::free(name_cstr as *mut libc::c_void) };
                                     if !ent.is_null() {
-                                        let content =
-                                            unsafe { (*(ent as *mut _xmlEntity)).content };
+                                        let content = unsafe { (*ent).content };
                                         // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
                                         // any '<' anywhere in the entity content
                                         // is illegal in an attribute value.
@@ -2189,7 +2183,7 @@ impl XmlParser {
                                     // consumed is the position after the reference.
                                     let after = i + semi_rel + 2;
                                     if self.parser_entity_check(
-                                        unsafe { (*ent2).expandedSize },
+                                        (*ent2).expandedSize,
                                         &mut (*ent).expandedSize,
                                         after as c_ulong,
                                     ) {
@@ -2198,7 +2192,7 @@ impl XmlParser {
                                     // Recursive-sum contribution (upstream
                                     // xmlCheckEntityInAttValue accumulation).
                                     expansion_sum = expansion_sum
-                                        .saturating_add(unsafe { (*ent2).expandedSize })
+                                        .saturating_add((*ent2).expandedSize)
                                         .saturating_add(20);
                                     flush_text!();
                                     let node =
@@ -2413,7 +2407,7 @@ impl XmlParser {
                 // UPSTREAM-PARITY: xmlns="" declares an empty (not NULL)
                 // namespace URI — xmlNewNs stores href="".
                 let uri_cstr = if uri.is_empty() {
-                    let mut empty = vec![0u8];
+                    let empty = vec![0u8];
                     let p = empty.as_ptr();
                     core::mem::forget(empty);
                     p as *const xmlChar
@@ -2454,7 +2448,7 @@ impl XmlParser {
                 // uses this to decide the compact xmlSAX2TextNode path vs the
                 // non-compact xmlNodeParseAttValue path (R-000120).
                 if *had_ref {
-                    attr_vec.push(unsafe { value_cstr.add(value.len()) } as *const xmlChar);
+                    attr_vec.push({ value_cstr.add(value.len()) } as *const xmlChar);
                 } else {
                     attr_vec.push(ptr::null());
                 }
@@ -2605,7 +2599,7 @@ impl XmlParser {
                 if !(*ns).prefix.is_null()
                     && crate::abi::exports_xml2::xmlStrEqual(
                         (*ns).prefix,
-                        b"xml\0".as_ptr() as *const xmlChar,
+                        c"xml".as_ptr() as *const xmlChar,
                     ) != 0
                 {
                     return;
@@ -2618,9 +2612,9 @@ impl XmlParser {
             }
             (*new_ns).type_ = crate::abi::types::XML_LOCAL_NAMESPACE as c_int;
             (*new_ns).href = crate::xml::string::xml_strdup(
-                b"http://www.w3.org/XML/1998/namespace\0".as_ptr() as *const xmlChar,
+                c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
             );
-            (*new_ns).prefix = crate::xml::string::xml_strdup(b"xml\0".as_ptr() as *const xmlChar);
+            (*new_ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
             (*new_ns).next = (*doc).oldNs;
             (*doc).oldNs = new_ns;
         }
@@ -2845,7 +2839,7 @@ impl XmlParser {
         const XML_MAX_AMPLIFICATION_DEFAULT: c_ulong = 5;
 
         unsafe {
-            let mut consumed = consumed.saturating_add((*self.ctxt).sizeentities);
+            let consumed = consumed.saturating_add((*self.ctxt).sizeentities);
             let target = if slot.is_null() {
                 (*self.ctxt).sizeentcopy = (*self.ctxt)
                     .sizeentcopy
@@ -2864,7 +2858,7 @@ impl XmlParser {
                 (*self.ctxt).maxAmpl as c_ulong
             };
             if target > XML_PARSER_ALLOWED_EXPANSION
-                && (target >= c_ulong::MAX || target / max_ampl > consumed)
+                && (target == c_ulong::MAX || target / max_ampl > consumed)
             {
                 self.raise_error_now(
                     XML_FROM_PARSER,
@@ -2884,6 +2878,7 @@ impl XmlParser {
     }
 
     /// Raise an error at the tokenizer's current position.
+    #[allow(clippy::too_many_arguments)]
     fn raise_error_now(
         &mut self,
         domain: c_int,
@@ -2903,6 +2898,7 @@ impl XmlParser {
 
     /// Raise an error attributed to a specific byte position (e.g. the
     /// start of a token).
+    #[allow(clippy::too_many_arguments)]
     fn raise_error_at(
         &mut self,
         domain: c_int,
@@ -3023,17 +3019,15 @@ impl XmlParser {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Check whether a Unicode codepoint is a valid XML character.
-fn is_valid_xml_char(codepoint: u32) -> bool {
-    match codepoint {
-        0x09 | 0x0A | 0x0D => true,
-        0x20..=0xD7FF => true,
-        0xE000..=0xFFFD => true,
-        0x10000..=0x10FFFF => true,
-        _ => false,
-    }
+const fn is_valid_xml_char(codepoint: u32) -> bool {
+    matches!(
+        codepoint,
+        0x09 | 0x0A | 0x0D | 0x20..=0xD7FF | 0xE000..=0xFFFD | 0x10000..=0x10FFFF
+    )
 }
 
 /// Helper trait to trim ASCII whitespace from byte slices.
+#[allow(dead_code)]
 trait TrimAscii {
     fn trim_ascii_start(&self) -> &[u8];
 }
@@ -3094,7 +3088,7 @@ fn find_decl_end(s: &[u8]) -> Option<usize> {
 }
 
 /// Skip ASCII whitespace.
-fn skip_ws(s: &[u8], idx: &mut usize) {
+const fn skip_ws(s: &[u8], idx: &mut usize) {
     while *idx < s.len() && s[*idx].is_ascii_whitespace() {
         *idx += 1;
     }
@@ -3203,7 +3197,7 @@ fn split_two_quoted(s: &[u8]) -> (Option<&[u8]>, Option<&[u8]>) {
 fn parse_attr_type(s: &[u8]) -> (c_int, *mut crate::abi::structs::_xmlEnumeration, usize) {
     use crate::abi::types::xmlAttributeType::*;
     let s = trim_ascii(s);
-    let mut rest = s;
+    let rest = s;
     let kw_len = rest
         .iter()
         .position(|&b| b.is_ascii_whitespace())
@@ -3295,7 +3289,7 @@ fn parse_enumeration(s: &[u8]) -> (*mut crate::abi::structs::_xmlEnumeration, us
 fn parse_attr_default(s: &[u8]) -> (c_int, Option<&[u8]>, usize) {
     use crate::abi::types::xmlAttributeDefault::*;
     let s = trim_ascii(s);
-    let mut rest = s;
+    let rest = s;
     let kw_len = rest
         .iter()
         .position(|&b| b.is_ascii_whitespace())

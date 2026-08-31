@@ -40,6 +40,7 @@ pub type xlinkNodeDetectFunc = unsafe extern "C" fn(ctx: *mut c_void, node: *mut
 /// `xlinkHandler` — opaque handler block (never dereferenced by the
 /// candidate; stored as an opaque pointer exactly like upstream's
 /// deprecated API).
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xlinkHandler {
     _private: *mut c_void,
@@ -52,24 +53,74 @@ static mut XLINK_DEFAULT_HANDLER: *mut _xlinkHandler = ptr::null_mut();
 static mut XLINK_DEFAULT_DETECT: Option<xlinkNodeDetectFunc> = None;
 
 /// Get the default xlink handler.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xlinkGetDefaultHandler() -> *mut _xlinkHandler {
     unsafe { XLINK_DEFAULT_HANDLER }
 }
 
 /// Set the default xlink handler.
+///
+/// # SAFETY
+///
+/// - `handler` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xlinkSetDefaultHandler(handler: *mut _xlinkHandler) {
     unsafe { XLINK_DEFAULT_HANDLER = handler };
 }
 
 /// Get the default xlink detection routine.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xlinkGetDefaultDetect() -> Option<xlinkNodeDetectFunc> {
     unsafe { XLINK_DEFAULT_DETECT }
 }
 
 /// Set the default xlink detection routine.
+///
+/// # SAFETY
+///
+///
+/// - `func` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xlinkSetDefaultDetect(func: Option<xlinkNodeDetectFunc>) {
     unsafe { XLINK_DEFAULT_DETECT = func };
@@ -102,25 +153,25 @@ pub unsafe extern "C" fn xlinkIsLink(doc: *mut _xmlDoc, node: *mut _xmlNode) -> 
 
         let type_attr = crate::abi::exports_xml2::xmlGetNsProp(
             node,
-            b"type\0".as_ptr() as *const xmlChar,
+            c"type".as_ptr() as *const xmlChar,
             XLINK_NS.as_ptr() as *const xmlChar,
         );
         if type_attr.is_null() {
             return XLINK_TYPE_NONE;
         }
         let mut ret = XLINK_TYPE_NONE;
-        if crate::abi::exports_xml2::xmlStrEqual(type_attr, b"simple\0".as_ptr() as *const xmlChar)
+        if crate::abi::exports_xml2::xmlStrEqual(type_attr, c"simple".as_ptr() as *const xmlChar)
             != 0
         {
             ret = XLINK_TYPE_SIMPLE;
         } else if crate::abi::exports_xml2::xmlStrEqual(
             type_attr,
-            b"extended\0".as_ptr() as *const xmlChar,
+            c"extended".as_ptr() as *const xmlChar,
         ) != 0
         {
             let role = crate::abi::exports_xml2::xmlGetNsProp(
                 node,
-                b"role\0".as_ptr() as *const xmlChar,
+                c"role".as_ptr() as *const xmlChar,
                 XLINK_NS.as_ptr() as *const xmlChar,
             );
             if !role.is_null() {
@@ -133,7 +184,7 @@ pub unsafe extern "C" fn xlinkIsLink(doc: *mut _xmlDoc, node: *mut _xmlNode) -> 
                     // Fallback method: role equals "xlink:external-linkset".
                     if crate::abi::exports_xml2::xmlStrEqual(
                         role,
-                        b"xlink:external-linkset\0".as_ptr() as *const xmlChar,
+                        c"xlink:external-linkset".as_ptr() as *const xmlChar,
                     ) != 0
                     {
                         ret = XLINK_TYPE_EXTENDED_SET;

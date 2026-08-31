@@ -116,7 +116,7 @@ fn align_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, 
         "right" => format!("{}{}", " ".repeat(fill), s),
         "center" => {
             // Upstream rounds the extra space to the LEFT for odd fills.
-            let left = (fill + 1) / 2;
+            let left = fill.div_ceil(2);
             let right = fill - left;
             format!("{}{}{}", " ".repeat(left), s, " ".repeat(right))
         }
@@ -132,7 +132,7 @@ fn concat_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue,
         Some(XPathValue::NodeSet(ns)) => ns.clone(),
         _ => NodeSet::new(),
     };
-    let parts: Vec<String> = ns.iter().map(|n| node_string_value(n)).collect();
+    let parts: Vec<String> = ns.iter().map(node_string_value).collect();
     Ok(XPathValue::String(parts.join(&sep)))
 }
 
@@ -220,7 +220,7 @@ fn decode_uri_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathVa
     ))
 }
 
-fn hex_val(b: u8) -> Option<u8> {
+const fn hex_val(b: u8) -> Option<u8> {
     match b {
         b'0'..=b'9' => Some(b - b'0'),
         b'a'..=b'f' => Some(b - b'a' + 10),
@@ -274,7 +274,7 @@ mod tests {
         let mut c = ctx();
         let r = tokenize_fn(&mut c, &[XPathValue::String("a b\tc".to_string())]).unwrap();
         let ns = r.as_node_set();
-        let mut values: Vec<String> = ns.iter().map(|n| node_string_value(n)).collect();
+        let mut values: Vec<String> = ns.iter().map(node_string_value).collect();
         // The tokens are standalone text nodes; a node-set's iteration order is
         // document order, which for parentless nodes falls back to pointer
         // comparison. Compare as a set to stay deterministic.
@@ -346,13 +346,13 @@ mod tests {
         // Nodes must share a document for a deterministic document-order
         // comparison (standalone nodes fall back to pointer comparison).
         let doc = unsafe {
-            crate::xml::tree::new_doc(b"1.0\0".as_ptr() as *const crate::abi::types::xmlChar)
+            crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar)
         };
         let a = unsafe {
-            crate::xml::tree::new_text(b"x\0".as_ptr() as *const crate::abi::types::xmlChar)
+            crate::xml::tree::new_text(c"x".as_ptr() as *const crate::abi::types::xmlChar)
         };
         let b = unsafe {
-            crate::xml::tree::new_text(b"y\0".as_ptr() as *const crate::abi::types::xmlChar)
+            crate::xml::tree::new_text(c"y".as_ptr() as *const crate::abi::types::xmlChar)
         };
         unsafe {
             crate::xml::tree::add_child(doc as *mut crate::abi::structs::_xmlNode, a);

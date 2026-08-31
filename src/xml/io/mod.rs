@@ -14,7 +14,7 @@
 )]
 
 use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::ptr;
 
 use libc;
@@ -26,7 +26,7 @@ use crate::abi::callbacks::{
 use crate::abi::structs::{
     _xmlBuf, _xmlBuffer, _xmlCharEncodingHandler, _xmlOutputBuffer, _xmlParserInputBuffer,
 };
-use crate::abi::types::{xmlChar, xmlCharEncoding, xmlCharPtr};
+use crate::abi::types::{xmlChar, xmlCharEncoding};
 use crate::xml::encoding;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -293,6 +293,7 @@ pub(crate) fn buf_ccat(buf: *mut _xmlBuffer, c: xmlChar) -> c_int {
 ///
 /// If `len` exceeds the used length, the buffer is emptied.
 /// Returns the new used length, or -1 on error.
+#[allow(dead_code)]
 pub(crate) fn buf_shrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
     if buf.is_null() {
         return -1;
@@ -303,7 +304,7 @@ pub(crate) fn buf_shrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
         return 0;
     }
 
-    b.use_ = if len >= b.use_ { 0 } else { b.use_ - len };
+    b.use_ = b.use_.saturating_sub(len);
 
     // Null-terminate
     unsafe {
@@ -382,6 +383,7 @@ pub(crate) fn buf_grow(buf: *mut _xmlBuffer, size: c_uint) -> c_int {
 ///
 /// If `size` <= 0, a default buffer size is used.
 /// Returns a pointer to the new buffer, or NULL on allocation failure.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_create(size: c_int) -> *mut _xmlBuf {
     let buf_size = if size <= 0 {
         DEFAULT_BUFFER_SIZE
@@ -426,6 +428,7 @@ pub(crate) fn xml_buf_create(size: c_int) -> *mut _xmlBuf {
 /// Free an xmlBuf.
 ///
 /// Frees the content and the buffer struct itself.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_free(buf: *mut _xmlBuf) {
     if buf.is_null() {
         return;
@@ -440,6 +443,7 @@ pub(crate) fn xml_buf_free(buf: *mut _xmlBuf) {
 }
 
 /// Get the content of an xmlBuf.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_content(buf: *mut _xmlBuf) -> *mut xmlChar {
     if buf.is_null() {
         return ptr::null_mut();
@@ -448,6 +452,7 @@ pub(crate) fn xml_buf_content(buf: *mut _xmlBuf) -> *mut xmlChar {
 }
 
 /// Get the used length of an xmlBuf.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_length(buf: *mut _xmlBuf) -> c_int {
     if buf.is_null() {
         return -1;
@@ -510,6 +515,7 @@ pub(crate) fn xml_buf_cat(buf: *mut _xmlBuf, str: *const xmlChar) -> c_int {
 /// Grow an xmlBuf to at least `size` bytes of capacity.
 ///
 /// Returns 0 on success, -1 on failure.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_grow(buf: *mut _xmlBuf, size: c_uint) -> c_int {
     if buf.is_null() {
         return -1;
@@ -534,6 +540,7 @@ pub(crate) fn xml_buf_grow(buf: *mut _xmlBuf, size: c_uint) -> c_int {
 /// Shrink an xmlBuf by `len` bytes from the end.
 ///
 /// Returns the new used length, or -1 on error.
+#[allow(dead_code)]
 pub(crate) fn xml_buf_shrink(buf: *mut _xmlBuf, len: c_uint) -> c_int {
     if buf.is_null() {
         return -1;
@@ -544,7 +551,7 @@ pub(crate) fn xml_buf_shrink(buf: *mut _xmlBuf, len: c_uint) -> c_int {
         return 0;
     }
 
-    b.use_ = if len >= b.use_ { 0 } else { b.use_ - len };
+    b.use_ = b.use_.saturating_sub(len);
 
     unsafe {
         ptr::write(b.content.add(b.use_ as usize), 0);
@@ -558,7 +565,7 @@ pub(crate) fn xml_buf_shrink(buf: *mut _xmlBuf, len: c_uint) -> c_int {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Convert a `c_int` encoding value to an `xmlCharEncoding` enum.
-fn encoding_from_int(enc: c_int) -> xmlCharEncoding {
+const fn encoding_from_int(enc: c_int) -> xmlCharEncoding {
     match enc {
         -1 => xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
         0 => xmlCharEncoding::XML_CHAR_ENCODING_NONE,
@@ -714,6 +721,7 @@ pub(crate) fn input_buffer_create_mem(
 // ── File I/O callbacks ──────────────────────────────────────────────────────
 
 /// Read callback for file descriptor-based input.
+#[allow(dead_code)]
 unsafe extern "C" fn file_read_callback(
     context: *mut c_void,
     buffer: *mut c_char,
@@ -732,6 +740,7 @@ unsafe extern "C" fn file_read_callback(
 }
 
 /// Close callback for file descriptor-based input.
+#[allow(dead_code)]
 unsafe extern "C" fn file_close_callback(context: *mut c_void) -> c_int {
     if context.is_null() {
         return -1;
@@ -841,6 +850,7 @@ pub(crate) fn input_buffer_create_file(
 ///
 /// The `ioread` callback is called to fill the raw buffer.
 /// The `ioclose` callback is called when the buffer is freed.
+#[allow(dead_code)]
 pub(crate) fn input_buffer_create_io(
     ioread: Option<xmlInputReadCallback>,
     ioclose: Option<xmlInputCloseCallback>,
@@ -891,6 +901,7 @@ pub(crate) fn input_buffer_create_io(
 /// Create an input buffer from a file descriptor.
 ///
 /// The buffer uses read/close callbacks that wrap `libc::read` and `libc::close`.
+#[allow(dead_code)]
 pub(crate) fn input_buffer_create_fd(fd: c_int, enc: c_int) -> *mut _xmlParserInputBuffer {
     if fd < 0 {
         return ptr::null_mut();
@@ -944,6 +955,7 @@ pub(crate) fn input_buffer_free(buf: *mut _xmlParserInputBuffer) {
 /// directly from the internal buffer.
 ///
 /// Returns the number of bytes read, or -1 on error.
+#[allow(dead_code)]
 pub(crate) fn input_buffer_read(
     buf: *mut _xmlParserInputBuffer,
     buffer: *mut c_char,
@@ -1196,7 +1208,7 @@ fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
 pub(crate) fn output_buffer_create_filename(
     URI: *const c_char,
     encoder: *mut _xmlCharEncodingHandler,
-    compression: c_int,
+    _compression: c_int,
 ) -> *mut _xmlOutputBuffer {
     if URI.is_null() {
         return ptr::null_mut();
@@ -1734,7 +1746,7 @@ pub(crate) fn output_buffer_write_escape(
     if buf.is_null() {
         return -1;
     }
-    let mut inlen = unsafe { libc::strlen(str as *const libc::c_char) as c_int };
+    let inlen = unsafe { libc::strlen(str as *const libc::c_char) as c_int };
     let mut inpos = 0i32;
     let mut total = 0i32;
     while inpos < inlen {
@@ -1822,7 +1834,7 @@ unsafe fn escape_text(str: *const xmlChar) -> *mut xmlChar {
 }
 
 /// Byte length of the UTF-8 sequence starting with `lead` (1 when invalid).
-fn utf8_seq_len(lead: u8) -> usize {
+const fn utf8_seq_len(lead: u8) -> usize {
     match lead {
         0x00..=0x7f => 1,
         0xc2..=0xdf => 2,
@@ -1839,6 +1851,7 @@ fn utf8_seq_len(lead: u8) -> usize {
 /// Check if a file exists.
 ///
 /// Returns 1 if the file exists, 0 if not, -1 on error.
+#[allow(dead_code)]
 pub(crate) fn check_file_exists(filename: *const c_char) -> c_int {
     if filename.is_null() {
         return -1;
@@ -1873,6 +1886,7 @@ pub(crate) fn check_file_exists(filename: *const c_char) -> c_int {
 /// The size of the buffer is stored in `size` if it's non-NULL.
 ///
 /// The returned buffer must be freed with `xmlFree`.
+#[allow(dead_code)]
 pub(crate) fn read_file_to_memory(filename: *const c_char, size: *mut c_int) -> *mut c_char {
     if filename.is_null() {
         return ptr::null_mut();
@@ -1954,6 +1968,7 @@ pub(crate) fn read_file_to_memory(filename: *const c_char, size: *mut c_int) -> 
 ///
 /// Creates or truncates the file and writes `size` bytes from `data`.
 /// Returns 0 on success, -1 on error.
+#[allow(dead_code)]
 pub(crate) fn write_memory_to_file(
     filename: *const c_char,
     data: *const c_char,
@@ -2017,6 +2032,7 @@ pub(crate) fn write_memory_to_file(
 ///
 /// Returns a newly allocated null-terminated string, or NULL on failure.
 /// The returned pointer must be freed with `xmlFree`.
+#[allow(dead_code)]
 pub(crate) fn get_cwd() -> *mut c_char {
     // Use a reasonable initial buffer size
     let mut size: usize = 1024;
@@ -2426,7 +2442,7 @@ mod tests {
 
     #[test]
     fn test_input_buffer_set_encoder() {
-        let buf = input_buffer_create_mem(ptr::null(), 0, 0);
+        let _buf = input_buffer_create_mem(ptr::null(), 0, 0);
         // Create a fresh buffer
         let data = c("test");
         let buf = input_buffer_create_mem(data.as_ptr(), 4, 0);

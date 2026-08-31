@@ -16,4 +16,3 @@
 //! subsystem is implemented per §85 phases.
 
 pub mod globals;
-pub mod versioning;

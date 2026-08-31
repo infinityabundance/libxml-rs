@@ -19,10 +19,15 @@ use std::os::raw::c_int;
 use std::ptr;
 
 /// The XSLT document cache entry.
+#[derive(Debug)]
 #[repr(C)]
 pub struct _xsltDocCacheEntry {
+    /// Next entry in the document-cache linked list.
     pub next: *mut _xsltDocCacheEntry,
+    /// The resolved document URI (NULL for RVT entries, which are never
+    /// matched by URI lookup).
     pub uri: *mut xmlChar,
+    /// The cached document.
     pub doc: *mut _xmlDoc,
 }
 
@@ -67,7 +72,7 @@ pub(crate) unsafe fn xsltRegisterRVT(ctxt: *mut _xsltTransformContext, doc: *mut
 ///
 /// - `ctxt` may be NULL.
 /// - `URI` must be a valid NUL-terminated string.
-pub unsafe extern "C" fn xsltDefaultLoader(
+pub const unsafe extern "C" fn xsltDefaultLoader(
     _ctxt: *mut c_void,
     _style: *const c_char,
     URI: *const c_char,

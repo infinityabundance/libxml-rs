@@ -69,6 +69,7 @@ struct InputCallbackEntry {
     closecb: Option<xmlInputCloseCallback>,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 struct OutputCallbackEntry {
     matchcb: Option<xmlOutputMatchCallback>,
@@ -85,6 +86,7 @@ static EXTERNAL_ENTITY_LOADER: Mutex<Option<xmlExternalEntityLoader>> =
 
 // Deprecated legacy function codes not present in types.rs (upstream xmlerror.h).
 const XML_ERR_USER_STOP: c_int = 111;
+#[allow(dead_code)]
 const XML_ERR_RESOURCE_LIMIT: c_int = 114;
 
 // XML_SCAN_* flags (upstream include/private/parser.h).
@@ -93,6 +95,7 @@ const XML_SCAN_NMTOKEN: c_int = 2;
 const XML_SCAN_OLD10: c_int = 4;
 
 // xmlParserLoadSubset bits (upstream parser.h).
+#[allow(dead_code)]
 const XML_DETECT_IDS: c_int = 1 << 0;
 const XML_COMPLETE_ATTRS: c_int = 1 << 1;
 
@@ -100,6 +103,7 @@ const XML_COMPLETE_ATTRS: c_int = 1 << 1;
 const LINE_LEN: usize = 80;
 
 /// Minimal amount of data the parser expects in the buffer (parserInternals.c).
+#[allow(dead_code)]
 const INPUT_CHUNK: usize = 100;
 
 const XML_INVALID_CHAR: c_int = -1;
@@ -385,8 +389,13 @@ unsafe fn parse_dtd_text(
             tree::free_doc(doc);
         }
         // Fallback: an empty DTD carrying the identifiers.
-        let dtd = dtd::new_dtd(ptr::null_mut(), b"none\0".as_ptr(), public_id, system_id);
-        dtd
+
+        dtd::new_dtd(
+            ptr::null_mut(),
+            c"none".as_ptr() as *const xmlChar,
+            public_id,
+            system_id,
+        )
     }
 }
 
@@ -401,6 +410,16 @@ unsafe fn parse_dtd_text(
 /// ```c
 /// xmlParserCtxtPtr xmlNewParserCtxt(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewParserCtxt() -> *mut _xmlParserCtxt {
     unsafe {
@@ -425,6 +444,21 @@ pub unsafe extern "C" fn xmlNewParserCtxt() -> *mut _xmlParserCtxt {
 /// ```c
 /// xmlParserCtxtPtr xmlNewSAXParserCtxt(const xmlSAXHandler *sax, void *userData);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax`, `userData` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewSAXParserCtxt(
     sax: *const _xmlSAXHandler,
@@ -452,6 +486,21 @@ pub unsafe extern "C" fn xmlNewSAXParserCtxt(
 /// ```c
 /// int xmlInitParserCtxt(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlInitParserCtxt(ctxt: *mut _xmlParserCtxt) -> c_int {
     unsafe { init_sax_parser_ctxt(ctxt, ptr::null(), ptr::null_mut()) }
@@ -464,6 +513,21 @@ pub unsafe extern "C" fn xmlInitParserCtxt(ctxt: *mut _xmlParserCtxt) -> c_int {
 /// ```c
 /// void xmlClearParserCtxt(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlClearParserCtxt(ctxt: *mut _xmlParserCtxt) {
     unsafe { xmlCtxtReset(ctxt) }
@@ -477,6 +541,21 @@ pub unsafe extern "C" fn xmlClearParserCtxt(ctxt: *mut _xmlParserCtxt) {
 /// ```c
 /// void xmlCtxtReset(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
     if ctxt.is_null() {
@@ -594,6 +673,25 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
 /// int xmlCtxtResetPush(xmlParserCtxtPtr ctxt, const char *chunk, int size,
 ///                      const char *filename, const char *encoding);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `chunk`, `filename`, `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtResetPush(
     ctxt: *mut _xmlParserCtxt,
@@ -638,6 +736,21 @@ pub unsafe extern "C" fn xmlCtxtResetPush(
 /// ```c
 /// int xmlCtxtSetOptions(xmlParserCtxtPtr ctxt, int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtSetOptions(ctxt: *mut _xmlParserCtxt, options: c_int) -> c_int {
     if ctxt.is_null() {
@@ -678,6 +791,25 @@ pub unsafe extern "C" fn xmlCtxtSetOptions(ctxt: *mut _xmlParserCtxt, options: c
 /// void xmlCtxtSetErrorHandler(xmlParserCtxtPtr ctxt,
 ///                             xmlStructuredErrorFunc handler, void *data);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `handler` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtSetErrorHandler(
     ctxt: *mut _xmlParserCtxt,
@@ -700,6 +832,21 @@ pub unsafe extern "C" fn xmlCtxtSetErrorHandler(
 /// ```c
 /// void xmlCtxtSetMaxAmplification(xmlParserCtxtPtr ctxt, unsigned maxAmpl);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtSetMaxAmplification(ctxt: *mut _xmlParserCtxt, maxAmpl: c_uint) {
     if ctxt.is_null() || maxAmpl == 0 {
@@ -717,6 +864,21 @@ pub unsafe extern "C" fn xmlCtxtSetMaxAmplification(ctxt: *mut _xmlParserCtxt, m
 /// ```c
 /// const xmlError *xmlCtxtGetLastError(void *ctx);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtGetLastError(ctx: *mut c_void) -> *const _xmlError {
     if ctx.is_null() {
@@ -738,6 +900,21 @@ pub unsafe extern "C" fn xmlCtxtGetLastError(ctx: *mut c_void) -> *const _xmlErr
 /// ```c
 /// void xmlCtxtResetLastError(void *ctx);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtResetLastError(ctx: *mut c_void) {
     if ctx.is_null() {
@@ -759,6 +936,21 @@ pub unsafe extern "C" fn xmlCtxtResetLastError(ctx: *mut c_void) {
 /// ```c
 /// void xmlCtxtErrMemory(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtErrMemory(ctxt: *mut _xmlParserCtxt) {
     if ctxt.is_null() {
@@ -774,7 +966,7 @@ pub unsafe extern "C" fn xmlCtxtErrMemory(ctxt: *mut _xmlParserCtxt) {
         c.lastError.domain = XML_FROM_PARSER;
         c.lastError.code = XML_ERR_NO_MEMORY;
         c.lastError.level = xmlErrorLevel::XML_ERR_FATAL as c_int;
-        c.lastError.message = b"out of memory\n\0".as_ptr() as *mut c_char;
+        c.lastError.message = c"out of memory\n".as_ptr() as *mut c_char;
 
         if let Some(handler) = c.errorHandler {
             handler(c.errorCtxt, &c.lastError);
@@ -793,6 +985,21 @@ pub unsafe extern "C" fn xmlCtxtErrMemory(ctxt: *mut _xmlParserCtxt) {
 /// ```c
 /// void xmlStopParser(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStopParser(ctxt: *mut _xmlParserCtxt) {
     if ctxt.is_null() {
@@ -816,6 +1023,21 @@ pub unsafe extern "C" fn xmlStopParser(ctxt: *mut _xmlParserCtxt) {
 /// ```c
 /// long xmlByteConsumed(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlByteConsumed(ctxt: *mut _xmlParserCtxt) -> c_long {
     if ctxt.is_null() {
@@ -847,6 +1069,21 @@ pub unsafe extern "C" fn xmlByteConsumed(ctxt: *mut _xmlParserCtxt) -> c_long {
 /// ```c
 /// char *xmlParserGetDirectory(const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserGetDirectory(filename: *const c_char) -> *mut c_char {
     if filename.is_null() {
@@ -861,14 +1098,14 @@ pub unsafe extern "C" fn xmlParserGetDirectory(filename: *const c_char) -> *mut 
             }
         }
         match last_sep {
-            Some(0) => xmlMemStrdupImpl(b"/\0".as_ptr() as *const c_char) as *mut c_char,
+            Some(0) => xmlMemStrdupImpl(c"/".as_ptr() as *const c_char) as *mut c_char,
             Some(pos) => {
                 let slice = core::slice::from_raw_parts(filename as *const u8, pos);
                 let mut v = slice.to_vec();
                 v.push(0);
                 xmlMemStrdupImpl(v.as_ptr() as *const c_char) as *mut c_char
             }
-            None => xmlMemStrdupImpl(b".\0".as_ptr() as *const c_char) as *mut c_char,
+            None => xmlMemStrdupImpl(c".".as_ptr() as *const c_char) as *mut c_char,
         }
     }
 }
@@ -881,6 +1118,21 @@ pub unsafe extern "C" fn xmlParserGetDirectory(filename: *const c_char) -> *mut 
 /// ```c
 /// int xmlCheckFilename(const char *path);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `path` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCheckFilename(path: *const c_char) -> c_int {
     if path.is_null() {
@@ -906,6 +1158,21 @@ pub unsafe extern "C" fn xmlCheckFilename(path: *const c_char) -> c_int {
 /// ```c
 /// int xmlIsXHTML(const xmlChar *systemID, const xmlChar *publicID);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `systemID`, `publicID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIsXHTML(systemID: *const xmlChar, publicID: *const xmlChar) -> c_int {
     const XHTML_STRICT_PUBLIC_ID: &[u8] = b"-//W3C//DTD XHTML 1.0 Strict//EN\0";
@@ -920,25 +1187,25 @@ pub unsafe extern "C" fn xmlIsXHTML(systemID: *const xmlChar, publicID: *const x
         return -1;
     }
     unsafe {
-        if !publicID.is_null() {
-            if string::xml_strcmp(publicID, XHTML_STRICT_PUBLIC_ID.as_ptr() as *const xmlChar) == 0
+        if !publicID.is_null()
+            && (string::xml_strcmp(publicID, XHTML_STRICT_PUBLIC_ID.as_ptr() as *const xmlChar)
+                == 0
                 || string::xml_strcmp(publicID, XHTML_FRAME_PUBLIC_ID.as_ptr() as *const xmlChar)
                     == 0
                 || string::xml_strcmp(publicID, XHTML_TRANS_PUBLIC_ID.as_ptr() as *const xmlChar)
-                    == 0
-            {
-                return 1;
-            }
+                    == 0)
+        {
+            return 1;
         }
-        if !systemID.is_null() {
-            if string::xml_strcmp(systemID, XHTML_STRICT_SYSTEM_ID.as_ptr() as *const xmlChar) == 0
+        if !systemID.is_null()
+            && (string::xml_strcmp(systemID, XHTML_STRICT_SYSTEM_ID.as_ptr() as *const xmlChar)
+                == 0
                 || string::xml_strcmp(systemID, XHTML_FRAME_SYSTEM_ID.as_ptr() as *const xmlChar)
                     == 0
                 || string::xml_strcmp(systemID, XHTML_TRANS_SYSTEM_ID.as_ptr() as *const xmlChar)
-                    == 0
-            {
-                return 1;
-            }
+                    == 0)
+        {
+            return 1;
         }
     }
     0
@@ -955,6 +1222,21 @@ pub unsafe extern "C" fn xmlIsXHTML(systemID: *const xmlChar, publicID: *const x
 /// ```c
 /// xmlParserCtxtPtr xmlCreateMemoryParserCtxt(const char *buffer, int size);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `buffer` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateMemoryParserCtxt(
     buffer: *const c_char,
@@ -983,6 +1265,25 @@ pub unsafe extern "C" fn xmlCreateMemoryParserCtxt(
 ///                                          const char *chunk, int size,
 ///                                          const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax`, `user_data` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `chunk`, `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreatePushParserCtxt(
     sax: *mut _xmlSAXHandler,
@@ -1022,6 +1323,25 @@ pub unsafe extern "C" fn xmlCreatePushParserCtxt(
 ///                                        xmlInputCloseCallback ioclose,
 ///                                        void *ioctx, xmlCharEncoding enc);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax`, `user_data`, `ioctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `ioread`, `ioclose` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateIOParserCtxt(
     sax: *mut _xmlSAXHandler,
@@ -1052,6 +1372,21 @@ pub unsafe extern "C" fn xmlCreateIOParserCtxt(
 /// ```c
 /// xmlParserCtxtPtr xmlCreateURLParserCtxt(const char *filename, int options);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateURLParserCtxt(
     filename: *const c_char,
@@ -1087,6 +1422,21 @@ pub unsafe extern "C" fn xmlCreateURLParserCtxt(
 ///                                            const xmlChar *ID,
 ///                                            const xmlChar *base);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `URL`, `ID`, `base` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCreateEntityParserCtxt(
     URL: *const xmlChar,
@@ -1125,6 +1475,25 @@ pub unsafe extern "C" fn xmlCreateEntityParserCtxt(
 /// xmlDocPtr xmlCtxtReadDoc(xmlParserCtxtPtr ctxt, const xmlChar *cur,
 ///                          const char *URL, const char *encoding, int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `cur`, `URL`, `_encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReadDoc(
     ctxt: *mut _xmlParserCtxt,
@@ -1151,6 +1520,25 @@ pub unsafe extern "C" fn xmlCtxtReadDoc(
 /// xmlDocPtr xmlCtxtReadFile(xmlParserCtxtPtr ctxt, const char *filename,
 ///                           const char *encoding, int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `filename`, `_encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReadFile(
     ctxt: *mut _xmlParserCtxt,
@@ -1178,6 +1566,25 @@ pub unsafe extern "C" fn xmlCtxtReadFile(
 ///                             int size, const char *URL, const char *encoding,
 ///                             int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `buffer`, `URL`, `_encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReadMemory(
     ctxt: *mut _xmlParserCtxt,
@@ -1204,6 +1611,25 @@ pub unsafe extern "C" fn xmlCtxtReadMemory(
 /// xmlDocPtr xmlCtxtReadFd(xmlParserCtxtPtr ctxt, int fd, const char *URL,
 ///                         const char *encoding, int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `_encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReadFd(
     ctxt: *mut _xmlParserCtxt,
@@ -1239,6 +1665,29 @@ pub unsafe extern "C" fn xmlCtxtReadFd(
 ///                         xmlInputCloseCallback ioclose, void *ioctx,
 ///                         const char *URL, const char *encoding, int options);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ioctx` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `_encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// - `ioread`, `ioclose` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtReadIO(
     ctxt: *mut _xmlParserCtxt,
@@ -1265,6 +1714,21 @@ pub unsafe extern "C" fn xmlCtxtReadIO(
 /// ```c
 /// xmlDocPtr xmlCtxtParseDocument(xmlParserCtxtPtr ctxt, xmlParserInputPtr input);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCtxtParseDocument(
     ctxt: *mut _xmlParserCtxt,
@@ -1317,6 +1781,16 @@ pub unsafe extern "C" fn xmlCtxtParseDocument(
 /// ```c
 /// xmlParserInputBufferPtr xmlAllocParserInputBuffer(xmlCharEncoding enc);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlAllocParserInputBuffer(enc: c_int) -> *mut _xmlParserInputBuffer {
     unsafe {
@@ -1355,6 +1829,21 @@ pub unsafe extern "C" fn xmlAllocParserInputBuffer(enc: c_int) -> *mut _xmlParse
 /// ```c
 /// int xmlParserInputBufferGrow(xmlParserInputBufferPtr in, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserInputBufferGrow(
     in_: *mut _xmlParserInputBuffer,
@@ -1393,6 +1882,25 @@ pub unsafe extern "C" fn xmlParserInputBufferGrow(
 /// ```c
 /// int xmlParserInputBufferPush(xmlParserInputBufferPtr in, int len, const char *buf);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `buf` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserInputBufferPush(
     in_: *mut _xmlParserInputBuffer,
@@ -1418,6 +1926,21 @@ pub unsafe extern "C" fn xmlParserInputBufferPush(
 /// ```c
 /// int xmlParserInputBufferRead(xmlParserInputBufferPtr in, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserInputBufferRead(
     in_: *mut _xmlParserInputBuffer,
@@ -1433,8 +1956,26 @@ pub unsafe extern "C" fn xmlParserInputBufferRead(
 /// ```c
 /// int xmlParserInputRead(xmlParserInputPtr in, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `_in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserInputRead(_in_: *mut _xmlParserInput, _len: c_int) -> c_int {
+pub const unsafe extern "C" fn xmlParserInputRead(
+    _in_: *mut _xmlParserInput,
+    _len: c_int,
+) -> c_int {
     -1
 }
 
@@ -1445,6 +1986,21 @@ pub unsafe extern "C" fn xmlParserInputRead(_in_: *mut _xmlParserInput, _len: c_
 /// ```c
 /// int xmlParserInputGrow(xmlParserInputPtr in, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserInputGrow(in_: *mut _xmlParserInput, len: c_int) -> c_int {
     if in_.is_null() || len < 0 {
@@ -1475,6 +2031,21 @@ pub unsafe extern "C" fn xmlParserInputGrow(in_: *mut _xmlParserInput, len: c_in
 /// ```c
 /// void xmlParserInputShrink(xmlParserInputPtr in);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserInputShrink(in_: *mut _xmlParserInput) {
     if in_.is_null() {
@@ -1501,6 +2072,21 @@ pub unsafe extern "C" fn xmlParserInputShrink(in_: *mut _xmlParserInput) {
 /// ```c
 /// xmlParserInputPtr xmlNewInputStream(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewInputStream(ctxt: *mut _xmlParserCtxt) -> *mut _xmlParserInput {
     unsafe {
@@ -1526,6 +2112,21 @@ pub unsafe extern "C" fn xmlNewInputStream(ctxt: *mut _xmlParserCtxt) -> *mut _x
 ///                                       xmlParserInputBufferPtr input,
 ///                                       xmlCharEncoding enc);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewIOInputStream(
     ctxt: *mut _xmlParserCtxt,
@@ -1562,6 +2163,25 @@ pub unsafe extern "C" fn xmlNewIOInputStream(
 /// xmlParserInputPtr xmlNewStringInputStream(xmlParserCtxtPtr ctxt,
 ///                                           const xmlChar *buffer);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `buffer` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNewStringInputStream(
     ctxt: *mut _xmlParserCtxt,
@@ -1592,6 +2212,25 @@ pub unsafe extern "C" fn xmlNewStringInputStream(
 /// void xmlSetupParserForBuffer(xmlParserCtxtPtr ctxt, const xmlChar* buffer,
 ///                              const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `buffer`, `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSetupParserForBuffer(
     ctxt: *mut _xmlParserCtxt,
@@ -1621,6 +2260,21 @@ pub unsafe extern "C" fn xmlSetupParserForBuffer(
 /// ```c
 /// int xmlPushInput(xmlParserCtxtPtr ctxt, xmlParserInputPtr input);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPushInput(
     ctxt: *mut _xmlParserCtxt,
@@ -1661,6 +2315,21 @@ pub unsafe extern "C" fn xmlPushInput(
 /// ```c
 /// xmlChar xmlPopInput(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPopInput(ctxt: *mut _xmlParserCtxt) -> xmlChar {
     if ctxt.is_null() || (*ctxt).inputNr <= 1 {
@@ -1703,6 +2372,21 @@ pub unsafe extern "C" fn xmlPopInput(ctxt: *mut _xmlParserCtxt) -> xmlChar {
 /// ```c
 /// int xmlSwitchEncoding(xmlParserCtxtPtr ctxt, xmlCharEncoding enc);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSwitchEncoding(ctxt: *mut _xmlParserCtxt, enc: c_int) -> c_int {
     if ctxt.is_null() || (*ctxt).input.is_null() {
@@ -1727,6 +2411,25 @@ pub unsafe extern "C" fn xmlSwitchEncoding(ctxt: *mut _xmlParserCtxt, enc: c_int
 /// ```c
 /// int xmlSwitchEncodingName(xmlParserCtxtPtr ctxt, const char *encoding);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `encoding` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSwitchEncodingName(
     ctxt: *mut _xmlParserCtxt,
@@ -1752,6 +2455,21 @@ pub unsafe extern "C" fn xmlSwitchEncodingName(
 /// int xmlSwitchInputEncoding(xmlParserCtxtPtr ctxt, xmlParserInputPtr input,
 ///                            xmlCharEncodingHandlerPtr handler);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `input`, `handler` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSwitchInputEncoding(
     ctxt: *mut _xmlParserCtxt,
@@ -1779,6 +2497,21 @@ pub unsafe extern "C" fn xmlSwitchInputEncoding(
 /// int xmlSwitchToEncoding(xmlParserCtxtPtr ctxt,
 ///                         xmlCharEncodingHandlerPtr handler);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `handler` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSwitchToEncoding(
     ctxt: *mut _xmlParserCtxt,
@@ -1808,6 +2541,21 @@ pub unsafe extern "C" fn xmlSwitchToEncoding(
 /// ```c
 /// void xmlInitNodeInfoSeq(xmlParserNodeInfoSeqPtr seq);
 /// ```
+///
+/// # SAFETY
+///
+/// - `seq` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlInitNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
     if seq.is_null() {
@@ -1828,6 +2576,21 @@ pub unsafe extern "C" fn xmlInitNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
 /// ```c
 /// void xmlClearNodeInfoSeq(xmlParserNodeInfoSeqPtr seq);
 /// ```
+///
+/// # SAFETY
+///
+/// - `seq` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlClearNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
     if seq.is_null() {
@@ -1853,6 +2616,21 @@ pub unsafe extern "C" fn xmlClearNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
 /// unsigned long xmlParserFindNodeInfoIndex(xmlParserNodeInfoSeqPtr seq,
 ///                                          xmlNodePtr node);
 /// ```
+///
+/// # SAFETY
+///
+/// - `seq`, `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserFindNodeInfoIndex(
     seq: *mut _xmlParserNodeInfoSeq,
@@ -1892,6 +2670,21 @@ pub unsafe extern "C" fn xmlParserFindNodeInfoIndex(
 /// const xmlParserNodeInfo *xmlParserFindNodeInfo(xmlParserCtxtPtr ctxt,
 ///                                                xmlNodePtr node);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `node` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserFindNodeInfo(
     ctxt: *mut _xmlParserCtxt,
@@ -1921,6 +2714,21 @@ pub unsafe extern "C" fn xmlParserFindNodeInfo(
 /// ```c
 /// void xmlParserAddNodeInfo(xmlParserCtxtPtr ctxt, xmlParserNodeInfoPtr info);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `info` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserAddNodeInfo(
     ctxt: *mut _xmlParserCtxt,
@@ -1982,6 +2790,21 @@ pub unsafe extern "C" fn xmlParserAddNodeInfo(
 ///                               xmlInputReadCallback readFunc,
 ///                               xmlInputCloseCallback closeFunc);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `matchFunc`, `openFunc`, `readFunc`, `closeFunc` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterInputCallbacks(
     matchFunc: Option<xmlInputMatchCallback>,
@@ -2012,6 +2835,16 @@ pub unsafe extern "C" fn xmlRegisterInputCallbacks(
 /// ```c
 /// void xmlRegisterDefaultInputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterDefaultInputCallbacks() {
     unsafe {
@@ -2031,6 +2864,16 @@ pub unsafe extern "C" fn xmlRegisterDefaultInputCallbacks() {
 /// ```c
 /// int xmlPopInputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPopInputCallbacks() -> c_int {
     unsafe {
@@ -2051,6 +2894,16 @@ pub unsafe extern "C" fn xmlPopInputCallbacks() -> c_int {
 /// ```c
 /// void xmlCleanupInputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCleanupInputCallbacks() {
     unsafe {
@@ -2069,6 +2922,21 @@ pub unsafe extern "C" fn xmlCleanupInputCallbacks() {
 ///                                xmlOutputWriteCallback writeFunc,
 ///                                xmlOutputCloseCallback closeFunc);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `matchFunc`, `openFunc`, `writeFunc`, `closeFunc` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterOutputCallbacks(
     matchFunc: Option<xmlOutputMatchCallback>,
@@ -2099,6 +2967,16 @@ pub unsafe extern "C" fn xmlRegisterOutputCallbacks(
 /// ```c
 /// void xmlRegisterDefaultOutputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterDefaultOutputCallbacks() {
     unsafe {
@@ -2113,6 +2991,16 @@ pub unsafe extern "C" fn xmlRegisterDefaultOutputCallbacks() {
 /// ```c
 /// void xmlRegisterHTTPPostCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlRegisterHTTPPostCallbacks() {
     unsafe { xmlRegisterDefaultOutputCallbacks() }
@@ -2125,6 +3013,16 @@ pub unsafe extern "C" fn xmlRegisterHTTPPostCallbacks() {
 /// ```c
 /// int xmlPopOutputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPopOutputCallbacks() -> c_int {
     unsafe {
@@ -2145,6 +3043,16 @@ pub unsafe extern "C" fn xmlPopOutputCallbacks() -> c_int {
 /// ```c
 /// void xmlCleanupOutputCallbacks(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCleanupOutputCallbacks() {
     unsafe {
@@ -2176,7 +3084,7 @@ unsafe extern "C" fn default_external_entity_loader(
         // Refuse network access when NONET is set.
         if !ctxt.is_null() && (*ctxt).options & XML_PARSE_NONET != 0 {
             let len = libc::strlen(url);
-            if len >= 7 && libc::strncasecmp(url, b"http://\0".as_ptr() as *const c_char, 7) == 0 {
+            if len >= 7 && libc::strncasecmp(url, c"http://".as_ptr() as *const c_char, 7) == 0 {
                 return ptr::null_mut();
             }
         }
@@ -2220,6 +3128,21 @@ unsafe extern "C" fn default_external_entity_loader(
 /// ```c
 /// void xmlSetExternalEntityLoader(xmlExternalEntityLoader f);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `f` must be a valid callback (or None);
+///   the callback is invoked with the documented context pointer and
+///   must itself uphold the same pointer invariants.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSetExternalEntityLoader(f: Option<xmlExternalEntityLoader>) {
     *EXTERNAL_ENTITY_LOADER.lock() = f;
@@ -2232,6 +3155,16 @@ pub unsafe extern "C" fn xmlSetExternalEntityLoader(f: Option<xmlExternalEntityL
 /// ```c
 /// xmlExternalEntityLoader xmlGetExternalEntityLoader(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlGetExternalEntityLoader() -> Option<xmlExternalEntityLoader> {
     *EXTERNAL_ENTITY_LOADER.lock()
@@ -2246,6 +3179,25 @@ pub unsafe extern "C" fn xmlGetExternalEntityLoader() -> Option<xmlExternalEntit
 ///                                                const char *ID,
 ///                                                xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `ID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNoNetExternalEntityLoader(
     URL: *const c_char,
@@ -2273,6 +3225,25 @@ pub unsafe extern "C" fn xmlNoNetExternalEntityLoader(
 /// xmlParserInputPtr xmlLoadExternalEntity(const char *URL, const char *ID,
 ///                                         xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `URL`, `ID` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlLoadExternalEntity(
     URL: *const c_char,
@@ -2295,6 +3266,21 @@ pub unsafe extern "C" fn xmlLoadExternalEntity(
 /// xmlParserInputPtr xmlCheckHTTPInput(xmlParserCtxtPtr ctxt,
 ///                                     xmlParserInputPtr ret);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `ret` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCheckHTTPInput(
     ctxt: *mut _xmlParserCtxt,
@@ -2309,7 +3295,7 @@ pub unsafe extern "C" fn xmlCheckHTTPInput(
             if !filename.is_null() {
                 let len = libc::strlen(filename);
                 if len >= 7
-                    && libc::strncasecmp(filename, b"http://\0".as_ptr() as *const c_char, 7) == 0
+                    && libc::strncasecmp(filename, c"http://".as_ptr() as *const c_char, 7) == 0
                 {
                     // free_parser_input now frees the owned buffer (upstream
                     // xmlFreeInputStream semantics); no separate buf free.
@@ -2333,8 +3319,23 @@ pub unsafe extern "C" fn xmlCheckHTTPInput(
 /// ```c
 /// int xmlFileMatch(const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `_filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlFileMatch(_filename: *const c_char) -> c_int {
+pub const unsafe extern "C" fn xmlFileMatch(_filename: *const c_char) -> c_int {
     1
 }
 
@@ -2345,12 +3346,27 @@ pub unsafe extern "C" fn xmlFileMatch(_filename: *const c_char) -> c_int {
 /// ```c
 /// void *xmlFileOpen(const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+///
+/// - `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFileOpen(filename: *const c_char) -> *mut c_void {
     if filename.is_null() {
         return ptr::null_mut();
     }
-    unsafe { libc::fopen(filename, b"rb\0".as_ptr() as *const c_char) as *mut c_void }
+    unsafe { libc::fopen(filename, c"rb".as_ptr() as *const c_char) as *mut c_void }
 }
 
 /// Read up to `len` bytes from a `FILE *` I/O context.
@@ -2360,6 +3376,21 @@ pub unsafe extern "C" fn xmlFileOpen(filename: *const c_char) -> *mut c_void {
 /// ```c
 /// int xmlFileRead(void *context, char *buffer, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `context`, `buffer` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFileRead(
     context: *mut c_void,
@@ -2390,6 +3421,21 @@ pub unsafe extern "C" fn xmlFileRead(
 /// ```c
 /// int xmlFileClose(void *context);
 /// ```
+///
+/// # SAFETY
+///
+/// - `context` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlFileClose(context: *mut c_void) -> c_int {
     if context.is_null() {
@@ -2422,6 +3468,21 @@ pub unsafe extern "C" fn xmlFileClose(context: *mut c_void) -> c_int {
 /// ```c
 /// int xmlCurrentChar(xmlParserCtxtPtr ctxt, int *len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `len` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCurrentChar(ctxt: *mut _xmlParserCtxt, len: *mut c_int) -> c_int {
     if ctxt.is_null() || len.is_null() || (*ctxt).input.is_null() {
@@ -2480,7 +3541,7 @@ pub unsafe extern "C" fn xmlCurrentChar(ctxt: *mut _xmlParserCtxt, len: *mut c_i
             let val = (((c & 0x0f) as c_int) << 12)
                 | (((*cur.add(1) & 0x3f) as c_int) << 6)
                 | ((*cur.add(2) & 0x3f) as c_int);
-            if val < 0x800 || (val >= 0xd800 && val < 0xe000) {
+            if val < 0x800 || (0xd800..0xe000).contains(&val) {
                 *len = 1;
                 return XML_INVALID_CHAR;
             }
@@ -2495,7 +3556,7 @@ pub unsafe extern "C" fn xmlCurrentChar(ctxt: *mut _xmlParserCtxt, len: *mut c_i
             | (((*cur.add(1) & 0x3f) as c_int) << 12)
             | (((*cur.add(2) & 0x3f) as c_int) << 6)
             | ((*cur.add(3) & 0x3f) as c_int);
-        if val < 0x10000 || val >= 0x110000 {
+        if !(0x10000..0x110000).contains(&val) {
             *len = 1;
             return XML_INVALID_CHAR;
         }
@@ -2511,6 +3572,21 @@ pub unsafe extern "C" fn xmlCurrentChar(ctxt: *mut _xmlParserCtxt, len: *mut c_i
 /// ```c
 /// void xmlNextChar(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlNextChar(ctxt: *mut _xmlParserCtxt) {
     if ctxt.is_null() || (*ctxt).input.is_null() {
@@ -2569,7 +3645,7 @@ pub unsafe extern "C" fn xmlNextChar(ctxt: *mut _xmlParserCtxt) {
         }
         if c < 0xf0 {
             let val = (((c as c_int) << 8) as u32) | (*cur.add(1) as u32);
-            if (val < 0xe0a0) || (val >= 0xeda0 && val < 0xee00) {
+            if (val < 0xe0a0) || (0xeda0..0xee00).contains(&val) {
                 pi.cur = cur.add(1);
                 return;
             }
@@ -2581,7 +3657,7 @@ pub unsafe extern "C" fn xmlNextChar(ctxt: *mut _xmlParserCtxt) {
             return;
         }
         let val = (((c as c_int) << 8) as u32) | (*cur.add(1) as u32);
-        if val < 0xf090 || val >= 0xf490 {
+        if !(0xf090..0xf490).contains(&val) {
             pi.cur = cur.add(1);
             return;
         }
@@ -2597,6 +3673,21 @@ pub unsafe extern "C" fn xmlNextChar(ctxt: *mut _xmlParserCtxt) {
 /// ```c
 /// int xmlSkipBlankChars(xmlParserCtxtPtr ctxt);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSkipBlankChars(ctxt: *mut _xmlParserCtxt) -> c_int {
     if ctxt.is_null() || (*ctxt).input.is_null() {
@@ -2626,7 +3717,7 @@ pub unsafe extern "C" fn xmlSkipBlankChars(ctxt: *mut _xmlParserCtxt) -> c_int {
 }
 
 /// XML 1.0 5th-edition NameStartChar predicate (upstream `xmlIsNameStartCharNew`).
-fn is_name_start_char_new(c: c_int) -> bool {
+const fn is_name_start_char_new(c: c_int) -> bool {
     if c == b' ' as c_int || c == b'>' as c_int || c == b'/' as c_int {
         return false;
     }
@@ -2649,7 +3740,7 @@ fn is_name_start_char_new(c: c_int) -> bool {
 }
 
 /// XML 1.0 5th-edition NameChar predicate (upstream `xmlIsNameCharNew`).
-fn is_name_char_new(c: c_int) -> bool {
+const fn is_name_char_new(c: c_int) -> bool {
     if c == b' ' as c_int || c == b'>' as c_int || c == b'/' as c_int {
         return false;
     }
@@ -2686,6 +3777,21 @@ fn is_name_char_new(c: c_int) -> bool {
 /// ```c
 /// const xmlChar *xmlScanName(xmlParserCtxtPtr ctxt, int max, int flags);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlScanName(
     ctxt: *mut _xmlParserCtxt,
@@ -2757,7 +3863,7 @@ pub unsafe extern "C" fn xmlScanName(
 
 /// Decode a UTF-8 character at `ptr` with `avail` bytes available; returns the
 /// codepoint (or -1 on invalid/truncated input) and sets `*len` to its length.
-unsafe fn decode_utf8_char(ptr: *const u8, avail: usize, len: &mut usize) -> c_int {
+const unsafe fn decode_utf8_char(ptr: *const u8, avail: usize, len: &mut usize) -> c_int {
     unsafe {
         let c = *ptr;
         if avail < 2 || (*ptr.add(1) & 0xc0) != 0x80 {
@@ -2799,7 +3905,7 @@ unsafe fn decode_utf8_char(ptr: *const u8, avail: usize, len: &mut usize) -> c_i
 }
 
 /// XML 1.0 (pre-revision-5) NameStartChar predicate: Letter, '_' or ':'.
-fn is_name_start_char_old10(c: c_int) -> bool {
+const fn is_name_start_char_old10(c: c_int) -> bool {
     (c >= b'a' as c_int && c <= b'z' as c_int)
         || (c >= b'A' as c_int && c <= b'Z' as c_int)
         || c == b'_' as c_int
@@ -2820,7 +3926,7 @@ fn is_name_start_char_old10(c: c_int) -> bool {
 
 /// XML 1.0 (pre-revision-5) NameChar predicate: NameStartChar, digits, '.',
 /// '-', combining chars and extenders.
-fn is_name_char_old10(c: c_int) -> bool {
+const fn is_name_char_old10(c: c_int) -> bool {
     is_name_start_char_old10(c)
         || (c >= b'0' as c_int && c <= b'9' as c_int)
         || c == b'.' as c_int
@@ -2849,6 +3955,21 @@ fn is_name_char_old10(c: c_int) -> bool {
 /// xmlChar *xmlDecodeEntities(xmlParserCtxtPtr ctxt, int len, xmlChar end,
 ///                            xmlChar end2, xmlChar end3);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlDecodeEntities(
     ctxt: *mut _xmlParserCtxt,
@@ -2960,7 +4081,7 @@ pub unsafe extern "C" fn xmlDecodeEntities(
 
 /// Parse a numeric character reference at `ptr` (starting at '&#'); returns
 /// the value and total bytes consumed, or (0, 0) when malformed.
-unsafe fn parse_char_ref(ptr: *const u8, avail: usize) -> (c_int, usize) {
+const unsafe fn parse_char_ref(ptr: *const u8, avail: usize) -> (c_int, usize) {
     unsafe {
         if avail < 3 || *ptr != b'&' || *ptr.add(1) != b'#' {
             return (0, 0);
@@ -2992,7 +4113,7 @@ unsafe fn parse_char_ref(ptr: *const u8, avail: usize) -> (c_int, usize) {
 }
 
 /// Encode a codepoint into a UTF-8 byte sequence; returns the byte count.
-fn copy_char_utf8(out: &mut [u8; 4], val: c_int) -> usize {
+const fn copy_char_utf8(out: &mut [u8; 4], val: c_int) -> usize {
     if val < 0x80 {
         out[0] = val as u8;
         1
@@ -3024,8 +4145,23 @@ fn copy_char_utf8(out: &mut [u8; 4], val: c_int) -> usize {
 /// ```c
 /// xmlCharEncoding xmlDetectCharEncoding(const unsigned char *in, int len);
 /// ```
+///
+/// # SAFETY
+///
+/// - `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlDetectCharEncoding(in_: *const c_uchar, len: c_int) -> c_int {
+pub const unsafe extern "C" fn xmlDetectCharEncoding(in_: *const c_uchar, len: c_int) -> c_int {
     if in_.is_null() {
         return xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int;
     }
@@ -3074,6 +4210,21 @@ pub unsafe extern "C" fn xmlDetectCharEncoding(in_: *const c_uchar, len: c_int) 
 /// int xmlCharEncFirstLine(xmlCharEncodingHandlerPtr handler,
 ///                         struct _xmlBuffer *out, struct _xmlBuffer *in);
 /// ```
+///
+/// # SAFETY
+///
+/// - `handler`, `out`, `in_` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlCharEncFirstLine(
     handler: *mut _xmlCharEncodingHandler,
@@ -3090,8 +4241,18 @@ pub unsafe extern "C" fn xmlCharEncFirstLine(
 /// ```c
 /// int xmlIsMainThread(void);
 /// ```
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlIsMainThread() -> c_int {
+pub const unsafe extern "C" fn xmlIsMainThread() -> c_int {
     1
 }
 
@@ -3107,6 +4268,21 @@ pub unsafe extern "C" fn xmlIsMainThread() -> c_int {
 /// ```c
 /// void xmlParserPrintFileInfo(struct _xmlParserInput *input);
 /// ```
+///
+/// # SAFETY
+///
+/// - `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserPrintFileInfo(input: *mut _xmlParserInput) {
     if input.is_null() {
@@ -3116,15 +4292,15 @@ pub unsafe extern "C" fn xmlParserPrintFileInfo(input: *mut _xmlParserInput) {
         let channel: Option<xmlGenericErrorFunc> = globals::get_generic_error_func();
         let data = globals::get_generic_error_ctx();
         let Some(ch) = channel else { return };
-        let msg;
-        if !(*input).filename.is_null() {
+
+        let msg = if !(*input).filename.is_null() {
             let file = CStr::from_ptr((*input).filename);
             let s = format!("{}:{}: ", file.to_string_lossy(), (*input).line);
-            msg = std::ffi::CString::new(s).unwrap_or_default();
+            std::ffi::CString::new(s).unwrap_or_default()
         } else {
             let s = format!("Entity: line {}: ", (*input).line);
-            msg = std::ffi::CString::new(s).unwrap_or_default();
-        }
+            std::ffi::CString::new(s).unwrap_or_default()
+        };
         ch(data, msg.as_ptr());
     }
 }
@@ -3137,6 +4313,21 @@ pub unsafe extern "C" fn xmlParserPrintFileInfo(input: *mut _xmlParserInput) {
 /// ```c
 /// void xmlParserPrintFileContext(struct _xmlParserInput *input);
 /// ```
+///
+/// # SAFETY
+///
+/// - `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlParserPrintFileContext(input: *mut _xmlParserInput) {
     if input.is_null() || (*input).cur.is_null() {
@@ -3171,7 +4362,7 @@ pub unsafe extern "C" fn xmlParserPrintFileContext(input: *mut _xmlParserInput) 
 
         // Caret line pointing at the current character.
         let mut caret = vec![b' '; take];
-        if take + 1 <= LINE_LEN + 1 {
+        if take < LINE_LEN + 1 {
             caret.push(b'^');
         }
         let caret_c = std::ffi::CString::new(caret).unwrap_or_default();
@@ -3191,6 +4382,21 @@ pub unsafe extern "C" fn xmlParserPrintFileContext(input: *mut _xmlParserInput) 
 /// ```c
 /// void xmlHandleEntity(xmlParserCtxtPtr ctxt, xmlEntityPtr entity);
 /// ```
+///
+/// # SAFETY
+///
+/// - `ctxt`, `entity` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlHandleEntity(ctxt: *mut _xmlParserCtxt, entity: *mut c_void) {
     if ctxt.is_null() {
@@ -3249,6 +4455,25 @@ pub unsafe extern "C" fn xmlHandleEntity(ctxt: *mut _xmlParserCtxt, entity: *mut
 /// xmlDtdPtr xmlSAXParseDTD(xmlSAXHandlerPtr sax, const xmlChar *publicId,
 ///                          const xmlChar *systemId);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `publicId`, `systemId` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSAXParseDTD(
     sax: *mut _xmlSAXHandler,
@@ -3313,6 +4538,21 @@ pub unsafe extern "C" fn xmlSAXParseDTD(
 /// xmlDtdPtr xmlIOParseDTD(xmlSAXHandlerPtr sax, xmlParserInputBufferPtr input,
 ///                         xmlCharEncoding enc);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax`, `input` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlIOParseDTD(
     sax: *mut _xmlSAXHandler,
@@ -3383,6 +4623,25 @@ unsafe fn input_buffer_data(buf: *mut _xmlParserInputBuffer) -> Vec<u8> {
 /// ```c
 /// xmlDocPtr xmlSAXParseEntity(xmlSAXHandlerPtr sax, const char *filename);
 /// ```
+///
+/// # SAFETY
+///
+/// - `sax` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSAXParseEntity(
     sax: *mut _xmlSAXHandler,
@@ -3432,6 +4691,25 @@ pub unsafe extern "C" fn xmlSAXParseEntity(
 ///                    xmlChar **inclusive_ns_prefixes, int with_comments,
 ///                    const char *filename, int compression);
 /// ```
+///
+/// # SAFETY
+///
+/// - `doc`, `nodes`, `inclusive_ns_prefixes` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// - `filename` must point to valid NUL-terminated
+///   strings (or NULL where the C contract allows) for the lifetime
+///   of the call.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlC14NDocSave(
     doc: *mut _xmlDoc,

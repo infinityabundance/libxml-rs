@@ -263,7 +263,7 @@ unsafe fn cstr_to_str(s: *const c_char) -> Option<String> {
 /// # SAFETY
 ///
 /// - `s` must be a valid NUL-terminated C string or NULL.
-unsafe fn cstr_eq(s: *const c_char, bytes: &[u8]) -> bool {
+const unsafe fn cstr_eq(s: *const c_char, bytes: &[u8]) -> bool {
     if s.is_null() {
         return false;
     }
@@ -291,7 +291,7 @@ unsafe fn dup_cstr(s: *const c_char) -> *mut c_char {
     unsafe { xmlMemStrdupImpl(s) as *mut c_char }
 }
 
-fn is_whitespace(c: char) -> bool {
+const fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
@@ -331,7 +331,7 @@ fn apply_ws(s: &str, ws: c_int) -> String {
 }
 
 /// Map an `xmlSchemaValType` to the internal `XsdDatatypeKind`.
-fn val_type_to_kind(val_type: c_int) -> Option<XsdDatatypeKind> {
+const fn val_type_to_kind(val_type: c_int) -> Option<XsdDatatypeKind> {
     Some(match val_type {
         VAL_STRING | VAL_ANYTYPE | VAL_ANYSIMPLETYPE => XsdDatatypeKind::String,
         VAL_NORMSTRING => XsdDatatypeKind::NormalizedString,
@@ -382,7 +382,7 @@ fn val_type_to_kind(val_type: c_int) -> Option<XsdDatatypeKind> {
 }
 
 /// Map an `xmlSchemaFacetType` to the internal facet kind.
-fn facet_type_to_kind(facet_type: c_int) -> Option<XsdDatatypeKind> {
+const fn facet_type_to_kind(facet_type: c_int) -> Option<XsdDatatypeKind> {
     Some(match facet_type {
         FACET_MININCLUSIVE => XsdDatatypeKind::FacetMinInclusive,
         FACET_MINEXCLUSIVE => XsdDatatypeKind::FacetMinExclusive,
@@ -401,7 +401,7 @@ fn facet_type_to_kind(facet_type: c_int) -> Option<XsdDatatypeKind> {
 }
 
 /// NUL-terminated static name for a built-in `xmlSchemaValType`.
-fn type_name(val_type: c_int) -> Option<&'static [u8]> {
+const fn type_name(val_type: c_int) -> Option<&'static [u8]> {
     Some(match val_type {
         VAL_STRING => b"string\0",
         VAL_NORMSTRING => b"normalizedString\0",
@@ -454,7 +454,7 @@ fn type_name(val_type: c_int) -> Option<&'static [u8]> {
 }
 
 /// Whether an `xmlSchemaValType` is numeric (decimal / integer family / float / double).
-fn is_numeric_type(val_type: c_int) -> bool {
+const fn is_numeric_type(val_type: c_int) -> bool {
     matches!(
         val_type,
         VAL_DECIMAL
@@ -477,12 +477,12 @@ fn is_numeric_type(val_type: c_int) -> bool {
 }
 
 /// Whether an `xmlSchemaValType` is a built-in list type.
-fn is_list_type(val_type: c_int) -> bool {
+const fn is_list_type(val_type: c_int) -> bool {
     matches!(val_type, VAL_NMTOKENS | VAL_IDREFS | VAL_ENTITIES)
 }
 
 /// The item type of a built-in list type (itself otherwise).
-fn list_item_type(val_type: c_int) -> c_int {
+const fn list_item_type(val_type: c_int) -> c_int {
     match val_type {
         VAL_NMTOKENS => VAL_NMTOKEN,
         VAL_IDREFS => VAL_IDREF,
@@ -804,7 +804,7 @@ unsafe fn validate_doc_string(ctxt: *mut xmlSchemaValidCtxt, xml: &str) -> c_int
         crate::abi::exports_xml2::xmlReadMemory(
             xml.as_ptr() as *const c_char,
             xml.len() as c_int,
-            b"doc.xml\0".as_ptr() as *const c_char,
+            c"doc.xml".as_ptr() as *const c_char,
             ptr::null(),
             0,
         )
@@ -865,7 +865,7 @@ pub extern "C" fn xmlSchemaInitTypes() -> c_int {
 /// here are intentionally leaked statics (their addresses are handed out to
 /// callers and must remain valid), so this is a no-op for ABI compatibility.
 #[no_mangle]
-pub extern "C" fn xmlSchemaCleanupTypes() {
+pub const extern "C" fn xmlSchemaCleanupTypes() {
     // No-op: built-in type descriptors are process-lifetime statics.
 }
 
@@ -974,7 +974,7 @@ pub unsafe extern "C" fn xmlSchemaIsBuiltInTypeFacet(
     if type_.is_null() {
         return 0;
     }
-    if facetType < FACET_MININCLUSIVE || facetType > FACET_MINLENGTH {
+    if !(FACET_MININCLUSIVE..=FACET_MINLENGTH).contains(&facetType) {
         return 0;
     }
     // SAFETY: type_ is one of our descriptor pointers.
@@ -1580,7 +1580,7 @@ pub unsafe extern "C" fn xmlSchemaCheckFacet(
     }
     // SAFETY: facet is one of our XsdFacet boxes.
     let facet_type = unsafe { (*(facet as *mut XsdFacet)).facet_type };
-    if facet_type < FACET_MININCLUSIVE || facet_type > FACET_MINLENGTH {
+    if !(FACET_MININCLUSIVE..=FACET_MINLENGTH).contains(&facet_type) {
         unsafe {
             dispatch_parser_error(ctxt as usize, "Invalid facet type");
         }
@@ -2163,7 +2163,7 @@ pub unsafe extern "C" fn xmlSchemaFreeType(type_: *mut xmlSchemaType) {
 ///
 /// - `wildcard` must be NULL or a pointer from this crate.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchemaFreeWildcard(_wildcard: *mut xmlSchemaWildcard) {
+pub const unsafe extern "C" fn xmlSchemaFreeWildcard(_wildcard: *mut xmlSchemaWildcard) {
     // No-op: the internal engine does not allocate wildcard objects.
 }
 
@@ -2485,7 +2485,7 @@ pub unsafe extern "C" fn xmlSchemaValidCtxtGetOptions(ctxt: *mut xmlSchemaValidC
 ///
 /// - `ctxt` may be NULL or a validation context created by this crate.
 #[no_mangle]
-pub unsafe extern "C" fn xmlSchemaValidCtxtGetParserCtxt(
+pub const unsafe extern "C" fn xmlSchemaValidCtxtGetParserCtxt(
     _ctxt: *mut xmlSchemaValidCtxt,
 ) -> *mut c_void {
     ptr::null_mut()

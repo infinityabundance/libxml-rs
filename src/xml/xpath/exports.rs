@@ -68,7 +68,7 @@ pub unsafe extern "C" fn xmlXPathNewString(val: *const xmlChar) -> *mut _xmlXPat
     }
     (*obj).type_ = xmlXPathObjectType::XPATH_STRING as c_int;
     (*obj).stringval = if val.is_null() {
-        xml_strdup(b"\0".as_ptr() as *const xmlChar)
+        xml_strdup(c"".as_ptr() as *const xmlChar)
     } else {
         xml_strdup(val)
     };
@@ -355,8 +355,18 @@ pub unsafe extern "C" fn xmlXPathCastToNumber(val: *mut _xmlXPathObject) -> c_do
 }
 
 /// `double xmlXPathCastBooleanToNumber(int val)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathCastBooleanToNumber(val: c_int) -> c_double {
+pub const unsafe extern "C" fn xmlXPathCastBooleanToNumber(val: c_int) -> c_double {
     if val != 0 {
         1.0
     } else {
@@ -365,12 +375,22 @@ pub unsafe extern "C" fn xmlXPathCastBooleanToNumber(val: c_int) -> c_double {
 }
 
 /// `xmlChar *xmlXPathCastBooleanToString(int val)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCastBooleanToString(val: c_int) -> *mut xmlChar {
     if val != 0 {
-        xml_strdup(b"true\0".as_ptr() as *const xmlChar)
+        xml_strdup(c"true".as_ptr() as *const xmlChar)
     } else {
-        xml_strdup(b"false\0".as_ptr() as *const xmlChar)
+        xml_strdup(c"false".as_ptr() as *const xmlChar)
     }
 }
 
@@ -453,12 +473,32 @@ pub unsafe extern "C" fn xmlXPathCastNodeToString(node: *mut _xmlNode) -> *mut x
 }
 
 /// `int xmlXPathCastNumberToBoolean(double val)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCastNumberToBoolean(val: c_double) -> c_int {
     (val != 0.0 && !val.is_nan()) as c_int
 }
 
 /// `xmlChar *xmlXPathCastNumberToString(double val)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCastNumberToString(val: c_double) -> *mut xmlChar {
     number_to_xmlstring(val)
@@ -470,7 +510,7 @@ pub unsafe extern "C" fn xmlXPathCastNumberToString(val: c_double) -> *mut xmlCh
 ///
 /// - `val` must be a valid NUL-terminated string or NULL.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathCastStringToBoolean(val: *const xmlChar) -> c_int {
+pub const unsafe extern "C" fn xmlXPathCastStringToBoolean(val: *const xmlChar) -> c_int {
     if val.is_null() || unsafe { *val } == 0 {
         0
     } else {
@@ -479,12 +519,32 @@ pub unsafe extern "C" fn xmlXPathCastStringToBoolean(val: *const xmlChar) -> c_i
 }
 
 /// `int xmlXPathIsNaN(double val)`.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathIsNaN(val: c_double) -> c_int {
+pub const unsafe extern "C" fn xmlXPathIsNaN(val: c_double) -> c_int {
     val.is_nan() as c_int
 }
 
 /// `int xmlXPathIsInf(double val)` — 1 for +inf, -1 for -inf, 0 otherwise.
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathIsInf(val: c_double) -> c_int {
     if val.is_infinite() {
@@ -531,8 +591,18 @@ pub unsafe extern "C" fn xmlXPathIsNodeType(name: *const xmlChar) -> c_int {
 }
 
 /// `void xmlXPathInit(void)` — no-op (the candidate needs no initialization).
+///
+/// # SAFETY
+///
+/// The function touches crate-global state only; it is safe
+/// as long as the caller respects the library's global
+/// initialization/cleanup ordering (xmlInitParser before use,
+/// xmlCleanupParser only after all users are done).
+///
+/// Violating the global lifecycle ordering, or calling this after
+/// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathInit() {}
+pub const unsafe extern "C" fn xmlXPathInit() {}
 
 /// `void xmlXPathErr(xmlXPathParserContextPtr ctxt, int error)` — stub entry
 /// (the parser-context error channel is set via the context bridge).
@@ -569,7 +639,7 @@ pub unsafe extern "C" fn xmlXPatherror(
 }
 
 #[allow(unused)]
-fn _unused_doc(_d: *mut _xmlDoc) {}
+const fn _unused_doc(_d: *mut _xmlDoc) {}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Node-set operations
@@ -1249,7 +1319,7 @@ use crate::xml::xpath::parser_context::{
 // ── Shared helpers ──────────────────────────────────────────────────────
 
 /// Opaque `xmlXPathParserContextPtr` → typed pointer.
-unsafe fn pc_from(p: *mut c_void) -> *mut XmlXPathParserContext {
+const unsafe fn pc_from(p: *mut c_void) -> *mut XmlXPathParserContext {
     p as *mut XmlXPathParserContext
 }
 
@@ -1273,7 +1343,7 @@ unsafe fn cstr_eq(a: *const xmlChar, b: *const xmlChar) -> bool {
 }
 
 /// Upstream IS_BLANK_CH: space, tab, LF, CR.
-unsafe fn is_blank_ch(c: xmlChar) -> bool {
+const unsafe fn is_blank_ch(c: xmlChar) -> bool {
     c == b' ' || c == b'\t' || c == b'\n' || c == b'\r'
 }
 
@@ -1334,7 +1404,7 @@ unsafe fn check_arity(pc: *mut XmlXPathParserContext, n: c_int) -> bool {
 /// Consume an XML Name / NCName from `cur` (NUL-terminated), returning the
 /// number of bytes consumed. Mirrors upstream `xmlScanName(ptr, SIZE_MAX,
 /// flags)` with XML 1.0 Fifth-Edition character classes.
-unsafe fn scan_c_name(cur: *const xmlChar, nc: bool) -> usize {
+const unsafe fn scan_c_name(cur: *const xmlChar, nc: bool) -> usize {
     if cur.is_null() {
         return 0;
     }
@@ -1412,8 +1482,8 @@ unsafe fn cstr_find(hay: *const xmlChar, needle: *const xmlChar) -> *const xmlCh
     if nlen > hlen {
         return ptr::null();
     }
-    let hay_b = unsafe { core::slice::from_raw_parts(hay as *const u8, hlen) };
-    let needle_b = unsafe { core::slice::from_raw_parts(needle as *const u8, nlen) };
+    let hay_b = unsafe { core::slice::from_raw_parts(hay, hlen) };
+    let needle_b = unsafe { core::slice::from_raw_parts(needle, nlen) };
     for off in 0..=hlen - nlen {
         if &hay_b[off..off + nlen] == needle_b {
             return unsafe { hay.add(off) };
@@ -1434,15 +1504,14 @@ static XML_XPATH_XML_NS: XmlXPathXmlNs = XmlXPathXmlNs(crate::abi::structs::_xml
     next: ptr::null_mut(),
     type_: crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int,
     href: XML_XML_NAMESPACE_BYTES.as_ptr() as *const xmlChar,
-    prefix: b"xml\0".as_ptr() as *const xmlChar,
+    prefix: c"xml".as_ptr() as *const xmlChar,
     _private: ptr::null_mut(),
     context: ptr::null_mut(),
 });
 
-/// Upstream `xmlXPathStringHash` (FNV-ish over the string bytes) is not
-/// observable through the public API; the node-set equality helpers below
-/// perform the full string comparison the hash only gates.
-
+// Upstream `xmlXPathStringHash` (FNV-ish over the string bytes) is not
+// observable through the public API; the node-set equality helpers below
+// perform the full string comparison the hash only gates.
 // ═══════════════════════════════════════════════════════════════════════════════
 // Value stack operators (upstream xmlXPathValuePush/Pop + typed Pop*)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1554,36 +1623,126 @@ unsafe fn binary_inplace(ctxt: *mut c_void, op: impl Fn(&mut f64, f64)) {
 }
 
 /// `void xmlXPathAddValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathAddValues(ctxt: *mut c_void) {
     binary_inplace(ctxt, |x, v| *x += v);
 }
 
 /// `void xmlXPathSubValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathSubValues(ctxt: *mut c_void) {
     binary_inplace(ctxt, |x, v| *x -= v);
 }
 
 /// `void xmlXPathMultValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathMultValues(ctxt: *mut c_void) {
     binary_inplace(ctxt, |x, v| *x *= v);
 }
 
 /// `void xmlXPathDivValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathDivValues(ctxt: *mut c_void) {
     binary_inplace(ctxt, |x, v| *x /= v);
 }
 
 /// `void xmlXPathModValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathModValues(ctxt: *mut c_void) {
     binary_inplace(ctxt, |x, v| *x %= v);
 }
 
 /// `void xmlXPathValueFlipSign(xmlXPathParserContextPtr ctxt)` — unary minus.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathValueFlipSign(ctxt: *mut c_void) {
     let pc = pc_from(ctxt);
@@ -1599,12 +1758,42 @@ pub unsafe extern "C" fn xmlXPathValueFlipSign(ctxt: *mut c_void) {
 
 /// `int xmlXPathEqualValues(xmlXPathParserContextPtr ctxt)` — pops two values,
 /// pushes the boolean result and returns it.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathEqualValues(ctxt: *mut c_void) -> c_int {
     equal_values_impl(pc_from(ctxt), false)
 }
 
 /// `int xmlXPathNotEqualValues(xmlXPathParserContextPtr ctxt)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNotEqualValues(ctxt: *mut c_void) -> c_int {
     equal_values_impl(pc_from(ctxt), true)
@@ -1615,6 +1804,21 @@ pub unsafe extern "C" fn xmlXPathNotEqualValues(ctxt: *mut c_void) -> c_int {
 /// `inf`/`strict` encode the operator: `<`=(1,1), `<=`=(1,0), `>`=(0,1),
 /// `>=`=(0,0). Returns the comparison result without pushing (upstream callers
 /// push the boolean themselves).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCompareValues(
     ctxt: *mut c_void,
@@ -1836,6 +2040,21 @@ pub unsafe extern "C" fn xmlXPathEvaluatePredicateResult(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// `xmlNodePtr xmlXPathNextSelf(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextSelf(ctxt: *mut c_void, cur: *mut _xmlNode) -> *mut _xmlNode {
     let pc = pc_from(ctxt);
@@ -1853,6 +2072,21 @@ pub unsafe extern "C" fn xmlXPathNextSelf(ctxt: *mut c_void, cur: *mut _xmlNode)
 }
 
 /// `xmlNodePtr xmlXPathNextChild(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextChild(ctxt: *mut c_void, cur: *mut _xmlNode) -> *mut _xmlNode {
     let pc = pc_from(ctxt);
@@ -1896,6 +2130,21 @@ pub unsafe extern "C" fn xmlXPathNextChild(ctxt: *mut c_void, cur: *mut _xmlNode
 }
 
 /// `xmlNodePtr xmlXPathNextDescendant(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextDescendant(
     ctxt: *mut c_void,
@@ -1928,12 +2177,10 @@ pub unsafe extern "C" fn xmlXPathNextDescendant(
         if (*cur).type_ == ET::XML_NAMESPACE_DECL as c_int {
             return ptr::null_mut();
         }
-        if !(*cur).children.is_null() {
-            if (*(*cur).children).type_ != ET::XML_ENTITY_DECL as c_int {
-                cur = (*cur).children;
-                if (*cur).type_ != ET::XML_DTD_NODE as c_int {
-                    return cur;
-                }
+        if !(*cur).children.is_null() && (*(*cur).children).type_ != ET::XML_ENTITY_DECL as c_int {
+            cur = (*cur).children;
+            if (*cur).type_ != ET::XML_DTD_NODE as c_int {
+                return cur;
             }
         }
         if cur == (*ctx).node {
@@ -1965,6 +2212,21 @@ pub unsafe extern "C" fn xmlXPathNextDescendant(
 }
 
 /// `xmlNodePtr xmlXPathNextDescendantOrSelf(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextDescendantOrSelf(
     ctxt: *mut c_void,
@@ -1994,6 +2256,21 @@ pub unsafe extern "C" fn xmlXPathNextDescendantOrSelf(
 }
 
 /// `xmlNodePtr xmlXPathNextParent(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextParent(
     ctxt: *mut c_void,
@@ -2068,6 +2345,21 @@ unsafe fn next_parent_impl(ctx: *mut _xmlXPathContext) -> *mut _xmlNode {
 }
 
 /// `xmlNodePtr xmlXPathNextAncestor(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextAncestor(
     ctxt: *mut c_void,
@@ -2153,6 +2445,21 @@ pub unsafe extern "C" fn xmlXPathNextAncestor(
 }
 
 /// `xmlNodePtr xmlXPathNextAncestorOrSelf(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextAncestorOrSelf(
     ctxt: *mut c_void,
@@ -2173,6 +2480,21 @@ pub unsafe extern "C" fn xmlXPathNextAncestorOrSelf(
 }
 
 /// `xmlNodePtr xmlXPathNextFollowingSibling(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextFollowingSibling(
     ctxt: *mut c_void,
@@ -2212,6 +2534,21 @@ pub unsafe extern "C" fn xmlXPathNextFollowingSibling(
 }
 
 /// `xmlNodePtr xmlXPathNextPrecedingSibling(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextPrecedingSibling(
     ctxt: *mut c_void,
@@ -2256,6 +2593,21 @@ pub unsafe extern "C" fn xmlXPathNextPrecedingSibling(
 }
 
 /// `xmlNodePtr xmlXPathNextFollowing(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextFollowing(
     ctxt: *mut c_void,
@@ -2319,6 +2671,21 @@ pub unsafe extern "C" fn xmlXPathNextFollowing(
 }
 
 /// `xmlNodePtr xmlXPathNextPreceding(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextPreceding(
     ctxt: *mut c_void,
@@ -2405,6 +2772,21 @@ pub unsafe extern "C" fn xmlXPathNextPreceding(
 }
 
 /// `xmlNodePtr xmlXPathNextNamespace(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextNamespace(
     ctxt: *mut c_void,
@@ -2450,6 +2832,21 @@ pub unsafe extern "C" fn xmlXPathNextNamespace(
 }
 
 /// `xmlNodePtr xmlXPathNextAttribute(xmlXPathParserContextPtr ctxt, xmlNodePtr cur)`.
+///
+/// # SAFETY
+///
+/// - `ctxt`, `cur` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNextAttribute(
     ctxt: *mut c_void,
@@ -2484,6 +2881,21 @@ pub unsafe extern "C" fn xmlXPathNextAttribute(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// `void xmlXPathBooleanFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathBooleanFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2504,6 +2916,21 @@ pub unsafe extern "C" fn xmlXPathBooleanFunction(ctxt: *mut c_void, _nargs: c_in
 }
 
 /// `void xmlXPathNotFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNotFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2523,6 +2950,21 @@ pub unsafe extern "C" fn xmlXPathNotFunction(ctxt: *mut c_void, _nargs: c_int) {
 }
 
 /// `void xmlXPathTrueFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathTrueFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2534,6 +2976,21 @@ pub unsafe extern "C" fn xmlXPathTrueFunction(ctxt: *mut c_void, _nargs: c_int) 
 }
 
 /// `void xmlXPathFalseFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathFalseFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2546,7 +3003,7 @@ pub unsafe extern "C" fn xmlXPathFalseFunction(ctxt: *mut c_void, _nargs: c_int)
 
 /// Upstream `lang()` semantics: `lang` matches the nearest ancestor/self
 /// `xml:lang` attribute value, case-insensitively, with `-` sublanguage.
-unsafe fn lang_matches(lang: *const xmlChar, the_lang: *const xmlChar) -> bool {
+const unsafe fn lang_matches(lang: *const xmlChar, the_lang: *const xmlChar) -> bool {
     if lang.is_null() || the_lang.is_null() {
         return false;
     }
@@ -2560,7 +3017,7 @@ unsafe fn lang_matches(lang: *const xmlChar, the_lang: *const xmlChar) -> bool {
         if tc == 0 {
             return false;
         }
-        if lc.to_ascii_uppercase() != tc.to_ascii_uppercase() {
+        if !lc.eq_ignore_ascii_case(&tc) {
             return false;
         }
         i += 1;
@@ -2570,6 +3027,21 @@ unsafe fn lang_matches(lang: *const xmlChar, the_lang: *const xmlChar) -> bool {
 }
 
 /// `void xmlXPathLangFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathLangFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2600,7 +3072,7 @@ pub unsafe extern "C" fn xmlXPathLangFunction(ctxt: *mut c_void, _nargs: c_int) 
         while !n.is_null() {
             let got = crate::xml::tree::get_ns_prop(
                 n,
-                b"lang\0".as_ptr() as *const xmlChar,
+                c"lang".as_ptr() as *const xmlChar,
                 XML_XML_NAMESPACE_BYTES.as_ptr() as *const xmlChar,
             );
             if !got.is_null() {
@@ -2621,6 +3093,21 @@ pub unsafe extern "C" fn xmlXPathLangFunction(ctxt: *mut c_void, _nargs: c_int) 
 }
 
 /// `void xmlXPathNumberFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNumberFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2649,6 +3136,21 @@ pub unsafe extern "C" fn xmlXPathNumberFunction(ctxt: *mut c_void, nargs: c_int)
 }
 
 /// `void xmlXPathSumFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathSumFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2691,6 +3193,21 @@ pub unsafe extern "C" fn xmlXPathSumFunction(ctxt: *mut c_void, _nargs: c_int) {
 }
 
 /// `void xmlXPathFloorFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathFloorFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2710,6 +3227,21 @@ pub unsafe extern "C" fn xmlXPathFloorFunction(ctxt: *mut c_void, _nargs: c_int)
 }
 
 /// `void xmlXPathCeilingFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCeilingFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2729,6 +3261,21 @@ pub unsafe extern "C" fn xmlXPathCeilingFunction(ctxt: *mut c_void, _nargs: c_in
 }
 
 /// `void xmlXPathRoundFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathRoundFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2744,7 +3291,7 @@ pub unsafe extern "C" fn xmlXPathRoundFunction(ctxt: *mut c_void, _nargs: c_int)
     }
     unsafe {
         let f = (*(*pc).value).floatval;
-        if f >= -0.5 && f < 0.5 {
+        if (-0.5..0.5).contains(&f) {
             // Handles negative zero.
             (*(*pc).value).floatval *= 0.0;
         } else {
@@ -2758,6 +3305,21 @@ pub unsafe extern "C" fn xmlXPathRoundFunction(ctxt: *mut c_void, _nargs: c_int)
 }
 
 /// `void xmlXPathLastFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathLastFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2773,6 +3335,21 @@ pub unsafe extern "C" fn xmlXPathLastFunction(ctxt: *mut c_void, _nargs: c_int) 
 }
 
 /// `void xmlXPathPositionFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathPositionFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2788,6 +3365,21 @@ pub unsafe extern "C" fn xmlXPathPositionFunction(ctxt: *mut c_void, _nargs: c_i
 }
 
 /// `void xmlXPathCountFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCountFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2868,6 +3460,21 @@ unsafe fn get_elements_by_ids(doc: *mut _xmlDoc, ids: *const xmlChar) -> *mut _x
 }
 
 /// `void xmlXPathIdFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathIdFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -2979,6 +3586,21 @@ unsafe fn node_local_name(node: *mut _xmlNode) -> String {
 }
 
 /// `void xmlXPathLocalNameFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathLocalNameFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3062,6 +3684,21 @@ unsafe fn node_namespace_uri(node: *mut _xmlNode) -> String {
 }
 
 /// `void xmlXPathNamespaceURIFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNamespaceURIFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3111,6 +3748,21 @@ pub unsafe extern "C" fn xmlXPathNamespaceURIFunction(ctxt: *mut c_void, nargs: 
 }
 
 /// `void xmlXPathStringFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathStringFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3139,6 +3791,21 @@ pub unsafe extern "C" fn xmlXPathStringFunction(ctxt: *mut c_void, nargs: c_int)
 }
 
 /// `void xmlXPathStringLengthFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathStringLengthFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3184,16 +3851,29 @@ pub unsafe extern "C" fn xmlXPathStringLengthFunction(ctxt: *mut c_void, nargs: 
 }
 
 /// `void xmlXPathConcatFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathConcatFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
     if pc.is_null() {
         return;
     }
-    if nargs < 2 {
-        if !check_arity(pc, 2) {
-            return;
-        }
+    if nargs < 2 && !check_arity(pc, 2) {
+        return;
     }
     if !check_arity(pc, nargs) {
         return;
@@ -3219,6 +3899,21 @@ pub unsafe extern "C" fn xmlXPathConcatFunction(ctxt: *mut c_void, nargs: c_int)
 }
 
 /// `void xmlXPathContainsFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathContainsFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3256,6 +3951,21 @@ pub unsafe extern "C" fn xmlXPathContainsFunction(ctxt: *mut c_void, _nargs: c_i
 }
 
 /// `void xmlXPathStartsWithFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathStartsWithFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3293,6 +4003,21 @@ pub unsafe extern "C" fn xmlXPathStartsWithFunction(ctxt: *mut c_void, _nargs: c
 }
 
 /// `void xmlXPathSubstringFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathSubstringFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3303,10 +4028,8 @@ pub unsafe extern "C" fn xmlXPathSubstringFunction(ctxt: *mut c_void, nargs: c_i
         if !check_arity(pc, 2) {
             return;
         }
-    } else if nargs > 3 {
-        if !check_arity(pc, 3) {
-            return;
-        }
+    } else if nargs > 3 && !check_arity(pc, 3) {
+        return;
     }
     let mut le = 0.0;
     if nargs == 3 {
@@ -3350,6 +4073,10 @@ pub unsafe extern "C" fn xmlXPathSubstringFunction(ctxt: *mut c_void, nargs: c_i
     let int_max = i32::MAX as f64;
     let mut i: i64 = 1;
     let mut j: i64 = i32::MAX as i64;
+    // UPSTREAM-PARITY: `!(in < int_max)` mirrors xpath.c xmlXPathSubstring
+    // verbatim; rewriting it as `in >= int_max` would change NaN handling
+    // (the oracle treats NaN as "not less" -> clamps to INT_MAX).
+    #[allow(clippy::neg_cmp_op_on_partial_ord)]
     if !(in_ < int_max) {
         i = i32::MAX as i64;
     } else if in_ >= 1.0 {
@@ -3368,6 +4095,7 @@ pub unsafe extern "C" fn xmlXPathSubstringFunction(ctxt: *mut c_void, nargs: c_i
             rle += 1.0;
         }
         let end = rin + rle;
+        #[allow(clippy::neg_cmp_op_on_partial_ord)]
         if !(end >= 1.0) {
             j = 1;
         } else if end < int_max {
@@ -3390,6 +4118,21 @@ pub unsafe extern "C" fn xmlXPathSubstringFunction(ctxt: *mut c_void, nargs: c_i
 }
 
 /// `void xmlXPathSubstringBeforeFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathSubstringBeforeFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3439,6 +4182,21 @@ pub unsafe extern "C" fn xmlXPathSubstringBeforeFunction(ctxt: *mut c_void, _nar
 }
 
 /// `void xmlXPathSubstringAfterFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathSubstringAfterFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3474,7 +4232,7 @@ pub unsafe extern "C" fn xmlXPathSubstringAfterFunction(ctxt: *mut c_void, _narg
                 let nlen = crate::xml::string::xml_strlen(needle);
                 let rest = point.add(nlen);
                 let len = crate::xml::string::xml_strlen(rest);
-                let bytes = core::slice::from_raw_parts(rest as *const u8, len);
+                let bytes = core::slice::from_raw_parts(rest, len);
                 String::from_utf8_lossy(bytes).into_owned()
             }
         }
@@ -3490,6 +4248,21 @@ pub unsafe extern "C" fn xmlXPathSubstringAfterFunction(ctxt: *mut c_void, _narg
 }
 
 /// `void xmlXPathNormalizeFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathNormalizeFunction(ctxt: *mut c_void, nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3558,6 +4331,21 @@ pub unsafe extern "C" fn xmlXPathNormalizeFunction(ctxt: *mut c_void, nargs: c_i
 }
 
 /// `void xmlXPathTranslateFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathTranslateFunction(ctxt: *mut c_void, _nargs: c_int) {
     let pc = pc_from(ctxt);
@@ -3642,8 +4430,23 @@ pub unsafe extern "C" fn xmlXPathTranslateFunction(ctxt: *mut c_void, _nargs: c_
 
 /// `void xmlXPathRegisterAllFunctions(xmlXPathContextPtr ctxt)` — no-op since
 /// 2.14.0 (the core library is compiled in; upstream keeps an empty body).
+///
+/// # SAFETY
+///
+/// - `_ctxt` must be valid pointers (or NULL
+///   where the upstream C contract allows), obtained from the
+///   matching constructor/owner and not yet freed; the callee may
+///   take or keep ownership exactly as the C API specifies.
+///
+/// The caller must not race this call with concurrent mutation of the
+/// same objects from other threads (per-object state is not internally
+/// synchronized). Violating any of the above is undefined behavior.
+///
+/// Exercised by the C-API differential courts
+/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
+/// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
-pub unsafe extern "C" fn xmlXPathRegisterAllFunctions(_ctxt: *mut _xmlXPathContext) {}
+pub const unsafe extern "C" fn xmlXPathRegisterAllFunctions(_ctxt: *mut _xmlXPathContext) {}
 
 /// Standard core function name → exported C shim pointer (upstream
 /// `xmlXPathStandardFunctions` table).
@@ -4042,7 +4845,7 @@ pub unsafe extern "C" fn xmlXPathNsLookup(
         return ptr::null();
     }
     // The xml prefix always maps to the XML namespace (upstream).
-    if cstr_eq(prefix, b"xml\0".as_ptr() as *const xmlChar) {
+    if cstr_eq(prefix, c"xml".as_ptr() as *const xmlChar) {
         return XML_XML_NAMESPACE_BYTES.as_ptr() as *const xmlChar;
     }
     // In-scope namespace declarations on the context.
@@ -4167,7 +4970,7 @@ pub unsafe extern "C" fn xmlXPathDebugDumpObject(
         return;
     }
     let mut s = String::new();
-    for _ in 0..depth.min(25).max(0) {
+    for _ in 0..depth.clamp(0, 25) {
         s.push_str("  ");
     }
     if cur.is_null() {
@@ -4257,7 +5060,7 @@ pub unsafe extern "C" fn xmlXPathDebugDumpCompExpr(
     let map = registry.lock();
     if let Some(compiled) = map.get(&(comp as u64)) {
         let mut s = String::new();
-        for _ in 0..depth.min(25).max(0) {
+        for _ in 0..depth.clamp(0, 25) {
             s.push_str("  ");
         }
         s.push_str("Compiled Expression : ");
@@ -4268,4 +5071,4 @@ pub unsafe extern "C" fn xmlXPathDebugDumpCompExpr(
 }
 
 #[allow(unused)]
-fn _unused_xpath_batch(_: *mut _xmlAttr) {}
+const fn _unused_xpath_batch(_: *mut _xmlAttr) {}

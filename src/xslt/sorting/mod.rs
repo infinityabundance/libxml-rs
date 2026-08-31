@@ -37,14 +37,18 @@ use std::ptr;
 
 /// Sort data type constants
 pub const XSLT_SORT_TEXT: c_int = 0;
+/// `data-type="number"`: compare values numerically (NaN sorts after all
+/// other values).
 pub const XSLT_SORT_NUMBER: c_int = 1;
 
 /// Sort order constants
 pub const XSLT_SORT_ASCENDING: c_int = 0;
+/// `order="descending"`: invert the comparison result.
 pub const XSLT_SORT_DESCENDING: c_int = 1;
 
 /// Case order constants
 pub const XSLT_SORT_CASE_UPPER_FIRST: c_int = 0;
+/// `case-order="lower-first"`: sort lowercase letters before uppercase ones.
 pub const XSLT_SORT_CASE_LOWER_FIRST: c_int = 1;
 
 /// Compile a sort specification from an xsl:sort instruction node.
@@ -267,8 +271,8 @@ pub unsafe fn xsltCompareSingle(
             (false, false) => {
                 // Respect case-order: upper-first means uppercase letters
                 // sort before lowercase.
-                let cmp = xmlStrcmp(a_str, b_str);
-                cmp
+
+                xmlStrcmp(a_str, b_str)
             }
         };
     } else {
@@ -287,9 +291,7 @@ pub unsafe fn xsltCompareSingle(
             result = 0;
         } else if a_num.is_nan() {
             result = 1; // NaN sorts after everything
-        } else if b_num.is_nan() {
-            result = -1;
-        } else if a_num < b_num {
+        } else if b_num.is_nan() || a_num < b_num {
             result = -1;
         } else if a_num > b_num {
             result = 1;
@@ -381,17 +383,17 @@ pub unsafe fn xsltSortNodeSet(
         // Insertion sort (stable).
         let mut i = 1usize;
         while i < nr as usize {
-            let key = *tab.offset(i as isize);
+            let key = *tab.add(i);
             let mut j = i as isize - 1;
             while j >= 0 {
                 let cur = *tab.offset(j);
                 if xsltCompareNodes(ctxt, cur, key, sorts) <= 0 {
                     break;
                 }
-                *tab.offset((j + 1) as isize) = cur;
+                *tab.offset(j + 1) = cur;
                 j -= 1;
             }
-            *tab.offset((j + 1) as isize) = key;
+            *tab.offset(j + 1) = key;
             i += 1;
         }
     } else {
@@ -399,8 +401,8 @@ pub unsafe fn xsltSortNodeSet(
         let mut indices: Vec<usize> = (0..nr as usize).collect();
         quicksort_indices(ctxt, tab, &mut indices, sorts);
         for (new_pos, old_idx) in indices.iter().enumerate() {
-            let old_ptr = *tab.offset(*old_idx as isize);
-            *tab.offset(new_pos as isize) = old_ptr;
+            let old_ptr = *tab.add(*old_idx);
+            *tab.add(new_pos) = old_ptr;
         }
     }
 }
@@ -422,12 +424,7 @@ unsafe fn quicksort_indices(
         if *idx == pivot {
             continue;
         }
-        let cmp = xsltCompareNodes(
-            ctxt,
-            *tab.offset(*idx as isize),
-            *tab.offset(pivot as isize),
-            sorts,
-        );
+        let cmp = xsltCompareNodes(ctxt, *tab.add(*idx), *tab.add(pivot), sorts);
         if cmp <= 0 {
             less.push(*idx);
         } else {

@@ -34,9 +34,7 @@ use libxml_rs::abi::exports_xml2::*;
 use libxml_rs::abi::structs::*;
 use libxml_rs::abi::types::*;
 use libxml_rs::xslt::serialization::xsltSaveResultToFile;
-use libxml_rs::xslt::stylesheet::{
-    xsltFreeStylesheet, xsltParseStylesheetDoc, xsltParseStylesheetFile,
-};
+use libxml_rs::xslt::stylesheet::{xsltFreeStylesheet, xsltParseStylesheetDoc};
 use libxml_rs::xslt::transform::{
     xsltApplyStylesheet, xsltApplyStylesheetUser, xsltFreeTransformContext,
     xsltNewTransformContext, xsltRunStylesheetUser,
@@ -95,7 +93,6 @@ struct Cli {
     options: c_int,
     errorno: c_int,
     params: Vec<*const c_char>,
-    strparams: Vec<*mut xmlChar>,
 }
 
 impl Default for Cli {
@@ -122,7 +119,6 @@ impl Default for Cli {
             options: XSLT_PARSE_OPTIONS,
             errorno: 0,
             params: Vec::new(),
-            strparams: Vec::new(),
         }
     }
 }
@@ -265,7 +261,7 @@ unsafe fn xslt_read_file(filename: &str, cli: &Cli) -> *mut _xmlDoc {
             .unwrap_or(ptr::null_mut());
         let doc = xmlReadFd(
             0,
-            b"-\0".as_ptr() as *const c_char,
+            c"-".as_ptr() as *const c_char,
             enc as *const c_char,
             cli.options,
         );
@@ -394,7 +390,7 @@ unsafe fn xslt_process(
 unsafe fn crate_dump_doc(doc: *mut _xmlDoc) {
     let s = libxml_rs::xml::tree::dump_doc(doc);
     if !s.is_null() {
-        libc::printf(b"%s\0".as_ptr() as *const c_char, s as *const c_char);
+        libc::printf(c"%s".as_ptr() as *const c_char, s as *const c_char);
         libxml_rs::abi::allocator::xmlFreeImpl(s as *mut c_void);
     }
 }
@@ -419,7 +415,7 @@ unsafe fn stderr_file() -> *mut libc::FILE {
     static mut STDERR_FILE: *mut libc::FILE = ptr::null_mut();
     unsafe {
         if STDERR_FILE.is_null() {
-            STDERR_FILE = libc::fdopen(2, b"w\0".as_ptr() as *const c_char);
+            STDERR_FILE = libc::fdopen(2, c"w".as_ptr() as *const c_char);
         }
         STDERR_FILE
     }
@@ -430,7 +426,7 @@ unsafe fn stdout_file() -> *mut libc::FILE {
     static mut STDOUT_FILE: *mut libc::FILE = ptr::null_mut();
     unsafe {
         if STDOUT_FILE.is_null() {
-            STDOUT_FILE = libc::fdopen(1, b"w\0".as_ptr() as *const c_char);
+            STDOUT_FILE = libc::fdopen(1, c"w".as_ptr() as *const c_char);
         }
         STDOUT_FILE
     }

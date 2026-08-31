@@ -18,6 +18,7 @@ use std::fmt;
 // Token Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// A token in an XPath expression.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     // ── Names ────────────────────────────────────────────────────────────
@@ -103,12 +104,19 @@ pub enum Token {
     NumberLiteral(f64),
 
     // ── Punctuation ──────────────────────────────────────────────────────
+    /// `(` — left parenthesis (groups sub-expressions, opens function calls)
     LParen,
+    /// `)` — right parenthesis
     RParen,
+    /// `[` — left bracket (opens a predicate)
     LBracket,
+    /// `]` — right bracket (closes a predicate)
     RBracket,
-    LBrace, // for XSLT attribute value templates; rare in XPath
+    /// `{` — left brace (for XSLT attribute value templates; rare in XPath)
+    LBrace,
+    /// `}` — right brace
     RBrace,
+    /// `,` — separates function call arguments
     Comma,
     /// `$` (variable reference)
     Dollar,
@@ -191,6 +199,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    /// Create a lexer for the given XPath expression string.
     pub fn new(input: &str) -> Self {
         let bytes = input.as_bytes().to_vec();
         let ch = if bytes.is_empty() { 0 } else { bytes[0] };
@@ -365,7 +374,7 @@ impl Lexer {
         }
 
         // Save at_start for unary minus detection
-        let was_at_start = self.at_start;
+        let _was_at_start = self.at_start;
         self.at_start = false;
 
         // ── Single-char tokens ────────────────────────────────────────────
@@ -668,7 +677,7 @@ mod tests {
         let tokens = tokenize("42");
         assert_eq!(tokens, vec![Token::NumberLiteral(42.0), Token::Eof]);
     }
-
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_decimal() {
         let tokens = tokenize("3.14");

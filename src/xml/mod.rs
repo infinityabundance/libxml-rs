@@ -46,6 +46,8 @@ pub mod schematron;
 pub mod string;
 pub mod threads;
 pub mod tree;
+/// Unicode character-class tables (upstream libxml2 chvalid data globals,
+/// extracted verbatim from `codegen/ranges.inc`).
 pub mod unicode_tables;
 pub mod uri;
 pub mod validation;

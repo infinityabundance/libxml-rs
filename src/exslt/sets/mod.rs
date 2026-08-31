@@ -232,26 +232,20 @@ mod tests {
         let mut ns2 = NodeSet::new();
         ns2.push(b);
         let mut x = ctx();
-        assert_eq!(
-            has_same_node_fn(
-                &mut x,
-                &[XPathValue::NodeSet(ns1.clone()), XPathValue::NodeSet(ns2)]
-            )
-            .unwrap()
-            .as_boolean(),
-            false
-        );
+        assert!(!has_same_node_fn(
+            &mut x,
+            &[XPathValue::NodeSet(ns1.clone()), XPathValue::NodeSet(ns2)]
+        )
+        .unwrap()
+        .as_boolean());
         let mut ns3 = NodeSet::new();
         ns3.push(a);
-        assert_eq!(
-            has_same_node_fn(
-                &mut x,
-                &[XPathValue::NodeSet(ns1), XPathValue::NodeSet(ns3)]
-            )
-            .unwrap()
-            .as_boolean(),
-            true
-        );
+        assert!(has_same_node_fn(
+            &mut x,
+            &[XPathValue::NodeSet(ns1), XPathValue::NodeSet(ns3)]
+        )
+        .unwrap()
+        .as_boolean());
         unsafe {
             crate::xml::tree::free_node(a);
             crate::xml::tree::free_node(b);
