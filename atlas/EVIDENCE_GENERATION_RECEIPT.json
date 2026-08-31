@@ -2,7 +2,7 @@
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
  "mode": "generate",
- "candidate_git_head": "6c2f8ca6d0736d52748ee867c8477c43f4d225e8",
+ "candidate_git_head": "be03688004e664e525196fc714a1a88c4c897c95",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",

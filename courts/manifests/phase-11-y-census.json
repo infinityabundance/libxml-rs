@@ -3,7 +3,7 @@
  "title": "11.1-Y required court families census",
  "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0). 11.1-Z.1 amendment: PREPROCESSOR-SURFACE and AST-SURFACE now point at the real condition-lattice / Clang-AST machinery (dedicated courts), not the config-script / header-compile courts.",
  "date": "2026-08-31",
- "candidate_commit": "<Z1_COMMIT_PLACEHOLDER>",
+ "candidate_commit": "be03688004e664e525196fc714a1a88c4c897c95",
  "verdict": "PASS",
  "families": {
   "DOXYGEN-SURFACE": {
