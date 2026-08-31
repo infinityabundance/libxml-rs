@@ -67,7 +67,7 @@ byte-for-byte against the system libxml2 2.15.3 binaries:
 - **DTD validation diagnostics** — `--valid` output (messages, caret placement, exit codes) matches the oracle for both no-DTD and declaration errors
 - **Entity expansion** — `--noent` re-parses declared-entity content through the input stack (nested references and markup entities included), matching upstream trees
 - **HTML serialization** — meta-charset insertion, upstream formatting rules (p/pre/param never formatted, single-child and inline elements inline), HTML document headers
-- **1144 passing tests**: `cargo test --lib` — 0 failures
+- **1146 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 44-case CLI suite (`target/difftest_summary.sh`) is **byte-identical** to the system tools (stdout + stderr + exit codes), plus a 30+ case edge corpus (entities, DTDs, HTML, compact/no-compact, debug dumps, XPath)
 
 ### Phase 9 (historical)
@@ -88,7 +88,7 @@ process-wide EXSLT registry (`exsltRegisterAll`, mirroring upstream):
 - **`exsltRegisterAll` C ABI export** — mirrors upstream; `xsltproc` calls it at startup
 - **`xsltproc` CLI** — full option surface (`--param`, `--stringparam`, `--output`, `--noout`, `--html`, `--encoding`, `--xinclude`, `--profile`, `--maxdepth`, `--maxvars`, `--nonet`, `--nowrite`, …) with upstream exit codes (1–11)
 - **RTF support** — variables with inline content become context-owned result tree fragments; `exsl:node-set($var)/path` navigation works
-- **1144 passing tests**: `cargo test --lib` — 0 failures
+- **1146 passing tests**: `cargo test --lib` — 0 failures
 - **Differential oracle parity**: a 12-case `xsltproc` corpus (basic transform, `count()`/AVTs, `exsl:node-set`/`math:`/`set:`/`str:`, predicates, attribute string-values, `xsl:if`/`xsl:when`, numbering, descending `xsl:sort`, `key()`, `call-template` with params, `method="html"`) is **byte-identical** to the system libxslt 1.1.45 `xsltproc` (stdout + exit codes)
 
 ### Underlying subsystem fixes landed during Phase 9
@@ -135,7 +135,7 @@ All six Phase 8 residuals are documented in [`atlas/RESIDUAL_LEDGER.md`](atlas/R
 ```sh
 cargo build                          # Build library + CLI binaries
 cargo build --lib                    # Build only the library
-cargo test --lib                     # Run library tests (1144 passing)
+cargo test --lib                     # Run library tests (1146 passing)
 
 # Test C consumer compilation against our headers:
 gcc -I include courts/suites/sanity/ABI-STRUCT-NODE-0001-abicheck.c -o /tmp/abicheck
@@ -212,6 +212,7 @@ by the oracle contamination court.
 | EXSLT registry | 3 |
 | XSLT compiler | 3 |
 | XSLT sorting | 3 |
+| ABI data globals | 2 |
 | EXSLT dynamic | 2 |
 | Memory | 2 |
 | Threads | 2 |
@@ -223,7 +224,7 @@ by the oracle contamination court.
 | XSLT documents | 1 |
 | XSLT imports | 1 |
 | XSLT misc (attrs) | 1 |
-| **Total (1144 passing, 0 failed)** | |
+| **Total (1146 passing, 0 failed)** | |
 <!-- GENERATED-TESTCOVERAGE:END -->
 
 ---
@@ -276,7 +277,7 @@ libxml-rs/
 ```sh
 cargo build              # Build the library and CLI binaries
 cargo build --lib        # Build only the library
-cargo test --lib         # Run library tests (1144 passing)
+cargo test --lib         # Run library tests (1146 passing)
 cargo build --release    # Optimized build (LTO, panic=abort)
 ```
 
@@ -307,7 +308,7 @@ at your option.
 | Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 44, PARTIAL 41 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1400 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |
-| Test coverage | 1144 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
+| Test coverage | 1146 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
 | C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |

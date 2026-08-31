@@ -147,9 +147,11 @@ pub(crate) mod default_sax_handler {
         ctxt: *mut _xmlParserCtxt,
         ch: *const xmlChar,
         len: c_int,
+        force_noncompact: bool,
     ) -> *mut _xmlNode {
         unsafe {
-            let compact = !ctxt.is_null()
+            let compact = !force_noncompact
+                && !ctxt.is_null()
                 && ((*ctxt).options & XML_PARSE_COMPACT) != 0
                 && (len as usize) < 16;
             if compact {
@@ -188,17 +190,13 @@ pub(crate) mod default_sax_handler {
     /// `parser_new_text_node` so short attribute values are compact under
     /// `XML_PARSE_COMPACT` (upstream `xmlSAX2AttributeNs` behavior).
     ///
-    /// `prefix`/`uri` resolve the attribute's namespace exactly like upstream
-    /// `xmlSAX2AttributeNs` (xmlSAX2.c): a non-NULL prefix is looked up in the
-    /// namespace scope of the element; a NULL prefix means the attribute is
-    /// NOT in the default namespace.
-    ///
-    /// KNOWN RESIDUAL: upstream attribute values that contain entity or
-    /// character references take the `xmlNodeParseAttValue` path and are
-    /// never compact; our tokenizer decodes references before the SAX layer,
-    /// losing that signal, so such values may be marked compact in `--debug`
-    /// dumps where the oracle shows a plain `TEXT`. Content, serialization
-    /// and XPath results are identical.
+    /// `had_ref` mirrors upstream's dup-detection: when the raw attribute
+    /// value contained an entity/character reference, the parser passes a
+    /// non-NULL valueEnd (the value was duplicated and null-terminated) and
+    /// `xmlSAX2AttributeNs` builds the value through `xmlNodeParseAttValue`,
+    /// which never produces compact text. The candidate's tokenizer decodes
+    /// references before this layer, so the signal is carried explicitly and
+    /// forces the non-compact path (R-000120).
     ///
     /// Returns the attribute, or NULL on failure.
     unsafe fn parser_set_prop(
@@ -208,6 +206,7 @@ pub(crate) mod default_sax_handler {
         prefix: *const xmlChar,
         value: *const xmlChar,
         value_len: isize,
+        had_ref: bool,
     ) -> *mut _xmlAttr {
         if node.is_null() || name.is_null() || value.is_null() || value_len <= 0 {
             return ptr::null_mut();
@@ -265,7 +264,7 @@ pub(crate) mod default_sax_handler {
                         (*attr_mut).children = ptr::null_mut();
                         (*attr_mut).last = ptr::null_mut();
                     }
-                    let text = parser_new_text_node(ctxt, value, value_len as c_int);
+                    let text = parser_new_text_node(ctxt, value, value_len as c_int, had_ref);
                     if !text.is_null() {
                         let attr_mut = existing as *mut _xmlAttr;
                         (*attr_mut).children = text;
@@ -295,7 +294,7 @@ pub(crate) mod default_sax_handler {
             // zero-initialised value (0) for instance attributes; the
             // XML_ATTRIBUTE_* values are used by DTD attribute declarations.
 
-            let text = parser_new_text_node(ctxt, value, value_len as c_int);
+            let text = parser_new_text_node(ctxt, value, value_len as c_int, had_ref);
             if !text.is_null() {
                 (*attr).children = text;
                 (*attr).last = text;
@@ -348,6 +347,16 @@ pub(crate) mod default_sax_handler {
 
             c.myDoc = doc;
             c.wellFormed = 1;
+
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartDocument): the document
+            // records the current input's filename as its URL, so consumers
+            // (debug dumps, error messages, XSLT runtime diagnostics) see the
+            // source name.
+            if !c.input.is_null() && !(*c.input).filename.is_null() {
+                (*doc).URL = crate::xml::string::xml_strdup(
+                    (*c.input).filename as *const crate::abi::types::xmlChar,
+                );
+            }
 
             // UPSTREAM-PARITY (SAX2.c xmlSAX2StartDocument): the parser
             // owns the document properties; the flags are set at
@@ -528,6 +537,14 @@ pub(crate) mod default_sax_handler {
                         // Compute attribute value length.
                         // If value_end is NULL, the value is null-terminated;
                         // otherwise, value_end points past the last character.
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): a
+                        // non-NULL value_end means the parser duplicated the
+                        // value because it contained an entity/character
+                        // reference (the raw string is null-terminated there)
+                        // — the value node is then built through
+                        // xmlNodeParseAttValue and is never compact
+                        // (R-000120).
+                        let had_ref = !attr_value_end.is_null();
                         let value_len = if attr_value_end.is_null() {
                             // Compute length from null-terminated string
                             let mut len: isize = 0;
@@ -551,6 +568,7 @@ pub(crate) mod default_sax_handler {
                                 attr_prefix,
                                 attr_value_start,
                                 value_len,
+                                had_ref,
                             );
                             // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs tail):
                             // ID/IDREF attributes are registered against the
@@ -745,7 +763,7 @@ pub(crate) mod default_sax_handler {
                 }
             }
 
-            let text = parser_new_text_node(ctxt, ch, len);
+            let text = parser_new_text_node(ctxt, ch, len, false);
 
             if !text.is_null() {
                 (*text).line = current_line(ctxt);

@@ -69,6 +69,12 @@ pub unsafe fn create_int_subset(
         return ptr::null_mut();
     }
 
+    // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): if the document already
+    // has an internal subset, return it — never create a second DTD node.
+    if !(*doc).intSubset.is_null() {
+        return (*doc).intSubset;
+    }
+
     // SAFETY: Allocate zero-initialized memory for the DTD.
     let dtd = allocator::xmlMallocZero(size_of::<_xmlDtd>() as usize) as *mut _xmlDtd;
     if dtd.is_null() {

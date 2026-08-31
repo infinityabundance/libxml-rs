@@ -1,23 +1,32 @@
 {
-  "case_id": "CLI-XMLLINT-0023",
-  "surface": "cli-xmllint",
-  "purpose": "no arguments usage/exit",
-  "oracle_profile": "libxml2-2.15.3",
-  "inputs": {
-    "argv": []
+ "case_id": "CLI-XMLLINT-0023",
+ "surface": "cli-xmllint",
+ "purpose": "no arguments usage/exit",
+ "oracle_profile": "libxml2-2.15.3",
+ "inputs": {
+  "argv": []
+ },
+ "observables": [
+  "exit_status",
+  "stdout_hash",
+  "stderr_hash"
+ ],
+ "normalization": [
+  {
+   "pattern": "/usr/bin/xmllint",
+   "replacement": "TOOL"
   },
-  "observables": [
-    "exit_status",
-    "stdout_hash",
-    "stderr_hash"
-  ],
-  "normalization": [],
-  "provenance": [
-    "upstream-documentation",
-    "phase-10-differential-corpus"
-  ],
-  "tags": [
-    "differential",
-    "xmllint"
-  ]
+  {
+   "pattern": "(?:/[A-Za-z0-9_./-]*)?target/debug/xmllint",
+   "replacement": "TOOL"
+  }
+ ],
+ "provenance": [
+  "upstream-documentation",
+  "phase-10-differential-corpus"
+ ],
+ "tags": [
+  "differential",
+  "xmllint"
+ ]
 }

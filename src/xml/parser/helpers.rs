@@ -483,12 +483,30 @@ pub(crate) unsafe fn alloc_parser_input(
         let pi = &mut *ptr;
 
         // Use the InputBuffer's populate method to fill in the core fields
-        // (base, cur, end, line, col, length, consumed, filename).
-        input.populate_parser_input(pi);
+        // (base, cur, end, line, col, length, consumed). The Rust-side
+        // filename is NOT borrowed here: `populate_parser_input` would point
+        // at a Rust String that the parser later moves/drops (a dangling C
+        // pointer — the observed heap-reuse garbage). Instead the filename is
+        // duplicated into memory owned by the _xmlParserInput itself
+        // (upstream keeps the filename on the input struct and frees it with
+        // xmlFreeInputStream).
+        input.populate_parser_input_without_filename(pi);
 
-        // Override the filename if one was explicitly provided.
-        if let Some(fname) = filename {
-            pi.filename = fname.as_ptr() as *const c_char;
+        // Own a C copy of the filename: the explicit override wins, else the
+        // buffer's own filename. NOTE: `xml_strndup` (not `xml_strdup`) is
+        // used because the source is a Rust `String` whose `as_ptr()` is NOT
+        // NUL-terminated — `xml_strdup` would scan past the end of the
+        // allocation (heap-buffer-overflow) and copy garbage, which the
+        // TREE-001 probe observed as `URL=t.xml<V>`. The explicit length
+        // makes the copy exact and NUL-terminates it.
+        let owned = filename
+            .map(|s| s.to_string())
+            .or_else(|| input.filename().map(|s| s.to_string()));
+        if let Some(fname) = owned {
+            pi.filename = crate::xml::string::xml_strndup(
+                fname.as_ptr() as *const crate::abi::types::xmlChar,
+                fname.len(),
+            ) as *const c_char;
         }
 
         // Set remaining fields that populate_parser_input does not touch.
@@ -531,6 +549,11 @@ pub(crate) unsafe fn alloc_parser_input_buffer() -> *mut _xmlParserInputBuffer {
 pub(crate) unsafe fn free_parser_input(input: *mut _xmlParserInput) {
     if input.is_null() {
         return;
+    }
+    // SAFETY: The filename is an owned xmlMalloc'd copy made by
+    // alloc_parser_input (upstream frees input->filename with the input).
+    if !(*input).filename.is_null() {
+        crate::abi::allocator::xmlFreeImpl((*input).filename as *mut c_void);
     }
     // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
     unsafe { xmlFreeImpl(input as *mut c_void) };

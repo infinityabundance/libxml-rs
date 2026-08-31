@@ -1,0 +1,23 @@
+{
+ "schema": "cli-court-receipt-1",
+ "case_id": "CLI-XMLLINT-0006",
+ "tool": "xmllint",
+ "oracle": "/usr/bin/xmllint",
+ "candidate": "/mnt/1tb_kingston/libxml-rs/target/debug/xmllint",
+ "candidate_commit": "833bc0d44175abc30c2f340563d430de21066b08",
+ "timestamp": "2026-08-31T05:21:31.261362+00:00",
+ "observations": {
+  "oracle": {
+   "exit_status": 3,
+   "stdout_hash": "4c33fdd6599e978be1dd87a6f9cb90aab12af8ad05c94afbcbaf30497843a223",
+   "stderr_hash": "db002439a49fe8f199a75719ef39b749b36f4fc966ce1c299841cc9daa2d228f"
+  },
+  "candidate": {
+   "exit_status": 3,
+   "stdout_hash": "4c33fdd6599e978be1dd87a6f9cb90aab12af8ad05c94afbcbaf30497843a223",
+   "stderr_hash": "db002439a49fe8f199a75719ef39b749b36f4fc966ce1c299841cc9daa2d228f"
+  }
+ },
+ "residuals": [],
+ "verdict": "PASS"
+}

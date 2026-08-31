@@ -605,13 +605,18 @@ unsafe extern "C" fn dump_entityscan_cb(payload: *mut c_void, data: *mut c_void,
                 xmlDebugDumpString(ctx.output, ent.content as *const u8);
             }
             libc::fprintf(ctx.output, b"\n\0".as_ptr() as *const c_char);
-            // The entity's parsed content tree (upstream builds children on
-            // first reference and dumps them; ours stores the raw content,
-            // so a compact text node is synthesized for plain text content
-            // only. KNOWN RESIDUAL: entity content containing markup (`<`,
-            // `&`) is not parsed into a child tree, so the oracle's
-            // element/entity-ref children are not reproduced here.
-            if !ent.content.is_null() && !contains_markup(ent.content) && ent.children.is_null() {
+            // The entity's parsed content tree: upstream (debugXML.c
+            // xmlCtxtDumpNode) recurses into ent->children, which the parser
+            // populates on first reference (xmlCtxtParseEntity). For entity
+            // declarations that were never referenced (no children) the raw
+            // content is synthesized as a compact text node for plain text.
+            if !ent.children.is_null() {
+                let mut c = ent.children;
+                while !c.is_null() {
+                    xmlDebugDumpNode(ctx.output, c, (ctx.depth + 1) as c_int);
+                    c = unsafe { (*c).next };
+                }
+            } else if !ent.content.is_null() && !contains_markup(ent.content) {
                 for _ in 0..(ctx.depth + 1) {
                     libc::fprintf(ctx.output, b"  \0".as_ptr() as *const c_char);
                 }
@@ -646,12 +651,16 @@ pub unsafe extern "C" fn xmlDebugDumpNode(
 
         // UPSTREAM-PARITY: only element-like nodes recurse into children;
         // text nodes (including the non-compact merged representation) do not.
+        // The DTD node's declaration children are dumped from the hash tables
+        // inside xmlDebugDumpOneNode, so the children chain must not be
+        // walked again (upstream debugXML.c xmlCtxtDumpNode reaches the decl
+        // nodes through the chain, but the candidate keeps them in the DTD
+        // tables as well — walking both would duplicate them).
         let t = (*node).type_;
         let recurse = t == 1 // XML_ELEMENT_NODE
             || t == 9  // XML_DOCUMENT_NODE
             || t == 13 // XML_HTML_DOCUMENT_NODE
-            || t == 11 // XML_DOCUMENT_FRAG_NODE
-            || t == 14; // XML_DTD_NODE
+            || t == 11; // XML_DOCUMENT_FRAG_NODE
         if recurse && !(*node).children.is_null() {
             let mut child = (*node).children;
             while !child.is_null() {
@@ -738,10 +747,24 @@ pub unsafe extern "C" fn xmlDebugDumpDocument(output: *mut _IO_FILE, doc: *mut _
             }
         }
 
-        // Dump the internal subset (upstream keeps the DTD as the document's
-        // first child; ours is stored on doc->intSubset).
+        // Dump the internal subset. UPSTREAM-PARITY: xmlCreateIntSubset keeps
+        // the DTD as a member of the document's children chain, so the
+        // children loop below dumps it; only dump it here when the
+        // construction path kept it solely on doc->intSubset (xmlCopyDoc,
+        // lazily-created subsets). Never dump both.
         if !(*doc).intSubset.is_null() {
-            xmlDebugDumpNode(output, (*doc).intSubset as *mut _xmlNode, 1);
+            let mut in_chain = false;
+            let mut c = (*doc).children;
+            while !c.is_null() {
+                if c as *mut c_void == (*doc).intSubset as *mut c_void {
+                    in_chain = true;
+                    break;
+                }
+                c = (*c).next;
+            }
+            if !in_chain {
+                xmlDebugDumpNode(output, (*doc).intSubset as *mut _xmlNode, 1);
+            }
         }
 
         // Dump children of doc

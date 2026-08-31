@@ -5671,6 +5671,9 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
         return ptr::null_mut();
     }
     let internal = &mut *internal;
+    // Clear any stale error so a fresh evaluation either succeeds or records
+    // its own failure message (the XSLT layer surfaces it verbatim).
+    internal.clear_error();
 
     match crate::xml::xpath::evaluate_str(expr_str, internal) {
         Some(val) => xpath_to_object(val),

@@ -3373,11 +3373,15 @@ unsafe fn dtd_dump_output(
         io::buf_add(buf, b" SYSTEM " as *const u8, 8);
         write_quoted_string(buf, d.SystemID);
     }
-    if crate::xml::hash::hash_size(d.entities as *mut crate::xml::hash::HashTable) == 0
-        && crate::xml::hash::hash_size(d.elements as *mut crate::xml::hash::HashTable) == 0
-        && crate::xml::hash::hash_size(d.attributes as *mut crate::xml::hash::HashTable) == 0
-        && crate::xml::hash::hash_size(d.notations as *mut crate::xml::hash::HashTable) == 0
-        && crate::xml::hash::hash_size(d.pentities as *mut crate::xml::hash::HashTable) == 0
+    // UPSTREAM-PARITY (xmlsave.c xmlDtdDumpOutput): the internal-subset
+    // brackets are written only when a declaration table is non-NULL — an
+    // empty DTD (all tables NULL) emits `>`. (hash_size() cannot be used
+    // here: it returns -1 for NULL tables.)
+    if d.entities.is_null()
+        && d.elements.is_null()
+        && d.attributes.is_null()
+        && d.notations.is_null()
+        && d.pentities.is_null()
     {
         io::buf_ccat(buf, b'>');
         return;
@@ -3521,12 +3525,27 @@ unsafe fn doc_content_dump_output(
         io::buf_add(buf, b"?>\n" as *const u8, 3);
     }
 
-    // UPSTREAM-PARITY: the internal subset is serialized before the tree
-    // children (it is stored on doc->intSubset, not in the children list).
+    // UPSTREAM-PARITY (xmlsave.c xmlSaveDocInternal): the internal subset
+    // DTD is a member of the children chain (xmlCreateIntSubset inserts it
+    // before the first element), and the children loop below dumps it once.
+    // Construction paths that keep the DTD only on doc->intSubset
+    // (xmlCopyDoc, lazily-created subsets) need the explicit dump. Never
+    // dump both — that double-prints <!DOCTYPE>.
     if !d.intSubset.is_null() {
-        let mut lvl = 0;
-        dtd_dump_output(buf, d.intSubset as *mut _xmlNode, state, &mut lvl);
-        io::buf_ccat(buf, b'\n');
+        let mut in_chain = false;
+        let mut c = d.children;
+        while !c.is_null() {
+            if c as *mut c_void == d.intSubset as *mut c_void {
+                in_chain = true;
+                break;
+            }
+            c = unsafe { (*c).next };
+        }
+        if !in_chain {
+            let mut lvl = 0;
+            dtd_dump_output(buf, d.intSubset as *mut _xmlNode, state, &mut lvl);
+            io::buf_ccat(buf, b'\n');
+        }
     }
 
     if !d.children.is_null() {

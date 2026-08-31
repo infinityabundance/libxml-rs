@@ -44,9 +44,17 @@ pub fn compile(expr_str: &str) -> Option<CompiledExpr> {
 
 /// Evaluate a compiled XPath expression.
 ///
-/// Returns `None` on evaluation error.
+/// Returns `None` on evaluation error; the error message is recorded on the
+/// context (`XPathContext::error`) so callers can surface it exactly as
+/// upstream does ("XPath error : ...").
 pub fn evaluate(compiled: &CompiledExpr, context: &mut XPathContext) -> Option<XPathValue> {
-    eval::eval(context, &compiled.expr).ok()
+    match eval::eval(context, &compiled.expr) {
+        Ok(value) => Some(value),
+        Err(msg) => {
+            context.set_error(&msg);
+            None
+        }
+    }
 }
 
 /// Parse and evaluate in one step.

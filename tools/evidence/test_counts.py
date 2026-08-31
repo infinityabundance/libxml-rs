@@ -24,6 +24,7 @@ OUT = os.path.join(ATLAS, "TEST_COUNTS.json")
 # Keyed on the module paths emitted by `cargo test --lib -- --list`.
 MODULE_DISPLAY = {
     "abi::allocator": "ABI allocator",
+    "abi::data_globals": "ABI data globals",
     "abi::exports_xslt_avt": "ABI (xslt exports)",
     "compatibility::profiles": "Compatibility profiles",
     "exslt::common": "EXSLT common",

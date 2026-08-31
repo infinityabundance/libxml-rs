@@ -88,8 +88,8 @@ pub unsafe fn new_parser_context(
     if pc.is_null() {
         return ptr::null_mut();
     }
-    let tab =
-        xmlMallocImpl(VALUE_TAB_SIZE * size_of::<*mut _xmlXPathObject>()) as *mut *mut _xmlXPathObject;
+    let tab = xmlMallocImpl(VALUE_TAB_SIZE * size_of::<*mut _xmlXPathObject>())
+        as *mut *mut _xmlXPathObject;
     if tab.is_null() {
         xmlFreeImpl(pc as *mut c_void);
         return ptr::null_mut();
@@ -277,7 +277,9 @@ pub unsafe fn pop_string(pc: *mut XmlXPathParserContext) -> *mut xmlChar {
     }
     let s = crate::abi::exports_xml2::object_to_xpathvalue_pub(arg).as_string();
     crate::abi::exports_xml2::xmlXPathFreeObject(arg);
-    crate::xml::string::xml_strdup(s.as_bytes().as_ptr() as *const xmlChar)
+    // xml_strndup (not xml_strdup): a Rust String's as_bytes() is not
+    // NUL-terminated, and xml_strdup would scan past the allocation.
+    crate::xml::string::xml_strndup(s.as_bytes().as_ptr() as *const xmlChar, s.len())
 }
 
 /// Pop a node set (freshly allocated; caller frees with xmlXPathFreeNodeSet).

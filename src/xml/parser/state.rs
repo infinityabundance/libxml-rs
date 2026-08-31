@@ -1081,6 +1081,7 @@ impl XmlParser {
                 name,
                 attributes,
                 attr_end,
+                attr_start,
                 empty,
                 unterminated,
             } => {
@@ -1089,7 +1090,7 @@ impl XmlParser {
                     // already raised; upstream's element parse failed.
                     return Err(());
                 }
-                self.parse_element(name, attributes, attr_end, empty)?;
+                self.parse_element(name, attributes, attr_end, attr_start, empty)?;
 
                 // UPSTREAM-PARITY: a catastrophic stop (disableSAX == 2)
                 // ends the parse without the trailing checks.
@@ -1172,6 +1173,7 @@ impl XmlParser {
         name: Vec<u8>,
         attributes: Vec<(Vec<u8>, Vec<u8>)>,
         attr_end: Vec<usize>,
+        attr_start: Vec<usize>,
         empty: bool,
     ) -> Result<(), ()> {
         // Line where this element's start tag appeared (used for upstream
@@ -1185,21 +1187,28 @@ impl XmlParser {
 
         // Separate namespace declarations from regular attributes
         let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-        let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>)> = Vec::new();
+        let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)> = Vec::new();
 
         // UPSTREAM-PARITY: attribute values are parsed with
         // xmlParseAttValueInternal, which substitutes character references
         // always, predefined entities always, and declared entities when
         // XML_PARSE_NOENT is set. The tokenizer scans the raw value, so the
         // substitution happens here.
-        let mut new_attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::with_capacity(attributes.len());
-        for (n, v) in attributes.into_iter() {
-            let value = self.substitute_refs(&v)?;
-            new_attributes.push((n, value));
+        let mut new_attributes: Vec<(Vec<u8>, Vec<u8>, bool)> =
+            Vec::with_capacity(attributes.len());
+        for (idx, (n, v)) in attributes.into_iter().enumerate() {
+            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): an attribute value
+            // containing a reference is duplicated and passed to the SAX
+            // layer with a non-NULL valueEnd, which forces the non-compact
+            // xmlNodeParseAttValue path (R-000120).
+            let had_ref = v.contains(&b'&');
+            let value_start = attr_start.get(idx).copied().unwrap_or(0);
+            let value = self.substitute_refs(&v, value_start)?;
+            new_attributes.push((n, value, had_ref));
         }
         let attributes = new_attributes;
 
-        for (idx, (attr_name, attr_value)) in attributes.iter().enumerate() {
+        for (idx, (attr_name, attr_value, _had_ref)) in attributes.iter().enumerate() {
             // UPSTREAM-PARITY (parser.c xmlParseStartTag2): the default
             // namespace declaration warns when the URI is not absolute
             // (xmlns: URI %s is not absolute); the prefixed form warns only
@@ -1265,9 +1274,9 @@ impl XmlParser {
                         self.ensure_doc_xml_ns();
                     }
                     let localname = attr_name[colons + 1..].to_vec();
-                    regular_attrs.push((Some(prefix), localname, attr_value.clone()));
+                    regular_attrs.push((Some(prefix), localname, attr_value.clone(), *_had_ref));
                 } else {
-                    regular_attrs.push((None, attr_name.clone(), attr_value.clone()));
+                    regular_attrs.push((None, attr_name.clone(), attr_value.clone(), *_had_ref));
                 }
             }
         }
@@ -1330,6 +1339,7 @@ impl XmlParser {
                         name: child_name,
                         attributes: child_attrs,
                         attr_end: child_attr_end,
+                        attr_start: child_attr_start,
                         empty: child_empty,
                         unterminated,
                     } => {
@@ -1340,7 +1350,13 @@ impl XmlParser {
                             self.pop_name();
                             return Err(());
                         }
-                        self.parse_element(child_name, child_attrs, child_attr_end, child_empty)?;
+                        self.parse_element(
+                            child_name,
+                            child_attrs,
+                            child_attr_end,
+                            child_attr_start,
+                            child_empty,
+                        )?;
                     }
                     XmlToken::Characters(data) => {
                         if !data.is_empty() {
@@ -1444,7 +1460,11 @@ impl XmlParser {
     /// Returns `Err(())` when a referenced entity's content is not allowed in
     /// an attribute value (a `<` in entity content, upstream
     /// `XML_ERR_LT_IN_ATTRIBUTE`).
-    fn substitute_refs(&mut self, value: &[u8]) -> Result<Vec<u8>, ()> {
+    ///
+    /// `value_start_pos` is the document byte offset just after the
+    /// attribute's opening quote — the caret for the `<`-in-entity error
+    /// points at the `&` of the offending reference (R-000121).
+    fn substitute_refs(&mut self, value: &[u8], value_start_pos: usize) -> Result<Vec<u8>, ()> {
         let mut out = Vec::with_capacity(value.len());
         let mut i = 0usize;
         while i < value.len() {
@@ -1489,15 +1509,65 @@ impl XmlParser {
                                     if !ent.is_null() {
                                         let content =
                                             unsafe { (*(ent as *mut _xmlEntity)).content };
-                                        if !content.is_null() && unsafe { (*content) == b'<' } {
-                                            self.set_error(
-                                                crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
-                                                &format!(
-                                                    "'<' in entity '{}' is not allowed in attributes \
-                                                     values",
-                                                    String::from_utf8_lossy(inner)
-                                                ),
+                                        // UPSTREAM-PARITY (xmlCheckEntityInAttValue):
+                                        // any '<' anywhere in the entity content
+                                        // is illegal in an attribute value.
+                                        let content_has_lt = if content.is_null() {
+                                            false
+                                        } else {
+                                            unsafe {
+                                                core::slice::from_raw_parts(
+                                                    content,
+                                                    libc::strlen(content as *const c_char),
+                                                )
+                                                .contains(&b'<')
+                                            }
+                                        };
+                                        if content_has_lt {
+                                            // UPSTREAM-PARITY (R-000121, E-005):
+                                            // the error fires once for
+                                            // xmlParseAttValueInternal's
+                                            // xmlCheckEntityInAttValue scan and
+                                            // again from the entity-expansion
+                                            // re-scan (xmlExpandEntityInAttValue
+                                            // with the reference entity), so the
+                                            // the 2.13.0+ oracle reports it twice
+                                            // with the caret right past the ';'
+                                            // of the offending reference (the
+                                            // input position when the error
+                                            // fires). --noent takes the
+                                            // xmlExpandEntityInAttValue path
+                                            // only, reporting it once.
+                                            let ref_pos = value_start_pos + i + semi + 1;
+                                            let msg = format!(
+                                                "'<' in entity '{}' is not allowed in attributes \
+                                                 values",
+                                                String::from_utf8_lossy(inner)
                                             );
+                                            self.raise_error_at(
+                                                XML_FROM_PARSER,
+                                                crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
+                                                xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                                msg.clone(),
+                                                None,
+                                                None,
+                                                None,
+                                                0,
+                                                ref_pos,
+                                            );
+                                            if (self.options & XML_PARSE_NOENT) == 0 {
+                                                self.raise_error_at(
+                                                    XML_FROM_PARSER,
+                                                    crate::abi::types::XML_ERR_LT_IN_ATTRIBUTE,
+                                                    xmlErrorLevel::XML_ERR_FATAL as c_int,
+                                                    msg,
+                                                    None,
+                                                    None,
+                                                    None,
+                                                    0,
+                                                    ref_pos,
+                                                );
+                                            }
                                             return Err(());
                                         }
                                         if (self.options & XML_PARSE_NOENT) != 0 {
@@ -1792,9 +1862,33 @@ impl XmlParser {
             macro_rules! flush_text {
                 () => {
                     if !pending.is_empty() {
-                        let mut nul = pending.clone();
-                        nul.push(0);
-                        let node = crate::xml::tree::new_text(nul.as_ptr() as *const xmlChar);
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2TextNode): short text
+                        // runs are stored inline in the node struct when
+                        // XML_PARSE_COMPACT is set — the oracle's --debug shows
+                        // `TEXT compact` for the entity's parsed content.
+                        let len = pending.len();
+                        let node = if (self.options & XML_PARSE_COMPACT) != 0 && len < 16 {
+                            let n = crate::abi::allocator::xmlMallocZero(core::mem::size_of::<
+                                _xmlNode,
+                            >()) as *mut _xmlNode;
+                            if !n.is_null() {
+                                (*n).type_ = XML_TEXT_NODE as c_int;
+                                (*n).name = crate::xml::string::xml_strdup(
+                                    b"text\0".as_ptr() as *const xmlChar
+                                );
+                                let inline =
+                                    std::ptr::addr_of_mut!((*n).properties) as *mut xmlChar;
+                                ptr::copy_nonoverlapping(pending.as_ptr(), inline, len);
+                                *inline.add(len) = 0;
+                                (*n).content = inline;
+                                crate::abi::data_globals::register_node_hook(n);
+                            }
+                            n
+                        } else {
+                            let mut nul = pending.clone();
+                            nul.push(0);
+                            crate::xml::tree::new_text(nul.as_ptr() as *const xmlChar)
+                        };
                         if !node.is_null() {
                             (*node).doc = doc;
                             // UPSTREAM-PARITY: the entity input stream starts
@@ -2024,7 +2118,7 @@ impl XmlParser {
     fn sax_start_element(
         &mut self,
         _name: &[u8],
-        attrs: &[(Option<Vec<u8>>, Vec<u8>, Vec<u8>)],
+        attrs: &[(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)],
         ns_decls: &[(Vec<u8>, Vec<u8>)],
     ) {
         if self.is_sax_disabled() {
@@ -2081,7 +2175,7 @@ impl XmlParser {
 
             // Build the attribute array for SAX2: [localname1, prefix1, uri1, valueStart1, valueEnd1, ...]
             let mut attr_vec: Vec<*const xmlChar> = Vec::with_capacity(attrs.len() * 5);
-            for (prefix, localname, value) in attrs {
+            for (prefix, localname, value, had_ref) in attrs {
                 let local_cstr = Self::vec_to_cstr_null(localname);
                 let prefix_cstr = prefix
                     .as_ref()
@@ -2104,9 +2198,18 @@ impl XmlParser {
                 attr_vec.push(prefix_cstr);
                 attr_vec.push(uri_cstr);
                 attr_vec.push(value_cstr);
-                // valueEnd is the end of the value string — we pass null to indicate
-                // the value is null-terminated
-                attr_vec.push(ptr::null());
+                // UPSTREAM-PARITY (parser.c xmlParseStartTag2 / SAX2.c
+                // xmlSAX2AttributeNs): when the raw value contained an
+                // entity/character reference the value was duplicated and is
+                // null-terminated, so valueEnd points at the NUL byte
+                // (*valueEnd == 0); otherwise valueEnd is NULL. The handler
+                // uses this to decide the compact xmlSAX2TextNode path vs the
+                // non-compact xmlNodeParseAttValue path (R-000120).
+                if *had_ref {
+                    attr_vec.push(unsafe { value_cstr.add(value.len()) } as *const xmlChar);
+                } else {
+                    attr_vec.push(ptr::null());
+                }
             }
 
             let localname_cstr = Self::vec_to_cstr_null(&localname);

@@ -24,6 +24,18 @@ use std::os::raw::{c_char, c_int, c_uint};
 use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
 use crate::abi::types::xmlChar;
 
+/// Serializes writes to the exported `xmlLastError` mirror.
+///
+/// Upstream's `xmlLastError` is a bare racy global (deprecated, documented
+/// not thread-safe), and the candidate preserves the C-visible semantics:
+/// downstream C consumers read the symbol directly without a lock. The
+/// candidate's internal deep-copy/free writers are serialized here so that
+/// concurrent error raises on different threads can never free the same
+/// mirror string twice or write while another thread is freeing — observed
+/// as heap corruption (`double free or corruption (!prev)`) in the parallel
+/// lib test suite (xml::errors tests racing with any other raising thread).
+static LAST_ERROR_MIRROR_LOCK: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Parser defaults (upstream globals.c)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -630,8 +642,14 @@ pub unsafe fn sync_xml_last_error(err: *const crate::abi::structs::_xmlError) {
     if err.is_null() {
         return;
     }
+    let _guard = LAST_ERROR_MIRROR_LOCK.lock();
+    unsafe { sync_xml_last_error_locked(err) };
+}
+
+/// Mirror write helper; caller must hold `LAST_ERROR_MIRROR_LOCK`.
+unsafe fn sync_xml_last_error_locked(err: *const crate::abi::structs::_xmlError) {
     unsafe {
-        reset_xml_last_error();
+        reset_xml_last_error_locked();
         let src = &*err;
         let dst = core::ptr::addr_of_mut!(xmlLastError);
         (*dst).domain = src.domain;
@@ -658,6 +676,12 @@ pub unsafe fn sync_xml_last_error(err: *const crate::abi::structs::_xmlError) {
 /// Only call while no other thread is reading the global (upstream has the
 /// same race; documented).
 pub unsafe fn reset_xml_last_error() {
+    let _guard = LAST_ERROR_MIRROR_LOCK.lock();
+    unsafe { reset_xml_last_error_locked() };
+}
+
+/// Mirror reset helper; caller must hold `LAST_ERROR_MIRROR_LOCK`.
+unsafe fn reset_xml_last_error_locked() {
     unsafe {
         let dst = core::ptr::addr_of_mut!(xmlLastError);
         if !(*dst).message.is_null() {
@@ -1234,4 +1258,101 @@ pub unsafe extern "C" fn __xmlSubstituteEntitiesDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
     unsafe { core::ptr::addr_of_mut!(xmlSubstituteEntitiesDefaultValue) }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Regression court — xmlLastError mirror concurrency (11.1-X)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// R-000135 discovery during 11.1-X: the exported `xmlLastError` mirror was
+// deep-copied and freed without synchronization, so concurrent error raises
+// on different threads double-freed the mirror strings. The parallel lib
+// test suite observed this as `double free or corruption (!prev)` aborts
+// (xml::errors tests racing with any other raising thread). The writers are
+// serialized via LAST_ERROR_MIRROR_LOCK; these courts hammer the exact
+// interleavings and must complete without crashing.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::abi::allocator::xmlMallocImpl;
+    use crate::abi::structs::_xmlError;
+    use crate::xml::globals;
+    use core::ptr;
+
+    /// Allocate a NUL-terminated C string owned by xmlMallocImpl (the same
+    /// allocator the thread-local error slot uses).
+    unsafe fn alloc_cstr(s: &str) -> *mut c_char {
+        let bytes = s.as_bytes();
+        let p = unsafe { xmlMallocImpl(bytes.len() + 1) as *mut c_char };
+        assert!(!p.is_null(), "alloc_cstr: xmlMallocImpl failed");
+        unsafe {
+            ptr::copy_nonoverlapping(bytes.as_ptr(), p as *mut u8, bytes.len());
+            *((p as *mut u8).add(bytes.len())) = 0;
+        }
+        p
+    }
+
+    /// Build an owned `_xmlError` with distinct string fields.
+    unsafe fn build_error(tag: &str) -> _xmlError {
+        _xmlError {
+            domain: 1,
+            code: 2,
+            message: unsafe { alloc_cstr(&format!("msg {tag}")) },
+            level: 3,
+            file: unsafe { alloc_cstr(&format!("file {tag}")) },
+            line: 4,
+            str1: unsafe { alloc_cstr(&format!("str1 {tag}")) },
+            str2: ptr::null_mut(),
+            str3: ptr::null_mut(),
+            int1: 0,
+            int2: 0,
+            ctxt: ptr::null_mut(),
+            node: ptr::null_mut(),
+        }
+    }
+
+    /// Concurrent sync/reset hammer: one thread raises errors while another
+    /// resets. Before the mirror lock this double-freed the shared strings;
+    /// the test crashes (SIGABRT) under the old code and passes now.
+    #[test]
+    fn test_last_error_mirror_concurrent_sync_reset() {
+        let sync = std::thread::spawn(|| {
+            for i in 0..400 {
+                unsafe { globals::set_last_error(build_error(&format!("sync {i}"))) };
+            }
+        });
+        let reset = std::thread::spawn(|| {
+            for _ in 0..400 {
+                globals::reset_last_error();
+            }
+        });
+        sync.join().unwrap();
+        reset.join().unwrap();
+        // Leave the mirror in a clean state for later tests. (No thread-local
+        // assertion: the harness reuses OS threads across tests, so a prior
+        // test's error may legitimately live in this thread's slot.)
+        globals::reset_last_error();
+    }
+
+    /// Many threads raising concurrently (the full parallel-suite shape that
+    /// originally aborted in `test_encode_entities_reentrant_*` victims).
+    #[test]
+    fn test_last_error_mirror_many_threads() {
+        let mut handles = Vec::new();
+        for t in 0..8 {
+            handles.push(std::thread::spawn(move || {
+                for i in 0..150 {
+                    unsafe { globals::set_last_error(build_error(&format!("t{t} i{i}"))) };
+                    if i % 7 == 0 {
+                        globals::reset_last_error();
+                    }
+                }
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+        globals::reset_last_error();
+    }
 }

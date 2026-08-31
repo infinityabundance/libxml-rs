@@ -408,16 +408,20 @@ pub unsafe fn raise_error(
     globals::set_last_error(err);
 
     // UPSTREAM-PARITY (xmlCtxtVErr): the structured handler wins; the
-    // generic channel is only used when no structured handler is set.
-    if let Some(handler) = globals::get_structured_error_func() {
-        let ctx = globals::get_structured_error_ctx();
+    // generic channel is only used when no structured handler is set. The
+    // (handler, ctx) pairs are read atomically (11.1-X), then invoked
+    // outside the lock so a handler that re-enters the library cannot
+    // deadlock.
+    let structured = globals::with_structured_error(|h, c| (h, c));
+    if let Some(handler) = structured.0 {
         let err_ref = globals::get_last_error();
         if !err_ref.is_null() {
-            handler(ctx, err_ref as *const _xmlError);
+            handler(structured.1, err_ref as *const _xmlError);
         }
-    } else if let Some(handler) = globals::get_generic_error_func() {
-        if level != 0 {
-            let ctx = globals::get_generic_error_ctx();
+    } else if level != 0 {
+        let generic = globals::with_generic_error(|h, c| (h, c));
+        if let Some(handler) = generic.0 {
+            let ctx = generic.1;
             if !formatted_msg.is_null() {
                 handler(ctx, formatted_msg as *const core::ffi::c_char);
             } else if !msg.is_null() {
@@ -865,12 +869,13 @@ unsafe fn raise_error_streamed_x86_64(
 
     globals::set_last_error(err);
 
-    // Structured handler wins (upstream `else if` chain).
-    if let Some(handler) = globals::get_structured_error_func() {
-        let ctx = globals::get_structured_error_ctx();
+    // Structured handler wins (upstream `else if` chain); the (handler, ctx)
+    // pair is read atomically and invoked outside the lock (11.1-X).
+    let structured = globals::with_structured_error(|h, c| (h, c));
+    if let Some(handler) = structured.0 {
         let err_ref = globals::get_last_error();
         if !err_ref.is_null() {
-            handler(ctx, err_ref as *const _xmlError);
+            handler(structured.1, err_ref as *const _xmlError);
         }
         return;
     }
@@ -1063,6 +1068,9 @@ mod tests {
 
     #[test]
     fn test_structured_error_callback() {
+        // Serialized against the handler-slot tests in xml::globals (11.1-X):
+        // the structured handler slot is shared global state.
+        let _guard = crate::xml::globals::ERROR_HANDLER_TEST_LOCK.lock();
         unsafe {
             reset_last_error();
 

@@ -237,6 +237,45 @@ unsafe fn shell_del(value: &str) {
     println!("del command failed");
 }
 
+/// Shell tokenizer matching upstream xmlcatalog.c usershell(): whitespace
+/// separates tokens; single and double quotes group characters into one
+/// token (the quotes are consumed). Unbalanced quotes terminate the token at
+/// end-of-line, exactly like upstream's pointer walk.
+fn shell_tokens(line: &str) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::new();
+    let mut chars = line.chars().peekable();
+    let mut cur = String::new();
+    let mut in_token = false;
+    while let Some(c) = chars.next() {
+        match c {
+            ' ' | '\t' => {
+                if in_token {
+                    tokens.push(std::mem::take(&mut cur));
+                    in_token = false;
+                }
+            }
+            '\'' | '"' => {
+                in_token = true;
+                // consume until the matching quote or end of input
+                for c2 in chars.by_ref() {
+                    if c2 == c {
+                        break;
+                    }
+                    cur.push(c2);
+                }
+            }
+            _ => {
+                in_token = true;
+                cur.push(c);
+            }
+        }
+    }
+    if in_token {
+        tokens.push(cur);
+    }
+    tokens
+}
+
 /// Run the interactive shell.
 unsafe fn shell_loop() {
     use std::io::Write;
@@ -251,42 +290,44 @@ unsafe fn shell_loop() {
         if trimmed.is_empty() {
             continue;
         }
-        let parts: Vec<&str> = trimmed.split_whitespace().collect();
-        match parts[0] {
+        let parts: Vec<String> = shell_tokens(&trimmed);
+        match parts[0].as_str() {
             "quit" | "exit" | "bye" | "q" => break,
             "public" => {
-                if parts.len() < 2 {
+                // UPSTREAM-PARITY: exactly one argument (nbargs != 1 fails)
+                if parts.len() != 2 {
                     println!("public requires 1 arguments");
                 } else {
-                    shell_public(parts[1]);
+                    shell_public(&parts[1]);
                 }
             }
             "system" => {
-                if parts.len() < 2 {
+                if parts.len() != 2 {
                     println!("system requires 1 arguments");
                 } else {
-                    shell_system(parts[1]);
+                    shell_system(&parts[1]);
                 }
             }
             "resolve" => {
-                if parts.len() < 3 {
+                if parts.len() != 3 {
                     println!("resolve requires 2 arguments");
                 } else {
-                    shell_resolve(parts[1], parts[2]);
+                    shell_resolve(&parts[1], &parts[2]);
                 }
             }
             "add" => {
-                if parts.len() < 3 {
+                if parts.len() < 3 || parts.len() > 4 {
                     println!("add requires 2 or 3 arguments");
                 } else {
-                    shell_add(&parts[1..]);
+                    let refs: Vec<&str> = parts[1..].iter().map(String::as_str).collect();
+                    shell_add(&refs);
                 }
             }
             "del" => {
-                if parts.len() < 2 {
+                if parts.len() != 2 {
                     println!("del requires 1");
                 } else {
-                    shell_del(parts[1]);
+                    shell_del(&parts[1]);
                 }
             }
             "dump" => {
@@ -405,8 +446,12 @@ fn main() {
     cli.entities = positionals[1..].to_vec();
 
     unsafe {
-        // Load the existing catalog unless we are creating a new one.
-        if !cli.create && !catalog_file.is_empty() {
+        // Load the catalog file when it exists. UPSTREAM-PARITY: this happens
+        // regardless of --create (xmlcatalog.c loads the filename and only
+        // falls back to seeding a fresh "catalog" entry when the load fails
+        // AND --create is set) — so `--create` on an existing catalog loads
+        // and dumps it (R-000122 family).
+        if !catalog_file.is_empty() {
             load_catalog_file(&catalog_file);
         }
 
@@ -449,12 +494,14 @@ fn main() {
 
         if cli.shell {
             shell_loop();
-        } else if !cli.entities.is_empty() && !modified && !cli.create {
-            // UPSTREAM-PARITY: query mode — each positional argument after the
+        } else if !cli.entities.is_empty() && !modified {
+            // UPSTREAM-PARITY: query mode — every positional argument after the
             // catalog file is resolved: strings that are not parseable URIs go
             // through the PUBLIC path, everything else via SYSTEM then URI
-            // (exit 4 on failure). Upstream's URI parser rejects strings with
-            // whitespace.
+            // (exit 4 on failure). Upstream runs this loop regardless of
+            // --create (xmlcatalog.c: the `else` branch of add/del/shell), so
+            // trailing options after the first non-option argument are resolved
+            // as entities against the freshly created catalog (R-000122).
             for id in &cli.entities {
                 let cid = cstr_alloc(id.as_bytes());
                 let uri = xmlParseURI(cid as *const c_char);
@@ -497,7 +544,12 @@ fn main() {
                 }
                 free_cstr(cid);
             }
-        } else if modified || cli.create {
+        }
+        // UPSTREAM-PARITY: the dump/save runs AFTER the query loop, and
+        // independently of it (xmlcatalog.c: `if (add || del || create)` at
+        // the end of main) — so `--create FILE --noout` both resolves the
+        // trailing --noout as an entity (exit 4) AND dumps the new catalog.
+        if modified || cli.create {
             if cli.noout {
                 // Save the catalog (only when something changed or created).
                 save_catalog(&catalog_file);

@@ -76,7 +76,8 @@ const XML_EXTERNAL_GENERAL_PARSED_ENTITY: c_int =
     xmlEntityType::XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int;
 const XML_INTERNAL_PARAMETER_ENTITY: c_int = xmlEntityType::XML_INTERNAL_PARAMETER_ENTITY as c_int;
 const XML_EXTERNAL_PARAMETER_ENTITY: c_int = xmlEntityType::XML_EXTERNAL_PARAMETER_ENTITY as c_int;
-const XML_INTERNAL_PREDEFINED_ENTITY: c_int = xmlEntityType::XML_INTERNAL_PREDEFINED_ENTITY as c_int;
+const XML_INTERNAL_PREDEFINED_ENTITY: c_int =
+    xmlEntityType::XML_INTERNAL_PREDEFINED_ENTITY as c_int;
 const XML_ATTRIBUTE_CDATA: c_int = xmlAttributeType::XML_ATTRIBUTE_CDATA as c_int;
 const XML_ATTRIBUTE_ID: c_int = xmlAttributeType::XML_ATTRIBUTE_ID as c_int;
 const XML_ATTRIBUTE_IDREF: c_int = xmlAttributeType::XML_ATTRIBUTE_IDREF as c_int;
@@ -91,8 +92,10 @@ const XML_ATTRIBUTE_NONE: c_int = xmlAttributeDefault::XML_ATTRIBUTE_NONE as c_i
 const XML_ATTRIBUTE_REQUIRED: c_int = xmlAttributeDefault::XML_ATTRIBUTE_REQUIRED as c_int;
 const XML_ATTRIBUTE_IMPLIED: c_int = xmlAttributeDefault::XML_ATTRIBUTE_IMPLIED as c_int;
 const XML_ATTRIBUTE_FIXED: c_int = xmlAttributeDefault::XML_ATTRIBUTE_FIXED as c_int;
-const XML_ELEMENT_CONTENT_PCDATA: c_int = xmlElementContentType::XML_ELEMENT_CONTENT_PCDATA as c_int;
-const XML_ELEMENT_CONTENT_ELEMENT: c_int = xmlElementContentType::XML_ELEMENT_CONTENT_ELEMENT as c_int;
+const XML_ELEMENT_CONTENT_PCDATA: c_int =
+    xmlElementContentType::XML_ELEMENT_CONTENT_PCDATA as c_int;
+const XML_ELEMENT_CONTENT_ELEMENT: c_int =
+    xmlElementContentType::XML_ELEMENT_CONTENT_ELEMENT as c_int;
 const XML_ELEMENT_CONTENT_SEQ: c_int = xmlElementContentType::XML_ELEMENT_CONTENT_SEQ as c_int;
 const XML_ELEMENT_CONTENT_OR: c_int = xmlElementContentType::XML_ELEMENT_CONTENT_OR as c_int;
 const XML_ELEMENT_CONTENT_ONCE: c_int = xmlElementContentOccur::XML_ELEMENT_CONTENT_ONCE as c_int;
@@ -277,8 +280,24 @@ fn pi_is_pubidchar(c: u8) -> bool {
         || c.is_ascii_alphanumeric()
         || matches!(
             c,
-            b'-' | b'\'' | b'(' | b')' | b'+' | b',' | b'.' | b'/' | b':' | b'=' | b'?' | b';'
-                | b'!' | b'*' | b'#' | b'@' | b'$' | b'_' | b'%'
+            b'-' | b'\''
+                | b'('
+                | b')'
+                | b'+'
+                | b','
+                | b'.'
+                | b'/'
+                | b':'
+                | b'='
+                | b'?'
+                | b';'
+                | b'!'
+                | b'*'
+                | b'#'
+                | b'@'
+                | b'$'
+                | b'_'
+                | b'%'
         )
 }
 
@@ -507,11 +526,7 @@ unsafe fn pi_decode_utf8(ptr: *const u8, end: *const u8) -> (c_int, usize) {
             let v = (((c as c_int) & 0x1F) << 6) | ((*ptr.add(1) as c_int) & 0x3F);
             return (v, 2);
         }
-        if c >= 0xE0
-            && avail >= 3
-            && (*ptr.add(1) & 0xC0) == 0x80
-            && (*ptr.add(2) & 0xC0) == 0x80
-        {
+        if c >= 0xE0 && avail >= 3 && (*ptr.add(1) & 0xC0) == 0x80 && (*ptr.add(2) & 0xC0) == 0x80 {
             let v = (((c as c_int) & 0x0F) << 12)
                 | (((*ptr.add(1) as c_int) & 0x3F) << 6)
                 | ((*ptr.add(2) as c_int) & 0x3F);
@@ -662,42 +677,51 @@ unsafe fn pi_skip_blanks(ctxt: *mut _xmlParserCtxt) -> c_int {
 /// Compare six bytes at the current position against a literal.
 #[inline]
 unsafe fn pi_cmp6(ctxt: *mut _xmlParserCtxt, s: &[u8; 6]) -> bool {
-    unsafe { pi_nxt(ctxt, 0) == s[0] && pi_nxt(ctxt, 1) == s[1] && pi_nxt(ctxt, 2) == s[2] && pi_nxt(ctxt, 3) == s[3] && pi_nxt(ctxt, 4) == s[4] && pi_nxt(ctxt, 5) == s[5] }
+    unsafe {
+        pi_nxt(ctxt, 0) == s[0]
+            && pi_nxt(ctxt, 1) == s[1]
+            && pi_nxt(ctxt, 2) == s[2]
+            && pi_nxt(ctxt, 3) == s[3]
+            && pi_nxt(ctxt, 4) == s[4]
+            && pi_nxt(ctxt, 5) == s[5]
+    }
 }
 
 #[inline]
 unsafe fn pi_cmp5(ctxt: *mut _xmlParserCtxt, s: &[u8; 5]) -> bool {
-    unsafe { pi_nxt(ctxt, 0) == s[0] && pi_nxt(ctxt, 1) == s[1] && pi_nxt(ctxt, 2) == s[2] && pi_nxt(ctxt, 3) == s[3] && pi_nxt(ctxt, 4) == s[4] }
+    unsafe {
+        pi_nxt(ctxt, 0) == s[0]
+            && pi_nxt(ctxt, 1) == s[1]
+            && pi_nxt(ctxt, 2) == s[2]
+            && pi_nxt(ctxt, 3) == s[3]
+            && pi_nxt(ctxt, 4) == s[4]
+    }
 }
 
 #[inline]
 unsafe fn pi_cmp7(ctxt: *mut _xmlParserCtxt, s: &[u8; 7]) -> bool {
-    unsafe {
-        pi_cmp6(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5]]) && pi_nxt(ctxt, 6) == s[6]
-    }
+    unsafe { pi_cmp6(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5]]) && pi_nxt(ctxt, 6) == s[6] }
 }
 
 #[inline]
 unsafe fn pi_cmp8(ctxt: *mut _xmlParserCtxt, s: &[u8; 8]) -> bool {
-    unsafe {
-        pi_cmp7(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5], s[6]])
-            && pi_nxt(ctxt, 7) == s[7]
-    }
+    unsafe { pi_cmp7(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5], s[6]]) && pi_nxt(ctxt, 7) == s[7] }
 }
 
 #[inline]
 unsafe fn pi_cmp9(ctxt: *mut _xmlParserCtxt, s: &[u8; 9]) -> bool {
     unsafe {
-        pi_cmp8(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7]])
-            && pi_nxt(ctxt, 8) == s[8]
+        pi_cmp8(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7]]) && pi_nxt(ctxt, 8) == s[8]
     }
 }
 
 #[inline]
 unsafe fn pi_cmp10(ctxt: *mut _xmlParserCtxt, s: &[u8; 10]) -> bool {
     unsafe {
-        pi_cmp9(ctxt, &[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8]])
-            && pi_nxt(ctxt, 9) == s[9]
+        pi_cmp9(
+            ctxt,
+            &[s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8]],
+        ) && pi_nxt(ctxt, 9) == s[9]
     }
 }
 
@@ -886,6 +910,11 @@ unsafe fn pi_pop_pe(ctxt: *mut _xmlParserCtxt) {
         if !base.is_null() && !(*input).entity.is_null() {
             xmlFreeImpl(base as *mut c_void);
         }
+        // Free the owned filename copy (alloc_parser_input/parserint dup) so
+        // the pop path is symmetric with free_parser_input.
+        if !(*input).filename.is_null() {
+            xmlFreeImpl((*input).filename as *mut c_void);
+        }
         xmlFreeImpl(input as *mut c_void);
     }
 }
@@ -959,7 +988,10 @@ unsafe fn pi_get_predefined_entity(name: *const xmlChar) -> *mut _xmlEntity {
 
 /// `xmlLookupGeneralEntity` equivalent (without the unparsed-entity
 /// validation, which needs error reporting paths).
-unsafe fn pi_lookup_general_entity(ctxt: *mut _xmlParserCtxt, name: *const xmlChar) -> *mut _xmlEntity {
+unsafe fn pi_lookup_general_entity(
+    ctxt: *mut _xmlParserCtxt,
+    name: *const xmlChar,
+) -> *mut _xmlEntity {
     unsafe {
         // Predefined entities override any extra definition (unless OLDSAX).
         if (*ctxt).options & XML_PARSE_OLDSAX == 0 {
@@ -986,7 +1018,10 @@ unsafe fn pi_lookup_general_entity(ctxt: *mut _xmlParserCtxt, name: *const xmlCh
 }
 
 /// Lookup a parameter entity (sax getParameterEntity, then doc fallback).
-unsafe fn pi_lookup_parameter_entity(ctxt: *mut _xmlParserCtxt, name: *const xmlChar) -> *mut _xmlEntity {
+unsafe fn pi_lookup_parameter_entity(
+    ctxt: *mut _xmlParserCtxt,
+    name: *const xmlChar,
+) -> *mut _xmlEntity {
     unsafe {
         let c = &*ctxt;
         if !c.sax.is_null() {
@@ -1181,7 +1216,10 @@ unsafe fn pi_parse_name(ctxt: *mut _xmlParserCtxt) -> *const xmlChar {
         let first = *in_ptr;
 
         // Accelerator for simple ASCII names.
-        if (first.is_ascii_lowercase() || first.is_ascii_uppercase() || first == b'_' || first == b':')
+        if (first.is_ascii_lowercase()
+            || first.is_ascii_uppercase()
+            || first == b'_'
+            || first == b':')
             && in_ptr < end
         {
             let mut p = in_ptr.add(1);
@@ -1256,7 +1294,10 @@ unsafe fn pi_parse_nmtoken(ctxt: *mut _xmlParserCtxt) -> *mut xmlChar {
 }
 
 /// `xmlParseNameAndCompare` — fast path returning `1` on match.
-unsafe fn pi_parse_name_and_compare(ctxt: *mut _xmlParserCtxt, other: *const xmlChar) -> *const xmlChar {
+unsafe fn pi_parse_name_and_compare(
+    ctxt: *mut _xmlParserCtxt,
+    other: *const xmlChar,
+) -> *const xmlChar {
     unsafe {
         let input = pi_input(ctxt);
         if input.is_null() || other.is_null() {
@@ -1394,7 +1435,10 @@ unsafe fn pi_parse_entity_ref_name(ctxt: *mut _xmlParserCtxt) -> *const xmlChar 
 }
 
 /// `xmlParseEntityValue` — parse a quoted entity value.
-unsafe fn pi_parse_entity_value(ctxt: *mut _xmlParserCtxt, orig: *mut *mut xmlChar) -> *mut xmlChar {
+unsafe fn pi_parse_entity_value(
+    ctxt: *mut _xmlParserCtxt,
+    orig: *mut *mut xmlChar,
+) -> *mut xmlChar {
     unsafe {
         let quote = pi_raw(ctxt);
         if quote != b'"' && quote != b'\'' {
@@ -1844,8 +1888,7 @@ unsafe fn pi_parse_cd_sect(ctxt: *mut _xmlParserCtxt) {
         }
         pi_nextl(ctxt, sl);
         let (mut cur, mut l) = pi_current_char_recover(ctxt);
-        while pi_is_char(cur)
-            && !(r == b']' as c_int && s == b']' as c_int && cur == b'>' as c_int)
+        while pi_is_char(cur) && !(r == b']' as c_int && s == b']' as c_int && cur == b'>' as c_int)
         {
             pi_push_codepoint(&mut buf, r);
             r = s;
@@ -2151,12 +2194,7 @@ unsafe fn pi_parse_entity_decl(ctxt: *mut _xmlParserCtxt) {
                         let c = &*ctxt;
                         if !c.sax.is_null() && c.disableSAX == 0 {
                             SaxDispatcher::unparsed_entity_decl(
-                                &*c.sax,
-                                c.userData,
-                                name,
-                                literal,
-                                uri,
-                                ndata,
+                                &*c.sax, c.userData, name, literal, uri, ndata,
                             );
                         }
                         if !ndata.is_null() {
@@ -2253,7 +2291,10 @@ unsafe fn pi_parse_default_decl(ctxt: *mut _xmlParserCtxt, value: *mut *mut xmlC
 }
 
 /// `xmlParseAttributeType`.
-unsafe fn pi_parse_attribute_type(ctxt: *mut _xmlParserCtxt, tree: *mut *mut _xmlEnumeration) -> c_int {
+unsafe fn pi_parse_attribute_type(
+    ctxt: *mut _xmlParserCtxt,
+    tree: *mut *mut _xmlEnumeration,
+) -> c_int {
     unsafe {
         if pi_cmp5(ctxt, b"CDATA") {
             pi_skip(ctxt, 5);
@@ -2378,7 +2419,10 @@ unsafe fn pi_parse_enumeration_type(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnume
 }
 
 /// `xmlParseEnumeratedType`.
-unsafe fn pi_parse_enumerated_type(ctxt: *mut _xmlParserCtxt, tree: *mut *mut _xmlEnumeration) -> c_int {
+unsafe fn pi_parse_enumerated_type(
+    ctxt: *mut _xmlParserCtxt,
+    tree: *mut *mut _xmlEnumeration,
+) -> c_int {
     unsafe {
         if pi_cmp8(ctxt, b"NOTATION") {
             pi_skip(ctxt, 8);
@@ -2524,7 +2568,10 @@ unsafe fn pi_free_enumeration(cur: *mut _xmlEnumeration) {
 }
 
 /// `xmlParseElementMixedContentDecl` — the leading '(' was already consumed.
-unsafe fn pi_parse_element_mixed_content_decl(ctxt: *mut _xmlParserCtxt, _open_input_nr: c_int) -> *mut _xmlElementContent {
+unsafe fn pi_parse_element_mixed_content_decl(
+    ctxt: *mut _xmlParserCtxt,
+    _open_input_nr: c_int,
+) -> *mut _xmlElementContent {
     unsafe {
         if pi_cmp7(ctxt, b"#PCDATA") {
             pi_skip(ctxt, 7);
@@ -2616,7 +2663,11 @@ unsafe fn pi_parse_element_children_content_decl_priv(
     depth: c_int,
 ) -> *mut _xmlElementContent {
     unsafe {
-        let max_depth = if (*ctxt).options & XML_PARSE_HUGE != 0 { 2048 } else { 256 };
+        let max_depth = if (*ctxt).options & XML_PARSE_HUGE != 0 {
+            2048
+        } else {
+            256
+        };
         if depth > max_depth {
             pi_fatal_err(ctxt, XML_ERR_RESOURCE_LIMIT);
             return ptr::null_mut();
@@ -2713,7 +2764,8 @@ unsafe fn pi_parse_element_children_content_decl_priv(
             pi_skip_blanks(ctxt);
             if pi_raw(ctxt) == b'(' {
                 pi_next1(ctxt);
-                last = pi_parse_element_children_content_decl_priv(ctxt, (*ctxt).inputNr, depth + 1);
+                last =
+                    pi_parse_element_children_content_decl_priv(ctxt, (*ctxt).inputNr, depth + 1);
                 if last.is_null() {
                     free_content_model(ret);
                     return ptr::null_mut();
@@ -3040,10 +3092,7 @@ unsafe fn pi_parse_conditional_sections(ctxt: *mut _xmlParserCtxt) {
                     return;
                 }
                 pi_pop_pe(ctxt);
-            } else if pi_raw(ctxt) == b'<'
-                && pi_nxt(ctxt, 1) == b'!'
-                && pi_nxt(ctxt, 2) == b'['
-            {
+            } else if pi_raw(ctxt) == b'<' && pi_nxt(ctxt, 1) == b'!' && pi_nxt(ctxt, 2) == b'[' {
                 pi_skip(ctxt, 3);
                 pi_skip_blanks(ctxt);
                 if pi_cmp7(ctxt, b"INCLUDE") {
@@ -3277,7 +3326,8 @@ unsafe fn pi_parse_sd_decl(ctxt: *mut _xmlParserCtxt) -> c_int {
                 if pi_raw(ctxt) == b'n' && pi_nxt(ctxt, 1) == b'o' {
                     standalone = 0;
                     pi_skip(ctxt, 2);
-                } else if pi_raw(ctxt) == b'y' && pi_nxt(ctxt, 1) == b'e' && pi_nxt(ctxt, 2) == b's' {
+                } else if pi_raw(ctxt) == b'y' && pi_nxt(ctxt, 1) == b'e' && pi_nxt(ctxt, 2) == b's'
+                {
                     standalone = 1;
                     pi_skip(ctxt, 3);
                 } else {
@@ -3453,7 +3503,10 @@ unsafe fn pi_parse_content(ctxt: *mut _xmlParserCtxt) {
 }
 
 /// `xmlParseAttribute` — parse `Name Eq AttValue`.
-unsafe fn pi_parse_attribute(ctxt: *mut _xmlParserCtxt, value: *mut *mut xmlChar) -> *const xmlChar {
+unsafe fn pi_parse_attribute(
+    ctxt: *mut _xmlParserCtxt,
+    value: *mut *mut xmlChar,
+) -> *const xmlChar {
     unsafe {
         *value = ptr::null_mut();
         let name = pi_parse_name(ctxt);
@@ -3623,7 +3676,11 @@ unsafe fn pi_parse_end_tag(ctxt: *mut _xmlParserCtxt) {
 /// `xmlParseElement` — parse `<name ...>content</name>`.
 unsafe fn pi_parse_element(ctxt: *mut _xmlParserCtxt) {
     unsafe {
-        let max_depth = if (*ctxt).options & XML_PARSE_HUGE != 0 { 2048 } else { 256 };
+        let max_depth = if (*ctxt).options & XML_PARSE_HUGE != 0 {
+            2048
+        } else {
+            256
+        };
         if (*ctxt).nameNr > max_depth {
             pi_fatal_err(ctxt, XML_ERR_RESOURCE_LIMIT);
             return;
@@ -3737,7 +3794,9 @@ unsafe fn pi_parse_internal_subset(ctxt: *mut _xmlParserCtxt) {
                     pi_next1(ctxt);
                     pi_skip_blanks(ctxt);
                     break;
-                } else if pi_raw(ctxt) == b'<' && (pi_nxt(ctxt, 1) == b'!' || pi_nxt(ctxt, 1) == b'?') {
+                } else if pi_raw(ctxt) == b'<'
+                    && (pi_nxt(ctxt, 1) == b'!' || pi_nxt(ctxt, 1) == b'?')
+                {
                     pi_parse_markup_decl(ctxt);
                 } else if pi_raw(ctxt) == b'%' {
                     pi_parse_pe_reference(ctxt);
@@ -3918,10 +3977,7 @@ unsafe fn pi_parse_content_node_list(
         let mut root: *mut _xmlNode = ptr::null_mut();
         let mut list: *mut _xmlNode = ptr::null_mut();
         let root_name = b"#root\0";
-        root = crate::xml::tree::new_node(
-            ptr::null_mut(),
-            root_name.as_ptr() as *const xmlChar,
-        );
+        root = crate::xml::tree::new_node(ptr::null_mut(), root_name.as_ptr() as *const xmlChar);
         if root.is_null() {
             pi_err_memory(ctxt);
             return ptr::null_mut();
@@ -3934,10 +3990,7 @@ unsafe fn pi_parse_content_node_list(
         pi_space_push(ctxt, -1);
         pi_node_push(ctxt, root);
 
-        if has_text_decl != 0
-            && pi_cmp5(ctxt, b"<?xml")
-            && pi_is_blank_ch(pi_nxt(ctxt, 5))
-        {
+        if has_text_decl != 0 && pi_cmp5(ctxt, b"<?xml") && pi_is_blank_ch(pi_nxt(ctxt, 5)) {
             pi_parse_text_decl(ctxt);
         }
 
@@ -3961,7 +4014,10 @@ unsafe fn pi_parse_content_node_list(
         }
 
         if pi_input_pop(ctxt) == input {
-            // popped input is the one we pushed
+            // The popped input is the one we pushed: free it (struct and its
+            // owned filename; the base data lives in the boxed InputBuffer
+            // stashed in ctxt->_private, freed by free_parser_ctxt).
+            crate::xml::parser::helpers::free_parser_input(input);
         }
         pi_node_pop(ctxt);
         pi_name_pop(ctxt);
@@ -4403,7 +4459,9 @@ pub unsafe extern "C" fn xmlParseNotationType(ctxt: *mut _xmlParserCtxt) -> *mut
 /// xmlEnumeration *xmlParseEnumerationType(xmlParserCtxtPtr ctxt);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlParseEnumerationType(ctxt: *mut _xmlParserCtxt) -> *mut _xmlEnumeration {
+pub unsafe extern "C" fn xmlParseEnumerationType(
+    ctxt: *mut _xmlParserCtxt,
+) -> *mut _xmlEnumeration {
     pi_parse_enumeration_type(ctxt)
 }
 
@@ -4705,16 +4763,26 @@ pub unsafe extern "C" fn xmlParseCtxtExternalEntity(
                 pi_err_memory(ctxt);
                 return (*ctxt).errNo;
             }
-            (*boxed).populate_parser_input(&mut *pi);
-             (*pi).buf =  ptr::null_mut();
-             (*pi).directory =  ptr::null();
-             (*pi).free =  None;
-             (*pi).encoding =  ptr::null();
-             (*pi).version =  ptr::null();
-             (*pi).flags =  0;
-             (*pi).id =  0;
-             (*pi).parentConsumed =  0;
-             (*pi).entity =  ptr::null_mut();
+            (*boxed).populate_parser_input_without_filename(&mut *pi);
+            // Own a C copy of the buffer's filename: the boxed InputBuffer is
+            // freed with the context (free_parser_ctxt), so borrowing its
+            // Rust String here would leave a dangling `filename` (the
+            // observed heap-reuse garbage in TREE-001).
+            if let Some(fname) = (*boxed).filename() {
+                (*pi).filename = crate::xml::string::xml_strndup(
+                    fname.as_ptr() as *const crate::abi::types::xmlChar,
+                    fname.len(),
+                ) as *const c_char;
+            }
+            (*pi).buf = ptr::null_mut();
+            (*pi).directory = ptr::null();
+            (*pi).free = None;
+            (*pi).encoding = ptr::null();
+            (*pi).version = ptr::null();
+            (*pi).flags = 0;
+            (*pi).id = 0;
+            (*pi).parentConsumed = 0;
+            (*pi).entity = ptr::null_mut();
             // stash the box so it outlives the parse
             (*ctxt)._private = boxed as *mut c_void;
             pi
@@ -4854,16 +4922,22 @@ pub unsafe extern "C" fn xmlParseBalancedChunkMemoryRecover(
             free_parser_ctxt(ctxt);
             return if ret != 0 { ret } else { XML_ERR_NO_MEMORY };
         }
-        (*boxed).populate_parser_input(&mut *input);
-         (*input).buf =  ptr::null_mut();
-         (*input).directory =  ptr::null();
-         (*input).free =  None;
-         (*input).encoding =  ptr::null();
-         (*input).version =  ptr::null();
-         (*input).flags =  0;
-         (*input).id =  0;
-         (*input).parentConsumed =  0;
-         (*input).entity =  ptr::null_mut();
+        (*boxed).populate_parser_input_without_filename(&mut *input);
+        if let Some(fname) = (*boxed).filename() {
+            (*input).filename = crate::xml::string::xml_strndup(
+                fname.as_ptr() as *const crate::abi::types::xmlChar,
+                fname.len(),
+            ) as *const c_char;
+        }
+        (*input).buf = ptr::null_mut();
+        (*input).directory = ptr::null();
+        (*input).free = None;
+        (*input).encoding = ptr::null();
+        (*input).version = ptr::null();
+        (*input).flags = 0;
+        (*input).id = 0;
+        (*input).parentConsumed = 0;
+        (*input).entity = ptr::null_mut();
 
         let list = pi_parse_content_node_list(ctxt, input, 0);
         if !list_out.is_null() {
@@ -4923,16 +4997,22 @@ pub unsafe extern "C" fn xmlParseInNodeContext(
             free_parser_ctxt(ctxt);
             return XML_ERR_NO_MEMORY;
         }
-        (*boxed).populate_parser_input(&mut *input);
-         (*input).buf =  ptr::null_mut();
-         (*input).directory =  ptr::null();
-         (*input).free =  None;
-         (*input).encoding =  ptr::null();
-         (*input).version =  ptr::null();
-         (*input).flags =  0;
-         (*input).id =  0;
-         (*input).parentConsumed =  0;
-         (*input).entity =  ptr::null_mut();
+        (*boxed).populate_parser_input_without_filename(&mut *input);
+        if let Some(fname) = (*boxed).filename() {
+            (*input).filename = crate::xml::string::xml_strndup(
+                fname.as_ptr() as *const crate::abi::types::xmlChar,
+                fname.len(),
+            ) as *const c_char;
+        }
+        (*input).buf = ptr::null_mut();
+        (*input).directory = ptr::null();
+        (*input).free = None;
+        (*input).encoding = ptr::null();
+        (*input).version = ptr::null();
+        (*input).flags = 0;
+        (*input).id = 0;
+        (*input).parentConsumed = 0;
+        (*input).entity = ptr::null_mut();
 
         pi_ctxt_late_init(ctxt);
         (*ctxt).myDoc = doc;
@@ -4958,7 +5038,11 @@ pub unsafe extern "C" fn xmlParseInNodeContext(
                 return XML_ERR_INTERNAL_ERROR;
             }
             free_parser_ctxt(ctxt);
-            return if ret != 0 { ret } else { XML_ERR_INTERNAL_ERROR };
+            return if ret != 0 {
+                ret
+            } else {
+                XML_ERR_INTERNAL_ERROR
+            };
         }
         *list_out = list;
         free_parser_ctxt(ctxt);
@@ -4998,16 +5082,22 @@ pub unsafe extern "C" fn xmlParseDTD(
             (*ctxt)._private = boxed as *mut c_void;
             let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
             if !input.is_null() {
-                (*boxed).populate_parser_input(&mut *input);
-                 (*input).buf =  ptr::null_mut();
-                 (*input).directory =  ptr::null();
-                 (*input).free =  None;
-                 (*input).encoding =  ptr::null();
-                 (*input).version =  ptr::null();
-                 (*input).flags =  0;
-                 (*input).id =  0;
-                 (*input).parentConsumed =  0;
-                 (*input).entity =  ptr::null_mut();
+                (*boxed).populate_parser_input_without_filename(&mut *input);
+                if let Some(fname) = (*boxed).filename() {
+                    (*input).filename = crate::xml::string::xml_strndup(
+                        fname.as_ptr() as *const crate::abi::types::xmlChar,
+                        fname.len(),
+                    ) as *const c_char;
+                }
+                (*input).buf = ptr::null_mut();
+                (*input).directory = ptr::null();
+                (*input).free = None;
+                (*input).encoding = ptr::null();
+                (*input).version = ptr::null();
+                (*input).flags = 0;
+                (*input).id = 0;
+                (*input).parentConsumed = 0;
+                (*input).entity = ptr::null_mut();
                 // Make it the main input.
                 (*ctxt).input = input;
                 (*ctxt).inputNr = 1;
@@ -5195,7 +5285,12 @@ unsafe extern "C" fn pi_file_read(context: *mut c_void, buffer: *mut c_char, len
         if context.is_null() || buffer.is_null() || len <= 0 {
             return -1;
         }
-        libc::fread(buffer as *mut c_void, 1, len as usize, context as *mut libc::FILE) as c_int
+        libc::fread(
+            buffer as *mut c_void,
+            1,
+            len as usize,
+            context as *mut libc::FILE,
+        ) as c_int
     }
 }
 
@@ -5205,7 +5300,10 @@ unsafe extern "C" fn pi_file_read(context: *mut c_void, buffer: *mut c_char, len
 /// xmlParserInputBufferPtr xmlParserInputBufferCreateFd(int fd, xmlCharEncoding enc);
 /// ```
 #[no_mangle]
-pub unsafe extern "C" fn xmlParserInputBufferCreateFd(fd: c_int, _enc: c_int) -> *mut _xmlParserInputBuffer {
+pub unsafe extern "C" fn xmlParserInputBufferCreateFd(
+    fd: c_int,
+    _enc: c_int,
+) -> *mut _xmlParserInputBuffer {
     unsafe {
         if fd < 0 {
             return ptr::null_mut();
@@ -5309,8 +5407,8 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateFilenameDefault(
         let default_fn: unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer =
             pi_default_input_buffer_create_filename;
         let old = xmlParserInputBufferCreateFilenameValue;
-        xmlParserInputBufferCreateFilenameValue = if func == Some(default_fn) { None } else { func };
+        xmlParserInputBufferCreateFilenameValue =
+            if func == Some(default_fn) { None } else { func };
         old.or(Some(default_fn))
     }
 }
-

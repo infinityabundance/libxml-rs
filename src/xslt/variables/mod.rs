@@ -300,11 +300,17 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
         return;
     }
     // First, register caller-provided parameters. UPSTREAM-PARITY: global
-    // params and variables both live in the stylesheet's `variables` list
-    // (params are marked by the XSLT_VAR_PARAM flag).
+    // params and variables both live in the stylesheet's `variables` list.
+    // Caller params carry XSLT_VAR_PARAM|XSLT_VAR_INTERNAL (set by
+    // xsltParseStylesheetParam); the stylesheet's OWN global xsl:param
+    // defaults carry only XSLT_VAR_PARAM (compile_variable) and must NOT be
+    // treated as caller params — otherwise they would overwrite the caller's
+    // values (CLI-XSLTPROC-0012).
     let mut param = (*style).variables;
     while !param.is_null() {
-        if ((*param).flags & XSLT_VAR_PARAM) != 0 {
+        if (*param).flags & (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL)
+            == (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL)
+        {
             register_global_value(ctxt, param, false);
         }
         param = (*param).next;

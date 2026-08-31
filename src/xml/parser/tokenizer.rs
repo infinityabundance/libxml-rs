@@ -34,6 +34,10 @@ pub(crate) enum XmlToken {
         /// Byte offset just past each attribute value's closing quote
         /// (parallel to `attributes`; used for namespace-URI diagnostics).
         attr_end: Vec<usize>,
+        /// Byte offset just after each attribute value's opening quote
+        /// (parallel to `attributes`; start of the raw value, used for the
+        /// '<' in entity error caret).
+        attr_start: Vec<usize>,
         empty: bool,
         unterminated: bool,
     },
@@ -489,6 +493,7 @@ impl XmlTokenizer {
                 name,
                 attributes,
                 attr_end: Vec::new(),
+                attr_start: Vec::new(),
                 empty,
                 unterminated: true,
             };
@@ -496,6 +501,9 @@ impl XmlTokenizer {
 
         let mut attributes: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
         let mut attr_end: Vec<usize> = Vec::new();
+        // Byte offset just after each attribute value's opening quote
+        // (start of the raw value; used for the '<' in entity error caret).
+        let mut attr_start: Vec<usize> = Vec::new();
         loop {
             self.skip_whitespace();
 
@@ -542,12 +550,14 @@ impl XmlTokenizer {
                     self.skip_whitespace();
 
                     let mut attr_value: Option<Vec<u8>> = None;
+                    let mut value_start: usize = 0;
                     if self.input.peek_char() == Some('=') {
                         self.input.read_char();
                         self.skip_whitespace();
                         match self.input.peek_char() {
                             Some(q @ ('"' | '\'')) => {
                                 self.input.read_char();
+                                value_start = self.input.current_pos().2;
                                 let (value, closed) = self.scan_attr_value_inner(q);
                                 if !closed {
                                     // upstream xmlParseAttValueInternal at
@@ -609,6 +619,7 @@ impl XmlTokenizer {
                         // closing quote (upstream's error position for
                         // namespace-URI diagnostics).
                         attr_end.push(self.input.current_pos().2);
+                        attr_start.push(value_start);
                         attributes.push((attr_name, v));
                     }
 
@@ -702,6 +713,7 @@ impl XmlTokenizer {
             name,
             attributes,
             attr_end,
+            attr_start,
             empty,
             unterminated,
         }

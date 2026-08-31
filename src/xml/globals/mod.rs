@@ -39,6 +39,24 @@ use crate::abi::types::xmlErrorLevel::XML_ERR_NONE;
 use crate::abi::types::*;
 use crate::abi::versioning;
 
+/// Serializes the exported error-handler slot pairs
+/// (`xmlGenericError`/`xmlGenericErrorContext` and
+/// `xmlStructuredError`/`xmlStructuredErrorContext`). Upstream's globals are
+/// bare racy `static mut` slots; the candidate keeps the C-visible symbols
+/// but makes internal set/get atomic as a (handler, ctx) pair so readers
+/// never observe a new handler with an old context (or vice versa). C
+/// consumers that touch the symbols directly keep upstream's documented
+/// racy semantics.
+static ERROR_HANDLER_LOCK: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+
+/// Serializes the error-handler tests that mutate the shared handler slots
+/// (11.1-X regression court wiring): `test_error_callbacks_*` (globals) and
+/// `test_structured_error_callback` (errors) must not run concurrently, or
+/// `test_error_callbacks_default_handlers` observes another test's
+/// temporarily-installed structured handler.
+#[cfg(test)]
+pub(crate) static ERROR_HANDLER_TEST_LOCK: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Initialization Reference Counting
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -242,26 +260,46 @@ pub fn set_get_warnings_default(val: c_int) {
 pub unsafe fn set_generic_error_func(ctx: *mut c_void, handler: Option<xmlGenericErrorFunc>) {
     // SAFETY: writing the exported C globals xmlGenericErrorContext /
     // xmlGenericError; matches upstream xmlSetGenericErrorFunc (NULL resets
-    // to the built-in default stderr printer, error.c).
+    // to the built-in default stderr printer, error.c). The (ctx, func)
+    // pair is written atomically under ERROR_HANDLER_LOCK.
+    let resolved = match handler {
+        Some(h) => Some(h),
+        None => unsafe { crate::abi::data_globals::default_generic_error_func() },
+    };
+    let _guard = ERROR_HANDLER_LOCK.lock();
     unsafe {
         crate::abi::data_globals::xmlGenericErrorContext = ctx;
-        crate::abi::data_globals::xmlGenericError = match handler {
-            Some(h) => Some(h),
-            None => crate::abi::data_globals::default_generic_error_func(),
-        };
+        crate::abi::data_globals::xmlGenericError = resolved;
     }
 }
 
 /// Get the generic error handler context.
 pub fn get_generic_error_ctx() -> *mut c_void {
+    let _guard = ERROR_HANDLER_LOCK.lock();
     // SAFETY: reading the exported C global xmlGenericErrorContext.
     unsafe { crate::abi::data_globals::xmlGenericErrorContext }
 }
 
 /// Get the generic error handler function pointer.
 pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
+    let _guard = ERROR_HANDLER_LOCK.lock();
     // SAFETY: reading the exported C global xmlGenericError.
     unsafe { crate::abi::data_globals::xmlGenericError }
+}
+
+/// Read the generic error (func, ctx) pair atomically.
+///
+/// The closure runs after the lock is released, so a handler installed
+/// by the callback cannot deadlock.
+pub fn with_generic_error<R>(f: impl FnOnce(Option<xmlGenericErrorFunc>, *mut c_void) -> R) -> R {
+    let (h, c) = {
+        let _guard = ERROR_HANDLER_LOCK.lock();
+        (
+            unsafe { crate::abi::data_globals::xmlGenericError },
+            unsafe { crate::abi::data_globals::xmlGenericErrorContext },
+        )
+    };
+    f(h, c)
 }
 
 /// Set the structured error handler.
@@ -271,7 +309,9 @@ pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
 /// - `handler` must be a valid function pointer or NULL.
 pub unsafe fn set_structured_error_func(ctx: *mut c_void, handler: Option<xmlStructuredErrorFunc>) {
     // SAFETY: writing the exported C globals xmlStructuredErrorContext /
-    // xmlStructuredError; matches upstream xmlSetStructuredErrorFunc.
+    // xmlStructuredError; matches upstream xmlSetStructuredErrorFunc. The
+    // (ctx, func) pair is written atomically under ERROR_HANDLER_LOCK.
+    let _guard = ERROR_HANDLER_LOCK.lock();
     unsafe {
         crate::abi::data_globals::xmlStructuredErrorContext = ctx;
         crate::abi::data_globals::xmlStructuredError = handler;
@@ -280,14 +320,34 @@ pub unsafe fn set_structured_error_func(ctx: *mut c_void, handler: Option<xmlStr
 
 /// Get the structured error handler context.
 pub fn get_structured_error_ctx() -> *mut c_void {
+    let _guard = ERROR_HANDLER_LOCK.lock();
     // SAFETY: reading the exported C global xmlStructuredErrorContext.
     unsafe { crate::abi::data_globals::xmlStructuredErrorContext }
 }
 
 /// Get the structured error handler function pointer.
 pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
+    let _guard = ERROR_HANDLER_LOCK.lock();
     // SAFETY: reading the exported C global xmlStructuredError.
     unsafe { crate::abi::data_globals::xmlStructuredError }
+}
+
+/// Read the structured error (func, ctx) pair atomically.
+///
+/// The closure runs after the lock is released, so a handler installed by
+/// the callback (or an error raised from inside the handler) cannot
+/// deadlock on ERROR_HANDLER_LOCK.
+pub fn with_structured_error<R>(
+    f: impl FnOnce(Option<xmlStructuredErrorFunc>, *mut c_void) -> R,
+) -> R {
+    let (h, c) = {
+        let _guard = ERROR_HANDLER_LOCK.lock();
+        (
+            unsafe { crate::abi::data_globals::xmlStructuredError },
+            unsafe { crate::abi::data_globals::xmlStructuredErrorContext },
+        )
+    };
+    f(h, c)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -549,6 +609,9 @@ mod tests {
     fn test_error_callbacks_default_handlers() {
         // UPSTREAM-PARITY (error.c): xmlGenericError defaults to the built-in
         // stderr printer (never NULL); xmlStructuredError defaults to NULL.
+        // Serialized against the other handler-mutating tests (11.1-X): the
+        // slots are shared global state.
+        let _guard = ERROR_HANDLER_TEST_LOCK.lock();
         #[cfg(target_arch = "x86_64")]
         assert!(get_generic_error_func().is_some());
         assert!(get_structured_error_func().is_none());
@@ -556,6 +619,7 @@ mod tests {
 
     #[test]
     fn test_error_callbacks_set_and_get() {
+        let _guard = ERROR_HANDLER_TEST_LOCK.lock();
         unsafe {
             unsafe extern "C" fn dummy_handler(_ctx: *mut c_void, _msg: *const core::ffi::c_char) {}
             let dummy_func: xmlGenericErrorFunc = dummy_handler;

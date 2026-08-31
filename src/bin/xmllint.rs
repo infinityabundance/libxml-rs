@@ -387,9 +387,14 @@ unsafe fn dump_document(cli: &Cli, doc: *mut _xmlDoc, filename: &str) {
                 == libxml_rs::abi::types::xmlElementType::XML_HTML_DOCUMENT_NODE as c_int)
     {
         // Remove the internal subset (upstream xmlDtdRemove / HTML
-        // --nodefdtd suppresses the default HTML DOCTYPE).
+        // --nodefdtd suppresses the default HTML DOCTYPE). UPSTREAM-PARITY
+        // (xmllint.c parseAndPrintFile): the DTD is unlinked from the
+        // children chain first — it is still linked there by
+        // xmlCreateIntSubset, so freeing it while linked double-frees when
+        // the document is released.
         let dtd = (*doc).intSubset;
         if !dtd.is_null() {
+            libxml_rs::xml::tree::unlink_node(dtd as *mut _xmlNode);
             (*doc).intSubset = ptr::null_mut();
             xmlFreeDtd(dtd);
         }

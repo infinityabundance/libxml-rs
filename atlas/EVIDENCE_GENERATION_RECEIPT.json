@@ -1,8 +1,8 @@
 {
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
- "mode": "generate",
- "candidate_git_head": "a0115160ef850641c40575408365437d625e292e",
+ "mode": "check",
+ "candidate_git_head": "833bc0d44175abc30c2f340563d430de21066b08",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -21,14 +21,14 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
-  "candidate SONAME libxml2": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
-  "candidate SONAME libxslt": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
-  "candidate SONAME libexslt": "acbbeb871c7b32c10d6d4023a85a741630221f7c7d67d03a2dc2e5de5106ea67",
+  "candidate DSO": "d7e1751709a44b4dbbec90d0f9c67605cc3d91604e6cd52e487a6b57fe385b4d",
+  "candidate SONAME libxml2": "d7e1751709a44b4dbbec90d0f9c67605cc3d91604e6cd52e487a6b57fe385b4d",
+  "candidate SONAME libxslt": "d7e1751709a44b4dbbec90d0f9c67605cc3d91604e6cd52e487a6b57fe385b4d",
+  "candidate SONAME libexslt": "d7e1751709a44b4dbbec90d0f9c67605cc3d91604e6cd52e487a6b57fe385b4d",
   "candidate headers": null,
   "residual ledger JSON (hand-maintained)": {
    "files": 1,
-   "aggregate_sha256": "a02ff2d4e405c03624243c6e1af9a97735a3e4624dea0ebb90e2bf3235b0a620"
+   "aggregate_sha256": "01f8b525075a363f99b620badcaf366396b9a172ee42fb2ab2ce3b55fa7f25d8"
   },
   "symbol court index": {
    "files": 1,
@@ -99,7 +99,7 @@
    "ok": true,
    "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/RESIDUAL_LEDGER.md\n",
    "hashes": {
-    "atlas/RESIDUAL_LEDGER.md": "2668bb7174b0d95b30765a29672348e7a57226a0a3842bf6307f55a9ad72075d"
+    "atlas/RESIDUAL_LEDGER.md": "f496c0aa7765778ed26cf789697700eba2e9ab4270dccb831fe4e14553492e63"
    }
   }
  ],

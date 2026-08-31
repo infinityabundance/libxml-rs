@@ -771,6 +771,24 @@ impl InputBuffer {
             .unwrap_or(std::ptr::null());
     }
 
+    /// Like [`populate_parser_input`](Self::populate_parser_input) but leaves
+    /// `filename` untouched: the caller owns a duplicated C string instead of
+    /// borrowing the Rust-side filename (which the parser moves/drops).
+    pub unsafe fn populate_parser_input_without_filename(&self, input: &mut _xmlParserInput) {
+        let data_ptr = self.data.as_ptr();
+        let base = data_ptr as *const crate::abi::types::xmlChar;
+        let cur = unsafe { data_ptr.add(self.pos) as *const crate::abi::types::xmlChar };
+        let end = unsafe { data_ptr.add(self.data.len()) as *const crate::abi::types::xmlChar };
+
+        input.base = base;
+        input.cur = cur;
+        input.end = end;
+        input.line = self.line as c_int;
+        input.col = self.col as c_int;
+        input.length = self.data.len() as c_int;
+        input.consumed = self.pos as c_ulong;
+    }
+
     /// Create a `_xmlParserInputBuffer` from this buffer's source.
     ///
     /// # Safety

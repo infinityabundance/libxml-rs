@@ -1,0 +1,168 @@
+{
+ "court": "TREE-001",
+ "phase": "11.1-N",
+ "timestamp": "2026-08-31T05:25:58Z",
+ "probe": "courts/suites/data-abi/tree-structure-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "stdout_sha256": "6899e4a87a4aaa738062b48f4322b7d12aef5d1205cb421d0e260ba86293e778"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "58113c0bb13d219ff1b06161dfbb9432a582ac354986ddce7bfa4b7dea3fbb7e"
+ },
+ "verdict": "FAIL",
+ "mismatch_count": 56,
+ "mismatches": [
+  {
+   "line": 3,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 24,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 53,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=65536 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=65536 properties=11"
+  },
+  {
+   "line": 74,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 81,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 110,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 114,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=256 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=256 properties=11"
+  },
+  {
+   "line": 134,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 138,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 167,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 171,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 187,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 191,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 205,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 209,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 227,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 231,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 250,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 254,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 276,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 280,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 311,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 315,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=2 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=2 properties=11"
+  },
+  {
+   "line": 341,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 345,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=65538 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=65538 properties=11"
+  },
+  {
+   "line": 371,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 375,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 406,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  },
+  {
+   "line": 410,
+   "oracle": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xml standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11",
+   "candidate": "doc type=9 name=(null) version=1.0 encoding=(null) URL=t.xmlV standalone=-1 compression=-1 charset=1 parseFlags=0 properties=11"
+  },
+  {
+   "line": 426,
+   "oracle": "base=t.xml",
+   "candidate": "base=t.xmlV"
+  }
+ ]
+}

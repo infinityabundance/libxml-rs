@@ -597,6 +597,10 @@ pub unsafe fn xsltProcessInstruction(
         return -1;
     }
     let typ = (*inst).type_;
+    // UPSTREAM-PARITY: the transform context tracks the current instruction
+    // (transform.c xsltProcessOneNode); XPath evaluation and error reporting
+    // use it for namespace scope and diagnostics.
+    (*ctxt).inst = inst;
     match typ {
         t if t == XML_TEXT_NODE as c_int || t == XML_CDATA_SECTION_NODE as c_int => {
             // Literal text: copy to the result.
@@ -869,8 +873,120 @@ pub(crate) unsafe fn eval_xpath(
         (*internal).context_size = (*xpath_ctxt).contextSize;
         (*internal).context_position = (*xpath_ctxt).proximityPosition;
         (*internal).proximity_position = (*xpath_ctxt).proximityPosition;
+        // UPSTREAM-PARITY (transform.c xsltEvalXPathString): the in-scope
+        // namespace declarations of the current instruction are registered
+        // on the XPath context, so prefixed extension-function names resolve
+        // and unknown ones report "Unregistered function" instead of
+        // "Undefined namespace prefix".
+        if !(*ctxt).inst.is_null() {
+            register_in_scope_ns(internal, (*ctxt).inst);
+        }
     }
     xmlXPathEvalExpression(expr, xpath_ctxt)
+}
+
+/// Register the in-scope namespace declarations of `node` (its own nsDef
+/// chain plus every ancestor's) on the internal XPath context.
+///
+/// # SAFETY
+///
+/// - `internal` must be a valid XPathContext pointer.
+/// - `node` must be a valid node pointer.
+pub(crate) unsafe fn register_in_scope_ns(
+    internal: *mut crate::xml::xpath::context::XPathContext,
+    node: *mut _xmlNode,
+) {
+    unsafe {
+        let mut cur = node;
+        let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+        while !cur.is_null() {
+            let mut ns = (*cur).nsDef;
+            while !ns.is_null() {
+                let prefix = if (*ns).prefix.is_null() {
+                    String::new()
+                } else {
+                    let l = libc::strlen((*ns).prefix as *const libc::c_char);
+                    String::from_utf8_lossy(core::slice::from_raw_parts((*ns).prefix, l))
+                        .into_owned()
+                };
+                if !seen.contains(&prefix) && !(*ns).href.is_null() {
+                    let l = libc::strlen((*ns).href as *const libc::c_char);
+                    let href = String::from_utf8_lossy(core::slice::from_raw_parts((*ns).href, l))
+                        .into_owned();
+                    (*internal).register_namespace(&prefix, &href);
+                    seen.insert(prefix);
+                }
+                ns = (*ns).next;
+            }
+            cur = (*cur).parent;
+        }
+    }
+}
+
+/// Report an XPath evaluation failure the way upstream xsltproc does and
+/// fail the transformation (the caller's stylesheet yields no result and
+/// xsltproc exits 10).
+///
+/// ```text
+/// XPath error : Unregistered function: str:upper-case
+/// runtime error: file exsl.xsl line 17 element value-of
+/// XPath evaluation returned no result.
+/// ```
+///
+/// # SAFETY
+///
+/// - `ctxt` / `inst` must be valid pointers.
+pub(crate) unsafe fn report_xpath_eval_failure(
+    ctxt: *mut _xsltTransformContext,
+    inst: *mut _xmlNode,
+    elem_name: &str,
+) {
+    unsafe {
+        let xpath_ctxt = (*ctxt).xpathCtxt;
+        if !xpath_ctxt.is_null() {
+            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
+            if !internal.is_null() {
+                if let Some(msg) = &(*internal).error {
+                    let line = format!("XPath error : {}\n", msg);
+                    libc::write(2, line.as_ptr() as *const libc::c_void, line.len());
+                }
+            }
+        }
+        // UPSTREAM-PARITY (transform.c xsltTransformError): the runtime
+        // error line carries the stylesheet URL, the instruction line and
+        // the instruction element name. The stylesheet's own doc URL is the
+        // fallback when the instruction node's doc carries none.
+        let url = if inst.is_null() || (*inst).doc.is_null() || (*(*inst).doc).URL.is_null() {
+            if !ctxt.is_null()
+                && !(*ctxt).style.is_null()
+                && !(*(*ctxt).style).doc.is_null()
+                && !(*(*(*ctxt).style).doc).URL.is_null()
+            {
+                let u = (*(*(*ctxt).style).doc).URL;
+                let l = libc::strlen(u as *const libc::c_char);
+                String::from_utf8_lossy(core::slice::from_raw_parts(u, l)).into_owned()
+            } else {
+                "unknown".to_string()
+            }
+        } else {
+            let u = (*(*inst).doc).URL;
+            let l = libc::strlen(u as *const libc::c_char);
+            String::from_utf8_lossy(core::slice::from_raw_parts(u, l)).into_owned()
+        };
+        let line_no = if inst.is_null() { 0 } else { (*inst).line };
+        let line = format!(
+            "runtime error: file {} line {} element {}\n",
+            url, line_no, elem_name
+        );
+        libc::write(2, line.as_ptr() as *const libc::c_void, line.len());
+        let tail = "XPath evaluation returned no result.\n";
+        libc::write(2, tail.as_ptr() as *const libc::c_void, tail.len());
+        // UPSTREAM-PARITY (transform.c xsltValueOf / xsltCopyOf): an XPath
+        // evaluation failure stops the transformation — the stylesheet yields
+        // no result and xsltproc exits 10 (XSLT_STATE_STOPPED, not ERROR
+        // which maps to exit 9).
+        (*ctxt).state = XSLT_STATE_STOPPED;
+    }
 }
 
 /// Process `xsl:apply-templates`.
@@ -903,6 +1019,7 @@ pub(crate) unsafe fn process_apply_templates(
         if !mode.is_null() {
             libc::free(mode as *mut libc::c_void);
         }
+        report_xpath_eval_failure(ctxt, inst, "apply-templates");
         return;
     }
 
@@ -1140,6 +1257,11 @@ pub(crate) unsafe fn evaluate_with_param(
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {
             (*param).value = obj;
+        } else {
+            report_xpath_eval_failure(ctxt, inst, "with-param");
+            libc::free(select as *mut libc::c_void);
+            libc::free(param as *mut libc::c_void);
+            return ptr::null_mut();
         }
         libc::free(select as *mut libc::c_void);
     } else {
@@ -1206,21 +1328,31 @@ pub(crate) unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, ins
         return;
     }
     (*ctxt).depth += 1;
-    // Collect with-param children.
+    // UPSTREAM-PARITY (templates.c xsltApplyTemplate): remember the variable
+    // stack depth, push the with-params, instantiate the template (whose
+    // xsl:param defaults may push MORE variables on top), then pop back to
+    // the saved depth — never a fixed count. A fixed count misaligns the
+    // stack whenever a default parameter was materialized during the call
+    // and leaves stale bindings behind (R-000158).
+    let old_vars_nr = (*ctxt).varsNr;
     let params = collect_with_params(ctxt, inst);
+    // Snapshot the with-param list BEFORE pushing: xsltPushVariable rewires
+    // (*var).next into the variable-stack chain, clobbering the list links.
+    let mut to_push: Vec<*mut _xsltStackElem> = Vec::new();
     let mut p = params;
     while !p.is_null() {
-        crate::xslt::parameters::xsltPushParam(ctxt, p);
+        to_push.push(p);
         p = (*p).next;
+    }
+    for param in to_push {
+        crate::xslt::parameters::xsltPushParam(ctxt, param);
     }
     let saved_templ = (*ctxt).templ;
     (*ctxt).templ = templ;
     execute_content(ctxt, (*templ).content);
     (*ctxt).templ = saved_templ;
-    let mut p = params;
-    while !p.is_null() {
+    while (*ctxt).varsNr > old_vars_nr {
         crate::xslt::parameters::xsltPopParam(ctxt);
-        p = (*p).next;
     }
     (*ctxt).depth -= 1;
 }
@@ -1324,6 +1456,7 @@ pub(crate) unsafe fn process_for_each(ctxt: *mut _xsltTransformContext, inst: *m
     let obj = eval_xpath(ctxt, select);
     libc::free(select as *mut libc::c_void);
     if obj.is_null() {
+        report_xpath_eval_failure(ctxt, inst, "for-each");
         return;
     }
     if (*obj).type_ != xmlXPathObjectType::XPATH_NODESET as c_int {
@@ -1454,6 +1587,10 @@ pub(crate) unsafe fn process_value_of(ctxt: *mut _xsltTransformContext, inst: *m
     let obj = eval_xpath(ctxt, select);
     libc::free(select as *mut libc::c_void);
     if obj.is_null() {
+        // UPSTREAM-PARITY: an XPath evaluation failure in xsl:value-of is a
+        // fatal transform error (xsltValueOf -> "XPath evaluation returned
+        // no result.", exit 10).
+        report_xpath_eval_failure(ctxt, inst, "value-of");
         return;
     }
     let strv = xmlXPathCastToString(obj);
@@ -1477,6 +1614,7 @@ pub(crate) unsafe fn process_copy_of(ctxt: *mut _xsltTransformContext, inst: *mu
     let obj = eval_xpath(ctxt, select);
     libc::free(select as *mut libc::c_void);
     if obj.is_null() {
+        report_xpath_eval_failure(ctxt, inst, "copy-of");
         return;
     }
     if (*obj).type_ == xmlXPathObjectType::XPATH_NODESET as c_int {
@@ -1918,6 +2056,9 @@ pub(crate) unsafe fn process_number(ctxt: *mut _xsltTransformContext, inst: *mut
         if !obj.is_null() {
             number = (*obj).floatval;
             xmlXPathFreeObject(obj);
+        } else {
+            report_xpath_eval_failure(ctxt, inst, "number");
+            return;
         }
     } else {
         // Compute the number from the level (single/multiple/any) and
@@ -1990,10 +2131,12 @@ pub(crate) unsafe fn process_choose(ctxt: *mut _xsltTransformContext, inst: *mut
             if !test.is_null() {
                 let obj = eval_xpath(ctxt, test);
                 libc::free(test as *mut libc::c_void);
-                let truthy = !obj.is_null() && xpath_obj_boolean(obj);
-                if !obj.is_null() {
-                    xmlXPathFreeObject(obj);
+                if obj.is_null() {
+                    report_xpath_eval_failure(ctxt, child, "when");
+                    return;
                 }
+                let truthy = xpath_obj_boolean(obj);
+                xmlXPathFreeObject(obj);
                 if truthy {
                     execute_content(ctxt, (*child).children);
                     executed = true;
@@ -2023,6 +2166,7 @@ pub(crate) unsafe fn process_if(ctxt: *mut _xsltTransformContext, inst: *mut _xm
     let obj = eval_xpath(ctxt, test);
     libc::free(test as *mut libc::c_void);
     if obj.is_null() {
+        report_xpath_eval_failure(ctxt, inst, "if");
         return;
     }
     // XPath 1.0 boolean conversion (§4.3): the test may be a node-set
@@ -2060,6 +2204,11 @@ pub(crate) unsafe fn process_variable(ctxt: *mut _xsltTransformContext, inst: *m
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {
             (*var).value = obj;
+        } else {
+            report_xpath_eval_failure(ctxt, inst, "variable");
+            libc::free(select as *mut libc::c_void);
+            libc::free(var as *mut libc::c_void);
+            return;
         }
         libc::free(select as *mut libc::c_void);
     } else {
@@ -2120,6 +2269,11 @@ pub(crate) unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut 
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {
             (*var).value = obj;
+        } else {
+            report_xpath_eval_failure(ctxt, inst, "param");
+            libc::free(select as *mut libc::c_void);
+            libc::free(var as *mut libc::c_void);
+            return;
         }
         libc::free(select as *mut libc::c_void);
     } else {
@@ -2208,6 +2362,9 @@ pub(crate) unsafe fn eval_avt(
                             out.extend_from_slice(core::slice::from_raw_parts(strv, slen));
                             xmlFreeImpl(strv as *mut c_void);
                         }
+                    } else {
+                        report_xpath_eval_failure(ctxt, (*ctxt).inst, "attribute-value-template");
+                        return ptr::null_mut();
                     }
                 }
                 i = close + 1;

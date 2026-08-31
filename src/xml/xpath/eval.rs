@@ -151,11 +151,15 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
             // Set context position and size for this node
             let saved_node = ctx.context_node;
             let saved_pos = ctx.context_position;
+            let saved_prox = ctx.proximity_position;
             let saved_size = ctx.context_size;
             let saved_list = ctx.context_list.clone();
 
             ctx.context_node = node;
             ctx.context_position = (i + 1) as i32;
+            // UPSTREAM-PARITY: position() reads proximityPosition — both
+            // must track the predicate position (R-000159).
+            ctx.proximity_position = (i + 1) as i32;
             ctx.context_size = result.len() as i32;
 
             // Evaluate predicate
@@ -180,6 +184,7 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
 
             ctx.context_node = saved_node;
             ctx.context_position = saved_pos;
+            ctx.proximity_position = saved_prox;
             ctx.context_size = saved_size;
             ctx.context_list = saved_list;
         }
@@ -212,11 +217,14 @@ fn eval_filter(
         for (i, node) in nodes.iter().enumerate() {
             let saved_node = ctx.context_node;
             let saved_pos = ctx.context_position;
+            let saved_prox = ctx.proximity_position;
             let saved_size = ctx.context_size;
             let saved_list = ctx.context_list.clone();
 
             ctx.context_node = *node;
             ctx.context_position = (i + 1) as i32;
+            // UPSTREAM-PARITY: position() reads proximityPosition (R-000159).
+            ctx.proximity_position = (i + 1) as i32;
             ctx.context_size = nodes.len() as i32;
 
             let pred_val = eval(ctx, predicate)?;
@@ -235,6 +243,7 @@ fn eval_filter(
 
             ctx.context_node = saved_node;
             ctx.context_position = saved_pos;
+            ctx.proximity_position = saved_prox;
             ctx.context_size = saved_size;
             ctx.context_list = saved_list;
         }
@@ -279,7 +288,21 @@ fn eval_function_call(
             let f: &crate::xml::xpath::context::BoxedXPathFunction = unsafe { &*p };
             f(ctx, &evaluated_args)
         }
-        None => Err(format!("Unknown XPath function: {}", name)),
+        None => {
+            // UPSTREAM-PARITY (xpath.c xmlXPathCompFunction): an unknown
+            // function reports "Unregistered function: name"; when the name
+            // carries a prefix whose namespace was never declared, the error
+            // is "Undefined namespace prefix: prefix" instead (both are
+            // XPATH_UNKNOWN_FUNC / XPATH_UNDEF_PREFIX_ERROR, delivered as
+            // "XPath error : ...").
+            let msg = match name.split_once(':') {
+                Some((prefix, _)) if !ctx.namespaces.contains_key(prefix) => {
+                    format!("Undefined namespace prefix: {}", prefix)
+                }
+                _ => format!("Unregistered function: {}", name),
+            };
+            Err(msg)
+        }
     }
 }
 
