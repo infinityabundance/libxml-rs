@@ -2,13 +2,13 @@
  "schema": "phase-seal-verdict-1",
  "receipt_id": "PHASE-11-2-SEAL-VERDICT",
  "phase": "11.2",
- "title": "Phase 11.2 seal — forensic custodian commentary verdict",
+ "title": "Phase 11.2 seal \u2014 forensic custodian commentary verdict",
  "date": "2026-08-31",
  "candidate": {
   "project": "libxml-rs",
   "crate": "libxml-rs",
   "version": "0.1.0-alpha.32 (11.2 seal; released as 0.1.0-alpha.33)",
-  "git_head": "SEAL_COMMIT_PLACEHOLDER"
+  "git_head": "6d4f27c0aa844036ba12b5dd76a36006ff00dd51"
  },
  "acceptance": "a future maintainer can understand why the implementation looks the way it does without reconstructing chat archaeology",
  "commentary_court": {
@@ -62,7 +62,10 @@
   "total": 77,
   "fixed": 73,
   "open": 2,
-  "open_ids": ["R-000157", "R-000168"],
+  "open_ids": [
+   "R-000157",
+   "R-000168"
+  ],
   "evidence_integrity_court": "PASS (77 residuals, 2 open, Markdown byte-identical)"
  },
  "clean_build": {
@@ -73,20 +76,47 @@
   "cargo_clippy_all_targets_all_features_Dwarnings": "PASS"
  },
  "courts": {
-  "cli_xmllint": {"pass": 48, "fail": 0},
-  "cli_xsltproc": {"pass": 21, "fail": 0},
-  "cli_xmlcatalog": {"pass": 11, "fail": 0},
-  "header_compile": {"pass": 595, "fail": 0},
-  "dso_loader": {"pass": 25, "fail": 0},
-  "build_pkgconfig": {"pass": 11, "fail": 0},
-  "build_config_script": {"pass": 28, "fail": 0},
-  "install_layout": {"pass": 73, "fail": 0},
-  "sanity": {"pass": 6, "fail": 0},
+  "cli_xmllint": {
+   "pass": 48,
+   "fail": 0
+  },
+  "cli_xsltproc": {
+   "pass": 21,
+   "fail": 0
+  },
+  "cli_xmlcatalog": {
+   "pass": 11,
+   "fail": 0
+  },
+  "header_compile": {
+   "pass": 595,
+   "fail": 0
+  },
+  "dso_loader": {
+   "pass": 25,
+   "fail": 0
+  },
+  "build_pkgconfig": {
+   "pass": 11,
+   "fail": 0
+  },
+  "build_config_script": {
+   "pass": 28,
+   "fail": 0
+  },
+  "install_layout": {
+   "pass": 73,
+   "fail": 0
+  },
+  "sanity": {
+   "pass": 6,
+   "fail": 0
+  },
   "abi_probes": "all byte-identical PASS (data_globals, globals_threading, security_limits, tree_structure, callback, catalog, encoding, error, reader, save, writer, xpath, xslt families)",
   "rust_mirror": "PASS (45 structs/unions + 14 enums, 0 mismatches)",
   "header_surface_audit": "PASS (0 oracle-declared-but-candidate-undeclared)",
   "evidence_integrity": "PASS",
   "matrix_receipt": "PASS"
  },
- "final_verdict": "PASS — Phase 11.2 sealed. Every compatibility-sensitive module (127/127) now carries the seven forensic-custodian commentary dimensions, grounded in the atlas fact sheets; the CUSTODIAN-COMMENTARY-0001 court makes the acceptance machine-checkable and reproducible. Two new candidate parity bugs discovered while writing the commentary (R-000172, R-000173) and one constant error were fixed and court-covered, bringing the CLI corpora to xmllint 48 and xsltproc 21 byte-identical cases. Residual ledger: 73 FIXED / 2 OPEN (R-000157, R-000168 bounded obligations). A future maintainer can now reconstruct the why from the source without chat archaeology."
+ "final_verdict": "PASS \u2014 Phase 11.2 sealed. Every compatibility-sensitive module (127/127) now carries the seven forensic-custodian commentary dimensions, grounded in the atlas fact sheets; the CUSTODIAN-COMMENTARY-0001 court makes the acceptance machine-checkable and reproducible. Two new candidate parity bugs discovered while writing the commentary (R-000172, R-000173) and one constant error were fixed and court-covered, bringing the CLI corpora to xmllint 48 and xsltproc 21 byte-identical cases. Residual ledger: 73 FIXED / 2 OPEN (R-000157, R-000168 bounded obligations). A future maintainer can now reconstruct the why from the source without chat archaeology."
 }
