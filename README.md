@@ -365,11 +365,11 @@ at your option.
 | API completeness | libxml2 1395 oracle functions, 1395 fully reconciled; libxslt 232/232 reconciled; libexslt 13 oracle functions (evidence: atlas/PARITY_MATRIX.json, atlas/API_PARITY_LEDGER.json) |
 | ABI compatibility | 0 mismatches across 937 measured entities (struct/enum layouts), verdict PASS (evidence: atlas/ABI_PARITY_LEDGER.json) |
 | Parity obligations | 1683 obligations; 0 missing, 292 parity-verified by per-symbol courts (evidence: atlas/PARITY_OBLIGATIONS.json) |
-| Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 73, PARTIAL 4, UNOBLIGATED 8 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
+| Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 74, PARTIAL 3, UNOBLIGATED 8 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1395 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |
 | Test coverage | 1183 passing, 0 failed, 1 ignored (`cargo test --lib`, evidence: atlas/TEST_COUNTS.json) |
-| C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
+| C headers | gcc & clang header-compile courts green (595/595, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |
 | Downstream testing | Not started (Phase 12) |

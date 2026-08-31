@@ -55,7 +55,8 @@
 //! PARSER court family; data-ABI probes ERROR-001 (48 malformed inputs x 4
 //! passes, byte-identical) and TREE-001 (27-block structural fingerprint);
 //! SECURITY-LIMITS amplification sweep; CLI-XMLLINT-0033/0034; and
-//! `cargo test --lib` (1135+ tests). Receipts under courts/receipts/phase-11.
+//! `cargo test --lib` (counts generated into atlas/TEST_COUNTS.json by
+//! tools/evidence/test_counts.py). Receipts under courts/receipts/phase-11.
 //!
 //! # Tempting simplifications that would break parity
 //!

@@ -230,6 +230,14 @@ DOCUMENTED_NOOPS = {
     "xmlInitGlobals": "R-000131",
     "xmlCleanupGlobals": "R-000131",
     "xmlMemShow": "R-000131",
+    # 11.1-Z.3 (R-000178): the remaining display entry points are
+    # upstream-faithful no-ops too — upstream 2.15.0 removed the feature
+    # ('This feature was removed.'), and ALLOCATOR-DEFAULT-001 verifies the
+    # oracle and candidate write nothing byte-identically. Same R-000131
+    # surface as xmlMemShow.
+    "xmlMemDisplay": "R-000131",
+    "xmlMemDisplayLast": "R-000131",
+    "xmlMemoryDump": "R-000131",
     "xmlAutomataSetFinalState": "R-000135",
     "xmlAutomataNewCounter": "R-000135",
     # deprecated init/cleanup entry points that are genuine no-ops in

@@ -67,8 +67,8 @@
    "candidate_functions": 1718,
    "counts": {
     "MISSING": 0,
-    "STUB": 4,
-    "INTENTIONAL_NOOP": 24,
+    "STUB": 1,
+    "INTENTIONAL_NOOP": 27,
     "IMPLEMENTED_UNVERIFIED": 1109,
     "CURRENT_PARITY_VERIFIED": 263,
     "HISTORICAL_PARITY_VERIFIED": 0,
@@ -83,8 +83,8 @@
      "EXPORTED": 1422
     },
     "implementation_status": {
-     "STUB": 4,
-     "INTENTIONAL_NOOP": 24,
+     "STUB": 1,
+     "INTENTIONAL_NOOP": 27,
      "IMPLEMENTED": 1359,
      "UNKNOWN": 13,
      "NOT_APPLICABLE": 22
@@ -8770,15 +8770,17 @@
      "candidate_symbol": "xmlMemDisplay",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000131)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000131"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlMemDisplayLast",
@@ -8786,15 +8788,17 @@
      "candidate_symbol": "xmlMemDisplayLast",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000131)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000131"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlMemFree",
@@ -8964,15 +8968,17 @@
      "candidate_symbol": "xmlMemoryDump",
      "kind": "FUNC",
      "export_status": "EXPORTED",
-     "implementation_status": "STUB",
+     "implementation_status": "INTENTIONAL_NOOP",
      "abi_status": "UNVERIFIED",
      "semantic_status": "UNVERIFIED",
      "ownership_status": "UNVERIFIED",
      "historical_status": "CURRENT_ONLY",
-     "stub_reason": "empty body",
+     "stub_reason": "documented intentional no-op (residual R-000131)",
      "courts": [],
-     "residuals": [],
-     "overall": "STUB"
+     "residuals": [
+      "R-000131"
+     ],
+     "overall": "INTENTIONAL_NOOP"
     },
     {
      "entity_id": "libxml2:xmlMemoryStrdup",

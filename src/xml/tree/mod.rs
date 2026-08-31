@@ -78,7 +78,8 @@
 //!
 //! OWNERSHIP and TREE-STRUCTURE court families; TREE-001 (27-block structural
 //! fingerprint of 20 corpus docs x 8 option variants, byte-identical), ASan
-//! full-suite runs, and `cargo test --lib` (1135+ tests). Receipts under
+//! full-suite runs, and `cargo test --lib` (counts generated into
+//! atlas/TEST_COUNTS.json by tools/evidence/test_counts.py). Receipts under
 //! courts/receipts/phase-11.
 //!
 //! # Tempting simplifications that would break parity

@@ -27,8 +27,8 @@
   "exsltStrXpathCtxtRegister"
  ],
  "verdict_totals": {
-  "IMPLEMENTED_UNVERIFIED": 73,
-  "PARTIAL": 4,
+  "IMPLEMENTED_UNVERIFIED": 74,
+  "PARTIAL": 3,
   "UNOBLIGATED": 8
  },
  "uncategorized_oracle_functions": [],
@@ -81,20 +81,15 @@
    "missing_symbols": [],
    "obligations_total": 21,
    "obligations": {
-    "INTENTIONAL_NOOP": 3,
-    "IMPLEMENTED": 15,
-    "STUB": 3
+    "INTENTIONAL_NOOP": 6,
+    "IMPLEMENTED": 15
    },
    "obligation_gap": 5,
    "semantic_verified": 0,
-   "stub_symbols": [
-    "xmlMemDisplay",
-    "xmlMemDisplayLast",
-    "xmlMemoryDump"
-   ],
+   "stub_symbols": [],
    "unknown_symbols": [],
    "courts": [],
-   "verdict": "PARTIAL",
+   "verdict": "IMPLEMENTED_UNVERIFIED",
    "note": ""
   },
   "dictionaries": {

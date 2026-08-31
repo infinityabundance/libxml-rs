@@ -10,7 +10,7 @@
 
 | Domain | Functions | Free with | Notes |
 |---|---|---|---|
-| XML allocator | `xmlMalloc`, `xmlMallocAtomic`, `xmlMallocZero`, `xmlRealloc`, `xmlMemStrdup`, `xmlMallocLoc`/`xmlReallocLoc`/`xmlMemStrdupLoc`, `xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/`xmlMemoryStrdup` | `xmlFree` | Defaults to libc malloc; swappable via `xmlMemSetup`. The block registry (11.1-J) tracks every block: `xmlMemSize`, `xmlMemDisplayLast`, `xmlMemShow` report per-block data. |
+| XML allocator | `xmlMalloc`, `xmlMallocAtomic`, `xmlMallocZero`, `xmlRealloc`, `xmlMemStrdup`, `xmlMallocLoc`/`xmlReallocLoc`/`xmlMemStrdupLoc`, `xmlMemMalloc`/`xmlMemFree`/`xmlMemRealloc`/`xmlMemoryStrdup` | `xmlFree` | Defaults to plain libc malloc and is UNTRACKED (11.1-Z.3, R-000178): with the default installed `xmlMemUsed`/`xmlMemBlocks`/`xmlMemSize` are 0, byte-identical with the oracle; swappable via `xmlMemSetup` or direct assignment of the exported variables (custom hooks bypass accounting entirely). The per-block registry (R-000131) tracks only the debug-named surface (`xmlMemMalloc`/`*Loc`): `xmlMemSize` returns the recorded size for those blocks. `xmlMemDisplayLast`/`xmlMemShow`/`xmlMemoryDump` are upstream-faithful no-ops (2.15.0 removed the feature). |
 | libc | `libc::calloc`/`libc::malloc`/`libc::realloc` used inside engine internals for `_xsltDocument` shells, key tables, `varsTab` arrays | matching `libc::free` | Never handed to C callers as opaque pointers except where upstream does the same (`xsltNewSecurityPrefs` → `xsltFreeSecurityPrefs`). |
 | XPath objects | `xmlXPathNewString`/`NewNodeSet`/… and every `xmlXPath*Eval*` result | `xmlXPathFreeObject` | |
 | Buffers | `xmlBufferCreate`/`xmlBufCreate` | `xmlBufferFree`/`xmlBufFree` | `xmlBufferDetach` transfers the content pointer to the caller (caller frees with `xmlFree`). |
@@ -107,31 +107,38 @@ after deregistration. The candidate never dereferences user-data.
   not an RVT — safe.
 - `xsltSaveResultToString` hands the caller a buffer allocated with
   `xmlMalloc` (free with `xmlFree`), matching upstream.
-- Double-free protection: the candidate's `xmlFree` on a foreign/unknown
-  pointer is a no-op removal from the registry (upstream would corrupt);
-  documented safe divergence.
+- Debug-surface free of foreign pointers: the debug-named `xmlMemFree`
+  resolves the block through the registry and frees via libc, adjusting the
+  debug counters only when the block was tracked — a safe divergence from
+  upstream's MEMHDR tag-error print (which would pollute stderr). The
+  DEFAULT `xmlFree` is plain libc `free` (11.1-Z.3, R-000178), exactly
+  upstream's default; the pre-Z.3 "no-op removal from the registry" model
+  for `xmlFree` is obsolete.
 
 ## 10. Memory-tooling verification (11.1-J)
 
-- **AddressSanitizer** (nightly `-Zbuild-std -Zsanitizer=address`): the full
-  1135-test suite runs clean (0 invalid reads/writes, 0 use-after-free,
-  0 double-free) with `detect_leaks=0` (tests deliberately leak their
-  fixture strings). ASan caught and fixed two test-code bugs: an `xmlNs`
-  freed via `free_node` (layout misinterpretation — now `xmlFreeNs`), and
-  an HTML test passing a non-NUL-terminated buffer to a
-  NUL-terminated-string API.
+- **AddressSanitizer** (nightly `-Zbuild-std -Zsanitizer=address`, run at
+  the 11.1-J checkpoint): the full `cargo test --lib` suite ran clean (0
+  invalid reads/writes, 0 use-after-free, 0 double-free) with
+  `detect_leaks=0` (tests deliberately leak their fixture strings). ASan
+  caught and fixed two test-code bugs: an `xmlNs` freed via `free_node`
+  (layout misinterpretation — now `xmlFreeNs`), and an HTML test passing a
+  non-NUL-terminated buffer to a NUL-terminated-string API.
 - **Valgrind**: unusable on this host (glibc 2.44 SIGILLs valgrind 3.25.1 in
   `_dl_start` before any program runs); documented limitation.
-- **Allocator instrumentation**: the block registry (R-000131) gives
-  `xmlMemSize`, exact `xmlMemUsed`, and per-block `xmlMemDisplayLast` /
-  `xmlMemShow`; a future double-free detector can poison freed blocks in
-  the registry.
+- **Allocator instrumentation (11.1-Z.3 shape)**: the per-block registry
+  (R-000131) tracks only the debug-named surface (`xmlMemMalloc`/`*Loc`);
+  `xmlMemSize` returns the recorded size for those blocks. The DEFAULT
+  allocator is plain libc and untracked, so `xmlMemUsed`/`xmlMemBlocks`/
+  `xmlMemSize` are 0 under the default (R-000178, byte-identical with the
+  oracle); `xmlMemDisplayLast`/`xmlMemShow`/`xmlMemoryDump` are
+  upstream-faithful no-ops (2.15.0 removed the feature). A future
+  double-free detector can poison freed blocks in the registry.
 
 ## 9. Known divergence (documented)
 
-- `xmlFree` is exported as a *function* while the upstream header declares it
-  as a data variable — pre-existing drop-in mismatch, tracked as a follow-up;
-  C probes avoid calling `xmlFree` directly.
-- Allocator instrumentation (R-000131): `xmlMemSetup` custom allocators keep
-  counter-only accounting (no per-block registry), matching upstream's
-  debug-allocator-only block table.
+- Allocator instrumentation (R-000131, 11.1-Z.3 shape): the default libc
+  hooks and `xmlMemSetup` custom allocators are fully untracked (no
+  counters, no per-block registry — the counters are maintained only by the
+  debug-named surface), matching upstream's debug-allocator-only block
+  table.

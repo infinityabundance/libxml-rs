@@ -76,7 +76,8 @@
 //! WRITER-001, CALLBACK-001, DATA-GLOBALS-001, SECURITY-LIMITS, ENCODING-001),
 //! the CLI courts (CLI-XMLLINT-*, CLI-XSLTPROC-*, CLI-XMLCATALOG-*), the PARSER,
 //! DTD, RELAXNG, XSD, SCHEMATRON, TREE-STRUCTURE and OWNERSHIP court families,
-//! and `cargo test --lib` (1135+ tests). Receipts under courts/receipts/phase-11.
+//! and `cargo test --lib` (counts generated into atlas/TEST_COUNTS.json by
+//! tools/evidence/test_counts.py). Receipts under courts/receipts/phase-11.
 //!
 //! # Tempting simplifications that would break parity
 //!

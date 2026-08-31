@@ -2,7 +2,7 @@
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
  "mode": "check",
- "candidate_git_head": "6c764969e0041f166b5e967476e16272955f9fba",
+ "candidate_git_head": "75384b755e8ea04f8ad5ee48096351aef11d2344",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -24,10 +24,10 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "8e90c27f245630e393c226c6edbb24845e40d9e2e0be6d21c32bc51046838c84",
-  "candidate SONAME libxml2": "8e90c27f245630e393c226c6edbb24845e40d9e2e0be6d21c32bc51046838c84",
-  "candidate SONAME libxslt": "54521ba5683cf3c2740f58d4f30eac3d28a33bbbac670b42ca0b75fb7a021614",
-  "candidate SONAME libexslt": "0be84d233730c6821cdaa1add104f84deb3fcdee4bbf1fde42609ca1897aca92",
+  "candidate DSO": "503c459237cd5251cf9165254808a339488749f5289cfcbcb23943e017c26557",
+  "candidate SONAME libxml2": "503c459237cd5251cf9165254808a339488749f5289cfcbcb23943e017c26557",
+  "candidate SONAME libxslt": "34068783da6a7adc128a12616d884737db35a673a4e86588c6f2cb45142512ba",
+  "candidate SONAME libexslt": "9e968fea043329e702728aa40527ec6ed5f51d48e30601d3482f4f9740fd134b",
   "candidate headers": "0110e0579d55a13e619f0906bb976ba587d62536e1f6d13f595f94d8dded9fc7",
   "residual ledger JSON (hand-maintained)": "8ca250be5af00dfa75cc41ed8272c7f8b542fb9cbf0dfc4089d4a487ff6b5556",
   "symbol court index": "e76ffb6c88db37c542b9036c42de3f305f3a8d39d6492dc5e8ebb0dad9767b9c"
@@ -76,19 +76,19 @@
   {
    "step": "parity_obligations",
    "ok": true,
-   "detail": "libxml2: funcs=1400 data=22\n    STUB: 4\n    INTENTIONAL_NOOP: 24\n    IMPLEMENTED_UNVERIFIED: 1109\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
+   "detail": "libxml2: funcs=1400 data=22\n    STUB: 1\n    INTENTIONAL_NOOP: 27\n    IMPLEMENTED_UNVERIFIED: 1109\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
    "hashes": {
-    "atlas/PARITY_OBLIGATIONS.json": "0e6ad884d1c10cebc0f9c5b68cc487ad7c10aef744960256312718f396e60bc9",
-    "atlas/PARITY_OBLIGATIONS.md": "83bb3421494fa4d70a950fbeb4c0df02e982b72de7aaf89294ad809a88b95632"
+    "atlas/PARITY_OBLIGATIONS.json": "8987990cb7a8f578e62436413f8cd4a02e93bbc45aff22cd7e88ad1707d8465a",
+    "atlas/PARITY_OBLIGATIONS.md": "5144b93a142a4ca9b22a542511bee82176ee8b9c11cdad4bfbb4d513dc97a70a"
    }
   },
   {
    "step": "subsystem_census",
    "ok": true,
-   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 73, \"PARTIAL\": 4, \"UNOBLIGATED\": 8}\nuncategorized: 0 []\n",
+   "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 74, \"PARTIAL\": 3, \"UNOBLIGATED\": 8}\nuncategorized: 0 []\n",
    "hashes": {
-    "atlas/SUBSYSTEM_CENSUS.json": "9fdc48849a694411345624484a567e75f7610fe892c37c670f269e8a39c3bffa",
-    "atlas/SUBSYSTEM_CENSUS.md": "cf9236f5b1d609aff0f0446cfb95f6a11ec248afe08d4f1b03a355223b00c0fb"
+    "atlas/SUBSYSTEM_CENSUS.json": "54a3853f52b4b832ab15eec87b4c5f3a9a3636b3305a09356b986bdfd245e9f9",
+    "atlas/SUBSYSTEM_CENSUS.md": "403f32076a8e5efbccf461b2c38eb52c9aa9c2fc4220b9fb816c286ae729feb5"
    }
   },
   {
