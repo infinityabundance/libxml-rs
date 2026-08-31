@@ -1,0 +1,3 @@
+ns-xmlwrong.xml:1: namespace error : xml namespace prefix mapped to wrong URI
+<a xmlns:xml="urn:x"/>
+                    ^

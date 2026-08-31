@@ -696,14 +696,19 @@ impl XmlTokenizer {
         if unterminated {
             // upstream xmlParseElementStart end-of-tag check:
             // "Couldn't find end of Start Tag %s line %d\n" (73),
-            // str1 = name, int1 = start line.
+            // str1 = local name (xmlParseStartTag2 returns localname),
+            // int1 = start line.
+            let local = match name.iter().rposition(|&b| b == b':') {
+                Some(i) => &name[i + 1..],
+                None => name.as_slice(),
+            };
             self.record_error(
                 crate::abi::types::XML_FROM_PARSER,
                 crate::abi::types::XML_ERR_GT_REQUIRED,
                 crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
                 format!(
                     "Couldn't find end of Start Tag {} line {}\n",
-                    String::from_utf8_lossy(&name),
+                    String::from_utf8_lossy(local),
                     open_line
                 ),
                 Some(name.clone()),

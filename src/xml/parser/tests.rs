@@ -7,6 +7,7 @@
 use crate::abi::structs::*;
 use crate::abi::types::xmlChar;
 use crate::xml::parser::helpers;
+use crate::xml::tree;
 use core::ptr;
 
 /// Helper: parse a byte slice and return the document.
@@ -259,5 +260,67 @@ fn test_xml_read_memory_export() {
         let attr_val =
             crate::xml::string::xmlstr_to_bytes((*(*attr).children).content as *const xmlChar);
         assert_eq!(attr_val, b"val");
+    }
+}
+
+// ── R-000166 regression tests (11.1-Y) ──
+
+#[test]
+fn test_undefined_prefix_keeps_qname() {
+    // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): elements and
+    // attributes whose prefix is not bound to any namespace keep the raw
+    // QName as the node/attr name with a NULL namespace, so `<p:b/>`
+    // serializes as `<p:b/>` and `<a p:x="1"/>` as `p:x`.
+    unsafe {
+        let xml = b"<a p:x=\"1\"><p:b/></a>";
+        let doc = parse_bytes(xml);
+        assert!(!doc.is_null());
+        let a = (*doc).children;
+        assert!(!a.is_null());
+        // Attribute keeps the raw QName.
+        let attr = (*a).properties;
+        assert!(!attr.is_null());
+        let attr_name = crate::xml::string::xmlstr_to_bytes((*attr).name as *const xmlChar);
+        assert_eq!(attr_name, b"p:x");
+        assert!((*attr).ns.is_null());
+        // Child element keeps the raw QName.
+        let pb = (*a).children;
+        assert!(!pb.is_null());
+        let child_name = crate::xml::string::xmlstr_to_bytes((*pb).name as *const xmlChar);
+        assert_eq!(child_name, b"p:b");
+        assert!((*pb).ns.is_null());
+        tree::free_doc(doc);
+    }
+}
+
+#[test]
+fn test_ancestor_declared_prefix_binds_uri() {
+    // UPSTREAM-PARITY (parser.c xmlParserNsLookupUri): element and attribute
+    // URIs resolve against the ancestor scope when not declared on the
+    // element itself, so `<a xmlns:p="u"><p:b/></a>` binds p:b to "u".
+    unsafe {
+        let xml = b"<a xmlns:p=\"http://u/p\"><p:b p:c=\"1\"/></a>";
+        let doc = parse_bytes(xml);
+        assert!(!doc.is_null());
+        let a = (*doc).children;
+        let pb = (*a).children;
+        assert!(!pb.is_null());
+        let ns = (*pb).ns;
+        assert!(
+            !ns.is_null(),
+            "element should bind the ancestor-declared prefix"
+        );
+        let href = crate::xml::string::xmlstr_to_bytes((*ns).href as *const xmlChar);
+        assert_eq!(href, b"http://u/p");
+        // Attribute too.
+        let attr = (*pb).properties;
+        assert!(!attr.is_null());
+        assert!(
+            !(*attr).ns.is_null(),
+            "attribute should bind the ancestor-declared prefix"
+        );
+        let a_href = crate::xml::string::xmlstr_to_bytes((*(*attr).ns).href as *const xmlChar);
+        assert_eq!(a_href, b"http://u/p");
+        tree::free_doc(doc);
     }
 }

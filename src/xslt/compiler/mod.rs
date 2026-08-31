@@ -70,16 +70,181 @@ pub unsafe fn compile(style: *mut _xsltStylesheet, doc: *mut _xmlDoc) -> c_int {
         (Some(ns), Some(name))
             if ns == XSLT_NAMESPACE && (name == "stylesheet" || name == "transform") =>
         {
+            // Normal stylesheet (upstream xsltParseStylesheetProcess
+            // clears literal_result).
+            (*style).literal_result = 0;
             // Normal stylesheet.
             compile_top_level(style, root, 0);
         }
         _ => {
             // Simplified stylesheet: a literal result element with an
-            // implicit template matching "/".
+            // implicit template matching "/" (upstream sets
+            // literal_result = 1, which disables the preproc parent-context
+            // checks).
+            (*style).literal_result = 1;
             compile_simplified(style, root);
         }
     }
+
+    // UPSTREAM-PARITY (preproc.c xsltPreCompute): select/test expressions of
+    // the select-bearing instructions are compiled at stylesheet-parse time;
+    // a failed compile emits "XPath error : Invalid expression", the
+    // compilation-error context line and the instruction-specific message,
+    // then increments style->errors (xsltproc exits 5). The candidate
+    // evaluates XPath at transform time, so this document-order walk
+    // validates the same expressions at compile time to reproduce the
+    // oracle's diagnostics (R-000166 / malformed-XSLT item).
+    validate_content_selects(style, root);
     0
+}
+
+/// Validate the select/test expressions of every select-bearing XSLT
+/// instruction in document order (upstream preproc.c xsltPreCompute).
+///
+/// # SAFETY
+///
+/// - `style` and `node` must be valid pointers.
+unsafe fn validate_content_selects(style: *mut _xsltStylesheet, node: *mut _xmlNode) {
+    let mut cur = node;
+    while !cur.is_null() {
+        unsafe {
+            validate_content_selects(style, (*cur).children);
+            validate_one_select(style, cur);
+        }
+        cur = unsafe { (*cur).next };
+    }
+}
+
+/// Validate one instruction's select/test expression (upstream preproc.c
+/// message catalog).
+///
+/// # SAFETY
+///
+/// - `style` / `inst` must be valid pointers.
+unsafe fn validate_one_select(style: *mut _xsltStylesheet, inst: *mut _xmlNode) {
+    let (
+        is_value_of,
+        is_copy_of,
+        is_for_each,
+        is_apply,
+        is_sort,
+        is_if,
+        is_when,
+        is_variable,
+        is_param,
+    ) = (
+        is_xslt_element(inst, "value-of"),
+        is_xslt_element(inst, "copy-of"),
+        is_xslt_element(inst, "for-each"),
+        is_xslt_element(inst, "apply-templates"),
+        is_xslt_element(inst, "sort"),
+        is_xslt_element(inst, "if"),
+        is_xslt_element(inst, "when"),
+        is_xslt_element(inst, "variable"),
+        is_xslt_element(inst, "param"),
+    );
+    if !(is_value_of
+        || is_copy_of
+        || is_for_each
+        || is_apply
+        || is_sort
+        || is_if
+        || is_when
+        || is_variable
+        || is_param)
+    {
+        return;
+    }
+    // UPSTREAM-PARITY (preproc.c xsltCheckParentElement, called from
+    // xsltSortComp): xsl:sort is only allowed within xsl:apply-templates or
+    // xsl:for-each; otherwise "element sort is not allowed within that
+    // context" is reported first (before the select compile). Simplified
+    // stylesheets (literal_result) skip the parent checks.
+    if is_sort && unsafe { (*style).literal_result } == 0 {
+        let parent = unsafe { (*inst).parent };
+        let parent_ok = !parent.is_null()
+            && (is_xslt_element(parent, "apply-templates") || is_xslt_element(parent, "for-each"));
+        if !parent_ok {
+            let mut cmsg = b"element sort is not allowed within that context\n".to_vec();
+            let msg_len = cmsg.len();
+            cmsg.push(0);
+            crate::xslt::errors::xsltTransformError(
+                ptr::null_mut(),
+                style,
+                inst,
+                cmsg.as_ptr() as *const c_char,
+            );
+            let _ = msg_len;
+            unsafe { (*style).errors += 1 };
+        }
+    }
+    let attr = if is_if || is_when {
+        b"test\0".as_ptr() as *const xmlChar
+    } else {
+        b"select\0".as_ptr() as *const xmlChar
+    };
+    let prop = get_prop(inst, attr);
+    if prop.is_null() {
+        return;
+    }
+    let s = String::from_utf8_lossy(unsafe {
+        core::slice::from_raw_parts(prop as *const u8, libc::strlen(prop as *const libc::c_char))
+    })
+    .into_owned();
+    if crate::xml::xpath::compile(&s).is_none() {
+        let msg = if is_value_of {
+            format!(
+                "xsl:value-of : could not compile select expression '{}'\n",
+                s
+            )
+        } else if is_copy_of {
+            format!(
+                "xsl:copy-of : could not compile select expression '{}'\n",
+                s
+            )
+        } else if is_for_each {
+            format!(
+                "xsl:for-each : could not compile select expression '{}'\n",
+                s
+            )
+        } else if is_apply {
+            format!(
+                "XSLT-apply-templates: could not compile select expression '{}'\n",
+                s
+            )
+        } else if is_sort {
+            format!(
+                "xsltSortComp: could not compile select expression '{}'\n",
+                s
+            )
+        } else if is_if {
+            format!("xsl:if : could not compile test expression '{}'\n", s)
+        } else if is_when {
+            format!("xsl:when : could not compile test expression '{}'\n", s)
+        } else if is_variable {
+            format!(
+                "XSLT-variable: Failed to compile the XPath expression '{}'.\n",
+                s
+            )
+        } else {
+            format!("XSLT-param: could not compile select expression '{}'.\n", s)
+        };
+        // "XPath error : Invalid expression" (xpath.c xmlXPathErr).
+        let xerr = "XPath error : Invalid expression\n";
+        libc::write(2, xerr.as_ptr() as *const libc::c_void, xerr.len());
+        let mut cmsg = msg.into_bytes();
+        let msg_len = cmsg.len();
+        cmsg.push(0);
+        crate::xslt::errors::xsltTransformError(
+            ptr::null_mut(),
+            style,
+            inst,
+            cmsg.as_ptr() as *const c_char,
+        );
+        let _ = msg_len;
+        (*style).errors += 1;
+    }
+    libc::free(prop as *mut libc::c_void);
 }
 
 /// Get the document URL (or NULL).
@@ -1244,6 +1409,73 @@ mod tests {
             assert!(!(*style).templates.is_null());
             // The implicit template's content is the root element.
             assert_eq!((*(*style).templates).content, root);
+            crate::xslt::stylesheet::xsltFreeStylesheet(style);
+        }
+    }
+
+    #[test]
+    fn test_compile_bad_select_reports_error() {
+        // UPSTREAM-PARITY (preproc.c xsltPreCompute): a malformed select on
+        // xsl:value-of is reported at stylesheet-compile time and increments
+        // style->errors (xsltproc exits 5).
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\n\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n\
+              <xsl:template match=\"/\">\n\
+                <xsl:value-of select=\"number(&apos;x&apos;\"/>\n\
+              </xsl:template>\n\
+            </xsl:stylesheet>\0";
+            let doc = crate::abi::exports_xml2::xmlReadMemory(
+                xsl.as_ptr() as *const c_char,
+                (xsl.len() - 1) as c_int,
+                b"bad.xsl\0".as_ptr() as *const c_char,
+                ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null());
+            let style =
+                libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
+            let ret = compile(style, doc);
+            assert_eq!(ret, 0);
+            assert!(
+                (*style).errors > 0,
+                "malformed select must increment style->errors (got {})",
+                (*style).errors
+            );
+            // xsltFreeStylesheet owns the stylesheet document.
+            crate::xslt::stylesheet::xsltFreeStylesheet(style);
+        }
+    }
+
+    #[test]
+    fn test_compile_sort_outside_context_reports_error() {
+        // UPSTREAM-PARITY (preproc.c xsltCheckParentElement): xsl:sort
+        // outside xsl:apply-templates/xsl:for-each reports "element sort is
+        // not allowed within that context" and increments style->errors.
+        unsafe {
+            let xsl = b"<?xml version=\"1.0\"?>\n\
+            <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n\
+              <xsl:template match=\"/\">\n\
+                <xsl:sort select=\"title\"/>\n\
+              </xsl:template>\n\
+            </xsl:stylesheet>\0";
+            let doc = crate::abi::exports_xml2::xmlReadMemory(
+                xsl.as_ptr() as *const c_char,
+                (xsl.len() - 1) as c_int,
+                b"bad.xsl\0".as_ptr() as *const c_char,
+                ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null());
+            let style =
+                libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
+            let ret = compile(style, doc);
+            assert_eq!(ret, 0);
+            assert!(
+                (*style).errors > 0,
+                "sort outside apply-templates/for-each must be an error"
+            );
+            // xsltFreeStylesheet owns the stylesheet document.
             crate::xslt::stylesheet::xsltFreeStylesheet(style);
         }
     }

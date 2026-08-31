@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0041",
+  "surface": "cli-xmllint",
+  "purpose": "WFC: '<' in attribute value (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "wfc-attr.xml"
+    ],
+    "document": "wfc-attr.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

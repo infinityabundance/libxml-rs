@@ -1,0 +1,6 @@
+ns-empty.xml:1: namespace error : xmlns:p: Empty XML namespace is not allowed
+<a xmlns:p=""><p:b/></a>
+             ^
+ns-empty.xml:1: namespace error : Namespace prefix p on b is not defined
+<a xmlns:p=""><p:b/></a>
+                  ^

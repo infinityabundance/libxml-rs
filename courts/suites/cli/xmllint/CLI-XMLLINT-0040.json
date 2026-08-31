@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0040",
+  "surface": "cli-xmllint",
+  "purpose": "XML namespace URI as default namespace (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "ns-xmldefault.xml"
+    ],
+    "document": "ns-xmldefault.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

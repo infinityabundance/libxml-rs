@@ -1,0 +1,981 @@
+{
+  "receipt_id": "HIST-EPOCH-MATRIX-2026-08-31",
+  "phase": "11",
+  "title": "Historical oracle matrix — semantic epochs and residual fingerprints (§41, §42, §51)",
+  "timestamp": "2026-08-31",
+  "generator": "tools/evidence/matrix_receipt.py",
+  "case_ids": [
+    "HIST-EPOCH-0001",
+    "HIST-EPOCH-0002",
+    "HIST-EPOCH-0003",
+    "HIST-EPOCH-0004",
+    "HIST-EPOCH-0005",
+    "HIST-EPOCH-0006",
+    "HIST-EPOCH-0007",
+    "HIST-EPOCH-0008"
+  ],
+  "execution_commit": "e5f24662",
+  "seal_commit": "e5f24662",
+  "command": "oracle/historical/run_matrix.sh all && tools/evidence/matrix_receipt.py gen",
+  "environment": {
+    "host": "linux (glibc era-compatible build host)",
+    "oracle_build_toolchain": {
+      "gcc": "gcc (GCC) 16.2.1 20260810",
+      "autoconf": "autoconf (GNU Autoconf) 2.73",
+      "automake": "automake (GNU automake) 1.18.1",
+      "libtoolize": "libtoolize (GNU libtool) 2.6.2",
+      "note": "PATH forced to /usr/bin (cargo bin shadows autotools with Rust shims); era autotools modernization in build.sh"
+    },
+    "candidate_toolchain": {
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    },
+    "container_image_digest": null,
+    "container_note": "Native builds, no container oracle used for the matrix (tier-2 host builds; tier-3 container listed as future work)"
+  },
+  "oracle_identity": {
+    "xmllint": {
+      "oracles": [
+        "2.10.4",
+        "2.11.5",
+        "2.12.6",
+        "2.13.0",
+        "2.13.5",
+        "2.14.1",
+        "2.15.0",
+        "2.7.8",
+        "2.8.0",
+        "2.9.10",
+        "2.9.14",
+        "2.9.4",
+        "system"
+      ],
+      "distinct_version_hashes": 13,
+      "ambiguous": []
+    },
+    "xsltproc": {
+      "oracles": [
+        "1.1.26",
+        "1.1.32",
+        "1.1.35",
+        "1.1.38",
+        "1.1.42",
+        "system"
+      ],
+      "distinct_version_hashes": 6,
+      "ambiguous": []
+    }
+  },
+  "oracle_manifests": {
+    "note": "sha256 of the 18 committed evidence manifests under atlas/oracle-manifests/; the receipt fails the court if any manifest content changes",
+    "count": 18,
+    "manifest_hashes": {
+      "libxml2-2.6.32": "4d402f4460c93160e1bc33c9b4c826edbfc8e7b2e63ffce713b7288e23b9e038",
+      "libxml2-2.7.8": "ad00fe49bcee03927b9ce3dc4e9c7d7298e1ac7caee26e4268e331f9ab5d7c89",
+      "libxml2-2.8.0": "0084f6f09a2c6366271ab1d198e6366a33c2dcfeb6373582f1ec10643cc6c519",
+      "libxml2-2.9.4": "c855b09890813f2cb2656e1b41a761b1d7567596a9995f1db6ef974834117087",
+      "libxml2-2.9.10": "c54f7b34a42d4b399650a1c6ce1e1b6df8910a8d02a13902be2441e1842dac9f",
+      "libxml2-2.9.14": "fbac13edf1226bf0e68e636c768ead561e9c54ac0e79fb2245e66df3f0e8c632",
+      "libxml2-2.10.4": "d42fbcdf095b67b2a23342cdb22dbbe4fda4c42e1780fd9360f935e566023893",
+      "libxml2-2.11.5": "e3c83aac9475cf5132abc61f840cfd5ee0ee46e479193c0c3d56f523ec9c517d",
+      "libxml2-2.12.6": "a8def94f57b97f6e36bbf9bef354d1be0fb0cdd9549b5829228e23f005bee1cd",
+      "libxml2-2.13.0": "239b76494eb9c1b371c6500b567ddf6f8e815deeb10fdc9965044212f398b0ea",
+      "libxml2-2.13.5": "f6d6fa1924edb860a438721b594092035233b9709707341f8efb728f0a8feaa8",
+      "libxml2-2.14.1": "0fe0b34efea9edc073b0d4db43966e9cae5aeeda41b3b41e1d7f94357c529c81",
+      "libxml2-2.15.0": "dae99c87e685616c4e482f54a94c8e8116fbc476c5644f9deea606e9090a2df2",
+      "libxslt-1.1.26": "dd58b6e770a7d318070c8de33413c23c1db9265bd1d466a3846b6a1dc18ba965",
+      "libxslt-1.1.32": "d4fd050322613dfb8a592b0dea2087a5c1f437062e9745cc9b8e173f603a7c78",
+      "libxslt-1.1.35": "1b77a4dbbe52e903a69ac8d4aefd77b5e82caab322c4f97163ff9d0407252ec2",
+      "libxslt-1.1.38": "b12369b737eb64c88993a094d6b914360d6b1eacaccefe0fc020fb752808c288",
+      "libxslt-1.1.42": "01086ca3e324ec879c830309417abd56608cfe6d55db3483f5b48baac8cc278b"
+    }
+  },
+  "manifest_validation": {
+    "problems": [],
+    "verdict": "PASS"
+  },
+  "system_doxygen_inventories": {
+    "libxml2": {
+      "inventory_hash": "2a9f6129ac70f4be4dabc9970c7ee755934ee033a8017f0aae6d98931fa4b166",
+      "raw_xml_hash": "47f97bc9d5ab85712466bb11980b77c2a9e703a8477d7dcd8275916951dfc9e7",
+      "doxygen_version": "1.18.0"
+    },
+    "libxslt": {
+      "inventory_hash": "e99dbdf27ab320be8f5bec3ba3287aa670f852bd84e44a7a4cb067b433d7cd8b",
+      "raw_xml_hash": "d9bf9be989ac010ade44dd701138b746ec5858e02b8906c7b730480fd4aaea51",
+      "doxygen_version": "1.18.0"
+    }
+  },
+  "fixture_hashes": {
+    "simple.xml": "bdc0c4b964bad316ccfe99309d68b05b6e4fa88f79d5c0f5f47c8c0fe6058e04",
+    "empty.xml": "29114363f749a0226b6988dda3ca2492a954117ab6b5f382706c20300dabc079",
+    "dtd.xml": "e147438ee9ec2c8b980b4a94bc1f18e434d3cd019dc47aefcb4db647b57fd29d",
+    "bad.xml": "7d0bb6f1bf9b3f5a54b1e46ef0235c050a9f989dc96034bab28c6c3814417199",
+    "invalid.xml": "404fbb12d2ea1ccfd0797c3fac3ea3aad92fa79fc65803ffa59b8bec683110d8",
+    "ent.xml": "4c7b3c565e5111e175705d13a70c63aa374f72811b357a137396dcc59017970e",
+    "dclent.xml": "fc5e22d8f52648f705e47927935693874a5993fb7e5aa2eb20e8189e9c59964b",
+    "undeclared.xml": "10c8ce0cd884320177449869ddc8752cd7374748290b331f135fdfd6fc38a210",
+    "attrent.xml": "40108f742592bd3c6c62ac5c23861d75e600c12d481222152e0e2b7bdc67cc42",
+    "markattr.xml": "e50aa3af5993ea3b0331c87bd107b4b0c2a9cbf660fa6898668af07c70e3a3e4",
+    "lib.xml": "5842b50a4f00761baa36335854cb291bc9c07d836e095dbfc494944c36d8c820",
+    "nodes.xml": "1ba29f7d1bc80581b93231960815568a71b08cfb3430dc89d98280563f6e0c4b",
+    "longtext.xml": "545b8180bde198d18a80f559a39c8b71879785b8795723a3bfb828919ace4e78",
+    "ns.xml": "521329a445d1346c779d05a11bd02975d52a706d3da9e81d55c6a8127ce4c4fd",
+    "page.html": "4792a145b4dd43bc7fc0b4bfa916105a175dd82ee0320cde044618e0e9da1115"
+  },
+  "artifact_hashes": {
+    "results/matrix.json": "4c415ff15bea9d6ac0e1e710263126b2c8286c0ff80dfc6942b460197c3f3078",
+    "results/xmllint/2.10.4/fingerprint.json": "fe4f3350d1254607aaee052e88538af723242747ae51ba2d9017f326cec7fa65",
+    "results/xmllint/2.11.5/fingerprint.json": "7e309627a2f19c60cef776db75edcb27ae9f6735777afaba6925a21ef8d2abea",
+    "results/xmllint/2.12.6/fingerprint.json": "dac047aabdc3ebabcec2cc2f79234285783fbcdd7c4a8ed5312fed42f424f81c",
+    "results/xmllint/2.13.0/fingerprint.json": "b1957252109e6c2eb99fd6aa335c4ab8c95b440042bf57a9cf3690071178a793",
+    "results/xmllint/2.13.5/fingerprint.json": "e2601af48cf2b1c05101f91f05164aa85a704450addaeca42c6395bb7c90dd90",
+    "results/xmllint/2.14.1/fingerprint.json": "2f3c9ff84424b339a7e2a504e64538ce31e8d75f9977ec33b5f0288d7e40d5b1",
+    "results/xmllint/2.15.0/fingerprint.json": "18f086d867cf63b7f9f93439e1ec19348733e56ce60c8468f14f76caa148b883",
+    "results/xmllint/2.7.8/fingerprint.json": "2fd2594dc9cd0506a251b563b1c32489500efc82e9a9dbb8e867d9a9b65b83ea",
+    "results/xmllint/2.8.0/fingerprint.json": "0f1540277922bb58b6ea88a974b859f2c7117e071e725cce80056a96a195344c",
+    "results/xmllint/2.9.10/fingerprint.json": "8a3eb8ff7ba848616dfbd9e897b670f3321a8e3b2a8c59c1920f153c34e938ca",
+    "results/xmllint/2.9.14/fingerprint.json": "502f8631922864e9fbf9e35cb4aa1550eec5e92681d3978e33d3232c17bd69f5",
+    "results/xmllint/2.9.4/fingerprint.json": "c065d7f1f0a1749c1cfea87316c4b048f05b9aaa842e1a3002fa0f3137a38fce",
+    "results/xmllint/system/fingerprint.json": "15cf64bd5639abed574574a608b8623f8780656e4454ef41d61057c666d4d61c",
+    "results/xsltproc/1.1.26/fingerprint.json": "6a2d6cc396aaa86bbb10f9bc2deb3eaecabe02b354621b888225a777d0e293ea",
+    "results/xsltproc/1.1.32/fingerprint.json": "a3dfd3454d22c046c5f2d504bd34c0b6e18ea49c641c900a69225c03363ac132",
+    "results/xsltproc/1.1.35/fingerprint.json": "744a2e35778a8b83b16a1142a43a1e8d33f11aa3631934015ba50c6c4c1942c7",
+    "results/xsltproc/1.1.38/fingerprint.json": "7b7f4de3f22f81735ba30c82f9b96a4f08ab52913789687a07121e74c5775e17",
+    "results/xsltproc/1.1.42/fingerprint.json": "9bf2e096fc450ed27c0687b5f12ba6a5671546b2a5f0bbc91bec1a8cf981651f",
+    "results/xsltproc/system/fingerprint.json": "ea4d9d5aa7b2380cf262da9baff62ba0cb67141d038dbb08f91b205a283275a5"
+  },
+  "oracle_outputs": {
+    "note": "Per-case (stdout_hash, stderr_hash, exit_status) live in matrix.json (hash above); epoch groups below are derived from matrix.json",
+    "epoch_groups": {
+      "xmllint": {
+        "attr-entity": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "bf749ce6c87804e8"
+          }
+        ],
+        "attr-markup-entity": [
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "b7b95daeff15af32"
+          },
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "de874fb283e6cb00"
+          }
+        ],
+        "c14n": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "d00092a25d195f56"
+          }
+        ],
+        "copy-dtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "0eaf19127bf5bbe1"
+          }
+        ],
+        "debug-dtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "513786cd77ac8ae3"
+          }
+        ],
+        "debug-longtext": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "33d0da474d7e68fa"
+          }
+        ],
+        "debug-nodes": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "41faeda748772184"
+          }
+        ],
+        "debug-ns": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "51a8da2a8e6c41e9"
+          }
+        ],
+        "debug-simple": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "47993a3e60273ec5"
+          }
+        ],
+        "dropdtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "c130cc9163997670"
+          }
+        ],
+        "dump-dtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "0eaf19127bf5bbe1"
+          }
+        ],
+        "dump-empty": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "862de41d1bcde413"
+          }
+        ],
+        "dump-simple": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "6b424d883ab6b889"
+          }
+        ],
+        "format-dtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "0eaf19127bf5bbe1"
+          }
+        ],
+        "html-debug": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "3bce7edbc3729c56"
+          }
+        ],
+        "html-dump": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "018de41750f72e6a"
+          },
+          {
+            "versions": [
+              "2.15.0",
+              "system"
+            ],
+            "hash": "f482a9f001f5bdad"
+          }
+        ],
+        "noent": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "6ef8c5648da4ead5"
+          }
+        ],
+        "noent-debug": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "7d6304e5b51b4581"
+          },
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "d204d236c4116817"
+          }
+        ],
+        "noent-decl": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4",
+              "system"
+            ],
+            "hash": "4c5f4273839463dd"
+          }
+        ],
+        "parse-error": [
+          {
+            "versions": [
+              "2.9.10"
+            ],
+            "hash": "0b3d4406e42ea868"
+          },
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "b268238f86041333"
+          },
+          {
+            "versions": [
+              "2.12.6"
+            ],
+            "hash": "ecabbfc3289bebfb"
+          },
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.7.8",
+              "2.8.0",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "f57187e6051276ec"
+          }
+        ],
+        "recover-bad": [
+          {
+            "versions": [
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "2ce279f408a61a29"
+          },
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.7.8",
+              "2.8.0",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "eeef2f2ce57303b4"
+          },
+          {
+            "versions": [
+              "2.9.10"
+            ],
+            "hash": "ef869e3923c35348"
+          }
+        ],
+        "undeclared": [
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "493b5e48132b3fed"
+          },
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "f43131b1f65f4008"
+          }
+        ],
+        "valid-invalid": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "7aa03bc0927f391d"
+          },
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "c852afa1c507323a"
+          }
+        ],
+        "valid-nodtd": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "866a3dc765511e51"
+          },
+          {
+            "versions": [
+              "2.15.0",
+              "system"
+            ],
+            "hash": "bfafb1d255a2338f"
+          },
+          {
+            "versions": [
+              "2.13.0",
+              "2.13.5",
+              "2.14.1"
+            ],
+            "hash": "e005a943d7d4517f"
+          }
+        ],
+        "version": [
+          {
+            "versions": [
+              "2.13.5"
+            ],
+            "hash": "14f6477d79e616be"
+          },
+          {
+            "versions": [
+              "2.9.10"
+            ],
+            "hash": "15dd24a4f6246375"
+          },
+          {
+            "versions": [
+              "2.10.4"
+            ],
+            "hash": "20785c8000730af6"
+          },
+          {
+            "versions": [
+              "system"
+            ],
+            "hash": "225e8e27c854357b"
+          },
+          {
+            "versions": [
+              "2.7.8"
+            ],
+            "hash": "37987568afd373e4"
+          },
+          {
+            "versions": [
+              "2.15.0"
+            ],
+            "hash": "485b8697e796d7b8"
+          },
+          {
+            "versions": [
+              "2.12.6"
+            ],
+            "hash": "4ee7744ab05c11a6"
+          },
+          {
+            "versions": [
+              "2.14.1"
+            ],
+            "hash": "69f51a61fcd1bb2b"
+          },
+          {
+            "versions": [
+              "2.11.5"
+            ],
+            "hash": "882351e48d0e7430"
+          },
+          {
+            "versions": [
+              "2.9.4"
+            ],
+            "hash": "924c061c948c57bc"
+          },
+          {
+            "versions": [
+              "2.9.14"
+            ],
+            "hash": "a3e02f862ce9b1d3"
+          },
+          {
+            "versions": [
+              "2.8.0"
+            ],
+            "hash": "ba23baf897a39da0"
+          },
+          {
+            "versions": [
+              "2.13.0"
+            ],
+            "hash": "fde064a877ebc298"
+          }
+        ],
+        "xpath-attr": [
+          {
+            "versions": [
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "system"
+            ],
+            "hash": "42cd29228682529e"
+          },
+          {
+            "versions": [
+              "2.10.4",
+              "2.7.8",
+              "2.8.0",
+              "2.9.10",
+              "2.9.14",
+              "2.9.4"
+            ],
+            "hash": "70d4e7e9c1d46767"
+          },
+          {
+            "versions": [
+              "2.11.5"
+            ],
+            "hash": "7c092c96f5356342"
+          }
+        ],
+        "xpath-count": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.9.10",
+              "2.9.14",
+              "system"
+            ],
+            "hash": "409f9891ad678ea2"
+          },
+          {
+            "versions": [
+              "2.7.8",
+              "2.8.0",
+              "2.9.4"
+            ],
+            "hash": "b60239929ec51129"
+          }
+        ],
+        "xpath-nodeset": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.9.10",
+              "2.9.14",
+              "system"
+            ],
+            "hash": "222f927be47246b6"
+          },
+          {
+            "versions": [
+              "2.7.8",
+              "2.8.0",
+              "2.9.4"
+            ],
+            "hash": "ae4cee0e20fb3d72"
+          }
+        ],
+        "xpath-string": [
+          {
+            "versions": [
+              "2.10.4",
+              "2.11.5",
+              "2.12.6",
+              "2.13.0",
+              "2.13.5",
+              "2.14.1",
+              "2.15.0",
+              "2.9.10",
+              "2.9.14",
+              "system"
+            ],
+            "hash": "563acfadc219dcb6"
+          },
+          {
+            "versions": [
+              "2.7.8",
+              "2.8.0",
+              "2.9.4"
+            ],
+            "hash": "94df0169ac43fe97"
+          }
+        ]
+      },
+      "xsltproc": {
+        "basic": [
+          {
+            "versions": [
+              "1.1.26",
+              "1.1.32",
+              "1.1.35",
+              "1.1.38",
+              "1.1.42",
+              "system"
+            ],
+            "hash": "4cb7292caa137764"
+          }
+        ],
+        "empty": [
+          {
+            "versions": [
+              "1.1.26",
+              "1.1.32",
+              "1.1.35",
+              "1.1.38",
+              "1.1.42",
+              "system"
+            ],
+            "hash": "c23e34792f0b5e29"
+          }
+        ],
+        "num": [
+          {
+            "versions": [
+              "1.1.26",
+              "1.1.32",
+              "1.1.35",
+              "1.1.38",
+              "1.1.42",
+              "system"
+            ],
+            "hash": "00f6c8def0f34db0"
+          }
+        ],
+        "version": [
+          {
+            "versions": [
+              "1.1.26"
+            ],
+            "hash": "4719b81860e420bd"
+          },
+          {
+            "versions": [
+              "1.1.42"
+            ],
+            "hash": "5fcc356f18d22ce6"
+          },
+          {
+            "versions": [
+              "system"
+            ],
+            "hash": "6c418ac9f2945aa2"
+          },
+          {
+            "versions": [
+              "1.1.35"
+            ],
+            "hash": "8c4ecbed064e574a"
+          },
+          {
+            "versions": [
+              "1.1.38"
+            ],
+            "hash": "b5d465515ffc4685"
+          },
+          {
+            "versions": [
+              "1.1.32"
+            ],
+            "hash": "ceb012ea5e6ba953"
+          }
+        ]
+      }
+    },
+    "epoch_notes": {
+      "xpath-nodeset/xpath-count/xpath-string": "concatenated nodes with no separators in 2.7.8-2.9.4; one node per line from 2.9.10 (upstream commit da35eeae, v2.9.10) through 2.15.3",
+      "xpath-attr": "exit 10 in 2.7.8-2.10.4; exit 0 in 2.11.0-2.11.5 (e85f9b98); exit 11 in 2.12.6-2.15.3 (387a952b)",
+      "parse-error": "2 diagnostics + exit 1 in 2.7.8-2.11.5 (2.9.10 carries the EndTag regression, fixed de5b624f in v2.9.11); 1 diagnostic + exit 1 in 2.12.6; 1 diagnostic + exit 4 in 2.13.0-2.15.3",
+      "recover-bad": "2 diagnostics in 2.7.8-2.11.5 (2.9.10 carries the EndTag regression); 1 diagnostic in 2.12.6-2.15.3",
+      "undeclared": "exit 1 in 2.7.8-2.12.6; exit 4 in 2.13.0-2.15.3",
+      "attr-markup-entity": "reported once + exit 1 in 2.7.8-2.12.6; reported twice + exit 4 in 2.13.0-2.15.3",
+      "noent-debug": "ENTITYDECL content TEXT in 2.7.8-2.12.6; ENTITYDECL content TEXT compact from 2.13.0 (8d04f0ee)",
+      "valid-invalid": "exit 4 in 2.7.8-2.12.6; exit 3 in 2.13.0-2.15.3",
+      "valid-nodtd": "exit 4 in 2.7.8-2.12.6; exit 3 in 2.13.0-2.14.1; exit 0 in 2.15.0-2.15.3",
+      "html-dump": "formatted with newlines in 2.7.8-2.14.1; single line from 2.15.0 (newline writes removed from HTMLtree.c)",
+      "basic/num/empty": "byte-identical across 1.1.26-1.1.45 — stable epoch for xsltproc"
+    }
+  },
+  "candidate_outputs": {
+    "note": "Candidate (libxml-rs) runs are out of scope for the matrix receipt; candidate residuals are tracked in atlas/RESIDUAL_LEDGER.md (R-000119..R-000121 triangulated by epochs E-004/E-005)."
+  },
+  "normalization": [],
+  "residuals": [
+    "R-000119 (entity content children in --debug): crate's TEXT compact matches the 2.13.0+ epoch, i.e. the current system oracle",
+    "R-000120 (entity-containing attribute values marked compact): crate behavior sits in the pre-2.13 epoch; upstream never changed this observable across the matrix span",
+    "R-000121 (LT_IN_ATTRIBUTE reported once): crate reports once (pre-2.13 count) with exit 4 (2.13+ exit) — hybrid of two epochs; caret column differs from all upstream versions"
+  ],
+  "verdict": "PASS — every oracle identity bound (18 manifests hashed + validated, all oracle --version fingerprints distinct), per-case semantic epochs derived from the matrix, fixture/artifact hashes recorded. Regenerate with: tools/evidence/matrix_receipt.py gen"
+}

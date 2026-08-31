@@ -2358,18 +2358,45 @@ impl XmlParser {
         } else {
             (None, _name.to_vec())
         };
-        // Resolve the prefix against this element's namespace declarations.
-        let uri: Option<Vec<u8>> = match &prefix_opt {
-            Some(p) if p == b"xml" => Some(b"http://www.w3.org/XML/1998/namespace".to_vec()),
-            Some(p) => ns_decls
-                .iter()
-                .find(|(dp, _)| dp == p)
-                .map(|(_, u)| u.clone()),
-            None => ns_decls
-                .iter()
-                .find(|(dp, _)| dp.is_empty())
-                .map(|(_, u)| u.clone()),
+        // Resolve the prefix against this element's namespace declarations
+        // and, when not declared here, the ancestor scope (upstream
+        // xmlParserNsLookupUri walks the parser's in-scope namespace stack).
+        let my_doc = unsafe { (*self.ctxt).myDoc };
+        let parent_node = unsafe { (*self.ctxt).node };
+        let resolve_uri = |prefix: Option<&[u8]>| -> Option<Vec<u8>> {
+            // Own declarations win (the nearest in-scope binding).
+            if let Some(p) = prefix {
+                if p == b"xml" {
+                    return Some(b"http://www.w3.org/XML/1998/namespace".to_vec());
+                }
+                if let Some((_, u)) = ns_decls.iter().find(|(dp, _)| dp == p) {
+                    return Some(u.clone());
+                }
+            } else if let Some((_, u)) = ns_decls.iter().find(|(dp, _)| dp.is_empty()) {
+                return Some(u.clone());
+            }
+            // Ancestor scope.
+            unsafe {
+                if !parent_node.is_null() {
+                    let mut p = prefix.map(|p| p.to_vec()).unwrap_or_default();
+                    p.push(0);
+                    let ns = crate::xml::tree::search_ns(
+                        my_doc,
+                        parent_node,
+                        p.as_ptr() as *const xmlChar,
+                    );
+                    if !ns.is_null() && !(*ns).href.is_null() {
+                        let mut l = 0usize;
+                        while *(*ns).href.add(l) != 0 {
+                            l += 1;
+                        }
+                        return Some(core::slice::from_raw_parts((*ns).href, l).to_vec());
+                    }
+                }
+            }
+            None
         };
+        let uri: Option<Vec<u8>> = resolve_uri(prefix_opt.as_deref());
 
         unsafe {
             let sax = &*(*self.ctxt).sax;
@@ -2405,15 +2432,12 @@ impl XmlParser {
                     .as_ref()
                     .map(|p| Self::vec_to_cstr_null(p))
                     .unwrap_or(ptr::null());
-                // Resolve the attribute prefix against the namespace declarations.
+                // Resolve the attribute prefix against the namespace
+                // declarations and the ancestor scope (upstream
+                // xmlParserNsLookupUri).
                 let uri_cstr = match prefix {
-                    Some(p) if p == b"xml" => {
-                        Self::vec_to_cstr_null(b"http://www.w3.org/XML/1998/namespace")
-                    }
-                    Some(p) => ns_decls
-                        .iter()
-                        .find(|(dp, _)| dp == p)
-                        .map(|(_, u)| Self::vec_to_cstr_null(u))
+                    Some(p) => resolve_uri(Some(p))
+                        .map(|u| Self::vec_to_cstr_null(&u))
                         .unwrap_or(ptr::null()),
                     _ => ptr::null(),
                 };

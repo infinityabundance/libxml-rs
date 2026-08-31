@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0037",
+  "surface": "cli-xmllint",
+  "purpose": "empty xmlns:p=\"\" + undefined prefix double report (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "ns-empty.xml"
+    ],
+    "document": "ns-empty.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

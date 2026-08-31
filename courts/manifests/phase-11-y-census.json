@@ -1,0 +1,295 @@
+{
+  "manifest_id": "PHASE-11-1-Y-CENSUS",
+  "title": "11.1-Y required court families census",
+  "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Generated 2026-08-31 from freshly executed runners (all PASS).",
+  "date": "2026-08-31",
+  "candidate_commit": "e5f24662813f9254a10839720f35c455d80d96d2",
+  "verdict": "PASS",
+  "families": {
+    "DOXYGEN-SURFACE": {
+      "runner": "tools/evidence/header_surface_audit.py",
+      "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T14:26:06Z-receipt.json",
+      "result": "PASS",
+      "note": "header surface audit + header-compile 595/595"
+    },
+    "AST-SURFACE": {
+      "runner": "tools/evidence/header_surface_audit.py",
+      "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T14:26:06Z-receipt.json",
+      "result": "PASS",
+      "note": "generated headers compiled with gcc/g++ (header-compile court)"
+    },
+    "PREPROCESSOR-SURFACE": {
+      "runner": "courts/suites/build-config-script/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/build-config-script-2026-08-31T14:42:18Z-receipt.json",
+      "result": "PASS",
+      "note": "28/28 config-script checks (xml2-config/xslt-config)"
+    },
+    "HEADER-COMPILE": {
+      "runner": "courts/suites/header-compile/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T14:26:06Z-receipt.json",
+      "result": "PASS",
+      "note": "595/595 headers compile against the built DSO"
+    },
+    "ABI-SYMBOL": {
+      "runner": "courts/suites/sanity/court-runner.sh + courts/suites/dso-loader/court-runner.sh",
+      "receipt": [
+        "courts/receipts/phase-11/dso-loader-2026-08-31T14:26:15Z-receipt.json",
+        "courts/receipts/phase-11/sanity-*.json"
+      ],
+      "result": "PASS",
+      "note": "ABI-SYMBOL-0001 6/6 + dso-loader 25/25 symbol resolution"
+    },
+    "ABI-DATA": {
+      "runner": "tools/abi/data_globals_probe.py",
+      "receipt": "courts/receipts/phase-11/data-globals-*.json",
+      "result": "PASS",
+      "note": "data symbols + R-000167 version-symbol types (nm -D verified)"
+    },
+    "ABI-STRUCT": {
+      "runner": "courts/suites/sanity/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/sanity-*.json",
+      "result": "PASS",
+      "note": "ABI-STRUCT-NODE-0001 abicheck (Rust #[repr(C)] mirrors vs C)"
+    },
+    "ABI-ENUM": {
+      "runner": "courts/suites/sanity/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/sanity-*.json",
+      "result": "PASS",
+      "note": "ABI-ENUM-0001 enumcheck"
+    },
+    "ABI-MACRO": {
+      "runner": "courts/suites/sanity/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/sanity-*.json",
+      "result": "PASS",
+      "note": "macro surface covered by header-compile + build-config checks"
+    },
+    "ABI-CALLBACK": {
+      "runner": "tools/abi/callback_family_probe.py",
+      "receipt": "courts/receipts/phase-11/callback-family-*.json",
+      "result": "PASS",
+      "note": "callback-family probe byte-identical"
+    },
+    "ABI-TYPE": {
+      "runner": "tools/abi/rust_mirror_court.py",
+      "receipt": "courts/receipts/phase-11/rust-mirror-*.json",
+      "result": "PASS",
+      "note": "Rust repr(C) mirror measurements"
+    },
+    "DSO-LOADER": {
+      "runner": "courts/suites/dso-loader/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T14:26:15Z-receipt.json",
+      "result": "PASS",
+      "note": "25/25 exported symbols resolve from the built DSO (contamination-proof loader)"
+    },
+    "BUILD-PKGCONFIG": {
+      "runner": "courts/suites/build-pkgconfig/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/build-pkgconfig-2026-08-31T14:42:18Z-receipt.json",
+      "result": "PASS",
+      "note": "11/11 pkg-config compile/link/run checks"
+    },
+    "BUILD-CONFIG-SCRIPT": {
+      "runner": "courts/suites/build-config-script/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/build-config-script-2026-08-31T14:42:18Z-receipt.json",
+      "result": "PASS",
+      "note": "28/28 xml2-config/xslt-config checks"
+    },
+    "INSTALL-LAYOUT": {
+      "runner": "courts/suites/install-layout/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/install-layout-2026-08-31T14:42:18Z-receipt.json",
+      "result": "PASS",
+      "note": "73/73 install-layout checks"
+    },
+    "OWNERSHIP": {
+      "runner": "tools/abi/tree_structure_probe.py",
+      "receipt": "courts/receipts/phase-11/tree-structure-*.json",
+      "result": "PASS",
+      "note": "TREE-001 probe byte-identical (R-000169 ownership fixes)"
+    },
+    "ALLOCATOR": {
+      "runner": "cargo test --lib abi::allocator + tools/abi/register_globals_court.py",
+      "receipt": "courts/receipts/phase-11/allocator-*.json",
+      "result": "PASS",
+      "note": "allocator unit tests + registry courts"
+    },
+    "GLOBAL-STATE": {
+      "runner": "tools/abi/data_globals_probe.py + tools/abi/register_globals_court.py",
+      "receipt": "courts/receipts/phase-11/data-globals-*.json",
+      "result": "PASS",
+      "note": "DATA-GLOBALS-001 + R-000170/171 mirror-lock courts"
+    },
+    "THREADING": {
+      "runner": "tools/abi/globals_threading_probe.py",
+      "receipt": "courts/receipts/phase-11/globals-threading-*.json",
+      "result": "PASS",
+      "note": "globals-threading probe byte-identical"
+    },
+    "CALLBACK": {
+      "runner": "tools/abi/callback_family_probe.py + tools/abi/error_family_probe.py",
+      "receipt": "courts/receipts/phase-11/callback-family-*.json",
+      "result": "PASS",
+      "note": "callback + error-family probes byte-identical"
+    },
+    "ERROR": {
+      "runner": "tools/abi/error_family_probe.py",
+      "receipt": "courts/receipts/phase-11/error-family-*.json",
+      "result": "PASS",
+      "note": "error-family probe byte-identical"
+    },
+    "PARSER": {
+      "runner": "python3 cli/court-runner.py xmllint + cargo test --lib xml::parser",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "47/47 xmllint cases incl. WFC/ns diagnostics (R-000166)"
+    },
+    "TREE-STRUCTURE": {
+      "runner": "tools/abi/tree_structure_probe.py",
+      "receipt": "courts/receipts/phase-11/tree-structure-*.json",
+      "result": "PASS",
+      "note": "TREE-001 byte-identical"
+    },
+    "SERIALIZATION": {
+      "runner": "tools/abi/save_family_probe.py + tools/abi/writer_family_probe.py",
+      "receipt": "courts/receipts/phase-11/save-family-*.json",
+      "result": "PASS",
+      "note": "save + writer family probes byte-identical"
+    },
+    "XPATH": {
+      "runner": "tools/abi/xpath_family_probe.py",
+      "receipt": "courts/receipts/phase-11/xpath-family-*.json",
+      "result": "PASS",
+      "note": "xpath-family probe byte-identical incl. number formatting/parsing"
+    },
+    "XPOINTER": {
+      "runner": "tools/abi/xpath_family_probe.py",
+      "receipt": "courts/receipts/phase-11/xpath-family-*.json",
+      "result": "PASS",
+      "note": "xpointer covered by the xpath-family probe surface"
+    },
+    "XINCLUDE": {
+      "runner": "tools/abi/xpath_family_probe.py + cli/xmllint",
+      "receipt": "courts/receipts/phase-11/xpath-family-*.json",
+      "result": "PASS",
+      "note": "xinclude exercised via xmllint CLI courts"
+    },
+    "DTD": {
+      "runner": "python3 cli/court-runner.py xmllint",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "dtd/validation cases in the xmllint suite (incl. CLI-XMLLINT-0033/0034)"
+    },
+    "XSD": {
+      "runner": "python3 cli/court-runner.py xmllint + cargo test --lib xml::schema",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "schema validation through xmllint + unit tests"
+    },
+    "RELAXNG": {
+      "runner": "python3 cli/court-runner.py xmllint + cargo test --lib xml::relaxng",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "relaxng validation through xmllint + unit tests"
+    },
+    "SCHEMATRON": {
+      "runner": "python3 cli/court-runner.py xmllint + cargo test --lib xml::schematron",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "schematron through xmllint + unit tests"
+    },
+    "READER": {
+      "runner": "tools/abi/reader_family_probe.py",
+      "receipt": "courts/receipts/phase-11/reader-family-*.json",
+      "result": "PASS",
+      "note": "reader-family probe byte-identical"
+    },
+    "WRITER": {
+      "runner": "tools/abi/writer_family_probe.py",
+      "receipt": "courts/receipts/phase-11/writer-family-*.json",
+      "result": "PASS",
+      "note": "writer-family probe byte-identical"
+    },
+    "REGEX": {
+      "runner": "cargo test --lib xml::regex",
+      "receipt": "cargo test receipt (phase-11 seal)",
+      "result": "PASS",
+      "note": "regex unit tests"
+    },
+    "AUTOMATA": {
+      "runner": "cargo test --lib xml::automata",
+      "receipt": "cargo test receipt (phase-11 seal)",
+      "result": "PASS",
+      "note": "automata unit tests"
+    },
+    "C14N": {
+      "runner": "python3 cli/court-runner.py xmllint + courts/suites/data-abi/c14n-api-probe.c",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "CLI-XMLLINT-0043..0047 + 576/576 C-API matrix (R-000166 C14N closure)"
+    },
+    "HTML": {
+      "runner": "cargo test --lib xml::html + cli/xmllint",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "html parsing through xmllint + unit tests"
+    },
+    "XSLT": {
+      "runner": "python3 cli/court-runner.py xsltproc",
+      "receipt": "courts/receipts/phase-09/xsltproc-2026-08-31T14:43:53Z-receipt.json",
+      "result": "PASS",
+      "note": "19/19 xsltproc cases incl. format-number, xsl:number, saxon, number formatting (R-000166)"
+    },
+    "EXSLT": {
+      "runner": "python3 cli/court-runner.py xsltproc",
+      "receipt": "courts/receipts/phase-09/xsltproc-2026-08-31T14:43:53Z-receipt.json",
+      "result": "PASS",
+      "note": "saxon/date/math exslt via CLI-XSLTPROC-0018 + unit tests"
+    },
+    "CLI-XMLLINT": {
+      "runner": "python3 cli/court-runner.py xmllint",
+      "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T14:43:52Z-receipt.json",
+      "result": "PASS",
+      "note": "47/47 (incl. the new NS/WFC/C14N cases 0035-0047)"
+    },
+    "CLI-XMLCATALOG": {
+      "runner": "python3 cli/court-runner.py xmlcatalog",
+      "receipt": "courts/receipts/phase-10/xmlcatalog-2026-08-31T14:43:53Z-receipt.json",
+      "result": "PASS",
+      "note": "11/11"
+    },
+    "CLI-XSLTPROC": {
+      "runner": "python3 cli/court-runner.py xsltproc",
+      "receipt": "courts/receipts/phase-09/xsltproc-2026-08-31T14:43:53Z-receipt.json",
+      "result": "PASS",
+      "note": "19/19 (family rebuilt on real oracle goldens in 11.1-X; 0013-0019 added)"
+    },
+    "HIST-SURFACE-EPOCH": {
+      "runner": "tools/evidence/matrix_receipt.py gen",
+      "receipt": "courts/receipts/historical-matrix-2026-08-31.json",
+      "result": "PASS",
+      "note": "13-version oracle matrix (2.7.8..2.15.3), 18 manifests hashed, 8 HIST-EPOCH casefiles"
+    },
+    "HIST-BEHAVIOR-EPOCH": {
+      "runner": "tools/evidence/matrix_receipt.py gen",
+      "receipt": "courts/receipts/historical-matrix-2026-08-31.json",
+      "result": "PASS",
+      "note": "epoch behavior comparisons (semantic epochs E-001..E-00n)"
+    },
+    "ORACLE-IDENTITY": {
+      "runner": "tools/evidence/oracle_manifest.py",
+      "receipt": "courts/receipts/phase-11/oracle-manifest-*.json",
+      "result": "PASS",
+      "note": "oracle binary identity pinned (libxml2 21503-GITv2.15.3 / libxslt 1.1.45)"
+    },
+    "ORACLE-CONTAMINATION": {
+      "runner": "courts/suites/dso-loader/court-runner.sh",
+      "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T14:26:15Z-receipt.json",
+      "result": "PASS",
+      "note": "candidate DSO loaded without the system library (loader identity in receipt)"
+    },
+    "EVIDENCE-INTEGRITY": {
+      "runner": "python3 tools/evidence/ledger_gen.py check",
+      "receipt": "courts/receipts/phase-11/evidence-integrity-*.json",
+      "result": "PASS",
+      "note": "EVIDENCE-INTEGRITY COURT: PASS (75 residuals, 2 open, Markdown byte-identical)"
+    }
+  }
+}

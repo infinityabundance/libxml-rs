@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0035",
+  "surface": "cli-xmllint",
+  "purpose": "undefined element namespace prefix (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "ns-undefined.xml"
+    ],
+    "document": "ns-undefined.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

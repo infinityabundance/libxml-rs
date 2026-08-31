@@ -1,0 +1,3 @@
+ns-attrundef.xml:1: namespace error : Namespace prefix p for x on a is not defined
+<a p:x="1"/>
+          ^

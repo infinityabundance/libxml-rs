@@ -1,0 +1,3 @@
+ns-undefined.xml:1: namespace error : Namespace prefix p on b is not defined
+<a><p:b/></a>
+       ^

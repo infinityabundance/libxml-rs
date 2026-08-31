@@ -1,0 +1,3 @@
+wfc-attr.xml:1: parser error : Unescaped '<' not allowed in attributes values
+<a b="x < y"/>
+        ^

@@ -1,0 +1,3 @@
+ns-xmldefault.xml:1: namespace error : xml namespace URI cannot be the default namespace
+<a xmlns="http://www.w3.org/XML/1998/namespace"/>
+                                               ^

@@ -1,0 +1,3 @@
+wfc-comment.xml:1: parser error : Double hyphen within comment: <!-- a 
+<a><!-- a -- b --></a>
+          ^

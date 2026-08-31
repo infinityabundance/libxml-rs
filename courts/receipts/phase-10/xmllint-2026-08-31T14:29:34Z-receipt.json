@@ -1,0 +1,817 @@
+{
+  "receipt_id": "CLI-XMLLINT-10-2026-08-31T14:29:34Z",
+  "phase": "10",
+  "tool": "xmllint",
+  "timestamp": "2026-08-31T14:29:34Z",
+  "candidate_commit": "e5f24662813f9254a10839720f35c455d80d96d2",
+  "oracle_identity": "/usr/bin/xmllint: using libxml version 21503-GITv2.15.3\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib",
+  "oracle_binary": "/usr/bin/xmllint",
+  "candidate_binary": "/mnt/1tb_kingston/libxml-rs/target/debug/xmllint",
+  "normalization": "argv0 path normalized to TOOL (tools echo their own invocation path); all other bytes compared raw",
+  "cases": [
+    {
+      "case_id": "CLI-XMLLINT-0001",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0002",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0003",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "167e59afdf5669ac45f5e52fd26feaed38ba9b7caff670486bf99fe98ee488e1",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "167e59afdf5669ac45f5e52fd26feaed38ba9b7caff670486bf99fe98ee488e1",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0004",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "167e59afdf5669ac45f5e52fd26feaed38ba9b7caff670486bf99fe98ee488e1",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "167e59afdf5669ac45f5e52fd26feaed38ba9b7caff670486bf99fe98ee488e1",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0005",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "d57174ddbf311867e93a29497794abdb40ea7554689e1946c144335bb9f89f80",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "d57174ddbf311867e93a29497794abdb40ea7554689e1946c144335bb9f89f80",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0006",
+      "verdict": "PASS",
+      "oracle_exit": [
+        3
+      ],
+      "oracle_stdout_sha": "4c33fdd6599e978be1dd87a6f9cb90aab12af8ad05c94afbcbaf30497843a223",
+      "oracle_stderr_sha": "db002439a49fe8f199a75719ef39b749b36f4fc966ce1c299841cc9daa2d228f",
+      "candidate_exit": [
+        3
+      ],
+      "candidate_stdout_sha": "4c33fdd6599e978be1dd87a6f9cb90aab12af8ad05c94afbcbaf30497843a223",
+      "candidate_stderr_sha": "db002439a49fe8f199a75719ef39b749b36f4fc966ce1c299841cc9daa2d228f",
+      "expected_present": true,
+      "expected_exit": "3",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0007",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "oracle_stderr_sha": "25f426aecc685f3ea98fb0be05573b50d4a12736dac6187e53df4f8b274edef9",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "candidate_stderr_sha": "25f426aecc685f3ea98fb0be05573b50d4a12736dac6187e53df4f8b274edef9",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0008",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "6a8420adf6b4f84cd9939d8b1261dd914fa332dac2ad5cf9cb64c8db044a9db6",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "6a8420adf6b4f84cd9939d8b1261dd914fa332dac2ad5cf9cb64c8db044a9db6",
+      "expected_present": true,
+      "expected_exit": "4",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0009",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "d8d633f9e297836c9b12d073706bff432d6199409795814f4a72f69edcbbc805",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "d8d633f9e297836c9b12d073706bff432d6199409795814f4a72f69edcbbc805",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0010",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "e7838f6c83a4c3ad2087bde0ab9186d4278dcacaf8d51067ce8805a354da9548",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "e7838f6c83a4c3ad2087bde0ab9186d4278dcacaf8d51067ce8805a354da9548",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0011",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0012",
+      "verdict": "PASS",
+      "oracle_exit": [
+        11
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "candidate_exit": [
+        11
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "expected_present": true,
+      "expected_exit": "11",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0013",
+      "verdict": "PASS",
+      "oracle_exit": [
+        11
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "candidate_exit": [
+        11
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "expected_present": true,
+      "expected_exit": "11",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0014",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "2d67057ab695d365b6fcdb19a7fae54cefc2afc54393716d039afb53f87cdfa6",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "2d67057ab695d365b6fcdb19a7fae54cefc2afc54393716d039afb53f87cdfa6",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0015",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0016",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "fe1e4ebe5a12674c19277f181b5baf20911342c159ceb2c907d2a64c5cefeafb",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "fe1e4ebe5a12674c19277f181b5baf20911342c159ceb2c907d2a64c5cefeafb",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0017",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0018",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "5842b50a4f00761baa36335854cb291bc9c07d836e095dbfc494944c36d8c820",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "5842b50a4f00761baa36335854cb291bc9c07d836e095dbfc494944c36d8c820",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0019",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "3361542b17fe81ae9d63298fa136533eea6b133a455743d6e05652da66783ab5",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "3361542b17fe81ae9d63298fa136533eea6b133a455743d6e05652da66783ab5",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0020",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0021",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "032709cab14b0bbccfb7153489bcab7ae3924aa84435f6c354d47704ce3bd5e7",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "032709cab14b0bbccfb7153489bcab7ae3924aa84435f6c354d47704ce3bd5e7",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0022",
+      "verdict": "PASS",
+      "oracle_exit": [
+        1
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "f38ae479e194ca29cb6b1a84da2469bb551553bd89721e257b3b6c73614b9406",
+      "candidate_exit": [
+        1
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "f38ae479e194ca29cb6b1a84da2469bb551553bd89721e257b3b6c73614b9406",
+      "expected_present": true,
+      "expected_exit": "1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0023",
+      "verdict": "PASS",
+      "oracle_exit": [
+        1
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "6c9e1bac26daffc4a4916b8650809c5281fa1b55e4851ab04f9ebfc7079fd918",
+      "candidate_exit": [
+        1
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "6c9e1bac26daffc4a4916b8650809c5281fa1b55e4851ab04f9ebfc7079fd918",
+      "expected_present": true,
+      "expected_exit": "1",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0024",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "66a87d50cbbfa21e2b1fb1482ccd8faba288a47c7e7628dd432c15266fa5c6f5",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "66a87d50cbbfa21e2b1fb1482ccd8faba288a47c7e7628dd432c15266fa5c6f5",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0025",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "6cf85a6c3e34f5e39282cf30e5690b9db8b3de915ba4731801fdfd951947c018",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "6cf85a6c3e34f5e39282cf30e5690b9db8b3de915ba4731801fdfd951947c018",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0026",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "131de6cb8ecf6f07cbbe62edfcb96c6233546d2264d4e3a7657868c5ceb974d9",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "131de6cb8ecf6f07cbbe62edfcb96c6233546d2264d4e3a7657868c5ceb974d9",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0027",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "6cf85a6c3e34f5e39282cf30e5690b9db8b3de915ba4731801fdfd951947c018",
+      "oracle_stderr_sha": "69292528d2e4a111cd81763d96cc74f7d9e280668cefb2058c79c13bca46d51e",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "6cf85a6c3e34f5e39282cf30e5690b9db8b3de915ba4731801fdfd951947c018",
+      "candidate_stderr_sha": "69292528d2e4a111cd81763d96cc74f7d9e280668cefb2058c79c13bca46d51e",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0028",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "58cf07e43d8d234df4f780651acebf94e063e919cd057549243779741b2965e6",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0029",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "64b845ebce7b0cbe48d203ef9c86848d87378ae849d68fc89c4117e10071e96a",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "64b845ebce7b0cbe48d203ef9c86848d87378ae849d68fc89c4117e10071e96a",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0030",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "a466631123d15528bae3d472bf71d7438e904012ff623308bef843b59965da28",
+      "oracle_stderr_sha": "6a8420adf6b4f84cd9939d8b1261dd914fa332dac2ad5cf9cb64c8db044a9db6",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "a466631123d15528bae3d472bf71d7438e904012ff623308bef843b59965da28",
+      "candidate_stderr_sha": "6a8420adf6b4f84cd9939d8b1261dd914fa332dac2ad5cf9cb64c8db044a9db6",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0031",
+      "verdict": "PASS",
+      "oracle_exit": [
+        11
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "candidate_exit": [
+        11
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "b0240bf617e234029b82e942b51ea2cf0db9fbf884ed06ce0b0e00e003e81208",
+      "expected_present": true,
+      "expected_exit": "11",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0032",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "d0c9641cb229cb4be628d86a88cb0286685d99c49825921413c6c36ae1361c1f",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "d0c9641cb229cb4be628d86a88cb0286685d99c49825921413c6c36ae1361c1f",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0033",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "6326549f6e6eb8b78df4ce20d5233616a699958fd12141dec252af10996e0c9d",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "6326549f6e6eb8b78df4ce20d5233616a699958fd12141dec252af10996e0c9d",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0034",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "c21ba477392f6f3ace50ecefd40facd5b9522509204852174d3692b66daade21",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "c21ba477392f6f3ace50ecefd40facd5b9522509204852174d3692b66daade21",
+      "expected_present": true,
+      "expected_exit": "4",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0035",
+      "verdict": "FAIL",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "4e0aaceae75364e2cca84b9e60c965bed1546b0c2195ba22102a7bfedd160036",
+      "oracle_stderr_sha": "9f04461526f908d75c0bb5715ccb9ac93275f065843b4eb2310ac0de57243987",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "12e0ace11f93fab35cc87fc95fa7efd694ac1600ccdb2378f70342587d1f46e4",
+      "candidate_stderr_sha": "9f04461526f908d75c0bb5715ccb9ac93275f065843b4eb2310ac0de57243987",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": false
+    },
+    {
+      "case_id": "CLI-XMLLINT-0036",
+      "verdict": "FAIL",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "9d56ac5bc289a0dc0b9302c15775127d257934b39e94033edbab8fcaaee77995",
+      "oracle_stderr_sha": "f09b97978933d6792b6d38f74de552196090b6600e005a5aa60274d9c93c4542",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "3fbd8145f4955089e5c07fc9746b33a5aa10bc3d101d02e73d865e6c81eeeb36",
+      "candidate_stderr_sha": "f09b97978933d6792b6d38f74de552196090b6600e005a5aa60274d9c93c4542",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": false
+    },
+    {
+      "case_id": "CLI-XMLLINT-0037",
+      "verdict": "FAIL",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "4e0aaceae75364e2cca84b9e60c965bed1546b0c2195ba22102a7bfedd160036",
+      "oracle_stderr_sha": "dd8cf7c39e178b5b463b92a97439a0b06f1a76d92c4314d35af640161573c6af",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "12e0ace11f93fab35cc87fc95fa7efd694ac1600ccdb2378f70342587d1f46e4",
+      "candidate_stderr_sha": "dd8cf7c39e178b5b463b92a97439a0b06f1a76d92c4314d35af640161573c6af",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": false
+    },
+    {
+      "case_id": "CLI-XMLLINT-0038",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "0a5574b4b6ab705ad7dc5907773bf70e64965bd7c090e5c97d5769a87d7446f9",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "0a5574b4b6ab705ad7dc5907773bf70e64965bd7c090e5c97d5769a87d7446f9",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0039",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "00d7a08fc8b33620bc55baafcce5b85939a0284090dd9df14f99bb3bd60cfc12",
+      "oracle_stderr_sha": "77f459000c32d750e6105a63b6fe1daecd2a9e2acf3a39f44df3f2d870d54064",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "00d7a08fc8b33620bc55baafcce5b85939a0284090dd9df14f99bb3bd60cfc12",
+      "candidate_stderr_sha": "77f459000c32d750e6105a63b6fe1daecd2a9e2acf3a39f44df3f2d870d54064",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0040",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "00d7a08fc8b33620bc55baafcce5b85939a0284090dd9df14f99bb3bd60cfc12",
+      "oracle_stderr_sha": "3f851b77a8a7d41d0c811cc968bf9df3596d0869912ca5da52c8d50dce52860e",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "00d7a08fc8b33620bc55baafcce5b85939a0284090dd9df14f99bb3bd60cfc12",
+      "candidate_stderr_sha": "3f851b77a8a7d41d0c811cc968bf9df3596d0869912ca5da52c8d50dce52860e",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0041",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "422ca3187d74997b87ee7a2433ea9b986c8f465e60662a552c6c99586ae9c66b",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "422ca3187d74997b87ee7a2433ea9b986c8f465e60662a552c6c99586ae9c66b",
+      "expected_present": true,
+      "expected_exit": "4",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0042",
+      "verdict": "PASS",
+      "oracle_exit": [
+        4
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "e72b8f1c13ea753043b62c44aa04ed0ac4287efd54729bae3dbfcbfde796c857",
+      "candidate_exit": [
+        4
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "e72b8f1c13ea753043b62c44aa04ed0ac4287efd54729bae3dbfcbfde796c857",
+      "expected_present": true,
+      "expected_exit": "4",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0043",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "1f9981559cfe0c3ae52f1e6f6ec0b701d9789db31bc4bbb09e8d8b55248e8716",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "1f9981559cfe0c3ae52f1e6f6ec0b701d9789db31bc4bbb09e8d8b55248e8716",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0044",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "a7e9dfec10a52b01cfd3635d15e28808aa5e6cf065db65e03cb181a61e15dd8a",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "a7e9dfec10a52b01cfd3635d15e28808aa5e6cf065db65e03cb181a61e15dd8a",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0045",
+      "verdict": "PASS",
+      "oracle_exit": [
+        0
+      ],
+      "oracle_stdout_sha": "1f9981559cfe0c3ae52f1e6f6ec0b701d9789db31bc4bbb09e8d8b55248e8716",
+      "oracle_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_exit": [
+        0
+      ],
+      "candidate_stdout_sha": "1f9981559cfe0c3ae52f1e6f6ec0b701d9789db31bc4bbb09e8d8b55248e8716",
+      "candidate_stderr_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_present": true,
+      "expected_exit": "0",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0046",
+      "verdict": "PASS",
+      "oracle_exit": [
+        6
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "30a352ea70d32f4863e543b557807034bee33e80e7aa5ed468026b9e6db11fa5",
+      "candidate_exit": [
+        6
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "30a352ea70d32f4863e543b557807034bee33e80e7aa5ed468026b9e6db11fa5",
+      "expected_present": true,
+      "expected_exit": "6",
+      "expected_match": true
+    },
+    {
+      "case_id": "CLI-XMLLINT-0047",
+      "verdict": "PASS",
+      "oracle_exit": [
+        6
+      ],
+      "oracle_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oracle_stderr_sha": "30a352ea70d32f4863e543b557807034bee33e80e7aa5ed468026b9e6db11fa5",
+      "candidate_exit": [
+        6
+      ],
+      "candidate_stdout_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate_stderr_sha": "30a352ea70d32f4863e543b557807034bee33e80e7aa5ed468026b9e6db11fa5",
+      "expected_present": true,
+      "expected_exit": "6",
+      "expected_match": true
+    }
+  ],
+  "totals": {
+    "pass": 44,
+    "fail": 3
+  },
+  "verdict": "FAIL"
+}

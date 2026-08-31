@@ -1,0 +1,28 @@
+{
+  "case_id": "CLI-XSLTPROC-0019",
+  "surface": "cli-xsltproc",
+  "purpose": "value-of full double precision, number() string conversion, string() of numbers (R-000166)",
+  "oracle_profile": "libxslt-1.1.45",
+  "inputs": {
+    "argv": [
+      "xslt/num.xsl",
+      "xslt/doc.xml"
+    ],
+    "document": "xslt/doc.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xsltproc",
+    "number-formatting"
+  ]
+}

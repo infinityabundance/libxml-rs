@@ -1,0 +1,27 @@
+{
+  "case_id": "CLI-XMLLINT-0046",
+  "surface": "cli-xmllint",
+  "purpose": "relative namespace URI rejection in inclusive C14N (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "c14n-rel.xml",
+      "--c14n"
+    ],
+    "document": "c14n-rel.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}

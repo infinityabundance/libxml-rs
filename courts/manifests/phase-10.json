@@ -1,10 +1,10 @@
 {
   "tools": {
     "xmllint": {
-      "date": "2026-08-31T14:23:16Z",
-      "candidate_commit": "6d56f14333bf1d3adbcaf9bf1a8ff44c39307eb0",
+      "date": "2026-08-31T14:43:52Z",
+      "candidate_commit": "e5f24662813f9254a10839720f35c455d80d96d2",
       "oracle_identity": "/usr/bin/xmllint: using libxml version 21503-GITv2.15.3\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib",
-      "pass": 34,
+      "pass": 47,
       "fail": 0,
       "cases": {
         "CLI-XMLLINT-0001": "PASS",
@@ -40,12 +40,25 @@
         "CLI-XMLLINT-0031": "PASS",
         "CLI-XMLLINT-0032": "PASS",
         "CLI-XMLLINT-0033": "PASS",
-        "CLI-XMLLINT-0034": "PASS"
+        "CLI-XMLLINT-0034": "PASS",
+        "CLI-XMLLINT-0035": "PASS",
+        "CLI-XMLLINT-0036": "PASS",
+        "CLI-XMLLINT-0037": "PASS",
+        "CLI-XMLLINT-0038": "PASS",
+        "CLI-XMLLINT-0039": "PASS",
+        "CLI-XMLLINT-0040": "PASS",
+        "CLI-XMLLINT-0041": "PASS",
+        "CLI-XMLLINT-0042": "PASS",
+        "CLI-XMLLINT-0043": "PASS",
+        "CLI-XMLLINT-0044": "PASS",
+        "CLI-XMLLINT-0045": "PASS",
+        "CLI-XMLLINT-0046": "PASS",
+        "CLI-XMLLINT-0047": "PASS"
       }
     },
     "xmlcatalog": {
-      "date": "2026-08-31T14:23:16Z",
-      "candidate_commit": "6d56f14333bf1d3adbcaf9bf1a8ff44c39307eb0",
+      "date": "2026-08-31T14:43:53Z",
+      "candidate_commit": "e5f24662813f9254a10839720f35c455d80d96d2",
       "oracle_identity": "Usage : /usr/bin/xmlcatalog [options] catalogfile entities...\n\tParse the catalog file (void specification possibly expressed as \"\"\n\tappoints the default system one) and query it for the entities\n\t--sgml : handle SGML Super catalogs for --add and --del\n\t--shell : run a shell allowing interactive queries\n\t--create : create a new catalog\n\t--add 'type' 'orig' 'replace' : add an XML entry\n\t--add 'entry' : add an SGML entry\n\t--del 'values' : remove values\n\t--noout: avoid dumping the result on stdout\n\t         used with --add or --del, it saves the catalog changes\n\t         and with --sgml it automatically updates the super catalog\n\t--no-super-update: do not update the SGML super catalog\n\t-v --verbose : provide debug information\nUnknown option --version",
       "pass": 11,
       "fail": 0,

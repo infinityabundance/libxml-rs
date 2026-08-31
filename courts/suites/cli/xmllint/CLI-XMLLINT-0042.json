@@ -1,0 +1,26 @@
+{
+  "case_id": "CLI-XMLLINT-0042",
+  "surface": "cli-xmllint",
+  "purpose": "WFC: '--' in comment (R-000166)",
+  "oracle_profile": "libxml2-2.15.3",
+  "inputs": {
+    "argv": [
+      "wfc-comment.xml"
+    ],
+    "document": "wfc-comment.xml"
+  },
+  "observables": [
+    "exit_status",
+    "stdout_hash",
+    "stderr_hash"
+  ],
+  "normalization": [],
+  "provenance": [
+    "residual-R-000166",
+    "differential"
+  ],
+  "tags": [
+    "differential",
+    "xmllint"
+  ]
+}
