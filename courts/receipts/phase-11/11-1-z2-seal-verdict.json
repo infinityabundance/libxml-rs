@@ -1,0 +1,123 @@
+{
+ "schema": "phase-seal-verdict-1",
+ "receipt_id": "PHASE-11-1-Z2-SEAL-VERDICT",
+ "phase": "11.1-Z.2",
+ "title": "Phase 11.1-Z.2 amendment — function-signature ABI plane + allocator single-source-of-truth + state-coherence/commentary-drift courts (supersedes 11-1-z1-seal-verdict.json for the amended contract)",
+ "date": "2026-08-31",
+ "generator": "manual + generated evidence (see sources)",
+ "supersedes": "11-1-z1-seal-verdict.json (PHASE-11-1-Z1-SEAL-VERDICT, sealed at be036880; its open-residual acceptance phrasing is corrected below — see open_disposition)",
+ "candidate": {
+  "project": "libxml-rs",
+  "crate": "libxml-rs",
+  "version": "0.1.0-alpha.35",
+  "git_head": "1c35e4e15e50d7e2f10d84fa9a303c4e0d72ad83",
+  "language": "Rust (edition 2021)",
+  "dsos": {
+   "libxml2": "target/debug/libxml2.so.16 -> lib/libxml2.so.16 -> libxml2.so.16.1.3 -> ../liblibxml_rs.so (combined core, SONAME libxml2.so.16)",
+   "libxslt": "target/debug/libxslt.so.1 -> lib/libxslt.so.1 -> libxslt.so.1.1.45 (REAL whole-archive facade DSO, SONAME libxslt.so.1)",
+   "libexslt": "target/debug/libexslt.so.0 -> lib/libexslt.so.0 -> libexslt.so.0.8.25 (REAL whole-archive facade DSO, SONAME libexslt.so.0)"
+  },
+  "soname_abi": "libxml2.so.16 / libxslt.so.1 / libexslt.so.0 (three distinct ELF DSOs; verified per-object by readelf -d)",
+  "elf_contract": {
+   "core_soname": "libxml2.so.16",
+   "core_needed": "libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2 (no libxml2/libxslt/libexslt)",
+   "libxslt_soname": "libxslt.so.1",
+   "libxslt_needed": "libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "libexslt_soname": "libexslt.so.0",
+   "libexslt_needed": "libxslt.so.1, libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "upstream_reference": "readelf -d /usr/lib/libxslt.so.1 -> NEEDED libxml2.so.16, libm.so.6, libc.so.6; /usr/lib/libexslt.so.0 -> NEEDED libxslt.so.1, libxml2.so.16, libm.so.6, libc.so.6",
+   "facade_surfaces": "libxslt facade exports xslt* + xslDebugStatus (version script, namespace-scoped); libexslt facade exports exslt*; neither leaks the combined core (court-verified)",
+   "mechanism": "build.rs + .cargo/config.toml custom linker (tools/packaging/linker-wrapper.sh) -> tools/packaging/facade-gen.sh re-links the whole core from liblibxml_rs.a with --whole-archive, per-facade -Wl,-soname, version-script export filtering, and --no-as-needed -l: NEEDED entries; idempotent + flock-serialized; symlink fallback on non-Linux/cross/published-crate builds (documented distribution contract)",
+   "state_coherence": "DOCUMENTED DIVERGENCE (R-000177): the whole-archive facades are the only consumer-linkable construction (thin re-export facades fail the consumer static link — modern ld refuses an undefined dynsym entry as a definition — and the core cannot satisfy the facades' references to the crate's mangled internal symbols). They therefore carry private copies of the core state: hooks/globals installed through one DSO are not observed by the others. The DSO-STATE-COHERENCE court pins the exact partition profile; the DSO-LOADER court verifies the ELF identities.",
+   "distribution_contract": "The full Git repository (with .cargo/config.toml and tools/packaging/) is the C-custodian distribution — it builds the real three-DSO contract. The crates.io package excludes tools/ and .cargo/ (Cargo.toml exclude), so published-crate builds use the default linker and the symlink fallback: every SONAME name resolves to the single core liblibxml_rs.so instance (Rust-consumption artifact)."
+  }
+ },
+ "tools": {
+  "rustc": "1.98.0 (88d9e12ae 2026-08-18)",
+  "cargo": "1.98.0 (797e8a9bc 2026-08-05)",
+  "gcc": "gcc (GCC) 16.2.1 20260810",
+  "python": "Python 3.14.7",
+  "git": "git version 2.55.0",
+  "nm": "GNU nm (GNU Binutils) 2.47",
+  "readelf": "GNU readelf (GNU Binutils) 2.47"
+ },
+ "amendment_scope": [
+  "1. FUNCTION-SIGNATURE ABI PLANE (R-000176): new ABI-FUNCTION-SIGNATURE court mirrors every export across oracle header / candidate header / actual Rust extern \"C\" signature (3319 compared, 0 findings). Caught the xmlGcMemSetup class — xmlMemSetup/xmlMemGet/xmlGcMemSetup/xmlGcMemGet took four arguments (missing mallocAtomicFunc), returned nothing (header says int), and on x86-64 SysV misread five registers (RDX mallocAtomic read as realloc, RCX realloc as strdup) — plus shifted layouts (xmlC14NExecute 6-vs-7 args with a completely different contract; xmlAutomataNewCountTrans/xmlAutomataNewOnceTrans swapped min/max with data), 20+ stale pre-2.10 signatures (xmlAddAttributeDecl/ElementDecl/NotationDecl/xmlAddEntity/xmlValidateIDRef/Refs/xmlSplitQName/3/xmlListCopy/xmlRegNewExecCtxt/xmlRegExecPushString/xmlRegexpPrint/xmlSchematronNewValidCtxt/xmlXPathValuePush/xmlXPathNodeSetDel/xmlXPathNodeSetRemove/xmlCatalogConvert/xmlCatalogDump/xsltAddTemplate/xsltGetUTF8CharZ/xslt*Ext*/xsltSetCtxtLocaleHandlers/xsltSetLoaderFunc/xsltInitElemPreComp), candidate-header drift fixed to the oracle (xmlTextWriter* int returns, xmlDebugDumpNode depth arg, xmlParseURIReference/xmlURIUnescapeString returns, xmlNewTextReaderFilename 1-arg, xslt function-pointer typedefs), and the four legacy SAX v1 handlers became x86-64 variadic asm shims formatting the varargs (upstream xmlVFormatLegacyError).",
+  "2. ALLOCATOR SINGLE-SOURCE-OF-TRUTH: the five exported function-pointer variables (xmlFree/xmlMalloc/xmlMallocAtomic/xmlRealloc/xmlMemStrdup) ARE the allocator state (upstream globals.c); xmlMemSetup/xmlGcMemSetup validate NULLs (return -1), assign the variables (Gc assigns xmlMallocAtomic = mallocAtomicFunc) and return 0; xmlMemGet/xmlGcMemGet read them through NULL-tolerant outputs; the *Impl bodies are indirections through the variables so every internal allocation observes the override; the internal ALLOCATOR RwLock (two-sources-of-truth) is gone. ALLOCATOR-HOOK differential court (xmlMemSetup/get, Gc variant, direct public-variable assignment, NULL rejection) is byte-identical with the oracle.",
+  "3. DSO-STATE-COHERENCE COURT (R-000177): cross-DSO probe (install allocator/entity-loader/node-register/keepBlanks through -lxml2, run compile+transform through -lxslt). Oracle (shared instance): every observation True. Candidate whole-archive facades: fully partitioned (transform-phase allocator/register/deregister/loader observations all False, keepBlanks not shared — 56-byte result vs oracle 41). Thin re-export facades proven impossible (consumer static link fails; mangled-internal dependency). Accepted as a bounded divergence; the court pins the exact partition profile so silent architectural changes are caught.",
+  "4. CUSTODIAN-COMMENTARY-DRIFT COURT: every residual (R-\\d{6}), court/probe/casefile ID, epoch (E-\\d{3}) and courts/receipts path in source commentary resolves; embedded (N/N) court-verdict counts banned and removed (28 sites, e.g. DSO-LOADER (25/25) -> DSO-LOADER); granular coverage census — exports 1856/1856 documented, unsafe fns 1771/1811 documented, unsafe blocks 1737/5233 SAFETY-commented (baseline).",
+  "5. COUNTS + DISTRIBUTION CONTRACT: Cargo.toml/README narrative updated to 1181 tests and 78 FIXED / 3 OPEN (81 residuals); crates.io version 0.1.0-alpha.35; the repository-vs-crates.io distribution split (repo = real three-DSO C-custodian install; published crate = symlink-fallback Rust-consumption artifact) documented in build.rs."
+ ],
+ "oracle_identity": {
+  "libxml2": "2.15.3 (system /usr/lib/libxml2.so.16, xmllint 21503-GITv2.15.3)",
+  "libxslt": "1.1.45 (system /usr/lib/libxslt.so.1, xsltproc 10145-GITv1.1.45)",
+  "libexslt": "0.8.25 (system /usr/lib/libexslt.so.0, 825-GITv1.1.45)",
+  "xmllint_features": "Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib"
+ },
+ "courts_11_1_z2": {
+  "abi_function_signature": {
+   "runner": "tools/abi/function_signature_court.py",
+   "compared": 3319,
+   "ok": 3319,
+   "findings": 0,
+   "verdict": "PASS",
+   "receipt": "courts/receipts/phase-11/abi-function-signature-20260831T205819Z.json"
+  },
+  "allocator_hook": {
+   "runner": "tools/abi/allocator_hook_probe.py",
+   "oracle_sha256": "e6eec02745d73524e9e03d12d9f9efc15d3d9bfdc88807bc2ded24879547ceb6",
+   "candidate_sha256": "e6eec02745d73524e9e03d12d9f9efc15d3d9bfdc88807bc2ded24879547ceb6",
+   "identical": true,
+   "verdict": "PASS"
+  },
+  "dso_state_coherence": {
+   "runner": "tools/abi/dso_state_coherence_probe.py",
+   "mode": "documented-divergence (R-000177)",
+   "oracle": "shared instance: allocator/register/deregister/loader all observed, keepBlanks shared (result size 41)",
+   "candidate": "partition profile pinned: transform-phase hooks all unobserved, keepBlanks not shared (result size 56)",
+   "verdict": "PASS (partition profile asserted)"
+  },
+  "custodian_commentary_drift": {
+   "runner": "tools/evidence/custodian_commentary_drift.py",
+   "findings": 0,
+   "verdict": "PASS",
+   "census": "exports 1856/1856 documented; unsafe fns 1771/1811 documented; unsafe blocks 1737/5233 SAFETY-commented"
+  }
+ },
+ "battery": {
+  "cargo_test_lib": "1181 passed, 0 failed, 1 ignored",
+  "cargo_fmt_check": "PASS (0 diffs)",
+  "cargo_clippy_all_targets_all_features_Dwarnings": "PASS (exit 0)",
+  "generate_all_check": "reproducible (see EVIDENCE_GENERATION_RECEIPT.json)",
+  "cli_courts": "xmllint 48/48, xmlcatalog 11/11, xsltproc 21/21",
+  "suite_courts": "ast-surface, build-config-script, build-pkgconfig, dso-loader, header-compile, install-layout, sanity: all PASS",
+  "data_abi_probes": "callback, catalog, data-globals, encoding, error, globals-threading, reader, save, security-limits, tree-structure, writer, xpath, xslt families + c14n api + allocator-hook: all PASS",
+  "rust_mirror": "45 structs/unions + 14 enums; measurable=50 mismatches=0 PASS",
+  "custodian_commentary": "127/127 modules fully documented, 7 NOT-APPLICABLE, PASS",
+  "evidence_integrity": "PASS (81 residuals, 3 open, Markdown byte-identical)"
+ },
+ "artifact_hashes": {
+  "candidate_core_liblibxml_rs_so": "ba33948202f89370b68b1e2c626e33272d169991d7e7dd9dd18cb51a9a2d0070",
+  "candidate_libxslt_so_1_1_45": "7ffe2b84f2c95e3e389d80a7b2725318102db08a752f4ec072c41b61ce7c83b2",
+  "candidate_libexslt_so_0_8_25": "e3b0a2df6addef90d857e8d8f8b53cd201dfc1158d7d507f25a1b86d26c3096b",
+  "note": "three DISTINCT hashes — the facades are real DSOs, not hardlinks/symlinks to the core. Captured on the seal-commit tree (1c35e4e1); two independent clean `cargo clean -p libxml-rs && cargo build` runs reproduce them byte-identically."
+ },
+ "residuals": {
+  "total": 81,
+  "fixed": 78,
+  "open": 3,
+  "open_ids": [
+   "R-000157",
+   "R-000168",
+   "R-000177"
+  ],
+  "open_disposition": "R-000157 is OPEN/UNRESOLVED: a REAL current executed-platform gap (iconv/ICU-only encodings vs the Iconv+ICU-enabled 2.15.3 oracle) whose closure requires implementing an iconv/ICU backend — a future implementation work item, explicitly NOT waived. R-000168 is the bounded unexecuted-platform evidence obligation (Windows/macOS/BSD/32-bit runtime), documented per-obligation in atlas/PLATFORM_SURFACE_ATLAS.json. R-000177 is the documented cross-DSO state partitioning of the whole-archive facades, pinned by the DSO-STATE-COHERENCE court. CORRECTED ACCEPTANCE (supersedes the Z.1 phrasing): surface/evidence completeness is sealed for the executed platform; one known current implementation residual (R-000157) and the unexecuted-platform evidence obligation (R-000168) remain open and are explicitly deferred, and one bounded packaging divergence (R-000177) is accepted and court-pinned. There is no claim that open candidate-parity residuals = 0 — R-000157 is a genuine current executed-platform implementation gap."
+ },
+ "test_results": {
+  "lib": {
+   "passed": 1181,
+   "failed": 0,
+   "ignored": 1
+  }
+ }
+}
