@@ -58,7 +58,7 @@ STATUS_MODEL = {
     "abi_status": ["UNVERIFIED", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
     "semantic_status": ["UNVERIFIED", "PARTIAL", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
     "ownership_status": ["NOT_APPLICABLE", "UNVERIFIED", "PASS", "FAIL", "EVIDENCE_CONFLICT"],
-    "historical_status": ["CURRENT_ONLY", "PARTIAL", "VERIFIED", "EVIDENCE_CONFLICT"],
+    "historical_status": ["CURRENT_ONLY", "PARTIAL", "VERIFIED", "CUSTODIAN", "EVIDENCE_CONFLICT"],
     # Verification ladder: an entry climbs it only through courts.
     "overall": ["MISSING", "STUB", "INTENTIONAL_NOOP", "IMPLEMENTED_UNVERIFIED",
                 "CURRENT_PARITY_VERIFIED", "HISTORICAL_PARITY_VERIFIED",
@@ -72,8 +72,11 @@ STATUS_MODEL = {
         "CURRENT_PARITY_VERIFIED + historical_status VERIFIED (surface and "
         "behavior verified across every historically applicable epoch)"),
     "custodian_verified_definition": (
-        "HISTORICAL_PARITY_VERIFIED across every historically applicable "
-        "API/ABI/semantic epoch — not necessarily every version redundantly"),
+        "HISTORICAL_PARITY_VERIFIED with historical_status CUSTODIAN — "
+        "per-epoch verification evidence recorded across every historically "
+        "applicable API/ABI/semantic epoch, not necessarily every version "
+        "redundantly. CUSTODIAN is a stronger historical_status than VERIFIED "
+        "and is the only state that earns CUSTODIAN_VERIFIED"),
 }
 # The six per-symbol status dimensions tracked per obligation.
 STATUS_DIMENSIONS = ["export_status", "implementation_status", "abi_status",
@@ -110,6 +113,20 @@ DIM_MERGE = {
     ("VERIFIED", "CURRENT_ONLY"): "VERIFIED",
     ("CURRENT_ONLY", "PARTIAL"): "PARTIAL",
     ("PARTIAL", "CURRENT_ONLY"): "PARTIAL",
+    # 11.1-Z.1: CUSTODIAN (per-epoch verification evidence across every
+    # historically applicable epoch) is the strongest historical_status;
+    # VERIFIED < CUSTODIAN, and a conflict with FAIL stays a conflict.
+    ("UNVERIFIED", "CUSTODIAN"): "CUSTODIAN",
+    ("CUSTODIAN", "UNVERIFIED"): "CUSTODIAN",
+    ("CUSTODIAN", "CUSTODIAN"): "CUSTODIAN",
+    ("VERIFIED", "CUSTODIAN"): "CUSTODIAN",
+    ("CUSTODIAN", "VERIFIED"): "CUSTODIAN",
+    ("CUSTODIAN", "CURRENT_ONLY"): "CUSTODIAN",
+    ("CURRENT_ONLY", "CUSTODIAN"): "CUSTODIAN",
+    ("PARTIAL", "CUSTODIAN"): "PARTIAL",
+    ("CUSTODIAN", "PARTIAL"): "PARTIAL",
+    ("CUSTODIAN", "FAIL"): "EVIDENCE_CONFLICT",
+    ("FAIL", "CUSTODIAN"): "EVIDENCE_CONFLICT",
 }
 
 
@@ -330,9 +347,15 @@ def derive_overall(entry):
     if (entry["abi_status"] == "PASS"
             and entry["semantic_status"] == "PASS"
             and entry["ownership_status"] in ("NOT_APPLICABLE", "PASS")):
-        if entry["historical_status"] == "VERIFIED":
+        # 11.1-Z.1 ladder fix: VERIFIED (surface/behavior across every
+        # historically applicable epoch) earns HISTORICAL_PARITY_VERIFIED;
+        # only CUSTODIAN (per-epoch verification evidence across every
+        # historically applicable epoch — strictly stronger) earns
+        # CUSTODIAN_VERIFIED. PARTIAL historical evidence is not enough for
+        # either and stays at CURRENT_PARITY_VERIFIED.
+        if entry["historical_status"] == "CUSTODIAN":
             return "CUSTODIAN_VERIFIED"
-        if entry["historical_status"] in ("PARTIAL",):
+        if entry["historical_status"] == "VERIFIED":
             return "HISTORICAL_PARITY_VERIFIED"
         return "CURRENT_PARITY_VERIFIED"
     return "IMPLEMENTED_UNVERIFIED"
@@ -356,8 +379,9 @@ def main():
                   "CURRENT_PARITY_VERIFIED is earned only when per-symbol "
                   "courts exist and pass (abi + semantic + ownership); "
                   "HISTORICAL_PARITY_VERIFIED adds historical_status VERIFIED; "
-                  "CUSTODIAN_VERIFIED means verified across every historically "
-                  "applicable epoch. IMPLEMENTED_UNVERIFIED means the export "
+                  "CUSTODIAN_VERIFIED requires historical_status CUSTODIAN "
+                  "(per-epoch verification evidence across every historically "
+                  "applicable epoch). IMPLEMENTED_UNVERIFIED means the export "
                   "exists with real logic but has not yet been verified by a "
                   "court. Court verdicts merge PER DIMENSION with provenance; "
                   "contradictory verdicts fail the ledger as EVIDENCE_CONFLICT."),

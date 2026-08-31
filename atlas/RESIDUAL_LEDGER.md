@@ -712,10 +712,10 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Oracle versions:** libxml2 2.15.3 (system)
 - **Root cause:** Upstream serves UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252 via iconv/ICU plus static 8-bit tables; the crate ships no iconv/ICU backend, so those encodings report XML_ERR_UNSUPPORTED_ENCODING (32) where the oracle returns a converter. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths are byte-identical (ENCODING-001).
 - **Observable residual:** A C consumer requesting an iconv-only encoding gets XML_ERR_UNSUPPORTED_ENCODING instead of a handler; conversion through those encodings is unavailable in the candidate.
-- **Phase 11 triangulation:** No upstream epoch provides these converters without iconv/ICU; adding an iconv backend is a future work item, not a parity defect.
+- **Phase 11 triangulation:** The reference system oracle (libxml2 2.15.3, built with Iconv and ICU enabled) returns usable converters for UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252, while the candidate reports XML_ERR_UNSUPPORTED_ENCODING — a REAL current Linux-x86-64 observable parity gap. No upstream epoch provides these converters without iconv/ICU, so closing the gap requires implementing an iconv (or ICU) backend in the crate: a future implementation work item, not a permanent waiver.
 - **Regression courts:** ENCODING-001.
 - **Evidence:** ['courts/suites/data-abi/encoding-family-probe.c', 'courts/receipts/phase-11/encoding-family-*.json']
-- **Classification:** INTENTIONAL_SAFE_DIVERGENCE
+- **Classification:** UNRESOLVED
 
 ### R-000160: libxslt exports with literally-trivial upstream 1.1.45 bodies classified as intentional no-ops (FIXED)
 
@@ -922,6 +922,32 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Evidence:** ['oracle/historical/src/libxml2-2.15.0/xpath.c (xmlXPathNextChild, xmlXPathNextChildElement)']
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-31 (discovered during 11.2 custodian commentary audit); FIXED 2026-08-31 (fixed in 11.1-Z/11.2; CLI-XSLTPROC-0021 byte-identical)
+
+### R-000174: xsltGenericDebug exported as a function; upstream libxslt declares it as a data variable (xmlGenericErrorFunc function pointer, oracle symbol type D) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-Z)
+- **Component:** src/abi/data_globals.rs, src/xslt/errors/mod.rs
+- **Surface:** xsltGenericDebug, xsltSetGenericDebugFunc (xsltutils.h)
+- **Oracle versions:** libxslt 1.1.45 (system)
+- **Root cause:** The candidate exported xsltGenericDebug as a #[no_mangle] extern fn (symbol type T). Upstream xsltutils.c:632 defines `xmlGenericErrorFunc xsltGenericDebug = xsltGenericDebugDefaultFunc;` — a global function-pointer DATA variable (oracle nm type D) defaulting to a handler that writes the message to xsltGenericDebugContext (a FILE*) when it is non-NULL. The 11.1-Z.1 full-surface type scan (every oracle symbol vs the candidate DSOs) found this single remaining R-000167-class ABI type divergence.
+- **Fix:** 11.1-Z.1: xsltGenericDebug is now exported as DATA from src/abi/data_globals.rs (`#[no_mangle] pub static mut xsltGenericDebug: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC_DEBUG_DEFAULT);`) with a faithful default handler reproducing upstream xsltGenericDebugDefaultFunc (NULL-context suppression + write to the context FILE*). xsltSetGenericDebugFunc now writes the exported data global and xsltGenericDebugContext (upstream xsltutils.c:650 semantics). The old exported fn was removed. Full-surface type scan: 0 mismatches across libxml2/libxslt/libexslt.
+- **Regression courts:** DSO-LOADER, DATA-GLOBALS-001.
+- **Evidence:** ['courts/suites/dso-loader/court-runner.sh (symtype:xsltGenericDebug=D)', 'atlas/PARITY_MATRIX.json (libxslt exported_data fully_reconciled)']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-31 (discovered by the 11.1-Z.1 full-surface symbol-type scan (parity matrix libxslt data reconciliation 10/11)); FIXED 2026-08-31 (fixed in 11.1-Z.1; xsltGenericDebug exported as data with the upstream default handler; type scan 0 mismatches)
+
+### R-000175: xmlC14NDocDumpMemory serializes unexpanded entity references; upstream c14n.c fails canonicalization with -1 (XML_ENTITY_REF_NODE is an invalid node) (FIXED)
+
+- **Status:** FIXED (, Phase 11.1-Z)
+- **Component:** src/xml/c14n/mod.rs
+- **Surface:** xmlC14NDocDumpMemory, xmlC14NDocSaveTo, xmlC14NExecute (c14n.h)
+- **Oracle versions:** libxml2 2.15.3 (system)
+- **Root cause:** The candidate's c14n_serialize_node emitted the reference text (&foo;) for XML_ENTITY_REF_NODE nodes. Upstream c14n.c xmlC14NProcessNode treats XML_ENTITY_REF_NODE (and XML_ENTITY_NODE / XML_NAMESPACE_DECL) as invalid: xmlC14NErrInvalidNode(ctx, "XML_ENTITY_REF_NODE", "processing node") and the whole dump returns -1. A C consumer that depends on the -1 error (e.g. rejecting unexpanded entity documents) silently got canonical output instead. Found by the 11.1-Z.1 broad differential run of the C14N API probe over the full CLI corpus (dclent.xml).
+- **Fix:** 11.1-Z.1: C14nContext gains an invalid_node flag set by the XML_ENTITY_REF_NODE branch; all three dump paths (c14n_doc_dump_memory, c14n_execute, c14n_doc_save_to) return -1 with no output when it is set — matching the oracle. New regression test test_c14n_entity_ref_node_fails_like_upstream (parses a DTD doc with NOENT unset, expects -1 + NULL result); the C14N API probe differential over the full CLI corpus is 0 mismatches.
+- **Regression courts:** test_c14n_entity_ref_node_fails_like_upstream, CLI-XMLLINT-0043, CLI-XMLLINT-0044, CLI-XMLLINT-0045, CLI-XMLLINT-0046, CLI-XMLLINT-0047.
+- **Evidence:** ['courts/suites/data-abi/c14n-api-probe.c', 'oracle/historical/src/libxml2-2.15.0/c14n.c (xmlC14NProcessNode, xmlC14NErrInvalidNode)']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-08-31 (discovered by the 11.1-Z.1 broad C14N API differential (dclent.xml)); FIXED 2026-08-31 (fixed in 11.1-Z.1; entity-ref nodes fail the dump with -1 like the oracle; regression test + 0-mismatch corpus differential)
 
 ## Classification Legend
 

@@ -83,12 +83,22 @@ chain() {
 chain "libxml2:libxml2.so"          "${LIBDIR}/libxml2.so"        "${CANDIDATE_SO:-liblibxml_rs.so}"
 chain "libxml2:libxml2.so.16"       "${LIBDIR}/libxml2.so.16"     "liblibxml_rs.so"
 chain "libxml2:libxml2.so.16.1.3"   "${LIBDIR}/libxml2.so.16.1.3" "liblibxml_rs.so"
-chain "libxslt:libxslt.so"          "${LIBDIR}/libxslt.so"        "liblibxml_rs.so"
-chain "libxslt:libxslt.so.1"        "${LIBDIR}/libxslt.so.1"      "liblibxml_rs.so"
-chain "libxslt:libxslt.so.1.1.45"   "${LIBDIR}/libxslt.so.1.1.45" "liblibxml_rs.so"
-chain "libexslt:libexslt.so"        "${LIBDIR}/libexslt.so"       "liblibxml_rs.so"
-chain "libexslt:libexslt.so.0"      "${LIBDIR}/libexslt.so.0"     "liblibxml_rs.so"
-chain "libexslt:libexslt.so.0.8.25" "${LIBDIR}/libexslt.so.0.8.25" "liblibxml_rs.so"
+# 11.1-Z.1: libxslt/libexslt chains terminate in the REAL facade DSOs
+# (SONAME libxslt.so.1 / libexslt.so.0), not in the combined core.
+chain "libxslt:libxslt.so"          "${LIBDIR}/libxslt.so"        "libxslt.so.1.1.45"
+chain "libxslt:libxslt.so.1"        "${LIBDIR}/libxslt.so.1"      "libxslt.so.1.1.45"
+if [ -f "${LIBDIR}/libxslt.so.1.1.45" ] && [ ! -L "${LIBDIR}/libxslt.so.1.1.45" ]; then
+    record PASS "libxslt:libxslt.so.1.1.45:real-facade-file"
+else
+    record FAIL "libxslt:libxslt.so.1.1.45:real-facade-file" "not a regular file"
+fi
+chain "libexslt:libexslt.so"        "${LIBDIR}/libexslt.so"       "libexslt.so.0.8.25"
+chain "libexslt:libexslt.so.0"      "${LIBDIR}/libexslt.so.0"     "libexslt.so.0.8.25"
+if [ -f "${LIBDIR}/libexslt.so.0.8.25" ] && [ ! -L "${LIBDIR}/libexslt.so.0.8.25" ]; then
+    record PASS "libexslt:libexslt.so.0.8.25:real-facade-file"
+else
+    record FAIL "libexslt:libexslt.so.0.8.25:real-facade-file" "not a regular file"
+fi
 
 # relative links only (remount-safe): link targets must not be absolute
 rel_ok=0
@@ -108,15 +118,16 @@ fi
 
 # top-level compat links used by `-L target/debug -lxml2`
 chain "compat:top-level-libxml2.so" "${ARTIFACT}/libxml2.so"  "liblibxml_rs.so"
-chain "compat:top-level-libxslt.so" "${ARTIFACT}/libxslt.so"  "liblibxml_rs.so"
-chain "compat:top-level-libexslt.so" "${ARTIFACT}/libexslt.so" "liblibxml_rs.so"
+chain "compat:top-level-libxslt.so" "${ARTIFACT}/libxslt.so"  "libxslt.so.1.1.45"
+chain "compat:top-level-libexslt.so" "${ARTIFACT}/libexslt.so" "libexslt.so.0.8.25"
 
-# top-level SONAME compat links: the DSO carries SONAME libxml2.so.16, so
-# consumers NEED that name; LD_LIBRARY_PATH=<artifact> must resolve it and the
-# libxslt/libexslt SONAMEs through these links (11.1-T contamination guard).
+# top-level SONAME compat links: the DSOs carry SONAMEs libxml2.so.16 /
+# libxslt.so.1 / libexslt.so.0, so consumers NEED those names;
+# LD_LIBRARY_PATH=<artifact> must resolve them through these links
+# (11.1-T contamination guard).
 chain "compat:top-level-libxml2.so.16" "${ARTIFACT}/libxml2.so.16"  "liblibxml_rs.so"
-chain "compat:top-level-libxslt.so.1"  "${ARTIFACT}/libxslt.so.1"   "liblibxml_rs.so"
-chain "compat:top-level-libexslt.so.0" "${ARTIFACT}/libexslt.so.0"  "liblibxml_rs.so"
+chain "compat:top-level-libxslt.so.1"  "${ARTIFACT}/libxslt.so.1"   "libxslt.so.1.1.45"
+chain "compat:top-level-libexslt.so.0" "${ARTIFACT}/libexslt.so.0"  "libexslt.so.0.8.25"
 
 # ── 2. static library names ───────────────────────────────────────────────── #
 

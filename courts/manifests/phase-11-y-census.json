@@ -1,43 +1,42 @@
 {
  "manifest_id": "PHASE-11-1-Y-CENSUS",
  "title": "11.1-Y required court families census",
- "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0).",
+ "description": "Every mandated court family has a runnable case/runner, a persistent receipt, and clear PASS/FAIL semantics under courts/schema.json. This census maps each family to its runner and the latest receipt. Refreshed 2026-08-31 for the 11.1-Z seal from freshly executed runners (all PASS; STUB census = 0). 11.1-Z.1 amendment: PREPROCESSOR-SURFACE and AST-SURFACE now point at the real condition-lattice / Clang-AST machinery (dedicated courts), not the config-script / header-compile courts.",
  "date": "2026-08-31",
- "candidate_commit": "339d3aa99e05f1c3daef12aa762d02f5dd89241c",
+ "candidate_commit": "<Z1_COMMIT_PLACEHOLDER>",
  "verdict": "PASS",
  "families": {
   "DOXYGEN-SURFACE": {
    "runner": "tools/evidence/header_surface_audit.py",
-   "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T17:10:04Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T19:30:14Z-receipt.json",
    "result": "PASS",
    "note": "header surface audit + header-compile 595/595"
   },
   "AST-SURFACE": {
-   "runner": "tools/evidence/header_surface_audit.py",
-   "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T17:10:04Z-receipt.json",
+   "runner": "courts/suites/ast-surface/court-runner.sh (tools/archaeology/apiatlas.py output: atlas/api/<project>/<version>.json)",
+   "receipt": "courts/receipts/phase-11/ast-surface-2026-08-31T19:30:18Z-receipt.json",
    "result": "PASS",
-   "note": "generated headers compiled with gcc/g++ (header-compile court)"
+   "note": "Clang AST atlas 13/13 (functions/records/enums/typedefs/callbacks/globals per project, generator + version tag bound)"
   },
   "PREPROCESSOR-SURFACE": {
-   "runner": "courts/suites/build-config-script/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/build-config-script-2026-08-31T17:10:09Z-receipt.json",
+   "runner": "courts/suites/preprocessor-surface/court-runner.sh (tools/archaeology/condition_inventory.py output: oracle/historical/doxygen/conditions.json + coverage.json + configs.json)",
+   "receipt": "courts/receipts/phase-11/preprocessor-surface-2026-08-31T19:30:18Z-receipt.json",
    "result": "PASS",
-   "note": "28/28 config-script checks (xml2-config/xslt-config)"
+   "note": "configuration-lattice court 9/9: condition universe + both-direction branch coverage of every public-header condition (#if 0/#if 1 literals exempt), hashed config lattice"
   },
   "HEADER-COMPILE": {
    "runner": "courts/suites/header-compile/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T17:10:04Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/header-compile-2026-08-31T19:30:14Z-receipt.json",
    "result": "PASS",
    "note": "595/595 headers compile against the built DSO"
   },
   "ABI-SYMBOL": {
    "runner": "courts/suites/sanity/court-runner.sh + courts/suites/dso-loader/court-runner.sh",
    "receipt": [
-    "courts/receipts/phase-11/dso-loader-2026-08-31T14:26:15Z-receipt.json",
-    "courts/receipts/phase-11/dso-loader-2026-08-31T17:10:08Z-receipt.json"
+    "courts/receipts/phase-11/dso-loader-2026-08-31T19:30:13Z-receipt.json"
    ],
    "result": "PASS",
-   "note": "ABI-SYMBOL-0001 6/6 + dso-loader 25/25 symbol resolution"
+   "note": "ABI-SYMBOL-0001 6/6 + dso-loader 40/40 symbol resolution + symtype parity (incl. xsltGenericDebug=D, R-000174)"
   },
   "ABI-DATA": {
    "runner": "tools/abi/data_globals_probe.py",
@@ -77,27 +76,27 @@
   },
   "DSO-LOADER": {
    "runner": "courts/suites/dso-loader/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T17:10:08Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T19:30:13Z-receipt.json",
    "result": "PASS",
-   "note": "25/25 exported symbols resolve from the built DSO (contamination-proof loader)"
+   "note": "40/40: three real DSOs (core + libxslt/libexslt facades), per-DSO SONAMEs + NEEDED chain, -lxml2/-lxslt/-lexslt consumer link+run (11.1-Z.1)"
   },
   "BUILD-PKGCONFIG": {
    "runner": "courts/suites/build-pkgconfig/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/build-pkgconfig-2026-08-31T17:10:08Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/build-pkgconfig-2026-08-31T19:30:14Z-receipt.json",
    "result": "PASS",
-   "note": "11/11 pkg-config compile/link/run checks"
+   "note": "12/12 pkg-config compile/link/run checks (incl. -lexslt -lxslt -lxml2 chain, 11.1-Z.1)"
   },
   "BUILD-CONFIG-SCRIPT": {
    "runner": "courts/suites/build-config-script/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/build-config-script-2026-08-31T17:10:09Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/build-config-script-2026-08-31T19:30:14Z-receipt.json",
    "result": "PASS",
    "note": "28/28 xml2-config/xslt-config checks"
   },
   "INSTALL-LAYOUT": {
    "runner": "courts/suites/install-layout/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/install-layout-2026-08-31T17:10:09Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/install-layout-2026-08-31T19:30:14Z-receipt.json",
    "result": "PASS",
-   "note": "73/73 install-layout checks"
+   "note": "73/73 install-layout checks (facade chains resolve to real DSOs, 11.1-Z.1)"
   },
   "OWNERSHIP": {
    "runner": "tools/abi/tree_structure_probe.py",
@@ -245,21 +244,21 @@
   },
   "CLI-XMLLINT": {
    "runner": "python3 cli/court-runner.py xmllint",
-   "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T17:10:01Z-receipt.json",
+   "receipt": "courts/receipts/phase-10/xmllint-2026-08-31T19:30:19Z-receipt.json",
    "result": "PASS",
-   "note": "47/47 (incl. the new NS/WFC/C14N cases 0035-0047)"
+   "note": "48/48 (incl. NS/WFC/C14N cases 0035-0048)"
   },
   "CLI-XMLCATALOG": {
    "runner": "python3 cli/court-runner.py xmlcatalog",
-   "receipt": "courts/receipts/phase-10/xmlcatalog-2026-08-31T17:10:01Z-receipt.json",
+   "receipt": "courts/receipts/phase-10/xmlcatalog-2026-08-31T19:30:19Z-receipt.json",
    "result": "PASS",
    "note": "11/11"
   },
   "CLI-XSLTPROC": {
    "runner": "python3 cli/court-runner.py xsltproc",
-   "receipt": "courts/receipts/phase-09/xsltproc-2026-08-31T17:10:01Z-receipt.json",
+   "receipt": "courts/receipts/phase-09/xsltproc-2026-08-31T19:30:19Z-receipt.json",
    "result": "PASS",
-   "note": "19/19 (family rebuilt on real oracle goldens in 11.1-X; 0013-0019 added)"
+   "note": "21/21 (incl. 0020/0021 from the 11.2 custodian fixes)"
   },
   "HIST-SURFACE-EPOCH": {
    "runner": "tools/evidence/matrix_receipt.py gen",
@@ -281,7 +280,7 @@
   },
   "ORACLE-CONTAMINATION": {
    "runner": "courts/suites/dso-loader/court-runner.sh",
-   "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T14:26:15Z-receipt.json",
+   "receipt": "courts/receipts/phase-11/dso-loader-2026-08-31T19:30:13Z-receipt.json",
    "result": "PASS",
    "note": "candidate DSO loaded without the system library (loader identity in receipt)"
   },
@@ -289,7 +288,7 @@
    "runner": "python3 tools/evidence/ledger_gen.py check",
    "receipt": "courts/receipts/phase-11/evidence-integrity-*.json",
    "result": "PASS",
-   "note": "EVIDENCE-INTEGRITY COURT: PASS (75 residuals, 2 open, Markdown byte-identical)"
+   "note": "EVIDENCE-INTEGRITY COURT: PASS (79 residuals, 2 open, Markdown byte-identical)"
   },
   "CUSTODIAN-COMMENTARY": {
    "runner": "python3 tools/evidence/custodian_commentary_court.py",

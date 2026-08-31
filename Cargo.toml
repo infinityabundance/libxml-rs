@@ -1,8 +1,8 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.33"
+version = "0.1.0-alpha.34"
 edition = "2021"
-description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure (xmlXPath*, xmlTextReader*, xmlTextWriter*, catalogs, serialization, data globals, chvalid, encoding, the full libxslt surface) — parity ledger at 0 missing for both libxml2 and libxslt; residual closure loop (73 FIXED / 2 bounded obligations) sealed by differential court matrix; C14N, format-number(), number(), compile-time XSLT select/test validation, and undefined-prefix QName preservation verified byte-identical against libxml2 2.15.3 / libxslt 1.1.45 oracle. 1177 tests passing."
+description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure (xmlXPath*, xmlTextReader*, xmlTextWriter*, catalogs, serialization, data globals, chvalid, encoding, the full libxslt surface) — parity ledger at 0 missing for both libxml2 and libxslt; three-DSO ELF drop-in packaging (libxml2.so.16 core + libxslt.so.1/libexslt.so.0 facades with the upstream NEEDED chain); residual closure loop (75 FIXED / 2 OPEN) sealed by differential court matrix; C14N, format-number(), number(), compile-time XSLT select/test validation, and undefined-prefix QName preservation verified byte-identical against libxml2 2.15.3 / libxslt 1.1.45 oracle. 1177 tests passing."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"
@@ -20,6 +20,7 @@ exclude = [
     "courts/",
     "vgcore.*",
     ".gitignore",
+    ".cargo/",
     "session1.md",
     "CACHEDIR.TAG",
 ]

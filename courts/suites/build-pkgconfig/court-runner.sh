@@ -108,6 +108,13 @@ compile_and_run "cc-pkgconfig-libxslt" "libxslt-pc" "result=<out>hi</out>" \
     "${SCRIPT_DIR}/test-libxslt.c" \
     $( PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" pkg-config --libs libxslt )
 
+# 5. pkg-config libexslt (Requires: libxml-2.0, libxslt -> -lexslt -lxslt -lxml2;
+#    exercises the three-DSO NEEDED chain end to end)
+compile_and_run "cc-pkgconfig-libexslt" "libexslt-pc" "exslt=825 xml=21501 xslt=10145" \
+    $( PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" pkg-config --cflags libexslt ) \
+    "${SCRIPT_DIR}/test-libexslt.c" \
+    $( PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" pkg-config --libs libexslt )
+
 # pkg-config metadata sanity -------------------------------------------------- #
 
 check_pc() {

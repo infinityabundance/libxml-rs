@@ -33,9 +33,12 @@
 //! - Handler slots (`error`/`errctx`) are borrowed user-data, never
 //!   dereferenced by the library — per atlas/OWNERSHIP_ATLAS.md section 6,
 //!   the caller keeps the context alive.
-//! - `XSLT_GENERIC_DEBUG`/`XSLT_GENERIC_DEBUG_CONTEXT` are process-global
-//!   statics (upstream `xsltGenericDebug` globals); callers must not race
-//!   them (R-000171 slot-race lesson applied to the debug pair).
+//! - The exported `xsltGenericDebug` / `xsltGenericDebugContext` data globals
+//!   (crate::abi::data_globals) are process-global, exactly like the upstream
+//!   `xsltGenericDebug` globals; callers must not race them (R-000171
+//!   slot-race lesson applied to the debug pair). 11.1-Z.1: `xsltGenericDebug`
+//!   is exported as DATA (function pointer, oracle D) with the upstream
+//!   default handler, not as a function (R-000174).
 //!
 //! # Historical quirks & epochs
 //!
@@ -45,7 +48,8 @@
 //! the generic/structured handler chain (xmlFormatError fragment
 //! streaming, 6 calls per raise) and the default variadic stderr printers
 //! `xmlGenericError`/`xsltGenericError`; the candidate `xsltGenericDebug`
-//! writes through fd 2 with the upstream NULL-context suppression.
+//! default handler writes through the `xsltGenericDebugContext` FILE* with
+//! the upstream NULL-context suppression (11.1-Z.1, R-000174).
 //! R-000140 covered the `_xslt*` ABI mirrors.
 //!
 //! # Deliberate oddities
@@ -190,11 +194,10 @@ use std::sync::Mutex;
 
 static LAST_XSLT_ERROR: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
-/// Global debug handler (upstream xsltGenericDebug).
-static mut XSLT_GENERIC_DEBUG: Option<
-    unsafe extern "C" fn(*mut std::ffi::c_void, *const std::os::raw::c_char),
-> = None;
-
+/// Global debug handler: the exported `xsltGenericDebug` data global in
+/// `crate::abi::data_globals` (upstream `xsltGenericDebug`, a function
+/// pointer variable defaulting to `xsltGenericDebugDefaultFunc` — R-000174).
+///
 /// Set the generic debug handler (upstream `xsltSetGenericDebugFunc`).
 ///
 /// # UPSTREAM-PARITY
@@ -203,8 +206,10 @@ static mut XSLT_GENERIC_DEBUG: Option<
 /// void xsltSetGenericDebugFunc(void *ctx, xmlGenericErrorFunc handler);
 /// ```
 ///
-/// With a NULL handler, messages go to `stderr`; with a NULL context they
-/// are suppressed (upstream's default debug handler checks the context).
+/// Upstream (xsltutils.c:650): `xsltGenericDebugContext = ctx;` and — only
+/// when `handler != NULL` — `xsltGenericDebug = handler;`. With a NULL
+/// context the default handler suppresses output; a NULL handler leaves the
+/// current handler installed.
 ///
 /// # SAFETY
 ///
@@ -230,41 +235,11 @@ pub unsafe extern "C" fn xsltSetGenericDebugFunc(
     handler: Option<unsafe extern "C" fn(*mut std::ffi::c_void, *const std::os::raw::c_char)>,
 ) {
     unsafe {
-        XSLT_GENERIC_DEBUG_CONTEXT = ctx;
+        crate::abi::data_globals::xsltGenericDebugContext = ctx;
         if handler.is_some() {
-            XSLT_GENERIC_DEBUG = handler;
+            crate::abi::data_globals::xsltGenericDebug = handler;
         }
     }
-}
-
-static mut XSLT_GENERIC_DEBUG_CONTEXT: *mut std::ffi::c_void = std::ptr::null_mut();
-
-/// Emit a generic debug message (upstream xsltGenericDebug).
-///
-/// # SAFETY
-///
-/// - `ctx`, `msg` must be valid pointers (or NULL
-///   where the upstream C contract allows), obtained from the
-///   matching constructor/owner and not yet freed; the callee may
-///   take or keep ownership exactly as the C API specifies.
-///
-/// The caller must not race this call with concurrent mutation of the
-/// same objects from other threads (per-object state is not internally
-/// synchronized). Violating any of the above is undefined behavior.
-///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
-#[no_mangle]
-pub unsafe extern "C" fn xsltGenericDebug(
-    ctx: *mut std::ffi::c_void,
-    msg: *const std::os::raw::c_char,
-) {
-    if ctx.is_null() || msg.is_null() {
-        return;
-    }
-    let len = libc::strlen(msg);
-    libc::write(2, msg as *const libc::c_void, len);
 }
 
 /// Set the transform error handler for a context.

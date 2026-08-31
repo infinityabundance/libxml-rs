@@ -30,5 +30,7 @@
  "residuals": [
   "R-000168"
  ],
- "court_families": []
+ "court_families": [
+  "AST-SURFACE"
+ ]
 }

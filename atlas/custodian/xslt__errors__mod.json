@@ -5,8 +5,7 @@
   "xsltInternals.h"
  ],
  "export_samples": [
-  "xsltSetGenericDebugFunc",
-  "xsltGenericDebug"
+  "xsltSetGenericDebugFunc"
  ],
  "subsystems": [
   "xslt-lifecycle",
@@ -22,7 +21,8 @@
   "xslt-exports"
  ],
  "residuals": [
-  "R-000140"
+  "R-000140",
+  "R-000174"
  ],
  "court_families": []
 }

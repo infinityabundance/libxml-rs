@@ -155,6 +155,12 @@ pub struct C14nContext {
     /// callback): when present, only nodes whose pointer is in this set are
     /// visible. NULL (None) means the whole document is visible.
     visible_set: Option<HashSet<*mut c_void>>,
+    /// Set when a node that canonical XML cannot process is encountered
+    /// (upstream c14n.c xmlC14NErrInvalidNode: XML_ENTITY_REF_NODE /
+    /// XML_ENTITY_NODE / XML_NAMESPACE_DECL return -1 "processing node"
+    /// — 11.1-Z.1, R-000175). The dump functions then return -1 like the
+    /// oracle instead of serializing the reference.
+    pub invalid_node: bool,
 }
 
 impl C14nContext {
@@ -195,6 +201,7 @@ impl C14nContext {
             pos: 0, // XMLC14N_BEFORE_DOCUMENT_ELEMENT
             parent_is_doc: true,
             visible_set,
+            invalid_node: false,
         };
         // Push the initial (document-level) namespace scope, which contains
         // the implicit `xml` namespace.
@@ -1442,13 +1449,11 @@ unsafe fn c14n_serialize_node(node: *mut _xmlNode, ctx: &mut C14nContext, buf: *
             // Skip DTD nodes in C14N output
         }
         t if t == XML_ENTITY_REF_NODE as c_int => {
-            // Entity references are not expanded in canonical XML;
-            // instead, the reference itself is output.
-            if !n.name.is_null() {
-                io::buf_ccat(buf, b'&');
-                io::buf_cat(buf, n.name);
-                io::buf_ccat(buf, b';');
-            }
+            // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): an unexpanded
+            // entity reference is NOT serialized — upstream fails the
+            // canonicalization with xmlC14NErrInvalidNode ("processing
+            // node", return -1). The candidate mirrors the -1 (R-000175).
+            ctx.invalid_node = true;
         }
         _ => {
             // For unknown types, write content if present
@@ -1711,6 +1716,14 @@ pub unsafe fn c14n_doc_dump_memory(
     // xmlC14NProcessNodeList over doc->children).
     c14n_walk_document(doc, &mut ctx, buf);
 
+    // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): an unexpanded entity
+    // reference (or an entity/namespace-decl node) fails the whole
+    // canonicalization with -1 (R-000175).
+    if ctx.invalid_node {
+        io::buf_free(buf);
+        return -1;
+    }
+
     // Extract result string
     let content = io::buf_content(buf);
     let len = io::buf_length(buf);
@@ -1793,6 +1806,13 @@ pub unsafe fn c14n_execute(
     // Walk the document (upstream xmlC14NProcessNodeList).
     c14n_walk_document(doc, &mut ctx, buf);
 
+    // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): an unexpanded entity
+    // reference fails the canonicalization with -1 (R-000175).
+    if ctx.invalid_node {
+        io::buf_free(buf);
+        return -1;
+    }
+
     // Call the callback with the result
     let content = io::buf_content(buf);
     let len = io::buf_length(buf);
@@ -1863,6 +1883,13 @@ pub unsafe fn c14n_doc_save_to(
     // Walk the document; visibility decides what is rendered (upstream
     // xmlC14NProcessNodeList).
     c14n_walk_document(doc, &mut ctx, buf);
+
+    // UPSTREAM-PARITY (c14n.c xmlC14NProcessNode): an unexpanded entity
+    // reference fails the canonicalization with -1 (R-000175).
+    if ctx.invalid_node {
+        io::buf_free(buf);
+        return -1;
+    }
 
     // Write to output buffer
     let content = io::buf_content(buf);
@@ -2402,6 +2429,37 @@ mod tests {
     }
 
     // ── Basic document canonicalization ──
+
+    #[test]
+    fn test_c14n_entity_ref_node_fails_like_upstream() {
+        // R-000175: an unexpanded entity reference is an invalid node for
+        // canonical XML (upstream c14n.c xmlC14NProcessNode returns -1 via
+        // xmlC14NErrInvalidNode). The candidate used to serialize the
+        // reference (`&foo;`); it must fail with -1 exactly like the oracle.
+        unsafe {
+            let xml = b"<?xml version='1.0'?><!DOCTYPE r [<!ELEMENT r (#PCDATA)><!ENTITY foo \"FOO\">]><r>a &foo; b</r>\0";
+            let doc = crate::abi::exports_xml2::xmlReadMemory(
+                xml.as_ptr() as *const c_char,
+                (xml.len() - 1) as c_int,
+                b"t.xml\0" as *const u8 as *const c_char,
+                ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null(), "doc must parse (NOENT unset keeps the ref)");
+            let mut result: *mut xmlChar = ptr::null_mut();
+            let len = c14n_doc_dump_memory(
+                doc,
+                ptr::null_mut(),
+                C14nMode::XML_C14N_1_0,
+                ptr::null(),
+                0,
+                &mut result as *mut *mut xmlChar,
+            );
+            assert_eq!(len, -1, "entity-ref node must fail canonicalization");
+            assert!(result.is_null());
+            crate::abi::exports_xml2::xmlFreeDoc(doc);
+        }
+    }
 
     #[test]
     fn test_c14n_basic_document() {

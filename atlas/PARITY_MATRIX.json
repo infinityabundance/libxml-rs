@@ -6,18 +6,18 @@
    "project": "libxml2",
    "version": "2.15.3",
    "oracle_dso": "/usr/lib/libxml2.so.16",
-   "candidate_dso": "target/debug/liblibxml_rs.so",
+   "candidate_dso": "target/debug/libxml2.so.16",
    "counts": {
     "public_functions": {
      "oracle_doxygen": 1374,
      "oracle_clang_ast": 1403,
      "oracle_headers": 1408,
-     "oracle_dso": 1400,
+     "oracle_dso": 1395,
      "candidate_headers": 1396,
-     "candidate_dso": 1980,
-     "fully_reconciled": 1400,
+     "candidate_dso": 1709,
+     "fully_reconciled": 1395,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 580
+     "candidate_extra": 314
     },
     "exported_data": {
      "oracle_doxygen": 625,
@@ -25,10 +25,10 @@
      "oracle_headers": 18,
      "oracle_dso": 22,
      "candidate_headers": 38,
-     "candidate_dso": 67,
+     "candidate_dso": 52,
      "fully_reconciled": 22,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 45
+     "candidate_extra": 30
     },
     "struct_fields": {
      "abi_ledger_measurable": 658,
@@ -65,7 +65,7 @@
    "project": "libxslt",
    "version": "1.1.45",
    "oracle_dso": "/usr/lib/libxslt.so.1",
-   "candidate_dso": "target/debug/liblibxml_rs.so",
+   "candidate_dso": "target/debug/libxslt.so.1",
    "counts": {
     "public_functions": {
      "oracle_doxygen": 235,
@@ -73,21 +73,21 @@
      "oracle_headers": 244,
      "oracle_dso": 232,
      "candidate_headers": 250,
-     "candidate_dso": 1980,
+     "candidate_dso": 251,
      "fully_reconciled": 232,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 1748
+     "candidate_extra": 19
     },
     "exported_data": {
      "oracle_doxygen": 279,
      "oracle_clang_ast": 12,
      "oracle_headers": 11,
-     "oracle_dso": 12,
+     "oracle_dso": 11,
      "candidate_headers": 11,
-     "candidate_dso": 67,
+     "candidate_dso": 11,
      "fully_reconciled": 11,
-     "unresolved_oracle_only": 1,
-     "candidate_extra": 56
+     "unresolved_oracle_only": 0,
+     "candidate_extra": 0
     },
     "struct_fields": {
      "abi_ledger_measurable": 279,
@@ -124,7 +124,7 @@
    "project": "libexslt",
    "version": "0.8.25",
    "oracle_dso": "/usr/lib/libexslt.so.0",
-   "candidate_dso": "target/debug/liblibxml_rs.so",
+   "candidate_dso": "target/debug/libexslt.so.0",
    "counts": {
     "public_functions": {
      "oracle_doxygen": 13,
@@ -132,10 +132,10 @@
      "oracle_headers": 14,
      "oracle_dso": 13,
      "candidate_headers": 14,
-     "candidate_dso": 1980,
+     "candidate_dso": 14,
      "fully_reconciled": 13,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 1967
+     "candidate_extra": 1
     },
     "exported_data": {
      "oracle_doxygen": 4,
@@ -143,10 +143,10 @@
      "oracle_headers": 4,
      "oracle_dso": 4,
      "candidate_headers": 4,
-     "candidate_dso": 67,
+     "candidate_dso": 4,
      "fully_reconciled": 4,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 63
+     "candidate_extra": 0
     },
     "struct_fields": {
      "abi_ledger_measurable": null,

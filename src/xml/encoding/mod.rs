@@ -47,12 +47,16 @@
 //!
 //! # Historical quirks & epochs
 //!
-//! R-000157 (OPEN, INTENTIONAL_SAFE_DIVERGENCE): the crate ships no
+//! R-000157 (OPEN, UNRESOLVED): the crate ships no
 //! iconv/ICU backend, so the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC,
 //! UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252)
-//! report XML_ERR_UNSUPPORTED_ENCODING (32) where the 2.15.3 oracle returns
+//! report XML_ERR_UNSUPPORTED_ENCODING (32) where the 2.15.3 oracle (built
+//! with Iconv+ICU enabled) returns
 //! a converter, while the native set (UTF-8, UTF-16LE/BE, UTF-16,
-//! ISO-8859-1, US-ASCII) and all error paths are byte-identical. Upstream
+//! ISO-8859-1, US-ASCII) and all error paths are byte-identical. This is a
+//! REAL current executed-platform difference, so the residual is UNRESOLVED
+//! (11.1-Z.1) — closure requires implementing an iconv/ICU backend, a future
+//! implementation work item, not a waiver. Upstream
 //! itself removed the libiconv dependence where possible in the 2.10+ era
 //! (HISTORY.md §1.8), which is the epoch this module targets.
 //!
@@ -62,7 +66,9 @@
 //! missing encodings are absent because no converter exists, and every
 //! error path matches the oracle. `xmlLookupCharEncodingHandler` returns
 //! XML_ERR_OK with a NULL handler for UTF-8/NONE exactly like upstream
-//! encoding.c (`/* Return NULL handler for UTF-8 */`).
+//! encoding.c (`/* Return NULL handler for UTF-8 */`). R-000157 is tracked
+//! UNRESOLVED: adding an iconv/ICU backend would close the gap for the
+//! encodings the executed oracle serves.
 //!
 //! # Proving courts
 //!
@@ -76,7 +82,8 @@
 //! added through `xmlAddCharEncodingHandler` must stay discoverable by later
 //! lookups. Do not fabricate handlers for the iconv-only encodings — that
 //! would fake a converter that does not exist and break the R-000157
-//! bounded-obligation record. Do not touch the struct layout: R-000129
+//! UNRESOLVED record (the honest path is a real iconv/ICU backend). Do not
+//! touch the struct layout: R-000129
 //! proved a 48-byte mirror breaks the C ABI.
 
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]

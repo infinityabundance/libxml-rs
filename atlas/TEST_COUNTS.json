@@ -1,10 +1,10 @@
 {
  "schema": "test-counts-1",
  "generator": "tools/evidence/test_counts.py",
- "generated": "2026-08-31T18:38:23Z",
+ "generated": "2026-08-31T19:32:41Z",
  "cargo_test_lib": {
   "status": "ok",
-  "passed": 1177,
+  "passed": 1178,
   "failed": 0,
   "ignored": 1
  },
@@ -24,7 +24,7 @@
   "EXSLT strings": 6,
   "EXSLT registry": 3,
   "Automata": 16,
-  "C14N": 38,
+  "C14N": 39,
   "Catalog": 22,
   "Char validation": 9,
   "Debug": 11,

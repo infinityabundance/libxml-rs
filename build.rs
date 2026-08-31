@@ -8,10 +8,36 @@
 //! 5. Generating C header compatibility wrappers
 //! 6. Installing the header tree (libxml/, libxslt/, libexslt/, libxml2/libxml)
 //!
-//! The Rust crate produces liblibxml_rs.so as a cdylib. This build script
-//! creates the installation contract — an oracle-faithful `lib/ include/ bin/`
-//! layout under the artifact directory — so that downstream build systems find
-//! `libxml2.so` / `libxslt.so` / `libexslt.so` as expected.
+//! The Rust crate produces liblibxml_rs.so as a cdylib (the single combined
+//! core, SONAME libxml2.so.16) and liblibxml_rs.a as a staticlib. This build
+//! script creates the installation contract — an oracle-faithful
+//! `lib/ include/ bin/` layout under the artifact directory — so that
+//! downstream build systems find `libxml2.so` / `libxslt.so` / `libexslt.so`
+//! as expected.
+//!
+//! THE THREE-DSO CONTRACT (11.1-Z.1): upstream ships three DSOs with three
+//! distinct SONAMEs and a dependency chain (libexslt.so.0 NEEDs libxslt.so.1
+//! and libxml2.so.16; libxslt.so.1 NEEDs libxml2.so.16). Cargo can only emit
+//! one cdylib per link, so the two facade DSOs are generated POST-LINK from
+//! the freshly linked staticlib by `facade-gen.sh` (invoked through a linker
+//! wrapper installed via `cargo:linker` once the staticlib exists — i.e. at
+//! the first bin/test/example link of every build):
+//!
+//!   lib/libxslt.so.1.1.45   real ELF DSO, SONAME libxslt.so.1, exports the
+//!                           xslt* surface (version-script filtered), NEEDs
+//!                           libxml2.so.16 (upstream-faithful dependency).
+//!   lib/libexslt.so.0.8.25  real ELF DSO, SONAME libexslt.so.0, exports the
+//!                           exslt* surface, NEEDs libxslt.so.1 + libxml2.so.16.
+//!
+//! The facades are whole-core re-links (--whole-archive of the staticlib), so
+//! every xslt/exslt export is a real definition — consumers link with plain
+//! `-lxslt`/`-lexslt` exactly as with upstream. The version scripts give each
+//! facade the oracle's per-DSO export surface instead of leaking the whole
+//! combined core. build.rs also regenerates the facades synchronously at its
+//! start when the artifacts exist and the facades are stale (covers rebuilds
+//! that do not re-link a bin). On non-Linux targets, or when the staticlib is
+//! not yet present (first `--lib`-only build), the symlink fallback keeps the
+//! names resolvable to the core until a full build produces the facades.
 //!
 //! The layout mirrors the upstream libtool installation (see
 //! `oracle/historical/prefix/*/oracle-manifest.json` and the `lib/*.la` files):
@@ -19,17 +45,17 @@
 //! ```text
 //! <artifact>/
 //!   lib/
-//!     libxml2.so.16.1.3 -> ../liblibxml_rs.so      (libtool 17:3:1)
+//!     libxml2.so.16.1.3 -> ../liblibxml_rs.so   (real core DSO; 17:3:1)
 //!     libxml2.so.16     -> libxml2.so.16.1.3
 //!     libxml2.so        -> libxml2.so.16
 //!     libxml2.a         -> ../liblibxml_rs.a
 //!     libxml2.la        (libtool metadata)
-//!     libxslt.so.1.1.45 -> ../liblibxml_rs.so      (libtool 2:45:1)
+//!     libxslt.so.1.1.45 (REAL facade DSO, SONAME libxslt.so.1; 2:45:1)
 //!     libxslt.so.1      -> libxslt.so.1.1.45
 //!     libxslt.so        -> libxslt.so.1
 //!     libxslt.a         -> ../liblibxml_rs.a
 //!     libxslt.la
-//!     libexslt.so.0.8.25 -> ../liblibxml_rs.so     (libtool 8:25:8)
+//!     libexslt.so.0.8.25 (REAL facade DSO, SONAME libexslt.so.0; 8:25:8)
 //!     libexslt.so.0     -> libexslt.so.0.8.25
 //!     libexslt.so       -> libexslt.so.0.8.25
 //!     libexslt.a        -> ../liblibxml_rs.a
@@ -105,8 +131,23 @@ fn main() {
     // Generate pkg-config files (canonical lib/pkgconfig + compat pkgconfig/)
     generate_pkgconfig(&artifact_dir);
 
-    // Generate SONAME symlinks (canonical lib/ chains + top-level compat)
-    generate_symlinks(&artifact_dir);
+    // Whether the three-DSO facade contract is active on this build (Linux
+    // native target).
+    let three_dso_active = three_dso_active();
+
+    // Generate SONAME symlinks (canonical lib/ chains + top-level compat).
+    // When the facade contract is active, stale symlinks at the facade paths
+    // are cleared here so facade-gen.sh owns them.
+    generate_symlinks(&artifact_dir, three_dso_active);
+
+    // Install the three-DSO machinery and synchronously regenerate the
+    // libxslt/libexslt facade DSOs whenever the core artifacts already exist
+    // (rebuilds). Must run AFTER generate_symlinks so the cleared paths are
+    // re-filled before any consumer could look at them. On a fresh build the
+    // staticlib does not exist yet and the linker wrapper (see
+    // tools/packaging/linker-wrapper.sh + .cargo/config.toml) performs the
+    // generation at the first bin/test/example link.
+    install_three_dso_machinery(&artifact_dir, three_dso_active);
 
     // Generate xml2-config and xslt-config scripts (bin/ + top-level compat)
     generate_config_scripts(&artifact_dir);
@@ -117,14 +158,13 @@ fn main() {
     // Install the C header tree into include/
     install_headers(&artifact_dir);
 
-    // The cdylib carries the upstream libxml2 SONAME (libxml2.so.16) so that
-    // consumers record the same NEEDED entry as binaries linked against the
-    // oracle (readelf -d /usr/lib/libxml2.so.16.1.3 -> SONAME libxml2.so.16).
-    // The lib/libxml2.so.16 symlink chain resolves it at runtime. The single
-    // combined DSO therefore satisfies libxml2/libxslt/libexslt consumers
-    // through one upstream-standard runtime name (documented divergence:
-    // upstream ships three DSOs; the candidate ships one with the libxml2
-    // SONAME).
+    // The cdylib (the combined core) carries the upstream libxml2 SONAME
+    // (libxml2.so.16) so that consumers record the same NEEDED entry as
+    // binaries linked against the oracle (readelf -d
+    // /usr/lib/libxml2.so.16.1.3 -> SONAME libxml2.so.16). The libxslt and
+    // libexslt SONAMEs come from the post-link facade DSOs (see
+    // install_three_dso_machinery). The lib/ chains resolve every SONAME at
+    // runtime.
     println!("cargo:rustc-cdylib-link-arg=-Wl,-soname,libxml2.so.16");
 
     // Print cargo instructions
@@ -135,6 +175,72 @@ fn main() {
     // Set metadata for downstream crates
     println!("cargo:rustc-cfg=libxml_rs");
 }
+
+/// Whether the three-DSO facade contract is active on this build (Linux
+/// native target). Cross builds and non-Linux hosts keep the symlink
+/// fallback in generate_symlinks.
+#[cfg(unix)]
+fn three_dso_active() -> bool {
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let host = env::var("HOST").unwrap_or_default();
+    let target = env::var("TARGET").unwrap_or_default();
+    target_os == "linux" && target == host
+}
+
+#[cfg(not(unix))]
+fn three_dso_active() -> bool {
+    false
+}
+
+/// Install the three-DSO machinery.
+///
+/// Cargo links the package's cdylib BEFORE it archives the staticlib, so no
+/// build-script step can see both artifacts at once. The facade DSOs are
+/// therefore generated by `tools/packaging/facade-gen.sh` (single source of
+/// truth, committed), driven by the custom linker installed through
+/// `.cargo/config.toml` (`tools/packaging/linker-wrapper.sh`): the first
+/// link where the staticlib exists (a bin/test/example link — bins are
+/// linked only after the lib target completes) re-links the whole core into
+/// the two facade DSOs with their own SONAMEs, the oracle's per-DSO export
+/// surface (version scripts) and the upstream NEEDED chain:
+///
+///   libxslt.so.1  NEEDs libxml2.so.16
+///   libexslt.so.0 NEEDs libxslt.so.1, libxml2.so.16
+///
+/// This function additionally performs a SYNCHRONOUS regeneration at the
+/// start of the build whenever the artifacts already exist (rebuilds,
+/// including `cargo build --lib`), so the facades converge without a bin
+/// link. On non-Linux or cross builds the symlink fallback keeps the names
+/// resolvable to the core.
+#[cfg(unix)]
+fn install_three_dso_machinery(artifact_dir: &Path, three_dso_active: bool) {
+    if !three_dso_active {
+        return;
+    }
+
+    // Synchronous regeneration on rebuilds: when the artifacts already exist
+    // (e.g. a second `cargo build` after a previous full build), refresh the
+    // facades right now instead of waiting for the next bin link. On a fresh
+    // build the staticlib does not exist yet and the linker wrapper handles
+    // it. tools/ is excluded from the crates.io package, so on published-
+    // crate builds this script is absent and the symlink fallback applies.
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    let facade_gen = PathBuf::from(&manifest_dir)
+        .join("tools")
+        .join("packaging")
+        .join("facade-gen.sh");
+    let core = artifact_dir.join(CANDIDATE_SO);
+    let archive = artifact_dir.join(CANDIDATE_A);
+    if facade_gen.exists() && core.exists() && archive.exists() {
+        let _ = std::process::Command::new("sh")
+            .arg(&facade_gen)
+            .arg(artifact_dir)
+            .output();
+    }
+}
+
+#[cfg(not(unix))]
+fn install_three_dso_machinery(_artifact_dir: &Path, _three_dso_active: bool) {}
 
 /// Find the target directory by walking up from OUT_DIR.
 fn find_target_dir(out_dir: &Path) -> PathBuf {
@@ -279,9 +385,19 @@ fn remove_if_symlink_or_file(_path: &Path) {}
 /// symlinks) at the real DSO in the artifact root. Top-level compat links
 /// (`libxml2.so` etc. in the artifact root) preserve the flat layout that
 /// earlier-phase probe tooling links against with `-L target/debug`.
-fn generate_symlinks(artifact_dir: &Path) {
+fn generate_symlinks(artifact_dir: &Path, three_dso_active: bool) {
     let lib_dir = artifact_dir.join("lib");
     fs::create_dir_all(&lib_dir).ok();
+
+    // When the three-DSO machinery is active, the libxslt/libexslt facade
+    // paths must hold REAL DSOs written by facade-gen.sh, never symlinks.
+    // Remove any leftover symlink from earlier build-script versions or from
+    // a run where the machinery was inactive, so the facade generator owns
+    // the path.
+    if three_dso_active {
+        remove_if_symlink_or_file(&lib_dir.join(LIBXSLT_SO_FILE));
+        remove_if_symlink_or_file(&lib_dir.join(LIBEXSLT_SO_FILE));
+    }
 
     let actual_lib = artifact_dir.join(CANDIDATE_SO);
     if !actual_lib.exists() {
@@ -293,20 +409,39 @@ fn generate_symlinks(artifact_dir: &Path) {
     }
 
     // ── libxml2 2.15.3 chain (SONAME libxml2.so.16) ──────────────────────
+    // The core cdylib itself carries SONAME libxml2.so.16; the chain resolves
+    // the runtime name to the real DSO in the artifact root.
     create_symlink(LIBXML2_SO_FILE, &format!("../{CANDIDATE_SO}"), &lib_dir);
     create_symlink(LIBXML2_SONAME, LIBXML2_SO_FILE, &lib_dir);
     create_symlink("libxml2.so", LIBXML2_SONAME, &lib_dir);
 
     // ── libxslt 1.1.45 chain (SONAME libxslt.so.1) ────────────────────────
-    create_symlink(LIBXSLT_SO_FILE, &format!("../{CANDIDATE_SO}"), &lib_dir);
-    create_symlink(LIBXSLT_SONAME, LIBXSLT_SO_FILE, &lib_dir);
-    create_symlink("libxslt.so", LIBXSLT_SONAME, &lib_dir);
+    // libxslt.so.1.1.45 is a REAL facade DSO written post-link by
+    // facade-gen.sh (see install_three_dso_machinery); when the machinery is
+    // active that path was cleared above and the links below are created
+    // before the facade exists (dangling until it lands, exactly like the
+    // libxml2 chain points at the not-yet-linked core). When the machinery is
+    // inactive (non-Linux/cross), fall back to pointing the chain at the
+    // combined core so the names stay resolvable.
+    if three_dso_active {
+        create_symlink(LIBXSLT_SONAME, LIBXSLT_SO_FILE, &lib_dir);
+        create_symlink("libxslt.so", LIBXSLT_SONAME, &lib_dir);
+    } else {
+        create_symlink(LIBXSLT_SO_FILE, &format!("../{CANDIDATE_SO}"), &lib_dir);
+        create_symlink(LIBXSLT_SONAME, LIBXSLT_SO_FILE, &lib_dir);
+        create_symlink("libxslt.so", LIBXSLT_SONAME, &lib_dir);
+    }
 
     // ── libexslt 0.8.25 chain (SONAME libexslt.so.0) ──────────────────────
-    // Upstream: libexslt.so -> libexslt.so.0 -> libexslt.so.0.8.25
-    create_symlink(LIBEXSLT_SO_FILE, &format!("../{CANDIDATE_SO}"), &lib_dir);
-    create_symlink(LIBEXSLT_SONAME, LIBEXSLT_SO_FILE, &lib_dir);
-    create_symlink("libexslt.so", LIBEXSLT_SO_FILE, &lib_dir);
+    // Upstream: libexslt.so -> libexslt.so.0 -> libexslt.so.0.8.25.
+    if three_dso_active {
+        create_symlink(LIBEXSLT_SONAME, LIBEXSLT_SO_FILE, &lib_dir);
+        create_symlink("libexslt.so", LIBEXSLT_SO_FILE, &lib_dir);
+    } else {
+        create_symlink(LIBEXSLT_SO_FILE, &format!("../{CANDIDATE_SO}"), &lib_dir);
+        create_symlink(LIBEXSLT_SONAME, LIBEXSLT_SO_FILE, &lib_dir);
+        create_symlink("libexslt.so", LIBEXSLT_SO_FILE, &lib_dir);
+    }
 
     // ── Static library names (upstream installs libxml2.a/libxslt.a/libexslt.a)
     let static_lib = artifact_dir.join(CANDIDATE_A);

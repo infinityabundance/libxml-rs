@@ -1813,7 +1813,7 @@
    "oracle_versions": "libxml2 2.15.3 (system)",
    "root_cause": "Upstream serves UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252 via iconv/ICU plus static 8-bit tables; the crate ships no iconv/ICU backend, so those encodings report XML_ERR_UNSUPPORTED_ENCODING (32) where the oracle returns a converter. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths are byte-identical (ENCODING-001).",
    "observable_residual": "A C consumer requesting an iconv-only encoding gets XML_ERR_UNSUPPORTED_ENCODING instead of a handler; conversion through those encodings is unavailable in the candidate.",
-   "triangulation": "No upstream epoch provides these converters without iconv/ICU; adding an iconv backend is a future work item, not a parity defect.",
+   "triangulation": "The reference system oracle (libxml2 2.15.3, built with Iconv and ICU enabled) returns usable converters for UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252, while the candidate reports XML_ERR_UNSUPPORTED_ENCODING — a REAL current Linux-x86-64 observable parity gap. No upstream epoch provides these converters without iconv/ICU, so closing the gap requires implementing an iconv (or ICU) backend in the crate: a future implementation work item, not a permanent waiver.",
    "regression_courts": [
     "ENCODING-001"
    ],
@@ -1821,16 +1821,16 @@
     "courts/suites/data-abi/encoding-family-probe.c",
     "courts/receipts/phase-11/encoding-family-*.json"
    ],
-   "classification": "INTENTIONAL_SAFE_DIVERGENCE",
+   "classification": "UNRESOLVED",
    "history": [
     {
      "status": "OPEN",
      "date": "2026-08-30",
-     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend — a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU)."
+     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend — a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED — the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item)."
     }
    ],
-   "disposition": "11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend — a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU).",
-   "lesson": "A bounded backend dependency is a documented disposition, not an unexamined gap: the native set and all error paths stay byte-identical and the unsupported set is enumerated, not silent."
+   "disposition": "11.1-Z.1 reclassification (UNRESOLVED, not INTENTIONAL_SAFE_DIVERGENCE): this is a current executed-platform difference — on the 2.15.3 system oracle (Iconv+ICU enabled) the encodings above return handlers; the candidate returns XML_ERR_UNSUPPORTED_ENCODING. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths stay byte-identical (ENCODING-001). Closure requires an iconv/ICU backend — tracked as UNRESOLVED so it must eventually be implemented rather than waived.",
+   "lesson": "A bounded backend dependency must not be waived as \"safe divergence\" when the executed oracle serves the converters: an honest UNRESOLVED record keeps the implementation work item visible until the iconv/ICU backend lands."
   },
   {
    "id": "R-000158",
@@ -2459,6 +2459,83 @@
      "status": "FIXED",
      "date": "2026-08-31",
      "note": "fixed in 11.1-Z/11.2; CLI-XSLTPROC-0021 byte-identical"
+    }
+   ]
+  },
+  {
+   "id": "R-000174",
+   "status": "FIXED",
+   "phase": "11.1-Z",
+   "title": "xsltGenericDebug exported as a function; upstream libxslt declares it as a data variable (xmlGenericErrorFunc function pointer, oracle symbol type D)",
+   "surface": "xsltGenericDebug, xsltSetGenericDebugFunc (xsltutils.h)",
+   "component": [
+    "src/abi/data_globals.rs",
+    "src/xslt/errors/mod.rs"
+   ],
+   "discovery_date": "2026-08-31",
+   "oracle_versions": "libxslt 1.1.45 (system)",
+   "root_cause": "The candidate exported xsltGenericDebug as a #[no_mangle] extern fn (symbol type T). Upstream xsltutils.c:632 defines `xmlGenericErrorFunc xsltGenericDebug = xsltGenericDebugDefaultFunc;` — a global function-pointer DATA variable (oracle nm type D) defaulting to a handler that writes the message to xsltGenericDebugContext (a FILE*) when it is non-NULL. The 11.1-Z.1 full-surface type scan (every oracle symbol vs the candidate DSOs) found this single remaining R-000167-class ABI type divergence.",
+   "fix": "11.1-Z.1: xsltGenericDebug is now exported as DATA from src/abi/data_globals.rs (`#[no_mangle] pub static mut xsltGenericDebug: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC_DEBUG_DEFAULT);`) with a faithful default handler reproducing upstream xsltGenericDebugDefaultFunc (NULL-context suppression + write to the context FILE*). xsltSetGenericDebugFunc now writes the exported data global and xsltGenericDebugContext (upstream xsltutils.c:650 semantics). The old exported fn was removed. Full-surface type scan: 0 mismatches across libxml2/libxslt/libexslt.",
+   "lesson": "A function-pointer global must be exported as DATA, not as a function: consumers take its ADDRESS and read it as a variable; the parity matrix's per-DSO data reconciliation exposes any residual type divergence (libxslt data reconciled 10/11 before the fix).",
+   "regression_courts": [
+    "DSO-LOADER",
+    "DATA-GLOBALS-001"
+   ],
+   "evidence": [
+    "courts/suites/dso-loader/court-runner.sh (symtype:xsltGenericDebug=D)",
+    "atlas/PARITY_MATRIX.json (libxslt exported_data fully_reconciled)"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered by the 11.1-Z.1 full-surface symbol-type scan (parity matrix libxslt data reconciliation 10/11)"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-08-31",
+     "note": "fixed in 11.1-Z.1; xsltGenericDebug exported as data with the upstream default handler; type scan 0 mismatches"
+    }
+   ]
+  },
+  {
+   "id": "R-000175",
+   "status": "FIXED",
+   "phase": "11.1-Z",
+   "title": "xmlC14NDocDumpMemory serializes unexpanded entity references; upstream c14n.c fails canonicalization with -1 (XML_ENTITY_REF_NODE is an invalid node)",
+   "surface": "xmlC14NDocDumpMemory, xmlC14NDocSaveTo, xmlC14NExecute (c14n.h)",
+   "component": [
+    "src/xml/c14n/mod.rs"
+   ],
+   "discovery_date": "2026-08-31",
+   "oracle_versions": "libxml2 2.15.3 (system)",
+   "root_cause": "The candidate's c14n_serialize_node emitted the reference text (&foo;) for XML_ENTITY_REF_NODE nodes. Upstream c14n.c xmlC14NProcessNode treats XML_ENTITY_REF_NODE (and XML_ENTITY_NODE / XML_NAMESPACE_DECL) as invalid: xmlC14NErrInvalidNode(ctx, \"XML_ENTITY_REF_NODE\", \"processing node\") and the whole dump returns -1. A C consumer that depends on the -1 error (e.g. rejecting unexpanded entity documents) silently got canonical output instead. Found by the 11.1-Z.1 broad differential run of the C14N API probe over the full CLI corpus (dclent.xml).",
+   "fix": "11.1-Z.1: C14nContext gains an invalid_node flag set by the XML_ENTITY_REF_NODE branch; all three dump paths (c14n_doc_dump_memory, c14n_execute, c14n_doc_save_to) return -1 with no output when it is set — matching the oracle. New regression test test_c14n_entity_ref_node_fails_like_upstream (parses a DTD doc with NOENT unset, expects -1 + NULL result); the C14N API probe differential over the full CLI corpus is 0 mismatches.",
+   "lesson": "Canonical XML defines a closed node model: an unexpanded entity reference is not representable in the output, and upstream surfaces that as an error, not a serialization. More-permissive output is an observable divergence for consumers that branch on the return value.",
+   "regression_courts": [
+    "test_c14n_entity_ref_node_fails_like_upstream",
+    "CLI-XMLLINT-0043",
+    "CLI-XMLLINT-0044",
+    "CLI-XMLLINT-0045",
+    "CLI-XMLLINT-0046",
+    "CLI-XMLLINT-0047"
+   ],
+   "evidence": [
+    "courts/suites/data-abi/c14n-api-probe.c",
+    "oracle/historical/src/libxml2-2.15.0/c14n.c (xmlC14NProcessNode, xmlC14NErrInvalidNode)"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered by the 11.1-Z.1 broad C14N API differential (dclent.xml)"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-08-31",
+     "note": "fixed in 11.1-Z.1; entity-ref nodes fail the dump with -1 like the oracle; regression test + 0-mismatch corpus differential"
     }
    ]
   }

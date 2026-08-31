@@ -25,11 +25,13 @@
   "R-000163",
   "R-000167",
   "R-000170",
-  "R-000171"
+  "R-000171",
+  "R-000174"
  ],
  "court_families": [
   "ABI-DATA",
   "ALLOCATOR",
+  "AST-SURFACE",
   "GLOBAL-STATE",
   "THREADING"
  ]

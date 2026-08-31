@@ -147,26 +147,22 @@ def run_step(step, check_dir=None):
 
 
 def input_identity_hashes():
+    """Hash every claimed input. The pattern may be a literal file, a
+    directory (hashed recursively), or a glob (aggregate hash of the matching
+    files). The 11.1-Z.1 fix: glob metacharacters decide the branch, so
+    `oracle/historical/doxygen/*/inventory-*.json` is actually expanded and
+    the `include/` directory is hashed recursively instead of falling into
+    the glob branch and yielding null."""
+    import glob
     out = {}
     for label, pat in INPUT_IDENTITY:
         if pat.startswith("/usr/lib/"):
             p = pat
             out[label] = sha256(p) if os.path.exists(p) else None
             continue
-        base = ROOT
-        rel = pat
-        if pat.startswith("oracle/") or pat.startswith("target/"):
-            p = os.path.join(ROOT, pat)
-            if os.path.isfile(p):
-                out[label] = sha256(p)
-            elif os.path.isdir(p):
-                out[label] = dir_hash(p)
-            else:
-                out[label] = None
-        else:
-            # glob patterns: hash each matching file
-            import glob
-            files = sorted(f for f in glob.glob(os.path.join(ROOT, rel), recursive=True)
+        p = os.path.join(ROOT, pat)
+        if any(ch in pat for ch in "*?["):
+            files = sorted(f for f in glob.glob(p, recursive=True)
                            if os.path.isfile(f))
             h = hashlib.sha256()
             for f in files:
@@ -176,6 +172,12 @@ def input_identity_hashes():
                 h.update(b"\0")
             out[label] = {"files": len(files),
                           "aggregate_sha256": h.hexdigest()} if files else None
+        elif os.path.isdir(p):
+            out[label] = dir_hash(p)
+        elif os.path.isfile(p):
+            out[label] = sha256(p)
+        else:
+            out[label] = None
     return out
 
 

@@ -11,12 +11,12 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_doxygen | 1374 |
 | oracle_clang_ast | 1403 |
 | oracle_headers | 1408 |
-| oracle_dso | 1400 |
+| oracle_dso | 1395 |
 | candidate_headers | 1396 |
-| candidate_dso | 1980 |
-| fully_reconciled | 1400 |
+| candidate_dso | 1709 |
+| fully_reconciled | 1395 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 580 |
+| candidate_extra | 314 |
 
 ### exported_data
 
@@ -27,10 +27,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 18 |
 | oracle_dso | 22 |
 | candidate_headers | 38 |
-| candidate_dso | 67 |
+| candidate_dso | 52 |
 | fully_reconciled | 22 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 45 |
+| candidate_extra | 30 |
 
 ### struct fields
 
@@ -68,10 +68,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 244 |
 | oracle_dso | 232 |
 | candidate_headers | 250 |
-| candidate_dso | 1980 |
+| candidate_dso | 251 |
 | fully_reconciled | 232 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 1748 |
+| candidate_extra | 19 |
 
 ### exported_data
 
@@ -80,12 +80,12 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_doxygen | 279 |
 | oracle_clang_ast | 12 |
 | oracle_headers | 11 |
-| oracle_dso | 12 |
+| oracle_dso | 11 |
 | candidate_headers | 11 |
-| candidate_dso | 67 |
+| candidate_dso | 11 |
 | fully_reconciled | 11 |
-| unresolved_oracle_only | 1 |
-| candidate_extra | 56 |
+| unresolved_oracle_only | 0 |
+| candidate_extra | 0 |
 
 ### struct fields
 
@@ -123,10 +123,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 14 |
 | oracle_dso | 13 |
 | candidate_headers | 14 |
-| candidate_dso | 1980 |
+| candidate_dso | 14 |
 | fully_reconciled | 13 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 1967 |
+| candidate_extra | 1 |
 
 ### exported_data
 
@@ -137,10 +137,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 4 |
 | oracle_dso | 4 |
 | candidate_headers | 4 |
-| candidate_dso | 67 |
+| candidate_dso | 4 |
 | fully_reconciled | 4 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 63 |
+| candidate_extra | 0 |
 
 ### struct fields
 
@@ -173,18 +173,18 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1400, candidate headers 1396, candidate DSO 1980, reconciled all four 1374, oracle-only 5, candidate-only 573
-- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 67, reconciled all four 18, oracle-only 0, candidate-only 46
+- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1396, candidate DSO 1709, reconciled all four 1374, oracle-only 5, candidate-only 307
+- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 52, reconciled all four 18, oracle-only 0, candidate-only 31
 
 ## libxslt
 
-- functions: oracle headers 244, oracle DSO 232, candidate headers 250, candidate DSO 1980, reconciled all four 232, oracle-only 0, candidate-only 1743
-- data: oracle headers 11, oracle DSO 12, candidate headers 11, candidate DSO 67, reconciled all four 10, oracle-only 0, candidate-only 56
+- functions: oracle headers 244, oracle DSO 232, candidate headers 250, candidate DSO 251, reconciled all four 232, oracle-only 0, candidate-only 15
+- data: oracle headers 11, oracle DSO 11, candidate headers 11, candidate DSO 11, reconciled all four 11, oracle-only 0, candidate-only 0
 
 ## libexslt
 
-- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 1980, reconciled all four 13, oracle-only 0, candidate-only 1966
-- data: oracle headers 4, oracle DSO 4, candidate headers 4, candidate DSO 67, reconciled all four 4, oracle-only 0, candidate-only 63
+- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 14, reconciled all four 13, oracle-only 0, candidate-only 0
+- data: oracle headers 4, oracle DSO 4, candidate headers 4, candidate DSO 4, reconciled all four 4, oracle-only 0, candidate-only 0
 
 ---
 

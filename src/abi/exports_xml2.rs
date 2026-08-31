@@ -67,14 +67,16 @@
 //! R-000161: the five wrong default values fixed (e.g. `xmlParserVersion` =
 //! `21503-GITv2.15.3`); R-000162: allocator entry points exported as DATA;
 //! R-000157: iconv-only encodings report XML_ERR_UNSUPPORTED_ENCODING (no
-//! iconv backend — OPEN residual).
+//! iconv backend — OPEN residual, UNRESOLVED since 11.1-Z.1: the executed
+//! Iconv+ICU-enabled oracle serves those encodings, so closing requires an
+//! iconv/ICU backend rather than a waiver).
 //!
 //! # Deliberate oddities
 //!
 //! The no-op init/cleanup exports (R-000138), the `xmlGenericError`/
 //! `xsltGenericError` variadic asm stderr printers (R-000161), and the
 //! XML_ERR_UNSUPPORTED_ENCODING divergence for iconv/ICU-only encodings
-//! (R-000157) are the deliberate oddities of this module.
+//! (R-000157, OPEN/UNRESOLVED) are the deliberate oddities of this module.
 //!
 //! # Proving courts
 //!

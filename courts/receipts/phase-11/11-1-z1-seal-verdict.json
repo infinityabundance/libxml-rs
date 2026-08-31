@@ -1,0 +1,130 @@
+{
+ "schema": "phase-seal-verdict-1",
+ "receipt_id": "PHASE-11-1-Z1-SEAL-VERDICT",
+ "phase": "11.1-Z.1",
+ "title": "Phase 11.1-Z.1 amendment — evidence/packaging seal verdict (supersedes 11-1-z-seal-verdict.json for the amended contract)",
+ "date": "2026-08-31",
+ "generator": "manual + generated evidence (see sources)",
+ "supersedes": "11-1-z-seal-verdict.json (PHASE-11-1-Z-SEAL-VERDICT, sealed at 339d3aa9; its one-DSO artifact claims are superseded by the three-DSO contract below)",
+ "candidate": {
+  "project": "libxml-rs",
+  "crate": "libxml-rs",
+  "version": "0.1.0-alpha.34",
+  "git_head": "<Z1_COMMIT_PLACEHOLDER>",
+  "language": "Rust (edition 2021)",
+  "dsos": {
+   "libxml2": "target/debug/libxml2.so.16 -> lib/libxml2.so.16 -> libxml2.so.16.1.3 -> ../liblibxml_rs.so (combined core, SONAME libxml2.so.16)",
+   "libxslt": "target/debug/libxslt.so.1 -> lib/libxslt.so.1 -> libxslt.so.1.1.45 (REAL facade DSO, SONAME libxslt.so.1)",
+   "libexslt": "target/debug/libexslt.so.0 -> lib/libexslt.so.0 -> libexslt.so.0.8.25 (REAL facade DSO, SONAME libexslt.so.0)"
+  },
+  "soname_abi": "libxml2.so.16 / libxslt.so.1 / libexslt.so.0 (three distinct ELF DSOs; verified per-object by readelf -d)",
+  "elf_contract": {
+   "core_soname": "libxml2.so.16",
+   "core_needed": "libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2 (no libxml2/libxslt/libexslt)",
+   "libxslt_soname": "libxslt.so.1",
+   "libxslt_needed": "libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "libexslt_soname": "libexslt.so.0",
+   "libexslt_needed": "libxslt.so.1, libxml2.so.16, libgcc_s.so.1, libm.so.6, libc.so.6, ld-linux-x86-64.so.2",
+   "upstream_reference": "readelf -d /usr/lib/libxslt.so.1 -> NEEDED libxml2.so.16, libm.so.6, libc.so.6; /usr/lib/libexslt.so.0 -> NEEDED libxslt.so.1, libxml2.so.16, libm.so.6, libc.so.6",
+   "facade_surfaces": "libxslt facade exports xslt* + xslDebugStatus (version script, namespace-scoped); libexslt facade exports exslt*; neither leaks the combined core (court-verified)",
+   "mechanism": "build.rs + .cargo/config.toml custom linker (tools/packaging/linker-wrapper.sh) -> tools/packaging/facade-gen.sh re-links the whole core from liblibxml_rs.a with --whole-archive, per-facade -Wl,-soname, version-script export filtering, and --no-as-needed -l: NEEDED entries; idempotent + flock-serialized; symlink fallback on non-Linux/cross/published-crate builds (documented)"
+  }
+ },
+ "tools": {
+  "rustc": "1.98.0 (88d9e12ae 2026-08-18)",
+  "cargo": "1.98.0 (797e8a9bc 2026-08-05)",
+  "gcc": "gcc (GCC) 16.2.1 20260810",
+  "python": "Python 3.14.7",
+  "git": "git version 2.55.0",
+  "nm": "GNU nm (GNU Binutils) 2.47",
+  "readelf": "GNU readelf (GNU Binutils) 2.47"
+ },
+ "amendment_scope": [
+  "1. THREE-DSO ELF CONTRACT: three real DSOs (core + two post-link facades) with three correct SONAMEs and the upstream NEEDED chain; consumer link/run verified for -lxml2, -lxslt (-lxml2), and -lexslt (-lxslt -lxml2); the previous one-DSO symlink contract (all names -> same inode) is gone.",
+  "2. R-000157 RECLASSIFICATION: OPEN residual reclassified INTENTIONAL_SAFE_DIVERGENCE -> UNRESOLVED — the iconv/ICU-only encodings are a real current Linux-x86-64 observable gap vs the Iconv+ICU-enabled 2.15.3 oracle; closure requires an iconv/ICU backend (implementation work item, not a waiver).",
+  "3. EVIDENCE IDENTITY BUG FIXED: tools/evidence/generate_all.py now expands the oracle/historical/doxygen/*/inventory-*.json glob (38 files) and recursively hashes include/ — the receipt binds both inputs (previously null).",
+  "4. PARITY-MATRIX DSO ACCOUNTING FIXED: per-project candidate DSO (libxml2.so.16 / libxslt.so.1 / libexslt.so.0) + per-project symbol-prefix filtering on both sides — the 1980-everywhere contamination is gone; libxslt/libexslt now report their true facade surfaces.",
+  "5. VERIFICATION-LADDER STATE MACHINE FIXED: historical_status VERIFIED -> HISTORICAL_PARITY_VERIFIED; a new stronger CUSTODIAN status (per-epoch verification evidence) is the only path to CUSTODIAN_VERIFIED; PARTIAL stays at CURRENT_PARITY_VERIFIED.",
+  "6. README TRUTH RESTORED: stale '69 missing obligations' narrative replaced (77 FIXED / 2 OPEN... final: 77 FIXED / 2 OPEN of 79 residuals); crates.io version updated.",
+  "7. CENSUS FAMILY MAPPINGS FIXED: PREPROCESSOR-SURFACE now maps to the real condition-lattice court (courts/suites/preprocessor-surface/court-runner.sh over condition_inventory.py outputs); AST-SURFACE maps to the real Clang-AST atlas court (courts/suites/ast-surface/court-runner.sh over apiatlas.py outputs).",
+  "8. NEW RESIDUALS FROM THE AMENDMENT'S DEEPER SCANS: R-000174 (xsltGenericDebug exported as a function; now DATA with the upstream default handler — full-surface symbol-type scan 0 mismatches across all three projects) and R-000175 (C14N serialized unexpanded entity references; now fails with -1 like upstream c14n.c)."
+ ],
+ "oracle_identity": {
+  "libxml2": "2.15.3 (system /usr/lib/libxml2.so.16, xmllint 21503-GITv2.15.3)",
+  "libxslt": "1.1.45 (system /usr/lib/libxslt.so.1, xsltproc 10145-GITv1.1.45)",
+  "libexslt": "0.8.25 (system /usr/lib/libexslt.so.0, 825-GITv1.1.45)",
+  "xmllint_features": "Threads Tree Output Push Reader Patterns Writer SAXv1 DTDValid HTML C14N Catalog XPath XPointer XInclude Iconv ICU ISO8859X Regexps Automata RelaxNG Schemas Schematron Modules Debug Zlib"
+ },
+ "api_abi_census": {
+  "parity_matrix": {
+   "libxml2": {"oracle_dso_funcs": 1395, "candidate_dso_funcs": 1709, "fully_reconciled": 1395, "unresolved_oracle_only": 0, "candidate_extra": 314, "data_reconciled": "22/22"},
+   "libxslt": {"oracle_dso_funcs": 232, "candidate_dso_funcs": 252, "fully_reconciled": 232, "unresolved_oracle_only": 0, "candidate_extra": 20, "data_reconciled": "11/11 (R-000174 closed)"},
+   "libexslt": {"oracle_dso_funcs": 13, "candidate_dso_funcs": 14, "fully_reconciled": 13, "unresolved_oracle_only": 0, "candidate_extra": 1, "data_reconciled": "4/4"}
+  },
+  "symbol_type_scan": {"libxml2": "0 mismatches", "libxslt": "0 mismatches (xsltGenericDebug D fixed, R-000174)", "libexslt": "0 mismatches"},
+  "obligations": {"libxml2": {"MISSING": 0, "STUB": 0}, "libxslt": {"MISSING": 0, "STUB": 0}, "libexslt": {"MISSING": 0, "STUB": 0}},
+  "abi_ledger": {"structs_probed": 43, "enums_probed": 41, "entities": 658, "mismatch_count": 0, "verdict": "PASS"},
+  "rust_mirror": {"structs_unions": 45, "enums": 14, "measurable": 50, "mismatches": 0, "verdict": "PASS"}
+ },
+ "residuals": {
+  "total": 79,
+  "fixed": 77,
+  "open": 2,
+  "open_ids": ["R-000157", "R-000168"],
+  "open_disposition": "R-000157 is OPEN/UNRESOLVED: a REAL current executed-platform gap (iconv/ICU-only encodings vs the Iconv+ICU-enabled 2.15.3 oracle) whose closure requires implementing an iconv/ICU backend — a future implementation work item, explicitly NOT waived (11.1-Z.1 reclassification). R-000168 remains the bounded platform-surface obligation (Windows/macOS/BSD/32-bit runtime unexecuted on Linux x86-64), documented per-obligation in atlas/PLATFORM_SURFACE_ATLAS.json. Acceptance: open candidate-parity residuals = 0; R-000157 is tracked UNRESOLVED so it must eventually be implemented."
+ },
+ "clean_build": {
+  "cargo_fmt_check": "PASS (0 diffs)",
+  "cargo_clippy_all_targets_all_features_Dwarnings": "PASS (exit 0)",
+  "cargo_test_lib": "PASS (1178 passed, 0 failed, 1 ignored)",
+  "generate_all_check": "reproducible (see EVIDENCE_GENERATION_RECEIPT.json)"
+ },
+ "test_results": {
+  "lib": {"passed": 1178, "failed": 0, "ignored": 1},
+  "evidence_source": "atlas/TEST_COUNTS.json (tools/evidence/test_counts.py)"
+ },
+ "court_results": {
+  "cli_xmllint": {"pass": 48, "fail": 0},
+  "cli_xsltproc": {"pass": 21, "fail": 0},
+  "cli_xmlcatalog": {"pass": 11, "fail": 0},
+  "header_compile": {"pass": 595, "fail": 0},
+  "dso_loader": {"pass": 40, "fail": 0},
+  "build_pkgconfig": {"pass": 12, "fail": 0},
+  "build_config_script": {"pass": 28, "fail": 0},
+  "install_layout": {"pass": 73, "fail": 0},
+  "sanity": {"pass": 6, "fail": 0},
+  "preprocessor_surface": {"pass": 9, "fail": 0},
+  "ast_surface": {"pass": 13, "fail": 0},
+  "abi_probes": {
+   "data_globals": "PASS byte-identical",
+   "globals_threading": "PASS byte-identical",
+   "security_limits": "PASS",
+   "tree_structure": "PASS byte-identical",
+   "callback_family": "PASS byte-identical",
+   "catalog_family": "PASS byte-identical",
+   "encoding_family": "PASS byte-identical",
+   "error_family": "PASS byte-identical",
+   "reader_family": "PASS byte-identical",
+   "save_family": "PASS byte-identical",
+   "writer_family": "PASS byte-identical",
+   "xpath_family": "PASS byte-identical",
+   "xslt_family": "PASS byte-identical",
+   "rust_mirror": "PASS"
+  },
+  "c14n_api_differential": "0 mismatches over the full CLI corpus (R-000175 closed: entity-ref docs now fail with -1 like the oracle)",
+  "header_surface_audit": {"oracle_declared": "1640 functions, 33 vars", "candidate_declared": "1659 functions, 53 vars", "oracle_undeclared_in_candidate": "0 functions, 0 vars"},
+  "evidence_integrity": "PASS (79 residuals, 2 open, Markdown byte-identical)",
+  "custodian_commentary": "PASS (127/127 modules + 7 NOT-APPLICABLE)"
+ },
+ "artifact_hashes": {
+  "candidate_core_liblibxml_rs_so": "8ffc62bbaf1e2d04b4833722f05e9975c436c4d407dbced40f62aea882abf369",
+  "candidate_libxslt_so1_facade": "24821f427590542b3c2c318908b3aa18d45d8f040abd72b2c47eb2bcec585e18",
+  "candidate_libexslt_so0_facade": "a84bd46b37277bc85d60cc2dc2b5b8848ca7c2447f0880ebd233f7099aba2d19",
+  "note": "three DISTINCT hashes — the facades are real DSOs, not hardlinks/symlinks to the core (the 11.1-Z receipt's identical-hash note is superseded)"
+ },
+ "contamination_proof": {
+  "dso_loader": "dlopen(libxml2.so.16 / libxslt.so.1 / libexslt.so.0) resolves inside the artifact; consumers built with -lxml2/-lxslt/-lexslt link and run against the candidate DSOs only (ldd resolves into the artifact); no system libxml2/libxslt/libexslt in any NEEDED path",
+  "oracle_identity": "18 oracle manifests hashed + validated; no candidate DSO in oracle paths"
+ },
+ "final_verdict": "PASS — Phase 11.1-Z.1 amendment sealed. Three REAL ELF DSOs (core libxml2.so.16 + libxslt.so.1 + libexslt.so.0 facades) with correct SONAMEs and the upstream NEEDED chain, verified by the DSO-LOADER (40/40) and INSTALL-LAYOUT (73/73) courts and by consumer link/run for every -l flow; full-surface symbol-type scan 0 mismatches (R-000174) and C14N entity-ref parity restored (R-000175); R-000157 reclassified UNRESOLVED (real executed-platform gap, implementation work item); generated-evidence identity binds the Doxygen inventories (38) and headers; parity matrix per-project DSO accounting fixed; verification ladder corrected; PREPROCESSOR-SURFACE/AST-SURFACE courts real; 79 residuals (77 FIXED / 2 OPEN); 1178 tests; evidence reproducible."
+}

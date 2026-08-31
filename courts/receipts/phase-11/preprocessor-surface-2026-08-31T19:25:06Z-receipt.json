@@ -1,0 +1,24 @@
+{
+  "court": "PREPROCESSOR-SURFACE",
+  "phase": "11.1-D",
+  "timestamp": "2026-08-31T19:25:06Z",
+  "artifacts": {
+    "conditions": "/mnt/1tb_kingston/libxml-rs/oracle/historical/doxygen/conditions.json",
+    "coverage": "/mnt/1tb_kingston/libxml-rs/oracle/historical/doxygen/coverage.json",
+    "configs": "/mnt/1tb_kingston/libxml-rs/oracle/historical/doxygen/configs.json"
+  },
+  "cases": [
+    {"item":"artifact:conditions.json:present","status":"PASS"},
+    {"item":"artifact:coverage.json:present","status":"PASS"},
+    {"item":"artifact:configs.json:present","status":"PASS"},
+    {"item":"artifacts:valid-json","status":"PASS"},
+    {"item":"conditions:universe-nonempty=2789","status":"PASS"},
+    {"item":"conditions:all-covered","status":"PASS"},
+    {"item":"conditions:public-header=448","status":"PASS"},
+    {"item":"conditions:public-header-both-direction-covered","status":"PASS"},
+    {"item":"configs:lattice-hashed=a1ccb9c4bbbcd3e3","status":"PASS"}
+  ],
+  "summary": { "passed": 9, "failed": 0 },
+  "failures": {
+  }
+}

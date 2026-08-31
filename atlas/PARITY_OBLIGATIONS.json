@@ -37,6 +37,7 @@
    "CURRENT_ONLY",
    "PARTIAL",
    "VERIFIED",
+   "CUSTODIAN",
    "EVIDENCE_CONFLICT"
   ],
   "overall": [
@@ -53,10 +54,10 @@
   ],
   "current_parity_verified_definition": "EXPORTED + IMPLEMENTED + abi_status PASS + semantic_status PASS + ownership_status in (NOT_APPLICABLE, PASS), each supported by a passing court recorded in courts[]",
   "historical_parity_verified_definition": "CURRENT_PARITY_VERIFIED + historical_status VERIFIED (surface and behavior verified across every historically applicable epoch)",
-  "custodian_verified_definition": "HISTORICAL_PARITY_VERIFIED across every historically applicable API/ABI/semantic epoch — not necessarily every version redundantly"
+  "custodian_verified_definition": "HISTORICAL_PARITY_VERIFIED with historical_status CUSTODIAN — per-epoch verification evidence recorded across every historically applicable API/ABI/semantic epoch, not necessarily every version redundantly. CUSTODIAN is a stronger historical_status than VERIFIED and is the only state that earns CUSTODIAN_VERIFIED"
  },
  "symbol_court_index": "atlas/SYMBOL_COURT_INDEX.json",
- "verification_policy": "CURRENT_PARITY_VERIFIED is earned only when per-symbol courts exist and pass (abi + semantic + ownership); HISTORICAL_PARITY_VERIFIED adds historical_status VERIFIED; CUSTODIAN_VERIFIED means verified across every historically applicable epoch. IMPLEMENTED_UNVERIFIED means the export exists with real logic but has not yet been verified by a court. Court verdicts merge PER DIMENSION with provenance; contradictory verdicts fail the ledger as EVIDENCE_CONFLICT.",
+ "verification_policy": "CURRENT_PARITY_VERIFIED is earned only when per-symbol courts exist and pass (abi + semantic + ownership); HISTORICAL_PARITY_VERIFIED adds historical_status VERIFIED; CUSTODIAN_VERIFIED requires historical_status CUSTODIAN (per-epoch verification evidence across every historically applicable epoch). IMPLEMENTED_UNVERIFIED means the export exists with real logic but has not yet been verified by a court. Court verdicts merge PER DIMENSION with provenance; contradictory verdicts fail the ledger as EVIDENCE_CONFLICT.",
  "projects": {
   "libxml2": {
    "oracle_dso": "/usr/lib/libxml2.so.16",
@@ -112,6 +113,7 @@
      "CURRENT_ONLY": 1422,
      "PARTIAL": 0,
      "VERIFIED": 0,
+     "CUSTODIAN": 0,
      "EVIDENCE_CONFLICT": 0
     }
    },
@@ -23496,7 +23498,7 @@
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
    "oracle_functions": 232,
    "oracle_data": 12,
-   "candidate_functions": 266,
+   "candidate_functions": 265,
    "counts": {
     "MISSING": 0,
     "STUB": 0,
@@ -23545,6 +23547,7 @@
      "CURRENT_ONLY": 244,
      "PARTIAL": 0,
      "VERIFIED": 0,
+     "CUSTODIAN": 0,
      "EVIDENCE_CONFLICT": 0
     }
    },
@@ -27589,6 +27592,7 @@
      "CURRENT_ONLY": 17,
      "PARTIAL": 0,
      "VERIFIED": 0,
+     "CUSTODIAN": 0,
      "EVIDENCE_CONFLICT": 0
     }
    },

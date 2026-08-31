@@ -649,6 +649,38 @@ pub static mut xsltGenericErrorContext: *mut c_void = core::ptr::null_mut();
 #[no_mangle]
 pub static mut xsltGenericDebugContext: *mut c_void = core::ptr::null_mut();
 
+/// `xmlGenericErrorFunc xsltGenericDebug` — the libxslt debug callback.
+/// Upstream defaults to `xsltGenericDebugDefaultFunc` (xsltutils.c:632), a
+/// handler that writes the message to `xsltGenericDebugContext` (a FILE*)
+/// when that context is non-NULL. The candidate reproduces the default via
+/// `xsltGenericDebugDefaultFunc` below. Was previously exported as a
+/// FUNCTION (T) — an R-000167-class ABI type divergence closed in 11.1-Z.1
+/// (oracle DSO symbol type D, `nm -D /usr/lib/libxslt.so.1`).
+#[no_mangle]
+pub static mut xsltGenericDebug: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC_DEBUG_DEFAULT);
+
+/// Default debug handler reproducing upstream `xsltGenericDebugDefaultFunc`
+/// (xsltutils.c:621): no-op unless `xsltGenericDebugContext` is non-NULL,
+/// then the (pre-formatted) message is written to that context FILE*.
+/// Upstream's handler is variadic; the candidate's callers format the
+/// message before dispatch (same documented divergence as xsltGenericError).
+unsafe extern "C" fn xsltGenericDebugDefaultFunc(_ctx: *mut c_void, msg: *const c_char) {
+    if msg.is_null() {
+        return;
+    }
+    let dctx = unsafe { xsltGenericDebugContext };
+    if dctx.is_null() {
+        return;
+    }
+    let len = unsafe { libc::strlen(msg) };
+    unsafe {
+        libc::fwrite(msg as *const libc::c_void, 1, len, dctx as *mut libc::FILE);
+    }
+}
+
+/// Default value of the exported `xsltGenericDebug` data global.
+const XSLT_GENERIC_DEBUG_DEFAULT: xmlGenericErrorFunc = xsltGenericDebugDefaultFunc;
+
 /// `const xmlChar xsltExtMarker[]` — empty string used to mark extension
 /// nodes (upstream transform.c).
 #[no_mangle]

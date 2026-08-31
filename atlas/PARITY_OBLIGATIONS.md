@@ -19,7 +19,7 @@ oracle functions: 1400, oracle data: 22, candidate functions: 1714
 
 ## libxslt — oracle `/usr/lib/libxslt.so.1`
 
-oracle functions: 232, oracle data: 12, candidate functions: 266
+oracle functions: 232, oracle data: 12, candidate functions: 265
 
 | overall status | count |
 |---|---|
