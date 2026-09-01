@@ -1104,6 +1104,12 @@ fn append_to_xml_buffer(buf: &mut _xmlBuffer, data: &[u8]) {
             return; // Allocation failure — silently skip
         }
         buf.content = new_content;
+        // UPSTREAM-PARITY (io/mod.rs buf_add realloc paths): when the buffer
+        // grows, contentIO tracks the CURRENT allocation base — buf_free
+        // frees contentIO, so a stale contentIO (the pre-realloc block) would
+        // cause a double-free on buffers that grew through this conversion
+        // path (nokogiri HTML4/HTML5 UTF-8 serialization).
+        buf.contentIO = new_content;
         buf.size = new_size as c_uint;
     }
 

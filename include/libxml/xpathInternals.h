@@ -89,6 +89,47 @@ XMLPUBFUN xmlXPathObjectPtr
     (((ns) != NULL && (index) >= 0 && (index) < (ns)->nodeNr) ? \
      (ns)->nodeTab[(index)] : NULL)
 
+/* Upstream CAST_TO_* stack-cast macros (oracle xpathInternals.h). */
+#define CAST_TO_STRING							\
+    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_STRING))	\
+        xmlXPathStringFunction(ctxt, 1);
+
+#define CAST_TO_NUMBER							\
+    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_NUMBER))	\
+        xmlXPathNumberFunction(ctxt, 1);
+
+#define CAST_TO_BOOLEAN							\
+    if ((ctxt->value != NULL) && (ctxt->value->type != XPATH_BOOLEAN))	\
+        xmlXPathBooleanFunction(ctxt, 1);
+
+/* Upstream XP_ERROR / XP_ERROR0 / CHECK_ERROR0 macros. */
+#define CHECK_ERROR							\
+    if (ctxt->error != XPATH_EXPRESSION_OK) return
+
+#define CHECK_ERROR0							\
+    if (ctxt->error != XPATH_EXPRESSION_OK) return(0)
+
+#define XP_ERROR(X)							\
+    { xmlXPathErr(ctxt, X); return; }
+
+#define XP_ERROR0(X)							\
+    { xmlXPathErr(ctxt, X); return(0); }
+
+#define CHECK_TYPE(typeval)						\
+    if ((ctxt->value == NULL) || (ctxt->value->type != typeval))	\
+        XP_ERROR(XPATH_INVALID_TYPE)
+
+#define CHECK_TYPE0(typeval)						\
+    if ((ctxt->value == NULL) || (ctxt->value->type != typeval))	\
+        XP_ERROR0(XPATH_INVALID_TYPE)
+
+#define CHECK_ARITY(x)							\
+    if (ctxt == NULL) return;					\
+    if (nargs != (x))							\
+        XP_ERROR(XPATH_INVALID_ARITY);				\
+    if (ctxt->valueNr < (x))						\
+        XP_ERROR(XPATH_STACK_ERROR);
+
 #ifdef __cplusplus
 }
 #endif

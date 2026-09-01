@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev liblzma-dev libicu-dev \
     python3-dev python3-pip \
     ruby ruby-dev rake \
-    bison re2c autoconf libtool \
+    bison re2c autoconf libtool gdb \
     && rm -rf /var/lib/apt/lists/*
 
 # test-runner deps (same for oracle and candidate runs)

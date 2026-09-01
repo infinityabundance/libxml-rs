@@ -11,6 +11,7 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/parser.h>
+#include <libxml/chvalid.h>
 
 
 #ifdef __cplusplus
@@ -19,6 +20,28 @@ extern "C" {
 
 /* Deprecated character classification (parserInternals.h 2.15.3). */
 XMLPUBFUN int xmlIsLetter(int c);
+
+/* Upstream character-class macros (oracle parserInternals.h). */
+#define IS_BYTE_CHAR(c)	 xmlIsChar_ch(c)
+#define IS_CHAR(c)   xmlIsCharQ(c)
+#define IS_CHAR_CH(c)  xmlIsChar_ch(c)
+#define IS_BLANK(c)  xmlIsBlankQ(c)
+#define IS_BLANK_CH(c)  xmlIsBlank_ch(c)
+#define IS_BASECHAR(c) xmlIsBaseCharQ(c)
+#define IS_DIGIT(c) xmlIsDigitQ(c)
+#define IS_DIGIT_CH(c)  xmlIsDigit_ch(c)
+#define IS_COMBINING(c) xmlIsCombiningQ(c)
+#define IS_COMBINING_CH(c) 0
+#define IS_EXTENDER(c) xmlIsExtenderQ(c)
+#define IS_EXTENDER_CH(c)  xmlIsExtender_ch(c)
+#define IS_IDEOGRAPHIC(c) xmlIsIdeographicQ(c)
+#define IS_LETTER(c) (IS_BASECHAR(c) || IS_IDEOGRAPHIC(c))
+#define IS_LETTER_CH(c) xmlIsBaseChar_ch(c)
+#define IS_ASCII_LETTER(c)	((0x61 <= ((c) | 0x20)) && \
+				 ((c) | 0x20) <= 0x7a)
+#define IS_ASCII_DIGIT(c)	((0x30 <= (c)) && ((c) <= 0x39))
+#define IS_PUBIDCHAR(c)	xmlIsPubidCharQ(c)
+#define IS_PUBIDCHAR_CH(c) xmlIsPubidChar_ch(c)
 
 
 /* [11.1-S] begin: oracle-extracted declarations

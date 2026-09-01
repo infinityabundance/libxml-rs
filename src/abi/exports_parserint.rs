@@ -4043,16 +4043,27 @@ unsafe fn pi_parse_content_node_list(
         let mut root: *mut _xmlNode = ptr::null_mut();
         let mut list: *mut _xmlNode = ptr::null_mut();
         let root_name = b"#root\0";
-        root = crate::xml::tree::new_node(ptr::null_mut(), root_name.as_ptr() as *const xmlChar);
+        // pi_name_pop frees the pushed name, so the synthetic root name must
+        // be an OWNED copy — never a static/rodata pointer (upstream keeps
+        // the parser's names in the dictionary/input and does not free them
+        // on namePop, so this never bit the oracle; freeing rodata crashes).
+        let root_name_owned = pi_strndup_bytes(root_name.as_ptr(), 5);
+        if root_name_owned.is_null() {
+            pi_err_memory(ctxt);
+            return ptr::null_mut();
+        }
+        root = crate::xml::tree::new_node(ptr::null_mut(), root_name_owned as *const xmlChar);
         if root.is_null() {
+            xmlFreeImpl(root_name_owned as *mut c_void);
             pi_err_memory(ctxt);
             return ptr::null_mut();
         }
         if pi_input_push(ctxt, input) < 0 {
             crate::xml::tree::free_node(root);
+            xmlFreeImpl(root_name_owned as *mut c_void);
             return ptr::null_mut();
         }
-        pi_name_push(ctxt, root_name.as_ptr() as *const xmlChar);
+        pi_name_push(ctxt, root_name_owned as *const xmlChar);
         pi_space_push(ctxt, -1);
         pi_node_push(ctxt, root);
 

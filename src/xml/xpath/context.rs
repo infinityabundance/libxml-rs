@@ -69,7 +69,7 @@
 //! Do not remove the recursion guard — deep expressions must fail like
 //! the oracle, not overflow the stack.
 
-use crate::abi::structs::{_xmlDoc, _xmlNode, _xmlXPathObject};
+use crate::abi::structs::{_xmlDoc, _xmlNode, _xmlXPathContext, _xmlXPathObject};
 use crate::abi::types::xmlChar;
 use crate::xml::xpath::types::XPathValue;
 use std::collections::HashMap;
@@ -200,6 +200,11 @@ pub struct XPathContext {
 
     /// Opaque data pointer passed to `func_lookup_func`.
     pub func_lookup_data: *mut c_void,
+
+    /// The C-visible `_xmlXPathContext` this internal context belongs to
+    /// (set by `xmlXPathNewContext`); needed to invoke C-registered
+    /// extension functions through the `xmlXPathParserContext` protocol.
+    pub c_context: *mut _xmlXPathContext,
 }
 
 impl std::fmt::Debug for XPathContext {
@@ -239,6 +244,7 @@ impl Clone for XPathContext {
         cloned.var_lookup_data = self.var_lookup_data;
         cloned.func_lookup_func = self.func_lookup_func;
         cloned.func_lookup_data = self.func_lookup_data;
+        cloned.c_context = self.c_context;
         cloned
     }
 }
@@ -275,6 +281,7 @@ impl XPathContext {
             var_lookup_data: std::ptr::null_mut(),
             func_lookup_func: None,
             func_lookup_data: std::ptr::null_mut(),
+            c_context: std::ptr::null_mut(),
         }
     }
 
@@ -445,17 +452,11 @@ impl XPathContext {
             }
         }
 
-        // Fall back to the C callback if registered.
-        if let Some(lookup) = self.func_lookup_func {
-            let c_name: Vec<xmlChar> = name.bytes().collect();
-            // SAFETY: The callback must return a valid function pointer or null.
-            let _result =
-                unsafe { lookup(self.func_lookup_data, std::ptr::null(), c_name.as_ptr()) };
-            // TODO: Convert the opaque pointer back to a BoxedXPathFunction.
-            // This requires storing function pointers in a registry that can
-            // be looked up by the opaque handle returned by the callback.
-        }
-
+        // C-registered extension functions (xmlXPathRegisterFuncLookup) are
+        // resolved and invoked through the parser-context protocol in
+        // eval_function_call — they are NOT resolved here (a bare callback
+        // call with a non-NUL-terminated name crashes C consumers like
+        // nokogiri's handler lookup).
         None
     }
 

@@ -67,7 +67,12 @@ use crate::abi::structs::_xmlNode;
 use crate::xml::xpath::ast::{BinaryOp, Expr, NameTest, NodeTest, Step};
 use crate::xml::xpath::axes;
 use crate::xml::xpath::context::XPathContext;
+use crate::xml::xpath::parser_context::{
+    free_parser_context, new_parser_context, value_pop, value_push,
+};
 use crate::xml::xpath::types::{node_string_value, string_to_number, NodeSet, XPathValue};
+use core::ffi::c_void;
+use std::os::raw::c_int;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Evaluation
@@ -385,6 +390,16 @@ fn eval_function_call(
             f(ctx, &evaluated_args)
         }
         None => {
+            // C-registered extension function (xmlXPathRegisterFuncLookup):
+            // consumers like nokogiri register a lookup callback that returns
+            // an xmlXPathFunction; the candidate must invoke it with the
+            // upstream parser-context protocol (name on ctxt->function, args
+            // on the value stack, result popped off the stack).
+            if ctx.func_lookup_func.is_some() {
+                if let Some(result) = invoke_c_extension_function(ctx, name, &evaluated_args) {
+                    return Ok(result);
+                }
+            }
             // UPSTREAM-PARITY (xpath.c xmlXPathCompFunction): an unknown
             // function reports "Unregistered function: name"; when the name
             // carries a prefix whose namespace was never declared, the error
@@ -399,6 +414,94 @@ fn eval_function_call(
             };
             Err(msg)
         }
+    }
+}
+
+/// Invoke a C-registered XPath extension function through the upstream
+/// parser-context protocol.
+///
+/// UPSTREAM-PARITY (xpath.c `xmlXPathFunctionCall` / `xmlXPathCompFunction`):
+/// the function-lookup callback (`xmlXPathFuncLookupFunc`) is called with a
+/// NUL-terminated name; when it returns a function pointer, the candidate
+/// builds a fresh `xmlXPathParserContext`, sets `ctxt->function` to the
+/// function name (the invoker reads it), pushes the evaluated arguments in
+/// REVERSE order (so the first argument is on top — the function pops them in
+/// order), calls `func(pc, argc)`, and pops the result. Returns `None` when
+/// the callback is absent, returns NULL, or the C context is unavailable.
+///
+/// # Safety
+///
+/// - `ctx.func_lookup_func` / `ctx.func_lookup_data` come from
+///   `xmlXPathRegisterFuncLookup`; `ctx.c_context` must be the owning
+///   `_xmlXPathContext`.
+fn invoke_c_extension_function(
+    ctx: &mut XPathContext,
+    name: &str,
+    args: &[XPathValue],
+) -> Option<XPathValue> {
+    let lookup = ctx.func_lookup_func?;
+    let c_ctxt = ctx.c_context;
+    if c_ctxt.is_null() {
+        return None;
+    }
+
+    let mut name_nul: Vec<crate::abi::types::xmlChar> = name.as_bytes().to_vec();
+    name_nul.push(0);
+    // SAFETY: the callback contract returns an xmlXPathFunction (fn pointer)
+    // stored as void*, or NULL when the handler does not provide the name.
+    let fp = unsafe {
+        lookup(
+            ctx.func_lookup_data,
+            name_nul.as_ptr() as *const crate::abi::types::xmlChar,
+            std::ptr::null(),
+        )
+    };
+    if fp.is_null() {
+        return None;
+    }
+    let func: unsafe extern "C" fn(*mut c_void, c_int) = unsafe { std::mem::transmute(fp) };
+
+    unsafe {
+        let saved_function = (*c_ctxt).function;
+        (*c_ctxt).function = name_nul.as_ptr() as *const crate::abi::types::xmlChar;
+        let pc = new_parser_context(std::ptr::null(), c_ctxt);
+        if pc.is_null() {
+            (*c_ctxt).function = saved_function;
+            return None;
+        }
+
+        // Push the evaluated arguments in reverse order (upstream
+        // xmlXPathFunctionCall evaluates and pushes args from the last to the
+        // first, so the first argument sits on top of the stack).
+        let mut ok = true;
+        for val in args.iter().rev() {
+            let obj = crate::abi::exports_xml2::xpath_to_object_pub(val.clone());
+            if obj.is_null() {
+                ok = false;
+                break;
+            }
+            value_push(pc, obj);
+        }
+
+        let result = if ok {
+            func(pc as *mut c_void, args.len() as c_int);
+            let res = value_pop(pc);
+            if res.is_null() {
+                None
+            } else {
+                let val = crate::abi::exports_xml2::object_to_xpathvalue_pub(res);
+                crate::abi::exports_xml2::xmlXPathFreeObject(res);
+                Some(val)
+            }
+        } else {
+            None
+        };
+
+        // free_parser_context frees any remaining stack values and the
+        // context itself; the popped result was already freed above.
+        free_parser_context(pc);
+        (*c_ctxt).function = saved_function;
+        result
     }
 }
 

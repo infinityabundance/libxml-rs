@@ -20,6 +20,47 @@ extern "C" {
 typedef struct _xmlXIncludeCtxt xmlXIncludeCtxt;
 typedef xmlXIncludeCtxt *xmlXIncludeCtxtPtr;
 
+/**
+ * Macro defining the Xinclude namespace: http://www.w3.org/2003/XInclude
+ */
+#define XINCLUDE_NS (const xmlChar *) "http://www.w3.org/2003/XInclude"
+/**
+ * Macro defining the draft Xinclude namespace: http://www.w3.org/2001/XInclude
+ */
+#define XINCLUDE_OLD_NS (const xmlChar *) "http://www.w3.org/2001/XInclude"
+/**
+ * Macro defining "include"
+ */
+#define XINCLUDE_NODE (const xmlChar *) "include"
+/**
+ * Macro defining "fallback"
+ */
+#define XINCLUDE_FALLBACK (const xmlChar *) "fallback"
+/**
+ * Macro defining "href"
+ */
+#define XINCLUDE_HREF (const xmlChar *) "href"
+/**
+ * Macro defining "parse"
+ */
+#define XINCLUDE_PARSE (const xmlChar *) "parse"
+/**
+ * Macro defining "xml"
+ */
+#define XINCLUDE_PARSE_XML (const xmlChar *) "xml"
+/**
+ * Macro defining "text"
+ */
+#define XINCLUDE_PARSE_TEXT (const xmlChar *) "text"
+/**
+ * Macro defining "encoding"
+ */
+#define XINCLUDE_PARSE_ENCODING (const xmlChar *) "encoding"
+/**
+ * Macro defining "xpointer"
+ */
+#define XINCLUDE_PARSE_XPOINTER (const xmlChar *) "xpointer"
+
 XMLPUBFUN int xmlXIncludeProcess(xmlDocPtr doc);
 XMLPUBFUN int xmlXIncludeProcessFlags(xmlDocPtr doc, int flags);
 

@@ -283,29 +283,21 @@ pub unsafe extern "C" fn xmlXPathWrapExternal(val: *mut c_void) -> *mut _xmlXPat
     obj
 }
 
-/// `void xmlXPathFreeNodeSetList(xmlXPathObjectPtr obj)` — frees a node-set
-/// typed object and its node set.
+/// `void xmlXPathFreeNodeSetList(xmlXPathObjectPtr obj)` — frees an XPath
+/// result object WITHOUT its node set.
+///
+/// UPSTREAM-PARITY (xpath.c): upstream `xmlXPathFreeNodeSetList` frees only
+/// the object (`xmlFree(obj)`) — the nodesetval belongs to the consumer
+/// (nokogiri wraps it into a Ruby NodeSet and must keep it alive). The
+/// candidate previously freed the nodeTab + set too, leaving the wrapped
+/// nodeset dangling (nokogiri `xpath("/root/node()")` use-after-free,
+/// NodeSet#[] SIGSEGV).
 ///
 /// # SAFETY
 ///
 /// - `obj` must be a valid object pointer or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathFreeNodeSetList(obj: *mut _xmlXPathObject) {
-    if obj.is_null() {
-        return;
-    }
-    let typ = (*obj).type_;
-    if typ == xmlXPathObjectType::XPATH_NODESET as c_int
-        || typ == xmlXPathObjectType::XPATH_XSLT_TREE as c_int
-    {
-        let ns = (*obj).nodesetval as *mut _xmlNodeSet;
-        if !ns.is_null() {
-            if !(*ns).nodeTab.is_null() {
-                xmlFreeImpl((*ns).nodeTab as *mut c_void);
-            }
-            xmlFreeImpl(ns as *mut c_void);
-        }
-    }
     xmlFreeImpl(obj as *mut c_void);
 }
 

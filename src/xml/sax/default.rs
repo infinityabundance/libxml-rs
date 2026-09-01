@@ -608,6 +608,15 @@ pub(crate) mod default_sax_handler {
                 return;
             }
 
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs builds the node
+            // with xmlNewDocNodeEatName(ctxt->myDoc, ...)): the element is
+            // created as a child of the parser's document. Without this the
+            // node's doc stays NULL until it is linked into a tree, which
+            // never happens for unlinked fragments (xmlParseInNodeContext
+            // unlinks the parsed list — nokogiri's `noko_xml_document_pin_node`
+            // then dereferences a NULL node->doc).
+            (*node).doc = c.myDoc;
+
             // UPSTREAM-PARITY: nodes carry the line of their construct.
             (*node).line = current_line(ctxt);
 

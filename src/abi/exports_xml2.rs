@@ -5994,6 +5994,7 @@ pub unsafe extern "C" fn xmlXPathNewContext(doc: *mut _xmlDoc) -> *mut _xmlXPath
     for (name, func) in crate::xml::xpath::functions::core_functions() {
         internal.register_function(&name, func);
     }
+    internal.c_context = ctxt;
     (*ctxt).extra = Box::into_raw(internal) as *mut c_void;
 
     ctxt

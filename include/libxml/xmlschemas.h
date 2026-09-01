@@ -274,8 +274,10 @@ typedef struct _xmlSchemaSAXPlug xmlSchemaSAXPlugStruct;
 typedef xmlSchemaSAXPlugStruct *xmlSchemaSAXPlugPtr;
 
 typedef struct _xmlSchemaParserCtxt xmlSchemaParserCtxt;
+typedef xmlSchemaParserCtxt *xmlSchemaParserCtxtPtr;
 
 typedef struct _xmlSchemaValidCtxt xmlSchemaValidCtxt;
+typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 typedef enum{
     XML_SCHEMAS_ERR_OK		= 0,
@@ -309,8 +311,6 @@ typedef enum{
 typedef enum{
     XML_SCHEMA_VAL_VC_I_CREATE			= 1<<0
 } xmlSchemaValidOption;
-
-typedef xmlSchemaValidCtxt *xmlSchemaValidCtxtPtr;
 
 /* [11.1-G] end: extracted definitions */
 
