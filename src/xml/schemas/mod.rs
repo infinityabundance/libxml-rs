@@ -2432,6 +2432,8 @@ pub fn xsd_validate_model_group(
             child = (*child).next;
         }
 
+        let mut content_bad = false;
+
         match component.component_type {
             XsdComponentType::Sequence => {
                 // Validate in-order
@@ -2486,17 +2488,28 @@ pub fn xsd_validate_model_group(
                         } else if count >= min {
                             break;
                         } else {
+                            // UPSTREAM-PARITY (xmlschemas.c
+                            // xmlSchemaValidateChildElem): on the first
+                            // content-model mismatch the offending child is
+                            // reported once and the element's content is
+                            // marked BAD — downstream parts are NOT
+                            // validated (no cascading "missing child" /
+                            // "unexpected extra" errors), matching the
+                            // oracle's single-error-per-address behavior.
                             ctxt.errors.push(format!(
-                                "Expected element '{}' but found '{}'",
-                                match_name, child_name
+                                "Element '{}': This element is not expected. Expected is ( {} ).",
+                                child_name, match_name
                             ));
                             ctxt.nb_errors += 1;
                             valid = false;
-                            child_idx += 1;
+                            content_bad = true;
                             break;
                         }
                     }
                     part_counts[k] = count;
+                    if content_bad {
+                        break;
+                    }
 
                     if count < min {
                         // UPSTREAM-PARITY (xmlschemas.c
@@ -2545,7 +2558,11 @@ pub fn xsd_validate_model_group(
                 }
 
                 // Check for unexpected extra children
-                if child_idx < child_nodes.len() {
+                if content_bad {
+                    // Content already reported as bad — do not stack an
+                    // "unexpected extra" error on top (upstream stops once
+                    // BAD_CONTENT is set).
+                } else if child_idx < child_nodes.len() {
                     let extra = get_node_qname(child_nodes[child_idx]);
                     ctxt.errors
                         .push(format!("Unexpected element '{}' in sequence", extra));
