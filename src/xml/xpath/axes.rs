@@ -63,10 +63,13 @@
 //! namespace model are observable through xmlXPathObject node-sets.
 
 use crate::abi::structs::_xmlNode;
+use crate::abi::structs::_xmlNs;
 use crate::abi::types::xmlElementType;
 use crate::xml::xpath::ast::{Axis, NameTest, NodeTest};
 use crate::xml::xpath::types::NodeSet;
 use std::os::raw::c_int;
+use std::os::raw::c_void;
+use std::ptr;
 
 /// Traverse an axis from a context node, returning nodes matching the node test.
 ///
@@ -332,28 +335,154 @@ unsafe fn attribute_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
 }
 
 /// namespace axis: namespaces of context node.
-unsafe fn namespace_axis(node: *mut _xmlNode, _node_test: &NodeTest, _result: &mut NodeSet) {
+unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut NodeSet) {
     if node.is_null() {
         return;
     }
-    // Collect in-scope namespaces
-    let mut ns_def = (*node).nsDef;
-    while !ns_def.is_null() {
-        // Namespace nodes are synthesized. In a full implementation,
-        // we'd create temporary namespace nodes.
-        // For now, we check if there are any namespace declarations.
-        ns_def = (*ns_def).next;
-    }
-
-    // Also look at ancestors' namespace declarations
-    let mut n = (*node).parent;
-    while !n.is_null() {
-        let mut ns_def = (*n).nsDef;
+    // Collect in-scope namespaces: the context node's own declarations plus
+    // those inherited from its ancestors, deduplicated by prefix (the nearest
+    // declaration wins), plus the implicit xml namespace. libxml represents
+    // namespace-axis nodes as the actual `_xmlNs` from the tree's nsDef
+    // chains cast to `xmlNodePtr` (type XML_NAMESPACE_DECL), which nokogiri
+    // wraps via noko_xml_namespace_wrap_xpath_copy in node-sets.
+    let mut in_scope: Vec<*mut _xmlNs> = Vec::new();
+    let mut cur = node;
+    while !cur.is_null() {
+        let mut ns_def = (*cur).nsDef;
         while !ns_def.is_null() {
+            let prefix_null = (*ns_def).prefix.is_null();
+            let duplicate = in_scope.iter().any(|&e| {
+                if prefix_null {
+                    (*e).prefix.is_null()
+                } else {
+                    !(*e).prefix.is_null()
+                        && crate::abi::exports_xml2::xmlStrEqual((*e).prefix, (*ns_def).prefix) != 0
+                }
+            });
+            if !duplicate {
+                in_scope.push(ns_def);
+            }
             ns_def = (*ns_def).next;
         }
-        n = (*n).parent;
+        cur = (*cur).parent;
     }
+
+    // The xml namespace is always in scope.
+    let xml_prefix = c"xml".as_ptr() as *const crate::abi::types::xmlChar;
+    let xml_present = in_scope.iter().any(|&e| {
+        !(*e).prefix.is_null()
+            && crate::abi::exports_xml2::xmlStrEqual((*e).prefix, xml_prefix) != 0
+    });
+    if !xml_present {
+        // The xml namespace declaration lives in the document's oldNs chain
+        // (created by ensure_doc_xml_ns on parse); find it, else synthesize
+        // nothing (upstream hardcodes the xml ns availability).
+        let doc = (*node).doc;
+        if !doc.is_null() {
+            let mut ns = (*doc).oldNs;
+            while !ns.is_null() {
+                if !(*ns).prefix.is_null()
+                    && crate::abi::exports_xml2::xmlStrEqual((*ns).prefix, xml_prefix) != 0
+                {
+                    in_scope.push(ns);
+                    break;
+                }
+                ns = (*ns).next;
+            }
+        }
+    }
+
+    // UPSTREAM-PARITY (xpath.c namespace axis): namespace nodes placed in a
+    // node-set are independent COPIES of the in-scope tree declarations — the
+    // node-set owns them and consumers (nokogiri xml_namespace.c) free them on
+    // GC. Reusing the live tree `_xmlNs` would let nokogiri's dealloc free a
+    // declaration that doc teardown also walks (double free).
+    let doc = (*node).doc;
+    let mut pushed = 0usize;
+    for &ns in &in_scope {
+        let copy =
+            crate::abi::allocator::xmlMallocZero(core::mem::size_of::<_xmlNs>()) as *mut _xmlNs;
+        if copy.is_null() {
+            continue;
+        }
+        unsafe {
+            (*copy).type_ = crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int;
+            (*copy).href = if (*ns).href.is_null() {
+                ptr::null()
+            } else {
+                crate::abi::exports_xml2::xmlStrdup((*ns).href)
+            };
+            (*copy).prefix = if (*ns).prefix.is_null() {
+                ptr::null()
+            } else {
+                crate::abi::exports_xml2::xmlStrdup((*ns).prefix)
+            };
+            (*copy).context = doc;
+        }
+        let ns_node = copy as *mut _xmlNode;
+        if matches_namespace_node(ns_node, node_test) {
+            result.push(ns_node);
+            pushed += 1;
+        } else {
+            // Failed the node test: free the copy we just allocated.
+            free_namespace_copy(copy);
+        }
+    }
+    if std::env::var("LIBXML_RS_TRACE_NSASIS").is_ok() {
+        eprintln!(
+            "[nsaxis] node={:p} test={:?} in_scope={} pushed={}",
+            node,
+            node_test,
+            in_scope.len(),
+            pushed
+        );
+    }
+}
+
+/// Match a namespace-axis node (an `_xmlNs` cast to `_xmlNode`) against a
+/// node test. The implicit namespace prefix wildcard and explicit name tests
+/// are applied.
+unsafe fn matches_namespace_node(node: *mut _xmlNode, node_test: &NodeTest) -> bool {
+    let ns = node as *mut _xmlNs;
+    match node_test {
+        NodeTest::Node
+        | NodeTest::Wildcard
+        | NodeTest::NsWildcard(_)
+        | NodeTest::NsWildcardUri(_) => true,
+        NodeTest::NameTest(NameTest::Any) => true,
+        NodeTest::NameTest(NameTest::LocalName(prefix)) => {
+            if (*ns).prefix.is_null() {
+                prefix.is_empty()
+            } else {
+                crate::xml::string::xmlstr_to_string((*ns).prefix) == *prefix
+            }
+        }
+        NodeTest::NameTest(NameTest::QName { prefix, .. }) => {
+            if (*ns).prefix.is_null() {
+                prefix.is_empty()
+            } else {
+                crate::xml::string::xmlstr_to_string((*ns).prefix) == *prefix
+            }
+        }
+        NodeTest::NameTest(NameTest::QNameUri { .. }) => true,
+        _ => false,
+    }
+}
+
+/// Free a synthetic namespace node allocated by [`namespace_axis`]. These are
+/// independent `_xmlNs` copies owned by the node-set; upstream frees them when
+/// the containing node-set is released.
+unsafe fn free_namespace_copy(ns: *mut _xmlNs) {
+    if ns.is_null() {
+        return;
+    }
+    if !(*ns).href.is_null() {
+        crate::abi::allocator::xmlFreeImpl((*ns).href as *mut c_void);
+    }
+    if !(*ns).prefix.is_null() {
+        crate::abi::allocator::xmlFreeImpl((*ns).prefix as *mut c_void);
+    }
+    crate::abi::allocator::xmlFreeImpl(ns as *mut c_void);
 }
 
 /// self axis: the context node itself.

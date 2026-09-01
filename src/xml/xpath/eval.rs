@@ -64,7 +64,7 @@
 //! (R-000102) — both are observable through xmlXPathEval results.
 
 use crate::abi::structs::_xmlNode;
-use crate::xml::xpath::ast::{BinaryOp, Expr, NameTest, NodeTest, Step};
+use crate::xml::xpath::ast::{Axis, BinaryOp, Expr, NameTest, NodeTest, Step};
 use crate::xml::xpath::axes;
 use crate::xml::xpath::context::XPathContext;
 use crate::xml::xpath::parser_context::{
@@ -202,14 +202,17 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
     // ("Undefined namespace prefix: prefix").
     let node_test = resolve_step_prefix(&step.node_test, &ctx.namespaces)?;
 
-    // Traverse the axis
+    // Traverse the axis. Attribute nodes are included for every axis step;
+    // namespace nodes only when the step is explicitly the namespace axis
+    // (upstream collects namespace nodes only on AXIS_NAMESPACE).
+    let include_namespaces = step.axis == Axis::Namespace;
     let mut result = unsafe {
         axes::traverse_axis(
             context_node,
             step.axis,
             &node_test,
-            true,  // include attributes
-            false, // include namespaces
+            true, // include attributes
+            include_namespaces,
         )
     };
 
