@@ -64,7 +64,7 @@
 //! (R-000102) — both are observable through xmlXPathEval results.
 
 use crate::abi::structs::_xmlNode;
-use crate::xml::xpath::ast::{BinaryOp, Expr, Step};
+use crate::xml::xpath::ast::{BinaryOp, Expr, NameTest, NodeTest, Step};
 use crate::xml::xpath::axes;
 use crate::xml::xpath::context::XPathContext;
 use crate::xml::xpath::types::{node_string_value, string_to_number, NodeSet, XPathValue};
@@ -190,12 +190,19 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
         return Ok(XPathValue::NodeSet(NodeSet::new()));
     }
 
+    // UPSTREAM-PARITY (xpath.c xmlXPathCompQName): a QName / prefix:* node
+    // test resolves its prefix through the context's REGISTERED namespaces
+    // (ctxt->nsHash) — never the document's in-scope declarations. An
+    // unregistered prefix raises XPATH_UNDEF_PREFIX_ERROR
+    // ("Undefined namespace prefix: prefix").
+    let node_test = resolve_step_prefix(&step.node_test, &ctx.namespaces)?;
+
     // Traverse the axis
     let mut result = unsafe {
         axes::traverse_axis(
             context_node,
             step.axis,
-            &step.node_test,
+            &node_test,
             true,  // include attributes
             false, // include namespaces
         )
@@ -251,6 +258,37 @@ fn eval_step(ctx: &mut XPathContext, step: &Step) -> Result<XPathValue, String> 
     }
 
     Ok(XPathValue::NodeSet(result))
+}
+
+/// Resolve a step's node-test prefix through the registered namespaces,
+/// replacing prefix-based tests with URI-based ones (upstream
+/// `xmlXPathCompQName`/`xmlXPathCompNodeTest` do this at compile time; the
+/// candidate's AST is built without the context, so the resolution happens
+/// here at the start of each step evaluation).
+///
+/// An unregistered prefix is an error (XPATH_UNDEF_PREFIX_ERROR).
+fn resolve_step_prefix(
+    node_test: &NodeTest,
+    namespaces: &std::collections::HashMap<String, String>,
+) -> Result<NodeTest, String> {
+    match node_test {
+        NodeTest::NameTest(NameTest::QName { prefix, local }) if !prefix.is_empty() => {
+            let uri = namespaces
+                .get(prefix)
+                .ok_or_else(|| format!("Undefined namespace prefix: {}", prefix))?;
+            Ok(NodeTest::NameTest(NameTest::QNameUri {
+                uri: uri.clone(),
+                local: local.clone(),
+            }))
+        }
+        NodeTest::NsWildcard(prefix) if !prefix.is_empty() => {
+            let uri = namespaces
+                .get(prefix)
+                .ok_or_else(|| format!("Undefined namespace prefix: {}", prefix))?;
+            Ok(NodeTest::NsWildcardUri(uri.clone()))
+        }
+        _ => Ok(node_test.clone()),
+    }
 }
 
 /// Evaluate a filter expression: `primary[pred1][pred2]`.

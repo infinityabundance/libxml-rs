@@ -1116,15 +1116,69 @@ unsafe fn raise_error_streamed_x86_64(
         node: ptr::null_mut(),
     };
 
-    globals::set_last_error(err);
+    // UPSTREAM-PARITY (error.c xmlVRaiseError 2.15): parser-domain errors
+    // with a context update the PER-CONTEXT lastError (to = &ctxt->lastError)
+    // and then mirror into the TLS global (xmlCopyError); the callback
+    // receives the per-context error. Non-parser domains keep the TLS global
+    // as the single storage.
+    let is_ctxt_error = !ctxt.is_null()
+        && matches!(
+            domain,
+            XML_FROM_PARSER
+                | XML_FROM_HTML
+                | XML_FROM_DTD
+                | XML_FROM_NAMESPACE
+                | XML_FROM_IO
+                | XML_FROM_VALID
+        );
+    let to: *const _xmlError = if is_ctxt_error {
+        let c = &mut *(ctxt as *mut crate::abi::structs::_xmlParserCtxt);
+        // Free the previous per-context strings (upstream xmlResetError in
+        // xmlVUpdateError) before taking ownership of the new ones.
+        globals::free_error_strings(&c.lastError);
+        ptr::write(&mut c.lastError, err);
+        // Mirror into the TLS global with owned copies (upstream
+        // xmlCopyError(to, lastError)).
+        globals::set_last_error(deep_copy_error(&c.lastError));
+        &c.lastError
+    } else {
+        globals::set_last_error(err);
+        globals::get_last_error()
+    };
 
-    // Structured handler wins (upstream `else if` chain); the (handler, ctx)
-    // pair is read atomically and invoked outside the lock (11.1-X).
+    // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr channel selection):
+    // ctxt->errorHandler (xmlCtxtSetErrorHandler) wins, then the SAX2
+    // `serror` slot (lxml installs this), then the legacy SAX generic
+    // channel. The per-context structured handler is preferred over the
+    // TLS global structured handler (error.c xmlVRaiseError order).
+    let mut schannel: Option<xmlStructuredErrorFunc> = None;
+    let mut sdata: *mut c_void = ptr::null_mut();
+    if is_ctxt_error {
+        let c = &*(ctxt as *const crate::abi::structs::_xmlParserCtxt);
+        if let Some(handler) = c.errorHandler {
+            schannel = Some(handler);
+            sdata = c.errorCtxt;
+        } else if !c.sax.is_null() {
+            let sax = &*c.sax;
+            if sax.initialized == XML_SAX2_MAGIC as c_uint && sax.serror.is_some() {
+                schannel = sax.serror;
+                sdata = c.userData;
+            }
+        }
+    }
+    if let Some(handler) = schannel {
+        // SAFETY: the selected structured callback and its data come from
+        // the parser context (or the TLS install), valid per the C API.
+        handler(sdata, to);
+        return;
+    }
+
+    // Global structured handler (upstream `else if` chain); the (handler,
+    // ctx) pair is read atomically and invoked outside the lock (11.1-X).
     let structured = globals::with_structured_error(|h, c| (h, c));
     if let Some(handler) = structured.0 {
-        let err_ref = globals::get_last_error();
-        if !err_ref.is_null() {
-            handler(structured.1, err_ref as *const _xmlError);
+        if !to.is_null() {
+            handler(structured.1, to);
         }
         return;
     }
@@ -1154,6 +1208,41 @@ unsafe fn raise_error_streamed_x86_64(
             }
         }
         GenericDelivery::None => {}
+    }
+}
+
+/// Deep-copy an error's owned string fields (upstream `xmlCopyError`): the
+/// destination takes freshly strdup'd copies so both errors own their
+/// strings independently.
+///
+/// # Safety
+///
+/// - `err` must be a valid `_xmlError` whose string fields are NULL or
+///   NUL-terminated.
+unsafe fn deep_copy_error(err: &_xmlError) -> _xmlError {
+    unsafe {
+        let dup = |p: *mut c_char| -> *mut c_char {
+            if p.is_null() {
+                ptr::null_mut()
+            } else {
+                crate::abi::allocator::xmlMemStrdupImpl(p) as *mut c_char
+            }
+        };
+        _xmlError {
+            domain: err.domain,
+            code: err.code,
+            message: dup(err.message),
+            level: err.level,
+            file: dup(err.file),
+            line: err.line,
+            str1: dup(err.str1),
+            str2: dup(err.str2),
+            str3: dup(err.str3),
+            int1: err.int1,
+            int2: err.int2,
+            ctxt: err.ctxt,
+            node: err.node,
+        }
     }
 }
 

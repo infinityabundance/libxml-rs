@@ -227,11 +227,12 @@ struct _xmlParserNodeInfo {
 
 typedef struct _xmlParserNodeInfoSeq xmlParserNodeInfoSeq;
 
+typedef struct _xmlParserNodeInfoSeq *xmlParserNodeInfoSeqPtr;
+
 struct _xmlParserNodeInfoSeq {
-    unsigned long magic;
+    unsigned long maximum;
+    unsigned long length;
     xmlParserNodeInfo *buffer;
-    int size;
-    int number;
 };
 
 /* Element types */
@@ -365,7 +366,7 @@ struct _xmlNs {
     const xmlChar *href;
     const xmlChar *prefix;
     void *_private;
-    void *context;
+    struct _xmlDoc *context;
 };
 
 /* Document structure */
@@ -390,7 +391,7 @@ struct _xmlDoc {
     void *refs;
     xmlChar *URL;
     int charset;
-    void *dict;
+    struct _xmlDict *dict;
     void *psvi;
     int parseFlags;
     int properties;

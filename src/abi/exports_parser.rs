@@ -993,6 +993,8 @@ pub unsafe extern "C" fn xmlCtxtResetLastError(ctx: *mut c_void) {
     unsafe {
         (*ctxt).errNo = XML_ERR_OK;
         if (*ctxt).lastError.code != XML_ERR_OK {
+            // Upstream xmlResetError frees the owned strings.
+            crate::xml::globals::free_error_strings(&(*ctxt).lastError);
             errors::reset_error(&mut (*ctxt).lastError);
         }
     }
@@ -1035,7 +1037,11 @@ pub unsafe extern "C" fn xmlCtxtErrMemory(ctxt: *mut _xmlParserCtxt) {
         c.lastError.domain = XML_FROM_PARSER;
         c.lastError.code = XML_ERR_NO_MEMORY;
         c.lastError.level = xmlErrorLevel::XML_ERR_FATAL as c_int;
-        c.lastError.message = c"out of memory\n".as_ptr() as *mut c_char;
+        // Owned copy (upstream xmlRaiseMemoryError): the per-context last
+        // error strings are freed on reset/free, so static literals would be
+        // a double-free/UB hazard.
+        c.lastError.message =
+            crate::abi::allocator::xmlMemStrdupImpl(c"out of memory\n".as_ptr()) as *mut c_char;
 
         if let Some(handler) = c.errorHandler {
             handler(c.errorCtxt, &c.lastError);
@@ -2641,10 +2647,9 @@ pub unsafe extern "C" fn xmlInitNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
         return;
     }
     unsafe {
-        (*seq).block = ptr::null_mut();
-        (*seq).index = ptr::null_mut();
-        (*seq).block_max = 0;
-        (*seq).size = 0;
+        (*seq).length = 0;
+        (*seq).maximum = 0;
+        (*seq).buffer = ptr::null_mut();
     }
 }
 
@@ -2676,11 +2681,8 @@ pub unsafe extern "C" fn xmlClearNodeInfoSeq(seq: *mut _xmlParserNodeInfoSeq) {
         return;
     }
     unsafe {
-        if !(*seq).block.is_null() {
-            xmlFreeImpl((*seq).block as *mut c_void);
-        }
-        if !(*seq).index.is_null() {
-            xmlFreeImpl((*seq).index as *mut c_void);
+        if !(*seq).buffer.is_null() {
+            xmlFreeImpl((*seq).buffer as *mut c_void);
         }
         xmlInitNodeInfoSeq(seq);
     }
@@ -2720,14 +2722,14 @@ pub unsafe extern "C" fn xmlParserFindNodeInfoIndex(
     }
     unsafe {
         let s = &*seq;
-        if s.block.is_null() || s.size == 0 {
+        if s.buffer.is_null() || s.length == 0 {
             return 0;
         }
         let mut lower: usize = 0;
-        let mut upper: usize = s.size as usize;
+        let mut upper: usize = s.length as usize;
         while lower < upper {
             let middle = lower + (upper - lower) / 2;
-            let cur_node = (*s.block.add(middle)).node;
+            let cur_node = (*s.buffer.add(middle)).node;
             if cur_node == node {
                 return middle as c_ulong;
             }
@@ -2776,8 +2778,8 @@ pub unsafe extern "C" fn xmlParserFindNodeInfo(
         let seq = &(*ctxt).node_seq;
         let seq_mut = seq as *const _ as *mut _xmlParserNodeInfoSeq;
         let pos = xmlParserFindNodeInfoIndex(seq_mut, node);
-        if !seq.block.is_null() && (pos as usize) < (seq.size as usize) {
-            let info = &*seq.block.add(pos as usize);
+        if !seq.buffer.is_null() && (pos as usize) < (seq.length as usize) {
+            let info = &*seq.buffer.add(pos as usize);
             if info.node == node {
                 return info;
             }
@@ -2821,38 +2823,60 @@ pub unsafe extern "C" fn xmlParserAddNodeInfo(
         let node = (*info).node;
         let pos = xmlParserFindNodeInfoIndex(seq, node as *mut _xmlNode) as usize;
 
-        if !seq.block.is_null() && pos < seq.size as usize && (*seq.block.add(pos)).node == node {
-            ptr::copy_nonoverlapping(info, seq.block.add(pos), 1);
+        if pos < seq.length as usize && !seq.buffer.is_null() && (*seq.buffer.add(pos)).node == node
+        {
+            // Node already recorded: update the record in place.
+            ptr::copy_nonoverlapping(info, seq.buffer.add(pos), 1);
             return;
         }
 
-        // Grow the block.
-        if seq.size + 1 > seq.block_max {
-            let new_max = if seq.block_max == 0 {
-                4
-            } else {
-                seq.block_max * 2
-            };
-            let new_block = xmlReallocImpl(
-                seq.block as *mut c_void,
-                (new_max as usize) * core::mem::size_of::<_xmlParserNodeInfo>(),
-            ) as *mut _xmlParserNodeInfo;
-            if new_block.is_null() {
+        // Grow the buffer (upstream xmlGrowCapacity: 50% growth from a
+        // minimum of 4, capped at XML_MAX_ITEMS = 1 billion).
+        if seq.length + 1 > seq.maximum {
+            let new_max = xml_grow_capacity(seq.maximum);
+            if new_max < 0 {
                 xmlCtxtErrMemory(ctxt);
                 return;
             }
-            seq.block = new_block;
-            seq.block_max = new_max;
+            let new_buf = xmlReallocImpl(
+                seq.buffer as *mut c_void,
+                (new_max as usize) * core::mem::size_of::<_xmlParserNodeInfo>(),
+            ) as *mut _xmlParserNodeInfo;
+            if new_buf.is_null() {
+                xmlCtxtErrMemory(ctxt);
+                return;
+            }
+            seq.buffer = new_buf;
+            seq.maximum = new_max as c_ulong;
         }
 
         // Shift elements right to make room at `pos`.
-        let size = seq.size as usize;
-        for i in (pos + 1..=size).rev() {
-            ptr::copy_nonoverlapping(seq.block.add(i - 1), seq.block.add(i), 1);
+        let length = seq.length as usize;
+        for i in (pos + 1..=length).rev() {
+            ptr::copy_nonoverlapping(seq.buffer.add(i - 1), seq.buffer.add(i), 1);
         }
-        ptr::copy_nonoverlapping(info, seq.block.add(pos), 1);
-        seq.size += 1;
+        ptr::copy_nonoverlapping(info, seq.buffer.add(pos), 1);
+        seq.length += 1;
     }
+}
+
+/// Upstream `xmlGrowCapacity` (private/memory.h) for a zero-based capacity:
+/// 50% growth, minimum initial allocation 4, capped at XML_MAX_ITEMS.
+/// Returns the new capacity or -1 on overflow/cap exhaustion.
+unsafe fn xml_grow_capacity(capacity: c_ulong) -> c_int {
+    const XML_MAX_ITEMS: u64 = 1_000_000_000;
+    const ELEM_SIZE: usize = core::mem::size_of::<_xmlParserNodeInfo>();
+    if capacity == 0 {
+        return 4;
+    }
+    if capacity as u64 >= XML_MAX_ITEMS || (capacity as usize) > usize::MAX / 2 / ELEM_SIZE {
+        return -1;
+    }
+    let extra = (capacity + 1) / 2;
+    if capacity as u64 > XML_MAX_ITEMS - extra as u64 {
+        return XML_MAX_ITEMS as c_int;
+    }
+    (capacity + extra) as c_int
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

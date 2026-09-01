@@ -76,21 +76,25 @@ typedef xmlXPathFunction (*xmlXPathFuncLookupFunc)(void *ctxt,
 /* XPath context */
 typedef struct _xmlXPathContext xmlXPathContext;
 typedef xmlXPathContext *xmlXPathContextPtr;
+
+/* Forward typedefs (upstream declares these before the context) */
+typedef struct _xmlXPathType xmlXPathType;
+typedef struct _xmlXPathAxis xmlXPathAxis;
 struct _xmlXPathContext {
     xmlDocPtr doc;
     xmlNodePtr node;
     int nb_variables_unused;
     int max_variables_unused;
-    void *varHash;
+    xmlHashTable *varHash;
     int nb_types;
     int max_types;
-    void *types;
+    xmlXPathType *types;
     int nb_funcs_unused;
     int max_funcs_unused;
-    void *funcHash;
+    xmlHashTable *funcHash;
     int nb_axis;
     int max_axis;
-    void **axis;
+    xmlXPathAxis *axis;
     xmlNsPtr *namespaces;
     int nsNr;
     void *user;
@@ -99,18 +103,18 @@ struct _xmlXPathContext {
     int xptr;
     xmlNodePtr here;
     xmlNodePtr origin;
-    void *nsHash;
+    xmlHashTable *nsHash;
     xmlXPathVariableLookupFunc varLookupFunc;
     void *varLookupData;
     void *extra;
-    xmlXPathFunction function;
+    const xmlChar *function;
     const xmlChar *functionURI;
     xmlXPathFuncLookupFunc funcLookupFunc;
     void *funcLookupData;
     xmlNsPtr *tmpNsList;
     int tmpNsNr;
     void *userData;
-    xmlGenericErrorFunc error;
+    xmlStructuredErrorFunc error;
     xmlError lastError;
     xmlNodePtr debugNode;
     xmlDictPtr dict;

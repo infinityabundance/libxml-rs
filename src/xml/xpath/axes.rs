@@ -465,6 +465,19 @@ pub unsafe fn matches_node_test(node: *mut _xmlNode, node_test: &NodeTest) -> bo
                 false
             }
         }
+        NodeTest::NsWildcardUri(uri) => {
+            if node_type == 1 {
+                // Check namespace URI (prefix resolved at evaluation)
+                if let Some(ns) = node_ref.ns.as_ref() {
+                    let ns_uri = crate::xml::string::xmlstr_to_string(ns.href);
+                    ns_uri == *uri
+                } else {
+                    uri.is_empty()
+                }
+            } else {
+                false
+            }
+        }
     }
 }
 
@@ -496,6 +509,19 @@ unsafe fn matches_name_test(node: *mut _xmlNode, name_test: &NameTest) -> bool {
                 ns_prefix == *prefix
             } else {
                 prefix.is_empty()
+            }
+        }
+        NameTest::QNameUri { uri, local } => {
+            let name = crate::xml::string::xmlstr_to_string(node_ref.name);
+            if name != *local {
+                return false;
+            }
+            // Check namespace URI (prefix resolved at evaluation)
+            if let Some(ns) = node_ref.ns.as_ref() {
+                let ns_uri = crate::xml::string::xmlstr_to_string(ns.href);
+                ns_uri == *uri
+            } else {
+                uri.is_empty()
             }
         }
     }

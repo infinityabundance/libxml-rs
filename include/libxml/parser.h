@@ -25,9 +25,8 @@
 extern "C" {
 #endif
 
-
-
-
+/* Callback used to deallocate xmlParserInput buffers (upstream parser.h). */
+typedef void (*xmlParserInputDeallocate)(xmlChar *str);
 
 
 
@@ -229,8 +228,8 @@ struct _xmlParserInput {
     int line;
     int col;
     unsigned long consumed;
-    xmlFreeFunc free;
-    const char *encoding;
+    xmlParserInputDeallocate free;
+    const xmlChar *encoding;
     const xmlChar *version;
     int flags;
     int id;
@@ -244,8 +243,8 @@ struct _xmlParserInputBuffer {
     xmlInputReadCallback readcallback;
     xmlInputCloseCallback closecallback;
     xmlCharEncodingHandlerPtr encoder;
-    xmlBufferPtr buffer;
-    xmlBufferPtr raw;
+    xmlBuf *buffer;
+    xmlBuf *raw;
     int compressed;
     int error;
     unsigned long rawconsumed;
@@ -257,8 +256,8 @@ struct _xmlOutputBuffer {
     xmlOutputWriteCallback writecallback;
     xmlOutputCloseCallback closecallback;
     xmlCharEncodingHandlerPtr encoder;
-    xmlBufferPtr buffer;
-    xmlBufferPtr conv;
+    xmlBuf *buffer;
+    xmlBuf *conv;
     int written;
     int error;
 };
@@ -344,7 +343,7 @@ struct _xmlParserCtxt {
     int spaceMax;
     int *spaceTab;
     int depth;
-    xmlEntityPtr entity;
+    xmlParserInput *entity;
     int charset;
     int nodelen;
     int nodemem;
@@ -365,7 +364,7 @@ struct _xmlParserCtxt {
     int sax2;
     int nsNr;
     int nsMax;
-    xmlNsPtr *nsTab;
+    const xmlChar **nsTab;
     unsigned int *attallocs;
     xmlStartTag *pushTab;
     xmlHashTablePtr attsDefault;
@@ -374,9 +373,9 @@ struct _xmlParserCtxt {
     int options;
     int dictNames;
     int freeElemsNr;
-    xmlNodePtr *freeElems;
+    xmlNode *freeElems;
     int freeAttrsNr;
-    xmlAttrPtr *freeAttrs;
+    xmlAttr *freeAttrs;
     xmlError lastError;
     int parseMode;
     unsigned long nbentities;

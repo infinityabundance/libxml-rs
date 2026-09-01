@@ -1039,7 +1039,14 @@ impl InputStack {
         if cur.filename().is_none() && self.current > 0 {
             let parent = &self.inputs[self.current - 1];
             let (pl, pc, _) = parent.pos();
-            (parent.filename(), pl, pc)
+            // UPSTREAM-PARITY: a frozen (suspended) input's `col` lags the
+            // next-char position by the raw `NEXT` macro consumes (e.g. the
+            // trailing `;` of an entity reference — parserInternals.c
+            // xmlParseEntityRef ends with `NEXT` without the xmlCurrentChar
+            // col++). The oracle reports the last col-tracked char, so the
+            // candidate's 1-based next-char column is one ahead; clamp at 1
+            // (a newline consume resets col to 1 in both models).
+            (parent.filename(), pl, pc.saturating_sub(1).max(1))
         } else {
             let (l, c, _) = cur.pos();
             (cur.filename(), l, c)

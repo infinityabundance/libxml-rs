@@ -2293,7 +2293,15 @@ impl XmlParser {
                 // legacy "cur input" tail carries the referencing entity
                 // content's info + window (HOSTILE-FAILURE F2).
                 self.cur_error_tail = Some((1, ref_win));
-                self.raise_error_now(
+                // UPSTREAM-PARITY (xmlCtxtVErr frozen-parent position): the
+                // oracle attributes the loop error to the END of the
+                // top-level reference — the parent input's `col` sits on the
+                // trailing ';' (the raw NEXT consume does not bump col). The
+                // tokenizer has already consumed the reference, so its
+                // position is one past it.
+                let (_, _, dpos) = self.tokenizer.current_pos();
+                let ref_end = dpos.saturating_sub(1);
+                self.raise_error_at(
                     XML_FROM_PARSER,
                     XML_ERR_ENTITY_LOOP,
                     xmlErrorLevel::XML_ERR_FATAL as c_int,
@@ -2302,6 +2310,7 @@ impl XmlParser {
                     None,
                     None,
                     0,
+                    ref_end,
                 );
                 return Err(());
             }

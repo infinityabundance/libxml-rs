@@ -15,6 +15,7 @@
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
 #include <libxml/list.h>
+#include <libxml/xmlautomata.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +23,9 @@ extern "C" {
 
 typedef struct _xmlValidCtxt xmlValidCtxt;
 typedef xmlValidCtxt *xmlValidCtxtPtr;
+
+typedef struct _xmlValidState xmlValidState;
+typedef xmlValidState *xmlValidStatePtr;
 
 typedef struct _xmlHashTable xmlIDTable;
 typedef xmlIDTable *xmlIDTablePtr;
@@ -52,12 +56,12 @@ struct _xmlValidCtxt {
     unsigned int flags;
     xmlDocPtr doc;
     int valid;
-    void *vstate;
+    xmlValidState *vstate;
     int vstateNr;
     int vstateMax;
-    void *vstateTab;
-    void *am;
-    void *state;
+    xmlValidState *vstateTab;
+    xmlAutomata *am;
+    xmlAutomataState *state;
 };
 
 /*

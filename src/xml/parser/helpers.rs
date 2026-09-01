@@ -260,6 +260,10 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
             crate::abi::exports_xml2::xmlDictFree((*ctxt).dict);
         }
 
+        // Free the per-context last error's owned strings (the error paths
+        // now fill ctxt->lastError with strdup'd copies).
+        crate::xml::globals::free_error_strings(&(*ctxt).lastError);
+
         // Free the context itself.
         xmlFreeImpl(ctxt as *mut c_void);
     }

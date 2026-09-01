@@ -815,10 +815,9 @@ pub struct _xmlParserNodeInfo {
 /// Node info sequence.
 #[repr(C)]
 pub struct _xmlParserNodeInfoSeq {
-    pub block: *mut _xmlParserNodeInfo,
-    pub index: *mut c_int,
-    pub block_max: c_int,
-    pub size: c_int,
+    pub maximum: c_ulong,
+    pub length: c_ulong,
+    pub buffer: *mut _xmlParserNodeInfo,
 }
 
 /// Typedef alias for `_xmlParserNodeInfoSeq`.

@@ -165,6 +165,9 @@ pub enum NodeTest {
     Wildcard,
     /// prefix:* — namespace wildcard
     NsWildcard(String),
+    /// {uri}* — namespace wildcard with the prefix already resolved to a
+    /// URI at evaluation time (upstream resolves QName prefixes at compile)
+    NsWildcardUri(String),
 }
 
 /// A name test (QName or wildcard).
@@ -179,6 +182,14 @@ pub enum NameTest {
         /// Local part, e.g. `template` in `xslt:template`
         local: String,
     },
+    /// Qualified name with the prefix already resolved to a URI
+    /// (upstream xmlXPathCompQName resolves via the context nsHash).
+    QNameUri {
+        /// Namespace URI
+        uri: String,
+        /// Local part
+        local: String,
+    },
     /// Wildcard name: *
     Any,
 }
@@ -189,6 +200,7 @@ impl fmt::Display for NodeTest {
             NodeTest::NameTest(n) => match n {
                 NameTest::LocalName(s) => write!(f, "{}", s),
                 NameTest::QName { prefix, local } => write!(f, "{}:{}", prefix, local),
+                NameTest::QNameUri { uri, local } => write!(f, "{{{}}}{}", uri, local),
                 NameTest::Any => write!(f, "*"),
             },
             NodeTest::Comment => write!(f, "comment()"),
@@ -200,6 +212,7 @@ impl fmt::Display for NodeTest {
             NodeTest::Node => write!(f, "node()"),
             NodeTest::Wildcard => write!(f, "*"),
             NodeTest::NsWildcard(prefix) => write!(f, "{}:*", prefix),
+            NodeTest::NsWildcardUri(uri) => write!(f, "{{{}}}:*", uri),
         }
     }
 }

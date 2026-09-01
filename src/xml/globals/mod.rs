@@ -613,7 +613,7 @@ pub fn set_last_error(err: _xmlError) {
 ///   `str1`, `str2` and `str3` fields are NULL or pointers allocated with
 ///   `xmlFreeImpl`'s allocator; each non-NULL field is freed exactly once
 ///   and must not be freed or used again afterwards.
-fn free_error_strings(err: &_xmlError) {
+pub(crate) fn free_error_strings(err: &_xmlError) {
     use crate::abi::allocator::xmlFreeImpl;
     unsafe {
         if !err.message.is_null() {

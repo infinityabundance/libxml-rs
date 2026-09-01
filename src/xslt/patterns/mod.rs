@@ -874,6 +874,18 @@ unsafe fn match_node_test(node: *mut _xmlNode, node_test: &NodeTest) -> bool {
                 prefix.is_empty()
             }
         }
+        NodeTest::NsWildcardUri(uri) => {
+            // {uri}:* — matches any element in that namespace (URI form)
+            if node_type != 1 {
+                return false;
+            }
+            if let Some(ns) = node_ref.ns.as_ref() {
+                let ns_uri = xmlstr_to_string(ns.href);
+                ns_uri == *uri
+            } else {
+                uri.is_empty()
+            }
+        }
     }
 }
 
@@ -899,12 +911,23 @@ unsafe fn match_name_test(node: *mut _xmlNode, name_test: &NameTest) -> bool {
             if name != *local {
                 return false;
             }
-            // Check namespace prefix
             if let Some(ns) = node_ref.ns.as_ref() {
                 let ns_prefix = xmlstr_to_string(ns.prefix);
                 ns_prefix == *prefix
             } else {
                 prefix.is_empty()
+            }
+        }
+        NameTest::QNameUri { uri, local } => {
+            let name = xmlstr_to_string(node_ref.name);
+            if name != *local {
+                return false;
+            }
+            if let Some(ns) = node_ref.ns.as_ref() {
+                let ns_uri = xmlstr_to_string(ns.href);
+                ns_uri == *uri
+            } else {
+                uri.is_empty()
             }
         }
     }
@@ -1118,7 +1141,7 @@ fn compute_step_priority(step: &Step) -> f64 {
         // Name test: 0.0 for a specific name on the child axis;
         // 0.5 on the attribute axis (@QName per XSLT 1.0 §5.5).
         NodeTest::NameTest(name_test) => match name_test {
-            NameTest::LocalName(_) | NameTest::QName { .. } => {
+            NameTest::LocalName(_) | NameTest::QName { .. } | NameTest::QNameUri { .. } => {
                 if step.axis == Axis::Attribute {
                     0.5
                 } else {
@@ -1146,7 +1169,7 @@ fn compute_step_priority(step: &Step) -> f64 {
         }
 
         // prefix:* namespace wildcard: -0.5
-        NodeTest::NsWildcard(_) => {
+        NodeTest::NsWildcard(_) | NodeTest::NsWildcardUri(_) => {
             if step.axis == Axis::Attribute {
                 0.5
             } else {
@@ -1214,6 +1237,7 @@ fn collect_matched_names(expr: &Expr, names: &mut Vec<String>) {
         }) => match name_test {
             NameTest::LocalName(local) => names.push(local.clone()),
             NameTest::QName { prefix, local } => names.push(format!("{}:{}", prefix, local)),
+            NameTest::QNameUri { uri, local } => names.push(format!("{{{}}}{}", uri, local)),
             NameTest::Any => names.push("*".to_string()),
         },
         Expr::Step(Step {
@@ -1227,6 +1251,12 @@ fn collect_matched_names(expr: &Expr, names: &mut Vec<String>) {
             ..
         }) => {
             names.push(format!("{}:*", prefix));
+        }
+        Expr::Step(Step {
+            node_test: NodeTest::NsWildcardUri(uri),
+            ..
+        }) => {
+            names.push(format!("{{{}}}:*", uri));
         }
         _ => {}
     }
