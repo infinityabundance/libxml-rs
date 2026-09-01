@@ -1500,7 +1500,23 @@ pub unsafe extern "C" fn xmlNewChild(
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> *mut _xmlNode {
-    crate::xml::tree::new_child(parent, ns, name)
+    // UPSTREAM-PARITY (tree.c 2.15 xmlNewChild -> xmlNewDocNode): a non-NULL
+    // content becomes a text child of the new element
+    // (xmlNewDocText + xmlAddChild).
+    if parent.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    let node = crate::xml::tree::new_child(parent, ns, name);
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+    if !content.is_null() {
+        let text = crate::xml::tree::new_text(content);
+        if !text.is_null() {
+            crate::xml::tree::add_child(node, text);
+        }
+    }
+    node
 }
 
 /// Set the root element of a document.
@@ -8174,6 +8190,60 @@ mod tests {
         ];
         for (n, expected) in cases {
             assert_eq!(&xml_number_to_string(*n), expected, "value: {}", n);
+        }
+    }
+
+    /// xmlNewChild with a non-NULL content creates the element and appends a
+    /// text child (upstream tree.c xmlNewChild -> xmlNewDocNode ->
+    /// xmlNewDocText + xmlAddChild; tree2.c relies on it — Phase-12
+    /// EXTERNAL-CONSUMERS court).
+    ///
+    /// # Safety
+    ///
+    /// - The doc and nodes are created and freed exactly once within the
+    ///   test; pointers are asserted non-NULL before dereference.
+    #[test]
+    fn test_xml_new_child_with_content() {
+        unsafe {
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let root = crate::xml::tree::new_node(
+                core::ptr::null_mut(),
+                c"root".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!root.is_null());
+            crate::xml::tree::doc_set_root_element(doc, root);
+
+            let child = super::xmlNewChild(
+                root,
+                core::ptr::null_mut(),
+                c"node1".as_ptr() as *const crate::abi::types::xmlChar,
+                c"content of node 1".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!child.is_null());
+            assert!(
+                !(*child).children.is_null(),
+                "content must become a text child"
+            );
+            assert_eq!(
+                crate::abi::types::xmlElementType::XML_TEXT_NODE as i32,
+                (*(*child).children).type_
+            );
+            let text = crate::xml::string::xmlstr_to_bytes((*(*child).children).content);
+            assert_eq!(text, b"content of node 1");
+
+            // NULL content stays childless
+            let empty = super::xmlNewChild(
+                root,
+                core::ptr::null_mut(),
+                c"node2".as_ptr() as *const crate::abi::types::xmlChar,
+                core::ptr::null(),
+            );
+            assert!(!empty.is_null());
+            assert!((*empty).children.is_null());
+
+            crate::xml::tree::free_doc(doc);
         }
     }
 }

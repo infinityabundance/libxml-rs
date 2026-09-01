@@ -47,6 +47,7 @@ use crate::xml::parser::helpers::{
 use crate::xml::parser::input::InputBuffer;
 use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes};
 use crate::xml::tree;
+use std::collections::HashSet;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Reader Types (xmlreader.h)
@@ -288,9 +289,20 @@ pub struct XmlTextReader {
     rng: *mut c_void,
     /// Whether the reader owns `doc` (parse paths: yes; walker: no).
     owns_doc: bool,
+    /// Upstream `reader->preserve`: xmlTextReaderCurrentDoc sets it, so the
+    /// document ownership transfers to the caller (xmlFreeTextReader no
+    /// longer frees it; the caller frees with xmlFreeDoc). Without this the
+    /// upstream reader3.c pattern (CurrentDoc -> xmlFreeTextReader ->
+    /// xmlDocDump -> xmlFreeDoc) double-frees.
+    preserve: bool,
     /// Whether the current attribute position is a namespace declaration
     /// (xmlTextReaderIsNamespaceDecl; ns-decls are exposed as attributes).
     cur_attr_is_ns: bool,
+    /// Compiled preserve-patterns (xmlTextReaderPreservePattern; upstream
+    /// `reader->patternTab`). Applied after the parse: matched nodes and
+    /// their element ancestors survive, everything else is unlinked and
+    /// freed (upstream xmlTextReaderRead's NODE_IS_PRESERVED pruning).
+    pattern_tab: Vec<crate::abi::exports_automata::xmlPatternPtr>,
 }
 
 impl XmlTextReader {
@@ -338,7 +350,9 @@ impl XmlTextReader {
             schema: ptr::null_mut(),
             rng: ptr::null_mut(),
             owns_doc: true,
+            preserve: false,
             cur_attr_is_ns: false,
+            pattern_tab: Vec::new(),
         }
     }
 
@@ -356,9 +370,13 @@ impl XmlTextReader {
             return -1;
         }
 
-        // Set options on the context.
+        // Set options on the context (mirrors xmlCtxtUseOptions so the
+        // historical struct members — validate/loadsubset/recovery/etc. —
+        // reflect XML_PARSE_* options; reader2.c relies on XML_PARSE_DTDVALID
+        // reaching ctxt->validate so the parser raises the no-DTD validity
+        // error, Phase-12 EXTERNAL-CONSUMERS court).
         unsafe {
-            (*self.ctxt).options = self.options;
+            crate::abi::exports_parser::apply_options(self.ctxt, self.options);
         }
 
         // Parse the document.
@@ -380,6 +398,17 @@ impl XmlTextReader {
             return -1;
         }
 
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderRead NODE_IS_PRESERVED
+        // pruning): registered preserve-patterns are applied to the parsed
+        // tree before events are built — matched nodes and their element
+        // ancestors survive, everything else is unlinked and freed. Upstream
+        // prunes while streaming; the whole-tree reader collapses that to
+        // the equivalent post-parse state (Phase-12 EXTERNAL-CONSUMERS
+        // court: reader3.c).
+        unsafe {
+            self.apply_pattern_preservation();
+        }
+
         // Set the encoding from the document if not already set.
         if self.encoding.is_null() && !doc.is_null() {
             // SAFETY: doc is valid.
@@ -394,6 +423,63 @@ impl XmlTextReader {
 
         self.parsed = true;
         0
+    }
+
+    /// Apply registered preserve-patterns to the parsed tree (upstream
+    /// xmlreader.c: `xmlTextReaderPreserve` marks the matched node
+    /// NODE_IS_PRESERVED | NODE_IS_SPRESERVED and its element ancestors
+    /// NODE_IS_PRESERVED; the streaming `xmlTextReaderRead` prunes every
+    /// other node as it passes). The whole-tree reader collapses that to a
+    /// post-parse pass: a node survives iff it or an element ancestor is
+    /// matched by a registered pattern (SPRESERVED subtrees are kept
+    /// whole). DTD nodes survive like upstream's special-casing.
+    ///
+    /// # SAFETY
+    ///
+    /// - `self.doc` must be a valid parsed tree (or NULL); `self.pattern_tab`
+    ///   holds compiled patterns owned by the reader.
+    unsafe fn apply_pattern_preservation(&mut self) {
+        if self.pattern_tab.is_empty() || self.doc.is_null() {
+            return;
+        }
+
+        // Phase 1: collect every node matched by any pattern.
+        let mut matched: Vec<*mut _xmlNode> = Vec::new();
+        unsafe {
+            let mut stack: Vec<*mut _xmlNode> = vec![self.doc as *mut _xmlNode];
+            while let Some(n) = stack.pop() {
+                if n.is_null() {
+                    continue;
+                }
+                for p in &self.pattern_tab {
+                    if crate::abi::exports_automata::xmlPatternMatch(*p, n) == 1 {
+                        matched.push(n);
+                        break;
+                    }
+                }
+                let mut c = (*n).children;
+                while !c.is_null() {
+                    stack.push(c);
+                    c = (*c).next;
+                }
+            }
+        }
+
+        // Phase 2: keep-set = matched nodes + their element ancestors.
+        let mut keep: HashSet<usize> = HashSet::new();
+        for m in &matched {
+            keep.insert(*m as usize);
+            let mut p = unsafe { (**m).parent };
+            while !p.is_null() {
+                keep.insert(p as usize);
+                p = unsafe { (*p).parent };
+            }
+        }
+
+        // Phase 3: prune the children of every surviving node.
+        unsafe {
+            prune_unpreserved(self.doc as *mut _xmlNode, false, &keep, &self.pattern_tab);
+        }
     }
 
     /// Walk the tree in document order and build traversal events.
@@ -1788,11 +1874,63 @@ impl XmlTextReader {
     }
 }
 
+/// Recursively prune the children of `parent`: a child survives iff it is a
+/// DTD node, it or an element ancestor is matched by a registered pattern
+/// (`parent_matched` tracks the latter), or it is in the keep-set (matched
+/// nodes and their element ancestors). Non-surviving subtrees are unlinked
+/// and freed wholesale. This reproduces the post-stream state of upstream
+/// `xmlTextReaderRead`'s NODE_IS_PRESERVED pruning for the whole-tree
+/// reader.
+///
+/// # SAFETY
+///
+/// - `parent` must be a valid `_xmlNode`; `keep` must map every node pointer
+///   that must survive; `patterns` are compiled patterns owned by the
+///   reader.
+unsafe fn prune_unpreserved(
+    parent: *mut _xmlNode,
+    parent_matched: bool,
+    keep: &HashSet<usize>,
+    patterns: &[crate::abi::exports_automata::xmlPatternPtr],
+) {
+    let mut child = unsafe { (*parent).children };
+    while !child.is_null() {
+        let next = unsafe { (*child).next };
+        let is_dtd =
+            unsafe { (*child).type_ } == crate::abi::types::xmlElementType::XML_DTD_NODE as c_int;
+        let is_matched = patterns
+            .iter()
+            .any(|p| unsafe { crate::abi::exports_automata::xmlPatternMatch(*p, child) == 1 });
+        let survives = is_dtd || parent_matched || is_matched || keep.contains(&(child as usize));
+        if survives {
+            unsafe {
+                prune_unpreserved(child, parent_matched || is_matched, keep, patterns);
+            }
+        } else {
+            // SAFETY: child is linked into the tree; unlink first so the
+            // parent chain stays consistent, then free the subtree.
+            unsafe {
+                tree::unlink_node(child);
+                tree::free_node_list(child);
+            }
+        }
+        child = next;
+    }
+}
+
 impl Drop for XmlTextReader {
     fn drop(&mut self) {
         // Free cached strings.
         self.clear_cached_name();
         self.clear_cached_value();
+
+        // Free compiled preserve-patterns (xmlTextReaderPreservePattern;
+        // upstream xmlTextReaderFree frees patternTab).
+        for p in self.pattern_tab.drain(..) {
+            // SAFETY: each pattern was compiled by xmlPatterncompile and is
+            // owned by the reader.
+            unsafe { crate::abi::exports_automata::xmlFreePattern(p) };
+        }
 
         // Free the cached last-error message (owned, xmlMalloc'd).
         if !self.last_err.message.is_null() {
@@ -1814,7 +1952,11 @@ impl Drop for XmlTextReader {
         }
 
         // Free the document if we own it (walker readers borrow the doc).
-        if !self.doc.is_null() && self.owns_doc {
+        // xmlTextReaderCurrentDoc sets `preserve`, transferring ownership to
+        // the caller exactly like upstream's reader->preserve (xmlreader.c:
+        // xmlTextReaderCurrentDoc sets preserve=1; xmlTextReaderClose frees
+        // ctxt->myDoc only when preserve==0).
+        if !self.doc.is_null() && self.owns_doc && !self.preserve {
             // SAFETY: doc was created by the parser, which allocates via xmlMalloc.
             // We own the doc since we created it.
             unsafe { tree::free_doc(self.doc) };
@@ -1888,9 +2030,11 @@ unsafe fn reader_from_input(
     // Set up the parser context with the input.
     setup_parser_input(ctxt, input_buf);
 
-    // Set options.
+    // Set options (mirrors xmlCtxtUseOptions so the historical struct
+    // members track XML_PARSE_* options — reader2.c validates via
+    // XML_PARSE_DTDVALID; Phase-12 EXTERNAL-CONSUMERS court).
     unsafe {
-        (*ctxt).options = options;
+        crate::abi::exports_parser::apply_options(ctxt, options);
     }
 
     // Build URL and encoding strings.
@@ -3096,8 +3240,15 @@ pub unsafe extern "C" fn xmlTextReaderCurrentDoc(reader: *mut XmlTextReader) -> 
     if reader.is_null() {
         return ptr::null_mut();
     }
-    // SAFETY: reader is valid.
-    unsafe { (*reader).CurrentDoc() }
+    // SAFETY: reader is valid. Upstream xmlTextReaderCurrentDoc sets
+    // reader->preserve = 1 and returns ctxt->myDoc: the document ownership
+    // moves to the caller (freed with xmlFreeDoc). Mirror that so the
+    // reader's Drop does not free a doc the caller still owns (upstream
+    // reader3.c pattern; Phase-12 EXTERNAL-CONSUMERS court).
+    unsafe {
+        (*reader).preserve = true;
+        (*reader).CurrentDoc()
+    }
 }
 
 /// Close the reader, releasing the document and parser state.
@@ -4738,6 +4889,94 @@ mod tests {
             free_reader(reader);
         }
     }
+
+    /// xmlTextReaderPreservePattern: after a full traversal, the document
+    /// contains only the pattern-matched nodes and their element ancestors
+    /// (upstream NODE_IS_PRESERVED streaming prune; reader3.c — Phase-12
+    /// EXTERNAL-CONSUMERS court).
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   and freed exactly once with `free_reader`; the returned doc is freed
+    ///   with `tree::free_doc` exactly once.
+    #[test]
+    fn test_preserve_pattern_prunes() {
+        unsafe {
+            let reader = create_reader("<doc><parent><drop/><keep/><drop/></parent></doc>");
+            assert!(!reader.is_null());
+            // register the pattern BEFORE the first Read, like reader3.c
+            let pat = b"keep\0";
+            assert!(
+                xmlTextReaderPreservePattern(
+                    reader,
+                    pat.as_ptr() as *const xmlChar,
+                    ptr::null_mut(),
+                ) >= 0
+            );
+            let mut ret = xmlTextReaderRead(reader);
+            while ret == 1 {
+                ret = xmlTextReaderRead(reader);
+            }
+            let doc = xmlTextReaderCurrentDoc(reader);
+            assert!(!doc.is_null());
+            free_reader(reader);
+
+            // the pruned doc keeps doc -> parent -> keep; drop nodes gone
+            let root = tree::doc_get_root_element(doc);
+            assert!(!root.is_null());
+            assert_eq!(xmlstr_to_bytes((*root).name), b"doc");
+            let mut children: Vec<*mut _xmlNode> = Vec::new();
+            let mut c = (*root).children;
+            while !c.is_null() {
+                children.push(c);
+                c = (*c).next;
+            }
+            // the doc's only child is the preserved ancestor <parent>
+            assert_eq!(children.len(), 1);
+            assert_eq!(xmlstr_to_bytes((*children[0]).name), b"parent");
+            // <parent> keeps only the matched <keep/>; both <drop/> are gone
+            let mut keep: Vec<*mut _xmlNode> = Vec::new();
+            let mut c = (*children[0]).children;
+            while !c.is_null() {
+                keep.push(c);
+                c = (*c).next;
+            }
+            assert_eq!(keep.len(), 1);
+            assert_eq!(xmlstr_to_bytes((*keep[0]).name), b"keep");
+            tree::free_doc(doc);
+        }
+    }
+
+    /// XML_PARSE_DTDVALID on a no-DTD document: the parser raises the
+    /// no-DTD validity error and clears ctxt->valid (parse2.c — Phase-12
+    /// EXTERNAL-CONSUMERS court).
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   and freed exactly once with `free_reader`.
+    #[test]
+    fn test_reader_dtdvalid_no_dtd() {
+        unsafe {
+            let bytes = b"<doc/>";
+            let ctxt = create_parser_ctxt();
+            assert!(!ctxt.is_null());
+            let input = input_from_memory(bytes.as_ptr() as *const c_char, bytes.len() as c_int);
+            setup_parser_input(ctxt, input);
+            crate::abi::exports_parser::apply_options(ctxt, XML_PARSE_DTDVALID);
+            assert_eq!(parse_document(ctxt), 0);
+            assert_eq!(
+                (*ctxt).valid,
+                0,
+                "no-DTD validating parse must clear ctxt->valid"
+            );
+            assert_eq!((*ctxt).errNo, XML_DTD_NO_DTD);
+            free_parser_ctxt(ctxt);
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -5669,8 +5908,13 @@ pub unsafe extern "C" fn xmlTextReaderPreserve(reader: *mut XmlTextReader) -> *m
 
 /// `int xmlTextReaderPreservePattern(xmlTextReaderPtr reader, const xmlChar *pattern, const xmlChar **namespaces)`.
 ///
-/// The candidate preserves every node; returns 0 (documented divergence:
-/// pattern-based selective preservation is not tracked).
+/// Compiles the XPath-subset pattern (upstream `xmlPatterncompile`) and
+/// registers it like upstream `reader->patternTab`; after the parse,
+/// matched nodes and their element ancestors are kept and every other node
+/// is unlinked and freed (upstream's NODE_IS_PRESERVED streaming prune,
+/// applied post-parse by the candidate's whole-tree reader). Returns the
+/// index of the registered pattern, or -1 on error (upstream xmlreader.c
+/// xmlTextReaderPreservePattern).
 ///
 /// # SAFETY
 ///
@@ -5679,27 +5923,40 @@ pub unsafe extern "C" fn xmlTextReaderPreserve(reader: *mut XmlTextReader) -> *m
 ///   matching constructor/owner and not yet freed; the callee may
 ///   take or keep ownership exactly as the C API specifies.
 ///
-/// - `_pattern`, `_namespaces` must point to valid NUL-terminated
-///   strings (or NULL where the C contract allows) for the lifetime
-///   of the call.
+/// - `pattern` must point to a valid NUL-terminated string;
+///   `namespaces` must be NULL or a NULL-terminated array of
+///   NUL-terminated strings, both live for the duration of the call.
 ///
 /// The caller must not race this call with concurrent mutation of the
 /// same objects from other threads (per-object state is not internally
 /// synchronized). Violating any of the above is undefined behavior.
 ///
-/// Exercised by the C-API differential courts
-/// (courts/suites/data-abi/*-family-probe.c) and the CLI differential
-/// courts; those pass byte-for-byte against the upstream oracle.
+/// Exercised by the Phase-12 EXTERNAL-CONSUMERS court (reader3.c).
 #[no_mangle]
-pub const unsafe extern "C" fn xmlTextReaderPreservePattern(
+pub unsafe extern "C" fn xmlTextReaderPreservePattern(
     reader: *mut XmlTextReader,
-    _pattern: *const xmlChar,
-    _namespaces: *mut *const xmlChar,
+    pattern: *const xmlChar,
+    namespaces: *mut *const xmlChar,
 ) -> c_int {
-    if reader.is_null() {
+    if reader.is_null() || pattern.is_null() {
         return -1;
     }
-    0
+    let comp = unsafe {
+        crate::abi::exports_automata::xmlPatterncompile(
+            pattern,
+            ptr::null_mut(),
+            0,
+            namespaces as *const *const xmlChar,
+        )
+    };
+    if comp.is_null() {
+        return -1;
+    }
+    // SAFETY: reader is valid (checked); pattern_tab owns the compiled
+    // pattern and frees it in Drop.
+    let idx = unsafe { (*reader).pattern_tab.len() };
+    unsafe { (*reader).pattern_tab.push(comp) };
+    idx as c_int
 }
 
 /// `int xmlTextReaderSetErrorHandler(xmlTextReaderPtr reader, xmlTextReaderErrorFunc f, void *arg)`.

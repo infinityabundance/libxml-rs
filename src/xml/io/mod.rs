@@ -1474,6 +1474,50 @@ pub(crate) fn output_buffer_create_filename(
 
     let path_c = std::ffi::CString::new(path_str).unwrap_or_default();
 
+    // Upstream xmlOutputDefaultOpen (xmlIO.c): filename "-" means stdout
+    // (dup(STDOUT_FILENO)); tree2.c and other upstream consumers dump to
+    // stdout through xmlSaveFormatFileEnc("-", ...) (Phase-12
+    // EXTERNAL-CONSUMERS court).
+    if path_str == "-" {
+        let fd = unsafe { libc::dup(libc::STDOUT_FILENO) };
+        if fd < 0 {
+            return ptr::null_mut();
+        }
+        let obuf = allocate_output_buffer();
+        if obuf.is_null() {
+            unsafe { libc::close(fd) };
+            return ptr::null_mut();
+        }
+        let buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
+        if buf.is_null() {
+            unsafe {
+                libc::close(fd);
+                xmlFreeImpl(obuf as *mut c_void);
+            }
+            return ptr::null_mut();
+        }
+        let conv_buf = buf_create(DEFAULT_BUFFER_SIZE as c_int);
+        if conv_buf.is_null() {
+            unsafe {
+                libc::close(fd);
+                buf_free(buf);
+                xmlFreeImpl(obuf as *mut c_void);
+            }
+            return ptr::null_mut();
+        }
+        unsafe {
+            (*obuf).context = fd as *mut c_void;
+            (*obuf).writecallback = Some(file_write_callback as xmlOutputWriteCallback);
+            (*obuf).closecallback = Some(file_close_output_callback as xmlOutputCloseCallback);
+            (*obuf).encoder = encoder as *mut c_void;
+            (*obuf).buffer = buf as *mut c_void;
+            (*obuf).conv = conv_buf as *mut c_void;
+            (*obuf).written = 0;
+            (*obuf).error = 0;
+        }
+        return obuf;
+    }
+
     // Open file for writing (create/truncate)
     let fd = unsafe {
         libc::open(

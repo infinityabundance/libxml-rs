@@ -13,7 +13,7 @@
 //! - `<xi:fallback>` child element for fallback content
 //! - Recursive processing (includes within included documents)
 //! - Circular reference detection via URL tracking
-//! - Proper namespace handling (`http://www.w3.org/2001/XInclude`)
+//! - Proper namespace handling (`http://www.w3.org/2003/XInclude`)
 //! - `XML_XINCLUDE_START` / `XML_XINCLUDE_END` sentinel node handling
 //!
 //! # C ABI
@@ -96,7 +96,13 @@ use crate::xml::xpointer;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// The XInclude namespace URI.
-const XINCLUDE_NS: &[u8] = b"http://www.w3.org/2001/XInclude\0";
+/// The XInclude namespace URI (upstream `XINCLUDE_NS`, xinclude.h):
+/// http://www.w3.org/2003/XInclude. The 2001 draft URI is accepted as a
+/// legacy alias (`XINCLUDE_OLD_NS`) exactly like upstream xinclude.c.
+const XINCLUDE_NS: &[u8] = b"http://www.w3.org/2003/XInclude\0";
+
+/// The legacy XInclude 1.0 draft namespace URI (upstream `XINCLUDE_OLD_NS`).
+const XINCLUDE_OLD_NS: &[u8] = b"http://www.w3.org/2001/XInclude\0";
 
 /// The XInclude local element name.
 #[allow(dead_code)]
@@ -341,13 +347,13 @@ unsafe fn is_xinclude_element(node: *mut _xmlNode) -> bool {
     // Check if the node has the XInclude namespace set directly.
     let has_xinclude_ns = if !n.ns.is_null() {
         let ns = unsafe { &*n.ns };
-        !ns.href.is_null()
-            && unsafe { xml_str_equal(ns.href, XINCLUDE_NS.as_ptr() as *const xmlChar) }
+        !ns.href.is_null() && unsafe { is_xinclude_ns_uri(ns.href) }
     } else {
         // Try to find the XInclude namespace by looking at namespace declarations
         // on the node or its ancestors. The element name may be "xi:include"
         // (qualified name stored as-is).
         check_namespace_declaration(node, XINCLUDE_NS.as_ptr() as *const xmlChar)
+            || check_namespace_declaration(node, XINCLUDE_OLD_NS.as_ptr() as *const xmlChar)
     };
 
     if !has_xinclude_ns {
@@ -387,10 +393,10 @@ unsafe fn is_fallback_element(node: *mut _xmlNode) -> bool {
     // Check if the node has the XInclude namespace set directly.
     let has_xinclude_ns = if !n.ns.is_null() {
         let ns = unsafe { &*n.ns };
-        !ns.href.is_null()
-            && unsafe { xml_str_equal(ns.href, XINCLUDE_NS.as_ptr() as *const xmlChar) }
+        !ns.href.is_null() && unsafe { is_xinclude_ns_uri(ns.href) }
     } else {
         check_namespace_declaration(node, XINCLUDE_NS.as_ptr() as *const xmlChar)
+            || check_namespace_declaration(node, XINCLUDE_OLD_NS.as_ptr() as *const xmlChar)
     };
 
     if !has_xinclude_ns {
@@ -827,6 +833,27 @@ unsafe fn io_read_file(filename: *const xmlChar) -> *mut xmlChar {
         Err(_) => return ptr::null_mut(),
     };
 
+    // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateFilename): a URI
+    // accepted by a registered input callback pair (xmlRegisterInputCallbacks)
+    // is read through that pair instead of the file path — XInclude hrefs
+    // like "sql:..." (io1.c) route here (Phase-12 EXTERNAL-CONSUMERS court).
+    if let Some(data) =
+        crate::abi::exports_parser::read_uri_via_input_callbacks(c_filename.as_ptr())
+    {
+        if data.is_empty() {
+            return ptr::null_mut();
+        }
+        let result = unsafe { allocator::xmlMallocImpl(data.len() + 1) as *mut xmlChar };
+        if result.is_null() {
+            return ptr::null_mut();
+        }
+        unsafe {
+            ptr::copy_nonoverlapping(data.as_ptr(), result, data.len());
+            *result.add(data.len()) = 0; // null-terminate
+        }
+        return result;
+    }
+
     let fd = unsafe { libc::open(c_filename.as_ptr(), libc::O_RDONLY) };
     if fd < 0 {
         return ptr::null_mut();
@@ -1003,6 +1030,20 @@ unsafe fn xml_str_equal(a: *const xmlChar, b: *const xmlChar) -> bool {
         return false;
     }
     unsafe { crate::abi::exports_xml2::xmlStrEqual(a, b) != 0 }
+}
+
+/// Whether `href` is one of the XInclude namespace URIs — the 2003
+/// namespace (upstream `XINCLUDE_NS`) or the 2001 draft (upstream
+/// `XINCLUDE_OLD_NS`, honored like xinclude.c).
+///
+/// # SAFETY
+///
+/// `href` must be a valid null-terminated xmlChar string.
+unsafe fn is_xinclude_ns_uri(href: *const xmlChar) -> bool {
+    unsafe {
+        xml_str_equal(href, XINCLUDE_NS.as_ptr() as *const xmlChar)
+            || xml_str_equal(href, XINCLUDE_OLD_NS.as_ptr() as *const xmlChar)
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

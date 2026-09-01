@@ -338,6 +338,20 @@ impl InputBuffer {
         ib
     }
 
+    /// Append raw bytes to the buffered input (push-parser mode). Upstream
+    /// `xmlParseChunk` grows the parser input's base with each chunk; the
+    /// candidate accumulates into the stashed buffer and parses on the
+    /// terminating call (Phase-12 EXTERNAL-CONSUMERS court: parse4.c).
+    pub fn push_bytes(&mut self, bytes: &[u8]) {
+        if bytes.is_empty() {
+            return;
+        }
+        self.data.extend_from_slice(bytes);
+        if let InputSource::Memory(d) = &mut self.source {
+            d.extend_from_slice(bytes);
+        }
+    }
+
     /// Create an `InputBuffer` from a file on disk.
     ///
     /// Returns `Err` if the file cannot be opened or read.

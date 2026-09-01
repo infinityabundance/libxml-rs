@@ -66,6 +66,7 @@
 //! output-buffer layer (xmlIO.c): flush counts and encoder interaction
 //! (R-000151) are observable through `xmlSaveFlush`/`xmlSaveClose`.
 
+use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::callbacks::{
     xmlCharEncodingOutputFunc, xmlOutputCloseCallback, xmlOutputWriteCallback,
 };
@@ -99,6 +100,12 @@ pub struct _xmlSaveCtxt {
     pub no_empty: c_int,
     /// Optional indentation string used when formatting is enabled.
     pub indent: *mut xmlChar,
+    /// The encoding name carried into the XML declaration (upstream
+    /// `ctxt->encoding`, xmlStrdup'd at context creation, freed by
+    /// `xmlSaveClose`/`xmlSaveFinish` like upstream xmlFreeSaveCtxt).
+    /// NULL means "use the document's own encoding" (upstream
+    /// `if (encoding == NULL) encoding = cur->encoding;`).
+    pub encoding: *mut xmlChar,
     /// Character-escaping callback for text content (deprecated upstream).
     pub escape: Option<xmlCharEncodingOutputFunc>,
     /// Character-escaping callback for attribute values (deprecated upstream).
@@ -106,7 +113,19 @@ pub struct _xmlSaveCtxt {
 }
 
 /// Create a save context around an output buffer.
-unsafe fn save_ctxt_new(buf: *mut _xmlOutputBuffer, options: c_int) -> *mut _xmlSaveCtxt {
+///
+/// `encoding` is the encoding name passed to the `xmlSaveTo*` constructor
+/// (upstream `xmlNewSaveCtxt` xmlStrdups it into `ctxt->encoding`); it is
+/// emitted in the XML declaration and used to pick the encoder.
+///
+/// # SAFETY
+///
+/// - `encoding` must be NULL or a valid NUL-terminated string.
+unsafe fn save_ctxt_new(
+    buf: *mut _xmlOutputBuffer,
+    options: c_int,
+    encoding: *const c_char,
+) -> *mut _xmlSaveCtxt {
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -131,6 +150,11 @@ unsafe fn save_ctxt_new(buf: *mut _xmlOutputBuffer, options: c_int) -> *mut _xml
         1
     } else {
         0
+    };
+    (*ctxt).encoding = if encoding.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::exports_xml2::xmlStrdup(encoding as *const xmlChar)
     };
     ctxt
 }
@@ -158,7 +182,7 @@ pub unsafe extern "C" fn xmlSaveToFd(
 ) -> *mut _xmlSaveCtxt {
     let enc = unsafe { encoding_handler(encoding) };
     let out = io::output_buffer_create_fd(fd, enc);
-    unsafe { save_ctxt_new(out, options) }
+    unsafe { save_ctxt_new(out, options, encoding) }
 }
 
 /// `xmlSaveCtxt *xmlSaveToFilename(const char *filename, const char *encoding, int options)`.
@@ -174,7 +198,7 @@ pub unsafe extern "C" fn xmlSaveToFilename(
 ) -> *mut _xmlSaveCtxt {
     let enc = unsafe { encoding_handler(encoding) };
     let out = io::output_buffer_create_filename(filename, enc, 0);
-    unsafe { save_ctxt_new(out, options) }
+    unsafe { save_ctxt_new(out, options, encoding) }
 }
 
 /// `xmlSaveCtxt *xmlSaveToBuffer(xmlBuffer *buffer, const char *encoding, int options)`.
@@ -190,7 +214,7 @@ pub unsafe extern "C" fn xmlSaveToBuffer(
 ) -> *mut _xmlSaveCtxt {
     let enc = unsafe { encoding_handler(encoding) };
     let out = io::output_buffer_create_buffer(buffer, enc);
-    unsafe { save_ctxt_new(out, options) }
+    unsafe { save_ctxt_new(out, options, encoding) }
 }
 
 /// `xmlSaveCtxt *xmlSaveToIO(xmlOutputWriteCallback iowrite, xmlOutputCloseCallback ioclose, void *ioctx, const char *encoding, int options)`.
@@ -208,7 +232,7 @@ pub unsafe extern "C" fn xmlSaveToIO(
 ) -> *mut _xmlSaveCtxt {
     let enc = unsafe { encoding_handler(encoding) };
     let out = io::output_buffer_create_io(iowrite, ioclose, ioctx, enc);
-    unsafe { save_ctxt_new(out, options) }
+    unsafe { save_ctxt_new(out, options, encoding) }
 }
 
 /// Serialize `doc` into the save context's output buffer.
@@ -248,7 +272,8 @@ unsafe fn save_doc_or_tree(ctxt: *mut _xmlSaveCtxt, node: *mut _xmlNode) -> c_lo
     let indent = (*ctxt).indent;
     let format = (*ctxt).format;
     let no_decl = (*ctxt).no_decl;
-    crate::xml::tree::serialize_node_opts(node, buf, format, 0, indent, no_decl);
+    let encoding = (*ctxt).encoding as *const xmlChar;
+    crate::xml::tree::serialize_node_opts_enc(node, buf, format, 0, indent, no_decl, encoding);
 
     let before = io::buf_length(buf);
     let content = io::buf_content(buf);
@@ -306,6 +331,9 @@ pub unsafe extern "C" fn xmlSaveClose(ctxt: *mut _xmlSaveCtxt) -> c_int {
     if !(*ctxt).indent.is_null() {
         libc::free((*ctxt).indent as *mut libc::c_void);
     }
+    if !(*ctxt).encoding.is_null() {
+        xmlFreeImpl((*ctxt).encoding as *mut core::ffi::c_void);
+    }
     libc::free(ctxt as *mut libc::c_void);
     flush_ret
 }
@@ -333,6 +361,9 @@ pub unsafe extern "C" fn xmlSaveFinish(ctxt: *mut _xmlSaveCtxt) -> c_int {
     };
     if !(*ctxt).indent.is_null() {
         libc::free((*ctxt).indent as *mut libc::c_void);
+    }
+    if !(*ctxt).encoding.is_null() {
+        xmlFreeImpl((*ctxt).encoding as *mut core::ffi::c_void);
     }
     libc::free(ctxt as *mut libc::c_void);
     if ret < 0 {
@@ -417,8 +448,18 @@ pub unsafe extern "C" fn xmlSaveSetAttrEscape(
 
 /// Wrap an existing output buffer in a save context (candidate-internal;
 /// does not close the buffer on allocation failure — upstream xmlSaveFormatFileTo
-/// semantics).
-unsafe fn save_ctxt_wrap(buf: *mut _xmlOutputBuffer, options: c_int) -> *mut _xmlSaveCtxt {
+/// semantics). `encoding` is threaded into the XML declaration like upstream
+/// xmlDocDumpInternal (buf->encoder takes precedence there; the candidate
+/// resolves the encoder at xmlSaveTo* time).
+///
+/// # SAFETY
+///
+/// - `encoding` must be NULL or a valid NUL-terminated string.
+unsafe fn save_ctxt_wrap(
+    buf: *mut _xmlOutputBuffer,
+    options: c_int,
+    encoding: *const c_char,
+) -> *mut _xmlSaveCtxt {
     if buf.is_null() {
         return ptr::null_mut();
     }
@@ -443,6 +484,11 @@ unsafe fn save_ctxt_wrap(buf: *mut _xmlOutputBuffer, options: c_int) -> *mut _xm
     } else {
         0
     };
+    (*ctxt).encoding = if encoding.is_null() {
+        ptr::null_mut()
+    } else {
+        crate::abi::exports_xml2::xmlStrdup(encoding as *const xmlChar)
+    };
     ctxt
 }
 
@@ -461,9 +507,8 @@ pub unsafe extern "C" fn xmlSaveFormatFileTo(
     encoding: *const c_char,
     format: c_int,
 ) -> c_int {
-    let _ = encoding;
     let options = if format != 0 { XML_SAVE_FORMAT } else { 0 };
-    let ctxt = unsafe { save_ctxt_wrap(buf, options) };
+    let ctxt = unsafe { save_ctxt_wrap(buf, options, encoding) };
     if ctxt.is_null() {
         return -1;
     }
@@ -535,6 +580,32 @@ mod tests {
             let s = core::slice::from_raw_parts(content, len as usize);
             let expected = "<?xml version=\"1.0\"?>\n<root/>\n";
             assert_eq!(s, expected.as_bytes());
+            crate::xml::tree::free_doc(doc);
+            io::buf_free(buf);
+        }
+    }
+
+    /// xmlSaveFormatFileTo with an encoding name: the XML declaration
+    /// carries `encoding="..."` (upstream xmlsave.c xmlDocDumpInternal —
+    /// tree2.c's xmlSaveFormatFileEnc("-", doc, "UTF-8", 1) path; Phase-12
+    /// EXTERNAL-CONSUMERS court).
+    ///
+    /// # Safety
+    ///
+    /// - `doc` and `buf` are non-NULL (asserted) and valid until freed;
+    ///   the buffer content is valid while the byte slice is read.
+    #[test]
+    fn test_save_format_file_to_encoding_decl() {
+        unsafe {
+            let doc = doc_with_root();
+            let buf = io::buf_create(-1);
+            let obuf = io::output_buffer_create_buffer(buf, ptr::null_mut());
+            assert!(!obuf.is_null());
+            assert!(xmlSaveFormatFileTo(obuf, doc, c"UTF-8".as_ptr(), 1) >= 0);
+            let content = io::buf_content(buf);
+            let len = io::buf_length(buf);
+            let s = core::slice::from_raw_parts(content, len as usize);
+            assert_eq!(s, b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root/>\n");
             crate::xml::tree::free_doc(doc);
             io::buf_free(buf);
         }

@@ -103,7 +103,7 @@ fn is_xinclude_node(node: *mut _xmlNode) -> bool {
         }
         // Check for XInclude namespace
         let href = core::slice::from_raw_parts(ns_href, 30);
-        let xi_ns = b"http://www.w3.org/2001/XInclude\0";
+        let xi_ns = b"http://www.w3.org/2003/XInclude\0";
         let mut matches = true;
         for i in 0..30 {
             if i >= href.len() || href[i] != xi_ns[i] {

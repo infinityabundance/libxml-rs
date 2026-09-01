@@ -62,6 +62,12 @@ COURT_FAMILIES = {
     "CUSTODIAN-COMMENTARY-DRIFT",
     # 11.1-Z.3: default-allocator differential court (R-000178)
     "ALLOCATOR-DEFAULT",
+    # Phase 12: real downstream substitution (EXTERNAL-CONSUMERS, ELF
+    # versioning + binary substitution, dynamic-symbol surface, static
+    # substitution + pkg-config/config-script, the Docker-VM substitution
+    # battery, and the R-000177 DSO-boundary lint)
+    "EXTERNAL-CONSUMERS", "ELF-VERSIONING", "DYNSYM-SURFACE",
+    "STATIC-SUBSTITUTION", "DOCKER-SUBSTITUTION", "DSO-BOUNDARY-LINT",
 }
 
 

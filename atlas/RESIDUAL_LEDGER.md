@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**3 open residuals:** R-000157, R-000168, R-000177
+**4 open residuals:** R-000157, R-000168, R-000177, R-000179
 
 ## Phase 0 Residuals
 
@@ -991,6 +991,160 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Evidence:** ['courts/receipts/phase-11/allocator-default-*.json', 'courts/suites/data-abi/allocator-default-probe.c', 'tools/abi/allocator_default_probe.py', 'src/abi/allocator.rs']
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-08-31 (discovered in the 11.1-Z.3 review: default_free deallocates every pointer with a fabricated 1-byte layout and default_realloc passes the requested new size as the old allocation layout — both invalid-layout UB under the Rust allocator contract; the default also diverged from the oracle's untracked plain-malloc default); FIXED 2026-08-31 (closed by 11.1-Z.3: default hooks are now libc malloc/realloc/free/strdup (C allocation semantics, no layout exists), the default no longer maintains the accounting registry (xmlMemUsed/xmlMemBlocks/xmlMemSize match the oracle's 0s), the registry backs only the debug-named surface (matching upstream's tracked debug allocator), the display entry points are upstream-faithful no-ops, and xmlMallocAtomicLoc no longer zeroes; ALLOCATOR-DEFAULT-001 differential court passes byte-identical)
+
+## Phase 12 Residuals
+
+### R-000179: Versioned-distro binary contract gap: the executed oracle (system 2.15.3) is UNVERSIONED, so the candidate core is unversioned; distro binaries that require the upstream LIBXML2_2.x named-version nodes (libxml2-2.13.5 libxml2.syms chain, e.g. Debian-built consumers) are not yet satisfied (OPEN)
+
+- **Status:** OPEN
+- **Component:** tools/phase12/export_surface.py, tools/packaging/libxml2.syms, courts/suites/phase12/elf-versioning/court-runner.sh
+- **Surface:** libxml2.so.16 ELF version-definition plane (DT_VERDEF / symbol version indices)
+- **Root cause:** Upstream 2.15 removed libxml2.syms and exports everything unversioned; the executed distro oracle follows that. Versioning the candidate core with the upstream LIBXML2_2.x chain made every oracle-linked consumer emit ld.so 'no version information available' warnings when the DSO resolves via RUNPATH — an observable substitution difference (measured in the first Phase-12 iteration, reverted).
+- **Observable residual:** Executed-oracle parity is exact (both unversioned; ELF-VERSIONING court 14/14). The named-node contract for NON-executed distro binaries (Debian-style consumers requiring LIBXML2_2.x nodes) is a bounded, documented gap: the candidate exports everything the oracle exports unversioned; a distro-built binary's versioned references bind to the unversioned definitions (version-info mismatch warnings possible) until a versioned-profile build is produced.
+- **Phase 11 triangulation:** ELF-VERSIONING + BINARY-SUBSTITUTION court (courts/suites/phase12/elf-versioning): oracle-linked consumer -> candidate runtime byte-identical, no ld.so version warnings; libxslt carries the exact 27-node LIBXML2_1.x graph with the oracle's per-symbol nodes (the versioned side of the contract is fully implemented).
+- **Regression courts:** ELF-VERSIONING, DOCKER-SUBSTITUTION.
+- **Evidence:** ['courts/receipts/phase-12/elf-versioning-*.json', 'courts/receipts/phase-12/docker-substitution-*.json', 'atlas/EXPORT_SURFACE_DISPOSITION.json']
+- **Classification:** DOCUMENTED_DIVERGENCE
+
+### R-000180: xmlNewChild dropped a non-NULL content argument: upstream tree.c xmlNewChild -> xmlNewDocNode appends a text child (xmlNewDocText + xmlAddChild); the candidate created only the element (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/abi/exports_xml2.rs, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** xmlNewChild (tree.c consumer-visible constructor; tree2.c depends on it)
+- **Root cause:** The exported xmlNewChild delegated to new_child(parent, ns, name) and ignored the content parameter entirely — the element was created childless, so tree2.c's <node1>content of node 1</node1> serialized as <node1/>.
+- **Observable residual:** None on the executed platform: tree2.c (unmodified upstream example) is byte-identical with the oracle (EXTERNAL-CONSUMERS 15/15); unit test test_xml_new_child_with_content.
+- **Fix:** xmlNewChild now mirrors upstream exactly: create the element (new_child), then if content is non-NULL append a text child (new_text + add_child) so the document propagates.
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court tree2 case + src/abi/exports_xml2.rs test_xml_new_child_with_content.
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/abi/exports_xml2.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (tree2.c output diff: <node1/> vs <node1>content of node 1</node1>)); FIXED 2026-09-01 (xmlNewChild appends the content text child like upstream xmlNewDocNode; tree2.c byte-identical)
+
+### R-000181: XML_PARSE_DTDVALID no-DTD validity hook missing: validating parses of DTD-less documents did not raise 'Validation failed: no DTD found !' nor clear ctxt->valid (parse2/parse4/reader2 observe ctxt->valid) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/xml/parser/state.rs, src/xml/reader/mod.rs, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** parser SAX2 start-element validity check (SAX2.c xmlSAX2StartElementNs)
+- **Root cause:** The parser never implemented the SAX2.c first-validity-check: with ctxt->validate set (XML_PARSE_DTDVALID) and no external subset and no populated internal subset, upstream raises XML_DTD_NO_DTD (522) through the DTD domain ('validity error'), clears ctxt->valid, and disables further validation. The candidate ignored the option at parse time (the CLI reimplemented --valid separately). The reader also never mirrored options into ctxt->validate (it set only ctxt->options), so the reader path never validated at all.
+- **Observable residual:** None on the executed platform: parse2/parse4/reader2 byte-identical with the oracle including the error text, caret position and 'Failed to validate'/'does not validate' paths; unit test test_reader_dtdvalid_no_dtd.
+- **Fix:** sax_start_element now runs the upstream no-DTD check first (validate != 0 && no extSubset && (no intSubset || all four tables NULL)): raise_error_at(XML_FROM_DTD, XML_DTD_NO_DTD, ERROR, 'Validation failed: no DTD found !', end_pos) with ctxt->valid = 0 and ctxt->validate = 0; the reader now mirrors options through apply_options (validate/loadsubset/etc.).
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court parse2/parse4/reader2 cases (byte-identical stderr incl. the source-window caret) + reader unit test.
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/xml/parser/state.rs', 'src/xml/reader/mod.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (parse2/parse4/reader2: no validity error, ctxt->valid stayed 1; reader2 additionally reported 'does not validate' unconditionally because xmlTextReaderIsValid was a constant-0 stub)); FIXED 2026-09-01 (no-DTD validity check in sax_start_element (upstream SAX2.c semantics + error position); reader mirrors options into validate; all three consumers byte-identical)
+
+### R-000182: Push-parser chunk accumulation lost: xmlParseChunk with terminate=0 dropped the accumulated input, so the terminating call parsed only the last chunk ('Document is empty' — parse4) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/xml/parser/helpers.rs, src/xml/parser/input.rs, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** xmlParseChunk / xmlCreatePushParserCtxt (push parsing; parse4.c)
+- **Root cause:** parse_chunk took the stashed base buffer, pushed the new chunk, built an XmlParser, and for terminate=0 returned 0 WITHOUT re-stashing the combined input — the accumulated stream vanished and the terminating call parsed only its own (often empty) chunk.
+- **Observable residual:** None on the executed platform: parse4.c byte-identical with the oracle; unit test test_push_chunk_accumulates.
+- **Fix:** parse_chunk now appends each chunk to the base InputBuffer (new InputBuffer::push_bytes — upstream xmlParseChunk grows the parser input) and re-stashes it when terminate=0; the terminating call parses the whole accumulated stream.
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court parse4 case + src/xml/parser/helpers.rs test_push_chunk_accumulates.
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/xml/parser/helpers.rs', 'src/xml/parser/input.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (parse4: 'Document is empty' on a chunked parse)); FIXED 2026-09-01 (chunk accumulation into the stashed base buffer with re-stash on non-terminating calls)
+
+### R-000183: xmlTextReaderPreservePattern was a no-op: pattern-based selective preservation (upstream NODE_IS_PRESERVED streaming prune; reader3.c) was not implemented, so xmlTextReaderCurrentDoc returned the full document (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/xml/reader/mod.rs, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** xmlTextReaderPreservePattern / xmlTextReaderPreserve / xmlTextReaderCurrentDoc (reader3.c)
+- **Root cause:** The reader is a whole-tree implementation (parse once, build traversal events) while upstream prunes the stream as it reads (NODE_IS_PRESERVED / NODE_IS_SPRESERVED bits, preserves counter). PreservePattern returned 0 and preserved nothing.
+- **Observable residual:** None on the executed platform: reader3.c byte-identical with the oracle (only preserved nodes survive the reader free; document dumped unformatted); unit test test_preserve_pattern_prunes.
+- **Fix:** Implemented pattern preservation as the equivalent post-parse pass: xmlTextReaderPreservePattern compiles the pattern (xmlPatterncompile) into reader->patternTab (freed on Drop); after the parse, apply_pattern_preservation marks matched nodes + their element ancestors and prunes every other node (a node survives iff it or an element ancestor is matched — SPRESERVED subtrees survive whole, DTD nodes survive); prune_unpreserved unlinks + frees the rest. The earlier reader->preserve flag fix (CurrentDoc ownership) completes the reader3.c lifecycle.
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court reader3 case (byte-identical dump of the pruned doc) + reader unit test.
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/xml/reader/mod.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (reader3: the doc retained discarded nodes; also a double-free in the CurrentDoc -> xmlFreeTextReader -> xmlDocDump -> xmlFreeDoc pattern)); FIXED 2026-09-01 (pattern compile + post-parse preservation prune + CurrentDoc ownership transfer (reader->preserve); reader3 byte-identical)
+
+### R-000184: XInclude: (a) XINCLUDE_NS used the 2001 draft URI instead of the 2003 namespace, so no xi:include element was ever recognized; (b) XInclude hrefs never routed through registered input callbacks (xmlRegisterInputCallbacks), so custom I/O schemes like io1.c's sql: failed (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/xml/xinclude/mod.rs, src/abi/exports_parser.rs, src/xml/debug/mod.rs, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** XInclude namespace identity + input-callback dispatch (io1.c custom I/O + XInclude)
+- **Root cause:** (a) XINCLUDE_NS was b"http://www.w3.org/2001/XInclude" — the upstream XINCLUDE_OLD_NS draft — so is_xinclude_element never matched the 2003 namespace the parser materializes. (b) io_read_file/parse_xml_document opened hrefs with libc::open only; upstream xmlXIncludeLoadDoc -> xmlNewInputFromFile -> xmlParserInputBufferCreateFilename consults the registered input callback table, so sql: URIs were never dispatched.
+- **Observable residual:** None on the executed platform: io1.c byte-identical with the oracle (custom sql: scheme + XInclude + xmlDocDump); the C-level xmlParserInputBufferCreateFilename export remains a documented shallow allocation for the general file path (the parser's own file path uses the internal input machinery).
+- **Fix:** XINCLUDE_NS is now the 2003 namespace with the 2001 draft accepted as a legacy alias (is_xinclude_ns_uri, mirroring upstream XINCLUDE_NS/XINCLUDE_OLD_NS); the XInclude loader routes hrefs through a new read_uri_via_input_callbacks helper (match -> open -> read loop -> close, upstream xmlParserInputBufferCreateFilename semantics) before falling back to the file path; the debug dump namespace check updated to 2003.
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court io1 case + the xinclude module tests.
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/xml/xinclude/mod.rs', 'src/abi/exports_parser.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (io1: 'XInclude processing failed'; the include node carried the 2003 namespace the 2001 constant never matched)); FIXED 2026-09-01 (2003 namespace (2001 as legacy alias) + registered input callback dispatch in the XInclude loader; io1 byte-identical)
+
+### R-000185: tree.c save-family wrappers (xmlSaveFile/xmlSaveFileEnc/xmlSaveFormatFile/xmlSaveFormatFileEnc) ignored their encoding and format arguments and dumped unformatted without the encoding declaration (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/xml/tree/mod.rs, src/xml/save.rs, src/xml/io/mod.rs, include/libxml/tree.h, courts/suites/phase12/consumers/court-runner.sh
+- **Surface:** xmlSaveFile family (tree.c -> xmlsave.c xmlSaveFormatFileEnc -> xmlDocDumpInternal; tree2.c uses xmlSaveFormatFileEnc("-", doc, "UTF-8", 1))
+- **Root cause:** The four wrappers delegated to save_doc_to_filename(..., 0) with encoding/format discarded: no XML_SAVE_FORMAT, no encoding in the declaration. Upstream tree.c/xmlsave.c route through xmlSaveFormatFileEnc -> xmlSaveToFilename(filename, encoding, format ? XML_SAVE_FORMAT : 0) + xmlSaveDoc + xmlSaveClose. The save-context machinery also never carried the encoding name into the declaration (only doc->encoding), and the io layer did not map filename "-" to stdout (upstream xmlOutputDefaultOpen dup(STDOUT_FILENO)).
+- **Observable residual:** None on the executed platform: tree2.c byte-identical with the oracle (decl encoding="UTF-8", formatted output, stdout target); unit test test_save_format_file_to_encoding_decl.
+- **Fix:** The wrappers now delegate through crate::xml::save exactly like upstream (xmlSaveToFilename with the resolved encoder + options, xmlSaveDoc, xmlSaveClose); the save context stores the encoding name (xmlStrdup, freed by close/finish) and serialize_node_opts_enc/DumpState carry it into the XML declaration (falling back to doc->encoding like upstream's `if (encoding == NULL) encoding = cur->encoding`); io::output_buffer_create_filename maps "-" to dup(STDOUT_FILENO) like upstream xmlOutputDefaultOpen; the tree.h declarations for the legacy save family were added so tree.h-only consumers compile.
+- **Phase 11 triangulation:** EXTERNAL-CONSUMERS court tree2 case + save.rs unit test + SAVE-* differential courts (unchanged, byte-identical).
+- **Regression courts:** EXTERNAL-CONSUMERS.
+- **Evidence:** ['courts/receipts/phase-12/consumers-*.json', 'src/xml/save.rs', 'src/xml/tree/mod.rs', 'src/xml/io/mod.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the Phase-12 EXTERNAL-CONSUMERS court (tree2: missing encoding="UTF-8" declaration and no formatting)); FIXED 2026-09-01 (upstream-faithful delegation through the save machinery + encoding-carrying declaration + "-" stdout mapping; tree2 byte-identical)
+
+### R-000186: Facade DSOs required GLIBC_2.39 (weak pidfd_spawnp/pidfd_getpid refs from Rust std survived the plain cc re-link), making the facades unloadable on older glibc (Debian bookworm 2.36) — the core itself required only GLIBC_2.34 (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** tools/packaging/facade-gen.sh, courts/suites/phase12/docker-substitution/court-runner.sh
+- **Surface:** libxslt.so.1 / libexslt.so.0 facade ELF version requirements (Docker substitution portability)
+- **Root cause:** The core cdylib is linked by rustc + lld with --gc-sections, which drops the unreferenced weak pidfd_* entries Rust std emits on new glibc; the facade re-link (facade-gen.sh, plain cc -shared) did not GC, so the weak refs bound to the host glibc's GLIBC_2.39 versions and the facades carried GLIBC_2.39 requirements.
+- **Observable residual:** None on the executed platform: the DOCKER-SUBSTITUTION court loads the facades inside Debian bookworm; export surface unchanged (dynsym-surface 12/12, elf-versioning 14/14).
+- **Fix:** facade-gen.sh passes -Wl,--gc-sections (the exported symbols are kept as roots by the version scripts); the facades now require only GLIBC_2.34 like the core and load on Debian bookworm (glibc 2.36).
+- **Phase 11 triangulation:** DOCKER-SUBSTITUTION court (in-VM substitution) + objdump -T GLIBC_2.34 ceiling + DYNSYM-SURFACE.
+- **Regression courts:** DOCKER-SUBSTITUTION, DYNSYM-SURFACE, ELF-VERSIONING.
+- **Evidence:** ['courts/receipts/phase-12/docker-substitution-*.json', 'tools/packaging/facade-gen.sh']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the first DOCKER-SUBSTITUTION run: 'version GLIBC_2.39 not found (required by /candidate/libxslt.so.1)' on Debian bookworm); FIXED 2026-09-01 (--gc-sections on the facade re-links; GLIBC ceiling now 2.34 on all three DSOs)
+
+### R-000187: The LIBXML_THREAD_ALLOC_ENABLED accessor functions (__xmlMalloc/__xmlMallocAtomic/__xmlRealloc/__xmlFree/__xmlMemStrdup, upstream globals.c) were missing, so source-built consumers (upstream headers with thread-alloc enabled; the canonical source oracle's libxslt) could not resolve their xmlFree/xmlMalloc references (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** src/abi/allocator.rs, tools/phase12/export_surface.py, tools/phase12/dlsym_surface_court.py, courts/suites/phase12/docker-substitution/court-runner.sh
+- **Surface:** allocator accessor plane (source-profile consumers; DOCKER-SUBSTITUTION)
+- **Root cause:** The executed distro oracle hides the five thread-alloc accessors (no --with-thread-alloc / hidden visibility), so the candidate surface — generated from the executed oracle — omitted them; a source-built upstream libxml2 (--with-thread-alloc, the Dockerfile.oracle profile) exports them and its libxslt references __xmlFree/__xmlMalloc/__xmlRealloc, so substitution failed with 'undefined symbol: __xmlFree'.
+- **Observable residual:** None on the executed platform: DOCKER-SUBSTITUTION 17/17 with the source-profile oracle; the executed distro oracle surface is a strict subset (1718 = 1713 + 5 documented CUSTODIAN_EXTENSION accessors).
+- **Fix:** Implemented the five accessors per upstream semantics (each returns addr_of_mut! of the corresponding exported variable — R-000176 single source of truth, so (*__xmlMalloc()) is the candidate's xmlMalloc variable) and registered them as CUSTODIAN_EXTENSION exports in the disposition ledger + generated libxml2.syms. Fixed a latent fail-open in export_surface.py: the candidate surface is now the DSO dynsym UNION the staticlib #[no_mangle] surface, so a new export hidden by the version script can never be silently omitted (the accessors were invisible to nm_dyn until the map included them).
+- **Phase 11 triangulation:** DOCKER-SUBSTITUTION court (source-profile substitution) + EXPORT-SURFACE-DISPOSITION ledger + DYNSYM-SURFACE (all 1718 shipped resolve; 584 INTERNAL_LEAK hidden) + SHIPPED-SURFACE --check.
+- **Regression courts:** DOCKER-SUBSTITUTION, DYNSYM-SURFACE, ELF-VERSIONING.
+- **Evidence:** ['courts/receipts/phase-12/docker-substitution-*.json', 'atlas/EXPORT_SURFACE_DISPOSITION.json', 'src/abi/allocator.rs', 'tools/phase12/export_surface.py']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered by the DOCKER-SUBSTITUTION court with the canonical source-built oracle: 'undefined symbol: __xmlFree' (source-profile consumers use the thread-alloc accessor plane)); FIXED 2026-09-01 (five accessors implemented (CUSTODIAN_EXTENSION, single-source-of-truth semantics) + export_surface.py staticlib-union fail-closed discovery; source-profile substitution byte-identical)
+
+### R-000188: DYNSYM-SURFACE hidden-check false positives: a handle-scoped dlsym also resolves symbols the DSO merely inherits from its DT_NEEDED chain (libgcc_s compiler-rt builtins like __absvdi2, libc helpers), so INTERNAL_LEAK verification must use the DSO's own dynsym (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** tools/phase12/dlsym_surface_court.py
+- **Surface:** DYNSYM-SURFACE court negative test (evidence tooling)
+- **Root cause:** ctypes getattr/handle-dlsym searches the DSO AND its dependency tree; after the staticlib-union enlarged the INTERNAL_LEAK set, 149 inherited symbols (libgcc_s builtins) appeared 'visible' although they are not defined by the candidate DSO (readelf --dyn-syms shows none of them).
+- **Observable residual:** None: the court now measures exactly 'defined by the DSO' (12/12).
+- **Fix:** The negative check now reads the DSO's own nm -D --defined-only dynsym: an INTERNAL_LEAK is hidden iff it is not a defined dynamic export of that DSO (documented in the court docstring).
+- **Phase 11 triangulation:** DYNSYM-SURFACE court 12/12 + readelf --dyn-syms spot check.
+- **Regression courts:** DYNSYM-SURFACE.
+- **Evidence:** ['tools/phase12/dlsym_surface_court.py']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (discovered while verifying the __xml* accessor surface: the negative test flagged 149 inherited libgcc_s/libc symbols as visible leaks); FIXED 2026-09-01 (negative check switched to the DSO's own dynsym)
+
+### R-000189: docker/Dockerfile.oracle could not build: configure failed with 'ICU not found' because libicu-dev was not installed although oracle/build.sh passes --with-icu (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 12)
+- **Component:** docker/Dockerfile.oracle
+- **Surface:** Docker oracle image build (canonical source-built oracle for the DOCKER-SUBSTITUTION court)
+- **Root cause:** The Dockerfile installed the build toolchain without libicu-dev while the build script enables --with-icu (the executed host oracle is Iconv+ICU-enabled — R-000157's oracle profile).
+- **Observable residual:** None: the canonical oracle image builds and the DOCKER-SUBSTITUTION court runs entirely inside it.
+- **Fix:** Added libicu-dev to the apt install list; the oracle image now builds libxml2 2.15.3 + libxslt 1.1.45 with the ICU profile.
+- **Phase 11 triangulation:** DOCKER-SUBSTITUTION court image build + in-VM oracle version receipt.
+- **Regression courts:** DOCKER-SUBSTITUTION.
+- **Evidence:** ['docker/Dockerfile.oracle']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (first docker build of the oracle image failed at ./configure: ICU not found); FIXED 2026-09-01 (libicu-dev installed in the Dockerfile)
 
 ## Classification Legend
 

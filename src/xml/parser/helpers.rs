@@ -505,40 +505,36 @@ pub(crate) unsafe fn parse_chunk(
         &[]
     };
 
-    // Take ownership of the stashed InputBuffer (if any).
-    let stored_buf: Option<Box<InputBuffer>> = {
+    // Take ownership of the stashed InputBuffer (the base accumulated so
+    // far — the constructor's initial chunk is stashed by
+    // setup_parser_input), or start empty.
+    let mut base: InputBuffer = {
         let ptr = take_stashed_input_buffer(ctxt);
         if ptr.is_null() {
-            None
+            InputBuffer::from_memory(&[], None)
         } else {
             // SAFETY: ptr is a valid Box<InputBuffer> from Box::into_raw.
-            Some(unsafe { Box::from_raw(ptr) })
+            unsafe { *Box::from_raw(ptr) }
         }
     };
 
-    // Build the input stack. If there is a stored buffer, use it as the base;
-    // otherwise create an empty one.
-    let mut input_stack = if let Some(buf) = stored_buf {
-        InputStack::new(*buf)
-    } else {
-        InputStack::new(InputBuffer::from_memory(&[], None))
-    };
-
-    // Push the chunk onto the stack.
-    if !chunk_slice.is_empty() {
-        let chunk_buf = InputBuffer::from_memory(chunk_slice, None);
-        input_stack.push(chunk_buf);
-    }
-
-    // SAFETY: ctxt is a valid, initialised parser context.
-    let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
+    // Append the chunk to the accumulated input (upstream xmlParseChunk
+    // grows ctxt->input's base with each chunk; the candidate parses the
+    // whole accumulated stream on the terminating call).
+    base.push_bytes(chunk_slice);
 
     if terminate != 0 {
+        let input_stack = InputStack::new(base);
+        // SAFETY: ctxt is a valid, initialised parser context.
+        let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
         parser.parse_document()
+        // parser is dropped here.
     } else {
+        // More data expected: stash the accumulated buffer for the next
+        // xmlParseChunk call.
+        stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
         0
     }
-    // parser is dropped here.
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -685,4 +681,40 @@ pub(crate) unsafe fn free_parser_input_buffer(buf: *mut _xmlParserInputBuffer) {
     }
     // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
     unsafe { xmlFreeImpl(buf as *mut c_void) };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Push-parser chunk accumulation: xmlParseChunk-style feeds accumulate
+    /// into the stashed input and the terminating call parses the whole
+    /// stream (parse4.c — Phase-12 EXTERNAL-CONSUMERS court).
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` is created and freed exactly once; `myDoc` is freed exactly
+    ///   once.
+    #[test]
+    fn test_push_chunk_accumulates() {
+        unsafe {
+            let ctxt = create_parser_ctxt();
+            assert!(!ctxt.is_null());
+            // initial chunk (xmlCreatePushParserCtxt feeds the first bytes
+            // through setup_parser_input)
+            let c0 = b"<doc";
+            let input = InputBuffer::from_memory(c0, None);
+            setup_parser_input(ctxt, input);
+            assert_eq!(parse_chunk(ctxt, c"/>\n".as_ptr(), 3, 0), 0);
+            // terminating call with no new data parses the accumulated input
+            assert_eq!(parse_chunk(ctxt, ptr::null(), 0, 1), 0);
+            let doc = (*ctxt).myDoc;
+            assert!(!doc.is_null());
+            let root = (*doc).children;
+            assert!(!root.is_null());
+            assert_eq!(crate::xml::string::xmlstr_to_bytes((*root).name), b"doc");
+            crate::xml::tree::free_doc(doc);
+            free_parser_ctxt(ctxt);
+        }
+    }
 }

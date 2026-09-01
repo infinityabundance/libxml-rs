@@ -1688,7 +1688,7 @@ impl XmlParser {
 
         // Fire startElement SAX event
         // The default SAX handler manages nodeTab/nodeNr internally.
-        self.sax_start_element(&name, &regular_attrs, &ns_decls);
+        self.sax_start_element(&name, &regular_attrs, &ns_decls, end_pos);
 
         // If not an empty element, parse content until matching end tag
         if !empty {
@@ -2566,11 +2566,53 @@ impl XmlParser {
         _name: &[u8],
         attrs: &[(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)],
         ns_decls: &[(Vec<u8>, Vec<u8>)],
+        end_pos: usize,
     ) {
         if self.is_sax_disabled() {
             return;
         }
         self.sync_input_position();
+
+        // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): the first validity
+        // check runs before the element is processed — a validating parse
+        // with no DTD at all (no external subset and no populated internal
+        // subset) raises XML_DTD_NO_DTD (522) "Validation failed: no DTD
+        // found !" through the DTD domain ("validity error"), clears
+        // ctxt->valid, and disables further validation (ctxt->validate = 0).
+        // The error is attributed to `end_pos` — the tag's closing `>` /
+        // `/>` — exactly where upstream's cur sits when the SAX callback
+        // fires (xmlParseStartTag2 calls startElementNs before consuming
+        // the tag end). This is what XML_PARSE_DTDVALID consumers observe
+        // (parse2.c / parse4.c / reader2.c check ctxt->valid; Phase-12
+        // EXTERNAL-CONSUMERS court).
+        unsafe {
+            let ctxt = self.ctxt;
+            if (*ctxt).validate != 0 {
+                let my_doc = (*ctxt).myDoc;
+                let no_dtd = my_doc.is_null()
+                    || ((*my_doc).extSubset.is_null()
+                        && ((*my_doc).intSubset.is_null()
+                            || ((*(*my_doc).intSubset).notations.is_null()
+                                && (*(*my_doc).intSubset).elements.is_null()
+                                && (*(*my_doc).intSubset).attributes.is_null()
+                                && (*(*my_doc).intSubset).entities.is_null())));
+                if no_dtd {
+                    self.raise_error_at(
+                        XML_FROM_DTD,
+                        XML_DTD_NO_DTD,
+                        xmlErrorLevel::XML_ERR_ERROR as c_int,
+                        "Validation failed: no DTD found !".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                        end_pos,
+                    );
+                    (*ctxt).valid = 0;
+                    (*ctxt).validate = 0;
+                }
+            }
+        }
 
         // Split the element QName into prefix and local name. The tokenizer
         // yields the raw qualified name (e.g. "xsl:stylesheet"); SAX2

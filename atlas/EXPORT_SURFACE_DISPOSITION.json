@@ -2,19 +2,1260 @@
  "schema": "export-surface-disposition-1",
  "phase": "12",
  "generator": "tools/phase12/export_surface.py",
- "note": "shipped shared-DSO surface = executed-oracle surface + documented CUSTODIAN_EXTENSION plane (pre-2.15 global-data compat); INTERNAL_LEAK/HISTORICAL_COMPAT exports are hidden by the generated version scripts",
+ "note": "shipped shared-DSO surface = executed-oracle surface + documented CUSTODIAN_EXTENSION plane (pre-2.15 global-data compat + LIBXML_THREAD_ALLOC_ENABLED accessors); INTERNAL_LEAK/HISTORICAL_COMPAT exports are hidden by the generated version scripts; the candidate surface is the DSO dynsym UNION the staticlib #[no_mangle] surface so new exports cannot be silently hidden",
  "projects": {
   "libxml2": {
    "oracle_dso": "/usr/lib/libxml2.so.16",
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
    "oracle_exports": 1422,
-   "candidate_exports": 1713,
+   "candidate_exports": 1718,
+   "candidate_surface_union": 2302,
    "counts": {
+    "INTERNAL_LEAK": 584,
     "CURRENT_ORACLE_EXPORT": 1422,
-    "CUSTODIAN_EXTENSION": 40,
+    "CUSTODIAN_EXTENSION": 45,
     "HISTORICAL_COMPAT_EXPORT": 251
    },
    "symbols": {
+    "__absvdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__absvsi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__absvti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__adddf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addhf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addsf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addtf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addvdi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addvsi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__addvti3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashldi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashlsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashlti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashrdi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashrsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ashrti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__bswapdi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__bswapsi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__bswapti2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__clzdi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__clzsi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__clzti2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__cmpdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__cmpti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__compilerrt_abort_impl": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ctzdi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ctzsi2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ctzti2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divdc3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divdf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divdi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divmoddi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divmodsi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divmodti4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divsc3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divsf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divtf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__divti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__eqdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__eqhf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__eqsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__eqtf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extenddftf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extendhfdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extendhfsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extendhftf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extendsfdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__extendsftf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ffsti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixdfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixdfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixdfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixsfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixsfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixsfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixtfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixtfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixtfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunsdfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunsdfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunsdfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunssfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunssfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunssfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunstfdi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunstfsi": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__fixunstfti": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatdidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatdisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatditf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatsidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatsisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatsitf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floattidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floattisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floattitf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatundidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatundisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatunditf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatunsidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatunsisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatunsitf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatuntidf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatuntisf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__floatuntitf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gedf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gehf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gesf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__getf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gnu_f2h_ieee": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gnu_h2f_ieee": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gtdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gthf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gtsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__gttf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ledf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lehf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lesf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__letf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lshrdi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lshrsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lshrti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ltdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lthf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ltsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__lttf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__moddi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__modsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__modti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__muldc3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__muldf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__muldi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulhf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulodi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulosi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__muloti4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulsc3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulsf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__multf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__multi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulvdi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulvsi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__mulvti3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__nedf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negdf2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negsf2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negvdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negvsi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__negvti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__nehf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__nesf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__netf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__paritydi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__paritysi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__parityti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__popcountdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__popcountsi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__popcountti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__powidf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__powisf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__powitf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__rustc_debug_gdb_scripts_section__": {
+     "kind": "V",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subdf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subhf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subsf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subtf3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subvdi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subvsi3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__subvti3": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__truncdfhf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__truncdfsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__truncsfhf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__trunctfdf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__trunctfhf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__trunctfsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ucmpdi2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__ucmpti2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivdi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivmoddi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivmodsi4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivmodti4": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__udivti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__umoddi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__umodsi3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__umodti3": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__unorddf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__unordhf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__unordsf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__unordtf2": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlBufferAllocScheme": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlDefaultBufferSize": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlDefaultSAXHandler": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlDefaultSAXLocator": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "__xmlDeregisterNodeDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -26,6 +1267,13 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlFree": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },
@@ -85,6 +1333,27 @@
      "in_headers": false,
      "in_upstream_syms": false
     },
+    "__xmlMalloc": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlMallocAtomic": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlMemStrdup": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "__xmlOutputBufferCreateFilename": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -96,6 +1365,13 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlParserDebugEntities": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },
@@ -113,10 +1389,24 @@
      "in_headers": false,
      "in_upstream_syms": false
     },
+    "__xmlParserVersion": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "__xmlPedanticParserDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "__xmlRealloc": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },
@@ -159,6 +1449,503 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "cbrt": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "cbrtf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "ceil": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "ceilf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "ceilf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "ceilf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "copysign": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "copysignf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "copysignf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "copysignf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltCommonRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltCryptoRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltDateRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltDateXpathCtxtRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltDynRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltFuncRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltLibexsltVersion": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltLibraryVersion": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltLibxmlVersion": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltLibxsltVersion": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltMathRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltMathXpathCtxtRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltRegisterAll": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltSaxonRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltSetsRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltSetsXpathCtxtRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltStrRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltStrXpathCtxtRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fabs": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fabsf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fabsf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fabsf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fdim": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fdimf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fdimf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fdimf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "floor": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "floorf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "floorf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "floorf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fma": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmax": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaxf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaxf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaxf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximum": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximum_num": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximum_numf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximum_numf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximum_numf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximumf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximumf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmaximumf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmin": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimum": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimum_num": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimum_numf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimum_numf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimum_numf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimumf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimumf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fminimumf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmod": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmodf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmodf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "fmodf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },
@@ -266,6 +2053,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "htmlDecodeEntities": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "htmlDefaultSAXHandler": {
      "kind": "D",
@@ -624,6 +2418,146 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "rint": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "rintf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "rintf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "rintf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "round": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundeven": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundevenf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundevenf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundevenf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "roundf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "sqrt": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "sqrtf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "sqrtf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "sqrtf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "trunc": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "truncf": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "truncf128": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "truncf16": {
+     "kind": "W",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xlinkGetDefaultDetect": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -854,6 +2788,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlAutomataIsDeterministic": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlAutomataNewAllTrans": {
      "kind": "T",
@@ -1310,6 +3251,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlCatalogLoad": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlCatalogLocalResolve": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -1359,6 +3307,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlCatalogSave": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlCatalogSetDebug": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -1401,6 +3356,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlCharEncInput": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlCharEncNewCustomHandler": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -1414,6 +3376,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlCharEncOutput": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlCharInRange": {
      "kind": "T",
@@ -1569,6 +3538,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlCopyAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlCopyAttributeTable": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -1611,6 +3587,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlCopyElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlCopyElementContent": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -1631,6 +3614,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlCopyEntity": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlCopyEnumeration": {
      "kind": "T",
@@ -1673,6 +3663,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlCopyNotation": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlCopyNotationTable": {
      "kind": "T",
@@ -2276,6 +4273,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlDeregisterNodeDefaultValue": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlDetectCharEncoding": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -2584,6 +4588,13 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "xmlFreeAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlFreeAttributeTable": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -2625,6 +4636,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlFreeElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlFreeElementContent": {
      "kind": "T",
@@ -2695,6 +4713,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlFreeNotation": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlFreeNotationTable": {
      "kind": "T",
@@ -2836,6 +4861,27 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "xmlGenericErrorDefaultFuncV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xmlGetAttributeDecl": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xmlGetBinaryPath": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlGetBufferAllocationScheme": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -2927,12 +4973,26 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlGetElementDecl": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlGetEncodingAlias": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlGetEntity": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlGetExternalEntityLoader": {
      "kind": "T",
@@ -2961,6 +5021,13 @@
      "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": true
+    },
+    "xmlGetHomeOfBinary": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlGetID": {
      "kind": "T",
@@ -3010,6 +5077,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlGetNotationDecl": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlGetNsList": {
      "kind": "T",
@@ -3487,6 +5561,13 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "xmlIsBaseChar_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlIsBlank": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -3515,6 +5596,20 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "xmlIsChar_lrng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xmlIsChar_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlIsCombining": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -3527,6 +5622,13 @@
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
+     "in_upstream_syms": false
+    },
+    "xmlIsCombining_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
      "in_upstream_syms": false
     },
     "xmlIsDigit": {
@@ -3543,6 +5645,20 @@
      "in_headers": true,
      "in_upstream_syms": false
     },
+    "xmlIsDigit_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xmlIsEmptyElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlIsExtender": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -3555,6 +5671,13 @@
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
+     "in_upstream_syms": false
+    },
+    "xmlIsExtender_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
      "in_upstream_syms": false
     },
     "xmlIsID": {
@@ -3576,6 +5699,13 @@
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
+     "in_upstream_syms": false
+    },
+    "xmlIsIdeographic_srng": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
      "in_upstream_syms": false
     },
     "xmlIsInitialized": {
@@ -3970,12 +6100,26 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlMallocAtomicZero": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlMallocLoc": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlMallocZero": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlMemBlocks": {
      "kind": "T",
@@ -5034,6 +7178,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlOutputBufferCreateFilenameValue": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlOutputBufferCreateIO": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -5559,6 +7710,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlParserErrorV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlParserFindNodeInfo": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -5621,6 +7779,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlParserInputBufferCreateFilenameValue": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlParserInputBufferCreateIO": {
      "kind": "T",
@@ -5713,12 +7878,26 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlParserValidityErrorV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlParserValidityWarning": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlParserValidityWarningV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlParserVersion": {
      "kind": "D",
@@ -5733,6 +7912,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlParserWarningV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlPathToURI": {
      "kind": "T",
@@ -5867,6 +8053,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlRaiseError": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlReadDoc": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -6000,6 +8193,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlReallocZero": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlReconciliateNs": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -6098,6 +8298,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlRegexpIsDeterministic": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlRegexpPrint": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -6146,6 +8353,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlRegisterNodeDefaultValue": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlRegisterOutputCallbacks": {
      "kind": "T",
@@ -6629,6 +8843,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlSAXParseDocWithData": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlSAXParseEntity": {
      "kind": "T",
@@ -7512,6 +9733,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlSetValidErrors": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlSetupParserForBuffer": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -8331,6 +10559,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlTextReaderPrev": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlTextReaderQuoteChar": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -8527,6 +10762,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlTextWriterEndDTDAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlTextWriterEndDTDElement": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -8639,6 +10881,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlTextWriterStartDTDAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlTextWriterStartDTDElement": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -8736,6 +10985,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlTextWriterWriteDTDAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlTextWriterWriteDTDElement": {
      "kind": "T",
@@ -10417,6 +12673,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlUpgradeOldNs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlValidBuildContentModel": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -10466,6 +12729,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlValidateContent": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlValidateDocument": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -10507,6 +12777,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xmlValidateEnumeration": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xmlValidateID": {
      "kind": "T",
@@ -11880,6 +14157,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xmlXPtrEvalNodeSet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xmlXPtrFreeLocationSet": {
      "kind": "T",
      "disposition": "HISTORICAL_COMPAT_EXPORT",
@@ -12005,6 +14289,1847 @@
      "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": true
+    },
+    "xslDebugStatus": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAddKey": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAddStackElemList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAddTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAllocateExtra": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAllocateExtraCtxt": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyAttributeSet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyImports": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyOneTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyStripSpaces": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyStylesheet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyStylesheetStacked": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyStylesheetUser": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltApplyTemplates": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAttrListTemplateProcess": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAttrTemplateProcess": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAttrTemplateValueProcess": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAttrTemplateValueProcessNode": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltAttribute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCalibrateAdjust": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCallTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCheckExtPrefix": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCheckExtURI": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCheckFeature": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCheckRead": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCheckWrite": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltChoose": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCleanupGlobals": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCleanupTemplates": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltComment": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCompMatchClearCache": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCompileAttr": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCompilePattern": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltComputeSortResult": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCopy": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCopyNamespace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCopyNamespaceList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCopyOf": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCopyTextString": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltCreateRVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDebug": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDebugDumpExtensions": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDebugGetDefaultTrace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDebugSetDefaultTrace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDecimalFormatGetByName": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDecimalFormatGetByQName": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDefaultPriorityFromNode": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDefaultSortFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDoSortFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDocDefaultLoader": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDocumentComp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDocumentElem": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDocumentFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltDocumentSortFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltElementAvailableFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEngineVersion": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalAVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalAttrValueTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalGlobalVariables": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalOneUserParam": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalStaticAttrValueTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalTemplateString": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalUserParams": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalXPathPredicate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalXPathString": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltEvalXPathStringNs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtElementLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtMarker": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtModuleElementLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtModuleElementPreComputeLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtModuleFunctionLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtModuleTopLevelLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtensionInstructionResultFinalize": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltExtensionInstructionResultRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFindDocument": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFindElemSpaceHandling": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFindTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFlagRVTs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltForEach": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFormatNumberConversion": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFormatNumberFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeAVTList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeAttributeSetsHashes": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeCompMatchList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeCtxtExts": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeDocumentKeys": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeDocuments": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeExts": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeGlobalVariables": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeKeys": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeLocale": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeLocales": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeNamespaceAliasHashes": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeRVTs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeStackElemList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeStyleDocuments": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeStylePreComps": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeStylesheet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeTemplateHashes": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeTemplates": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeTransformContext": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFreeTransformResult": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFunctionAvailableFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltFunctionNodeSet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenerateIdFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericDebug": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericDebugContext": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericError": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericErrorContext": {
+     "kind": "B",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericErrorDefaultFuncV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetCNsProp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetDebuggerStatus": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetDefaultSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetExtData": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetExtInfo": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetKey": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetNamespace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetNsProp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetPlainNamespace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetProfileInformation": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetQNameURI": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetQNameURI2": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetSpecialNamespace": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetStylesheetDoc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetUTF8Char": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetUTF8CharZ": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGetXIncludeDefault": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltIf": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInit": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitAllDocKeys": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitCtxtExts": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitCtxtKey": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitCtxtKeys": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitElemPreComp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitGlobals": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltInitTemplateLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltIsBlank": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltKeyFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLibxmlVersion": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLibxsltVersion": {
+     "kind": "R",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLoadDocument": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLoadStyleDocument": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLoadStylesheetPI": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLocalVariablePop": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLocalVariablePush": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLocaleStrcmp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltLookupTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltMaxDepth": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltMaxVars": {
+     "kind": "D",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltMessage": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNamespaceAlias": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNeedElemSpaceHandling": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewDocument": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewElemPreComp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewLocale": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewStyleDocument": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewStylesheet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNewTransformContext": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNextImport": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNormalizeCompSteps": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNumber": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltNumberFormat": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseGlobalParam": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseGlobalVariable": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetAttributeSet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetCallerParam": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetDoc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetFile": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetImport": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetImportedDoc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetInclude": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetMemory": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetOutput": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetParam": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetProcess": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetUser": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseStylesheetVariable": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltParseTemplateContent": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltPreComputeExtModuleElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltPrintErrorContext": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltProcessOneNode": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltProcessingInstruction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltProfileStylesheet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltQuoteOneUserParam": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltQuoteUserParams": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterAllElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterAllExtras": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterAllFunctions": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtModule": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtModuleElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtModuleFull": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtModuleFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtModuleTopLevel": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtPrefix": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterExtras": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterLocalRVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterPersistRVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterTestModule": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterTmpRVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltReleaseRVT": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltResolveStylesheetAttributeSet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRunStylesheet": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRunStylesheetUser": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveProfiling": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveResultTo": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveResultToFd": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveResultToFile": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveResultToFilename": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSaveResultToString": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSecurityAllow": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSecurityForbid": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetCtxtLocaleHandlers": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetCtxtParseOptions": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetCtxtSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetCtxtSortFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetDebuggerCallbacks": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetDebuggerStatus": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetDefaultSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetGenericDebugFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetGenericErrorFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetLoaderFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetSecurityPrefs": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetSortFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetStylesheetDoc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetTransformErrorFunc": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSetXIncludeDefault": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltShutdownCtxtExts": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltShutdownExts": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSort": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSplitQName": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStrxfrm": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStyleGetExtData": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStylePreCompute": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStyleStylesheetLevelGetExtData": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStylesheetCreate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltSystemPropertyFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltTemplateProcess": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltTestCompMatchList": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltText": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltTimestamp": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltTransformError": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltTransformErrorV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUninit": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUnparsedEntityURIFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUnregisterExtModule": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUnregisterExtModuleElement": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUnregisterExtModuleFunction": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltUnregisterExtModuleTopLevel": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltValueOf": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltVariableLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltXPathCompile": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltXPathCompileFlags": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltXPathFunctionLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltXPathGetTransformContext": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltXPathVariableLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     }
    }
   },
@@ -12013,8 +16138,10 @@
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/lib/libxslt.so.1.1.45",
    "oracle_exports": 244,
    "candidate_exports": 251,
+   "candidate_surface_union": 263,
    "counts": {
     "CURRENT_ORACLE_EXPORT": 244,
+    "INTERNAL_LEAK": 12,
     "CUSTODIAN_EXTENSION": 5,
     "HISTORICAL_COMPAT_EXPORT": 2
    },
@@ -12095,6 +16222,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xsltApplyStylesheetStacked": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltApplyStylesheetUser": {
      "kind": "T",
@@ -12333,6 +16467,13 @@
      "in_oracle": true,
      "in_headers": false,
      "in_upstream_syms": true
+    },
+    "xsltDefaultPriorityFromNode": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltDefaultSortFunction": {
      "kind": "T",
@@ -12705,12 +16846,26 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xsltFreeTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xsltFreeTemplateHashes": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": false,
      "in_upstream_syms": true
+    },
+    "xsltFreeTemplates": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltFreeTransformContext": {
      "kind": "T",
@@ -12772,6 +16927,13 @@
      "kind": "B",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltGenericErrorDefaultFuncV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },
@@ -12894,6 +17056,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xsltGetUTF8CharZ": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xsltGetXIncludeDefault": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -12956,6 +17125,13 @@
      "in_oracle": true,
      "in_headers": false,
      "in_upstream_syms": true
+    },
+    "xsltInitTemplateLookup": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltIsBlank": {
      "kind": "T",
@@ -13026,6 +17202,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xsltLookupTemplate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltMaxDepth": {
      "kind": "D",
@@ -13496,6 +17679,13 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
+    "xsltSetCtxtLocaleHandlers": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xsltSetCtxtParseOptions": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -13643,6 +17833,20 @@
      "in_headers": false,
      "in_upstream_syms": true
     },
+    "xsltStyleStylesheetLevelGetExtData": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltStylesheetCreate": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
     "xsltSystemPropertyFunction": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -13684,6 +17888,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xsltTransformErrorV": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltUninit": {
      "kind": "T",
@@ -13783,14 +17994,23 @@
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/lib/libexslt.so.0.8.25",
    "oracle_exports": 17,
    "candidate_exports": 17,
+   "candidate_surface_union": 18,
    "counts": {
-    "CURRENT_ORACLE_EXPORT": 17
+    "CURRENT_ORACLE_EXPORT": 17,
+    "INTERNAL_LEAK": 1
    },
    "symbols": {
     "exsltCommonRegister": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "exsltCryptoRegister": {
+     "kind": "T",
+     "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
     },

@@ -106,6 +106,7 @@ if needs_gen "$XSLT_OUT"; then
     cc -shared -Wl,-soname,libxslt.so.1 -Wl,--version-script="$XSLT_VS" \
         -o "$XSLT_OUT.$$.tmp" \
         -Wl,--whole-archive "$ARCHIVE" -Wl,--no-whole-archive \
+        -Wl,--gc-sections \
         -Wl,--no-as-needed -L"$LIB" -l:libxml2.so.16.1.3 -Wl,--as-needed \
         -lgcc_s -lutil -lrt -lpthread -lm -ldl -lc \
         && mv -f "$XSLT_OUT.$$.tmp" "$XSLT_OUT" \
@@ -115,6 +116,7 @@ if [ "$GEN_OK" = 1 ] && needs_gen "$EXSLT_OUT"; then
     cc -shared -Wl,-soname,libexslt.so.0 -Wl,--version-script="$EXSLT_VS" \
         -o "$EXSLT_OUT.$$.tmp" \
         -Wl,--whole-archive "$ARCHIVE" -Wl,--no-whole-archive \
+        -Wl,--gc-sections \
         -Wl,--no-as-needed -L"$LIB" -l:libxslt.so.1.1.45 -l:libxml2.so.16.1.3 -Wl,--as-needed \
         -lgcc_s -lutil -lrt -lpthread -lm -ldl -lc \
         && mv -f "$EXSLT_OUT.$$.tmp" "$EXSLT_OUT" \

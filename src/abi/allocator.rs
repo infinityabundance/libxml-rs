@@ -689,6 +689,81 @@ pub static mut xmlFree: xmlFreeFunc = xmlFreeDefault;
 #[no_mangle]
 pub static mut xmlMemStrdup: xmlStrdupFunc = xmlMemStrdupDefault;
 
+// ── LIBXML_THREAD_ALLOC_ENABLED accessors (upstream globals.c) ─────────────
+//
+// Upstream source builds with --with-thread-alloc export accessor FUNCTIONS
+// `xmlMallocFunc *__xmlMalloc(void)` etc. (globals.c, gated by
+// LIBXML_THREAD_ALLOC_ENABLED); its xmlmemory.h then redefines `xmlMalloc`
+// as `(*__xmlMalloc())`, so consumers compiled against the thread-alloc
+// profile reference these accessors instead of the variables. The candidate
+// implements them per upstream semantics: each returns a pointer to the
+// allocator slot the library uses — which is exactly the corresponding
+// exported variable above (single source of truth, R-000176) — so
+// `(*__xmlMalloc())(size)` is the candidate's `xmlMalloc` variable.
+//
+// The executed distro oracle (system 2.15.3) hides these five accessors
+// (built without thread-alloc / with hidden visibility), so they are
+// CUSTODIAN_EXTENSION exports in the disposition ledger: upstream-ABI-valid,
+// required by source-built consumers (e.g. the canonical source oracle in
+// the Phase-12 DOCKER-SUBSTITUTION court, whose libxslt references
+// __xmlFree/__xmlMalloc/__xmlRealloc).
+
+/// Upstream `xmlMallocFunc *__xmlMalloc(void)`.
+///
+/// # Safety
+///
+/// - The returned pointer is the address of the exported `xmlMalloc`
+///   variable; it stays valid for the process lifetime and may be read or
+///   written through exactly like upstream's thread-local allocator slot.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlMalloc() -> *mut xmlMallocFunc {
+    core::ptr::addr_of_mut!(xmlMalloc)
+}
+
+/// Upstream `xmlMallocFunc *__xmlMallocAtomic(void)`.
+///
+/// # Safety
+///
+/// - The returned pointer is the address of the exported `xmlMallocAtomic`
+///   variable; it stays valid for the process lifetime.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlMallocAtomic() -> *mut xmlMallocFunc {
+    core::ptr::addr_of_mut!(xmlMallocAtomic)
+}
+
+/// Upstream `xmlReallocFunc *__xmlRealloc(void)`.
+///
+/// # Safety
+///
+/// - The returned pointer is the address of the exported `xmlRealloc`
+///   variable; it stays valid for the process lifetime.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlRealloc() -> *mut xmlReallocFunc {
+    core::ptr::addr_of_mut!(xmlRealloc)
+}
+
+/// Upstream `xmlFreeFunc *__xmlFree(void)`.
+///
+/// # Safety
+///
+/// - The returned pointer is the address of the exported `xmlFree`
+///   variable; it stays valid for the process lifetime.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlFree() -> *mut xmlFreeFunc {
+    core::ptr::addr_of_mut!(xmlFree)
+}
+
+/// Upstream `xmlStrdupFunc *__xmlMemStrdup(void)`.
+///
+/// # Safety
+///
+/// - The returned pointer is the address of the exported `xmlMemStrdup`
+///   variable; it stays valid for the process lifetime.
+#[no_mangle]
+pub unsafe extern "C" fn __xmlMemStrdup() -> *mut xmlStrdupFunc {
+    core::ptr::addr_of_mut!(xmlMemStrdup)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Memory Debugging / Statistics
 // ═══════════════════════════════════════════════════════════════════════════════

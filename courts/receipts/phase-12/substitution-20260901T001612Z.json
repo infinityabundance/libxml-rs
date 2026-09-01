@@ -1,0 +1,24 @@
+{
+  "court": "STATIC-SUBSTITUTION",
+  "phase": "12",
+  "timestamp": "20260901T001612Z",
+  "schema": "substitution-1",
+  "cases": [
+    {"item":"static:libxml2.a present","status":"PASS"},
+    {"item":"static:libxslt.a present","status":"PASS"},
+    {"item":"static:libexslt.a present","status":"PASS"},
+    {"item":"static:build","status":"PASS"},
+    {"item":"static:no-shared-candidate-deps (fully static)","status":"PASS"},
+    {"item":"static:links-and-runs-standalone","status":"PASS"},
+    {"item":"pkgconfig:libxml-2.0 exists","status":"PASS"},
+    {"item":"pkgconfig:libxslt exists","status":"PASS"},
+    {"item":"pkgconfig:libexslt exists","status":"PASS"},
+    {"item":"pkgconfig:build","status":"PASS"},
+    {"item":"pkgconfig:links-and-runs","status":"PASS"},
+    {"item":"config-script:build","status":"PASS"},
+    {"item":"config-script:links-and-runs","status":"PASS"}
+  ],
+  "summary": { "passed": 13, "failed": 0 },
+  "failures": {
+  }
+}

@@ -325,6 +325,42 @@
    "receipt": "courts/receipts/phase-11/allocator-default-*.json",
    "result": "PASS",
    "note": "default-allocator differential (R-000178): libc malloc/realloc/free/strdup vs oracle globals.c defaults; byte-identical incl. xmlMemSize/xmlMemUsed/xmlMemBlocks exactness; valgrind sweep unavailable (loader SIGILL)"
+  },
+  "EXTERNAL-CONSUMERS": {
+   "runner": "courts/suites/phase12/consumers/court-runner.sh",
+   "receipt": "courts/receipts/phase-12/consumers-20260901T001515Z.json",
+   "result": "PASS",
+   "note": "15/15: unmodified upstream libxml2-2.15.0 example programs built against candidate headers+DSOs, byte-identical stdout/stderr/exit with the oracle (Phase 12)"
+  },
+  "ELF-VERSIONING": {
+   "runner": "courts/suites/phase12/elf-versioning/court-runner.sh",
+   "receipt": "courts/receipts/phase-12/elf-versioning-20260901T002823Z.json",
+   "result": "PASS",
+   "note": "14/14: binary substitution (oracle-linked consumer on candidate runtime, byte-identical), VERDEF/VERNEED/DT_NEEDED parity, dlvsym named nodes (Phase 12)"
+  },
+  "DYNSYM-SURFACE": {
+   "runner": "tools/phase12/dlsym_surface_court.py",
+   "receipt": "courts/receipts/phase-12/dynsym-surface-20260901T002823Z.json",
+   "result": "PASS",
+   "note": "12/12: every shipped export resolves on its DSO, every INTERNAL_LEAK absent from the DSO dynsym (Phase 12)"
+  },
+  "STATIC-SUBSTITUTION": {
+   "runner": "courts/suites/phase12/substitution/court-runner.sh",
+   "receipt": "courts/receipts/phase-12/substitution-20260901T002823Z.json",
+   "result": "PASS",
+   "note": "13/13: static-link + pkg-config + config-script substitution (Phase 12)"
+  },
+  "DOCKER-SUBSTITUTION": {
+   "runner": "courts/suites/phase12/docker-substitution/court-runner.sh",
+   "receipt": "courts/receipts/phase-12/docker-substitution-20260901T003035Z.json",
+   "result": "PASS",
+   "note": "17/17: the reviewer binary-substitution battery run ENTIRELY inside a minimal Docker VM (canonical source-built 2.15.3 oracle), oracle-linked consumer -> candidate runtime byte-identical, ELF plane, pkg-config plane (Phase 12)"
+  },
+  "DSO-BOUNDARY-LINT": {
+   "runner": "tools/phase12/dso_boundary_lint.py",
+   "receipt": "courts/receipts/phase-12/dso-boundary-lint-20260901T003237Z.json",
+   "result": "PASS",
+   "note": "fail-closed machine-enforced DSO-boundary lint for R-000177: 98 violation references censused (OPEN architectural surface), 0 unclassified, 0 unresolved gateway modules (Phase 12)"
   }
  }
 }

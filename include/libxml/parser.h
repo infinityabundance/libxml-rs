@@ -754,6 +754,11 @@ XMLPUBFUN xmlExternalEntityLoader
  * drop-in headers — the source-compatibility contract. Signatures are the upstream ABI contract.
  */
 XMLPUBVAR const char *const xmlParserVersion;
+
+/* Phase 12 (EXTERNAL-CONSUMERS court): upstream parser.h defines
+ * XML_DEFAULT_VERSION; testWriter.c and other unmodified upstream consumers
+ * use it (xmlNewDoc(BAD_CAST XML_DEFAULT_VERSION)). */
+#define XML_DEFAULT_VERSION "1.0"
 XMLPUBFUN long xmlByteConsumed (xmlParserCtxt *ctxt);
 XMLPUBFUN void xmlClearNodeInfoSeq (xmlParserNodeInfoSeq *seq);
 XMLPUBFUN void xmlClearParserCtxt (xmlParserCtxt *ctxt);

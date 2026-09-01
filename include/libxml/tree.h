@@ -1018,6 +1018,14 @@ XMLPUBFUN int xmlReconciliateNs (xmlDoc *doc, xmlNode *tree);
 XMLPUBFUN xmlNode * xmlReplaceNode (xmlNode *old, xmlNode *cur);
 XMLPUBFUN int xmlSaveFile (const char *filename, xmlDoc *cur);
 XMLPUBFUN int xmlSaveFileEnc (const char *filename, xmlDoc *cur, const char *encoding);
+/* Legacy save family: upstream tree.h declares these alongside the
+ * xmlsave.h xmlSaveTo* family (tree2.c includes only tree.h and calls
+ * xmlSaveFormatFileEnc). Declared here verbatim so tree.h-only consumers
+ * compile unchanged (Phase-12 EXTERNAL-CONSUMERS court). */
+XMLPUBFUN int xmlSaveFormatFile (const char *filename, xmlDoc *cur, int format);
+XMLPUBFUN int xmlSaveFileTo (xmlOutputBuffer *buf, xmlDoc *cur, const char *encoding);
+XMLPUBFUN int xmlSaveFormatFileTo (xmlOutputBuffer *buf, xmlDoc *cur, const char *encoding, int format);
+XMLPUBFUN int xmlSaveFormatFileEnc (const char *filename, xmlDoc *cur, const char *encoding, int format);
 XMLPUBFUN void xmlSetBufferAllocationScheme(xmlBufferAllocationScheme scheme);
 XMLPUBFUN void xmlSetCompressMode (int mode);
 XMLPUBFUN void xmlSetDocCompressMode (xmlDoc *doc, int mode);

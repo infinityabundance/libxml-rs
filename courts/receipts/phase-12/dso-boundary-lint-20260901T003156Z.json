@@ -1,0 +1,1223 @@
+{
+ "court": "DSO-BOUNDARY-LINT",
+ "phase": "12",
+ "schema": "dso-boundary-lint-1",
+ "timestamp": "20260901T003156Z",
+ "residual": "R-000177 (OPEN architectural target: state-coherent three-DSO architecture requires the xslt layer to route every libxml2 interaction through the sanctioned gateway; the whole-archive facades currently partition state — pinned by the DSO-STATE-COHERENCE court)",
+ "invariant": "libxslt implementation may call crate::xslt::* (own), crate::abi::exports_* (sanctioned gateway), the ABI type surface, and the exported allocator data variables; may NOT call crate::xml::* internals, allocator *Impl internals, or XML-layer private globals",
+ "verdict_gates": "fail-closed classification only (unclassified == 0 and every sanctioned gateway module resolves); violation COUNT is the R-000177 surface, not a verdict gate — R-000177 is deliberately OPEN",
+ "scope": {
+  "dirs": [
+   "src/xslt"
+  ],
+  "abi_file_prefixes": [
+   "exports_xslt",
+   "exports_exslt"
+  ]
+ },
+ "counts": {
+  "UNCLASSIFIED": 38,
+  "BOUNDARY_VIOLATION": 101,
+  "SANCTIONED_TYPE_SURFACE": 13,
+  "SANCTIONED_GATEWAY": 70,
+  "SANCTIONED_HELPER": 3,
+  "OWN_INTERNALS": 102
+ },
+ "violation_surface": [
+  {
+   "reference": "crate::abi::allocator",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 10,
+   "files": [
+    "src/abi/exports_xslt_avt.rs",
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_ext.rs",
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::allocator::xmlFreeImpl",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 34,
+   "files": [
+    "src/abi/exports_xslt_apply.rs",
+    "src/xslt/attributes/mod.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/namespace_alias/mod.rs",
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/sorting/mod.rs",
+    "src/xslt/templates/mod.rs",
+    "src/xslt/transform/mod.rs",
+    "src/xslt/variables/mod.rs",
+    "src/xslt/whitespace/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::allocator::xmlMallocImpl",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 7,
+   "files": [
+    "src/abi/exports_xslt_util.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/numbering/mod.rs",
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::allocator::xmlMallocZero",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_apply.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::allocator::xmlMemStrdupImpl",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 6,
+   "files": [
+    "src/abi/exports_xslt_ext.rs",
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt.rs",
+    "src/xslt/errors/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::default_generic_error_func",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_util.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::xslDebugStatus",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::xsltGenericDebug",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/errors/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::xsltGenericDebugContext",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/errors/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::xsltGenericError",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_util.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::data_globals::xsltGenericErrorContext",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_util.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::Axis",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::Expr",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::NameTest",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::NodeSet",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/patterns/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::NodeTest",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::Step",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::XPathValue",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/patterns/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::XmlXPathParserContext",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::chvalid::xmlIsBlank",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::chvalid::xmlIsBlankNode",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::chvalid::xmlIsDigit",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::chvalid::xmlIsLetter",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::dictionary::Dict",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::dictionary::dict_lookup",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::doc_get_root_element",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/compiler/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::encoding",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::get_prop",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/compiler/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::hash::HashTable",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 6,
+   "files": [
+    "src/abi/exports_xslt_apply.rs",
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/templates/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::hash::hash_add_entry2",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/templates/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::hash::hash_create",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/templates/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::hash::hash_free",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt_apply.rs",
+    "src/abi/exports_xslt_compile.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::html::serialize_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::io::buf_content",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::io::buf_create",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::io::buf_free",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::io::buf_length",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::io::output_buffer_write",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_util.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::search_ns",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/compiler/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::bytes_to_xmlstr",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 13,
+   "files": [
+    "src/abi/exports_xslt_avt.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::split_qname2",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::xml_strcmp",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/templates/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::xml_strdup",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 18,
+   "files": [
+    "src/abi/exports_xslt_avt.rs",
+    "src/xslt/numbering/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::xml_strlen",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::string::xmlstr_to_string",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 10,
+   "files": [
+    "src/abi/exports_xslt_avt.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/serialization/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::copy_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::doc_dump",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::doc_get_root_element",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 6,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/xslt/imports/mod.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/whitespace/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::free_doc",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 17,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_vars.rs",
+    "src/xslt/documents/mod.rs",
+    "src/xslt/stylesheet/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::free_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 6,
+   "files": [
+    "src/abi/exports_xslt_apply.rs",
+    "src/abi/exports_xslt_compile.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/whitespace/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::free_node_list",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::get_prop",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/attributes/mod.rs",
+    "src/xslt/imports/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::new_doc",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::new_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::new_text",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::node_get_content",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_avt.rs",
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::search_ns",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::serialize_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::text_concat",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::unlink_node",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 6,
+   "files": [
+    "src/abi/exports_xslt_apply.rs",
+    "src/abi/exports_xslt_compile.rs",
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/whitespace/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::tree::xml_strlen",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/xslt/compiler/mod.rs",
+    "src/xslt/serialization/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::uri::resolve_uri",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/documents/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::uri::xmlURIEscapeStr",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::value_pop",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::value_push",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xmlXPathIsInf",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xmlXPathIsNaN",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::ast",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::compile",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/compiler/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::context::XPathContext",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 19,
+   "files": [
+    "src/abi/exports_xslt_functions.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/patterns/mod.rs",
+    "src/xslt/sorting/mod.rs",
+    "src/xslt/transform/mod.rs",
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::context::XPathContext::new",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::eval::eval",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathCompiledEval",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathContextSetCache",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_compile.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathConvertString",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathCtxtCompile",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathEvalPredicate",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathFunctionLookupNS",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathIsInf",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathIsNaN",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathNewString",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathNodeSetMerge",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathNsLookup",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathNumberFunction",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathStringFunction",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 10,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathWrapNodeSet",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::exports::xmlXPathWrapString",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::functions::core_functions",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::parser::parse_xpath",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/xslt/patterns/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::parser_context",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::parser_context::XmlXPathParserContext",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_compile.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 4,
+   "files": [
+    "src/xslt/patterns/mod.rs",
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types::NodeSet::new",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types::XPathValue",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types::XPathValue::NodeSet",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types::XPathValue::String",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 3,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpath::types::node_string_value",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::xml::xpointer::xmlXPtrEvalNodeSet",
+   "class": "BOUNDARY_VIOLATION",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  }
+ ],
+ "unclassified": [
+  {
+   "reference": "crate::abi::_xsltDecimalFormat",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/numbering/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::_xsltStylesheet",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/numbering/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::htmlNewDoc",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::htmlNewDocNoDtD",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlBufferCat",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlBufferContent",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlBufferCreate",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlBufferFree",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlCreateIntSubset",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlDocGetRootElement",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlFreeImpl",
+   "class": "UNCLASSIFIED",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_ext.rs",
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlMallocImpl",
+   "class": "UNCLASSIFIED",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_compile.rs",
+    "src/abi/exports_xslt_exec.rs",
+    "src/abi/exports_xslt_ext.rs",
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlNewDoc",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlNewDocProp",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlNewNsProp",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlNewTextLen",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_avt.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlReadFile",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/stylesheet/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlReadMemory",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/stylesheet/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlStrEqual",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlStrcmp",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlStrdup",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlStrndup",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathCastStringToNumber",
+   "class": "UNCLASSIFIED",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathCastToString",
+   "class": "UNCLASSIFIED",
+   "count": 3,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathCmpNodes",
+   "class": "UNCLASSIFIED",
+   "count": 2,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathEvalExpression",
+   "class": "UNCLASSIFIED",
+   "count": 2,
+   "files": [
+    "src/xslt/keys/mod.rs",
+    "src/xslt/sorting/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathFreeObject",
+   "class": "UNCLASSIFIED",
+   "count": 4,
+   "files": [
+    "src/abi/exports_xslt_exec.rs",
+    "src/xslt/keys/mod.rs",
+    "src/xslt/sorting/mod.rs",
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathNewNodeSet",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/keys/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathNodeSetCreate",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/keys/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xmlXPathObjectCopy",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/variables/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xsltEvalAttrValueTemplate",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::abi::xsltGetQNameURI",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_exec.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/abi/exports_xslt_functions.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt::EXSLT_NS_COMMON",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt::functions::register_stylesheet_functions",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt::iter_functions",
+   "class": "UNCLASSIFIED",
+   "count": 2,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt::lookup",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  },
+  {
+   "reference": "crate::exslt::register_all",
+   "class": "UNCLASSIFIED",
+   "count": 1,
+   "files": [
+    "src/xslt/transform/mod.rs"
+   ]
+  }
+ ],
+ "gateway_missing": [],
+ "verdict": "FAIL"
+}

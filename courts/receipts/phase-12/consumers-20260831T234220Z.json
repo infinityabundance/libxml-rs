@@ -1,0 +1,42 @@
+{
+  "court": "EXTERNAL-CONSUMERS",
+  "phase": "12",
+  "timestamp": "20260831T234220Z",
+  "schema": "external-consumers-1",
+  "source": "oracle/historical/src/libxml2-2.15.0/example (unmodified)",
+  "cases": [
+    {"item":"consumer:parse1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:parse2","status":"FAIL"},
+    {"item":"consumer:parse3 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:parse4","status":"FAIL"},
+    {"item":"consumer:reader1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:reader2","status":"FAIL"},
+    {"item":"consumer:reader3","status":"FAIL"},
+    {"item":"consumer:reader4","status":"FAIL"},
+    {"item":"consumer:tree1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:tree2:candidate-build","status":"FAIL"},
+    {"item":"consumer:xpath1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:xpath2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:io1","status":"FAIL"},
+    {"item":"consumer:io2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:testWriter:candidate-build","status":"FAIL"}
+  ],
+  "summary": { "passed": 7, "failed": 8 },
+  "failures": {
+    "consumer:testWriter:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/testWriter.c: In function ‘testXmlwriterTree’: /mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/testWriter.c:828:30: error: ‘XML_DEFAULT_VERSION’ undeclared (first use in this function)   828 |     doc = xmlNewDoc(BAD_CAST XML_DEFAULT_VERSION); "
+,
+    "consumer:io1": "oracle-rc=0 candidate-rc=1 out-diff=1 err-diff=1"
+,
+    "consumer:parse2": "oracle-rc=0 candidate-rc=0 out-diff=0 err-diff=1"
+,
+    "consumer:parse4": "oracle-rc=0 candidate-rc=0 out-diff=0 err-diff=1"
+,
+    "consumer:tree2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/tree2.c: In function ‘main’: /mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/tree2.c:95:5: error: implicit declaration of function ‘xmlSaveFormatFileEnc’; did you mean ‘xmlSaveFileEnc’? [-Wimplicit-function-declaration]    95 |     xmlSaveFormatFileEnc(argc > 1 ? argv[1] : -, doc, UTF-8, 1); "
+,
+    "consumer:reader2": "oracle-rc=0 candidate-rc=0 out-diff=0 err-diff=1"
+,
+    "consumer:reader3": "oracle-rc=0 candidate-rc=134 out-diff=1 err-diff=1"
+,
+    "consumer:reader4": "oracle-rc=0 candidate-rc=134 out-diff=1 err-diff=1"
+  }
+}

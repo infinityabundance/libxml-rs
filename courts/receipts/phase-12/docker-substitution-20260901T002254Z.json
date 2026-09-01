@@ -1,0 +1,41 @@
+{
+  "court": "DOCKER-SUBSTITUTION",
+  "phase": "12",
+  "timestamp": "20260901T002254Z",
+  "schema": "docker-substitution-1",
+  "image": "libxml-rs/docker-substitution (FROM libxml-rs/oracle:2.15.3)",
+  "container": {
+    "os": "Debian GNU/Linux",
+    "glibc": "ldd (Debian GLIBC 2.36-9+deb12u14) 2.36",
+    "oracle": "/usr/local/bin/xmllint: using libxml version 21503"
+  },
+  "substitution": {
+    "oracle_rc": "0",
+    "candidate_rc": "127",
+    "byte_identical": "false"
+  },
+  "cases": [
+    {"item":"build:consumer-vs-container-oracle","status":"PASS"},
+    {"item":"substitution:oracle-linked-binary-on-candidate","status":"FAIL"},
+    {"item":"substitution:no-ld.so-version-warnings","status":"PASS"},
+    {"item":"substitution:ldd-resolves-into-candidate","status":"PASS"},
+    {"item":"version:dlvsym-named-nodes","status":"FAIL"},
+    {"item":"elf:libxml2 unversioned on both sides","status":"PASS"},
+    {"item":"elf:libxslt node set == oracle chain + terminal LIBXML2_1.1.45","status":"PASS"},
+    {"item":"elf:libexslt unversioned on both sides","status":"PASS"},
+    {"item":"elf:libxslt per-symbol nodes == oracle","status":"PASS"},
+    {"item":"elf:libxslt NEEDs libxml2.so.16","status":"PASS"},
+    {"item":"elf:consumer VERNEED libxslt.so.1(LIBXML2_1.x)","status":"PASS"},
+    {"item":"pkgconfig:probe2-oracle-baseline","status":"PASS"},
+    {"item":"pkgconfig:candidate .pc files resolve","status":"PASS"},
+    {"item":"pkgconfig:consumer build","status":"FAIL"}
+  ],
+  "summary": { "passed": 11, "failed": 3 },
+  "failures": {
+    "substitution:oracle-linked-binary-on-candidate": "oracle-rc=0 candidate-rc=127 out-diff=1 err-diff=1"
+,
+    "version:dlvsym-named-nodes": ""
+,
+    "pkgconfig:consumer build": "/probe/substitution-consumer2.c:12:10: fatal error: libxml/parser.h: No such file or directory    12 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ compilation terminated. "
+  }
+}

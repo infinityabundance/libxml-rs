@@ -1,0 +1,25 @@
+{
+  "court": "BUILD-PKGCONFIG",
+  "phase": "11.1-S",
+  "timestamp": "2026-09-01T00:16:21Z",
+  "artifact": "/mnt/1tb_kingston/libxml-rs/target/debug",
+  "compiler": "cc (GCC) 16.2.1 20260810",
+  "pkg_config": "3.0.6",
+  "cases": [
+    {"item":"cc-xml2-config","status":"PASS"},
+    {"item":"cc-pkgconfig-libxml","status":"PASS"},
+    {"item":"cc-xslt-config","status":"PASS"},
+    {"item":"cc-pkgconfig-libxslt","status":"PASS"},
+    {"item":"cc-pkgconfig-libexslt","status":"PASS"},
+    {"item":"pkg-config:libxml-2.0:modversion=2.15.3","status":"PASS"},
+    {"item":"pkg-config:libxml-2.0:exists","status":"PASS"},
+    {"item":"pkg-config:libxslt:modversion=1.1.45","status":"PASS"},
+    {"item":"pkg-config:libxslt:exists","status":"PASS"},
+    {"item":"pkg-config:libexslt:modversion=0.8.25","status":"PASS"},
+    {"item":"pkg-config:libexslt:exists","status":"PASS"},
+    {"item":"pkg-config:libxslt:cflags-include","status":"PASS"}
+  ],
+  "summary": { "passed": 12, "failed": 0 },
+  "failures": {
+  }
+}

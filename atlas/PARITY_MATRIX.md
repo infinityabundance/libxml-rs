@@ -13,10 +13,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 1408 |
 | oracle_dso | 1395 |
 | candidate_headers | 1395 |
-| candidate_dso | 1713 |
+| candidate_dso | 1672 |
 | fully_reconciled | 1395 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 318 |
+| candidate_extra | 277 |
 
 ### exported_data
 
@@ -27,10 +27,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 18 |
 | oracle_dso | 22 |
 | candidate_headers | 38 |
-| candidate_dso | 52 |
+| candidate_dso | 41 |
 | fully_reconciled | 22 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 30 |
+| candidate_extra | 19 |
 
 ### struct fields
 
@@ -68,10 +68,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 244 |
 | oracle_dso | 232 |
 | candidate_headers | 250 |
-| candidate_dso | 251 |
+| candidate_dso | 239 |
 | fully_reconciled | 232 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 19 |
+| candidate_extra | 7 |
 
 ### exported_data
 
@@ -123,10 +123,10 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_headers | 14 |
 | oracle_dso | 13 |
 | candidate_headers | 14 |
-| candidate_dso | 14 |
+| candidate_dso | 13 |
 | fully_reconciled | 13 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 1 |
+| candidate_extra | 0 |
 
 ### exported_data
 
@@ -173,17 +173,17 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1395, candidate DSO 1713, reconciled all four 1374, oracle-only 5, candidate-only 310
-- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 52, reconciled all four 18, oracle-only 0, candidate-only 31
+- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1395, candidate DSO 1672, reconciled all four 1374, oracle-only 0, candidate-only 264
+- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 41, reconciled all four 18, oracle-only 0, candidate-only 20
 
 ## libxslt
 
-- functions: oracle headers 244, oracle DSO 232, candidate headers 250, candidate DSO 251, reconciled all four 232, oracle-only 0, candidate-only 15
+- functions: oracle headers 244, oracle DSO 232, candidate headers 250, candidate DSO 239, reconciled all four 232, oracle-only 0, candidate-only 6
 - data: oracle headers 11, oracle DSO 11, candidate headers 11, candidate DSO 11, reconciled all four 11, oracle-only 0, candidate-only 0
 
 ## libexslt
 
-- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 14, reconciled all four 13, oracle-only 0, candidate-only 0
+- functions: oracle headers 14, oracle DSO 13, candidate headers 14, candidate DSO 13, reconciled all four 13, oracle-only 0, candidate-only 0
 - data: oracle headers 4, oracle DSO 4, candidate headers 4, candidate DSO 4, reconciled all four 4, oracle-only 0, candidate-only 0
 
 ---

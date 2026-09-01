@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc6-dev \
     libz-dev \
     liblzma-dev \
+    libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Build Arguments ──────────────────────────────────────────────────────

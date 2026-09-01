@@ -14,10 +14,10 @@
      "oracle_headers": 1408,
      "oracle_dso": 1395,
      "candidate_headers": 1395,
-     "candidate_dso": 1713,
+     "candidate_dso": 1672,
      "fully_reconciled": 1395,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 318
+     "candidate_extra": 277
     },
     "exported_data": {
      "oracle_doxygen": 625,
@@ -25,10 +25,10 @@
      "oracle_headers": 18,
      "oracle_dso": 22,
      "candidate_headers": 38,
-     "candidate_dso": 52,
+     "candidate_dso": 41,
      "fully_reconciled": 22,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 30
+     "candidate_extra": 19
     },
     "struct_fields": {
      "abi_ledger_measurable": 658,
@@ -73,10 +73,10 @@
      "oracle_headers": 244,
      "oracle_dso": 232,
      "candidate_headers": 250,
-     "candidate_dso": 251,
+     "candidate_dso": 239,
      "fully_reconciled": 232,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 19
+     "candidate_extra": 7
     },
     "exported_data": {
      "oracle_doxygen": 279,
@@ -132,10 +132,10 @@
      "oracle_headers": 14,
      "oracle_dso": 13,
      "candidate_headers": 14,
-     "candidate_dso": 14,
+     "candidate_dso": 13,
      "fully_reconciled": 13,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 1
+     "candidate_extra": 0
     },
     "exported_data": {
      "oracle_doxygen": 4,

@@ -1,0 +1,2872 @@
+{
+ "court": "CUSTODIAN-COMMENTARY-DRIFT",
+ "phase": "11.1-Z.3",
+ "timestamp": "20260901T004021Z",
+ "schema": "custodian-commentary-drift-2",
+ "checks": {
+  "A-mutable-count": "no (N/N) court-verdict counts embedded in source",
+  "B-residual-unresolved": "every R-\\d{6} resolves in the residual ledger",
+  "C-court-unresolved": "every court/probe/casefile ID is known",
+  "D-receipt-path-unresolved": "every courts/receipts mention exists",
+  "E-epoch-unresolved": "every E-\\d{3} resolves in the epochs atlas"
+ },
+ "verdict_gates": {
+  "reference_drift": "A-E findings must be 0",
+  "unsafe_blocks_unaccounted": "must be 0 (11.2 goal: unexplained unsafe blocks: 0)",
+  "unsafe_fns_unaccounted": "must be 0 (11.2 goal: unexplained unsafe functions: 0)",
+  "rustdoc": "RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --all-features must pass"
+ },
+ "modules_total": 134,
+ "findings": [],
+ "summary": {
+  "A-mutable-count": 0,
+  "B-residual-unresolved": 0,
+  "C-court-unresolved": 0,
+  "D-receipt-path-unresolved": 0,
+  "E-epoch-unresolved": 0
+ },
+ "coverage_census": {
+  "exports": {
+   "total": 1971,
+   "documented": 1971,
+   "undocumented": []
+  },
+  "unsafe_fns": {
+   "total": 1816,
+   "documented": 1800,
+   "scope_covered": 16,
+   "undocumented": []
+  },
+  "unsafe_blocks": {
+   "total": 5278,
+   "local_proof": 2533,
+   "enclosing_proof_scope": 2739,
+   "classified_generated": 1,
+   "unaccounted": 5
+  }
+ },
+ "unsafe_fn_unaccounted": [],
+ "rustdoc": {
+  "command": "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps --all-features",
+  "exit_code": 0,
+  "clean": true,
+  "stderr_tail": "debug/lib\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/bin/xml2-config\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/bin/xslt-config\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/lib/libxml2.la\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/lib/libxslt.la\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/lib/libexslt.la\"\nwarning: libxml-rs@0.1.0-alpha.36: Generated \"/mnt/1tb_kingston/libxml-rs/target/debug/lib/xsltConf.sh\"\nwarning: libxml-rs@0.1.0-alpha.36: Installed headers into \"/mnt/1tb_kingston/libxml-rs/target/debug/include\"\n Documenting libxml-rs v0.1.0-alpha.36 (/mnt/1tb_kingston/libxml-rs)\nwarning: unnecessary `unsafe` block\n   --> src/abi/allocator.rs:714:5\n    |\n714 |     unsafe { core::ptr::addr_of_mut!(xmlMalloc) }\n    |     ^^^^^^ unnecessary `unsafe` block\n    |\n    = note: `#[warn(unused_unsafe)]` (part of `#[warn(unused)]`) on by default\n\nwarning: unnecessary `unsafe` block\n   --> src/abi/allocator.rs:720:5\n    |\n720 |     unsafe { core::ptr::addr_of_mut!(xmlMallocAtomic) }\n    |     ^^^^^^ unnecessary `unsafe` block\n\nwarning: unnecessary `unsafe` block\n   --> src/abi/allocator.rs:726:5\n    |\n726 |     unsafe { core::ptr::addr_of_mut!(xmlRealloc) }\n    |     ^^^^^^ unnecessary `unsafe` block\n\nwarning: unnecessary `unsafe` block\n   --> src/abi/allocator.rs:732:5\n    |\n732 |     unsafe { core::ptr::addr_of_mut!(xmlFree) }\n    |     ^^^^^^ unnecessary `unsafe` block\n\nwarning: unnecessary `unsafe` block\n   --> src/abi/allocator.rs:738:5\n    |\n738 |     unsafe { core::ptr::addr_of_mut!(xmlMemStrdup) }\n    |     ^^^^^^ unnecessary `unsafe` block\n\nwarning: `libxml-rs` (lib) generated 5 warnings\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.29s\n   Generated /mnt/1tb_kingston/libxml-rs/target/doc/libxml_rs/index.html and 3 other files\n"
+ },
+ "coverage_per_module": [
+  {
+   "module": "src/abi/allocator.rs",
+   "exports": {
+    "total": 29,
+    "documented": 29,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 39,
+    "documented": 39,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 62,
+    "local_proof": 41,
+    "enclosing_proof_scope": 16,
+    "classified_generated": 0,
+    "unaccounted": 5
+   }
+  },
+  {
+   "module": "src/abi/callbacks.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/constants.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/data_globals.rs",
+   "exports": {
+    "total": 49,
+    "documented": 49,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 52,
+    "documented": 52,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "local_proof": 38,
+    "enclosing_proof_scope": 13,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_automata.rs",
+   "exports": {
+    "total": 26,
+    "documented": 26,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 27,
+    "documented": 27,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "local_proof": 5,
+    "enclosing_proof_scope": 55,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_buffer.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 14,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "local_proof": 14,
+    "enclosing_proof_scope": 10,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_hash.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 15,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 36,
+    "local_proof": 8,
+    "enclosing_proof_scope": 28,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_html.rs",
+   "exports": {
+    "total": 59,
+    "documented": 59,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 59,
+    "documented": 59,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 176,
+    "local_proof": 2,
+    "enclosing_proof_scope": 174,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_misc.rs",
+   "exports": {
+    "total": 41,
+    "documented": 41,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 38,
+    "documented": 38,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 170,
+    "local_proof": 0,
+    "enclosing_proof_scope": 170,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_nano.rs",
+   "exports": {
+    "total": 48,
+    "documented": 48,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 48,
+    "documented": 48,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "local_proof": 0,
+    "enclosing_proof_scope": 19,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_parser.rs",
+   "exports": {
+    "total": 83,
+    "documented": 83,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 84,
+    "documented": 84,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 94,
+    "local_proof": 30,
+    "enclosing_proof_scope": 64,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_parserint.rs",
+   "exports": {
+    "total": 99,
+    "documented": 99,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 104,
+    "documented": 104,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 172,
+    "local_proof": 0,
+    "enclosing_proof_scope": 172,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_relaxng.rs",
+   "exports": {
+    "total": 18,
+    "documented": 18,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 18,
+    "documented": 18,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "local_proof": 19,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_schema.rs",
+   "exports": {
+    "total": 59,
+    "documented": 59,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 55,
+    "documented": 55,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 122,
+    "local_proof": 118,
+    "enclosing_proof_scope": 4,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_shell.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 15,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 151,
+    "local_proof": 8,
+    "enclosing_proof_scope": 143,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_string.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 14,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "local_proof": 17,
+    "enclosing_proof_scope": 34,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_tree.rs",
+   "exports": {
+    "total": 56,
+    "documented": 56,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 62,
+    "documented": 56,
+    "scope_covered": 6,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 356,
+    "local_proof": 60,
+    "enclosing_proof_scope": 296,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_treedump.rs",
+   "exports": {
+    "total": 36,
+    "documented": 36,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 49,
+    "documented": 39,
+    "scope_covered": 10,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 128,
+    "local_proof": 50,
+    "enclosing_proof_scope": 78,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_uri.rs",
+   "exports": {
+    "total": 11,
+    "documented": 11,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 11,
+    "documented": 11,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 37,
+    "local_proof": 12,
+    "enclosing_proof_scope": 25,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xinclude.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 10,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 31,
+    "local_proof": 22,
+    "enclosing_proof_scope": 9,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xlink.rs",
+   "exports": {
+    "total": 5,
+    "documented": 5,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 5,
+    "documented": 5,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "local_proof": 5,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xml2.rs",
+   "exports": {
+    "total": 416,
+    "documented": 416,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 322,
+    "documented": 322,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 110,
+    "local_proof": 26,
+    "enclosing_proof_scope": 84,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xptr.rs",
+   "exports": {
+    "total": 19,
+    "documented": 19,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 19,
+    "documented": 19,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "local_proof": 0,
+    "enclosing_proof_scope": 24,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 2,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "local_proof": 1,
+    "enclosing_proof_scope": 4,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_apply.rs",
+   "exports": {
+    "total": 20,
+    "documented": 20,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 20,
+    "documented": 20,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_avt.rs",
+   "exports": {
+    "total": 24,
+    "documented": 24,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 24,
+    "documented": 24,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "local_proof": 0,
+    "enclosing_proof_scope": 9,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_compile.rs",
+   "exports": {
+    "total": 25,
+    "documented": 25,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 26,
+    "documented": 26,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_exec.rs",
+   "exports": {
+    "total": 26,
+    "documented": 26,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 26,
+    "documented": 26,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 1,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_ext.rs",
+   "exports": {
+    "total": 28,
+    "documented": 28,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 28,
+    "documented": 28,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 12,
+    "local_proof": 0,
+    "enclosing_proof_scope": 12,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_functions.rs",
+   "exports": {
+    "total": 18,
+    "documented": 18,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 19,
+    "documented": 19,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 22,
+    "local_proof": 4,
+    "enclosing_proof_scope": 18,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_internals.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_util.rs",
+   "exports": {
+    "total": 27,
+    "documented": 27,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 28,
+    "documented": 28,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 0,
+    "enclosing_proof_scope": 2,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/exports_xslt_vars.rs",
+   "exports": {
+    "total": 34,
+    "documented": 34,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 34,
+    "documented": 34,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/ownership.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 0,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/structs.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/types.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/ucs_blocks.rs",
+   "exports": {
+    "total": 128,
+    "documented": 128,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/ucs_cat.rs",
+   "exports": {
+    "total": 35,
+    "documented": 35,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/abi/versioning.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/bin/xmlcatalog.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 0,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/bin/xmllint.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "local_proof": 2,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/bin/xsltproc.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 29,
+    "local_proof": 3,
+    "enclosing_proof_scope": 26,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/compatibility/historical/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/compatibility/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/compatibility/platform/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/compatibility/profiles/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/compatibility/quirks/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/common/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "local_proof": 3,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/dates/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 0,
+    "enclosing_proof_scope": 2,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/dynamic/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "local_proof": 5,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/functions/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/math/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 0,
+    "enclosing_proof_scope": 2,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/mod.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/saxon/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "local_proof": 6,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/sets/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "local_proof": 4,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/exslt/strings/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 7,
+    "local_proof": 0,
+    "enclosing_proof_scope": 7,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/internal/globals.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/internal/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/lib.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/automata/mod.rs",
+   "exports": {
+    "total": 15,
+    "documented": 15,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 15,
+    "documented": 15,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 32,
+    "local_proof": 13,
+    "enclosing_proof_scope": 19,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/c14n/mod.rs",
+   "exports": {
+    "total": 3,
+    "documented": 3,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 4,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 135,
+    "local_proof": 57,
+    "enclosing_proof_scope": 78,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/catalog/mod.rs",
+   "exports": {
+    "total": 25,
+    "documented": 25,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 25,
+    "documented": 25,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 54,
+    "local_proof": 31,
+    "enclosing_proof_scope": 23,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/chvalid.rs",
+   "exports": {
+    "total": 11,
+    "documented": 11,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 11,
+    "documented": 11,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 19,
+    "local_proof": 17,
+    "enclosing_proof_scope": 2,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/debug/mod.rs",
+   "exports": {
+    "total": 11,
+    "documented": 11,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 13,
+    "documented": 13,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "local_proof": 17,
+    "enclosing_proof_scope": 16,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/dictionary/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 26,
+    "local_proof": 21,
+    "enclosing_proof_scope": 5,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/dtd/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 75,
+    "local_proof": 65,
+    "enclosing_proof_scope": 10,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/encoding/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 10,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "local_proof": 11,
+    "enclosing_proof_scope": 49,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/entities/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 38,
+    "local_proof": 27,
+    "enclosing_proof_scope": 11,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/errors/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 40,
+    "local_proof": 30,
+    "enclosing_proof_scope": 10,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/globals/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 34,
+    "local_proof": 31,
+    "enclosing_proof_scope": 3,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/hash/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 28,
+    "local_proof": 22,
+    "enclosing_proof_scope": 6,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/html/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 125,
+    "local_proof": 41,
+    "enclosing_proof_scope": 84,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/io/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 9,
+    "documented": 9,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 180,
+    "local_proof": 61,
+    "enclosing_proof_scope": 119,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/list/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 115,
+    "local_proof": 77,
+    "enclosing_proof_scope": 38,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/memory/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/namespaces/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/debug_test.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "local_proof": 3,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/helpers.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 25,
+    "local_proof": 25,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/input.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "local_proof": 2,
+    "enclosing_proof_scope": 7,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/state.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 99,
+    "local_proof": 27,
+    "enclosing_proof_scope": 72,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/tests.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 13,
+    "local_proof": 11,
+    "enclosing_proof_scope": 2,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/parser/tokenizer.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/reader/mod.rs",
+   "exports": {
+    "total": 90,
+    "documented": 90,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 90,
+    "documented": 90,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 380,
+    "local_proof": 290,
+    "enclosing_proof_scope": 90,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/regex/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 37,
+    "local_proof": 30,
+    "enclosing_proof_scope": 7,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/relaxng/mod.rs",
+   "exports": {
+    "total": 9,
+    "documented": 9,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 9,
+    "documented": 9,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 147,
+    "local_proof": 102,
+    "enclosing_proof_scope": 45,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/save.rs",
+   "exports": {
+    "total": 14,
+    "documented": 14,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 14,
+    "documented": 14,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 20,
+    "local_proof": 20,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/sax/default.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 31,
+    "documented": 31,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 46,
+    "local_proof": 43,
+    "enclosing_proof_scope": 3,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/sax/dispatch.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "local_proof": 33,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/sax/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/schemas/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 66,
+    "local_proof": 56,
+    "enclosing_proof_scope": 10,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/schematron/mod.rs",
+   "exports": {
+    "total": 16,
+    "documented": 16,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 16,
+    "documented": 16,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 97,
+    "local_proof": 66,
+    "enclosing_proof_scope": 31,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/string.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 16,
+    "local_proof": 15,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/threads/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "local_proof": 4,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/tree/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 264,
+    "local_proof": 154,
+    "enclosing_proof_scope": 110,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/unicode_tables.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/uri/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 60,
+    "local_proof": 34,
+    "enclosing_proof_scope": 26,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/validation/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 4,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 147,
+    "local_proof": 120,
+    "enclosing_proof_scope": 27,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/writer/mod.rs",
+   "exports": {
+    "total": 68,
+    "documented": 68,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 70,
+    "documented": 70,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 152,
+    "local_proof": 123,
+    "enclosing_proof_scope": 28,
+    "classified_generated": 1,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xinclude/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 139,
+    "local_proof": 82,
+    "enclosing_proof_scope": 57,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/ast.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/axes.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 0,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/context.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 2,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 9,
+    "local_proof": 9,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/eval.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 1,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/exports.rs",
+   "exports": {
+    "total": 137,
+    "documented": 137,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 137,
+    "documented": 137,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 184,
+    "local_proof": 78,
+    "enclosing_proof_scope": 106,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/functions.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "local_proof": 3,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/lexer.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/parser_context.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 33,
+    "local_proof": 29,
+    "enclosing_proof_scope": 4,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpath/types.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 1,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xml/xpointer/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 2,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 62,
+    "local_proof": 33,
+    "enclosing_proof_scope": 29,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/attributes/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 1,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/compiler/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 44,
+    "local_proof": 5,
+    "enclosing_proof_scope": 39,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/documents/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 2,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/errors/mod.rs",
+   "exports": {
+    "total": 1,
+    "documented": 1,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 1,
+    "documented": 1,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 14,
+    "local_proof": 8,
+    "enclosing_proof_scope": 6,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/extensions/mod.rs",
+   "exports": {
+    "total": 2,
+    "documented": 2,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 2,
+    "documented": 2,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "local_proof": 2,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/imports/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 1,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/keys/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 0,
+    "local_proof": 0,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/namespace_alias/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "local_proof": 2,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/numbering/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 28,
+    "local_proof": 20,
+    "enclosing_proof_scope": 8,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/parameters/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "local_proof": 3,
+    "enclosing_proof_scope": 3,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/patterns/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 24,
+    "local_proof": 24,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/security/mod.rs",
+   "exports": {
+    "total": 6,
+    "documented": 6,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 7,
+    "documented": 7,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 5,
+    "local_proof": 4,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/serialization/mod.rs",
+   "exports": {
+    "total": 4,
+    "documented": 4,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 4,
+    "documented": 4,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 8,
+    "local_proof": 4,
+    "enclosing_proof_scope": 4,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/sorting/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 2,
+    "local_proof": 2,
+    "enclosing_proof_scope": 0,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/stylesheet/mod.rs",
+   "exports": {
+    "total": 8,
+    "documented": 8,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 8,
+    "documented": 8,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 4,
+    "local_proof": 3,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/templates/mod.rs",
+   "exports": {
+    "total": 7,
+    "documented": 7,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 7,
+    "documented": 7,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 1,
+    "local_proof": 0,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/transform/mod.rs",
+   "exports": {
+    "total": 10,
+    "documented": 10,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 10,
+    "documented": 10,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 51,
+    "local_proof": 20,
+    "enclosing_proof_scope": 31,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/variables/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 6,
+    "local_proof": 3,
+    "enclosing_proof_scope": 3,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  },
+  {
+   "module": "src/xslt/whitespace/mod.rs",
+   "exports": {
+    "total": 0,
+    "documented": 0,
+    "undocumented": []
+   },
+   "unsafe_fns": {
+    "total": 0,
+    "documented": 0,
+    "scope_covered": 0,
+    "undocumented": []
+   },
+   "unsafe_blocks": {
+    "total": 3,
+    "local_proof": 2,
+    "enclosing_proof_scope": 1,
+    "classified_generated": 0,
+    "unaccounted": 0
+   }
+  }
+ ],
+ "verdict": "FAIL"
+}

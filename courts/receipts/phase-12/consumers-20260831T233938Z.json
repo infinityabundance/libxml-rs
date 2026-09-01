@@ -1,0 +1,56 @@
+{
+  "court": "EXTERNAL-CONSUMERS",
+  "phase": "12",
+  "timestamp": "20260831T233938Z",
+  "schema": "external-consumers-1",
+  "source": "oracle/historical/src/libxml2-2.15.0/example (unmodified)",
+  "cases": [
+    {"item":"consumer:parse1:candidate-build","status":"FAIL"},
+    {"item":"consumer:parse2:candidate-build","status":"FAIL"},
+    {"item":"consumer:parse3:candidate-build","status":"FAIL"},
+    {"item":"consumer:parse4:candidate-build","status":"FAIL"},
+    {"item":"consumer:reader1:candidate-build","status":"FAIL"},
+    {"item":"consumer:reader2:candidate-build","status":"FAIL"},
+    {"item":"consumer:reader3:candidate-build","status":"FAIL"},
+    {"item":"consumer:reader4:candidate-build","status":"FAIL"},
+    {"item":"consumer:tree1:candidate-build","status":"FAIL"},
+    {"item":"consumer:tree2:candidate-build","status":"FAIL"},
+    {"item":"consumer:xpath1:candidate-build","status":"FAIL"},
+    {"item":"consumer:xpath2:candidate-build","status":"FAIL"},
+    {"item":"consumer:io1:candidate-build","status":"FAIL"},
+    {"item":"consumer:io2:candidate-build","status":"FAIL"},
+    {"item":"consumer:testWriter:candidate-build","status":"FAIL"}
+  ],
+  "summary": { "passed": 0, "failed": 15 },
+  "failures": {
+    "consumer:reader2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/reader2.c:16:10: fatal error: libxml/xmlreader.h: No such file or directory    16 | #include <libxml/xmlreader.h>       |          ^~~~~~~~~~~~~~~~~~~~ "
+,
+    "consumer:parse3:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/parse3.c:13:10: fatal error: libxml/parser.h: No such file or directory    13 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:tree1:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/tree1.c:13:10: fatal error: libxml/parser.h: No such file or directory    13 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:xpath2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/xpath2.c:16:10: fatal error: libxml/tree.h: No such file or directory    16 | #include <libxml/tree.h>       |          ^~~~~~~~~~~~~~~ "
+,
+    "consumer:xpath1:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/xpath1.c:16:10: fatal error: libxml/tree.h: No such file or directory    16 | #include <libxml/tree.h>       |          ^~~~~~~~~~~~~~~ "
+,
+    "consumer:testWriter:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/testWriter.c:16:10: fatal error: libxml/encoding.h: No such file or directory    16 | #include <libxml/encoding.h>       |          ^~~~~~~~~~~~~~~~~~~ "
+,
+    "consumer:reader1:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/reader1.c:15:10: fatal error: libxml/xmlreader.h: No such file or directory    15 | #include <libxml/xmlreader.h>       |          ^~~~~~~~~~~~~~~~~~~~ "
+,
+    "consumer:parse4:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/parse4.c:14:10: fatal error: libxml/parser.h: No such file or directory    14 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:parse2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/parse2.c:14:10: fatal error: libxml/parser.h: No such file or directory    14 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:io2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/io2.c:12:10: fatal error: libxml/parser.h: No such file or directory    12 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:io1:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/io1.c:17:10: fatal error: libxml/parser.h: No such file or directory    17 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:reader3:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/reader3.c:16:10: fatal error: libxml/xmlreader.h: No such file or directory    16 | #include <libxml/xmlreader.h>       |          ^~~~~~~~~~~~~~~~~~~~ "
+,
+    "consumer:tree2:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/tree2.c:12:10: fatal error: libxml/parser.h: No such file or directory    12 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+,
+    "consumer:reader4:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/reader4.c:15:10: fatal error: libxml/xmlreader.h: No such file or directory    15 | #include <libxml/xmlreader.h>       |          ^~~~~~~~~~~~~~~~~~~~ "
+,
+    "consumer:parse1:candidate-build": "/mnt/1tb_kingston/libxml-rs/oracle/historical/src/libxml2-2.15.0/example/parse1.c:13:10: fatal error: libxml/parser.h: No such file or directory    13 | #include <libxml/parser.h>       |          ^~~~~~~~~~~~~~~~~ "
+  }
+}

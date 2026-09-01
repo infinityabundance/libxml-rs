@@ -3063,6 +3063,10 @@ struct DumpState {
     indent_len: c_int,
     /// Suppress the XML declaration (XML_SAVE_NO_DECL, upstream `no_decl`).
     no_decl: c_int,
+    /// The encoding name for the XML declaration (upstream `ctxt->encoding`);
+    /// NULL means "use the document's own encoding" (upstream
+    /// `if (encoding == NULL) encoding = cur->encoding;`).
+    encoding: *const xmlChar,
 }
 
 impl DumpState {
@@ -3075,17 +3079,26 @@ impl DumpState {
             indent: INDENT.as_ptr(),
             indent_len: INDENT.len() as c_int,
             no_decl: 0,
+            encoding: ptr::null(),
         }
     }
 
-    /// Create a state with a custom indent string (xmlSaveSetIndentString)
-    /// and the XML_SAVE_NO_DECL option.
+    /// Create a state with a custom indent string (xmlSaveSetIndentString),
+    /// the XML_SAVE_NO_DECL option, and an encoding name for the XML
+    /// declaration (upstream `ctxt->encoding`; NULL = use `doc->encoding`).
     ///
     /// # SAFETY
     ///
     /// - `indent` must be NULL or a valid NUL-terminated string that stays
     ///   alive for the whole dump.
-    const unsafe fn with_indent(format: c_int, indent: *const xmlChar, no_decl: c_int) -> Self {
+    /// - `encoding` must be NULL or a valid NUL-terminated string that stays
+    ///   alive for the whole dump.
+    const unsafe fn with_indent_enc(
+        format: c_int,
+        indent: *const xmlChar,
+        no_decl: c_int,
+        encoding: *const xmlChar,
+    ) -> Self {
         let f = if format != 0 { 1 } else { 0 };
         let (ptr, len) = if indent.is_null() {
             (INDENT.as_ptr(), INDENT.len() as c_int)
@@ -3103,6 +3116,7 @@ impl DumpState {
             indent: ptr,
             indent_len: len,
             no_decl,
+            encoding,
         }
     }
 }
@@ -3684,9 +3698,12 @@ unsafe fn doc_content_dump_output(
     let doc = cur as *mut _xmlDoc;
     let d = unsafe { &*doc };
 
-    // XML declaration: `<?xml version="..."?>\n`. The encoding is included
-    // only when the document carries one. Suppressed by the
-    // XML_SAVE_NO_DECL save option (upstream xmlsave.c `no_decl`).
+    // XML declaration: `<?xml version="..."?>` plus the encoding and
+    // standalone attributes. The encoding is the save-context encoding when
+    // one is set (upstream `ctxt->encoding`), falling back to the
+    // document's own encoding (upstream xmlsave.c xmlSaveDocInternal:
+    // `if (encoding == NULL) encoding = cur->encoding;`). Suppressed by the
+    // XML_SAVE_NO_DECL save option (upstream `no_decl`).
     if state.no_decl == 0 {
         io::buf_add(buf, b"<?xml version=\"" as *const u8, 15);
         if !d.version.is_null() {
@@ -3695,9 +3712,14 @@ unsafe fn doc_content_dump_output(
             io::buf_add(buf, b"1.0" as *const u8, 3);
         }
         io::buf_ccat(buf, b'"');
-        if !d.encoding.is_null() {
+        let enc = if state.encoding.is_null() {
+            d.encoding
+        } else {
+            state.encoding
+        };
+        if !enc.is_null() {
             io::buf_add(buf, b" encoding=\"" as *const u8, 11);
-            io::buf_cat(buf, d.encoding);
+            io::buf_cat(buf, enc);
             io::buf_ccat(buf, b'"');
         }
         match d.standalone {
@@ -4028,11 +4050,32 @@ pub(crate) unsafe fn serialize_node_opts(
     indent: *const xmlChar,
     no_decl: c_int,
 ) {
+    unsafe { serialize_node_opts_enc(node, buf, format, level, indent, no_decl, ptr::null()) };
+}
+
+/// Like `serialize_node_opts`, plus an encoding name for the XML
+/// declaration (upstream `ctxt->encoding`; NULL = use `doc->encoding`).
+///
+/// # SAFETY
+///
+/// - `indent` must be NULL or a valid NUL-terminated string that stays
+///   alive for the whole dump.
+/// - `encoding` must be NULL or a valid NUL-terminated string that stays
+///   alive for the whole dump.
+pub(crate) unsafe fn serialize_node_opts_enc(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+    no_decl: c_int,
+    encoding: *const xmlChar,
+) {
     if node.is_null() || buf.is_null() {
         return;
     }
     let parent = unsafe { (*node).parent };
-    let mut state = DumpState::with_indent(format, indent, no_decl);
+    let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
     let mut lvl = level;
     node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
 }
@@ -4092,44 +4135,6 @@ pub(crate) unsafe fn node_dump(
         return -1;
     }
     after - before
-}
-
-/// Save a document to a file.
-///
-/// # SAFETY
-///
-/// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
-/// - `filename` must be a valid null-terminated C string.
-pub(crate) unsafe fn save_doc_to_filename(
-    doc: *mut _xmlDoc,
-    filename: *const c_char,
-    compression: c_int,
-) -> c_int {
-    if doc.is_null() || filename.is_null() {
-        return -1;
-    }
-
-    let out = io::output_buffer_create_filename(filename, ptr::null_mut(), compression);
-    if out.is_null() {
-        return -1;
-    }
-
-    let buf = io::buf_create(-1);
-    if buf.is_null() {
-        io::output_buffer_close(out);
-        return -1;
-    }
-
-    let ret = doc_dump(buf, doc);
-    if ret >= 0 {
-        // Flush the buffer content to the output
-        io::output_buffer_write_string(out, io::buf_content(buf) as *const c_char);
-        io::output_buffer_flush(out);
-    }
-
-    io::buf_free(buf);
-    io::output_buffer_close(out);
-    ret
 }
 
 /// Save a document to a file descriptor.
@@ -4427,7 +4432,8 @@ pub(crate) unsafe fn xmlDocDumpMemory(doc: *mut _xmlDoc, mem: *mut *mut xmlChar,
     xmlDocDumpFormatMemory(doc, mem, size, 0)
 }
 
-/// Save a document to a file (ABI wrapper).
+/// Save a document to a file (ABI wrapper). Upstream tree.c 2.15:
+/// `xmlSaveFile` = `xmlSaveFormatFileEnc(filename, cur, NULL, 0)`.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -4440,10 +4446,11 @@ pub(crate) unsafe fn xmlDocDumpMemory(doc: *mut _xmlDoc, mem: *mut *mut xmlChar,
 /// - `filename` must be a valid null-terminated C string.
 /// - `cur` must be a valid pointer to an `_xmlDoc`, or NULL.
 pub(crate) unsafe fn xmlSaveFile(filename: *const c_char, cur: *mut _xmlDoc) -> c_int {
-    save_doc_to_filename(cur, filename, 0)
+    unsafe { xmlSaveFormatFileEnc(filename, cur, ptr::null(), 0) }
 }
 
-/// Save a document to a file with encoding.
+/// Save a document to a file with encoding. Upstream tree.c 2.15:
+/// `xmlSaveFileEnc` = `xmlSaveFormatFileEnc(filename, cur, encoding, 0)`.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -4461,11 +4468,11 @@ pub(crate) unsafe fn xmlSaveFileEnc(
     cur: *mut _xmlDoc,
     encoding: *const c_char,
 ) -> c_int {
-    let _ = encoding; // Future: use encoding to set encoder on output buffer
-    save_doc_to_filename(cur, filename, 0)
+    unsafe { xmlSaveFormatFileEnc(filename, cur, encoding, 0) }
 }
 
-/// Save a document to a file with format flag.
+/// Save a document to a file with format flag. Upstream tree.c 2.15:
+/// `xmlSaveFormatFile` = `xmlSaveFormatFileEnc(filename, cur, NULL, format)`.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -4482,11 +4489,16 @@ pub(crate) unsafe fn xmlSaveFormatFile(
     cur: *mut _xmlDoc,
     format: c_int,
 ) -> c_int {
-    let _ = format;
-    save_doc_to_filename(cur, filename, 0)
+    unsafe { xmlSaveFormatFileEnc(filename, cur, ptr::null(), format) }
 }
 
 /// Save a document to a file with encoding and format flag.
+///
+/// Mirrors upstream xmlsave.c 2.15 `xmlSaveFormatFileEnc`: create the output
+/// buffer ("-" maps to stdout like the oracle), serialize through the save
+/// machinery (formatting + the encoding declaration), and return the close
+/// result. The save context's encoding is emitted in the XML declaration and
+/// drives the output-buffer encoder exactly like upstream xmlDocDumpInternal.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -4505,9 +4517,20 @@ pub(crate) unsafe fn xmlSaveFormatFileEnc(
     encoding: *const c_char,
     format: c_int,
 ) -> c_int {
-    let _ = encoding;
-    let _ = format;
-    save_doc_to_filename(cur, filename, 0)
+    if cur.is_null() {
+        return -1;
+    }
+    let options = if format != 0 {
+        crate::xml::save::XML_SAVE_FORMAT
+    } else {
+        0
+    };
+    let ctxt = crate::xml::save::xmlSaveToFilename(filename, encoding, options);
+    if ctxt.is_null() {
+        return -1;
+    }
+    crate::xml::save::xmlSaveDoc(ctxt, cur);
+    crate::xml::save::xmlSaveClose(ctxt)
 }
 
 /// Get the compression mode of a document.

@@ -1,0 +1,88 @@
+{
+  "court": "ELF-VERSIONING",
+  "phase": "12",
+  "timestamp": "20260831T233641Z",
+  "schema": "elf-versioning-1",
+  "probe": "courts/suites/phase12/elf-versioning/elf-versioning-consumer.c",
+  "substitution": {
+    "oracle_rc": "0",
+    "candidate_rc": "0",
+    "byte_identical": "true"
+  },
+  "cases": [
+    {"item":"substitution:build-oracle-linked","status":"PASS"},
+    {"item":"substitution:build-candidate-linked","status":"PASS"},
+    {"item":"substitution:oracle-linked-binary-on-candidate (byte-identical, rc=0)","status":"PASS"},
+    {"item":"substitution:ldd-resolves-into-artifact","status":"PASS"},
+    {"item":"version:dlvsym-named-nodes (LIBXML2_1.0.11/1.0.12/1.1.34 resolve; wrong/bogus fail)","status":"PASS"},
+    {"item":"reverse:candidate-linked-on-oracle (libxslt graph symmetric)","status":"PASS"},
+    {"item":"verdef:libxslt node set","status":"FAIL"},
+    {"item":"verdef:libxslt per-symbol nodes","status":"FAIL"},
+    {"item":"verdef:libxml2 upstream chain + terminal (executed oracle unversioned; documented superset)","status":"PASS"},
+    {"item":"verdef:libexslt unversioned on both sides","status":"PASS"},
+    {"item":"needed:libxslt -> libxml2.so.16","status":"PASS"},
+    {"item":"needed:libexslt -> libxslt.so.1","status":"PASS"},
+    {"item":"verneed:oracle-linked-consumer requires libxslt.so.1(LIBXML2_1.x)","status":"PASS"}
+  ],
+  "summary": { "passed": 11, "failed": 2 },
+  "failures": {
+    "verdef:libxslt per-symbol nodes": "oracle=244 candidate=251"
+,
+    "verdef:libxslt node set": "oracle=[libxslt.so.1
+LIBXML2_1.0.11
+LIBXML2_1.0.12
+LIBXML2_1.0.13
+LIBXML2_1.0.16
+LIBXML2_1.0.17
+LIBXML2_1.0.18
+LIBXML2_1.0.22
+LIBXML2_1.0.24
+LIBXML2_1.0.30
+LIBXML2_1.0.32
+LIBXML2_1.0.33
+LIBXML2_1.1.0
+LIBXML2_1.1.1
+LIBXML2_1.1.2
+LIBXML2_1.1.3
+LIBXML2_1.1.5
+LIBXML2_1.1.7
+LIBXML2_1.1.9
+LIBXML2_1.1.18
+LIBXML2_1.1.20
+LIBXML2_1.1.23
+LIBXML2_1.1.24
+LIBXML2_1.1.25
+LIBXML2_1.1.26
+LIBXML2_1.1.27
+LIBXML2_1.1.30
+LIBXML2_1.1.34] candidate=[libxslt.so.1
+LIBXML2_1.0.11
+LIBXML2_1.0.12
+LIBXML2_1.0.13
+LIBXML2_1.0.16
+LIBXML2_1.0.17
+LIBXML2_1.0.18
+LIBXML2_1.0.22
+LIBXML2_1.0.24
+LIBXML2_1.0.30
+LIBXML2_1.0.32
+LIBXML2_1.0.33
+LIBXML2_1.1.0
+LIBXML2_1.1.1
+LIBXML2_1.1.2
+LIBXML2_1.1.3
+LIBXML2_1.1.5
+LIBXML2_1.1.7
+LIBXML2_1.1.9
+LIBXML2_1.1.18
+LIBXML2_1.1.20
+LIBXML2_1.1.23
+LIBXML2_1.1.24
+LIBXML2_1.1.25
+LIBXML2_1.1.26
+LIBXML2_1.1.27
+LIBXML2_1.1.30
+LIBXML2_1.1.34
+LIBXML2_1.1.45]"
+  }
+}

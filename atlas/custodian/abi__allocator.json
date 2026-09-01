@@ -9,8 +9,8 @@
   "xmlMemGet",
   "xmlGcMemSetup",
   "xmlGcMemGet",
-  "xmlMemUsed",
-  "xmlMemBlocks"
+  "__xmlMalloc",
+  "__xmlMallocAtomic"
  ],
  "subsystems": [
   "memory",
@@ -20,7 +20,8 @@
   "R-000131",
   "R-000133",
   "R-000176",
-  "R-000178"
+  "R-000178",
+  "R-000187"
  ],
  "court_families": [
   "ABI-DATA",

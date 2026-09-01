@@ -1,0 +1,28 @@
+{
+  "court": "STATIC-SUBSTITUTION",
+  "phase": "12",
+  "timestamp": "20260831T233812Z",
+  "schema": "substitution-1",
+  "cases": [
+    {"item":"static:libxml2.a present","status":"PASS"},
+    {"item":"static:libxslt.a present","status":"PASS"},
+    {"item":"static:libexslt.a present","status":"PASS"},
+    {"item":"static:build","status":"PASS"},
+    {"item":"static:no-shared-candidate-deps (fully static)","status":"PASS"},
+    {"item":"static:links-and-runs-standalone","status":"FAIL"},
+    {"item":"pkgconfig:libxml-2.0 exists","status":"PASS"},
+    {"item":"pkgconfig:libxslt exists","status":"PASS"},
+    {"item":"pkgconfig:libexslt exists","status":"PASS"},
+    {"item":"pkgconfig:build","status":"PASS"},
+    {"item":"pkgconfig:links-and-runs","status":"FAIL"},
+    {"item":"config-script:build","status":"FAIL"}
+  ],
+  "summary": { "passed": 9, "failed": 3 },
+  "failures": {
+    "pkgconfig:links-and-runs": "consumer <?xml version=1.0?> ok-5  ver=10145 825 21501 10145 "
+,
+    "config-script:build": "/usr/bin/ld: /tmp/ccnlXiIq.o: warning: relocation against `exsltLibexsltVersion' in read-only section `.text' /usr/bin/ld: /tmp/ccnlXiIq.o: in function `main': sub-consumer.c:(.text+0x103): undefined reference to `exsltRegisterAll' "
+,
+    "static:links-and-runs-standalone": "consumer <?xml version=1.0?> ok-5  ver=10145 825 21501 10145 "
+  }
+}

@@ -112,7 +112,7 @@ def status_table():
          f"{tests_passed} passing, {tests_failed} failed, {tests_ignored} ignored "
          f"(`cargo test --lib`, evidence: atlas/TEST_COUNTS.json)"),
         ("C headers",
-         "gcc & clang header-compile courts green (595/595, evidence: "
+         "gcc & clang header-compile courts green (596/596, evidence: "
          "courts/receipts/header-compile-*)"),
         ("CLI parity",
          "`xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity "

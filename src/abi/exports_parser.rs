@@ -2981,6 +2981,64 @@ pub unsafe extern "C" fn xmlCleanupInputCallbacks() {
     INPUT_CALLBACKS.lock().clear();
 }
 
+/// Read a URI through the registered input callbacks (upstream
+/// `xmlParserInputBufferCreateFilename`): the first registered pair whose
+/// match callback accepts the URI is opened, read to EOF, and closed.
+/// Returns `None` when no registered pair matches — callers fall back to
+/// the regular file path. NULL callbacks inside a matching pair are treated
+/// like upstream (an entry whose match callback is NULL is skipped).
+///
+/// Used by the XInclude loader so custom I/O schemes registered through
+/// `xmlRegisterInputCallbacks` are honored (upstream xmlXIncludeLoadDoc →
+/// xmlNewInputFromFile; Phase-12 EXTERNAL-CONSUMERS court: io1.c registers
+/// an sql: scheme and XInclude hrefs route through it).
+///
+/// # SAFETY
+///
+/// - `uri` must be a valid NUL-terminated C string live for the call.
+pub(crate) unsafe fn read_uri_via_input_callbacks(uri: *const c_char) -> Option<Vec<u8>> {
+    let table = INPUT_CALLBACKS.lock();
+    for e in table.iter() {
+        let Some(matchcb) = e.matchcb else {
+            continue;
+        };
+        // SAFETY: callbacks were registered by the caller and must uphold
+        // the xmlInput*Callback contracts.
+        if unsafe { matchcb(uri) } == 0 {
+            continue;
+        }
+        let (Some(opencb), Some(readcb)) = (e.opencb, e.readcb) else {
+            return None;
+        };
+        // SAFETY: the open callback returns a context for read/close.
+        let ctx = unsafe { opencb(uri) };
+        if ctx.is_null() {
+            return None;
+        }
+        let mut data = Vec::new();
+        let mut buf = [0u8; 4096];
+        loop {
+            // SAFETY: readcb fills `buf` per the xmlInputReadCallback contract.
+            let n = unsafe { readcb(ctx, buf.as_mut_ptr() as *mut c_char, buf.len() as c_int) };
+            if n < 0 {
+                if let Some(closecb) = e.closecb {
+                    unsafe { closecb(ctx) };
+                }
+                return None;
+            }
+            if n == 0 {
+                break;
+            }
+            data.extend_from_slice(&buf[..n as usize]);
+        }
+        if let Some(closecb) = e.closecb {
+            unsafe { closecb(ctx) };
+        }
+        return Some(data);
+    }
+    None
+}
+
 /// Register a new set of output I/O callbacks.
 ///
 /// # UPSTREAM-PARITY

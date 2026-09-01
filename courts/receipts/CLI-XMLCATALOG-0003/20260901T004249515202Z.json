@@ -1,0 +1,23 @@
+{
+ "schema": "cli-court-receipt-1",
+ "case_id": "CLI-XMLCATALOG-0003",
+ "tool": "xmlcatalog",
+ "oracle": "/usr/bin/xmlcatalog",
+ "candidate": "/mnt/1tb_kingston/libxml-rs/target/debug/xmlcatalog",
+ "candidate_commit": "fed3cd03a11dec111d6af39cdede770a4d8a73b2",
+ "timestamp": "2026-09-01T00:42:49.515170+00:00",
+ "observations": {
+  "oracle": {
+   "exit_status": 1,
+   "stdout_hash": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+   "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "candidate": {
+   "exit_status": 1,
+   "stdout_hash": "c78e28ff4c07abe1ad9aa56d4ea68fb6908f4f29d2f7e49443eec0e3e62664f2",
+   "stderr_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+ },
+ "residuals": [],
+ "verdict": "PASS"
+}
