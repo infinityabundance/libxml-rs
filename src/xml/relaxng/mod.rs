@@ -2177,6 +2177,21 @@ pub unsafe fn rng_validate_doc_schema(
 // They use raw pointers and follow libxml2's calling conventions.
 
 /// Create a new RELAX NG parser context.
+/// RELAX NG parser context (upstream `xmlRelaxNGParserCtxt`).
+///
+/// Owns the eagerly-parsed schema; `xmlRelaxNGParse` hands out a NEW schema
+/// object (a clone) so the context and the schema have separate lifetimes,
+/// exactly as upstream callers expect (lxml: `xmlRelaxNGParse` then
+/// `xmlRelaxNGFreeParserCtxt`, with `xmlRelaxNGFree` on the schema at
+/// dealloc). The pre-fix implementation returned the context as the schema
+/// pointer, so `xmlRelaxNGFreeParserCtxt` freed the schema out from under
+/// consumers — a use-after-free (Phase 14 lxml RelaxNG court).
+pub(crate) struct RelaxNgParserCtxt {
+    /// The parsed schema, if parsing succeeded.
+    pub(crate) schema: Option<RelaxNgSchema>,
+}
+
+/// Create a new RELAX NG parser context from a URL.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -2190,8 +2205,7 @@ pub unsafe fn rng_validate_doc_schema(
 #[no_mangle]
 pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_void {
     if url.is_null() {
-        let ctxt = allocator::xmlMallocZero(size_of::<RelaxNgSchema>() as usize);
-        return ctxt;
+        return Box::into_raw(Box::new(RelaxNgParserCtxt { schema: None })) as *mut c_void;
     }
 
     let url_str = unsafe {
@@ -2203,25 +2217,25 @@ pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_v
         String::from_utf8_lossy(slice).to_string()
     };
 
-    // Try to parse the schema from the URL
-    if !url_str.is_empty() {
-        let url_c = std::ffi::CString::new(url_str.clone()).ok();
+    // Parse the schema from the URL eagerly and keep it in the context.
+    let schema = if url_str.is_empty() {
+        None
+    } else {
+        let url_c = std::ffi::CString::new(url_str).ok();
         if let Some(c) = url_c {
             let doc = crate::abi::exports_xml2::xmlParseFile(c.as_ptr());
             if !doc.is_null() {
                 let result = rng_parse_doc(doc);
                 crate::abi::exports_xml2::xmlFreeDoc(doc);
-                if let Ok(schema) = result {
-                    let schema_box = Box::new(schema);
-                    return Box::into_raw(schema_box) as *mut c_void;
-                }
+                result.ok()
+            } else {
+                None
             }
+        } else {
+            None
         }
-    }
-
-    // Return empty context for later parsing
-
-    allocator::xmlMallocZero(size_of::<RelaxNgSchema>() as usize)
+    };
+    Box::into_raw(Box::new(RelaxNgParserCtxt { schema })) as *mut c_void
 }
 
 /// Create a new RELAX NG parser context from a memory buffer.
@@ -2244,17 +2258,15 @@ pub unsafe extern "C" fn xmlRelaxNGNewMemParserCtxt(
         return ptr::null_mut();
     }
 
-    // Parse the schema immediately
+    // Parse the schema immediately and keep it in the parser context;
+    // `xmlRelaxNGParse` hands out a fresh schema object (Phase 14: the
+    // context and the schema must have separate lifetimes — lxml frees the
+    // context right after xmlRelaxNGParse and the schema at dealloc).
     let buf_slice = unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) };
     let xml_str = String::from_utf8_lossy(buf_slice).to_string();
 
-    match rng_parse(&xml_str) {
-        Ok(schema) => {
-            let schema_box = Box::new(schema);
-            Box::into_raw(schema_box) as *mut c_void
-        }
-        Err(_) => ptr::null_mut(),
-    }
+    let schema = rng_parse(&xml_str).ok();
+    Box::into_raw(Box::new(RelaxNgParserCtxt { schema })) as *mut c_void
 }
 
 /// Parse a RELAX NG schema.
@@ -2269,14 +2281,22 @@ pub unsafe extern "C" fn xmlRelaxNGNewMemParserCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlRelaxNGParse(ctxt: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn xmlRelaxNGParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
 
-    // If the context already contains a parsed schema (from xmlRelaxNGNewMemParserCtxt),
-    // return it. Otherwise, return the context as-is.
-    ctxt
+    // UPSTREAM-PARITY (relaxng.c xmlRelaxNGParse): the parser context owns
+    // the parsed schema; this hands out a NEW schema object so the caller
+    // can free the context independently (lxml frees the context right
+    // after this call). The pre-fix implementation returned the context
+    // itself, so xmlRelaxNGFreeParserCtxt freed the schema out from under
+    // the consumer.
+    let pctxt = unsafe { &*ctxt.cast::<RelaxNgParserCtxt>() };
+    match &pctxt.schema {
+        Some(schema) => Box::into_raw(Box::new(schema.clone())) as *mut c_void,
+        None => ptr::null_mut(),
+    }
 }
 
 /// Free a RELAX NG schema.
@@ -2317,9 +2337,10 @@ pub unsafe extern "C" fn xmlRelaxNGFreeParserCtxt(ctxt: *mut c_void) {
     if ctxt.is_null() {
         return;
     }
-    // SAFETY: Reconstruct the Box to drop it.
+    // SAFETY: Reconstruct the Box to drop it (the context is a separate
+    // allocation from the schema handed out by xmlRelaxNGParse).
     unsafe {
-        let _ = Box::from_raw(ctxt as *mut RelaxNgSchema);
+        let _ = Box::from_raw(ctxt as *mut RelaxNgParserCtxt);
     }
 }
 

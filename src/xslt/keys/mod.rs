@@ -451,19 +451,34 @@ pub(crate) unsafe fn build_key_table(
             }
         }
     }
-    // Recurse into children.
-    let mut child = (*node).children;
-    while !child.is_null() {
-        let next = (*child).next;
-        build_key_table(ctxt, doc, child, pattern, use_expr, table);
-        child = next;
+    // Recurse into children. Attribute nodes are skipped here: the
+    // attribute VALUE text is not part of the key walk — the attribute
+    // node itself is the matchable unit (upstream iterates the match
+    // pattern's node-set, which returns attribute nodes, never their
+    // value text).
+    let is_attribute =
+        (*node).type_ == crate::abi::types::xmlElementType::XML_ATTRIBUTE_NODE as c_int;
+    if !is_attribute {
+        let mut child = (*node).children;
+        while !child.is_null() {
+            let next = (*child).next;
+            build_key_table(ctxt, doc, child, pattern, use_expr, table);
+            child = next;
+        }
     }
-    // Recurse into attributes (keys can match attribute values via use).
-    let mut prop = (*node).properties;
-    while !prop.is_null() {
-        let next = (*prop).next;
-        build_key_table(ctxt, doc, prop as *mut _xmlNode, pattern, use_expr, table);
-        prop = next;
+    // Recurse into attributes (element nodes only). _xmlAttr has no
+    // `properties`/`nsDef` tail: the _xmlNode fields beyond `doc`/`ns`
+    // (content/properties/nsDef/...) overlap _xmlAttr's psvi/atype, so
+    // reading them on an attribute would walk garbage (a misaligned-
+    // pointer panic observed with lxml xsl:keys). The attribute's own
+    // pattern test / use evaluation happened at the top of this call.
+    if (*node).type_ == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int {
+        let mut prop = (*node).properties;
+        while !prop.is_null() {
+            let next = (*prop).next;
+            build_key_table(ctxt, doc, prop as *mut _xmlNode, pattern, use_expr, table);
+            prop = next;
+        }
     }
 }
 

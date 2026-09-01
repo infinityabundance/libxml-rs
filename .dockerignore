@@ -1,0 +1,8 @@
+target/
+.git/
+courts/receipts/
+courts/suites/phase14/sources/lxml/.git
+courts/suites/phase14/sources/nokogiri/.git
+*.pyc
+__pycache__/
+.atlas-tmp/

@@ -210,6 +210,13 @@ typedef enum {
     XML_PARSER_PUBLIC_LITERAL = 12
 } xmlParserInputState;
 
+/* Phase 14 (DOWNSTREAM-LXML): internal bits in the 'loadsubset' context
+ * member (upstream parser.h); consumers (lxml etree.c _initSaxDocument)
+ * poke them directly. Verbatim from the upstream oracle header. */
+#define XML_DETECT_IDS		2
+#define XML_COMPLETE_ATTRS	4
+#define XML_SKIP_IDS		8
+
 /* Parser input structure (fwd typedef in SAX2.h; struct body here) */
 struct _xmlParserInput {
     xmlParserInputBufferPtr buf;

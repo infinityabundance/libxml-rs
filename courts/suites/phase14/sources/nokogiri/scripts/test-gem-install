@@ -1,0 +1,39 @@
+#! /usr/bin/env bash
+#
+#  run as part of CI, see gem-install.yml
+#
+if [[ $# -lt 1 ]] ; then
+  echo "usage: $(basename $0) <gems_dir> [install_flags]"
+  exit 1
+fi
+
+GEMS_DIR=$1
+shift
+INSTALL_FLAGS=$*
+
+test -e /etc/os-release && cat /etc/os-release
+
+set -e -x -u
+
+pushd $GEMS_DIR
+
+  gemfile=$(ls *.gem | head -n1)
+  ls -l ${gemfile}
+  gem install --no-document ${gemfile} -- ${INSTALL_FLAGS}
+  gem list -d nokogiri
+  nokogiri -v
+  NOKOGIRI_VERSION=$(ruby -e "require 'nokogiri'; puts Nokogiri::VERSION")
+
+popd
+
+gem install bundler
+
+bundle config set --local without rdoc
+ruby -i.bak -ne 'print unless /^gemspec$/' Gemfile
+bundle add nokogiri --version "${NOKOGIRI_VERSION}" --skip-install
+
+rm -rf lib ext # ensure we don't use the local files
+bundle install --prefer-local
+bundle exec rake test
+
+./scripts/test-gem-installation

@@ -1,0 +1,752 @@
+name: ci
+concurrency:
+  group: "${{github.workflow}}-${{github.ref}}"
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 3" # At 08:00 on Wednesday # https://crontab.guru/#0_8_*_*_3
+  push:
+    branches:
+      - main
+      - v*.*.x
+    tags:
+      - v*.*.*
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - '*'
+
+env:
+  NOKOGIRI_USE_CANONICAL_GNOME_SOURCE: t
+
+jobs:
+  #
+  #  SECTION pre-checks for fast feedback loops, and to gate the rest of the suite
+  #
+  rubocop:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-3.4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake rubocop
+
+  basic:
+    needs: ["rubocop"]
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu"]
+        sys: ["enable"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:${{matrix.image}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+      - run: bundle exec rake test:bench
+
+  gumbo:
+    needs: ["rubocop"]
+    strategy:
+      fail-fast: false
+      matrix:
+        plat: ["ubuntu", "windows", "macos"]
+    runs-on: ${{matrix.plat}}-latest
+    steps:
+      - name: configure git crlf
+        if: matrix.plat == 'windows'
+        run: |
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          bundler: latest
+      - run: bundle exec rake gumbo:test
+
+  css:
+    name: "css parser"
+    needs: ["basic"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:ubuntu
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake css:clean css:generate
+      - run: bundle exec rake compile -- --enable-system-libraries
+      - run: bundle exec rake test
+
+  #
+  #  SECTION meta - control variables
+  #
+  ruby_versions:
+    needs: ["basic"]
+    outputs:
+      # these are usually the same, but are different once we get to ruby release candidates
+      setup_ruby:     "['3.2', '3.3', '3.4', '4.0']"
+      setup_ruby_win: "['3.2', '3.3', '3.4', '4.0']"
+      image_tag:      "['3.2', '3.3', '3.4', '4.0']"
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "generating rubies ..."
+
+  rcd_image_version:
+    needs: ["basic"]
+    runs-on: ubuntu-latest
+    outputs:
+      rcd_image_version: ${{steps.rcd_image_version.outputs.rcd_image_version}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          bundler: latest
+      - id: rcd_image_version
+        run: bundle exec ruby -e 'require "rake_compiler_dock"; puts "rcd_image_version=#{RakeCompilerDock::IMAGE_VERSION}"' >> $GITHUB_OUTPUT
+
+  #
+  #  SECTION run the test suite across a broad matrix of rubies, configs, and systems
+  #
+  linux:
+    needs: ["basic", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.image_tag) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+      - run: bundle exec rake test:bench
+
+  valgrind:
+    needs: ["linux", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.image_tag) }}
+        mem: ["ruby"]
+        include:
+          - sys: "disable"
+            ruby: "3.4"
+            mem: "default"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    env:
+      NOKOGIRI_LIBXML_MEMORY_MANAGEMENT: ${{matrix.mem}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test:valgrind
+
+  musl:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:alpine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      # skip cache because of https://github.com/actions/cache/issues/675
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+
+  musl-valgrind:
+    needs: ["musl"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["disable"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:alpine
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      # skip cache because of https://github.com/actions/cache/issues/675
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test:valgrind
+
+  libxmlruby:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable"]
+        ruby: ["3.4"]
+    env:
+      BUNDLE_GEMFILE: "Gemfile-libxml-ruby"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+
+  libxmlruby-valgrind:
+    needs: ["libxmlruby"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["disable"]
+        ruby: ["3.4"]
+    env:
+      BUNDLE_GEMFILE: "Gemfile-libxml-ruby"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test:valgrind
+
+  osx:
+    needs: ["basic", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby) }}
+        os: [ macos-15-intel, macos-15 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: ${{matrix.ruby}}
+          bundler-cache: true
+          bundler: latest
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-macos-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+
+  darwin-nix:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-24.11
+      - run: nix-shell --packages ruby bundler --run 'bundle install'
+      - if: matrix.sys == 'disable'
+        run: nix-shell --packages ruby bundler --run 'bundle exec rake compile -- --disable-system-libraries --disable-xml2-legacy'
+      - if: matrix.sys == 'disable'
+        run: nix-shell --packages ruby bundler --run 'bundle exec rake test'
+      # libxml2 headers are in a subdirectory for some reason so we need to add it to NIX_CFLAGS_COMPILE manually.
+      # there are a bunch of examples of other packages doing this in nixpkgs so this seems to be expected.
+      - if: matrix.sys == 'enable'
+        run: |
+          nix-shell \
+            --expr 'with import <nixpkgs> {}; mkShell { buildInputs = [ ruby bundler libxml2 libxslt ]; env.NIX_CFLAGS_COMPILE = "-I ${libxml2.dev}/include/libxml2"; }' \
+            --run 'bundle exec rake compile -- --enable-system-libraries --disable-xml2-legacy'
+      - if: matrix.sys == 'enable'
+        run: |
+          nix-shell --packages ruby bundler libxml2 libxslt --run 'bundle exec rake test'
+
+  windows:
+    needs: ["basic", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby_win) }}
+    runs-on: windows-2022
+    steps:
+      - name: configure git crlf
+        run: |
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby-pkgs@v1
+        with:
+          setup-ruby-ref: ruby/setup-ruby/d3e3bd032ad2222a8ac878bbccf2aba78864e134
+          ruby-version: "${{matrix.ruby}}"
+          mingw: "libxml2 libxslt"
+          bundler-cache: true
+          bundler: latest
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-windows-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test
+
+  jruby:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["jruby-10.0"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: ${{matrix.ruby}}
+          bundler-cache: true
+          bundler: latest
+      - run: bundle exec rake compile
+      - run: bundle exec rake test
+      - run: bundle exec rake test:bench
+
+  truffleruby:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        flags:
+          - "--disable-system-libraries --disable-static"
+          - "--disable-system-libraries --enable-static"
+          - "--enable-system-libraries"
+        include:
+          - flags: "--enable-system-libraries"
+            apt_packages: "libxml2-dev libxslt1-dev pkg-config"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby-pkgs@v1
+        with:
+          setup-ruby-ref: ruby/setup-ruby/d3e3bd032ad2222a8ac878bbccf2aba78864e134
+          ruby-version: truffleruby
+          bundler-cache: true
+          bundler: 2.5.10
+          apt-get: ${{ matrix.apt_packages }}
+      - uses: actions/cache@v4
+        with:
+          path: ports/archives
+          key: tarballs-ubuntu-${{hashFiles('dependencies.yml', 'patches/**/*.patch')}}
+      - run: bundle exec rake compile -- ${{matrix.flags}}
+      - run: bundle exec rake test
+
+  bsd:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          envs: NOKOGIRI_USE_CANONICAL_GNOME_SOURCE
+          usesh: true
+          copyback: false
+          prepare: pkg install -y ruby devel/ruby-gems pkgconf libxml2 libxslt git
+          run: |
+            gem install bundler
+            bundle install --local || bundle install
+            bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+            bundle exec rake test
+
+  #
+  #  SECTION let's look for memory leaks
+  #
+  memory_suite:
+    continue-on-error: true # still pressure testing the value of this suite
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["disable"]
+        ruby: ["3.4"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test:memory_suite
+
+  memcheck:
+    needs: ["basic"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["disable"]
+        ruby: ["3.4"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/sparklemotion/nokogiri-test:mri-${{matrix.ruby}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        if: matrix.sys == 'disable'
+        with:
+          path: ports
+          key: ports-ubuntu-${{matrix.ruby}}-${{hashFiles('dependencies.yml', 'patches/**/*.patch', 'ext/nokogiri/extconf.rb')}}
+      - run: bundle install --local || bundle install
+      - run: bundle exec rake compile -- --${{matrix.sys}}-system-libraries
+      - run: bundle exec rake test:memcheck
+
+  #
+  #  SECTION the end-to-end gem installation tests
+  #
+  generic-package:
+    needs: ["rcd_image_version"]
+    name: "generic-package"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        with:
+          path: ports/archives
+          key: tarballs-ubuntu-${{hashFiles('dependencies.yml', 'patches/**/*.patch')}}
+      - run: |
+          docker run --rm -v "$(pwd):/nokogiri" -w /nokogiri \
+            ghcr.io/rake-compiler/rake-compiler-dock-image:${{needs.rcd_image_version.outputs.rcd_image_version}}-mri-x86_64-linux-gnu \
+            ./scripts/test-gem-build gems ruby
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generic-gem
+          path: gems
+          retention-days: 1
+
+  generic-linux-install:
+    needs: ["generic-package", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby-pkgs@v1
+        with:
+          setup-ruby-ref: ruby/setup-ruby/d3e3bd032ad2222a8ac878bbccf2aba78864e134
+          ruby-version: "${{matrix.ruby}}"
+          apt-get: "libxml2-dev libxslt1-dev pkg-config"
+      - uses: actions/download-artifact@v4
+        with:
+          name: generic-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems --${{matrix.sys}}-system-libraries
+
+  generic-darwin-install:
+    needs: ["generic-package", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby) }}
+        os: [ macos-15-intel, macos-15 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "${{matrix.ruby}}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: generic-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems --${{matrix.sys}}-system-libraries
+
+  generic-windows-install:
+    needs: ["generic-package", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: ["enable", "disable"]
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby_win) }}
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby-pkgs@v1
+        with:
+          setup-ruby-ref: ruby/setup-ruby/d3e3bd032ad2222a8ac878bbccf2aba78864e134
+          ruby-version: "${{matrix.ruby}}"
+          mingw: "libxml2 libxslt"
+      - uses: actions/download-artifact@v4
+        with:
+          name: generic-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems --${{matrix.sys}}-system-libraries
+        shell: bash
+
+  cruby-package:
+    needs: ["rcd_image_version"]
+    name: "cruby-package"
+    strategy:
+      fail-fast: false
+      matrix:
+        plat:
+          - "aarch64-linux-gnu"
+          - "aarch64-linux-musl"
+          - "arm-linux-gnu"
+          - "arm-linux-musl"
+          - "arm64-darwin"
+          - "x64-mingw-ucrt"
+          - "x86_64-darwin"
+          - "x86_64-linux-gnu"
+          - "x86_64-linux-musl"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/cache@v4
+        with:
+          path: ports/archives
+          key: tarballs-ubuntu-${{hashFiles('dependencies.yml', 'patches/**/*.patch')}}
+      - run: |
+          docker run --rm -v "$(pwd):/nokogiri" -w /nokogiri \
+            ghcr.io/rake-compiler/rake-compiler-dock-image:${{needs.rcd_image_version.outputs.rcd_image_version}}-mri-${{matrix.plat}} \
+            ./scripts/test-gem-build gems ${{matrix.plat}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "cruby-${{matrix.plat}}-gem"
+          path: gems
+          retention-days: 1
+
+  cruby-install-with-setup-ruby:
+    needs: ["cruby-package", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "${{matrix.ruby}}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cruby-x86_64-linux-gnu-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems
+
+  cruby-linux-install-matrix:
+    needs: ["cruby-package", "ruby_versions"]
+    name: "cruby-${{ matrix.platform }}-install (${{ matrix.ruby }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - aarch64-linux-gnu
+          - aarch64-linux-musl
+          - arm-linux-gnu
+          - arm-linux-musl
+          - x86_64-linux-gnu
+          - x86_64-linux-musl
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.image_tag) }}
+        include:
+          # declare docker image for each platform
+          - { runner: ubuntu-latest, platform: aarch64-linux-musl, docker_tag: "-alpine", bootstrap: "apk add bash build-base &&" }
+          - { runner: ubuntu-latest, platform: arm-linux-musl, docker_tag: "-alpine", bootstrap: "apk add bash build-base &&" }
+          - { runner: ubuntu-latest, platform: x86_64-linux-musl, docker_tag: "-alpine", bootstrap: "apk add bash build-base &&" }
+          # declare docker platform for each platform
+          - { runner: ubuntu-24.04-arm, platform: aarch64-linux-gnu, docker_platform: "--platform=linux/arm64/v8" }
+          - { runner: ubuntu-24.04-arm, platform: aarch64-linux-musl, docker_platform: "--platform=linux/arm64/v8" }
+          - { runner: ubuntu-24.04-arm, platform: arm-linux-gnu, docker_platform: "--platform=linux/arm/v7" }
+          - { runner: ubuntu-24.04-arm, platform: arm-linux-musl, docker_platform: "--platform=linux/arm/v7" }
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: cruby-${{ matrix.platform }}-gem
+          path: gems
+      - run: |
+          docker run --rm -v $PWD:/nokogiri -w /nokogiri \
+            ${{ matrix.docker_platform }} ruby:${{ matrix.ruby }}${{ matrix.docker_tag }} \
+            sh -c "
+              ${{ matrix.bootstrap }}
+              ./scripts/test-gem-install gems
+            "
+
+  cruby-darwin-install-matrix:
+    needs: ["cruby-package", "ruby_versions"]
+    name: "cruby-${{ matrix.platform }}-install (${{ matrix.ruby }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - arm64-darwin
+          - x86_64-darwin
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby) }}
+        include:
+          - { platform: arm64-darwin, os: macos-15 }
+          - { platform: x86_64-darwin, os: macos-15-intel }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "${{ matrix.ruby }}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cruby-${{ matrix.platform }}-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems
+
+  cruby-x64-mingw-ucrt-install:
+    needs: ["cruby-package", "ruby_versions"]
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ${{ fromJSON(needs.ruby_versions.outputs.setup_ruby_win) }}
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ruby/setup-ruby@d3e3bd032ad2222a8ac878bbccf2aba78864e134
+        with:
+          ruby-version: "${{matrix.ruby}}"
+      - uses: actions/download-artifact@v4
+        with:
+          name: cruby-x64-mingw-ucrt-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems
+        shell: bash
+
+  jruby-package:
+    needs: ["rcd_image_version"]
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/rake-compiler/rake-compiler-dock-image:${{needs.rcd_image_version.outputs.rcd_image_version}}-jruby"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: ./scripts/test-gem-build gems java
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jruby-gem
+          path: gems
+          retention-days: 1
+
+  jruby-install:
+    needs: ["jruby-package"]
+    strategy:
+      fail-fast: false
+      matrix:
+        jruby: ["10.0"]
+        jre: ["21", "25"]
+    name: "jruby-${{matrix.jruby}}-jre${{matrix.jre}}-install"
+    runs-on: ubuntu-latest
+    container:
+      image: "jruby:${{matrix.jruby}}-jre${{matrix.jre}}"
+    steps:
+      - run: apt update && apt install -y build-essential git
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: jruby-gem
+          path: gems
+      - run: ./scripts/test-gem-install gems

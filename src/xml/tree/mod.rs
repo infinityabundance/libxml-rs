@@ -417,28 +417,63 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
 /// - `doc` must be a valid pointer to an _xmlDoc.
 /// - `root` must be a valid pointer to an _xmlNode, or NULL.
 pub unsafe fn doc_set_root_element(doc: *mut _xmlDoc, root: *mut _xmlNode) -> *mut _xmlNode {
-    if doc.is_null() {
+    if doc.is_null() || root.is_null() || unsafe { (*root).type_ } == XML_NAMESPACE_DECL as c_int {
         return ptr::null_mut();
     }
 
-    let d = unsafe { &mut *doc };
-
     let old_root = doc_get_root_element(doc);
+    if old_root == root {
+        return old_root;
+    }
 
-    if !root.is_null() {
-        unsafe {
-            (*root).parent = ptr::null_mut();
-            (*root).doc = doc;
+    unsafe {
+        // UPSTREAM-PARITY (tree.c xmlDocSetRootElement): unlink the node
+        // from its current tree, move doc pointers, and set the parent to
+        // the DOCUMENT NODE itself. A NULL parent here is observable: lxml
+        // walks `parent` to decide whether a node is still in a document
+        // (proxy.pxi getDeallocationTop) and would free an orphaned-looking
+        // root directly, after which free_doc walks the doc children and
+        // frees it again — a double free.
+        if !(*root).parent.is_null() {
+            unlink_node(root);
         }
-        d.children = root;
-        d.last = root;
-        unsafe {
-            (*root).prev = ptr::null_mut();
-            (*root).next = ptr::null_mut();
+        if (*root).doc != doc {
+            propagate_doc(root, doc);
         }
-    } else {
-        d.children = ptr::null_mut();
-        d.last = ptr::null_mut();
+        (*root).parent = doc as *mut _xmlNode;
+        (*root).doc = doc;
+
+        if old_root.is_null() {
+            // No previous root element: append after the existing doc-level
+            // nodes (PIs/comments may precede the root).
+            if (*doc).children.is_null() {
+                (*doc).children = root;
+                (*doc).last = root;
+                (*root).prev = ptr::null_mut();
+                (*root).next = ptr::null_mut();
+            } else {
+                add_sibling((*doc).last, root);
+            }
+        } else {
+            // Replace the old root in position (upstream xmlReplaceNode).
+            if (*old_root).prev.is_null() {
+                (*doc).children = root;
+                (*root).prev = ptr::null_mut();
+            } else {
+                (*(*old_root).prev).next = root;
+                (*root).prev = (*old_root).prev;
+            }
+            if (*old_root).next.is_null() {
+                (*doc).last = root;
+                (*root).next = ptr::null_mut();
+            } else {
+                (*(*old_root).next).prev = root;
+                (*root).next = (*old_root).next;
+            }
+            (*old_root).parent = ptr::null_mut();
+            (*old_root).prev = ptr::null_mut();
+            (*old_root).next = ptr::null_mut();
+        }
     }
 
     old_root
@@ -749,6 +784,55 @@ pub unsafe fn new_node(ns: *mut _xmlNs, name: *const xmlChar) -> *mut _xmlNode {
     node
 }
 
+/// Create a new XML element node whose name is BORROWED (not duplicated).
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// xmlNodePtr xmlNewDocNodeEatName(xmlDocPtr doc, xmlNsPtr ns,
+///                                 const xmlChar *name, const xmlChar *content);
+/// ```
+///
+/// The name pointer is stored as-is; the caller keeps ownership. The XML
+/// parser uses this when `dictNames` is enabled: the name is an interned
+/// dictionary string owned by the document dictionary, and consumers (lxml
+/// objectify `_tagMatches`) rely on node names being pointer-identical to
+/// `xmlDictLookup`/`xmlDictExists` results. `free_node` consults
+/// `xmlDictOwns` (UPSTREAM-PARITY `DICT_FREE`) so borrowed dictionary names
+/// are never freed.
+///
+/// # SAFETY
+///
+/// - `ns` may be NULL.
+/// - `name` must be non-NULL and remain valid for the lifetime of the node.
+pub unsafe fn new_node_eat_name(ns: *mut _xmlNs, name: *const xmlChar) -> *mut _xmlNode {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    let node = allocator::xmlMallocZero(size_of::<_xmlNode>() as usize) as *mut _xmlNode;
+    if node.is_null() {
+        return ptr::null_mut();
+    }
+
+    unsafe {
+        (*node).type_ = XML_ELEMENT_NODE as c_int;
+        (*node).name = name as *mut xmlChar;
+        (*node).ns = ns;
+        (*node).line = 0;
+        (*node).extra = 0;
+
+        if !ns.is_null() {
+            (*ns).context = node as *mut _xmlDoc;
+        }
+    }
+
+    // UPSTREAM-PARITY (tree.c): the node-registration hook fires after a
+    // node is fully initialised.
+    crate::abi::data_globals::register_node_hook(node);
+
+    node
+}
+
 /// Free a single node (without freeing children).
 ///
 /// # UPSTREAM-PARITY
@@ -810,8 +894,20 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
         free_ns_list(n.nsDef);
     }
 
-    // Free the name
-    if !n.name.is_null() {
+    // UPSTREAM-PARITY (tree.c xmlFreeNode + DICT_FREE): node names and
+    // content may live in the document dictionary — consumers (lxml
+    // `_fixHtmlDictNodeNames`) intern HTML element/attribute names with
+    // xmlDictLookup, so the same interned pointer is shared by every node
+    // with that name. Dict-owned strings must NOT be freed here; the guard
+    // is: free iff there is no dict, or the dict does not own the string.
+    let dict = if n.doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*n.doc).dict }
+    };
+
+    // Free the name.
+    if !n.name.is_null() && !crate::abi::exports_hash::dict_owns_str(dict, n.name) {
         allocator::xmlFreeImpl(n.name as *mut c_void);
     }
 
@@ -827,7 +923,9 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
             || node_type == XML_PI_NODE as c_int
         {
             let inline_addr = std::ptr::addr_of_mut!((*node).properties) as *const c_void;
-            if n.content as *const c_void != inline_addr {
+            if n.content as *const c_void != inline_addr
+                && !crate::abi::exports_hash::dict_owns_str(dict, n.content)
+            {
                 allocator::xmlFreeImpl(n.content as *mut c_void);
             }
         }
@@ -910,8 +1008,19 @@ unsafe fn free_prop(prop: *mut _xmlAttr) {
         free_node_list(unsafe { (*prop).children });
     }
 
+    // UPSTREAM-PARITY (tree.c xmlFreeProp + DICT_FREE): attribute names may
+    // be dict-interned (lxml `_fixHtmlDictNodeNames`); interned names are
+    // shared and must not be freed here.
+    let dict = if unsafe { (*prop).doc }.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*(*prop).doc).dict }
+    };
+
     // Free name
-    if !unsafe { (*prop).name }.is_null() {
+    if !unsafe { (*prop).name }.is_null()
+        && !crate::abi::exports_hash::dict_owns_str(dict, unsafe { (*prop).name })
+    {
         allocator::xmlFreeImpl(unsafe { (*prop).name } as *mut c_void);
     }
 

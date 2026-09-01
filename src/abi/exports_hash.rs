@@ -619,7 +619,7 @@ static DICT_OWNED: Lazy<Mutex<HashMap<usize, HashSet<usize>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Record an interned string pointer as owned by `dict` (for `xmlDictOwns`).
-fn register_owned(dict: *mut c_void, s: *const xmlChar) {
+pub(crate) fn register_owned(dict: *mut c_void, s: *const xmlChar) {
     if dict.is_null() || s.is_null() {
         return;
     }
@@ -645,6 +645,13 @@ pub unsafe extern "C" fn xmlDictReference(dict: *mut c_void) -> c_int {
         return -1;
     }
     *DICT_REFS.lock().entry(dict as usize).or_insert(0) += 1;
+    if std::env::var_os("LX_DICT_TRACE").is_some() {
+        eprintln!(
+            "[dict] ref   {:p} now={}",
+            dict,
+            DICT_REFS.lock().get(&(dict as usize)).copied().unwrap_or(0)
+        );
+    }
     0
 }
 
@@ -710,6 +717,19 @@ pub unsafe extern "C" fn xmlDictOwns(dict: *mut c_void, str: *const xmlChar) -> 
     } else {
         0
     }
+}
+
+/// Internal dict-ownership predicate (no FFI/c_int): true when `s` is an
+/// interned string owned by `dict`. Used by the tree teardown paths
+/// (UPSTREAM-PARITY `DICT_FREE` in tree.c).
+pub(crate) fn dict_owns_str(dict: *mut c_void, s: *const xmlChar) -> bool {
+    if dict.is_null() || s.is_null() {
+        return false;
+    }
+    DICT_OWNED
+        .lock()
+        .get(&(dict as usize))
+        .is_some_and(|set| set.contains(&(s as usize)))
 }
 
 /// Free the dictionary data.

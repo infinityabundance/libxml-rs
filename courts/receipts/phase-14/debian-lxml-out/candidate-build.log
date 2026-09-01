@@ -1,0 +1,64 @@
+warning: src/lxml/xmlerror.pxi:660:22: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:661:69: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:662:20: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:667:22: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:668:73: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:669:20: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:674:22: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:675:73: local variable 'args' referenced before assignment
+warning: src/lxml/xmlerror.pxi:676:20: local variable 'args' referenced before assignment
+Building lxml version 6.1.2.
+Building with Cython 3.3.0.
+Building against libxml2 2.15.3 and libxslt 1.1.45
+Building against libxml2/libxslt in the following directory: /candidate/lib
+Compiling src/lxml/etree.pyx because it changed.
+Compiling src/lxml/objectify.pyx because it changed.
+Compiling src/lxml/builder.py because it changed.
+Compiling src/lxml/_elementpath.py because it changed.
+Compiling src/lxml/html/diff.py because it changed.
+Compiling src/lxml/html/_difflib.py because it changed.
+Compiling src/lxml/sax.py because it changed.
+[1/7] Cythonizing src/lxml/_elementpath.py
+[2/7] Cythonizing src/lxml/builder.py
+[3/7] Cythonizing src/lxml/etree.pyx
+[4/7] Cythonizing src/lxml/html/_difflib.py
+[5/7] Cythonizing src/lxml/html/diff.py
+[6/7] Cythonizing src/lxml/objectify.pyx
+[7/7] Cythonizing src/lxml/sax.py
+running build_ext
+building 'lxml.etree' extension
+creating build
+creating build/temp.linux-x86_64-cpython-311
+creating build/temp.linux-x86_64-cpython-311/src
+creating build/temp.linux-x86_64-cpython-311/src/lxml
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -Isrc/lxml -Isrc/lxml/includes -I/candidate/include/libxml2 -I/candidate/include -Isrc -I/usr/include/python3.11 -c src/lxml/etree.c -o build/temp.linux-x86_64-cpython-311/src/lxml/etree.o -w
+creating build/lib.linux-x86_64-cpython-311
+creating build/lib.linux-x86_64-cpython-311/lxml
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/etree.o -L/candidate/lib -L/usr/lib/x86_64-linux-gnu -lxslt -lexslt -lxml2 -lrt -lz -lm -o build/lib.linux-x86_64-cpython-311/lxml/etree.cpython-311-x86_64-linux-gnu.so
+building 'lxml.objectify' extension
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -Isrc/lxml/includes -I/candidate/include/libxml2 -I/candidate/include -Isrc -I/usr/include/python3.11 -c src/lxml/objectify.c -o build/temp.linux-x86_64-cpython-311/src/lxml/objectify.o -w
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/objectify.o -L/candidate/lib -L/usr/lib/x86_64-linux-gnu -lxslt -lexslt -lxml2 -lrt -lz -lm -o build/lib.linux-x86_64-cpython-311/lxml/objectify.cpython-311-x86_64-linux-gnu.so
+building 'lxml.builder' extension
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -I/candidate/include/libxml2 -I/candidate/include -Isrc -Isrc/lxml/includes -I/usr/include/python3.11 -c src/lxml/builder.c -o build/temp.linux-x86_64-cpython-311/src/lxml/builder.o -w
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/builder.o -L/usr/lib/x86_64-linux-gnu -o build/lib.linux-x86_64-cpython-311/lxml/builder.cpython-311-x86_64-linux-gnu.so
+building 'lxml._elementpath' extension
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -I/candidate/include/libxml2 -I/candidate/include -Isrc -Isrc/lxml/includes -I/usr/include/python3.11 -c src/lxml/_elementpath.c -o build/temp.linux-x86_64-cpython-311/src/lxml/_elementpath.o -w
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/_elementpath.o -L/usr/lib/x86_64-linux-gnu -o build/lib.linux-x86_64-cpython-311/lxml/_elementpath.cpython-311-x86_64-linux-gnu.so
+building 'lxml.html.diff' extension
+creating build/temp.linux-x86_64-cpython-311/src/lxml/html
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -I/candidate/include/libxml2 -I/candidate/include -Isrc -Isrc/lxml/includes -I/usr/include/python3.11 -c src/lxml/html/diff.c -o build/temp.linux-x86_64-cpython-311/src/lxml/html/diff.o -w
+creating build/lib.linux-x86_64-cpython-311/lxml/html
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/html/diff.o -L/usr/lib/x86_64-linux-gnu -o build/lib.linux-x86_64-cpython-311/lxml/html/diff.cpython-311-x86_64-linux-gnu.so
+building 'lxml.html._difflib' extension
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -I/candidate/include/libxml2 -I/candidate/include -Isrc -Isrc/lxml/includes -I/usr/include/python3.11 -c src/lxml/html/_difflib.c -o build/temp.linux-x86_64-cpython-311/src/lxml/html/_difflib.o -w
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/html/_difflib.o -L/usr/lib/x86_64-linux-gnu -o build/lib.linux-x86_64-cpython-311/lxml/html/_difflib.cpython-311-x86_64-linux-gnu.so
+building 'lxml.sax' extension
+x86_64-linux-gnu-gcc -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -O1 -g0 -fPIC -DCYTHON_CLINE_IN_TRACEBACK=0 -I/candidate/include/libxml2 -I/candidate/include -Isrc -Isrc/lxml/includes -I/usr/include/python3.11 -c src/lxml/sax.c -o build/temp.linux-x86_64-cpython-311/src/lxml/sax.o -w
+x86_64-linux-gnu-gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -g -fwrapv -O2 -O1 -g0 build/temp.linux-x86_64-cpython-311/src/lxml/sax.o -L/usr/lib/x86_64-linux-gnu -o build/lib.linux-x86_64-cpython-311/lxml/sax.cpython-311-x86_64-linux-gnu.so
+copying build/lib.linux-x86_64-cpython-311/lxml/etree.cpython-311-x86_64-linux-gnu.so -> src/lxml
+copying build/lib.linux-x86_64-cpython-311/lxml/objectify.cpython-311-x86_64-linux-gnu.so -> src/lxml
+copying build/lib.linux-x86_64-cpython-311/lxml/builder.cpython-311-x86_64-linux-gnu.so -> src/lxml
+copying build/lib.linux-x86_64-cpython-311/lxml/_elementpath.cpython-311-x86_64-linux-gnu.so -> src/lxml
+copying build/lib.linux-x86_64-cpython-311/lxml/html/diff.cpython-311-x86_64-linux-gnu.so -> src/lxml/html
+copying build/lib.linux-x86_64-cpython-311/lxml/html/_difflib.cpython-311-x86_64-linux-gnu.so -> src/lxml/html
+copying build/lib.linux-x86_64-cpython-311/lxml/sax.cpython-311-x86_64-linux-gnu.so -> src/lxml

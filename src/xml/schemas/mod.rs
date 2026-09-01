@@ -2689,6 +2689,20 @@ unsafe fn get_node_qname(node: *mut _xmlNode) -> String {
 // These are the C-compatible entry points that get exported via the ABI layer.
 // They use raw pointers and follow libxml2's calling conventions.
 
+/// XML Schema parser context (upstream `xmlSchemaParserCtxt`).
+///
+/// Owns the eagerly-parsed schema; `xmlSchemaParse` hands out a NEW schema
+/// object (a clone) so the context and the schema have separate lifetimes,
+/// exactly as upstream callers expect (lxml: `xmlSchemaParse` then
+/// `xmlSchemaFreeParserCtxt`, with `xmlSchemaFree` on the schema at
+/// dealloc). The pre-fix implementation returned the context as the schema
+/// pointer, so `xmlSchemaFreeParserCtxt` freed the schema out from under
+/// consumers — a use-after-free (Phase 14 lxml schema court).
+pub(crate) struct XsdParserCtxt {
+    /// The parsed schema, if parsing succeeded.
+    pub(crate) schema: Option<XsdSchema>,
+}
+
 /// Create a new schema parser context from a URL.
 ///
 /// # UPSTREAM-PARITY
@@ -2703,35 +2717,23 @@ unsafe fn get_node_qname(node: *mut _xmlNode) -> String {
 #[no_mangle]
 pub unsafe extern "C" fn xmlSchemaNewParserCtxt(url: *const c_char) -> *mut c_void {
     if url.is_null() {
-        // Return a simple empty context
-        let ctxt = allocator::xmlMallocZero(size_of::<XsdSchema>() as usize);
-        return ctxt;
+        // Empty context (no schema): xmlSchemaParse returns NULL.
+        return Box::into_raw(Box::new(XsdParserCtxt { schema: None })) as *mut c_void;
     }
 
-    // Read the URL
     let url_str = unsafe {
-        if url.is_null() {
-            String::new()
-        } else {
-            let mut len = 0;
-            while *url.add(len) != 0 {
-                len += 1;
-            }
-            let slice = std::slice::from_raw_parts(url as *const u8, len);
-            String::from_utf8_lossy(slice).to_string()
+        let mut len = 0;
+        while *url.add(len) != 0 {
+            len += 1;
         }
+        let slice = std::slice::from_raw_parts(url as *const u8, len);
+        String::from_utf8_lossy(slice).to_string()
     };
 
-    // Try to parse the schema from the URL
-    // For now, return a placeholder context
-    let ctxt = allocator::xmlMallocZero(size_of::<XsdSchema>() as usize);
-    // In a full implementation, this would read the file and parse it
-    if !url_str.is_empty() {
-        // Store the URL for later parsing
-        let _ = url_str;
-    }
-
-    ctxt
+    let schema = std::fs::read(&url_str)
+        .ok()
+        .and_then(|data| xsd_parse(&String::from_utf8_lossy(&data)).ok());
+    Box::into_raw(Box::new(XsdParserCtxt { schema })) as *mut c_void
 }
 
 /// Create a new schema parser context from a memory buffer.
@@ -2754,18 +2756,15 @@ pub unsafe extern "C" fn xmlSchemaNewMemParserCtxt(
         return ptr::null_mut();
     }
 
-    // Parse the schema immediately
+    // Parse the schema immediately and keep it in the parser context;
+    // `xmlSchemaParse` hands out a fresh schema object (Phase 14: the
+    // context and the schema must have separate lifetimes — lxml frees the
+    // context right after xmlSchemaParse and the schema at dealloc).
     let buf_slice = unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) };
     let xml_str = String::from_utf8_lossy(buf_slice).to_string();
 
-    match xsd_parse(&xml_str) {
-        Ok(schema) => {
-            // Allocate and store the schema
-            let schema_box = Box::new(schema);
-            Box::into_raw(schema_box) as *mut c_void
-        }
-        Err(_) => ptr::null_mut(),
-    }
+    let schema = xsd_parse(&xml_str).ok();
+    Box::into_raw(Box::new(XsdParserCtxt { schema })) as *mut c_void
 }
 
 /// Parse a schema.
@@ -2780,15 +2779,22 @@ pub unsafe extern "C" fn xmlSchemaNewMemParserCtxt(
 ///
 /// - `ctxt` must be a valid pointer to a parser context, or NULL.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlSchemaParse(ctxt: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn xmlSchemaParse(ctxt: *mut c_void) -> *mut c_void {
     if ctxt.is_null() {
         return ptr::null_mut();
     }
 
-    // If the context already contains a parsed schema (from xmlSchemaNewMemParserCtxt),
-    // return it. Otherwise, parse from the URL stored in the context.
-    // For now, just return the context as the schema pointer.
-    ctxt
+    // UPSTREAM-PARITY (schemas.c xmlSchemaParse): the parser context owns
+    // the parsed schema; this hands out a NEW schema object so the caller
+    // can free the context independently (lxml frees the context right
+    // after this call). The pre-fix implementation returned the context
+    // itself, so xmlSchemaFreeParserCtxt freed the schema out from under
+    // the consumer.
+    let pctxt = unsafe { &*ctxt.cast::<XsdParserCtxt>() };
+    match &pctxt.schema {
+        Some(schema) => Box::into_raw(Box::new(schema.clone())) as *mut c_void,
+        None => ptr::null_mut(),
+    }
 }
 
 /// Free a schema.
@@ -2871,9 +2877,10 @@ pub unsafe extern "C" fn xmlSchemaFreeParserCtxt(ctxt: *mut c_void) {
     if ctxt.is_null() {
         return;
     }
-    // SAFETY: Reconstruct the Box to drop it.
+    // SAFETY: Reconstruct the Box to drop it (the context is a separate
+    // allocation from the schema handed out by xmlSchemaParse).
     unsafe {
-        let _ = Box::from_raw(ctxt as *mut XsdSchema);
+        let _ = Box::from_raw(ctxt as *mut XsdParserCtxt);
     }
 }
 

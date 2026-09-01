@@ -4013,6 +4013,9 @@ pub extern "C" fn xmlDictCreate() -> *mut c_void {
             .lock()
             .entry(d as usize)
             .or_insert(0) = 1;
+        if std::env::var_os("LX_DICT_TRACE").is_some() {
+            eprintln!("[dict] create {:p}", d);
+        }
     }
     d
 }
@@ -4035,6 +4038,9 @@ pub extern "C" fn xmlDictCreateSub(sub: *mut c_void) -> *mut c_void {
             .lock()
             .entry(d as usize)
             .or_insert(0) = 1;
+        if std::env::var_os("LX_DICT_TRACE").is_some() {
+            eprintln!("[dict] createsub {:p} parent={:p}", d, sub);
+        }
     }
     d
 }
@@ -4056,9 +4062,16 @@ pub unsafe extern "C" fn xmlDictLookup(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    unsafe {
+    let ret = unsafe {
         crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, len)
-    }
+    };
+    // UPSTREAM-PARITY (dict.c xmlDictOwns): any pointer returned by a dict
+    // lookup lives in the dict's string pool and is owned by it — record it
+    // so `xmlDictOwns` (and the tree teardown DICT_FREE guards) recognize
+    // it. Consumers (lxml `_fixHtmlDictNodeNames`) intern node names this
+    // way and then rely on xmlFreeNode NOT freeing them.
+    crate::abi::exports_hash::register_owned(dict, ret);
+    ret
 }
 
 /// Check if a string exists in the dictionary.
@@ -4074,9 +4087,13 @@ pub unsafe extern "C" fn xmlDictExists(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    unsafe {
+    let ret = unsafe {
         crate::xml::dictionary::dict_exists(dict as *mut crate::xml::dictionary::Dict, name, len)
-    }
+    };
+    // The returned pointer is interned and dict-owned even when it already
+    // existed (UPSTREAM-PARITY xmlDictOwns).
+    crate::abi::exports_hash::register_owned(dict, ret);
+    ret
 }
 
 /// Query dictionary size.
@@ -4123,7 +4140,23 @@ pub extern "C" fn xmlDictFree(dict: *mut c_void) {
         }
     }
     if remaining == 0 {
+        if std::env::var_os("LX_DICT_TRACE").is_some() {
+            eprintln!(
+                "[dict] free  {:p} remaining={}\n{}",
+                dict,
+                remaining,
+                std::backtrace::Backtrace::force_capture()
+            );
+        }
         unsafe { crate::xml::dictionary::dict_free(dict as *mut crate::xml::dictionary::Dict) };
+    } else if std::env::var_os("LX_DICT_TRACE").is_some() {
+        let bt = std::backtrace::Backtrace::force_capture()
+            .to_string()
+            .lines()
+            .take(4)
+            .collect::<Vec<_>>()
+            .join(" | ");
+        eprintln!("[dict] free  {:p} remaining={} @ {}", dict, remaining, bt);
     }
 }
 
@@ -6014,6 +6047,15 @@ pub unsafe extern "C" fn xmlXPathNewContext(doc: *mut _xmlDoc) -> *mut _xmlXPath
     ctxt
 }
 
+/// Deallocator for `xmlXPathContext.nsHash` payloads (strdup'd namespace
+/// URIs; upstream `xmlXPathFreeContext` / `xmlXPathRegisteredNsCleanup` pass
+/// `xmlFree`).
+pub(crate) unsafe extern "C" fn free_ns_uri_payload(payload: *mut c_void, _key: *mut xmlChar) {
+    if !payload.is_null() {
+        crate::abi::allocator::xmlFreeImpl(payload);
+    }
+}
+
 /// Free an XPath context.
 ///
 /// # UPSTREAM-PARITY
@@ -6031,11 +6073,10 @@ pub unsafe extern "C" fn xmlXPathFreeContext(ctxt: *mut _xmlXPathContext) {
         let _ = Box::from_raw((*ctxt).extra as *mut XPathContext);
         (*ctxt).extra = ptr::null_mut();
     }
-    // Drop the registered-namespace C-string hash (xmlXPathNsLookup pointers).
+    // Free the registered-namespace hash (upstream xmlXPathFreeContext:
+    // xmlHashFree(ctxt->nsHash, xmlFree) — the payloads are strdup'd URIs).
     if !(*ctxt).nsHash.is_null() {
-        drop(Box::from_raw(
-            (*ctxt).nsHash as *mut HashMap<String, CString>,
-        ));
+        xmlHashFree((*ctxt).nsHash, Some(free_ns_uri_payload));
         (*ctxt).nsHash = ptr::null_mut();
     }
     // Free the C ABI context struct.
@@ -6561,21 +6602,25 @@ pub unsafe extern "C" fn xmlXPathRegisterNs(
 
     internal.register_namespace(prefix_str, uri_str);
 
-    // Mirror the registration into the C context's nsHash (Box<HashMap<
-    // String, CString>>): xmlXPathNsLookup hands out pointers into these
-    // owned C strings, matching upstream ownership (strdup'd in nsHash,
-    // freed by xmlXPathRegisteredNsCleanup / xmlXPathFreeContext).
-    let map: &mut HashMap<String, CString> = if (*ctxt).nsHash.is_null() {
-        let b: Box<HashMap<String, CString>> = Box::default();
-        (*ctxt).nsHash = Box::into_raw(b) as *mut c_void;
-        &mut *((*ctxt).nsHash as *mut HashMap<String, CString>)
-    } else {
-        &mut *((*ctxt).nsHash as *mut HashMap<String, CString>)
-    };
-    map.insert(
-        prefix_str.to_string(),
-        CString::new(uri_str.as_bytes()).unwrap_or_default(),
-    );
+    // UPSTREAM-PARITY (xpath.c xmlXPathRegisterNs): the C context's nsHash
+    // is a REAL xmlHashTable keyed by prefix with a strdup'd URI payload —
+    // C consumers (lxml registerExsltFunctions) call xmlHashScan and
+    // xmlHashLookup on it, so it must be an xmlHashTable, not a Rust map.
+    // (R-00019x: the pre-fix nsHash held a Box<HashMap<..>>; lxml's
+    // xmlHashScan interpreted the HashMap as an xmlHashTable and crashed on
+    // its internal layout.)
+    if (*ctxt).nsHash.is_null() {
+        (*ctxt).nsHash = xmlHashCreate(10);
+    }
+    if !(*ctxt).nsHash.is_null() {
+        let uri_dup = crate::xml::string::xml_strdup(ns_uri);
+        let rc = xmlHashAddEntry((*ctxt).nsHash, prefix, uri_dup as *mut c_void);
+        if rc != 0 {
+            // Duplicate prefix: upstream keeps the first mapping (and leaks
+            // the new strdup'd URI); the candidate frees the unused copy.
+            crate::abi::allocator::xmlFreeImpl(uri_dup as *mut c_void);
+        }
+    }
     0
 }
 

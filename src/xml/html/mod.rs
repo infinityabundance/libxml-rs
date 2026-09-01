@@ -85,6 +85,7 @@
 //!   NUL-terminated `xmlChar` strings.
 
 use core::ffi::c_void;
+use core::mem::size_of;
 use core::ptr;
 use core::slice;
 use std::os::raw::{c_char, c_int};
@@ -2264,20 +2265,24 @@ pub(crate) unsafe fn create_file_parser_ctxt(
         return ptr::null_mut();
     }
 
-    let ctxt = unsafe { xmlMallocZero(size_of::<HtmlParserCtxt>() as usize) };
-    if ctxt.is_null() {
+    // Host allocation (R-00019x): real C-visible `_xmlParserCtxt` at offset 0
+    // followed by the engine state; freed as one block by `free_parser_ctxt`.
+    let total = size_of::<_xmlParserCtxt>() + size_of::<HtmlParserCtxt>();
+    let mem = unsafe { xmlMallocZero(total) } as *mut u8;
+    if mem.is_null() {
         return ptr::null_mut();
     }
 
-    let ctxt = ctxt as *mut HtmlParserCtxt;
+    let ctxt = mem.add(size_of::<_xmlParserCtxt>()) as *mut HtmlParserCtxt;
     unsafe {
         ptr::write(ctxt, HtmlParserCtxt::new());
         if !encoding.is_null() {
             (*ctxt).encoding = c_strdup(encoding);
         }
+        (*(mem as *mut _xmlParserCtxt)).html = 1;
     }
 
-    ctxt as *mut c_void
+    mem as *mut c_void
 }
 
 /// Free an HTML parser context.
@@ -2294,15 +2299,21 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut c_void) {
         return;
     }
 
-    let ctxt = ctxt as *mut HtmlParserCtxt;
+    // Host allocation (R-00019x): a real C-visible `_xmlParserCtxt` at
+    // offset 0 with the engine state (`HtmlParserCtxt`) after it. Free the
+    // engine's owned input buffer and strings, then the single host block.
+    let state = (ctxt as *mut u8).add(size_of::<_xmlParserCtxt>()) as *mut HtmlParserCtxt;
     unsafe {
-        if !(*ctxt).filename.is_null() {
-            xmlFreeImpl((*ctxt).filename as *mut c_void);
+        if !(*state).input.is_null() {
+            xmlFreeImpl((*state).input as *mut c_void);
         }
-        if !(*ctxt).encoding.is_null() {
-            xmlFreeImpl((*ctxt).encoding as *mut c_void);
+        if !(*state).filename.is_null() {
+            xmlFreeImpl((*state).filename as *mut c_void);
         }
-        xmlFreeImpl(ctxt as *mut c_void);
+        if !(*state).encoding.is_null() {
+            xmlFreeImpl((*state).encoding as *mut c_void);
+        }
+        xmlFreeImpl(ctxt);
     }
 }
 

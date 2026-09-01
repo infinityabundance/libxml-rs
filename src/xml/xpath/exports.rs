@@ -4929,15 +4929,12 @@ pub unsafe extern "C" fn xmlXPathNsLookup(
             }
         }
     }
-    // Registered namespace hash (owned C strings, upstream xmlXPathRegisterNs
-    // stores strdup'd URIs in ctxt->nsHash; the candidate mirrors that).
+    // Registered namespace hash (upstream xmlXPathRegisterNs stores
+    // strdup'd URIs in ctxt->nsHash, a real xmlHashTable).
     if !(*ctxt).nsHash.is_null() {
-        let map = &*((*ctxt).nsHash as *const HashMap<String, CString>);
-        let p = CStr::from_ptr(prefix as *const c_char)
-            .to_string_lossy()
-            .into_owned();
-        if let Some(c) = map.get(&p) {
-            return c.as_ptr() as *const xmlChar;
+        let uri = crate::abi::exports_xml2::xmlHashLookup((*ctxt).nsHash, prefix);
+        if !uri.is_null() {
+            return uri as *const xmlChar;
         }
     }
     ptr::null()
@@ -4991,9 +4988,12 @@ pub unsafe extern "C" fn xmlXPathRegisteredNsCleanup(ctxt: *mut _xmlXPathContext
         (*internal).namespaces.clear();
     }
     if !(*ctxt).nsHash.is_null() {
-        drop(Box::from_raw(
-            (*ctxt).nsHash as *mut HashMap<String, CString>,
-        ));
+        // UPSTREAM-PARITY (xpath.c xmlXPathRegisteredNsCleanup):
+        // xmlHashFree(ctxt->nsHash, xmlFree) — payloads are strdup'd URIs.
+        crate::abi::exports_xml2::xmlHashFree(
+            (*ctxt).nsHash,
+            Some(crate::abi::exports_xml2::free_ns_uri_payload),
+        );
         (*ctxt).nsHash = ptr::null_mut();
     }
 }

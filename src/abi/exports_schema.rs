@@ -115,8 +115,8 @@ use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlVal
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
 use crate::xml::schemas::{
-    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind, XsdSchema,
-    XsdValidCtxt,
+    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind,
+    XsdParserCtxt, XsdSchema, XsdValidCtxt,
 };
 use crate::xml::schematron::schematron_parse;
 
@@ -2245,10 +2245,11 @@ pub const unsafe extern "C" fn xmlSchemaFreeWildcard(_wildcard: *mut xmlSchemaWi
 /// ```
 ///
 /// The document is serialized and compiled through the internal engine
-/// (`xsd_parse`). Following the internal engine's convention,
-/// `xmlSchemaParse` returns its context as the schema pointer, so the
-/// returned context IS the compiled schema box. Returns NULL if `doc` is
-/// NULL or the schema fails to compile.
+/// (`xsd_parse`); the compiled schema is stored in the parser context and
+/// `xmlSchemaParse` hands out a separate schema object (Phase 14: the
+/// context and the schema have independent lifetimes — lxml frees the
+/// context right after `xmlSchemaParse`). Returns NULL if `doc` is NULL or
+/// the schema fails to compile.
 ///
 /// # SAFETY
 ///
@@ -2259,10 +2260,9 @@ pub unsafe extern "C" fn xmlSchemaNewDocParserCtxt(doc: *mut _xmlDoc) -> *mut xm
     let Some(xml) = (unsafe { doc_to_string(doc) }) else {
         return ptr::null_mut();
     };
-    match xsd_parse(&xml) {
-        Ok(schema) => Box::into_raw(Box::new(schema)) as *mut xmlSchemaParserCtxt,
-        Err(_) => ptr::null_mut(),
-    }
+    let schema = xsd_parse(&xml).ok();
+    let ctxt = crate::xml::schemas::XsdParserCtxt { schema };
+    Box::into_raw(Box::new(ctxt)) as *mut xmlSchemaParserCtxt
 }
 
 /// Set the error/warning callbacks of a parser context.

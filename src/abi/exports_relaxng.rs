@@ -481,22 +481,23 @@ pub unsafe extern "C" fn xmlRelaxNGNewDocParserCtxt(doc: *mut _xmlDoc) -> *mut c
     let schema = if doc.is_null() {
         let mut s = RelaxNgSchema::new();
         s.errors.push("Document is NULL".to_string());
-        s
+        Some(s)
     } else {
         // SAFETY: doc is a valid _xmlDoc; rng_parse_schema_doc reads it.
         match unsafe { rng_parse_schema_doc(doc) } {
-            Ok(s) => s,
+            Ok(s) => Some(s),
             Err(e) => {
                 let mut s = RelaxNgSchema::new();
                 s.errors.push(e);
-                s
+                Some(s)
             }
         }
     };
-    // SAFETY: The schema is boxed and handed to the ABI layer; it is released
-    // by xmlRelaxNGFreeParserCtxt / xmlRelaxNGFree, both of which reconstruct
-    // the Box.
-    Box::into_raw(Box::new(schema)) as *mut c_void
+    // The parsed schema lives in the parser context; `xmlRelaxNGParse` hands
+    // out a separate schema object (Phase 14: the context and the schema
+    // have independent lifetimes — lxml frees the context right after
+    // xmlRelaxNGParse and the schema at dealloc).
+    Box::into_raw(Box::new(crate::xml::relaxng::RelaxNgParserCtxt { schema })) as *mut c_void
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -1835,8 +1835,12 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
     let write_cb = match ob.writecallback {
         Some(cb) => cb,
         None => {
-            // No write callback — just clear the buffer
-            buf_empty(buf);
+            // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): with no I/O
+            // callback the buffered data simply STAYS in buffer/conv — the
+            // caller reads it via xmlBufContent/xmlBufUse (lxml
+            // serialization reads the buffer after flushing). The pre-fix
+            // implementation cleared the buffer here, so `ET.tostring`
+            // returned an empty string (Phase 14 lxml serialization court).
             return 0;
         }
     };

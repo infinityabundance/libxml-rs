@@ -359,7 +359,15 @@ pub(crate) mod default_sax_handler {
                 return ptr::null_mut();
             }
             (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
-            (*attr).name = crate::xml::string::xml_strdup(name);
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): with dictNames
+            // the attribute name is the dict-interned string (borrowed,
+            // never freed by xmlFreeProp — DICT_FREE); otherwise it is
+            // duplicated.
+            (*attr).name = if (*ctxt).dictNames != 0 && !(*ctxt).dict.is_null() {
+                crate::abi::exports_xml2::xmlDictLookup((*ctxt).dict, name, -1)
+            } else {
+                crate::xml::string::xml_strdup(name) as *const xmlChar
+            };
             (*attr).ns = ns;
             (*attr).parent = node;
             // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): the attribute
@@ -579,7 +587,23 @@ pub(crate) mod default_sax_handler {
                 (localname, tree::search_ns(c.myDoc, parent, prefix))
             };
 
-            let node = tree::new_node(ns, node_name);
+            let node = if c.dictNames != 0 && !c.dict.is_null() {
+                // UPSTREAM-PARITY (parser.c xmlParseStartTag2 + SAX2.c
+                // xmlSAX2StartElementNs): with dictNames the parser interns
+                // the element name in the context dictionary and the node
+                // BORROWS the interned string (xmlNewDocNodeEatName).
+                // Consumers (lxml objectify `_tagMatches`, `xmlDictExists`
+                // probes) rely on node names being pointer-identical to
+                // dict lookup results.
+                let interned = crate::abi::exports_xml2::xmlDictLookup(c.dict, node_name, -1);
+                if interned.is_null() {
+                    tree::new_node(ns, node_name)
+                } else {
+                    tree::new_node_eat_name(ns, interned)
+                }
+            } else {
+                tree::new_node(ns, node_name)
+            };
             if node.is_null() {
                 return;
             }

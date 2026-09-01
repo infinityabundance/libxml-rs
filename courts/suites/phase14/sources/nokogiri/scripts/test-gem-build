@@ -1,0 +1,42 @@
+#! /usr/bin/env bash
+#
+#  run as part of CI, see gem-install.yml
+#
+if [[ $# -lt 2 ]] ; then
+  echo "usage: $(basename $0) <output_dir> <platform>"
+  exit 1
+fi
+
+set -e
+
+OUTPUT_DIR=$1
+BUILD_NATIVE_GEM=$2
+
+test -e /etc/os-release && cat /etc/os-release
+
+set -u -x
+
+# avoid the pernicious "fatal: detected dubious ownership in repository" errors
+git config --global --add safe.directory $(realpath $(dirname $0)/..)
+
+bundle
+
+bundle exec rake set-version-to-timestamp
+
+if [[ "${BUILD_NATIVE_GEM}" == "ruby" ]] ; then
+  # TODO we're only compiling so that we retrieve libxml2/libxslt tarballs, we can do better.
+  bundle exec rake clean compile
+  bundle exec rake gem
+elif [[ "${BUILD_NATIVE_GEM}" == "java" ]] ; then
+  bundle exec rake java gem
+else
+  bundle exec rake gem:${BUILD_NATIVE_GEM}:builder
+fi
+
+chmod -v 664 ports/archives/* || true
+
+./scripts/test-gem-file-contents pkg/nokogiri*.gem
+
+mkdir -p ${OUTPUT_DIR}
+cp -v pkg/nokogiri*.gem ${OUTPUT_DIR}
+ls -l ${OUTPUT_DIR}/*

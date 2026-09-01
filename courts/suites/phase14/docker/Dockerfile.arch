@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1
+#
+# Phase 14 — minimal Arch Linux court image (same contract as
+# Dockerfile.debian; see PROVENANCE.md in courts/suites/phase14/sources/).
+#
+# Build (context = repository root):
+#   docker build -t libxml-rs/phase14-arch:1 \
+#     -f courts/suites/phase14/docker/Dockerfile.arch .
+FROM archlinux:latest
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+RUN pacman -Syu --noconfirm \
+    && pacman -S --noconfirm --needed \
+    base-devel pkgconf curl ca-certificates \
+    zlib xz icu \
+    python python-pip \
+    ruby \
+    bison re2c autoconf automake libtool \
+    && pacman -Scc --noconfirm
+
+RUN python3 -m pip install --no-cache-dir --break-system-packages pytest cssselect cython html5lib \
+    && gem install --no-document minitest rake
+
+ARG LIBXML2_VERSION=2.15.3
+ARG LIBSXLT_VERSION=1.1.45
+ARG LIBXML2_SHA256=78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07
+ARG LIBSXLT_SHA256=9acfe68419c4d06a45c550321b3212762d92f41465062ca4ea19e632ee5d216e
+WORKDIR /oracle
+COPY oracle/build.sh /oracle/build.sh
+RUN chmod +x /oracle/build.sh \
+    && curl -fsSL -o libxml2.tar.xz \
+       "https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION%.*}/libxml2-${LIBXML2_VERSION}.tar.xz" \
+    && curl -fsSL -o libxslt.tar.xz \
+       "https://download.gnome.org/sources/libxslt/${LIBSXLT_VERSION%.*}/libxslt-${LIBSXLT_VERSION}.tar.xz" \
+    && echo "${LIBXML2_SHA256}  libxml2.tar.xz" | sha256sum -c - \
+    && echo "${LIBSXLT_SHA256}  libxslt.tar.xz" | sha256sum -c - \
+    && tar xf libxml2.tar.xz && tar xf libxslt.tar.xz \
+    && rm -f libxml2.tar.xz libxslt.tar.xz \
+    && /oracle/build.sh "${LIBXML2_VERSION}" "${LIBSXLT_VERSION}" \
+    && /usr/local/bin/xmllint --version 2>&1 | head -1
+
+COPY courts/suites/phase14/sources /src
+COPY courts/suites/phase14/consumers /court/consumers
+RUN chmod +x /court/consumers/*.sh && mkdir -p /out
+CMD ["/bin/bash"]

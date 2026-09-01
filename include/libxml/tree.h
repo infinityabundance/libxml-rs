@@ -162,6 +162,12 @@ typedef xmlOutputBuffer *xmlOutputBufferPtr;
 typedef struct _xmlBuffer xmlBuffer;
 typedef xmlBuffer *xmlBufferPtr;
 
+/* Phase 14 (DOWNSTREAM-LXML): upstream tree.h defines LIBXML2_NEW_BUFFER to
+ * express that the API uses the new xmlBuf-based buffers (introduced in
+ * libxml2 2.9.0); consumers (lxml etree_defs.h) key their xmlBuf alias off
+ * it. Verbatim from the upstream oracle header. */
+#define LIBXML2_NEW_BUFFER
+
 typedef struct _xmlBuf xmlBuf;
 typedef xmlBuf *xmlBufPtr;
 
@@ -356,8 +362,8 @@ struct _xmlAttr {
 struct _xmlNs {
     xmlNsPtr next;
     int type;
-    xmlChar *href;
-    xmlChar *prefix;
+    const xmlChar *href;
+    const xmlChar *prefix;
     void *_private;
     void *context;
 };
@@ -378,11 +384,11 @@ struct _xmlDoc {
     xmlDtdPtr intSubset;
     xmlDtdPtr extSubset;
     xmlNsPtr oldNs;
-    const xmlChar *version;
-    const xmlChar *encoding;
+    xmlChar *version;
+    xmlChar *encoding;
     void *ids;
     void *refs;
-    const xmlChar *URL;
+    xmlChar *URL;
     int charset;
     void *dict;
     void *psvi;
@@ -405,8 +411,8 @@ struct _xmlDtd {
     void *elements;
     void *attributes;
     void *entities;
-    const xmlChar *ExternalID;
-    const xmlChar *SystemID;
+    xmlChar *ExternalID;
+    xmlChar *SystemID;
     void *pentities;
 };
 

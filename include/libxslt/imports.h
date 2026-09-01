@@ -19,6 +19,36 @@ extern "C" {
 
 /* Functions will be declared here as they are implemented. */
 
+/* Phase 14 (DOWNSTREAM-LXML): the XSLT_GET_IMPORT_* macros from the upstream
+ * oracle imports.h — consumers (lxml etree_defs.h LXML_GET_XSLT_ENCODING)
+ * use them to walk the stylesheet cascading import order. Verbatim from the
+ * upstream oracle header. */
+/**
+ * XSLT_GET_IMPORT_PTR:
+ *
+ * A macro to import pointers from the stylesheet cascading order.
+ */
+#define XSLT_GET_IMPORT_PTR(res, style, name) {			\
+    xsltStylesheetPtr st = style;				\
+    res = NULL;							\
+    while (st != NULL) {					\
+	if (st->name != NULL) { res = st->name; break; }	\
+	st = xsltNextImport(st);				\
+    }}
+
+/**
+ * XSLT_GET_IMPORT_INT:
+ *
+ * A macro to import intergers from the stylesheet cascading order.
+ */
+#define XSLT_GET_IMPORT_INT(res, style, name) {			\
+    xsltStylesheetPtr st = style;				\
+    res = -1;							\
+    while (st != NULL) {					\
+	if (st->name != -1) { res = st->name; break; }	\
+	st = xsltNextImport(st);				\
+    }}
+
 
 /* [11.1-S] begin: oracle-extracted declarations
  * Extracted verbatim from the upstream headers (11.1-S header-surface

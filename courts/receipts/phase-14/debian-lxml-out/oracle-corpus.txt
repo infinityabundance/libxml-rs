@@ -1,0 +1,170 @@
+op:parse-simple: '<root><a>1</a><b>2</b></root>'
+op:parse-ns: '<root xmlns:x="http://x"><x:a x:attr="v">t</x:a></root>'
+op:parse-entity: '<r>hello</r>'
+op:parse-pi: '<r/>'
+op:parse-comment: '<r><!-- c --><a/></r>'
+op:parse-doctype: '<html xmlns="http://www.w3.org/1999/xhtml"></html>'
+op:parse-attr-quote: ('EXC', 'XMLSyntaxError', ['AttValue: " or \' expected, line 1, column 18 (<string>, line 1)'])
+op:parse-empty: ('EXC', 'XMLSyntaxError', ['Document is empty, line 1, column 1 (<string>, line 1)'])
+op:parse-ws: '<r>  <a> x </a>  </r>'
+op:parse-cdata: '<r>&lt;not-markup&gt;</r>'
+op:parse-simple-fields: ('root', [], None, None)
+op:parse-ns-fields: ('root', [], None, None)
+op:parse-entity-fields: ('r', [], 'hello', None)
+op:parse-pi-fields: ('r', [], None, None)
+op:parse-comment-fields: ('r', [], None, None)
+op:parse-doctype-fields: ('html', [], None, None)
+op:parse-attr-quote-fields: ('EXC', 'XMLSyntaxError', ['AttValue: " or \' expected, line 1, column 18 (<string>, line 1)'])
+op:parse-empty-fields: ('EXC', 'XMLSyntaxError', ['Document is empty, line 1, column 1 (<string>, line 1)'])
+op:parse-ws-fields: ('r', [], '  ', None)
+op:parse-cdata-fields: ('r', [], '<not-markup>', None)
+op:parse-hostile-opt1: '<r/>'
+op:parse-hostile-opt2: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt256: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt16384: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt128: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt32: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt64: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt4: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt524288: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt65536: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt32768: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:parse-hostile-opt131072: ('EXC', 'XMLSyntaxError', ['Detected an entity reference loop, line 1, column 38 (<string>, line 1)'])
+op:recover-0: None
+op:recover-0-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-1: None
+op:recover-1-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-2: None
+op:recover-2-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-3: None
+op:recover-3-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-4: None
+op:recover-4-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-5: None
+op:recover-5-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-6: None
+op:recover-6-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-7: None
+op:recover-7-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-8: None
+op:recover-8-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-9: None
+op:recover-9-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-10: None
+op:recover-10-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-11: None
+op:recover-11-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-12: None
+op:recover-12-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-13: None
+op:recover-13-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-14: None
+op:recover-14-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:recover-15: None
+op:recover-15-err: ('EXC', 'XMLSyntaxError', ["Start tag expected, '<' not found, line 1, column 1 (<string>, line 1)"])
+op:push-even: ('EXC', 'TypeError', ["'list' object is not callable"])
+op:iterparse: [('end', 'a'), ('end', 'b'), ('end', 'a'), ('end', 'r')]
+op:iterparse-start: [('start', 'r'), ('start', 'a'), ('start', 'b')]
+op:iterparse-tag: [('end', 'a'), ('end', 'a')]
+op:html-basic: '<html><head><title>T</title></head><body><p>P</p></body></html>'
+op:html-broken: '<html><body><p>a</p><p>b</p></body></html>'
+op:html-table: '<table><tr><td>1</td><td>2</td></tr><tr><td>3</td></tr></table>'
+op:html-entities: '<html><body>\xa0©AB</body></html>'
+op:html-meta-enc: '<html><head></head><body>café</body></html>'
+op:html-comments: '<span>x</span>'
+op:html-script: "<html><body><script>if (a < b && c > d) { x('</script>'); }</body></html>"
+op:html-fragment: '<div><p>a</p><p>b</p></div>'
+op:html-fragments: ['<p>a</p>', '<p>b</p>', '<div><span>c</span></div>']
+op:sax-basic: ('EXC', 'AttributeError', ["'SaxSink' object has no attribute 'close'"])
+op:sax-ns: ('EXC', 'AttributeError', ["'SaxSink' object has no attribute 'close'"])
+op:tree-ops: ['<root a="1"><first/><prev/><child c="3">text<sub>deep</sub></child>tail<sib/><child2/></root>', ['root', 'first', 'prev', 'child', 'sub', 'sib', 'child2'], [('root', None), ('first', None), ('prev', None), ('child', 'text'), ('sub', 'deep'), ('sib', None), ('child2', None)], '1', None, 'default', {'a': '1'}, 5, 'first']
+op:tree-move: '<r><a/><b/></r>'
+op:tree-deepcopy: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'deepcopy'"])
+op:tree-clear: '<r/>'
+op:tree-builder: '<root><a>1text</a><b>tail<c>x</c></b></root>'
+op:objectify: (5, 2.5, True, 'text', "'text'")
+op:xpath-abs: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>']
+op:xpath-rel: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>']
+op:xpath-attr: ['1', '2']
+op:xpath-text: ['x', 'y', 'z']
+op:xpath-pred: ['<a xmlns:n="http://n" i="2">y</a>']
+op:xpath-pos: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n">z</a>']
+op:xpath-last: ['<a xmlns:n="http://n" i="2">y</a>', '<a xmlns:n="http://n">z</a>']
+op:xpath-axis: ['<r xmlns:n="http://n"><a i="1">x</a><a i="2">y</a><b><a>z</a></b><n:c>w</n:c></r>']
+op:xpath-following-sibling: ['<a xmlns:n="http://n" i="2">y</a>']
+op:xpath-ns: ['<n:c xmlns:n="http://n">w</n:c>']
+op:xpath-unknown-ns: ('EXC', 'XPathEvalError', ['Undefined namespace prefix: n'])
+op:xpath-string-fn: ['1']
+op:xpath-number-fn: ('EXC', 'TypeError', ["'float' object is not iterable"])
+op:xpath-concat: ['x', '-', 'y']
+op:xpath-contains: ('EXC', 'TypeError', ["'bool' object is not iterable"])
+op:xpath-translate: ['X']
+op:xpath-normalize-space: ['a', ' ', 'b']
+op:xpath-sum: ('EXC', 'TypeError', ["'float' object is not iterable"])
+op:xpath-count: ('EXC', 'TypeError', ["'float' object is not iterable"])
+op:xpath-local-name: ('EXC', 'XPathEvalError', ['Undefined namespace prefix: n'])
+op:xpath-name: ('EXC', 'XPathEvalError', ['Undefined namespace prefix: n'])
+op:xpath-namespace-uri: ('EXC', 'XPathEvalError', ['Undefined namespace prefix: n'])
+op:xpath-var: ('EXC', 'XPathResultError', ['Unknown return type: dict'])
+op:xpath-var-num: ('EXC', 'XPathResultError', ['Unknown return type: dict'])
+op:xpath-var-node: ('EXC', 'XPathResultError', ['Unknown return type: dict'])
+op:xpath-bad-expr: ('EXC', 'XPathEvalError', ['Invalid expression'])
+op:xpath-bad-fn: ('EXC', 'XPathEvalError', ['Unregistered function: unknown-fn'])
+op:xpath-bool: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>']
+op:xpath-union: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>', '<b xmlns:n="http://n"><a>z</a></b>', '<a xmlns:n="http://n">z</a>']
+op:xpath-ancestor-or-self: ['<r xmlns:n="http://n"><a i="1">x</a><a i="2">y</a><b><a>z</a></b><n:c>w</n:c></r>', '<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>', '<b xmlns:n="http://n"><a>z</a></b>', '<a xmlns:n="http://n">z</a>']
+op:xpath-descendant: ['<a xmlns:n="http://n" i="1">x</a>', '<a xmlns:n="http://n" i="2">y</a>', '<a xmlns:n="http://n">z</a>']
+op:xpath-preceding-sibling: ['<a xmlns:n="http://n" i="1">x</a>']
+op:xpath-id: []
+op:xpath-smart: [('_ElementUnicodeResult', '1')]
+op:xslt-basic: ('<?xml version="1.0"?>\n<out><item id="1">a</item><item id="2">b</item><item id="3">c</item>many</out>\n', )
+op:xslt-params: ('<?xml version="1.0"?>\n<out><item id="1">a</item><item id="2">b</item><item id="3">c</item>many</out>\n', )
+op:xslt-exslt: ('EXC', 'XSLTApplyError', ['XPath evaluation returned no result.'])
+op:xslt-document-resolver: ('EXC', 'XSLTApplyError', ['Cannot resolve URI string://__STRING__XSLT__/extra'])
+op:xslt-keys: ('b', )
+op:schema-valid: (True, [])
+op:schema-invalid: (False, ["Element 'a': 'nope' is not a valid value of the atomic type 'xs:int'.", "Element 'root': Missing child element(s). Expected is one of ( a, b )."])
+op:schema-missing: (False, ["Element 'root': Missing child element(s). Expected is one of ( a, b )."])
+op:rng-valid: (True, [])
+op:rng-invalid: (False, ['Did not expect element c there'])
+op:dtd-docinfo: ('EXC', 'AttributeError', ["'lxml.etree._Element' object has no attribute 'docinfo'"])
+op:dtd-validate-ok: ('EXC', 'AttributeError', ["'lxml.etree._Element' object has no attribute 'docinfo'"])
+op:dtd-validate-bad: ('EXC', 'XMLSyntaxError', ['No declaration for element b, line 1, column 70 (<string>, line 1)'])
+op:ser-methods: {'xml': '<r a="1"><a>text</a><b><!--c--></b><c>&lt;x&gt;</c></r>', 'html': '<r a="1"><a>text</a><b><!--c--></b><c>&lt;x&gt;</c></r>', 'text': 'text<x>', 'c14n': '<r a="1"><a>text</a><b><!--c--></b><c>&lt;x&gt;</c></r>'}
+op:ser-encodings: ('EXC', 'XMLSyntaxError', ['Invalid bytes in character encoding, line 1, column 10 (<string>, line 1)'])
+op:ser-xmldecl: ("<?xml version='1.0' encoding='ASCII'?>\n<r/>", '<r/>')
+op:ser-pretty: '<r>\n  <a>1</a>\n  <b>\n    <c>2</c>\n  </b>\n</r>\n'
+op:ser-text-tail: ('a', 'c', None)
+op:c14n: ('<r xmlns:p="http://p" xmlns:q="http://q"><a b="2" p:x="1"><b>t</b></a><p:c></p:c></r>', '<r><a xmlns:p="http://p" b="2" p:x="1"><b>t</b></a><p:c xmlns:p="http://p"></p:c></r>', '<r xmlns:p="http://p" xmlns:q="http://q"><a b="2" p:x="1"><b>t</b></a><p:c></p:c></r>')
+op:enc-iso-8859-1: None
+op:enc-iso-8859-1-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:enc-iso-8859-15: None
+op:enc-iso-8859-15-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:enc-utf-16: '<r>caf&#233;</r>'
+op:enc-utf-16-err: '<r>café</r>'
+op:enc-utf-8: '<r>caf&#195;&#169;</r>'
+op:enc-utf-8-err: '<r>cafÃ©</r>'
+op:enc-ascii: '<r>plain</r>'
+op:enc-ascii-err: '<r>plain</r>'
+op:enc-windows-1252: '<r>&#65533;quote&#65533;</r>'
+op:enc-windows-1252-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:enc-shift_jis: '<r>&#65533;&#65533;&#65533;[&#65533;&#65533;&#65533;&#65533;</r>'
+op:enc-shift_jis-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:enc-euc-jp: '<r>&#65533;&#65533;&#65533;&#65533;</r>'
+op:enc-euc-jp-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:enc-iso-2022-jp: '<r>$BF|K\\(B</r>'
+op:enc-iso-2022-jp-err: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:errors-matrix: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'get_last_error'"])
+op:errors-reset: ('EXC', 'AttributeError')
+op:lifetime-churn: 200
+op:lifetime-churn-html: 200
+op:lifetime-mutate-iter: '<r><a/><c/><d/></r>'
+op:xinclude: ('EXC', 'AttributeError')
+op:misc-getpath: ('/r/a', '/r/c')
+op:misc-itertext: 'a|c|d|e'
+op:misc-findall: (['a', 'a'], ['a', 'a'], True, True)
+op:misc-makeelement: '<r><x a="1">t</x></r>'
+op:misc-qname: ('{http://p}a', 'a', 'http://p', '{http://p}a')
+op:html5-surface: '<html:html xmlns:html="http://www.w3.org/1999/xhtml"><html:head></html:head><html:body><html:p>x</html:p></html:body></html:html>'
+op:sax-bridge: ('EXC', 'AttributeError', ["module 'lxml.etree' has no attribute 'sax'"])
+TOTAL_OPS: 169

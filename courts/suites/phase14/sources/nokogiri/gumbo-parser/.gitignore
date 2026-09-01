@@ -1,0 +1,5 @@
+build
+googletest
+src/*.o
+fuzzer/build
+src/libgumbo.a

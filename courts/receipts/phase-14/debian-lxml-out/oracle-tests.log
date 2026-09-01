@@ -1,0 +1,35 @@
+.................s........................................................................................................................./src/lxml/src/lxml/tests/test_elementpath.py:311: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  self.assertEqual(summarize_list(etree.ElementTree(elem).findall("/tag")),
+......s/src/lxml/src/lxml/tests/test_elementpath.py:311: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  self.assertEqual(summarize_list(etree.ElementTree(elem).findall("/tag")),
+..ss.../src/lxml/src/lxml/tests/test_elementpath.py:311: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  self.assertEqual(summarize_list(etree.ElementTree(elem).findall("/tag")),
+......./src/lxml/src/lxml/tests/test_elementpath.py:311: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  self.assertEqual(summarize_list(etree.ElementTree(elem).findall("/tag")),
+...................................................................................................................................................................................................................................................................................................................ssss...ssssssssssssss...ssssssssssssss....................................................................................................................................................................................................................................................................................................ssss............................................................................................................................................................................................................................................................................................................................................................................................<doctest lxml.tests.selftest.find[35]>:1: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  summarize_list(ElementTree.ElementTree(elem).findall("/tag"))
+...................<doctest lxml.tests.selftest2.find[25]>:1: FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.  If you rely on the current behaviour, change it to './tag'
+  summarize_list(ElementTree.ElementTree(elem).findall("/tag"))
+........................................................................sssss............................................................................s..................s..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 2007 tests in 1.428s
+
+OK
+Skipping tests in feedparser_data - external lxml_html_clean package is not installed
+Comparing with ElementTree 1.3.0
+
+TESTED VERSION: 6.1.2
+    Python:           (3, 11, 2, 'final', 0)
+    lxml.etree:       (6, 1, 2, 0)
+    libxml used:      (2, 15, 3)
+           features:  catalog html iconv icu regexp schematron xmlschema xpath zlib
+    libxml compiled:  (2, 15, 3)
+           features:  catalog html iconv icu regexp schematron xmlschema xpath zlib
+    libxslt used:     (1, 1, 45)
+    libxslt compiled: (1, 1, 45)
+    iconv compiled:   (0, 0)
+    FS encoding:      utf-8
+    Default encoding: utf-8
+    Max Unicode:      1114111
+    PyUCS4 encoding:  UCS-4LE
+

@@ -28,12 +28,17 @@
 //! `serialize_node` / `new_doc*`), which is the oracle-verified engine used by
 //! `xmllint --html`.
 //!
-//! The `htmlParserCtxt` type is opaque at this boundary (`*mut c_void`):
-//! structs.rs has no `_htmlParserCtxt` mirror. Contexts created here are
-//! freed by the already-exported `htmlFreeParserCtxt`
-//! (`crate::xml::html::free_parser_ctxt`), so the context struct mirrors the
-//! internal `HtmlParserCtxt` field layout through `filename`/`encoding`
-//! (the only fields that function touches) before appending ABI state.
+//! The `htmlParserCtxt` type is opaque at this boundary (`*mut c_void`), but
+//! every context IS a genuine `xmlParserCtxt`: each host allocation is a real
+//! `_xmlParserCtxt` at offset 0 (C consumers read/write `sax`, `userData`,
+//! `myDoc`, `html`, `options`, `wellFormed`, ... per the C header) followed
+//! by the internal `HtmlParserCtxt` engine state, which C never sees.
+//! Contexts created here are freed by the already-exported
+//! `htmlFreeParserCtxt` (`crate::xml::html::free_parser_ctxt`), which frees
+//! the single host block. (R-00019x: the pre-Phase-14 contexts were a raw
+//! private struct cast to `xmlParserCtxt*`; lxml's `c_ctxt->sax.startDocument`
+//! write crashed on the mismatched layout — this host layout closes that
+//! defect class.)
 //!
 //! # Upstream contract
 //!
@@ -73,9 +78,10 @@
 //! `htmlElementAllowedHere` returns 1 unconditionally and `htmlInitAutoClose`/
 //! `htmlDefaultSAXHandlerInit`/`htmlParseCharRef` are no-ops — all in the
 //! R-000138 documented-no-op set because upstreams own 2.15 bodies are
-//! constant/empty. The `htmlParserCtxt` type is opaque here (`*mut c_void`)
-//! with no `_htmlParserCtxt` mirror — deliberate, the internal context struct
-//! is the real storage.
+//! constant/empty. Contexts are host allocations (a real `xmlParserCtxt` at
+//! offset 0 plus the engine state) per R-00019x; there is deliberately no
+//! standalone `_htmlParserCtxt` mirror because the C-visible prefix IS
+//! `_xmlParserCtxt`.
 //!
 //! # Proving courts
 //!
@@ -2444,14 +2450,14 @@ pub const unsafe extern "C" fn htmlParseCharRef(_ctxt: *mut c_void) -> c_int {
 // HTML parser contexts
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Opaque HTML parser context.
+/// Opaque HTML parser context — the ENGINE STATE half of a host allocation.
 ///
 /// # Layout contract
 ///
-/// The exported `htmlFreeParserCtxt` (src/abi/exports_xml2.rs) routes to
-/// `crate::xml::html::free_parser_ctxt`, which interprets the pointer as the
-/// internal `HtmlParserCtxt` and frees its `filename`/`encoding` fields and
-/// the block itself. The field prefix below therefore mirrors
+/// Exported `htmlParserCtxt*` values are HOST ALLOCATIONS (R-00019x): a
+/// genuine `_xmlParserCtxt` at offset 0 (C-visible: `sax`/`userData`/`myDoc`/
+/// `html`/`options`/`wellFormed`/`errNo` are real C fields) followed by this
+/// struct at `HTML_CTXT_STATE_OFFSET`. The field prefix mirrors
 /// `HtmlParserCtxt`'s declaration **exactly** (same field types, same order,
 /// same default Rust representation — NOT `repr(C)`), which places
 /// `filename`/`encoding` at the same byte offsets as the internal struct
@@ -2485,16 +2491,35 @@ struct HtmlOpaqueCtxt {
     user_data: *mut c_void,
 }
 
-/// Allocate a zero-initialized HTML parser context with the internal
-/// `HtmlParserCtxt`-compatible prefix. Freed by `htmlFreeParserCtxt`.
-unsafe fn html_ctxt_alloc() -> *mut HtmlOpaqueCtxt {
-    let mem = xmlMallocZero(size_of::<HtmlOpaqueCtxt>()) as *mut HtmlOpaqueCtxt;
+/// Byte offset of the engine state inside a host allocation: the exported
+/// `htmlParserCtxt` is a real `xmlParserCtxt` at offset 0, then the state.
+const HTML_CTXT_STATE_OFFSET: usize = size_of::<_xmlParserCtxt>();
+
+/// The engine-state pointer inside a host HTML parser context allocation.
+///
+/// # Safety
+///
+/// - `ctxt` must be non-NULL and point to a host allocation created by
+///   `html_ctxt_alloc` (directly or through the exported creators).
+unsafe fn html_state(ctxt: *mut c_void) -> *mut HtmlOpaqueCtxt {
+    (ctxt as *mut u8).add(HTML_CTXT_STATE_OFFSET) as *mut HtmlOpaqueCtxt
+}
+
+/// Allocate a zero-initialized host HTML parser context: a real C-visible
+/// `xmlParserCtxt` at offset 0 (with `html = 1` and the exported
+/// `htmlDefaultSAXHandler` as the default SAX handler, matching upstream
+/// `htmlNewParserCtxt`) followed by the engine state. The whole block is
+/// freed by `htmlFreeParserCtxt`.
+unsafe fn html_ctxt_alloc() -> *mut c_void {
+    let total = HTML_CTXT_STATE_OFFSET + size_of::<HtmlOpaqueCtxt>();
+    let mem = xmlMallocZero(total) as *mut u8;
     if mem.is_null() {
         return ptr::null_mut();
     }
+    let state = mem.add(HTML_CTXT_STATE_OFFSET) as *mut HtmlOpaqueCtxt;
     unsafe {
         ptr::write(
-            mem,
+            state,
             HtmlOpaqueCtxt {
                 doc: ptr::null_mut(),
                 current: ptr::null_mut(),
@@ -2519,15 +2544,24 @@ unsafe fn html_ctxt_alloc() -> *mut HtmlOpaqueCtxt {
                 user_data: ptr::null_mut(),
             },
         );
+        // C-visible context: HTML parser contexts are `html = 1` from
+        // creation (upstream htmlNewSAXParserCtxt/htmlNewParserCtxt), and a
+        // NULL sax selects the exported htmlDefaultSAXHandler global.
+        let c = mem as *mut _xmlParserCtxt;
+        (*c).html = 1;
+        (*c).sax = ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler)
+            as *const _xmlSAXHandler as *mut _xmlSAXHandler;
+        (*state).sax = (*c).sax;
     }
-    mem
+    mem as *mut c_void
 }
 
-/// Store a copy of `buffer` (len bytes) as the context's input buffer.
-unsafe fn html_ctxt_set_input(ctxt: *mut HtmlOpaqueCtxt, buffer: *const c_char, size: c_int) {
+/// Store a copy of `buffer` (len bytes) as the context's engine input.
+unsafe fn html_ctxt_set_input(ctxt: *mut c_void, buffer: *const c_char, size: c_int) {
     if buffer.is_null() || size <= 0 {
         return;
     }
+    let st = unsafe { html_state(ctxt) };
     let len = size as usize;
     let nb = xmlMallocImpl(len) as *mut u8;
     if nb.is_null() {
@@ -2535,9 +2569,9 @@ unsafe fn html_ctxt_set_input(ctxt: *mut HtmlOpaqueCtxt, buffer: *const c_char, 
     }
     unsafe {
         ptr::copy_nonoverlapping(buffer as *const u8, nb, len);
-        (*ctxt).input = nb;
-        (*ctxt).input_len = len;
-        (*ctxt).input_pos = 0;
+        (*st).input = nb;
+        (*st).input_len = len;
+        (*st).input_pos = 0;
     }
 }
 
@@ -2553,15 +2587,28 @@ pub unsafe extern "C" fn htmlNewSAXParserCtxt(
     sax: *const _xmlSAXHandler,
     userData: *mut c_void,
 ) -> *mut c_void {
-    let ctxt = unsafe { html_ctxt_alloc() };
-    if ctxt.is_null() {
+    let host = unsafe { html_ctxt_alloc() };
+    if host.is_null() {
         return ptr::null_mut();
     }
+    let c = host as *mut _xmlParserCtxt;
     unsafe {
-        (*ctxt).sax = sax as *mut _xmlSAXHandler;
-        (*ctxt).user_data = userData;
+        // Upstream (HTMLparser.c htmlNewSAXParserCtxt): a NULL sax selects
+        // the exported htmlDefaultSAXHandler global; the handler is stored
+        // by reference, not copied.
+        (*c).sax = if sax.is_null() {
+            ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *const _xmlSAXHandler
+                as *mut _xmlSAXHandler
+        } else {
+            sax as *mut _xmlSAXHandler
+        };
+        (*c).userData = userData;
+        (*c).html = 1;
+        let st = unsafe { html_state(host) };
+        (*st).sax = (*c).sax;
+        (*st).user_data = userData;
     }
-    ctxt as *mut c_void
+    host
 }
 
 /// Allocate and initialize a new HTML parser context.
@@ -2592,16 +2639,17 @@ pub unsafe extern "C" fn htmlCreateMemoryParserCtxt(
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
-    let ctxt = unsafe { html_ctxt_alloc() };
-    if ctxt.is_null() {
+    let host = unsafe { html_ctxt_alloc() };
+    if host.is_null() {
         return ptr::null_mut();
     }
-    unsafe { html_ctxt_set_input(ctxt, buffer, size) };
-    if unsafe { (*ctxt).input.is_null() } {
-        unsafe { crate::xml::html::free_parser_ctxt(ctxt as *mut c_void) };
+    unsafe { html_ctxt_set_input(host, buffer, size) };
+    let st = unsafe { html_state(host) };
+    if unsafe { (*st).input.is_null() } {
+        unsafe { crate::xml::html::free_parser_ctxt(host) };
         return ptr::null_mut();
     }
-    ctxt as *mut c_void
+    host
 }
 
 /// Create a parser context for using the HTML parser in push mode.
@@ -2622,30 +2670,42 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
     filename: *const c_char,
     _enc: xmlCharEncoding,
 ) -> *mut c_void {
-    let ctxt = unsafe { html_ctxt_alloc() };
-    if ctxt.is_null() {
+    let host = unsafe { html_ctxt_alloc() };
+    if host.is_null() {
         return ptr::null_mut();
     }
+    let c = host as *mut _xmlParserCtxt;
+    let st = unsafe { html_state(host) };
     unsafe {
-        (*ctxt).sax = sax;
-        (*ctxt).user_data = user_data;
+        // Upstream routes through htmlNewSAXParserCtxt: a NULL sax selects
+        // the exported htmlDefaultSAXHandler global.
+        (*c).sax = if sax.is_null() {
+            ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *const _xmlSAXHandler
+                as *mut _xmlSAXHandler
+        } else {
+            sax as *mut _xmlSAXHandler
+        };
+        (*c).userData = user_data;
+        (*c).html = 1;
+        (*st).sax = (*c).sax;
+        (*st).user_data = user_data;
         if !filename.is_null() {
-            (*ctxt).filename = c_strdup(filename);
+            (*st).filename = c_strdup(filename);
         }
         if size > 0 && !chunk.is_null() {
-            html_ctxt_set_input(ctxt, chunk, size);
+            html_ctxt_set_input(host, chunk, size);
         } else {
             // Upstream always creates a push input; allocate an (empty)
             // buffer so htmlParseChunk sees a valid input.
             let nb = xmlMallocImpl(1) as *mut u8;
             if !nb.is_null() {
-                (*ctxt).input = nb;
-                (*ctxt).input_len = 0;
-                (*ctxt).input_pos = 0;
+                (*st).input = nb;
+                (*st).input_len = 0;
+                (*st).input_pos = 0;
             }
         }
     }
-    ctxt as *mut c_void
+    host
 }
 
 /// Reset a parser context.
@@ -2660,18 +2720,26 @@ pub unsafe extern "C" fn htmlCtxtReset(ctxt: *mut c_void) {
     if ctxt.is_null() {
         return;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
+    let st = unsafe { html_state(ctxt) };
+    let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
-        if !(*c).input.is_null() {
-            xmlFreeImpl((*c).input as *mut c_void);
+        if !(*st).input.is_null() {
+            xmlFreeImpl((*st).input as *mut c_void);
         }
-        (*c).input = ptr::null_mut();
-        (*c).input_len = 0;
-        (*c).input_pos = 0;
-        (*c).doc = ptr::null_mut();
+        (*st).input = ptr::null_mut();
+        (*st).input_len = 0;
+        (*st).input_pos = 0;
+        (*st).doc = ptr::null_mut();
+        (*st).options = 0;
+        (*st).line = 1;
+        (*st).err = false;
+        // C-visible state: upstream htmlCtxtReset clears the input streams
+        // and doc, resets errNo and wellFormed, and keeps the SAX handler
+        // and userData.
+        (*c).myDoc = ptr::null_mut();
+        (*c).errNo = 0;
+        (*c).wellFormed = 1;
         (*c).options = 0;
-        (*c).line = 1;
-        (*c).err = false;
     }
 }
 
@@ -2690,10 +2758,12 @@ pub unsafe extern "C" fn htmlCtxtUseOptions(ctxt: *mut c_void, options: c_int) -
     if ctxt.is_null() {
         return -1;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
+    let c = ctxt as *mut _xmlParserCtxt;
+    let st = unsafe { html_state(ctxt) };
     // Historic storage rule: some options can only be enabled.
     unsafe {
         (*c).options = ((*c).options & HTML_OPTIONS_KEEP_MASK) | (options & HTML_OPTIONS_ALL_MASK);
+        (*st).options = (*c).options;
     }
     // Return the set of unknown/unimplemented options (XML_PARSE_NOENT is
     // accepted and ignored, matching upstream).
@@ -2713,12 +2783,19 @@ pub unsafe extern "C" fn htmlParseDocument(ctxt: *mut c_void) -> c_int {
     if ctxt.is_null() {
         return -1;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
-    if unsafe { (*c).input.is_null() } {
+    let st = unsafe { html_state(ctxt) };
+    if unsafe { (*st).input.is_null() } {
         return -1;
     }
-    let doc = unsafe { html::parse_memory((*c).input as *const c_char, (*c).input_len as c_int) };
-    unsafe { (*c).doc = doc };
+    let doc = unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
+    let c = ctxt as *mut _xmlParserCtxt;
+    unsafe {
+        (*st).doc = doc;
+        (*c).myDoc = doc;
+        if !doc.is_null() {
+            (*c).wellFormed = 1;
+        }
+    }
     if doc.is_null() {
         -1
     } else {
@@ -2746,33 +2823,38 @@ pub unsafe extern "C" fn htmlParseChunk(
     if ctxt.is_null() || size < 0 || (size > 0 && chunk.is_null()) {
         return XML_ERR_ARGUMENT;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
-    if unsafe { (*c).input.is_null() } {
+    let st = unsafe { html_state(ctxt) };
+    if unsafe { (*st).input.is_null() } {
         return XML_ERR_ARGUMENT;
     }
 
     if size > 0 {
-        let new_len = unsafe { (*c).input_len }.wrapping_add(size as usize);
-        let nb = unsafe { xmlReallocImpl((*c).input as *mut c_void, new_len) } as *mut u8;
+        let new_len = unsafe { (*st).input_len }.wrapping_add(size as usize);
+        let nb = unsafe { xmlReallocImpl((*st).input as *mut c_void, new_len) } as *mut u8;
         if nb.is_null() {
             return XML_ERR_NO_MEMORY;
         }
         unsafe {
-            ptr::copy_nonoverlapping(chunk as *const u8, nb.add((*c).input_len), size as usize);
-            (*c).input = nb;
-            (*c).input_len = new_len;
+            ptr::copy_nonoverlapping(chunk as *const u8, nb.add((*st).input_len), size as usize);
+            (*st).input = nb;
+            (*st).input_len = new_len;
         }
     }
 
     if terminate != 0 {
         let doc =
-            unsafe { html::parse_memory((*c).input as *const c_char, (*c).input_len as c_int) };
+            unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
+        let c = ctxt as *mut _xmlParserCtxt;
         unsafe {
-            (*c).doc = doc;
+            (*st).doc = doc;
+            (*c).myDoc = doc;
+            if !doc.is_null() {
+                (*c).wellFormed = 1;
+            }
             // The accumulated input is no longer needed.
-            xmlFreeImpl((*c).input as *mut c_void);
-            (*c).input = ptr::null_mut();
-            (*c).input_len = 0;
+            xmlFreeImpl((*st).input as *mut c_void);
+            (*st).input = ptr::null_mut();
+            (*st).input_len = 0;
         }
     }
     XML_ERR_OK
@@ -2803,9 +2885,14 @@ pub unsafe extern "C" fn htmlCtxtParseDocument(
         return ptr::null_mut();
     }
     let doc = unsafe { html::parse_memory(cur as *const c_char, len) };
-    let c = ctxt as *mut HtmlOpaqueCtxt;
+    let st = unsafe { html_state(ctxt) };
+    let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
-        (*c).doc = doc;
+        (*st).doc = doc;
+        (*c).myDoc = doc;
+        if !doc.is_null() {
+            (*c).wellFormed = 1;
+        }
     }
     doc
 }
@@ -2824,9 +2911,14 @@ unsafe fn html_ctxt_finish_read(
     if ctxt.is_null() {
         return doc;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
+    let st = unsafe { html_state(ctxt) };
+    let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
-        (*c).doc = doc;
+        (*st).doc = doc;
+        (*c).myDoc = doc;
+        if !doc.is_null() {
+            (*c).wellFormed = 1;
+        }
         if !doc.is_null() && !url.is_null() {
             (*doc).URL = c_strdup(url) as *mut xmlChar;
         }
@@ -3191,13 +3283,14 @@ pub unsafe extern "C" fn htmlParseElement(ctxt: *mut c_void) {
     if ctxt.is_null() {
         return;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
-    if unsafe { (*c).input.is_null() } {
+    let st = unsafe { html_state(ctxt) };
+    if unsafe { (*st).input.is_null() } {
         return;
     }
-    let doc = unsafe { html::parse_memory((*c).input as *const c_char, (*c).input_len as c_int) };
+    let doc = unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
     unsafe {
-        (*c).doc = doc;
+        (*st).doc = doc;
+        (*(ctxt as *mut _xmlParserCtxt)).myDoc = doc;
     }
 }
 
@@ -3985,9 +4078,11 @@ pub unsafe extern "C" fn htmlCtxtSetOptions(ctxt: *mut c_void, options: c_int) -
     if ctxt.is_null() {
         return -1;
     }
-    let c = ctxt as *mut HtmlOpaqueCtxt;
+    let c = ctxt as *mut _xmlParserCtxt;
+    let st = unsafe { html_state(ctxt) };
     unsafe {
         (*c).options = options & HTML_OPTIONS_ALL_MASK;
+        (*st).options = (*c).options;
     }
     options & !HTML_OPTIONS_ALL_MASK & !crate::abi::types::XML_PARSE_NOENT
 }
