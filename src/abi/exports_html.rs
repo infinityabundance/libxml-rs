@@ -2668,7 +2668,7 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
     chunk: *const c_char,
     size: c_int,
     filename: *const c_char,
-    _enc: xmlCharEncoding,
+    enc: xmlCharEncoding,
 ) -> *mut c_void {
     let host = unsafe { html_ctxt_alloc() };
     if host.is_null() {
@@ -2691,6 +2691,16 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
         (*st).user_data = user_data;
         if !filename.is_null() {
             (*st).filename = c_strdup(filename);
+        }
+        // UPSTREAM-PARITY: htmlCreatePushParserCtxt(enc) wires the encoding
+        // into the input; htmlParseChunk converts chunk data to UTF-8 when
+        // the accumulated input is parsed.
+        if enc != xmlCharEncoding::XML_CHAR_ENCODING_NONE {
+            if let Some(name) = crate::xml::encoding::encoding_name(enc) {
+                let mut nb = name.to_vec();
+                nb.push(0);
+                (*st).encoding = c_strdup(nb.as_ptr() as *const c_char);
+            }
         }
         if size > 0 && !chunk.is_null() {
             html_ctxt_set_input(host, chunk, size);
@@ -2787,7 +2797,13 @@ pub unsafe extern "C" fn htmlParseDocument(ctxt: *mut c_void) -> c_int {
     if unsafe { (*st).input.is_null() } {
         return -1;
     }
-    let doc = unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
+    let doc = unsafe {
+        html::parse_memory_enc(
+            (*st).input as *const c_char,
+            (*st).input_len as c_int,
+            (*st).encoding,
+        )
+    };
     let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
         (*st).doc = doc;
@@ -2842,8 +2858,13 @@ pub unsafe extern "C" fn htmlParseChunk(
     }
 
     if terminate != 0 {
-        let doc =
-            unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
+        let doc = unsafe {
+            html::parse_memory_enc(
+                (*st).input as *const c_char,
+                (*st).input_len as c_int,
+                (*st).encoding,
+            )
+        };
         let c = ctxt as *mut _xmlParserCtxt;
         unsafe {
             (*st).doc = doc;
@@ -2884,8 +2905,8 @@ pub unsafe extern "C" fn htmlCtxtParseDocument(
     if len <= 0 {
         return ptr::null_mut();
     }
-    let doc = unsafe { html::parse_memory(cur as *const c_char, len) };
     let st = unsafe { html_state(ctxt) };
+    let doc = unsafe { html::parse_memory_enc(cur as *const c_char, len, (*st).encoding) };
     let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
         (*st).doc = doc;
@@ -2940,7 +2961,7 @@ pub unsafe extern "C" fn htmlCtxtReadMemory(
     buffer: *const c_char,
     size: c_int,
     URL: *const c_char,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() || size < 0 {
@@ -2948,7 +2969,7 @@ pub unsafe extern "C" fn htmlCtxtReadMemory(
     }
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
-    let doc = unsafe { html::parse_memory(buffer, size) };
+    let doc = unsafe { html::parse_memory_enc(buffer, size, encoding) };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3045,7 +3066,7 @@ pub unsafe extern "C" fn htmlCtxtReadFd(
     ctxt: *mut c_void,
     fd: c_int,
     URL: *const c_char,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() {
@@ -3054,7 +3075,13 @@ pub unsafe extern "C" fn htmlCtxtReadFd(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let data = unsafe { html_read_fd(fd) };
-    let doc = unsafe { html::parse_memory(data.as_ptr() as *const c_char, data.len() as c_int) };
+    let doc = unsafe {
+        html::parse_memory_enc(
+            data.as_ptr() as *const c_char,
+            data.len() as c_int,
+            encoding,
+        )
+    };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3074,7 +3101,7 @@ pub unsafe extern "C" fn htmlCtxtReadIO(
     _ioclose: Option<xmlInputCloseCallback>,
     ioctx: *mut c_void,
     URL: *const c_char,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     options: c_int,
 ) -> *mut _xmlDoc {
     if ctxt.is_null() {
@@ -3083,7 +3110,13 @@ pub unsafe extern "C" fn htmlCtxtReadIO(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let data = unsafe { html_read_io(ioread, ioctx) };
-    let doc = unsafe { html::parse_memory(data.as_ptr() as *const c_char, data.len() as c_int) };
+    let doc = unsafe {
+        html::parse_memory_enc(
+            data.as_ptr() as *const c_char,
+            data.len() as c_int,
+            encoding,
+        )
+    };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3287,7 +3320,13 @@ pub unsafe extern "C" fn htmlParseElement(ctxt: *mut c_void) {
     if unsafe { (*st).input.is_null() } {
         return;
     }
-    let doc = unsafe { html::parse_memory((*st).input as *const c_char, (*st).input_len as c_int) };
+    let doc = unsafe {
+        html::parse_memory_enc(
+            (*st).input as *const c_char,
+            (*st).input_len as c_int,
+            (*st).encoding,
+        )
+    };
     unsafe {
         (*st).doc = doc;
         (*(ctxt as *mut _xmlParserCtxt)).myDoc = doc;

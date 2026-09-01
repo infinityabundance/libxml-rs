@@ -640,6 +640,69 @@ fn parse_datatype_kind(name: &str) -> Option<XsdDatatypeKind> {
     }
 }
 
+/// Canonical `xs:` QName for a built-in datatype kind (inverse of
+/// `parse_datatype_kind`; used for upstream-format type errors).
+const fn datatype_kind_qname(kind: &XsdDatatypeKind) -> &'static str {
+    match kind {
+        XsdDatatypeKind::String => "xs:string",
+        XsdDatatypeKind::Boolean => "xs:boolean",
+        XsdDatatypeKind::Decimal => "xs:decimal",
+        XsdDatatypeKind::Float => "xs:float",
+        XsdDatatypeKind::Double => "xs:double",
+        XsdDatatypeKind::Duration => "xs:duration",
+        XsdDatatypeKind::DateTime => "xs:dateTime",
+        XsdDatatypeKind::Time => "xs:time",
+        XsdDatatypeKind::Date => "xs:date",
+        XsdDatatypeKind::GYearMonth => "xs:gYearMonth",
+        XsdDatatypeKind::GYear => "xs:gYear",
+        XsdDatatypeKind::GMonthDay => "xs:gMonthDay",
+        XsdDatatypeKind::GDay => "xs:gDay",
+        XsdDatatypeKind::GMonth => "xs:gMonth",
+        XsdDatatypeKind::HexBinary => "xs:hexBinary",
+        XsdDatatypeKind::Base64Binary => "xs:base64Binary",
+        XsdDatatypeKind::AnyURI => "xs:anyURI",
+        XsdDatatypeKind::QName => "xs:QName",
+        XsdDatatypeKind::Notation => "xs:NOTATION",
+        XsdDatatypeKind::NormalizedString => "xs:normalizedString",
+        XsdDatatypeKind::Token => "xs:token",
+        XsdDatatypeKind::Language => "xs:language",
+        XsdDatatypeKind::Nmtoken => "xs:NMTOKEN",
+        XsdDatatypeKind::Nmtokens => "xs:NMTOKENS",
+        XsdDatatypeKind::Name => "xs:Name",
+        XsdDatatypeKind::NCName => "xs:NCName",
+        XsdDatatypeKind::Id => "xs:ID",
+        XsdDatatypeKind::Idref => "xs:IDREF",
+        XsdDatatypeKind::Idrefs => "xs:IDREFS",
+        XsdDatatypeKind::Entity => "xs:ENTITY",
+        XsdDatatypeKind::Entities => "xs:ENTITIES",
+        XsdDatatypeKind::Integer => "xs:integer",
+        XsdDatatypeKind::NonPositiveInteger => "xs:nonPositiveInteger",
+        XsdDatatypeKind::NegativeInteger => "xs:negativeInteger",
+        XsdDatatypeKind::Long => "xs:long",
+        XsdDatatypeKind::Int => "xs:int",
+        XsdDatatypeKind::Short => "xs:short",
+        XsdDatatypeKind::Byte => "xs:byte",
+        XsdDatatypeKind::NonNegativeInteger => "xs:nonNegativeInteger",
+        XsdDatatypeKind::UnsignedLong => "xs:unsignedLong",
+        XsdDatatypeKind::UnsignedInt => "xs:unsignedInt",
+        XsdDatatypeKind::UnsignedShort => "xs:unsignedShort",
+        XsdDatatypeKind::UnsignedByte => "xs:unsignedByte",
+        XsdDatatypeKind::PositiveInteger => "xs:positiveInteger",
+        XsdDatatypeKind::FacetPattern => "pattern",
+        XsdDatatypeKind::FacetEnumeration => "enumeration",
+        XsdDatatypeKind::FacetMinInclusive => "minInclusive",
+        XsdDatatypeKind::FacetMaxInclusive => "maxInclusive",
+        XsdDatatypeKind::FacetMinExclusive => "minExclusive",
+        XsdDatatypeKind::FacetMaxExclusive => "maxExclusive",
+        XsdDatatypeKind::FacetMinLength => "minLength",
+        XsdDatatypeKind::FacetMaxLength => "maxLength",
+        XsdDatatypeKind::FacetLength => "length",
+        XsdDatatypeKind::FacetWhiteSpace => "whiteSpace",
+        XsdDatatypeKind::FacetFractionDigits => "fractionDigits",
+        XsdDatatypeKind::FacetTotalDigits => "totalDigits",
+    }
+}
+
 /// Parse a facet kind from an XSD element name.
 fn parse_facet_kind(name: &str) -> Option<XsdDatatypeKind> {
     match name {
@@ -2333,7 +2396,8 @@ fn xsd_validate_model_group(
             XsdComponentType::Sequence => {
                 // Validate in-order
                 let mut child_idx = 0;
-                for part in &component.children {
+                let mut part_counts: Vec<i32> = vec![0; component.children.len()];
+                for (k, part) in component.children.iter().enumerate() {
                     let min = part.min_occurs;
                     let max = part.max_occurs;
                     let match_name = part.name.as_deref().unwrap_or("");
@@ -2348,6 +2412,24 @@ fn xsd_validate_model_group(
                             || (!match_name.is_empty() && child_name == match_name)
                             || (!match_ref.is_empty() && child_name == match_ref)
                         {
+                            // UPSTREAM-PARITY (xmlschemas.c
+                            // xmlSchemaValidatorPopElem): every matched
+                            // child is checked against its type; a bad value
+                            // raises "Element '%s': '%s' is not a valid value
+                            // of the atomic type '%s'." BEFORE the parent's
+                            // content model is checked.
+                            if let Some(ref dt) = part.datatype {
+                                let text = get_node_text(child_node);
+                                if !xsd_validate_datatype(dt, &text, &part.facets) {
+                                    let type_name = datatype_kind_qname(dt);
+                                    ctxt.errors.push(format!(
+                                        "Element '{}': '{}' is not a valid value of the atomic type '{}'.",
+                                        child_name, text, type_name
+                                    ));
+                                    ctxt.nb_errors += 1;
+                                    valid = false;
+                                }
+                            }
                             count += 1;
                             child_idx += 1;
                         } else if count >= min {
@@ -2363,18 +2445,49 @@ fn xsd_validate_model_group(
                             break;
                         }
                     }
+                    part_counts[k] = count;
 
                     if count < min {
-                        ctxt.errors.push(format!(
-                            "Element '{}' occurs {} times, minimum is {}",
-                            if match_name.is_empty() {
-                                "?"
+                        // UPSTREAM-PARITY (xmlschemas.c
+                        // xmlSchemaComplexTypeErr): the missing-child error
+                        // lists the automaton's still-expected particles —
+                        // for a sequence, every part up to and including the
+                        // failed one with remaining capacity (an unbounded or
+                        // not-yet-saturated earlier part can still appear).
+                        let mut expected: Vec<String> = Vec::new();
+                        for (j, p) in component.children.iter().enumerate().take(k + 1) {
+                            let name = p.name.as_deref().unwrap_or("");
+                            if name.is_empty() {
+                                continue;
+                            }
+                            let still_expected = if j == k {
+                                true
                             } else {
-                                match_name
-                            },
-                            count,
-                            min
-                        ));
+                                let cj = part_counts[j];
+                                p.max_occurs == -1 || cj < p.max_occurs.max(0)
+                            };
+                            if still_expected {
+                                expected.push(name.to_string());
+                            }
+                        }
+                        let node_name = get_node_qname(node);
+                        if expected.len() > 1 {
+                            ctxt.errors.push(format!(
+                                "Element '{}': Missing child element(s). Expected is one of ( {} ).",
+                                node_name,
+                                expected.join(", ")
+                            ));
+                        } else if expected.len() == 1 {
+                            ctxt.errors.push(format!(
+                                "Element '{}': Missing child element(s). Expected is ( {} ).",
+                                node_name, expected[0]
+                            ));
+                        } else {
+                            ctxt.errors.push(format!(
+                                "Element '{}': Missing child element(s).",
+                                node_name
+                            ));
+                        }
                         ctxt.nb_errors += 1;
                         valid = false;
                     }

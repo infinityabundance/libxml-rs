@@ -854,7 +854,6 @@ unsafe fn rng_parse_element_pattern(
 
         // Parse children for name class and content pattern
         let mut child = (*node).children;
-        let mut content_found = false;
 
         while !child.is_null() {
             if (*child).type_ == XML_ELEMENT_NODE as c_int {
@@ -879,11 +878,14 @@ unsafe fn rng_parse_element_pattern(
                         pattern.name_class = Some(rng_parse_name_class_choice(child));
                     }
                     _ => {
-                        // Content pattern
-                        if !content_found {
-                            pattern.children.push(rng_parse_pattern(child, schema));
-                            content_found = true;
-                        }
+                        // Content pattern. UPSTREAM-PARITY (relaxng.c
+                        // xmlRelaxNGParseElement): multiple content children
+                        // form an implicit group — all of them are kept (the
+                        // former single-content gate silently dropped
+                        // every pattern after the first, e.g. the `<optional>`
+                        // in `<element name="root">a<optional>b</optional>`
+                        // which then surfaced as a spurious extra element).
+                        pattern.children.push(rng_parse_pattern(child, schema));
                     }
                 }
             }
@@ -1522,11 +1524,9 @@ fn rng_validate_content(
         // Check for extra children.
         if child_idx < child_nodes.len() {
             let extra_name = get_node_qname(child_nodes[child_idx]);
-            ctxt.record_error(format!(
-                "Unexpected extra element '{}' in content model at '{}'",
-                extra_name,
-                ctxt.current_path()
-            ));
+            // UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateElement, error
+            // XML_RELAXNG_ERR_ELEMWRONG): "Did not expect element %s there".
+            ctxt.record_error(format!("Did not expect element {} there", extra_name));
             valid = false;
         }
 

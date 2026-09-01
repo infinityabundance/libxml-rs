@@ -2853,6 +2853,49 @@ impl XmlParser {
         if self.is_sax_disabled() {
             return;
         }
+        // UPSTREAM-PARITY (SAX2.c xmlSAX2EndElementNs): a validating parse
+        // checks the just-closed element against the DTD before the node is
+        // popped. An undeclared element raises XML_DTD_UNKNOWN_ELEM at the
+        // end-tag position (ERROR level — the parse continues, but
+        // ctxt->valid is cleared). This is what XML_PARSE_DTDVALID consumers
+        // (lxml `dtd_validation=True`) observe as the first error.
+        unsafe {
+            let ctxt = self.ctxt;
+            if (*ctxt).validate != 0 && (*ctxt).wellFormed != 0 && !(*ctxt).node.is_null() {
+                let my_doc = (*ctxt).myDoc;
+                if !my_doc.is_null() {
+                    let dtd = (*my_doc).intSubset;
+                    if !dtd.is_null() {
+                        let elem_decl = if !(*dtd).elements.is_null() {
+                            crate::xml::hash::hash_lookup(
+                                (*dtd).elements as *mut crate::xml::hash::HashTable,
+                                (*(*ctxt).node).name,
+                            )
+                        } else {
+                            ptr::null_mut()
+                        };
+                        if elem_decl.is_null() {
+                            (*ctxt).valid = 0;
+                            let node_name = (*(*ctxt).node).name;
+                            let name_str = crate::xml::string::xmlstr_to_string(node_name);
+                            self.sync_input_position();
+                            let byte_pos = self.tokenizer.current_pos().2;
+                            self.raise_error_at(
+                                crate::abi::types::XML_FROM_VALID,
+                                crate::abi::types::XML_DTD_UNKNOWN_ELEM,
+                                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                format!("No declaration for element {}\n", name_str),
+                                None,
+                                None,
+                                None,
+                                0,
+                                byte_pos,
+                            );
+                        }
+                    }
+                }
+            }
+        }
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;

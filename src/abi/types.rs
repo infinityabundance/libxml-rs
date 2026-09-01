@@ -528,6 +528,7 @@ pub const XML_ERR_ARGUMENT: c_int = 115;
 pub const XML_ERR_REDECL_PREDEF_ENTITY: c_int = 117; /* entities.c xmlAddEntity */
 pub const XML_WAR_ENTITY_REDEFINED: c_int = 107; /* entities.c xmlAddEntity */
 pub const XML_DTD_NO_DTD: c_int = 522; /* entities.c xmlAddEntity */
+pub const XML_DTD_UNKNOWN_ELEM: c_int = 534; /* valid.c xmlValidateElement */
 pub const XML_IO_ENOENT: c_int = 1524;
 // Removed: duplicate of XML_ERR_NAME_TOO_LONG at line 414
 

@@ -1820,6 +1820,34 @@ unsafe fn handle_end_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8]) {
 // Main Parse Function
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/// Convert `data` from the declared input encoding to UTF-8.
+///
+/// UPSTREAM-PARITY: `xmlCtxtNewInputFromMemory` -> `xmlSwitchInputEncoding`
+/// installs a decoder on the input buffer so the parser (and the tree it
+/// builds) always consume UTF-8. Returns `None` when no conversion applies
+/// (NULL encoding, UTF-8/ASCII input, or an encoding the crate cannot
+/// convert — the caller then parses the raw bytes, matching upstream's
+/// recover-with-raw-bytes behavior when switching fails).
+fn convert_input_to_utf8(encoding: *const c_char, data: &[u8]) -> Option<Vec<u8>> {
+    if encoding.is_null() {
+        return None;
+    }
+    let name = unsafe { core::ffi::CStr::from_ptr(encoding).to_bytes() };
+    match crate::xml::encoding::encoding_from_name(name) {
+        xmlCharEncoding::XML_CHAR_ENCODING_8859_1 => {
+            Some(crate::xml::encoding::latin1_to_utf8(data))
+        }
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16LE => {
+            crate::xml::encoding::utf16le_to_utf8(data).ok()
+        }
+        xmlCharEncoding::XML_CHAR_ENCODING_UTF16BE => {
+            crate::xml::encoding::utf16be_to_utf8(data).ok()
+        }
+        // UTF-8 / US-ASCII / NONE (and unsupported encodings): no conversion.
+        _ => None,
+    }
+}
+
 /// Parse HTML from a buffer.
 ///
 /// # Safety
@@ -1866,9 +1894,24 @@ unsafe fn html_parse_buffer(
     let _ = default_dtd;
     ctxt.doc = doc;
 
+    // UPSTREAM-PARITY: a declared input encoding is converted to UTF-8 before
+    // parsing (xmlCtxtNewInputFromMemory -> xmlSwitchInputEncodingName installs
+    // an input-buffer decoder); the parse loop and the tree always consume
+    // UTF-8. The converted copy lives for the whole parse.
+    let converted: Option<Vec<u8>> = if !ctxt.encoding.is_null() {
+        let raw = unsafe { slice::from_raw_parts(buffer as *const u8, size as usize) };
+        convert_input_to_utf8(ctxt.encoding, raw)
+    } else {
+        None
+    };
+    let (input_ptr, input_len): (*const u8, usize) = match &converted {
+        Some(v) => (v.as_ptr(), v.len()),
+        None => (buffer as *const u8, size as usize),
+    };
+
     // Set up input
-    ctxt.input = buffer as *mut u8;
-    ctxt.input_len = size as usize;
+    ctxt.input = input_ptr as *mut u8;
+    ctxt.input_len = input_len;
     ctxt.input_pos = 0;
     ctxt.line = 1;
 
@@ -2227,11 +2270,34 @@ pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *m
 /// - `buffer` must point to valid memory of at least `size` bytes.
 /// - `size` must be non-negative.
 pub unsafe fn parse_memory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
+    unsafe { parse_memory_enc(buffer, size, ptr::null()) }
+}
+
+/// Parse HTML from a memory buffer with an explicit input encoding.
+///
+/// UPSTREAM-PARITY: equivalent to `htmlCtxtReadMemory` where the caller's
+/// `encoding` is wired into the input buffer (`xmlCtxtNewInputFromMemory` ->
+/// `xmlSwitchInputEncodingName` installs a decoder so the parse loop always
+/// consumes UTF-8). NULL means no conversion (BOM sniffing only).
+///
+/// # Safety
+///
+/// - `buffer` must point to valid memory of at least `size` bytes.
+/// - `size` must be non-negative.
+/// - `encoding` must be a valid NUL-terminated C string or NULL.
+pub(crate) unsafe fn parse_memory_enc(
+    buffer: *const c_char,
+    size: c_int,
+    encoding: *const c_char,
+) -> *mut _xmlDoc {
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
 
     let mut ctxt = HtmlParserCtxt::new();
+    if !encoding.is_null() {
+        ctxt.encoding = unsafe { c_strdup(encoding) };
+    }
     unsafe { html_parse_buffer(&mut ctxt, buffer, size) }
 }
 
