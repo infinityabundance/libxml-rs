@@ -190,13 +190,6 @@ pub unsafe extern "C" fn xsltFreeStylesheet(style: *mut _xsltStylesheet) {
     }
     // Free the stylesheet document.
     if !(*style).doc.is_null() {
-        if std::env::var_os("LX_DICT_TRACE").is_some() {
-            eprintln!(
-                "[xslt] free_stylesheet doc={:p} doc.dict={:p}",
-                (*style).doc,
-                (*(*style).doc).dict
-            );
-        }
         free_doc((*style).doc);
     }
     // Free the string fields that we own (heap-allocated by the compiler).

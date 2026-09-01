@@ -79,6 +79,7 @@
 use core::ffi::c_void;
 use core::hash::Hasher;
 use core::ptr;
+use core::sync::atomic::AtomicU32;
 use std::os::raw::c_int;
 
 use crate::abi::allocator;
@@ -164,8 +165,14 @@ pub struct Dict {
     is_sub: bool,
     /// The opaque C pointer for this dictionary.
     /// Used to track which dictionary owns which entries.
-    #[allow(dead_code)]
     opaque_id: usize,
+    /// Reference count (upstream xmlDict `ref_counter`). Stored IN the
+    /// shared dict memory so cross-DSO operations observe one coherent
+    /// count — R-000177 (Phase 14: the pre-fix per-DSO side table
+    /// partitioned the count, so a dict created/referenced through
+    /// libxml2.so.16 was invisible to libxslt.so.1's xmlDictFree, which
+    /// freed it out from under live references).
+    pub(crate) ref_count: AtomicU32,
 }
 
 /// A reference-counted handle to a Dict.
@@ -232,6 +239,7 @@ pub fn dict_create() -> *mut Dict {
         parent: None,
         is_sub: false,
         opaque_id: next_dict_id(),
+        ref_count: AtomicU32::new(1),
     });
 
     Box::into_raw(dict)
@@ -267,6 +275,7 @@ pub unsafe fn dict_create_sub(parent: *mut Dict) -> *mut Dict {
         parent: Some(DictRef { ptr: parent }),
         is_sub: true,
         opaque_id: next_dict_id(),
+        ref_count: AtomicU32::new(1),
     });
 
     Box::into_raw(sub)
@@ -424,6 +433,41 @@ pub unsafe fn dict_exists(dict: *mut Dict, name: *const xmlChar, len: c_int) -> 
     }
 
     ptr::null()
+}
+
+/// Whether `s` is one of this dictionary's interned strings (walking the
+/// parent chain for sub-dictionaries).
+///
+/// # UPSTREAM-PARITY
+///
+/// Upstream `xmlDictOwns` checks whether `str` points inside the dict's
+/// string pool; this scans the entry data pointers, which IS the pool. The
+/// scan runs on the SHARED dict memory, so it is cross-DSO coherent
+/// (R-000177): a dict interned through libxml2.so.16 is recognized by
+/// libxslt.so.1's teardown paths, which must not free interned strings.
+///
+/// # SAFETY
+///
+/// - `dict` must be NULL or a valid Dict; `s` must be NULL or a valid
+///   pointer (only compared, never dereferenced).
+pub unsafe fn dict_owns(dict: *mut Dict, s: *const xmlChar) -> bool {
+    if dict.is_null() || s.is_null() {
+        return false;
+    }
+    let mut cur = dict;
+    while !cur.is_null() {
+        let d = unsafe { &*cur };
+        for e in &d.entries {
+            if e.data as *const xmlChar == s {
+                return true;
+            }
+        }
+        cur = match &d.parent {
+            Some(p) => p.ptr,
+            None => ptr::null_mut(),
+        };
+    }
+    false
 }
 
 /// Get the number of entries in the dictionary.

@@ -85,7 +85,6 @@ use core::ffi::c_void;
 use core::ptr;
 use std::os::raw::{c_char, c_int};
 
-use crate::abi::allocator;
 use crate::abi::structs::*;
 use crate::abi::types::xmlElementType::*;
 

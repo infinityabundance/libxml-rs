@@ -114,7 +114,7 @@ use core::ptr;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
 
@@ -4004,20 +4004,11 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreate() -> *mut c_void {
-    let d = { crate::xml::dictionary::dict_create() as *mut c_void };
-    if !d.is_null() {
-        // UPSTREAM-PARITY: the creator holds the base reference (count 1);
-        // xmlDictReference adds to it and xmlDictFree decrements, freeing
-        // the dictionary when it reaches zero.
-        *crate::abi::exports_hash::DICT_REFS
-            .lock()
-            .entry(d as usize)
-            .or_insert(0) = 1;
-        if std::env::var_os("LX_DICT_TRACE").is_some() {
-            eprintln!("[dict] create {:p}", d);
-        }
-    }
-    d
+    // The creator holds the base reference (Dict.ref_count = 1, upstream
+    // ref_counter); xmlDictReference adds to it and xmlDictFree decrements,
+    // freeing the dictionary when it reaches zero. The count lives in the
+    // shared dict memory (R-000177: cross-DSO coherent).
+    crate::xml::dictionary::dict_create() as *mut c_void
 }
 
 /// Create a sub-dictionary.
@@ -4029,20 +4020,11 @@ pub extern "C" fn xmlDictCreate() -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlDictCreateSub(sub: *mut c_void) -> *mut c_void {
-    let d = unsafe {
+    // Base reference lives in the shared dict memory (Dict.ref_count).
+    unsafe {
         crate::xml::dictionary::dict_create_sub(sub as *mut crate::xml::dictionary::Dict)
             as *mut c_void
-    };
-    if !d.is_null() {
-        *crate::abi::exports_hash::DICT_REFS
-            .lock()
-            .entry(d as usize)
-            .or_insert(0) = 1;
-        if std::env::var_os("LX_DICT_TRACE").is_some() {
-            eprintln!("[dict] createsub {:p} parent={:p}", d, sub);
-        }
     }
-    d
 }
 
 /// Look up a string in the dictionary.
@@ -4062,16 +4044,9 @@ pub unsafe extern "C" fn xmlDictLookup(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    let ret = unsafe {
+    unsafe {
         crate::xml::dictionary::dict_lookup(dict as *mut crate::xml::dictionary::Dict, name, len)
-    };
-    // UPSTREAM-PARITY (dict.c xmlDictOwns): any pointer returned by a dict
-    // lookup lives in the dict's string pool and is owned by it — record it
-    // so `xmlDictOwns` (and the tree teardown DICT_FREE guards) recognize
-    // it. Consumers (lxml `_fixHtmlDictNodeNames`) intern node names this
-    // way and then rely on xmlFreeNode NOT freeing them.
-    crate::abi::exports_hash::register_owned(dict, ret);
-    ret
+    }
 }
 
 /// Check if a string exists in the dictionary.
@@ -4087,13 +4062,9 @@ pub unsafe extern "C" fn xmlDictExists(
     name: *const xmlChar,
     len: c_int,
 ) -> *const xmlChar {
-    let ret = unsafe {
+    unsafe {
         crate::xml::dictionary::dict_exists(dict as *mut crate::xml::dictionary::Dict, name, len)
-    };
-    // The returned pointer is interned and dict-owned even when it already
-    // existed (UPSTREAM-PARITY xmlDictOwns).
-    crate::abi::exports_hash::register_owned(dict, ret);
-    ret
+    }
 }
 
 /// Query dictionary size.
@@ -4126,37 +4097,18 @@ pub extern "C" fn xmlDictFree(dict: *mut c_void) {
     if dict.is_null() {
         return;
     }
-    let mut remaining = 0u32;
-    {
-        let mut refs = crate::abi::exports_hash::DICT_REFS.lock();
-        if let Some(r) = refs.get_mut(&(dict as usize)) {
-            if *r > 0 {
-                *r -= 1;
-            }
-            remaining = *r;
-            if remaining == 0 {
-                refs.remove(&(dict as usize));
-            }
-        }
-    }
-    if remaining == 0 {
-        if std::env::var_os("LX_DICT_TRACE").is_some() {
-            eprintln!(
-                "[dict] free  {:p} remaining={}\n{}",
-                dict,
-                remaining,
-                std::backtrace::Backtrace::force_capture()
-            );
-        }
+    // The reference count lives IN the shared dict memory (R-000177): a
+    // decrement through one DSO observes references made through every
+    // other DSO, so a dict created by libxml2.so.16 is never freed early by
+    // libxslt.so.1's teardown. The pre-fix per-DSO side table partitioned
+    // the count and unconditionally freed unknown dicts.
+    let d = dict as *mut crate::xml::dictionary::Dict;
+    let prev = unsafe {
+        (*d).ref_count
+            .fetch_sub(1, core::sync::atomic::Ordering::Relaxed)
+    };
+    if prev == 1 {
         unsafe { crate::xml::dictionary::dict_free(dict as *mut crate::xml::dictionary::Dict) };
-    } else if std::env::var_os("LX_DICT_TRACE").is_some() {
-        let bt = std::backtrace::Backtrace::force_capture()
-            .to_string()
-            .lines()
-            .take(4)
-            .collect::<Vec<_>>()
-            .join(" | ");
-        eprintln!("[dict] free  {:p} remaining={} @ {}", dict, remaining, bt);
     }
 }
 

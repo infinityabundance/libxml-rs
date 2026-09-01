@@ -184,6 +184,10 @@ pub(crate) struct XmlParser {
 
 // ─── Construction and accessors ─────────────────────────────────────────────
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Token stream helpers
+// ═══════════════════════════════════════════════════════════════════════════════
+
 impl XmlParser {
     /// Create a new parser from an input stack and parser context.
     ///
@@ -2921,7 +2925,20 @@ impl XmlParser {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
             let data_cstr = Self::vec_to_cstr_null(data);
-            SaxDispatcher::cdata_block(sax, ctx, data_cstr, data.len() as c_int);
+            let len = data.len() as c_int;
+            // UPSTREAM-PARITY (parser.c xmlParseCDSect): the CDATA content
+            // goes to the cdataBlock callback unless it is NULL or
+            // XML_PARSE_NOCDATA is set, in which case it falls back to the
+            // characters callback. Consumers (lxml's default parser nulls
+            // cdataBlock for strip_cdata) rely on the fallback — the
+            // pre-fix dispatch dropped the content entirely.
+            let use_chars = sax.cdataBlock.is_none()
+                || (unsafe { (*self.ctxt).options } & crate::abi::types::XML_PARSE_NOCDATA) != 0;
+            if use_chars {
+                SaxDispatcher::characters(sax, ctx, data_cstr, len);
+            } else {
+                SaxDispatcher::cdata_block(sax, ctx, data_cstr, len);
+            }
         }
     }
 

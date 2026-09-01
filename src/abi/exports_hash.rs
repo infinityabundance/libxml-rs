@@ -90,9 +90,6 @@
 
 use core::ffi::c_void;
 use core::ptr;
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
-use std::collections::{HashMap, HashSet};
 use std::os::raw::c_int;
 
 use crate::abi::allocator;
@@ -601,35 +598,6 @@ pub unsafe extern "C" fn xmlHashScanFull3(
 // Dictionary Exports (xmlDict*)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Reference counts tracked for `xmlDictReference`.
-///
-/// Upstream keeps `ref_counter` inside the `xmlDict` struct; the internal
-/// `Dict` has no self-refcount field (its refcounts are per-entry), so the
-/// Reference counts for dictionaries (upstream xmlDictReference). The
-/// reference count is tracked here in a side table keyed by the opaque dict
-/// pointer.
-pub static DICT_REFS: Lazy<Mutex<HashMap<usize, u32>>> = Lazy::new(|| Mutex::new(HashMap::new()));
-
-/// Interned string pointers owned by each dictionary, keyed by dict pointer.
-///
-/// Used by `xmlDictOwns`; upstream checks whether `str` falls inside the
-/// dict's string pool, which the internal `Dict` does not track, so pointers
-/// returned by `xmlDictQLookup` are recorded here.
-static DICT_OWNED: Lazy<Mutex<HashMap<usize, HashSet<usize>>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
-
-/// Record an interned string pointer as owned by `dict` (for `xmlDictOwns`).
-pub(crate) fn register_owned(dict: *mut c_void, s: *const xmlChar) {
-    if dict.is_null() || s.is_null() {
-        return;
-    }
-    DICT_OWNED
-        .lock()
-        .entry(dict as usize)
-        .or_default()
-        .insert(s as usize);
-}
-
 /// Increment the reference counter of a dictionary.
 ///
 /// # UPSTREAM-PARITY
@@ -639,18 +607,20 @@ pub(crate) fn register_owned(dict: *mut c_void, s: *const xmlChar) {
 /// ```
 ///
 /// Returns 0 in case of success and -1 in case of error.
+///
+/// The count lives IN the shared dict memory (`Dict.ref_count`, upstream
+/// `ref_counter`), so references made through one DSO are observed by every
+/// other DSO (R-000177 — the pre-fix per-DSO side table partitioned the
+/// count across the three-DSO facades).
 #[no_mangle]
 pub unsafe extern "C" fn xmlDictReference(dict: *mut c_void) -> c_int {
     if dict.is_null() {
         return -1;
     }
-    *DICT_REFS.lock().entry(dict as usize).or_insert(0) += 1;
-    if std::env::var_os("LX_DICT_TRACE").is_some() {
-        eprintln!(
-            "[dict] ref   {:p} now={}",
-            dict,
-            DICT_REFS.lock().get(&(dict as usize)).copied().unwrap_or(0)
-        );
+    let d = dict as *mut crate::xml::dictionary::Dict;
+    unsafe {
+        (*d).ref_count
+            .fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
     0
 }
@@ -676,9 +646,7 @@ pub unsafe extern "C" fn xmlDictQLookup(
         return ptr::null();
     }
     if prefix.is_null() {
-        let ret = unsafe { dict_lookup(dict as *mut Dict, name, -1) };
-        register_owned(dict, ret);
-        return ret;
+        return unsafe { dict_lookup(dict as *mut Dict, name, -1) };
     }
 
     // Build "prefix:name", intern it, then drop the temporary buffer.
@@ -688,9 +656,7 @@ pub unsafe extern "C" fn xmlDictQLookup(
     unsafe { push_c_str(&mut qname, name) };
     qname.push(0);
 
-    let ret = unsafe { dict_lookup(dict as *mut Dict, qname.as_ptr() as *const xmlChar, -1) };
-    register_owned(dict, ret);
-    ret
+    unsafe { dict_lookup(dict as *mut Dict, qname.as_ptr() as *const xmlChar, -1) }
 }
 
 /// Check if a string is owned by the dictionary.
@@ -708,11 +674,10 @@ pub unsafe extern "C" fn xmlDictOwns(dict: *mut c_void, str: *const xmlChar) -> 
     if dict.is_null() || str.is_null() {
         return -1;
     }
-    let owned = DICT_OWNED
-        .lock()
-        .get(&(dict as usize))
-        .is_some_and(|set| set.contains(&(str as usize)));
-    if owned {
+    // The scan runs on the SHARED dict memory, so interned strings are
+    // recognized across the three-DSO facades (R-000177).
+    if unsafe { crate::xml::dictionary::dict_owns(dict as *mut crate::xml::dictionary::Dict, str) }
+    {
         1
     } else {
         0
@@ -721,15 +686,13 @@ pub unsafe extern "C" fn xmlDictOwns(dict: *mut c_void, str: *const xmlChar) -> 
 
 /// Internal dict-ownership predicate (no FFI/c_int): true when `s` is an
 /// interned string owned by `dict`. Used by the tree teardown paths
-/// (UPSTREAM-PARITY `DICT_FREE` in tree.c).
+/// (UPSTREAM-PARITY `DICT_FREE` in tree.c). Cross-DSO coherent — operates
+/// on the shared dict memory.
 pub(crate) fn dict_owns_str(dict: *mut c_void, s: *const xmlChar) -> bool {
     if dict.is_null() || s.is_null() {
         return false;
     }
-    DICT_OWNED
-        .lock()
-        .get(&(dict as usize))
-        .is_some_and(|set| set.contains(&(s as usize)))
+    unsafe { crate::xml::dictionary::dict_owns(dict as *mut crate::xml::dictionary::Dict, s) }
 }
 
 /// Free the dictionary data.

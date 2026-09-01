@@ -116,7 +116,7 @@ use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
 use crate::xml::schemas::{
     xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind,
-    XsdParserCtxt, XsdSchema, XsdValidCtxt,
+    XsdSchema, XsdValidCtxt,
 };
 use crate::xml::schematron::schematron_parse;
 
