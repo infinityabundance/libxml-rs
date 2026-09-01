@@ -777,7 +777,10 @@ unsafe fn xsd_parse_schema_doc(doc: *mut _xmlDoc) -> Result<XsdSchema, String> {
 
         // Find the root <schema> element
         let mut schema_node = root;
-        while !schema_node.is_null() && !node_is(schema_node, "schema") {
+        while !schema_node.is_null()
+            && ((*schema_node).type_ != XML_ELEMENT_NODE as c_int
+                || !node_is(schema_node, "schema"))
+        {
             schema_node = (*schema_node).next;
         }
 
@@ -2311,6 +2314,43 @@ fn xsd_validate_element(
                 ctxt.nb_errors += 1;
                 valid = false;
             }
+        } else if let Some(ref base_name) = component.base {
+            // A named type reference (type="USAddress") with no inline type:
+            // resolve the top-level complexType/simpleType declaration and
+            // validate the element's content against it. The pre-fix code
+            // fell through to xsd_validate_content on THIS component, whose
+            // children are empty (the sequence lives on the named type), so
+            // child-content errors (e.g. a required <state> child) were never
+            // reported.
+            if let Some(named) = schema.components.iter().find(|c| {
+                let ct = c.component_type;
+                (ct == XsdComponentType::ComplexType || ct == XsdComponentType::SimpleType)
+                    && c.name.as_deref() == Some(base_name.as_str())
+            }) {
+                match named.component_type {
+                    XsdComponentType::ComplexType => {
+                        valid &= xsd_validate_complex_type(named, node, schema, ctxt);
+                    }
+                    XsdComponentType::SimpleType => {
+                        let text = get_node_text(node);
+                        if let Some(ref dt) = named.datatype {
+                            if !xsd_validate_datatype(dt, &text, &named.facets) {
+                                ctxt.errors.push(format!(
+                                    "Element '{}' has invalid value '{}' for type '{}'",
+                                    node_name, text, base_name
+                                ));
+                                ctxt.nb_errors += 1;
+                                valid = false;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            } else {
+                // Named type not found — validate against the inline content
+                // model directly (empty children → no content to check).
+                valid &= xsd_validate_content(component, node, schema, ctxt);
+            }
         } else {
             // No type information — validate children against content model
             valid &= xsd_validate_content(component, node, schema, ctxt);
@@ -2373,10 +2413,10 @@ fn xsd_validate_complex_type(
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an XML element node.
-fn xsd_validate_model_group(
+pub fn xsd_validate_model_group(
     component: &XsdComponent,
     node: *mut _xmlNode,
-    _schema: &XsdSchema,
+    schema: &XsdSchema,
     ctxt: &mut XsdValidCtxt,
 ) -> bool {
     unsafe {
@@ -2429,6 +2469,17 @@ fn xsd_validate_model_group(
                                     ctxt.nb_errors += 1;
                                     valid = false;
                                 }
+                            }
+                            // UPSTREAM-PARITY: a matched child that itself
+                            // carries a named type reference is validated
+                            // recursively (e.g. <shipTo type="USAddress">
+                            // against the USAddress content model), so a
+                            // missing required sub-child is reported.
+                            if part.component_type == XsdComponentType::Element
+                                && (part.datatype.is_none())
+                                && (!part.children.is_empty() || part.base.is_some())
+                            {
+                                valid &= xsd_validate_element(part, child_node, schema, ctxt);
                             }
                             count += 1;
                             child_idx += 1;
@@ -2739,6 +2790,38 @@ fn xsd_validate_element_inline(
                                 }
                             }
                             _ => {}
+                        }
+                    } else if let Some(ref base_name) = component.base {
+                        // Named type reference (type="USAddress") on an
+                        // inline element declaration: resolve the top-level
+                        // complexType/simpleType and validate the matched
+                        // child's content against it (same resolution as
+                        // xsd_validate_element).
+                        if let Some(named) = schema.components.iter().find(|c| {
+                            let ct = c.component_type;
+                            (ct == XsdComponentType::ComplexType
+                                || ct == XsdComponentType::SimpleType)
+                                && c.name.as_deref() == Some(base_name.as_str())
+                        }) {
+                            match named.component_type {
+                                XsdComponentType::ComplexType => {
+                                    valid &= xsd_validate_complex_type(named, child, schema, ctxt);
+                                }
+                                XsdComponentType::SimpleType => {
+                                    let text = get_node_text(child);
+                                    if let Some(ref dt) = named.datatype {
+                                        if !xsd_validate_datatype(dt, &text, &named.facets) {
+                                            ctxt.errors.push(format!(
+                                                "Element '{}' has invalid value '{}'",
+                                                child_name, text
+                                            ));
+                                            ctxt.nb_errors += 1;
+                                            valid = false;
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
                         }
                     }
                 }
