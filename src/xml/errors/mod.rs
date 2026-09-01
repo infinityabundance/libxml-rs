@@ -1116,6 +1116,13 @@ unsafe fn raise_error_streamed_x86_64(
         node: ptr::null_mut(),
     };
 
+    // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt -> error.c xmlVRaiseError): an
+    // XPath-domain error stores in the TLS global (upstream `to = lastError`;
+    // xmlXPathErrFmt separately pre-fills ctxt->lastError with the
+    // message-less domain/code/str1 fields) and dispatches to the XPath
+    // context's `error` handler with `userData`.
+    let is_xpath_error = !ctxt.is_null() && domain == XML_FROM_XPATH;
+
     // UPSTREAM-PARITY (error.c xmlVRaiseError 2.15): parser-domain errors
     // with a context update the PER-CONTEXT lastError (to = &ctxt->lastError)
     // and then mirror into the TLS global (xmlCopyError); the callback
@@ -1153,7 +1160,13 @@ unsafe fn raise_error_streamed_x86_64(
     // TLS global structured handler (error.c xmlVRaiseError order).
     let mut schannel: Option<xmlStructuredErrorFunc> = None;
     let mut sdata: *mut c_void = ptr::null_mut();
-    if is_ctxt_error {
+    if is_xpath_error {
+        let xc = &*(ctxt as *const crate::abi::structs::_xmlXPathContext);
+        if let Some(handler) = xc.error {
+            schannel = Some(handler);
+            sdata = xc.userData;
+        }
+    } else if is_ctxt_error {
         let c = &*(ctxt as *const crate::abi::structs::_xmlParserCtxt);
         if let Some(handler) = c.errorHandler {
             schannel = Some(handler);

@@ -818,6 +818,57 @@ pub const unsafe extern "C" fn xmlRelaxNGValidatePushCData(
     0
 }
 
+/// Deliver accumulated validation errors to the context's registered
+/// callbacks (xmlRelaxNGSetValidErrors / xmlRelaxNGSetValidStructuredErrors).
+/// The state is copied out so callbacks are never invoked while the lock is
+/// held.
+///
+/// # SAFETY
+///
+/// - `ctxt_addr` must be the address of a `RelaxNgValidCtxt` that a caller
+///   registered state for; otherwise this is a no-op.
+/// - `node` may be NULL; it is stored in the structured error's `node`.
+pub(crate) unsafe fn dispatch_relaxng_valid_errors(
+    ctxt_addr: usize,
+    msgs: &[String],
+    node: *mut c_void,
+) {
+    let state = VALID_CTXT_STATE.lock().get(&ctxt_addr).copied();
+    if let Some(st) = state {
+        for m in msgs {
+            // The message must be NUL-terminated for the C callback.
+            let Ok(cstr) = CString::new(m.as_str()) else {
+                continue;
+            };
+            if let Some(cb) = st.err {
+                // SAFETY: cb is a C callback registered by the caller; the
+                // message pointer is valid for the duration of the call.
+                unsafe { cb(st.ctx.0, cstr.as_ptr()) };
+            }
+            if let Some(cb) = st.serror {
+                let err_rec = _xmlError {
+                    domain: XML_FROM_RELAXNGV,
+                    code: 0,
+                    message: cstr.as_ptr() as *mut c_char,
+                    level: XML_ERR_ERROR as c_int,
+                    file: ptr::null_mut(),
+                    line: 0,
+                    str1: ptr::null_mut(),
+                    str2: ptr::null_mut(),
+                    str3: ptr::null_mut(),
+                    int1: 0,
+                    int2: 0,
+                    ctxt: ctxt_addr as *mut c_void,
+                    node,
+                };
+                // SAFETY: err_rec is valid for the duration of the call (the
+                // upstream contract for structured error callbacks).
+                unsafe { cb(st.serror_ctx.0, &err_rec as *const _xmlError) };
+            }
+        }
+    }
+}
+
 /// Pop an element end off the streaming validation stack.
 ///
 /// # UPSTREAM-PARITY
@@ -860,42 +911,7 @@ pub unsafe extern "C" fn xmlRelaxNGValidatePopElement(
     let msgs = std::mem::take(&mut valid.errors);
     valid.nb_errors = 0;
 
-    // Deliver the released errors to the registered callbacks. The state is
-    // copied out so the callbacks are never invoked while the lock is held.
-    let state = VALID_CTXT_STATE.lock().get(&(ctxt as usize)).copied();
-    if let Some(st) = state {
-        for m in &msgs {
-            // The message must be NUL-terminated for the C callback.
-            let Ok(cstr) = CString::new(m.as_str()) else {
-                continue;
-            };
-            if let Some(cb) = st.err {
-                // SAFETY: cb is a C callback registered by the caller; the
-                // message pointer is valid for the duration of the call.
-                unsafe { cb(st.ctx.0, cstr.as_ptr()) };
-            }
-            if let Some(cb) = st.serror {
-                let err_rec = _xmlError {
-                    domain: XML_FROM_RELAXNGV,
-                    code: 0,
-                    message: cstr.as_ptr() as *mut c_char,
-                    level: XML_ERR_ERROR as c_int,
-                    file: ptr::null_mut(),
-                    line: 0,
-                    str1: ptr::null_mut(),
-                    str2: ptr::null_mut(),
-                    str3: ptr::null_mut(),
-                    int1: 0,
-                    int2: 0,
-                    ctxt,
-                    node: elem as *mut c_void,
-                };
-                // SAFETY: err_rec is valid for the duration of the call (the
-                // upstream contract for structured error callbacks).
-                unsafe { cb(st.serror_ctx.0, &err_rec as *const _xmlError) };
-            }
-        }
-    }
+    unsafe { dispatch_relaxng_valid_errors(ctxt as usize, &msgs, elem as *mut c_void) };
     0
 }
 

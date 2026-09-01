@@ -2708,13 +2708,23 @@ impl XmlParser {
             // Ancestor scope.
             unsafe {
                 if !parent_node.is_null() {
-                    let mut p = prefix.map(|p| p.to_vec()).unwrap_or_default();
-                    p.push(0);
-                    let ns = crate::xml::tree::search_ns(
-                        my_doc,
-                        parent_node,
-                        p.as_ptr() as *const xmlChar,
-                    );
+                    // UPSTREAM-PARITY (parser.c xmlParserNsLookupUri): a
+                    // NULL prefix resolves the DEFAULT namespace
+                    // (xmlSearchNs(doc, node, NULL) matches the
+                    // prefix-less declaration); searching with an empty
+                    // string would never match because the default
+                    // declaration's prefix is NULL, not "".
+                    let ns = if let Some(p) = prefix {
+                        let mut pb = p.to_vec();
+                        pb.push(0);
+                        crate::xml::tree::search_ns(
+                            my_doc,
+                            parent_node,
+                            pb.as_ptr() as *const xmlChar,
+                        )
+                    } else {
+                        crate::xml::tree::search_ns(my_doc, parent_node, ptr::null())
+                    };
                     if !ns.is_null() && !(*ns).href.is_null() {
                         let mut l = 0usize;
                         while *(*ns).href.add(l) != 0 {
@@ -2790,7 +2800,7 @@ impl XmlParser {
                 }
             }
 
-            let localname_cstr = Self::vec_to_cstr_null(&localname);
+            let localname_cstr = self.sax_name_cstr(&localname);
             let prefix_cstr = prefix_opt
                 .as_ref()
                 .map(|p| Self::vec_to_cstr_null(p))
@@ -2846,14 +2856,36 @@ impl XmlParser {
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
-            let name_cstr = Self::vec_to_cstr_null(name);
-            SaxDispatcher::end_element(
-                sax,
-                ctx,
-                name_cstr,
-                ptr::null(), // prefix
-                ptr::null(), // URI
-            );
+            // UPSTREAM-PARITY (parser.c xmlParseElementEnd): the
+            // endElementNs callback receives the LOCAL name (ctxt->name),
+            // the opening tag's prefix and its URI (tag->prefix / tag->URI)
+            // — never the raw QName — so namespaced consumers (lxml's
+            // _MultiTagMatcher) match end events like start events.
+            let (prefix_opt, localname) = if let Some(colons) = name.iter().position(|&b| b == b':')
+            {
+                (Some(name[..colons].to_vec()), name[colons + 1..].to_vec())
+            } else {
+                (None, name.to_vec())
+            };
+            let name_cstr = self.sax_name_cstr(&localname);
+            let prefix_cstr = prefix_opt
+                .as_ref()
+                .map(|p| Self::vec_to_cstr_null(p))
+                .unwrap_or(ptr::null());
+            let uri_cstr = {
+                let node = (*self.ctxt).node;
+                if node.is_null() {
+                    ptr::null()
+                } else {
+                    let ns = (*node).ns;
+                    if ns.is_null() {
+                        ptr::null()
+                    } else {
+                        (*ns).href
+                    }
+                }
+            };
+            SaxDispatcher::end_element(sax, ctx, name_cstr, prefix_cstr, uri_cstr);
         }
     }
 
@@ -2942,7 +2974,7 @@ impl XmlParser {
             // cdataBlock for strip_cdata) rely on the fallback — the
             // pre-fix dispatch dropped the content entirely.
             let use_chars = sax.cdataBlock.is_none()
-                || (unsafe { (*self.ctxt).options } & crate::abi::types::XML_PARSE_NOCDATA) != 0;
+                || ((*self.ctxt).options & crate::abi::types::XML_PARSE_NOCDATA) != 0;
             if use_chars {
                 SaxDispatcher::characters(sax, ctx, data_cstr, len);
             } else {
@@ -3387,6 +3419,37 @@ impl XmlParser {
     // ─────────────────────────────────────────────────────────────────────────
     // Utility helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    /// SAX callback name pointer: with `dictNames` the parser hands the
+    /// callback the dict-interned string (upstream `xmlParseQNameHashed` /
+    /// `xmlParseEndTag2` return the document-dictionary pointer), so
+    /// consumers that compare name POINTERS — lxml's `_MultiTagMatcher`
+    /// (iterparse/iterwalk `tag=...`) interns its tags with `xmlDictLookup`
+    /// on the same dictionary and requires pointer identity — match. Falls
+    /// back to a fresh NUL-terminated copy when the dictionary is
+    /// unavailable.
+    ///
+    /// # Safety
+    ///
+    /// - `name` is a caller-owned byte slice live for the call; the returned
+    ///   pointer is valid for the duration of the SAX callback (dict-owned or
+    ///   leaked copy).
+    unsafe fn sax_name_cstr(&self, name: &[u8]) -> *const xmlChar {
+        unsafe {
+            let ctxt = self.ctxt;
+            if (*ctxt).dictNames != 0 && !(*ctxt).dict.is_null() && !name.is_empty() {
+                let interned = crate::abi::exports_xml2::xmlDictLookup(
+                    (*ctxt).dict,
+                    name.as_ptr() as *const xmlChar,
+                    name.len() as c_int,
+                );
+                if !interned.is_null() {
+                    return interned;
+                }
+            }
+            Self::vec_to_cstr_null(name)
+        }
+    }
 
     /// Convert a byte slice to a null-terminated C string pointer.
     /// The returned pointer is valid until the backing memory is freed.

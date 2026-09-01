@@ -1047,10 +1047,13 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
         }
     }
 
-    // Rule 5: <tr> auto-closes an open <tr>, <td> or <th> (the previous
-    // row); a new <td>/<th> only auto-closes an open <td>/<th> (the
-    // previous cell) and stays inside the open <tr> (upstream
-    // htmlAutoClose).
+    // Rule 5: <tr> auto-closes the open row — the <tr> itself and any open
+    // <td>/<th> cell (which is a child of that row); a new <td>/<th> only
+    // auto-closes an open <td>/<th> (the previous cell) and stays inside the
+    // open <tr> (upstream htmlAutoClose). The walk must NOT stop at a cell:
+    // it has to keep climbing to the enclosing <tr> and close the whole row
+    // (otherwise the new <tr> would nest inside the old one — corpus
+    // html-table).
     if tag_lower_str == "tr" {
         let mut cur2 = current;
         while !cur2.is_null() {
@@ -1058,7 +1061,7 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
             if ctype == XML_ELEMENT_NODE as c_int && !unsafe { (*cur2).name.is_null() } {
                 let name_bytes = unsafe { xmlstr_to_bytes((*cur2).name) };
                 let name_str = core::str::from_utf8(name_bytes).unwrap_or("");
-                if name_str == "tr" || name_str == "td" || name_str == "th" {
+                if name_str == "tr" {
                     current = unsafe { (*cur2).parent };
                     break;
                 }
@@ -2060,6 +2063,13 @@ unsafe fn html_parse_buffer(
                         let end_tag = format!("</{}", tag_str);
                         let end_bytes = end_tag.as_bytes();
                         let mut raw_text = Vec::new();
+                        // Potential end-tag prefix chars ("</script") are
+                        // buffered separately: on a full match they are
+                        // DISCARDED (the content ends before the '<' —
+                        // upstream script-content ends at the '<' that starts
+                        // the close tag), on a mismatch they are flushed back
+                        // into the text.
+                        let mut match_buf: Vec<u8> = Vec::new();
                         let mut match_idx = 0;
 
                         loop {
@@ -2068,7 +2078,9 @@ unsafe fn html_parse_buffer(
                             }
                             let ch = ctxt.peek().unwrap();
                             if ch.to_ascii_lowercase() == end_bytes[match_idx] {
+                                match_buf.push(ch);
                                 match_idx += 1;
+                                ctxt.next();
                                 if match_idx == end_bytes.len() {
                                     // We found the start of </tag
                                     // Add the text before the end tag
@@ -2079,8 +2091,7 @@ unsafe fn html_parse_buffer(
                                         }
                                     }
                                     // Consume the rest of the end tag: "tag>"
-                                    ctxt.next(); // consume the last char of end tag prefix
-                                                 // Now read "tag>"
+                                    // Now read "tag>"
                                     let _suffix = ctxt.read_while(|ch| ch != b'>');
                                     if ctxt.peek() == Some(b'>') {
                                         ctxt.next();
@@ -2089,15 +2100,13 @@ unsafe fn html_parse_buffer(
                                     ctxt.current = unsafe { (*raw_node).parent };
                                     break;
                                 }
-                                // Store the potential match start
-                                if match_idx == 1 {
-                                    raw_text.push(ch);
-                                }
-                                ctxt.next();
                             } else {
-                                // If we were building a match, flush all buffered chars
+                                // Mismatch: flush any buffered end-tag prefix
+                                // chars back into the text, then the current
+                                // char.
                                 if match_idx > 0 {
-                                    // We already pushed some chars, just continue
+                                    raw_text.extend_from_slice(&match_buf);
+                                    match_buf.clear();
                                     match_idx = 0;
                                 }
                                 raw_text.push(ch);
@@ -2105,11 +2114,15 @@ unsafe fn html_parse_buffer(
                             }
                         }
 
-                        // If we never found the end tag, just add the text
-                        if match_idx < end_bytes.len() && !raw_text.is_empty() {
-                            let text_node = tree::new_text(bytes_to_xmlstr(&raw_text));
-                            if !text_node.is_null() {
-                                tree::add_child(raw_node, text_node);
+                        // If we never found the end tag, add the text (plus
+                        // any buffered end-tag prefix chars).
+                        if match_idx < end_bytes.len() {
+                            raw_text.extend_from_slice(&match_buf);
+                            if !raw_text.is_empty() {
+                                let text_node = tree::new_text(bytes_to_xmlstr(&raw_text));
+                                if !text_node.is_null() {
+                                    tree::add_child(raw_node, text_node);
+                                }
                             }
                             ctxt.current = unsafe { (*raw_node).parent };
                         }
@@ -2450,7 +2463,9 @@ fn trim_ascii_start(s: &[u8]) -> &[u8] {
     &s[start..]
 }
 
-/// Write text content into an HTML output buffer, escaping `&` and `<`.
+/// Write text content into an HTML output buffer, escaping `&`, `<` and
+/// `>` (upstream htmlTreeDumpText escapes `>` to `&gt;` as well — the corpus
+/// `ser-methods` html method expects `&lt;x&gt;`, not `&lt;x>`).
 ///
 /// # Safety
 ///
@@ -2474,6 +2489,9 @@ unsafe fn html_serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len
             }
             b'&' => {
                 io::buf_add(buf, b"&amp;" as *const u8, 5);
+            }
+            b'>' => {
+                io::buf_add(buf, b"&gt;" as *const u8, 4);
             }
             _ => {
                 io::buf_add(buf, &ch as *const u8, 1);
@@ -2565,6 +2583,27 @@ pub(crate) unsafe fn serialize_node(
     format: c_int,
     level: c_int,
 ) {
+    unsafe { serialize_node_enc(node, buf, format, level, None) }
+}
+
+/// Serialize an HTML node with an optional output-encoding parameter
+/// (upstream `htmlNodeDumpInternal`'s `encoding` argument).
+///
+/// Upstream inserts a `<meta charset=...>` in the root `<head>` ONLY when
+/// this `encoding` parameter is non-NULL (htmlDocDumpMemoryFormat and the
+/// lxml `tostring(method="html")` path pass NULL and never insert one);
+/// `htmlSaveFileFormat` passes the caller's encoding string.
+///
+/// # Safety
+///
+/// - `node` must be NULL or a valid `_xmlNode`; `buf` a valid `_xmlBuffer`.
+pub(crate) unsafe fn serialize_node_enc(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    encoding: Option<&[u8]>,
+) {
     if node.is_null() || buf.is_null() {
         return;
     }
@@ -2617,24 +2656,24 @@ pub(crate) unsafe fn serialize_node(
                 attr = a.next;
             }
 
-            // UPSTREAM-PARITY: htmlSetMetaEncoding (htmlsave.c) inserts
+            // UPSTREAM-PARITY (HTMLtree.c htmlNodeDumpInternal): inserts
             // <meta charset="..."> as the first child of the <head> of the
-            // root <html> element when no <meta> is present and the document
-            // carries an encoding (htmlNodeDumpInternal only runs the meta
-            // logic when `encoding != NULL`). The meta is synthetic here, so
-            // it participates in the formatting rules like a real child.
+            // root <html> element when no <meta> is present AND the caller
+            // passed an explicit output `encoding` parameter (the doc-dump
+            // path passes NULL and inserts nothing). The meta is synthetic
+            // here, so it participates in the formatting rules like a real
+            // child.
             let mut meta_bytes: Option<Vec<u8>> = None;
-            if name.eq_ignore_ascii_case("head")
-                && level == 1
-                && !n.doc.is_null()
-                && !(*n.doc).encoding.is_null()
-            {
-                let parent_is_html = !n.parent.is_null() && !(*n.parent).name.is_null() && {
-                    let pn = core::str::from_utf8(xmlstr_to_bytes((*n.parent).name)).unwrap_or("");
-                    pn.eq_ignore_ascii_case("html")
-                };
-                if parent_is_html && !html_head_has_meta(n.children) {
-                    meta_bytes = Some(xmlstr_to_bytes((*n.doc).encoding).to_vec());
+            if name.eq_ignore_ascii_case("head") && level == 1 {
+                if let Some(enc) = encoding {
+                    let parent_is_html = !n.parent.is_null() && !(*n.parent).name.is_null() && {
+                        let pn =
+                            core::str::from_utf8(xmlstr_to_bytes((*n.parent).name)).unwrap_or("");
+                        pn.eq_ignore_ascii_case("html")
+                    };
+                    if parent_is_html && !html_head_has_meta(n.children) {
+                        meta_bytes = Some(enc.to_vec());
+                    }
                 }
             }
             let meta_inserted = meta_bytes.is_some();
@@ -2684,7 +2723,7 @@ pub(crate) unsafe fn serialize_node(
                 // indentation; the per-element rules emit the newlines).
                 let mut child = n.children;
                 while !child.is_null() {
-                    serialize_node(child, buf, format, level + 1);
+                    serialize_node_enc(child, buf, format, level + 1, encoding);
                     // UPSTREAM-PARITY (line 997): a newline follows a
                     // non-inline element whose next sibling is not text,
                     // unless the parent is p/pre/param.
@@ -2733,7 +2772,18 @@ pub(crate) unsafe fn serialize_node(
             }
         }
         t if t == XML_TEXT_NODE as c_int => {
-            html_serialize_text(buf, n.content, xml_strlen(n.content) as c_int);
+            // UPSTREAM-PARITY (HTMLtree.c htmlNodeDumpInternal): script/
+            // style content is DATA_RAWTEXT — written verbatim, never
+            // escaped (the corpus html-script expects `<` and `&&` raw).
+            let parent_is_raw = !n.parent.is_null() && !(*n.parent).name.is_null() && {
+                let pn = xmlstr_to_bytes((*n.parent).name);
+                pn.eq_ignore_ascii_case(b"script") || pn.eq_ignore_ascii_case(b"style")
+            };
+            if parent_is_raw {
+                io::buf_cat(buf, n.content);
+            } else {
+                html_serialize_text(buf, n.content, xml_strlen(n.content) as c_int);
+            }
         }
         t if t == XML_CDATA_SECTION_NODE as c_int => {
             io::buf_add(buf, b"<![CDATA[" as *const u8, 9);
@@ -2797,7 +2847,7 @@ pub(crate) unsafe fn serialize_node(
             // Serialize children
             let mut child = n.children;
             while !child.is_null() {
-                serialize_node(child, buf, format, 0);
+                serialize_node_enc(child, buf, format, 0, encoding);
                 child = unsafe { (*child).next };
             }
             // UPSTREAM-PARITY: htmlDocContentDumpOutput terminates with a
@@ -3402,6 +3452,22 @@ mod tests {
             // The raw text content should be preserved
             assert!(s.contains("var x = 1;"));
 
+            // UPSTREAM-PARITY (DATA_RAWTEXT): script content is never
+            // escaped, even when it contains '<', '&' or '>'.
+            let html2 = b"<script>if (a < b && c > d) { x(1); }</script>\0";
+            let doc2 = parse_memory(html2.as_ptr() as *const c_char, (html2.len() - 1) as c_int);
+            assert!(!doc2.is_null());
+            let s2 = html_doc_to_string(doc2);
+            assert!(
+                s2.contains("if (a < b && c > d) { x(1); }"),
+                "script content must be raw, got: {s2}"
+            );
+            assert!(
+                !s2.contains("&lt;"),
+                "script content must not be escaped: {s2}"
+            );
+            tree::free_doc(doc2);
+
             tree::free_doc(doc);
         }
     }
@@ -3643,6 +3709,20 @@ mod tests {
             assert!(s.contains("<td>Cell 1"));
             assert!(s.contains("<td>Cell 2"));
 
+            tree::free_doc(doc);
+        }
+    }
+
+    #[test]
+    fn test_table_tr_auto_close() {
+        // <tr> must auto-close the open row (the corpus html-table op:
+        // `<table><tr><td>1<td>2<tr><td>3</table>` yields two sibling rows).
+        unsafe {
+            let html = b"<table><tr><td>1<td>2<tr><td>3</table>\0";
+            let doc = parse_memory(html.as_ptr() as *const c_char, (html.len() - 1) as c_int);
+            assert!(!doc.is_null());
+            let s = html_doc_to_string(doc);
+            assert!(s.contains("</td></tr><tr>"));
             tree::free_doc(doc);
         }
     }

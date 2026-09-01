@@ -1432,10 +1432,17 @@ fn rng_validate_content(
             | RelaxNgPatternType::Group
             | RelaxNgPatternType::ZeroOrMore
             | RelaxNgPatternType::OneOrMore
-            | RelaxNgPatternType::Optional => {
+            | RelaxNgPatternType::Optional
+            | RelaxNgPatternType::List => {
                 return rng_validate_pattern(p, node, schema, ctxt);
             }
             RelaxNgPatternType::Text => return rng_validate_text_pattern(node, ctxt),
+            RelaxNgPatternType::Empty => return rng_validate_empty_pattern(node, ctxt),
+            RelaxNgPatternType::Data => return rng_validate_data_pattern(p, node, ctxt),
+            RelaxNgPatternType::Value => return rng_validate_value_pattern(p, node, ctxt),
+            RelaxNgPatternType::Attribute => {
+                return rng_validate_attribute_pattern(p, node, schema, ctxt)
+            }
             _ => {}
         }
     }
@@ -1454,11 +1461,34 @@ fn rng_validate_content(
         let mut valid = true;
         let mut child_idx = 0;
         for child_pat in content {
-            // A text pattern matches any text content of the element and
-            // does not consume an element child.
-            if child_pat.pattern_type == RelaxNgPatternType::Text {
-                valid &= rng_validate_text_pattern(node, ctxt);
-                continue;
+            // Patterns over the element's own character data and attributes
+            // do NOT consume an element child: `text` matches any text,
+            // `data`/`value` validate the concatenated text content,
+            // `attribute` validates the element's attributes, and `empty`
+            // requires no element children (upstream relaxng.c treats these
+            // against the element's data/attributes, not its child list).
+            match child_pat.pattern_type {
+                RelaxNgPatternType::Text => {
+                    valid &= rng_validate_text_pattern(node, ctxt);
+                    continue;
+                }
+                RelaxNgPatternType::Data => {
+                    valid &= rng_validate_data_pattern(child_pat, node, ctxt);
+                    continue;
+                }
+                RelaxNgPatternType::Value => {
+                    valid &= rng_validate_value_pattern(child_pat, node, ctxt);
+                    continue;
+                }
+                RelaxNgPatternType::Attribute => {
+                    valid &= rng_validate_attribute_pattern(child_pat, node, schema, ctxt);
+                    continue;
+                }
+                RelaxNgPatternType::Empty => {
+                    valid &= rng_validate_empty_pattern(node, ctxt);
+                    continue;
+                }
+                _ => {}
             }
             if child_idx >= child_nodes.len() {
                 match child_pat.pattern_type {
@@ -2514,6 +2544,16 @@ pub unsafe extern "C" fn xmlRelaxNGValidateDoc(ctxt: *mut c_void, doc: *mut _xml
         } else {
             valid_ctxt.errors = temp_ctxt.errors;
             valid_ctxt.nb_errors = temp_ctxt.nb_errors;
+            // UPSTREAM-PARITY: forward each recorded error to the context's
+            // registered handlers (xmlRelaxNGSetValidErrors /
+            // xmlRelaxNGSetValidStructuredErrors) so consumers like lxml's
+            // RelaxNG.validate (which installs serror = _receiveError)
+            // populate their error_log.
+            crate::abi::exports_relaxng::dispatch_relaxng_valid_errors(
+                ctxt as usize,
+                &valid_ctxt.errors,
+                ptr::null_mut(),
+            );
             temp_ctxt.nb_errors
         }
     }

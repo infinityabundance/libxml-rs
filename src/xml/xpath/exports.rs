@@ -1364,8 +1364,7 @@ pub unsafe extern "C" fn xmlXPathOrderDocElems(doc: *mut _xmlDoc) -> c_long {
     }
     count
 }
-use std::collections::HashMap;
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 
 use crate::abi::structs::_xmlAttr;
 use crate::xml::validation::{get_id, is_xml_name_char, is_xml_name_start};
@@ -4629,10 +4628,41 @@ pub unsafe extern "C" fn xmlXPathFunctionLookupNS(
 /// - `ctxt` may be NULL; `str` must be a valid string or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlXPathCtxtCompile(
-    _ctxt: *mut _xmlXPathContext,
+    ctxt: *mut _xmlXPathContext,
     str_: *const xmlChar,
 ) -> *mut c_void {
-    crate::abi::exports_xml2::xmlXPathCompile(str_)
+    if str_.is_null() {
+        return ptr::null_mut();
+    }
+    let expr_str = match CStr::from_ptr(str_ as *const c_char).to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+    match crate::abi::exports_xml2::xpath_compile_store(expr_str) {
+        Ok(key) => key,
+        Err(_e) => {
+            if ctxt.is_null() {
+                // UPSTREAM-PARITY (xpath.c xmlXPathCtxtCompile with a NULL
+                // context): fall back to the plain compile delivery (generic
+                // channel with expression window + caret, HOSTILE-FAILURE F3).
+                crate::abi::exports_xml2::xmlXPathCompile(str_)
+            } else {
+                // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): deliver through
+                // the context's error handler (lxml's XPathClass installs
+                // ctxt->error = _receiveXPathError, so the compile failure
+                // lands in its error_log with "Invalid expression").
+                unsafe {
+                    crate::abi::exports_xml2::raise_xpath_error(
+                        ctxt,
+                        crate::abi::types::XPATH_EXPR_ERROR,
+                        "Invalid expression",
+                        expr_str,
+                    );
+                }
+                ptr::null_mut()
+            }
+        }
+    }
 }
 
 /// `xmlXPathObject *xmlXPathCompiledEval(xmlXPathCompExpr *comp, xmlXPathContext *ctx)`.
@@ -4653,12 +4683,35 @@ pub unsafe extern "C" fn xmlXPathCompiledEval(
         return ptr::null_mut();
     }
     let internal = &mut *internal;
+    // UPSTREAM-PARITY (xpath.c xmlXPathCompiledEvalInternal): the context
+    // node, document and position come from the C context fields — consumers
+    // (lxml's compiled XPath evaluator) set xpathCtxt->doc/node per
+    // evaluation — so mirror them into the internal context before
+    // evaluating, exactly like xmlXPathEvalExpression does.
+    internal.document = (*ctx).doc;
+    internal.set_context_node((*ctx).node);
+    internal.context_position = (*ctx).proximityPosition;
+    internal.context_size = (*ctx).contextSize;
+    internal.proximity_position = (*ctx).proximityPosition;
+    internal.clear_error();
     let registry = crate::abi::exports_xml2::xpath_compiled_registry();
     let map = registry.lock();
     match map.get(&(comp as u64)) {
         Some(compiled) => match crate::xml::xpath::evaluate(compiled, internal) {
             Some(val) => crate::abi::exports_xml2::xpath_to_object_pub(val),
-            None => ptr::null_mut(),
+            None => {
+                // UPSTREAM-PARITY (xpath.c xmlXPathCompiledEvalInternal): an
+                // evaluation failure is raised through the context's error
+                // handler before NULL is returned.
+                unsafe {
+                    crate::abi::exports_xml2::raise_internal_xpath_error(
+                        ctx,
+                        internal,
+                        &compiled.original,
+                    );
+                }
+                ptr::null_mut()
+            }
         },
         None => ptr::null_mut(),
     }

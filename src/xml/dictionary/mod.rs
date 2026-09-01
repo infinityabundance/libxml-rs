@@ -163,9 +163,6 @@ pub struct Dict {
     parent: Option<DictRef>,
     /// Whether this is a sub-dictionary.
     is_sub: bool,
-    /// The opaque C pointer for this dictionary.
-    /// Used to track which dictionary owns which entries.
-    opaque_id: usize,
     /// Reference count (upstream xmlDict `ref_counter`). Stored IN the
     /// shared dict memory so cross-DSO operations observe one coherent
     /// count — R-000177 (Phase 14: the pre-fix per-DSO side table
@@ -185,16 +182,6 @@ struct DictRef {
 // SAFETY: Dict is only accessed through mutable references.
 unsafe impl Send for DictRef {}
 unsafe impl Sync for DictRef {}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Global Dictionary ID Counter
-// ═══════════════════════════════════════════════════════════════════════════════
-
-static NEXT_DICT_ID: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(1);
-
-fn next_dict_id() -> usize {
-    NEXT_DICT_ID.fetch_add(1, core::sync::atomic::Ordering::Relaxed)
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // String Hashing
@@ -238,7 +225,6 @@ pub fn dict_create() -> *mut Dict {
         limit: 0,
         parent: None,
         is_sub: false,
-        opaque_id: next_dict_id(),
         ref_count: AtomicU32::new(1),
     });
 
@@ -274,7 +260,6 @@ pub unsafe fn dict_create_sub(parent: *mut Dict) -> *mut Dict {
         limit: 0,
         parent: Some(DictRef { ptr: parent }),
         is_sub: true,
-        opaque_id: next_dict_id(),
         ref_count: AtomicU32::new(1),
     });
 
@@ -458,7 +443,7 @@ pub unsafe fn dict_owns(dict: *mut Dict, s: *const xmlChar) -> bool {
     while !cur.is_null() {
         let d = unsafe { &*cur };
         for e in &d.entries {
-            if e.data as *const xmlChar == s {
+            if std::ptr::eq(e.data, s) {
                 return true;
             }
         }

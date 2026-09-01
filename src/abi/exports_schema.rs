@@ -115,8 +115,8 @@ use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlVal
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
 use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
 use crate::xml::schemas::{
-    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind,
-    XsdSchema, XsdValidCtxt,
+    xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind, XsdSchema,
+    XsdValidCtxt,
 };
 use crate::xml::schematron::schematron_parse;
 
@@ -713,7 +713,7 @@ fn builtin_type(val_type: c_int) -> *mut XsdType {
 ///
 /// - `ctxt_addr` must be the address of an `XsdValidCtxt` that a caller
 ///   registered state for; otherwise this is a no-op.
-unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) {
+pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) {
     let state = {
         let guard = VALID_STATES.lock();
         guard.get(&ctxt_addr).copied()

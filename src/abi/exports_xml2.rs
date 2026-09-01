@@ -114,7 +114,7 @@ use core::ptr;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_long, c_uint, c_ulong};
 
@@ -6078,15 +6078,106 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
     match crate::xml::xpath::evaluate_str(expr_str, internal) {
         Some(val) => xpath_to_object(val),
         None => {
-            // UPSTREAM-PARITY: libxml2 reports a failed compile/eval with
-            // "XPath error : Invalid expression" (xmlXPathErr,
-            // XPATH_EXPR_ERROR). The precise per-expression diagnostics are
-            // tracked as RESIDUAL R-XPATH-ERRMSG.
-            if internal.error.is_none() {
-                internal.set_error("Invalid expression");
-            }
+            // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): report the failure
+            // through the C context (ctxt->lastError pre-fill + ctxt->error
+            // handler with ctxt->userData) so consumers like lxml's
+            // _receiveXPathError receive the specific message.
+            raise_internal_xpath_error(ctxt, internal, expr_str);
             ptr::null_mut()
         }
+    }
+}
+
+/// Map an internal XPath error message to its upstream `xmlXPathError` code
+/// (0-based, xpath.h) and raise it through the C context.
+pub(crate) unsafe fn raise_internal_xpath_error(
+    ctxt: *mut _xmlXPathContext,
+    internal: &mut XPathContext,
+    expr: &str,
+) {
+    let (xpath_code, message) = match internal.error.as_deref() {
+        Some(m) if m.starts_with("Undefined namespace prefix") => (XPATH_UNDEF_PREFIX_ERROR, m),
+        Some(m) if m.starts_with("Unregistered function") => (XPATH_UNKNOWN_FUNC_ERROR, m),
+        Some(m) if m.starts_with("Undefined variable") => (XPATH_UNDEF_VARIABLE_ERROR, m),
+        Some(m) => (XPATH_EXPR_ERROR, m),
+        None => {
+            internal.set_error("Invalid expression");
+            (XPATH_EXPR_ERROR, "Invalid expression")
+        }
+    };
+    unsafe { raise_xpath_error(ctxt, xpath_code, message, expr) }
+}
+
+/// UPSTREAM-PARITY (xpath.c `xmlXPathErrFmt` -> error.c `xmlVRaiseError`):
+/// deliver an XPath compile/eval failure to the C context. Pre-fills
+/// `ctxt->lastError` (domain/code/level, the expression as `str1`, `int1` =
+/// 0) exactly like upstream's message-less pre-fill, then raises through the
+/// shared streamed path: TLS-global storage + dispatch to `ctxt->error`
+/// (with `ctxt->userData`), the global structured handler, or the generic
+/// channel (`xmlFormatError` "XPath error : ..." fragments).
+///
+/// `code` is the 0-based `xmlXPathError` value (candidate `XPATH_*_ERROR`
+/// constants); the delivered structured code is offset by
+/// `XML_XPATH_EXPRESSION_OK` (1200) like upstream.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid `_xmlXPathContext`.
+pub(crate) unsafe fn raise_xpath_error(
+    ctxt: *mut _xmlXPathContext,
+    code: c_int,
+    message: &str,
+    expr: &str,
+) {
+    unsafe {
+        use crate::xml::errors::{raise_error_streamed, GenericDelivery};
+        use crate::xml::globals;
+
+        // Upstream xmlXPathErr / xmlXPathErrFmt always format with a
+        // trailing newline ("%s\n"); lxml's _LogEntry.message strips one.
+        let msg_c = CString::new(format!("{}\n", message)).unwrap_or_default();
+        let expr_c = CString::new(expr).unwrap_or_default();
+        let xerr_code = code + XML_XPATH_EXPRESSION_OK;
+
+        // Upstream pre-fill of ctxt->lastError (xmlXPathErrFmt): domain,
+        // code, level, str1 = strdup(base), int1 = cur - base. The message
+        // stays NULL here; xmlVRaiseError writes it into the TLS global.
+        globals::free_error_strings(&(*ctxt).lastError);
+        let pre = _xmlError {
+            domain: XML_FROM_XPATH,
+            code: xerr_code,
+            message: ptr::null_mut(),
+            level: xmlErrorLevel::XML_ERR_ERROR as c_int,
+            file: ptr::null_mut(),
+            line: 0,
+            str1: xmlMemStrdupImpl(expr_c.as_ptr()) as *mut c_char,
+            str2: ptr::null_mut(),
+            str3: ptr::null_mut(),
+            int1: 0,
+            int2: 0,
+            ctxt: ctxt as *mut c_void,
+            node: (*ctxt).debugNode as *mut c_void,
+        };
+        ptr::write(&mut (*ctxt).lastError, pre);
+
+        raise_error_streamed(
+            ctxt as *mut c_void,
+            XML_FROM_XPATH,
+            xerr_code,
+            xmlErrorLevel::XML_ERR_ERROR as c_int,
+            ptr::null_mut(),
+            0,
+            0,
+            expr_c.as_ptr(),
+            ptr::null_mut(),
+            ptr::null_mut(),
+            0,
+            msg_c.as_ptr(),
+            None,
+            None,
+            GenericDelivery::Stream,
+            None,
+        );
     }
 }
 
@@ -6448,10 +6539,26 @@ pub unsafe extern "C" fn xmlXPathFreeNodeSet(ns: *mut _xmlNodeSet) {
     xmlFreeImpl(ns as *mut c_void);
 }
 
+/// Compile `expr_str` and store it in the compiled-expression registry,
+/// returning the opaque key (or the parse error without raising — the caller
+/// decides delivery).
+pub(crate) fn xpath_compile_store(
+    expr_str: &str,
+) -> Result<*mut c_void, crate::xml::xpath::parser::ParseError> {
+    match crate::xml::xpath::compile_result(expr_str) {
+        Ok(compiled) => {
+            let mut map = COMPILED_EXPRS.lock();
+            let mut counter = NEXT_COMPILED_KEY.lock();
+            let key = *counter;
+            *counter += 1;
+            map.insert(key, Box::new(compiled));
+            Ok(key as *mut c_void)
+        }
+        Err(e) => Err(e),
+    }
+}
+
 /// Compile an XPath expression.
-///
-/// Returns an opaque pointer that can be passed to `xmlXPathEvalExpression`
-/// (via the compiled-expr infrastructure) or freed with `xmlXPathFreeCompExpr`.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -6468,20 +6575,14 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
         Err(_) => return ptr::null_mut(),
     };
 
-    match crate::xml::xpath::compile_result(expr_str) {
-        Ok(compiled) => {
-            let mut map = COMPILED_EXPRS.lock();
-            let mut counter = NEXT_COMPILED_KEY.lock();
-            let key = *counter;
-            *counter += 1;
-            map.insert(key, Box::new(compiled));
-            key as *mut c_void
-        }
+    match xpath_compile_store(expr_str) {
+        Ok(key) => key,
         Err(e) => {
             // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): a failed compile
             // reports "XPath error : Invalid expression\n" plus the
             // expression and a caret at the error offset through the generic
-            // channel (HOSTILE-FAILURE F3).
+            // channel (HOSTILE-FAILURE F3). The structured code is
+            // 1200-based like upstream `code + XML_XPATH_EXPRESSION_OK`.
             let msg_cstr = std::ffi::CString::new("Invalid expression\n").unwrap_or_default();
             let expr_cstr = std::ffi::CString::new(expr_str).unwrap_or_default();
             let off = e.pos;
@@ -6494,7 +6595,8 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
                 crate::xml::errors::raise_error_streamed(
                     ptr::null_mut(),
                     crate::abi::types::XML_FROM_XPATH,
-                    crate::abi::types::XPATH_EXPR_ERROR,
+                    crate::abi::types::XPATH_EXPR_ERROR
+                        + crate::abi::types::XML_XPATH_EXPRESSION_OK,
                     crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
                     ptr::null(),
                     0,

@@ -119,7 +119,8 @@ use crate::xml::io;
 use crate::xml::string::{check_utf8, xml_strdup, xml_strlen, xml_strndup};
 use crate::xml::tree::{
     copy_node, free_node_list, get_doc_entity, new_ns, new_text, node_get_content, search_ns,
-    search_ns_by_href, serialize_attr_value, serialize_node_opts,
+    search_ns_by_href, serialize_attr_value, serialize_node_opts, serialize_node_opts_xhtml,
+    xml_is_xhtml,
 };
 
 // The FILE* is opaque at the ABI boundary and is passed as *mut c_void; the
@@ -2476,7 +2477,7 @@ pub unsafe extern "C" fn xmlAttrSerializeTxtContent(
 #[no_mangle]
 pub unsafe extern "C" fn xmlNodeDumpOutput(
     buf: *mut _xmlOutputBuffer,
-    _doc: *mut _xmlDoc,
+    doc: *mut _xmlDoc,
     cur: *mut _xmlNode,
     level: c_int,
     format: c_int,
@@ -2490,7 +2491,14 @@ pub unsafe extern "C" fn xmlNodeDumpOutput(
     if tmp.is_null() {
         return;
     }
-    serialize_node_opts(cur, tmp, format, level, ptr::null(), 0);
+    // UPSTREAM-PARITY (xmlsave.c xmlNodeDumpOutput): when the document's
+    // DTD is an XHTML DTD, serialize via xhtmlNodeDumpOutput — a bare
+    // <html> element gets the XHTML namespace and non-empty elements are
+    // open/close serialized.
+    let xhtml = xml_is_xhtml(doc);
+    unsafe {
+        serialize_node_opts_xhtml(cur, tmp, format, level, ptr::null(), 0, ptr::null(), xhtml);
+    }
     let content = io::buf_content(tmp);
     let len = io::buf_length(tmp);
     if !content.is_null() && len > 0 {

@@ -2501,7 +2501,7 @@ const HTML_CTXT_STATE_OFFSET: usize = size_of::<_xmlParserCtxt>();
 ///
 /// - `ctxt` must be non-NULL and point to a host allocation created by
 ///   `html_ctxt_alloc` (directly or through the exported creators).
-unsafe fn html_state(ctxt: *mut c_void) -> *mut HtmlOpaqueCtxt {
+const unsafe fn html_state(ctxt: *mut c_void) -> *mut HtmlOpaqueCtxt {
     (ctxt as *mut u8).add(HTML_CTXT_STATE_OFFSET) as *mut HtmlOpaqueCtxt
 }
 
@@ -2683,7 +2683,7 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
             ptr::addr_of!(crate::abi::data_globals::htmlDefaultSAXHandler) as *const _xmlSAXHandler
                 as *mut _xmlSAXHandler
         } else {
-            sax as *mut _xmlSAXHandler
+            sax
         };
         (*c).userData = user_data;
         (*c).html = 1;
@@ -3781,10 +3781,31 @@ unsafe fn html_serialize_to_buffer(node: *mut _xmlNode, format: c_int) -> *mut _
 /// Serialize `node` into an `_xmlOutputBuffer` (writes the serialized bytes
 /// through the output buffer's I/O channel).
 unsafe fn html_serialize_to_obuf(obuf: *mut _xmlOutputBuffer, node: *mut _xmlNode, format: c_int) {
+    unsafe { html_serialize_to_obuf_enc(obuf, node, format, None) }
+}
+
+/// Serialize `node` into an `_xmlOutputBuffer` with an optional output
+/// encoding (upstream `htmlNodeDumpInternal`'s `encoding` parameter, which
+/// gates the `<meta charset>` insertion).
+unsafe fn html_serialize_to_obuf_enc(
+    obuf: *mut _xmlOutputBuffer,
+    node: *mut _xmlNode,
+    format: c_int,
+    encoding: Option<&[u8]>,
+) {
     if obuf.is_null() || node.is_null() {
         return;
     }
-    let buf = unsafe { html_serialize_to_buffer(node, format) };
+    let buf = if encoding.is_some() {
+        let b = io::buf_create(0);
+        if b.is_null() {
+            return;
+        }
+        unsafe { html::serialize_node_enc(node, b, format, 0, encoding) };
+        b
+    } else {
+        unsafe { html_serialize_to_buffer(node, format) }
+    };
     if buf.is_null() {
         return;
     }
@@ -4022,18 +4043,27 @@ pub unsafe extern "C" fn htmlDocDump(f: *mut c_void, cur: *mut _xmlDoc) -> c_int
 pub unsafe extern "C" fn htmlSaveFileFormat(
     filename: *const c_char,
     cur: *mut _xmlDoc,
-    _encoding: *const c_char,
+    encoding: *const c_char,
     format: c_int,
 ) -> c_int {
     if cur.is_null() || filename.is_null() {
         return -1;
     }
+    // UPSTREAM-PARITY (HTMLtree.c htmlSaveFileFormat): the caller's encoding
+    // string is passed through to htmlNodeDumpInternal, which inserts a
+    // <meta charset> when it is non-NULL.
+    let enc: Option<&[u8]> = if encoding.is_null() {
+        None
+    } else {
+        let s = std::ffi::CStr::from_ptr(encoding);
+        Some(s.to_bytes())
+    };
     let obuf = io::output_buffer_create_filename(filename, ptr::null_mut(), 0);
     if obuf.is_null() {
         // UPSTREAM-PARITY: a failed output buffer yields 0, not -1.
         return 0;
     }
-    unsafe { html_serialize_to_obuf(obuf, cur as *mut _xmlNode, format) };
+    unsafe { html_serialize_to_obuf_enc(obuf, cur as *mut _xmlNode, format, enc) };
     io::output_buffer_close(obuf)
 }
 

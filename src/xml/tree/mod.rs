@@ -3186,6 +3186,11 @@ struct DumpState {
     /// NULL means "use the document's own encoding" (upstream
     /// `if (encoding == NULL) encoding = cur->encoding;`).
     encoding: *const xmlChar,
+    /// XHTML mode (upstream `xhtmlNodeDumpOutput`): the document's DTD is an
+    /// XHTML DTD, so a bare `html` element gets
+    /// `xmlns="http://www.w3.org/1999/xhtml"` and non-HTML-empty elements
+    /// serialize as open/close instead of self-closing.
+    xhtml: bool,
 }
 
 impl DumpState {
@@ -3199,6 +3204,7 @@ impl DumpState {
             indent_len: INDENT.len() as c_int,
             no_decl: 0,
             encoding: ptr::null(),
+            xhtml: false,
         }
     }
 
@@ -3236,7 +3242,70 @@ impl DumpState {
             indent_len: len,
             no_decl,
             encoding,
+            xhtml: false,
         }
+    }
+}
+
+/// UPSTREAM-PARITY (tree.c xmlIsXHTML): whether the document's internal
+/// subset is one of the XHTML 1.0 DTDs (strict, frameset or transitional).
+/// The XML serializer (xmlsave.c xhtmlNodeDumpOutput) switches to XHTML mode
+/// when this returns 1.
+pub(crate) unsafe fn xml_is_xhtml(doc: *mut _xmlDoc) -> bool {
+    unsafe {
+        if doc.is_null() {
+            return false;
+        }
+        let d = &*doc;
+        if d.intSubset.is_null() {
+            return false;
+        }
+        let dtd = &*d.intSubset;
+        if !dtd.ExternalID.is_null()
+            && (c_str_eq_bytes(dtd.ExternalID, b"-//W3C//DTD XHTML 1.0 Strict//EN")
+                || c_str_eq_bytes(dtd.ExternalID, b"-//W3C//DTD XHTML 1.0 Frameset//EN")
+                || c_str_eq_bytes(dtd.ExternalID, b"-//W3C//DTD XHTML 1.0 Transitional//EN"))
+        {
+            return true;
+        }
+        if !dtd.SystemID.is_null()
+            && (c_str_eq_bytes(
+                dtd.SystemID,
+                b"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd",
+            ) || c_str_eq_bytes(
+                dtd.SystemID,
+                b"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd",
+            ) || c_str_eq_bytes(
+                dtd.SystemID,
+                b"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd",
+            ))
+        {
+            return true;
+        }
+        false
+    }
+}
+
+/// UPSTREAM-PARITY (xmlsave.c xhtmlIsEmpty): HTML empty elements which stay
+/// self-closing in XHTML mode.
+const unsafe fn xhtml_is_empty(name: *const xmlChar) -> bool {
+    unsafe {
+        if name.is_null() {
+            return false;
+        }
+        c_str_eq_bytes(name, b"area")
+            || c_str_eq_bytes(name, b"base")
+            || c_str_eq_bytes(name, b"basefont")
+            || c_str_eq_bytes(name, b"br")
+            || c_str_eq_bytes(name, b"col")
+            || c_str_eq_bytes(name, b"frame")
+            || c_str_eq_bytes(name, b"hr")
+            || c_str_eq_bytes(name, b"img")
+            || c_str_eq_bytes(name, b"input")
+            || c_str_eq_bytes(name, b"isindex")
+            || c_str_eq_bytes(name, b"link")
+            || c_str_eq_bytes(name, b"meta")
+            || c_str_eq_bytes(name, b"param")
     }
 }
 
@@ -3941,6 +4010,21 @@ unsafe fn node_dump_internal(
             // Start tag.
             io::buf_ccat(buf, b'<');
             write_qname(buf, cur);
+            // UPSTREAM-PARITY (xmlsave.c xhtmlNodeDumpOutput): in XHTML mode
+            // a bare <html> element (no ns, no nsDef) gets the XHTML default
+            // namespace declaration.
+            if state.xhtml
+                && !n.name.is_null()
+                && c_str_eq_bytes(n.name, b"html")
+                && n.ns.is_null()
+                && n.nsDef.is_null()
+            {
+                io::buf_add(
+                    buf,
+                    b" xmlns=\"http://www.w3.org/1999/xhtml\"" as *const u8,
+                    37,
+                );
+            }
             let mut nsdef = n.nsDef;
             while !nsdef.is_null() {
                 ns_dump_output(buf, nsdef);
@@ -3952,7 +4036,18 @@ unsafe fn node_dump_internal(
                 attr = unsafe { (*attr).next };
             }
             if n.children.is_null() {
-                io::buf_add(buf, b"/>" as *const u8, 2);
+                if state.xhtml && !xhtml_is_empty(n.name) {
+                    // UPSTREAM-PARITY (xhtmlNodeDumpOutput C.2): in XHTML
+                    // mode only the HTML-empty elements stay self-closing;
+                    // everything else (e.g. <html>) serializes as
+                    // open/close.
+                    io::buf_ccat(buf, b'>');
+                    io::buf_add(buf, b"</" as *const u8, 2);
+                    write_qname(buf, cur);
+                    io::buf_ccat(buf, b'>');
+                } else {
+                    io::buf_add(buf, b"/>" as *const u8, 2);
+                }
             } else {
                 if state.format == 1 {
                     // An element with text/CDATA/entity-ref children is
@@ -4190,13 +4285,46 @@ pub(crate) unsafe fn serialize_node_opts_enc(
     no_decl: c_int,
     encoding: *const xmlChar,
 ) {
-    if node.is_null() || buf.is_null() {
-        return;
+    unsafe {
+        serialize_node_opts_xhtml(node, buf, format, level, indent, no_decl, encoding, false)
+    };
+}
+
+/// Serialize a node with full options plus XHTML mode (upstream
+/// `xhtmlNodeDumpOutput`). When `xhtml` is set, a bare `<html>` element
+/// receives the XHTML default namespace and non-HTML-empty elements are
+/// serialized as open/close pairs.
+///
+/// # SAFETY
+///
+/// - `node` must be NULL or a valid `_xmlNode`; `buf` a valid `_xmlBuffer`;
+///   `indent`/`encoding` NULL or valid NUL-terminated strings.
+// The 8 parameters mirror the upstream xmlsave.c dump state (node, buffer,
+// format, level, indent, no-declaration, encoding, xhtml mode) — the XHTML
+// flag is threaded alongside the existing serializer state rather than
+// through the DumpState struct to keep the xhtml gate visible at the call
+// site.
+#[allow(clippy::too_many_arguments)]
+pub(crate) unsafe fn serialize_node_opts_xhtml(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+    no_decl: c_int,
+    encoding: *const xmlChar,
+    xhtml: bool,
+) {
+    unsafe {
+        if node.is_null() || buf.is_null() {
+            return;
+        }
+        let parent = (*node).parent;
+        let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
+        state.xhtml = xhtml;
+        let mut lvl = level;
+        node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
     }
-    let parent = unsafe { (*node).parent };
-    let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
-    let mut lvl = level;
-    node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
 }
 
 /// Dump a document to a buffer.

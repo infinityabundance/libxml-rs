@@ -4014,9 +4014,9 @@ fn main() {
             let layout = Layout::new::<_xmlParserNodeInfoSeq>();
             let p = alloc_zeroed(layout) as *mut _xmlParserNodeInfoSeq;
             println!(
-                "FIELD _xmlParserNodeInfoSeq.block offsetof={} size={}",
-                offset_of!(_xmlParserNodeInfoSeq, block),
-                size_of_val(&(*p).block)
+                "FIELD _xmlParserNodeInfoSeq.maximum offsetof={} size={}",
+                offset_of!(_xmlParserNodeInfoSeq, maximum),
+                size_of_val(&(*p).maximum)
             );
             dealloc(p as *mut u8, layout);
         }
@@ -4026,9 +4026,9 @@ fn main() {
             let layout = Layout::new::<_xmlParserNodeInfoSeq>();
             let p = alloc_zeroed(layout) as *mut _xmlParserNodeInfoSeq;
             println!(
-                "FIELD _xmlParserNodeInfoSeq.index offsetof={} size={}",
-                offset_of!(_xmlParserNodeInfoSeq, index),
-                size_of_val(&(*p).index)
+                "FIELD _xmlParserNodeInfoSeq.length offsetof={} size={}",
+                offset_of!(_xmlParserNodeInfoSeq, length),
+                size_of_val(&(*p).length)
             );
             dealloc(p as *mut u8, layout);
         }
@@ -4038,21 +4038,9 @@ fn main() {
             let layout = Layout::new::<_xmlParserNodeInfoSeq>();
             let p = alloc_zeroed(layout) as *mut _xmlParserNodeInfoSeq;
             println!(
-                "FIELD _xmlParserNodeInfoSeq.block_max offsetof={} size={}",
-                offset_of!(_xmlParserNodeInfoSeq, block_max),
-                size_of_val(&(*p).block_max)
-            );
-            dealloc(p as *mut u8, layout);
-        }
-    }
-    {
-        unsafe {
-            let layout = Layout::new::<_xmlParserNodeInfoSeq>();
-            let p = alloc_zeroed(layout) as *mut _xmlParserNodeInfoSeq;
-            println!(
-                "FIELD _xmlParserNodeInfoSeq.size offsetof={} size={}",
-                offset_of!(_xmlParserNodeInfoSeq, size),
-                size_of_val(&(*p).size)
+                "FIELD _xmlParserNodeInfoSeq.buffer offsetof={} size={}",
+                offset_of!(_xmlParserNodeInfoSeq, buffer),
+                size_of_val(&(*p).buffer)
             );
             dealloc(p as *mut u8, layout);
         }

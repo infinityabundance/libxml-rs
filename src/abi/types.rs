@@ -573,6 +573,17 @@ pub const XPATH_STACK_ERROR: c_int = 23;
 pub const XPATH_FORBID_VARIABLE_ERROR: c_int = 24;
 pub const XPATH_OP_LIMIT_EXCEEDED: c_int = 25;
 pub const XPATH_RECURSION_LIMIT_EXCEEDED: c_int = 26;
+
+// ── Structured-error XPath code base (upstream xmlerror.h xmlParserErrors) ──
+//
+// Upstream xmlXPathErrFmt delivers `err->code = code + XML_XPATH_EXPRESSION_OK
+// - XPATH_EXPRESSION_OK` — i.e. the 0-based xmlXPathError value offset by 1200
+// (XML_XPATH_EXPRESSION_OK = 1200, XPATH_EXPRESSION_OK = 0) — so structured
+// handlers observe 1207/1219-style codes, not 7/19. lxml's xmlerror.pxd
+// matches these 1200-based values.
+
+pub const XML_XPATH_EXPRESSION_OK: c_int = 1200;
+
 pub const XML_MAX_NAMELEN: c_int = 100;
 pub const XML_MAX_ATTRIBUTE_LENGTH: c_int = 500_000;
 

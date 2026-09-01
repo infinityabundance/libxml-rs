@@ -268,24 +268,34 @@ pub(crate) unsafe fn save_result_to_vec(
             // defaults indent to 1 for HTML output and inserts a meta
             // charset element; see RESIDUAL R-HTML-OUTPUT.
             let fmt = if indent != 0 { 1 } else { 0 };
-            // UPSTREAM-PARITY: xsltSaveResultTo calls htmlSetMetaEncoding
-            // with the stylesheet encoding (defaulting to "UTF-8") before
-            // dumping; the HTML serializer reads the document's encoding to
-            // emit the <meta charset> element.
+            // UPSTREAM-PARITY (xsltutils.c xsltSaveResultTo): the HTML
+            // method calls htmlSetMetaEncoding(result, encoding-or-"UTF-8")
+            // before dumping; the serializer emits <meta charset="..."> as
+            // the first child of the root <head> when the caller passes the
+            // encoding parameter (HTMLtree.c htmlNodeDumpInternal gates the
+            // meta logic on a non-NULL encoding).
+            let enc: *const xmlChar = if !encoding.is_null() {
+                encoding
+            } else {
+                c"UTF-8".as_ptr() as *const xmlChar
+            };
             if (*result).encoding.is_null() {
-                let enc: *const xmlChar = if !encoding.is_null() {
-                    encoding
-                } else {
-                    c"UTF-8".as_ptr() as *const xmlChar
-                };
                 (*result).encoding =
                     crate::abi::allocator::xmlMemStrdupImpl(enc as *const c_char) as *mut xmlChar;
             }
+            let enc_bytes: &[u8] =
+                crate::abi::versioning::c_str_to_bytes(enc as *const c_char).unwrap_or(b"UTF-8");
             let buf = crate::xml::io::buf_create(-1);
             if buf.is_null() {
                 return Err(-1);
             }
-            crate::xml::html::serialize_node(result as *mut _xmlNode, buf, fmt, 0);
+            crate::xml::html::serialize_node_enc(
+                result as *mut _xmlNode,
+                buf,
+                fmt,
+                0,
+                Some(enc_bytes),
+            );
             let len = crate::xml::io::buf_length(buf);
             let content = crate::xml::io::buf_content(buf);
             if len > 0 && !content.is_null() {

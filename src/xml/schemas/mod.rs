@@ -2855,6 +2855,12 @@ pub unsafe extern "C" fn xmlSchemaValidateDoc(ctxt: *mut c_void, doc: *mut _xmlD
         } else {
             valid_ctxt.errors = temp_ctxt.errors;
             valid_ctxt.nb_errors = temp_ctxt.nb_errors;
+            // UPSTREAM-PARITY: forward each recorded error to the context's
+            // registered handlers (xmlSchemaSetValidErrors /
+            // xmlSchemaSetValidStructuredErrors) so consumers like lxml's
+            // XMLSchema.validate (which installs serror = _receiveError)
+            // populate their error_log.
+            crate::abi::exports_schema::dispatch_valid_errors(ctxt as usize, &valid_ctxt.errors);
             temp_ctxt.nb_errors
         }
     }
@@ -4149,7 +4155,7 @@ mod tests {
         assert!(!ctxt.is_null());
         // Clean up
         unsafe {
-            allocator::xmlFreeImpl(ctxt);
+            crate::abi::allocator::xmlFreeImpl(ctxt);
         }
     }
 

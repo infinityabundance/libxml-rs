@@ -1372,6 +1372,13 @@ pub unsafe extern "C" fn xmlCreatePushParserCtxt(
         if ctxt.is_null() {
             return ptr::null_mut();
         }
+        // UPSTREAM-PARITY (parser.c xmlCreatePushParserCtxt): the push
+        // context forces dictNames on (and clears XML_PARSE_NODICT), so
+        // element/attribute names are interned in the document dictionary
+        // and pointer-identical to xmlDictLookup results — lxml's
+        // _MultiTagMatcher (iterparse tag=...) compares name pointers.
+        (*ctxt).options &= !crate::abi::types::XML_PARSE_NODICT;
+        (*ctxt).dictNames = 1;
         let slice = if size > 0 && !chunk.is_null() {
             core::slice::from_raw_parts(chunk as *const u8, size as usize)
         } else {
@@ -2863,7 +2870,10 @@ pub unsafe extern "C" fn xmlParserAddNodeInfo(
 /// Upstream `xmlGrowCapacity` (private/memory.h) for a zero-based capacity:
 /// 50% growth, minimum initial allocation 4, capped at XML_MAX_ITEMS.
 /// Returns the new capacity or -1 on overflow/cap exhaustion.
-unsafe fn xml_grow_capacity(capacity: c_ulong) -> c_int {
+// The `as u64` casts are width-correcting for 32-bit platforms where
+// `c_ulong` is 32 bits; on x86-64 they are identity casts.
+#[allow(clippy::unnecessary_cast)]
+const unsafe fn xml_grow_capacity(capacity: c_ulong) -> c_int {
     const XML_MAX_ITEMS: u64 = 1_000_000_000;
     const ELEM_SIZE: usize = core::mem::size_of::<_xmlParserNodeInfo>();
     if capacity == 0 {
@@ -2872,7 +2882,7 @@ unsafe fn xml_grow_capacity(capacity: c_ulong) -> c_int {
     if capacity as u64 >= XML_MAX_ITEMS || (capacity as usize) > usize::MAX / 2 / ELEM_SIZE {
         return -1;
     }
-    let extra = (capacity + 1) / 2;
+    let extra = capacity.div_ceil(2);
     if capacity as u64 > XML_MAX_ITEMS - extra as u64 {
         return XML_MAX_ITEMS as c_int;
     }
