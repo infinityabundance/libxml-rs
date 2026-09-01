@@ -125,6 +125,19 @@ typedef struct _xmlRegexp xmlRegexp;
 
 /* [11.1-G] end: extracted definitions */
 
+/* [13.1] begin: regexp handle pointer typedefs (HOSTILE-FAILURE F8 closure)
+ *
+ * Phase 13 (HOSTILE-FAILURE F8): the oracle xmlregexp.h declares the
+ * `xmlRegexpPtr`/`xmlRegExecCtxtPtr` handle typedefs, and hostile consumers
+ * use them as return values of xmlRegexpCompile() & co; the candidate
+ * exported the functions but the drop-in headers did not declare the
+ * pointer aliases. Extracted verbatim from the upstream oracle header.
+ */
+typedef xmlRegexp *xmlRegexpPtr;
+
+typedef xmlRegExecCtxt *xmlRegExecCtxtPtr;
+/* [13.1] end: regexp handle pointer typedefs */
+
 /* Callback type used by xmlRegNewExecCtxt (upstream xmlregexp.h) */
 typedef void (*xmlRegExecCallbacks) (xmlRegExecCtxt *exec,
 	                             const xmlChar *token,

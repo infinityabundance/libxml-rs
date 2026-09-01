@@ -371,10 +371,11 @@ pub unsafe fn split_qname3(name: *const xmlChar, len: *mut c_int) -> *mut xmlCha
 ///
 /// # Safety
 ///
-/// - `utf` must be a valid null-terminated UTF-8 string.
+/// - `utf` must be a valid null-terminated UTF-8 string or NULL (NULL
+///   returns -1, matching upstream xmlstring.c `xmlUTF8Strlen`).
 pub const unsafe fn utf8_strlen(utf: *const xmlChar) -> c_int {
     if utf.is_null() {
-        return 0;
+        return -1;
     }
     unsafe {
         let mut n: c_int = 0;

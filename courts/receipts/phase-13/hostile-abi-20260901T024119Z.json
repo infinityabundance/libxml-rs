@@ -1,0 +1,49 @@
+{
+ "court": "HOSTILE-ABI",
+ "phase": "13",
+ "timestamp": "20260901T024119Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-abi-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "PASS",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": true,
+ "stderr_identical": true,
+ "oracle_stdout": "A1 xmlReadMemory(NULL,0,NULL,NULL,0)=(nil)\nA2 xmlReadMemory((const char*)1,-1,NULL,NULL,0)=(nil)\nA3 xmlReadFile(NULL,NULL,0)=(nil)\nA4 xmlNewDoc(NULL)=(ptr)\nA5 xmlFreeDoc(NULL)\nA6 xmlDocGetRootElement(NULL)=(nil)\nA7 xmlNodeGetContent(NULL)=(nil)\nA8 xmlFreeNode(NULL)\nA9 xmlNodeDump(NULL,NULL,NULL,0,0)=-1\nA10 xmlXPathEvalExpression(NULL,NULL)=(nil)\nA11 xmlXPathFreeObject(NULL)\nA12 xmlXPathCompile(NULL)=(nil)\nA13 xmlSaveToFilename(NULL,NULL,0)=(nil)\nA14 xmlSaveClose(NULL)=-1\nA15 xmlSaveDoc(NULL,NULL)=-1\nA16 xmlNewTextReader(NULL,NULL)=(nil)\nA17 xmlFreeTextReader(NULL)\nA18 xmlTextReaderRead(NULL)=-1\nA19 xmlTextWriterStartDocument(NULL)=-1\nA20 xmlTextWriterEndDocument(NULL)=-1\nA21 xmlBufferCreateSize(-1)=(nil)\nA22 xmlBufferCreateSize(0)=(ptr)\nA23 xmlBufferFree(NULL)\nA24 xmlStrdup(NULL)=(nil)\nA25 xmlStrlen(NULL)=0\nA26 xmlStrcmp(NULL,NULL)=0\nA27 xmlURIUnescapeString(NULL,0,NULL)=(nil)\nA28 xmlParseURI(NULL)=(nil)\nA29 xmlFreeURI(NULL)\nA30 xmlNodeSetName(NULL,NULL)\nA31 xmlNodeSetContent(NULL,NULL)\nA32 xmlAddChild(NULL,NULL)=(nil)\nA33 xmlUnlinkNode(NULL)\nA34 xmlReplaceNode(NULL,NULL)=(nil)\nA35 xmlCopyNode(NULL,0)=(nil)\nA36 xmlCopyDoc(NULL,0)=(nil)\nA37 xmlCreateIntSubset(NULL,NULL,NULL,NULL)=(ptr)\nA38 xmlGetProp(NULL,NULL)=(nil)\nA39 xmlSetProp(NULL,NULL,NULL)=(nil)\nA40 xmlHasProp(NULL,NULL)=(nil)\nA41 xmlGetNoNsProp(NULL,NULL)=(nil)\nA42 xmlNewNs(NULL,NULL,NULL)=(ptr)\nA43 xmlNewChild(NULL,NULL,NULL,NULL)=(nil)\nA44 xmlNewText(NULL)=(ptr)\nA45 xmlNewComment(NULL)=(ptr)\nA46 xmlNewPI(NULL,NULL)=(nil)\nA47 xmlNewDocNode(NULL,NULL,NULL,NULL)=(nil)\nA48 xmlNewNode(NULL,NULL)=(nil)\nA49 xmlGetNodePath(NULL)=(nil)\nA50 xmlNodeListGetString(NULL,NULL,0)=(nil)\nA51 xmlDocDumpMemory(NULL,NULL,NULL)\nA52 xmlDocDumpFormatMemory(NULL,NULL,NULL,1)\nA53 xmlSaveFile(NULL,NULL)=-1\nA54 xmlSaveFormatFileEnc(NULL,NULL,NULL,0)=-1\nA55 xmlGetDocCompressMode(NULL)=-1\nA56 xmlSetDocCompressMode(NULL,9) [void]\nA57 xmlGetIntSubset(NULL)=(nil)\nA58 xmlGetDtdAttrDesc(NULL,NULL,NULL)=(nil)\nA59 xmlValidateDocument(NULL,NULL)=0\nA60 xmlValidateDtd(NULL,NULL,NULL)=0\nA61 xmlValidateNameValue(NULL)=0\nA62 xmlValidateNamesValue(NULL)=0\nA63 xmlValidateNmtokenValue(NULL)=0\nA64 xmlValidateQName(NULL,0)=-1\nA65 xmlValidateNCName(NULL,0)=-1\nA66 xmlValidateNMToken(NULL,0)=-1\nA67 xmlGetCharEncodingName(-1)=(nil)\nA68 xmlGetCharEncodingName(999)=(nil)\nA69 xmlParseCharEncoding(NULL)=0\nA70 xmlCleanupParser()\nA71 post-cleanup parse=(ptr)\nA72 xmlInitParser()\nB1 parse with all-ones options=(ptr)\nB2 parse with 0x80000000 options=(ptr)\nB3 parse with XML_PARSE_RECOVER on garbage=(ptr)\nB4 parse with XML_PARSE_NOERROR|NOWARNING on garbage\nB4 doc=(nil)\nB5 xmlSaveToBuffer with 0x40000000 options=(nil)\nB6 xmlTextReaderRead with invalid reader options\nB6 reader=(ptr) read=1\nB7 xmlParseMemory(NULL,0)=(nil)\nB8 xmlParseMemory(\"<a/>\",-5)=(nil)\nB9 xmlCreatePushParserCtxt(NULL,NULL,NULL,0,NULL)=(ptr)\nB10 xmlParseChunk(NULL,NULL,0,1)=115\nB11 push ctxt=(ptr)\nB12 push chunk terminate=0\nB13 push chunk neg size=115\nC1 buffer INT_MAX=(nil)\nC3 xmlBufferAdd neg len=0\nC4 xmlBufferAdd 0 len=0\nC5 xmlBufferContent empty=(ptr)\nC6 xmlStrncat(NULL,NULL,0)=(nil)\nC7 xmlStrncat(NULL,NULL,INT_MAX)=(nil)\nC8 xmlStrndup(NULL,0)=(nil)\nC9 xmlStrndup(NULL,INT_MAX)=(nil)\nC10 xmlStrncmp(NULL,NULL,0)=0\nC11 xmlStrchr(NULL,'a')=(nil)\nC12 xmlStrstr(NULL,NULL)=(nil)\nC13 xmlStrsub(NULL,0,0)=(nil)\nC14 xmlUTF8Strlen(NULL)=-1\nC15 xmlUTF8Strloc(NULL,0)=-1\nC16 xmlUTF8Strndup(NULL,0)=(nil)\nC17 xmlUTF8Size(NULL)=-1\nC18 xmlGetUTF8Char(NULL,NULL)=-1\nC19 xmlCheckUTF8(NULL)=0\nC20 xmlGetUTF8Char len0=-1\nC21 xmlGetUTF8Char lenneg=-1\nC22 xmlGetUTF8Char null len=-1\nD1 xmlReadMemory size INT_MAX=(nil)\nD1b xmlReadMemory trailing garbage=(nil)\nD2 xmlParseChunk size INT_MAX=115\nD3 xmlBufferCreateSize(INT_MIN)=(nil)\nD4 xmlNewDoc(version=INT_MAX bytes)=(ptr)\nD5 xmlStrdup 1=(ptr)\nD6 xmlEncodeSpecialChars(NULL,NULL)=(nil)\nD7 xmlNodeDumpOutput(NULL,NULL,NULL,0,0,NULL) [void]\nE1 root=(ptr) name=a\nE2 bogus-type dump ok\nE3 xmlMalloc(0)=(ptr)\nE4 xmlMalloc((size_t)-1)=(nil)\nE5 xmlRealloc(NULL,0)=(ptr)\nE6 xmlRealloc(NULL,(size_t)-1)=(nil)\nE7 xmlMemStrdup(NULL)=(nil)\nE8 xmlFree((void*)1) [guarded]\nE9 xmlMallocAtomic(0)=(ptr)\nE10 xmlMallocAtomic((size_t)-1)=(nil)\nHOSTILE-ABI VERDICT PASS\n",
+ "candidate_stdout": "A1 xmlReadMemory(NULL,0,NULL,NULL,0)=(nil)\nA2 xmlReadMemory((const char*)1,-1,NULL,NULL,0)=(nil)\nA3 xmlReadFile(NULL,NULL,0)=(nil)\nA4 xmlNewDoc(NULL)=(ptr)\nA5 xmlFreeDoc(NULL)\nA6 xmlDocGetRootElement(NULL)=(nil)\nA7 xmlNodeGetContent(NULL)=(nil)\nA8 xmlFreeNode(NULL)\nA9 xmlNodeDump(NULL,NULL,NULL,0,0)=-1\nA10 xmlXPathEvalExpression(NULL,NULL)=(nil)\nA11 xmlXPathFreeObject(NULL)\nA12 xmlXPathCompile(NULL)=(nil)\nA13 xmlSaveToFilename(NULL,NULL,0)=(nil)\nA14 xmlSaveClose(NULL)=-1\nA15 xmlSaveDoc(NULL,NULL)=-1\nA16 xmlNewTextReader(NULL,NULL)=(nil)\nA17 xmlFreeTextReader(NULL)\nA18 xmlTextReaderRead(NULL)=-1\nA19 xmlTextWriterStartDocument(NULL)=-1\nA20 xmlTextWriterEndDocument(NULL)=-1\nA21 xmlBufferCreateSize(-1)=(nil)\nA22 xmlBufferCreateSize(0)=(ptr)\nA23 xmlBufferFree(NULL)\nA24 xmlStrdup(NULL)=(nil)\nA25 xmlStrlen(NULL)=0\nA26 xmlStrcmp(NULL,NULL)=0\nA27 xmlURIUnescapeString(NULL,0,NULL)=(nil)\nA28 xmlParseURI(NULL)=(nil)\nA29 xmlFreeURI(NULL)\nA30 xmlNodeSetName(NULL,NULL)\nA31 xmlNodeSetContent(NULL,NULL)\nA32 xmlAddChild(NULL,NULL)=(nil)\nA33 xmlUnlinkNode(NULL)\nA34 xmlReplaceNode(NULL,NULL)=(nil)\nA35 xmlCopyNode(NULL,0)=(nil)\nA36 xmlCopyDoc(NULL,0)=(nil)\nA37 xmlCreateIntSubset(NULL,NULL,NULL,NULL)=(ptr)\nA38 xmlGetProp(NULL,NULL)=(nil)\nA39 xmlSetProp(NULL,NULL,NULL)=(nil)\nA40 xmlHasProp(NULL,NULL)=(nil)\nA41 xmlGetNoNsProp(NULL,NULL)=(nil)\nA42 xmlNewNs(NULL,NULL,NULL)=(ptr)\nA43 xmlNewChild(NULL,NULL,NULL,NULL)=(nil)\nA44 xmlNewText(NULL)=(ptr)\nA45 xmlNewComment(NULL)=(ptr)\nA46 xmlNewPI(NULL,NULL)=(nil)\nA47 xmlNewDocNode(NULL,NULL,NULL,NULL)=(nil)\nA48 xmlNewNode(NULL,NULL)=(nil)\nA49 xmlGetNodePath(NULL)=(nil)\nA50 xmlNodeListGetString(NULL,NULL,0)=(nil)\nA51 xmlDocDumpMemory(NULL,NULL,NULL)\nA52 xmlDocDumpFormatMemory(NULL,NULL,NULL,1)\nA53 xmlSaveFile(NULL,NULL)=-1\nA54 xmlSaveFormatFileEnc(NULL,NULL,NULL,0)=-1\nA55 xmlGetDocCompressMode(NULL)=-1\nA56 xmlSetDocCompressMode(NULL,9) [void]\nA57 xmlGetIntSubset(NULL)=(nil)\nA58 xmlGetDtdAttrDesc(NULL,NULL,NULL)=(nil)\nA59 xmlValidateDocument(NULL,NULL)=0\nA60 xmlValidateDtd(NULL,NULL,NULL)=0\nA61 xmlValidateNameValue(NULL)=0\nA62 xmlValidateNamesValue(NULL)=0\nA63 xmlValidateNmtokenValue(NULL)=0\nA64 xmlValidateQName(NULL,0)=-1\nA65 xmlValidateNCName(NULL,0)=-1\nA66 xmlValidateNMToken(NULL,0)=-1\nA67 xmlGetCharEncodingName(-1)=(nil)\nA68 xmlGetCharEncodingName(999)=(nil)\nA69 xmlParseCharEncoding(NULL)=0\nA70 xmlCleanupParser()\nA71 post-cleanup parse=(ptr)\nA72 xmlInitParser()\nB1 parse with all-ones options=(ptr)\nB2 parse with 0x80000000 options=(ptr)\nB3 parse with XML_PARSE_RECOVER on garbage=(ptr)\nB4 parse with XML_PARSE_NOERROR|NOWARNING on garbage\nB4 doc=(nil)\nB5 xmlSaveToBuffer with 0x40000000 options=(nil)\nB6 xmlTextReaderRead with invalid reader options\nB6 reader=(ptr) read=1\nB7 xmlParseMemory(NULL,0)=(nil)\nB8 xmlParseMemory(\"<a/>\",-5)=(nil)\nB9 xmlCreatePushParserCtxt(NULL,NULL,NULL,0,NULL)=(ptr)\nB10 xmlParseChunk(NULL,NULL,0,1)=115\nB11 push ctxt=(ptr)\nB12 push chunk terminate=0\nB13 push chunk neg size=115\nC1 buffer INT_MAX=(nil)\nC3 xmlBufferAdd neg len=0\nC4 xmlBufferAdd 0 len=0\nC5 xmlBufferContent empty=(ptr)\nC6 xmlStrncat(NULL,NULL,0)=(nil)\nC7 xmlStrncat(NULL,NULL,INT_MAX)=(nil)\nC8 xmlStrndup(NULL,0)=(nil)\nC9 xmlStrndup(NULL,INT_MAX)=(nil)\nC10 xmlStrncmp(NULL,NULL,0)=0\nC11 xmlStrchr(NULL,'a')=(nil)\nC12 xmlStrstr(NULL,NULL)=(nil)\nC13 xmlStrsub(NULL,0,0)=(nil)\nC14 xmlUTF8Strlen(NULL)=-1\nC15 xmlUTF8Strloc(NULL,0)=-1\nC16 xmlUTF8Strndup(NULL,0)=(nil)\nC17 xmlUTF8Size(NULL)=-1\nC18 xmlGetUTF8Char(NULL,NULL)=-1\nC19 xmlCheckUTF8(NULL)=0\nC20 xmlGetUTF8Char len0=-1\nC21 xmlGetUTF8Char lenneg=-1\nC22 xmlGetUTF8Char null len=-1\nD1 xmlReadMemory size INT_MAX=(nil)\nD1b xmlReadMemory trailing garbage=(nil)\nD2 xmlParseChunk size INT_MAX=115\nD3 xmlBufferCreateSize(INT_MIN)=(nil)\nD4 xmlNewDoc(version=INT_MAX bytes)=(ptr)\nD5 xmlStrdup 1=(ptr)\nD6 xmlEncodeSpecialChars(NULL,NULL)=(nil)\nD7 xmlNodeDumpOutput(NULL,NULL,NULL,0,0,NULL) [void]\nE1 root=(ptr) name=a\nE2 bogus-type dump ok\nE3 xmlMalloc(0)=(ptr)\nE4 xmlMalloc((size_t)-1)=(nil)\nE5 xmlRealloc(NULL,0)=(ptr)\nE6 xmlRealloc(NULL,(size_t)-1)=(nil)\nE7 xmlMemStrdup(NULL)=(nil)\nE8 xmlFree((void*)1) [guarded]\nE9 xmlMallocAtomic(0)=(ptr)\nE10 xmlMallocAtomic((size_t)-1)=(nil)\nHOSTILE-ABI VERDICT PASS\n",
+ "oracle_stderr": "t:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : Extra content at the end of the document\n<a/>X\n    ^\n",
+ "candidate_stderr": "t:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : Extra content at the end of the document\n<a/>X\n    ^\n"
+}

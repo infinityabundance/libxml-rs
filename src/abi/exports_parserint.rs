@@ -116,7 +116,6 @@ use std::os::raw::{c_char, c_int, c_uint, c_ulong};
 
 use crate::abi::allocator::{xmlFreeImpl, xmlMallocImpl, xmlMallocZero, xmlReallocImpl};
 use crate::abi::callbacks::_xmlSAXLocator;
-use crate::abi::data_globals::xmlParserInputBufferCreateFilenameValue;
 use crate::abi::structs::*;
 use crate::abi::types::*;
 use crate::xml::dtd::{create_content_model, create_int_subset, free_content_model};
@@ -5146,6 +5145,25 @@ pub unsafe extern "C" fn xmlParseDTD(
 
         let mut ret: *mut _xmlDtd = ptr::null_mut();
         let input_buf = input_from_file(system_id as *const c_char);
+        if let Err(()) = input_buf {
+            // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile via the
+            // default entity loader): a failed load raises
+            // xmlCtxtErrIO(ctxt, XML_IO_ENOENT, url) — "I/O warning :
+            // failed to load \"%s\": %s\n" (HOSTILE-FAILURE F7).
+            let errno = *libc::__errno_location();
+            let errstr = if errno == 0 {
+                String::new()
+            } else {
+                std::ffi::CStr::from_ptr(libc::strerror(errno))
+                    .to_string_lossy()
+                    .into_owned()
+            };
+            let url_str = std::ffi::CStr::from_ptr(system_id as *const c_char).to_string_lossy();
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                format!("failed to load \"{url_str}\": {errstr}\n"),
+            );
+        }
         if let Ok(buf) = input_buf {
             let boxed = Box::into_raw(Box::new(buf));
             crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
@@ -5481,14 +5499,13 @@ unsafe extern "C" fn pi_default_input_buffer_create_filename(
 pub unsafe extern "C" fn xmlParserInputBufferCreateFilenameDefault(
     func: Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer>,
 ) -> Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer> {
-    unsafe {
-        let default_fn: unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer =
-            pi_default_input_buffer_create_filename;
-        let old = xmlParserInputBufferCreateFilenameValue;
-        xmlParserInputBufferCreateFilenameValue =
-            if func == Some(default_fn) { None } else { func };
-        old.or(Some(default_fn))
-    }
+    let default_fn: unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer =
+        pi_default_input_buffer_create_filename;
+    let old = crate::xml::globals::get_parser_input_buffer_create_filename_value();
+    crate::xml::globals::set_parser_input_buffer_create_filename_value(
+        if func == Some(default_fn) { None } else { func },
+    );
+    old.or(Some(default_fn))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

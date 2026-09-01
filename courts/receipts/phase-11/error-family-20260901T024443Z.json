@@ -1,0 +1,17 @@
+{
+ "court": "ERROR-001",
+ "phase": "11.1-M",
+ "timestamp": "2026-09-01T02:44:43Z",
+ "probe": "courts/suites/data-abi/error-family-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "stdout_sha256": "9f5f2600765b33395a73783826a2afbe1aa2585dd3afcfabcc4da9db73074d4a"
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "stdout_sha256": "9f5f2600765b33395a73783826a2afbe1aa2585dd3afcfabcc4da9db73074d4a"
+ },
+ "verdict": "PASS",
+ "mismatch_count": 0,
+ "mismatches": []
+}

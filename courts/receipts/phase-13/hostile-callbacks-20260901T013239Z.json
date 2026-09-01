@@ -1,0 +1,49 @@
+{
+ "court": "HOSTILE-CALLBACKS",
+ "phase": "13",
+ "timestamp": "20260901T013239Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-callbacks-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "FAIL",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": true,
+ "stderr_identical": false,
+ "oracle_stdout": "C1 loader-fail: doc=(ptr) loader_calls=1\nC2 loader-empty: doc=(ptr) loader_calls=1\nC3 io-EOF: doc=(nil)\nC4 io-error: doc=(nil)\nC5 io-bytewise: doc=(ptr)\nC5 root=r children=abc\nC6 save-ctx=(ptr)\nC6 save-doc=0\nC6 save-close=-1\nC7 save-ctx=(ptr)\nC7 save-doc=0\nC7 save-close=0\nC8 structured: doc=(ptr) errors=1 warnings=0\nC9 generic: doc=(nil) errors=6\nC10 sax: rc=68 errors=1 warnings=0\nHOSTILE-CALLBACKS VERDICT PASS\n",
+ "candidate_stdout": "C1 loader-fail: doc=(ptr) loader_calls=1\nC2 loader-empty: doc=(ptr) loader_calls=1\nC3 io-EOF: doc=(nil)\nC4 io-error: doc=(nil)\nC5 io-bytewise: doc=(ptr)\nC5 root=r children=abc\nC6 save-ctx=(ptr)\nC6 save-doc=0\nC6 save-close=-1\nC7 save-ctx=(ptr)\nC7 save-doc=0\nC7 save-close=0\nC8 structured: doc=(ptr) errors=1 warnings=0\nC9 generic: doc=(nil) errors=6\nC10 sax: rc=68 errors=1 warnings=0\nHOSTILE-CALLBACKS VERDICT PASS\n",
+ "oracle_stderr": "t:1: parser error : Document is empty\n\n^\nt:1: I/O warning : Unknown IO error\n\n^\nt:1: parser error : Document is empty\n\n^\n",
+ "candidate_stderr": "Entity: line 1: parser error : Document is empty\n\n^\nEntity: line 1: parser error : Document is empty\n\n^\n"
+}

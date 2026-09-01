@@ -730,6 +730,7 @@ unsafe fn format_error_streamed(
     line: c_int,
     source_window: Option<(&[u8], usize)>,
     enc_bytes: Option<[u8; 4]>,
+    tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {
     // SAFETY: reads the exported C globals (upstream reads the same).
     let Some(handler) = globals::get_generic_error_func() else {
@@ -856,6 +857,50 @@ unsafe fn format_error_streamed(
             caret_line.as_ptr() as usize,
         );
     }
+
+    // 5b. "cur input" tail (error.c xmlFormatError): after the parent
+    // window, upstream prints the current (entity) input's info + window —
+    // `Entity: line %d: \n` for a nameless nested input, then its context
+    // and caret (HOSTILE-FAILURE F2 entity loops).
+    if let Some((tline, twindow)) = tail {
+        if tline != 0
+            && (domain == XML_FROM_PARSER
+                || domain == XML_FROM_SCHEMASV
+                || domain == XML_FROM_SCHEMASP
+                || domain == XML_FROM_DTD
+                || domain == XML_FROM_RELAXNGP
+                || domain == XML_FROM_RELAXNGV)
+        {
+            ch_call1(
+                handler,
+                data,
+                c"Entity: line %d: \n".as_ptr() as *const c_char,
+                tline as usize,
+            );
+        }
+        if let Some((window, caret)) = twindow {
+            let mut win = window.to_vec();
+            win.push(0);
+            ch_call1(
+                handler,
+                data,
+                c"%s\n".as_ptr() as *const c_char,
+                win.as_ptr() as usize,
+            );
+            let mut caret_line = Vec::with_capacity(caret + 2);
+            for &b in window.iter().take(caret) {
+                caret_line.push(if b == b'\t' { b'\t' } else { b' ' });
+            }
+            caret_line.push(b'^');
+            caret_line.push(0);
+            ch_call1(
+                handler,
+                data,
+                c"%s\n".as_ptr() as *const c_char,
+                caret_line.as_ptr() as usize,
+            );
+        }
+    }
 }
 
 /// How a raise delivers to the generic side of the error system (upstream
@@ -869,6 +914,33 @@ pub enum GenericDelivery {
     Stream,
     /// No channel (SAX slot NULL): no generic delivery.
     None,
+}
+
+/// Select the generic delivery for a parser error from the context's SAX
+/// `error` slot (upstream `xmlCtxtVErr`: `channel = ctxt->sax->error`). Used
+/// by the parser layer and by the SAX-layer depth error (HOSTILE-FAILURE F1).
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `_xmlParserCtxt` with a valid `sax` pointer.
+pub unsafe fn parser_delivery(ctxt: *mut crate::abi::structs::_xmlParserCtxt) -> GenericDelivery {
+    unsafe {
+        let sax = &*((*ctxt).sax);
+        match sax.error {
+            None => GenericDelivery::None,
+            Some(cb) if is_legacy_error_handler(cb) => GenericDelivery::Stream,
+            Some(cb) => GenericDelivery::Custom(cb, (*ctxt).userData),
+        }
+    }
+}
+
+/// Whether a SAX `error` slot holds the candidate's legacy default handler
+/// (the SAX1 shim or the default SAX2 handler) — those route through the
+/// streamed `xmlFormatError` fragments like upstream's `xmlParserError`.
+fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
+    let ptr = cb as usize;
+    ptr == XML_PARSER_ERROR_SAX1 as errorSAXFunc as usize
+        || ptr == crate::xml::sax::default::default_sax_handler::error as errorSAXFunc as usize
 }
 
 /// Raise an error with upstream's full routing (error.c 2.15
@@ -909,6 +981,7 @@ pub unsafe fn raise_error_streamed(
     source_window: Option<(&[u8], usize)>,
     enc_bytes: Option<[u8; 4]>,
     delivery: GenericDelivery,
+    tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {
     // The streamed generic-error channel below uses an x86_64 SysV va_list
     // trampoline (ch_call0/1/2 — register-based). Other ABIs (i686 cdecl,
@@ -941,9 +1014,9 @@ pub unsafe fn raise_error_streamed(
     #[cfg(target_arch = "x86_64")]
     {
         // UPSTREAM-PARITY (xmlVRaiseError): warnings are suppressed when the
-        // global xmlGetWarningsDefaultValue is zero.
+        // TLS global xmlGetWarningsDefaultValue is zero.
         if level == xmlErrorLevel::XML_ERR_WARNING as c_int
-            && unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue } == 0
+            && crate::xml::globals::get_get_warnings_default() == 0
         {
             return;
         }
@@ -964,6 +1037,7 @@ pub unsafe fn raise_error_streamed(
             source_window,
             enc_bytes,
             delivery,
+            tail,
         );
     }
 }
@@ -994,11 +1068,12 @@ unsafe fn raise_error_streamed_x86_64(
     source_window: Option<(&[u8], usize)>,
     enc_bytes: Option<[u8; 4]>,
     delivery: GenericDelivery,
+    tail: Option<(c_int, Option<(&[u8], usize)>)>,
 ) {
     // UPSTREAM-PARITY (xmlVRaiseError): warnings are suppressed when the
-    // global xmlGetWarningsDefaultValue is zero.
+    // TLS global xmlGetWarningsDefaultValue is zero.
     if level == xmlErrorLevel::XML_ERR_WARNING as c_int
-        && unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue } == 0
+        && crate::xml::globals::get_get_warnings_default() == 0
     {
         return;
     }
@@ -1073,6 +1148,7 @@ unsafe fn raise_error_streamed_x86_64(
                         line,
                         source_window,
                         enc_bytes,
+                        tail,
                     )
                 };
             }

@@ -5,8 +5,8 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 ## libxml2
 
 - oracle exports: 1422
-- candidate exports: 1718
-- dispositions: CURRENT_ORACLE_EXPORT 1422, CUSTODIAN_EXTENSION 45, HISTORICAL_COMPAT_EXPORT 251, INTERNAL_LEAK 584
+- candidate exports: 1704
+- dispositions: CURRENT_ORACLE_EXPORT 1422, CUSTODIAN_EXTENSION 31, HISTORICAL_COMPAT_EXPORT 251, INTERNAL_LEAK 580
 
 | symbol | kind | disposition | in oracle | in headers | in upstream syms |
 |---|---|---|---|---|---|
@@ -187,34 +187,34 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `__xmlDefaultBufferSize` | T | INTERNAL_LEAK | False | False | False |
 | `__xmlDefaultSAXHandler` | T | INTERNAL_LEAK | False | False | False |
 | `__xmlDefaultSAXLocator` | T | INTERNAL_LEAK | False | False | False |
-| `__xmlDeregisterNodeDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlDoValidityCheckingDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlDeregisterNodeDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlDoValidityCheckingDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlFree` | T | CUSTODIAN_EXTENSION | False | False | False |
-| `__xmlGenericError` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlGenericErrorContext` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlGetWarningsDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlIndentTreeOutput` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlKeepBlanksDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlGenericError` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlGenericErrorContext` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlGetWarningsDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlIndentTreeOutput` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlKeepBlanksDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlLastError` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlLineNumbersDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlLoadExtDtdDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlLineNumbersDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlLoadExtDtdDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlMalloc` | T | CUSTODIAN_EXTENSION | False | False | False |
 | `__xmlMallocAtomic` | T | CUSTODIAN_EXTENSION | False | False | False |
 | `__xmlMemStrdup` | T | CUSTODIAN_EXTENSION | False | False | False |
 | `__xmlOutputBufferCreateFilename` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlOutputBufferCreateFilenameValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlOutputBufferCreateFilenameValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlParserDebugEntities` | T | INTERNAL_LEAK | False | False | False |
 | `__xmlParserInputBufferCreateFilename` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlParserInputBufferCreateFilenameValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlParserInputBufferCreateFilenameValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlParserVersion` | T | INTERNAL_LEAK | False | False | False |
-| `__xmlPedanticParserDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlPedanticParserDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `__xmlRealloc` | T | CUSTODIAN_EXTENSION | False | False | False |
-| `__xmlRegisterNodeDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlSaveNoEmptyTags` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlStructuredError` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlStructuredErrorContext` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlSubstituteEntitiesDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | False | False |
-| `__xmlTreeIndentString` | T | CURRENT_ORACLE_EXPORT | True | False | False |
+| `__xmlRegisterNodeDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlSaveNoEmptyTags` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlStructuredError` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlStructuredErrorContext` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlSubstituteEntitiesDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | False |
+| `__xmlTreeIndentString` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `cbrt` | W | INTERNAL_LEAK | False | False | False |
 | `cbrtf` | W | INTERNAL_LEAK | False | False | False |
 | `ceil` | W | INTERNAL_LEAK | False | False | False |
@@ -618,7 +618,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlDefaultSAXLocator` | D | CURRENT_ORACLE_EXPORT | True | True | False |
 | `xmlDelEncodingAlias` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDeregisterNodeDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlDeregisterNodeDefaultValue` | B | INTERNAL_LEAK | False | False | False |
 | `xmlDetectCharEncoding` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDictCleanup` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDictCreate` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -632,7 +631,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlDictReference` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDictSetLimit` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDictSize` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlDoValidityCheckingDefaultValue` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlDocCopyNode` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDocCopyNodeList` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlDocDump` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -700,8 +698,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlFreeValidCtxt` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlGcMemGet` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlGcMemSetup` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlGenericError` | D | CUSTODIAN_EXTENSION | False | True | False |
-| `xmlGenericErrorContext` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlGenericErrorDefaultFuncV` | T | INTERNAL_LEAK | False | False | False |
 | `xmlGetAttributeDecl` | T | INTERNAL_LEAK | False | False | False |
 | `xmlGetBinaryPath` | T | INTERNAL_LEAK | False | False | False |
@@ -743,7 +739,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlGetRefs` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlGetThreadId` | T | HISTORICAL_COMPAT_EXPORT | False | False | True |
 | `xmlGetUTF8Char` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlGetWarningsDefaultValue` | D | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlHandleEntity` | T | HISTORICAL_COMPAT_EXPORT | False | False | True |
 | `xmlHasFeature` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlHasNsProp` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -787,7 +782,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlIOHTTPOpenW` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlIOHTTPRead` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlIOParseDTD` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlIndentTreeOutput` | D | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlInitCharEncodingHandlers` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlInitGlobals` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlInitMemory` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -833,11 +827,9 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlIsXHTML` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlIsolat1ToUTF8` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `xmlKeepBlanksDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlKeepBlanksDefaultValue` | D | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlLastElementChild` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlLastError` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlLineNumbersDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlLineNumbersDefaultValue` | D | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlLinkGetData` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlListAppend` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlListBack` | T | CUSTODIAN_EXTENSION | False | True | False |
@@ -869,7 +861,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlLoadACatalog` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlLoadCatalog` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlLoadCatalogs` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlLoadExtDtdDefaultValue` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlLoadExternalEntity` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlLoadSGMLSuperCatalog` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlLockLibrary` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1033,7 +1024,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlOutputBufferCreateFile` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlOutputBufferCreateFilename` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlOutputBufferCreateFilenameDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlOutputBufferCreateFilenameValue` | B | INTERNAL_LEAK | False | False | False |
 | `xmlOutputBufferCreateIO` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlOutputBufferFlush` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlOutputBufferGetContent` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1119,7 +1109,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlParserInputBufferCreateFile` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlParserInputBufferCreateFilename` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlParserInputBufferCreateFilenameDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlParserInputBufferCreateFilenameValue` | B | INTERNAL_LEAK | False | False | False |
 | `xmlParserInputBufferCreateIO` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlParserInputBufferCreateMem` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlParserInputBufferCreateStatic` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1149,7 +1138,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlPatternStreamable` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlPatterncompile` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlPedanticParserDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlPedanticParserDefaultValue` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlPopInput` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlPopInputCallbacks` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlPopOutputCallbacks` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1201,7 +1189,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlRegisterHTTPPostCallbacks` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlRegisterInputCallbacks` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlRegisterNodeDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlRegisterNodeDefaultValue` | B | INTERNAL_LEAK | False | False | False |
 | `xmlRegisterOutputCallbacks` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlRelaxNGCleanupTypes` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlRelaxNGDump` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1290,7 +1277,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlSaveFormatFile` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlSaveFormatFileEnc` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlSaveFormatFileTo` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlSaveNoEmptyTags` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlSaveSetAttrEscape` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlSaveSetEscape` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlSaveSetIndentString` | T | CURRENT_ORACLE_EXPORT | True | True | False |
@@ -1454,10 +1440,7 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlStrndup` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStrstr` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStrsub` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlStructuredError` | B | CUSTODIAN_EXTENSION | False | True | False |
-| `xmlStructuredErrorContext` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlSubstituteEntitiesDefault` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlSubstituteEntitiesDefaultValue` | B | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlSwitchEncoding` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlSwitchEncodingName` | T | CURRENT_ORACLE_EXPORT | True | True | False |
 | `xmlSwitchInputEncoding` | T | CURRENT_ORACLE_EXPORT | True | True | True |
@@ -1635,7 +1618,6 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlThrDefSetStructuredErrorFunc` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlThrDefSubstituteEntitiesDefaultValue` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlThrDefTreeIndentString` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlTreeIndentString` | D | CUSTODIAN_EXTENSION | False | True | False |
 | `xmlUCSIsAegeanNumbers` | T | HISTORICAL_COMPAT_EXPORT | False | False | True |
 | `xmlUCSIsAlphabeticPresentationForms` | T | HISTORICAL_COMPAT_EXPORT | False | False | True |
 | `xmlUCSIsArabic` | T | HISTORICAL_COMPAT_EXPORT | False | False | True |

@@ -1,0 +1,10 @@
+{
+ "module": "xml/globals/tls",
+ "upstream": [],
+ "export_samples": [],
+ "subsystems": [],
+ "residuals": [
+  "R-000190"
+ ],
+ "court_families": []
+}

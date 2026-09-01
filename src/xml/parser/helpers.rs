@@ -371,8 +371,11 @@ pub(crate) unsafe fn input_from_io(
     match InputBuffer::from_callback(read, close, ioctx) {
         Ok(buf) => buf,
         Err(_) => {
-            // Return an empty buffer on failure.
-            InputBuffer::from_memory(&[], None)
+            // UPSTREAM-PARITY (xmlIO.c/xmlParserInputBufferGrow): a read
+            // callback that reports an error makes the parser raise an I/O
+            // error on the first grow — NOT an empty-document parse
+            // (HOSTILE-CALLBACKS C4).
+            InputBuffer::failed_source()
         }
     }
 }

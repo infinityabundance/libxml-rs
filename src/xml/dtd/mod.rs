@@ -118,7 +118,9 @@ pub const fn get_int_subset(doc: *const _xmlDoc) -> *mut _xmlDtd {
 ///
 /// # SAFETY
 ///
-/// - `doc` may be NULL (returns NULL).
+/// - `doc` may be NULL — upstream still allocates and returns an
+///   unattached DTD in that case (HOSTILE-ABI A37); a NULL `doc` skips the
+///   child-chain attachment.
 /// - `name`, `ExternalID`, `SystemID` must be valid null-terminated strings or NULL.
 pub unsafe fn create_int_subset(
     doc: *mut _xmlDoc,
@@ -126,14 +128,12 @@ pub unsafe fn create_int_subset(
     ExternalID: *const xmlChar,
     SystemID: *const xmlChar,
 ) -> *mut _xmlDtd {
-    if doc.is_null() {
-        return ptr::null_mut();
-    }
-
-    // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): if the document already
-    // has an internal subset, return it — never create a second DTD node.
-    if !(*doc).intSubset.is_null() {
-        return (*doc).intSubset;
+    if !doc.is_null() {
+        // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): if the document already
+        // has an internal subset, return it — never create a second DTD node.
+        if !(*doc).intSubset.is_null() {
+            return (*doc).intSubset;
+        }
     }
 
     // SAFETY: Allocate zero-initialized memory for the DTD.
@@ -154,34 +154,36 @@ pub unsafe fn create_int_subset(
         // tables are created lazily by the xmlAdd* functions on first use;
         // an empty DTD exposes NULL table pointers.
 
-        // Attach to document
-        (*doc).intSubset = dtd;
+        if !doc.is_null() {
+            // Attach to document
+            (*doc).intSubset = dtd;
 
-        // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): the DTD node is
-        // inserted into the document's child chain immediately before the
-        // first element node (comments/PIs in the prolog stay ahead of it).
-        let doc_children = (*doc).children;
-        if doc_children.is_null() {
-            (*doc).children = dtd as *mut _xmlNode;
-            (*doc).last = dtd as *mut _xmlNode;
-        } else {
-            let mut next = doc_children;
-            while !next.is_null() && (*next).type_ != XML_ELEMENT_NODE as c_int {
-                next = (*next).next;
-            }
-            if next.is_null() {
-                (*dtd).prev = (*doc).last;
-                (*(*doc).last).next = dtd as *mut _xmlNode;
+            // UPSTREAM-PARITY (tree.c xmlCreateIntSubset): the DTD node is
+            // inserted into the document's child chain immediately before the
+            // first element node (comments/PIs in the prolog stay ahead of it).
+            let doc_children = (*doc).children;
+            if doc_children.is_null() {
+                (*doc).children = dtd as *mut _xmlNode;
                 (*doc).last = dtd as *mut _xmlNode;
             } else {
-                (*dtd).next = next;
-                (*dtd).prev = (*next).prev;
-                if (*dtd).prev.is_null() {
-                    (*doc).children = dtd as *mut _xmlNode;
-                } else {
-                    (*(*dtd).prev).next = dtd as *mut _xmlNode;
+                let mut next = doc_children;
+                while !next.is_null() && (*next).type_ != XML_ELEMENT_NODE as c_int {
+                    next = (*next).next;
                 }
-                (*next).prev = dtd as *mut _xmlNode;
+                if next.is_null() {
+                    (*dtd).prev = (*doc).last;
+                    (*(*doc).last).next = dtd as *mut _xmlNode;
+                    (*doc).last = dtd as *mut _xmlNode;
+                } else {
+                    (*dtd).next = next;
+                    (*dtd).prev = (*next).prev;
+                    if (*dtd).prev.is_null() {
+                        (*doc).children = dtd as *mut _xmlNode;
+                    } else {
+                        (*(*dtd).prev).next = dtd as *mut _xmlNode;
+                    }
+                    (*next).prev = dtd as *mut _xmlNode;
+                }
             }
         }
     }
@@ -1749,16 +1751,23 @@ mod tests {
         }
     }
 
-    /// Verify that `create_int_subset` with a NULL document returns NULL.
+    /// Verify that `create_int_subset` with a NULL doc still allocates and
+    /// returns an unattached DTD (upstream tree.c `xmlCreateIntSubset` —
+    /// HOSTILE-ABI A37).
     ///
     /// # Safety
     ///
-    /// - Passing a NULL `doc` is allowed and is not dereferenced.
+    /// - A NULL `doc` is allowed and is not dereferenced; the returned DTD
+    ///   is freed with `free_dtd`.
     #[test]
     fn test_create_int_subset_null_doc() {
         unsafe {
             let dtd = create_int_subset(ptr::null_mut(), c_str(b"root"), ptr::null(), ptr::null());
-            assert!(dtd.is_null());
+            assert!(!dtd.is_null());
+            assert_eq!((*dtd).type_, XML_DTD_NODE as c_int);
+            assert!((*dtd).parent.is_null());
+            assert!((*dtd).doc.is_null());
+            free_dtd(dtd);
         }
     }
 

@@ -297,6 +297,10 @@ pub(crate) struct InputBuffer {
     filename: Option<String>,
     /// Whether the BOM has been consumed.
     bom_consumed: bool,
+    /// The source (file / callback) failed to produce data: upstream
+    /// raises an I/O error on the first grow instead of parsing empty
+    /// content (HOSTILE-CALLBACKS C4).
+    io_failed: bool,
 }
 
 impl std::fmt::Debug for InputBuffer {
@@ -333,6 +337,7 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename,
             bom_consumed: false,
+            io_failed: false,
         };
         ib.detect_bom_and_encoding();
         ib
@@ -375,6 +380,7 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename,
             bom_consumed: false,
+            io_failed: false,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
@@ -400,9 +406,42 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename: None,
             bom_consumed: false,
+            io_failed: false,
         };
         ib.detect_bom_and_encoding();
         Ok(ib)
+    }
+
+    /// Create an `InputBuffer` whose source failed to produce data (read
+    /// callback returned an error). The parser raises an I/O error at the
+    /// first grow — mirroring upstream — instead of reporting an empty
+    /// document.
+    pub const fn failed_source() -> Self {
+        InputBuffer {
+            source: InputSource::Memory(Vec::new()),
+            data: Vec::new(),
+            pos: 0,
+            line: 1,
+            col: 1,
+            encoding: Encoding::Utf8,
+            filename: None,
+            bom_consumed: false,
+            io_failed: true,
+        }
+    }
+
+    /// Whether the underlying source failed (read callback returned an
+    /// error).
+    pub const fn has_source_error(&self) -> bool {
+        self.io_failed
+    }
+
+    /// Set the input's filename/URI. Upstream stores the base URL as the
+    /// input filename (xmlCtxtNewInputFromMemory/FromIO), which feeds the
+    /// `file:line:` error prefix (HOSTILE-CALLBACKS C3/C4).
+    pub fn with_filename(mut self, name: &str) -> Self {
+        self.filename = Some(name.to_string());
+        self
     }
 
     // ── BOM and encoding detection ─────────────────────────────────────────
@@ -985,6 +1024,26 @@ impl InputStack {
     /// Returns `(line, col, byte_offset)` for the current input.
     pub fn current_pos(&self) -> (usize, usize, usize) {
         self.inputs[self.current].pos()
+    }
+
+    /// Resolve the error location the way upstream `xmlCtxtVErr` does
+    /// (parserInternals.c 2.15): use the current input's filename/line/col,
+    /// but when the current input has no filename and the stack is nested
+    /// (`inputNr > 1`), fall back to the PARENT input's filename/line/col —
+    /// entity-content errors are attributed to the referencing document
+    /// (HOSTILE-CALLBACKS C1/C2).
+    ///
+    /// Returns `(filename, line, col)`.
+    pub fn error_context(&self) -> (Option<&str>, usize, usize) {
+        let cur = &self.inputs[self.current];
+        if cur.filename().is_none() && self.current > 0 {
+            let parent = &self.inputs[self.current - 1];
+            let (pl, pc, _) = parent.pos();
+            (parent.filename(), pl, pc)
+        } else {
+            let (l, c, _) = cur.pos();
+            (cur.filename(), l, c)
+        }
     }
 
     /// Returns the depth of the stack (number of nested inputs).

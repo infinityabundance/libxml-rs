@@ -8,12 +8,12 @@
    "oracle_dso": "/usr/lib/libxml2.so.16",
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
    "oracle_exports": 1422,
-   "candidate_exports": 1718,
-   "candidate_surface_union": 2302,
+   "candidate_exports": 1704,
+   "candidate_surface_union": 2284,
    "counts": {
-    "INTERNAL_LEAK": 584,
+    "INTERNAL_LEAK": 580,
     "CURRENT_ORACLE_EXPORT": 1422,
-    "CUSTODIAN_EXTENSION": 45,
+    "CUSTODIAN_EXTENSION": 31,
     "HISTORICAL_COMPAT_EXPORT": 251
    },
    "symbols": {
@@ -1260,14 +1260,14 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlDoValidityCheckingDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlFree": {
@@ -1281,35 +1281,35 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlGenericErrorContext": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlGetWarningsDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlIndentTreeOutput": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlKeepBlanksDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlLastError": {
@@ -1323,14 +1323,14 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlLoadExtDtdDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlMalloc": {
@@ -1365,7 +1365,7 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlParserDebugEntities": {
@@ -1386,7 +1386,7 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlParserVersion": {
@@ -1400,7 +1400,7 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlRealloc": {
@@ -1414,42 +1414,42 @@
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlSaveNoEmptyTags": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlStructuredError": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlStructuredErrorContext": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlSubstituteEntitiesDefaultValue": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "__xmlTreeIndentString": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "cbrt": {
@@ -4273,13 +4273,6 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlDeregisterNodeDefaultValue": {
-     "kind": "B",
-     "disposition": "INTERNAL_LEAK",
-     "in_oracle": false,
-     "in_headers": false,
-     "in_upstream_syms": false
-    },
     "xmlDetectCharEncoding": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -4370,13 +4363,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlDoValidityCheckingDefaultValue": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlDocCopyNode": {
      "kind": "T",
@@ -4847,20 +4833,6 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlGenericError": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
-    },
-    "xmlGenericErrorContext": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
-    },
     "xmlGenericErrorDefaultFuncV": {
      "kind": "T",
      "disposition": "INTERNAL_LEAK",
@@ -5147,13 +5119,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlGetWarningsDefaultValue": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlHandleEntity": {
      "kind": "T",
@@ -5455,13 +5420,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlIndentTreeOutput": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlInitCharEncodingHandlers": {
      "kind": "T",
@@ -5778,13 +5736,6 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlKeepBlanksDefaultValue": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
-    },
     "xmlLastElementChild": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -5805,13 +5756,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlLineNumbersDefaultValue": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlLinkGetData": {
      "kind": "T",
@@ -6029,13 +5973,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlLoadExtDtdDefaultValue": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlLoadExternalEntity": {
      "kind": "T",
@@ -7178,13 +7115,6 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlOutputBufferCreateFilenameValue": {
-     "kind": "B",
-     "disposition": "INTERNAL_LEAK",
-     "in_oracle": false,
-     "in_headers": false,
-     "in_upstream_syms": false
-    },
     "xmlOutputBufferCreateIO": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -7780,13 +7710,6 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlParserInputBufferCreateFilenameValue": {
-     "kind": "B",
-     "disposition": "INTERNAL_LEAK",
-     "in_oracle": false,
-     "in_headers": false,
-     "in_upstream_syms": false
-    },
     "xmlParserInputBufferCreateIO": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
@@ -7989,13 +7912,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlPedanticParserDefaultValue": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlPopInput": {
      "kind": "T",
@@ -8353,13 +8269,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlRegisterNodeDefaultValue": {
-     "kind": "B",
-     "disposition": "INTERNAL_LEAK",
-     "in_oracle": false,
-     "in_headers": false,
-     "in_upstream_syms": false
     },
     "xmlRegisterOutputCallbacks": {
      "kind": "T",
@@ -8976,13 +8885,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlSaveNoEmptyTags": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlSaveSetAttrEscape": {
      "kind": "T",
@@ -10125,33 +10027,12 @@
      "in_headers": true,
      "in_upstream_syms": true
     },
-    "xmlStructuredError": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
-    },
-    "xmlStructuredErrorContext": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
-    },
     "xmlSubstituteEntitiesDefault": {
      "kind": "T",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlSubstituteEntitiesDefaultValue": {
-     "kind": "B",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlSwitchEncoding": {
      "kind": "T",
@@ -11391,13 +11272,6 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
-    },
-    "xmlTreeIndentString": {
-     "kind": "D",
-     "disposition": "CUSTODIAN_EXTENSION",
-     "in_oracle": false,
-     "in_headers": true,
-     "in_upstream_syms": false
     },
     "xmlUCSIsAegeanNumbers": {
      "kind": "T",

@@ -1,0 +1,48 @@
+{
+ "court": "HOSTILE-OWNERSHIP",
+ "phase": "13",
+ "timestamp": "20260901T012731Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-ownership-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "PASS",
+ "exit_codes": {
+  "oracle": -11,
+  "candidate": -11
+ },
+ "stdout_identical": true,
+ "stderr_identical": true,
+ "oracle_stdout": "",
+ "candidate_stdout": "",
+ "oracle_stderr": "",
+ "candidate_stderr": ""
+}

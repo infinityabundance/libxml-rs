@@ -347,53 +347,7 @@ impl XmlTokenizer {
         let mut data = Vec::with_capacity(consumed.len() + remaining.len());
         data.extend_from_slice(consumed);
         data.extend_from_slice(remaining);
-        if byte_pos > data.len() {
-            return None;
-        }
-        let byte_at = |p: usize| -> u8 { data.get(p).copied().unwrap_or(0) };
-        let size = 80usize;
-
-        // 1. Skip backwards over any end-of-lines.
-        let mut cur = byte_pos;
-        while cur > 0 && matches!(byte_at(cur), b'\n' | b'\r') {
-            cur -= 1;
-        }
-        // 2. Search backwards for the beginning of the line (max 80 bytes).
-        let mut n = 0usize;
-        while n < size && cur > 0 && !matches!(byte_at(cur), b'\n' | b'\r') {
-            cur -= 1;
-            n += 1;
-        }
-        // 3. If a line break was found, step past it; otherwise skip
-        //    continuation bytes so the window starts on a character boundary.
-        if n > 0 && matches!(byte_at(cur), b'\n' | b'\r') {
-            cur += 1;
-        } else {
-            while cur < byte_pos && (byte_at(cur) & 0xC0) == 0x80 {
-                cur += 1;
-            }
-        }
-        // 4. Caret column = offset of the error position within the window.
-        let col = byte_pos - cur;
-        // 5. Search forward for the end of the line (max 80 bytes of valid
-        //    UTF-8; invalid bytes terminate the window like upstream).
-        let mut fwd = cur;
-        let mut n2 = 0usize;
-        while !matches!(byte_at(fwd), 0 | b'\n' | b'\r') {
-            let len = utf8_char_len(&data[fwd..]);
-            if len == 0 || n2 + len > size {
-                break;
-            }
-            fwd += len;
-            n2 += len;
-        }
-        // Upstream (2.15): the caret can only point to the end of the
-        // buffer if there's space for the marker — clamp to size-1.
-        let mut col = col;
-        if col >= n2 {
-            col = if n2 < size { n2 } else { size - 1 };
-        }
-        Some((data[cur..fwd].to_vec(), col))
+        window_at_data(&data, byte_pos)
     }
 
     // ── Token scanning ──────────────────────────────────────────────────────
@@ -1629,6 +1583,59 @@ impl XmlTokenizer {
 /// Byte length of the UTF-8 character starting at `data[0]` (0 if the
 /// sequence is invalid or truncated) — upstream `xmlGetUTF8Char` length
 /// semantics used by the source-window forward scan.
+/// Compute the upstream-style source window `(context bytes, caret col)`
+/// for an error at `byte_pos` in `data` (tokenizer `window_at` core — also
+/// used by the SAX-layer depth error, HOSTILE-FAILURE F1).
+pub(crate) fn window_at_data(data: &[u8], byte_pos: usize) -> Option<(Vec<u8>, usize)> {
+    if byte_pos > data.len() {
+        return None;
+    }
+    let byte_at = |p: usize| -> u8 { data.get(p).copied().unwrap_or(0) };
+    let size = 80usize;
+
+    // 1. Skip backwards over any end-of-lines.
+    let mut cur = byte_pos;
+    while cur > 0 && matches!(byte_at(cur), b'\n' | b'\r') {
+        cur -= 1;
+    }
+    // 2. Search backwards for the beginning of the line (max 80 bytes).
+    let mut n = 0usize;
+    while n < size && cur > 0 && !matches!(byte_at(cur), b'\n' | b'\r') {
+        cur -= 1;
+        n += 1;
+    }
+    // 3. If a line break was found, step past it; otherwise skip
+    //    continuation bytes so the window starts on a character boundary.
+    if n > 0 && matches!(byte_at(cur), b'\n' | b'\r') {
+        cur += 1;
+    } else {
+        while cur < byte_pos && (byte_at(cur) & 0xC0) == 0x80 {
+            cur += 1;
+        }
+    }
+    // 4. Caret column = offset of the error position within the window.
+    let col = byte_pos - cur;
+    // 5. Search forward for the end of the line (max 80 bytes of valid
+    //    UTF-8; invalid bytes terminate the window like upstream).
+    let mut fwd = cur;
+    let mut n2 = 0usize;
+    while !matches!(byte_at(fwd), 0 | b'\n' | b'\r') {
+        let len = utf8_char_len(&data[fwd..]);
+        if len == 0 || n2 + len > size {
+            break;
+        }
+        fwd += len;
+        n2 += len;
+    }
+    // Upstream (2.15): the caret can only point to the end of the
+    // buffer if there's space for the marker — clamp to size-1.
+    let mut col = col;
+    if col >= n2 {
+        col = if n2 < size { n2 } else { size - 1 };
+    }
+    Some((data[cur..fwd].to_vec(), col))
+}
+
 fn utf8_char_len(data: &[u8]) -> usize {
     if data.is_empty() {
         return 0;

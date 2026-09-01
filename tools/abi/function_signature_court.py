@@ -417,6 +417,13 @@ def rust_abi_fp(t, enums, fnptrs):
         # (upstream `xmlNode **`).
         if re.search(r"\*mut\s+\w+Ptr\b", t) or re.search(r"\*const\s+\w+Ptr\b", t):
             depth += 1
+        # A pointer to a NULLABLE FUNCTION POINTER (`*mut Option<extern "C"
+        # fn ...>` — the __xml* accessor return shape, Phase 13) is ONE
+        # machine pointer: the pointee is a single 8-byte fn-pointer slot, and
+        # the `*mut`/`*const` inside the callback parameter list are NOT
+        # indirections of the returned value. `t.count("*")` over-counts them.
+        if t.startswith("*mut Option<") or t.startswith("*const Option<"):
+            depth = 1
         return ("ptr", 64, None, depth)
     if t.startswith("Option<"):
         inner = t[len("Option<"):-1]

@@ -121,7 +121,14 @@ def status_table():
          "12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 "
          "oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json"),
         ("Downstream testing",
-         "Not started (Phase 12)"),
+         "Phase 12 sealed: EXTERNAL-CONSUMERS 15/15, ELF-VERSIONING + "
+         "BINARY-SUBSTITUTION 14/14, DYNSYM-SURFACE 12/12, "
+         "STATIC-SUBSTITUTION 13/13, DOCKER-SUBSTITUTION 17/17, "
+         "EXPORT-SURFACE-DISPOSITION (evidence: courts/receipts/phase-12/)"),
+        ("Hostile audit",
+         "Phase 13 sealed: HOSTILE-ABI / OWNERSHIP / ALLOCATOR / CALLBACKS / "
+         "FAILURE / THREADS / ORACLE-CONTAMINATION differential courts byte-identical "
+         "vs the system oracle (evidence: courts/receipts/phase-13/)"),
     ]
     lines = [f"| Dimension | Status |", "|---|---|"]
     for name, status in rows:

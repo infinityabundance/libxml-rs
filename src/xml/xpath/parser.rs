@@ -762,8 +762,24 @@ pub fn parse_xpath(input: &str) -> Result<Expr, ParseError> {
             break;
         }
     }
+    let starts = lexer.token_starts();
     let mut parser = Parser::new(tokens);
-    parser.parse()
+    parser.parse().map_err(|e| {
+        // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): the recorded error
+        // position is the BYTE offset into the expression (`int1 =
+        // ctxt->cur - ctxt->base`), not the token index — it drives the
+        // caret of the "XPath error : Invalid expression" diagnostic
+        // (HOSTILE-FAILURE F3).
+        let byte_off = starts
+            .get(e.pos)
+            .copied()
+            .unwrap_or(input.len())
+            .min(input.len());
+        ParseError {
+            message: e.message,
+            pos: byte_off,
+        }
+    })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

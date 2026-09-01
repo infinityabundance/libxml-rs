@@ -127,6 +127,7 @@ const fn has_uri_scheme(uri: &[u8]) -> bool {
 /// Whether a SAX `error` slot holds one of the candidate's legacy default
 /// handlers (upstream error.c treats these as "do not invoke directly —
 /// format via `xmlFormatError`" in `xmlVRaiseError`).
+#[allow(dead_code)]
 fn is_legacy_error_handler(cb: errorSAXFunc) -> bool {
     let ptr = cb as usize;
     ptr == crate::xml::errors::XML_PARSER_ERROR_SAX1 as errorSAXFunc as usize
@@ -174,6 +175,11 @@ pub(crate) struct XmlParser {
     /// Whether the handler uses SAX1 callbacks only.
     #[allow(dead_code)]
     sax1: bool,
+    /// Legacy-format "cur input" tail for the next raised parser error:
+    /// upstream `xmlFormatError` prints the current (entity) input's
+    /// `Entity: line N: ` info + window after the parent window
+    /// (HOSTILE-FAILURE F2). Consumed by `raise_parser_error`.
+    cur_error_tail: Option<(c_int, Option<(Vec<u8>, usize)>)>,
 }
 
 // ─── Construction and accessors ─────────────────────────────────────────────
@@ -205,6 +211,7 @@ impl XmlParser {
             ctxt,
             options,
             sax1,
+            cur_error_tail: None,
         }
     }
 
@@ -288,6 +295,28 @@ impl XmlParser {
         // Update parser state
         unsafe {
             (*self.ctxt).instate = XML_PARSER_MISC;
+        }
+
+        // UPSTREAM-PARITY (parserInternals.c xmlParserGrow): an I/O source
+        // whose read callback reported an error raises an XML_IO_UNKNOWN
+        // warning at the first grow, then parsing continues onto the empty
+        // content and reports "Document is empty" — both diagnostics appear
+        // (HOSTILE-CALLBACKS C4).
+        if self.tokenizer.input().current_ref().has_source_error() {
+            // XML_IO_UNKNOWN = 1500 (include/libxml/xmlerror.h 2.15).
+            const XML_IO_UNKNOWN: c_int = 1500;
+            self.raise_error_now(
+                XML_FROM_IO,
+                XML_IO_UNKNOWN,
+                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                "Unknown IO error\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+            );
+            // fall through: the empty input then reports "Document is
+            // empty" exactly like the oracle.
         }
 
         // UPSTREAM-PARITY (xmlParseDocument): an empty input is reported as
@@ -2145,7 +2174,7 @@ impl XmlParser {
                 // UPSTREAM-PARITY (xmlParseReference): the entity content is
                 // parsed into ent->children on first reference regardless of
                 // the substitution mode.
-                self.parse_entity_content(entity)?;
+                self.parse_entity_content(entity, None)?;
                 // UPSTREAM-PARITY (xmlParseReference): "We also check for
                 // amplification if entities aren't substituted. They might be
                 // expanded later." — unconditional, no XML_PARSE_HUGE bypass.
@@ -2200,7 +2229,7 @@ impl XmlParser {
                 // UPSTREAM-PARITY (xmlParseReference): the entity content is
                 // parsed into ent->children on the first reference
                 // (xmlCtxtParseEntity), before the reference event fires.
-                self.parse_entity_content(entity)?;
+                self.parse_entity_content(entity, None)?;
                 // UPSTREAM-PARITY (xmlParseReference): unconditional
                 // amplification check (also when not substituting).
                 let (_, _, dpos2) = self.tokenizer.current_pos();
@@ -2242,7 +2271,11 @@ impl XmlParser {
     ///   must be non-NULL and a valid `_xmlEntity` whose `flags`, `content`
     ///   and `children` fields are consistent; the function mutates `ent`
     ///   and builds its children node list.
-    fn parse_entity_content(&mut self, ent: *mut _xmlEntity) -> Result<(), ()> {
+    fn parse_entity_content(
+        &mut self,
+        ent: *mut _xmlEntity,
+        ref_win: Option<(Vec<u8>, usize)>,
+    ) -> Result<(), ()> {
         const XML_ENT_PARSED: c_int = 1 << 0;
         const XML_ENT_EXPANDING: c_int = 1 << 3;
         unsafe {
@@ -2251,12 +2284,16 @@ impl XmlParser {
             }
             if ((*ent).flags & XML_ENT_EXPANDING) != 0 {
                 // UPSTREAM-PARITY (parser.c xmlCtxtParseEntity): a reference
-                // to an entity that is already being expanded is a loop.
+                // to an entity that is already being expanded is a loop. The
+                // message text is xmlErrString(XML_ERR_ENTITY_LOOP); the
+                // legacy "cur input" tail carries the referencing entity
+                // content's info + window (HOSTILE-FAILURE F2).
+                self.cur_error_tail = Some((1, ref_win));
                 self.raise_error_now(
                     XML_FROM_PARSER,
                     XML_ERR_ENTITY_LOOP,
                     xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    "Entity loop detected\n".to_string(),
+                    "Detected an entity reference loop\n".to_string(),
                     None,
                     None,
                     None,
@@ -2381,7 +2418,20 @@ impl XmlParser {
                                     ptr::null_mut()
                                 };
                                 if !ent2.is_null() {
-                                    self.parse_entity_content(ent2)?;
+                                    // Window for a possible loop raise: the
+                                    // referencing entity's content at the
+                                    // reference position (upstream's current
+                                    // input at the raise; HOSTILE-FAILURE F2).
+                                    let ref_win = if (*ent).content.is_null() {
+                                        None
+                                    } else {
+                                        let clen = libc::strlen((*ent).content as *const c_char);
+                                        let cdata =
+                                            core::slice::from_raw_parts((*ent).content, clen);
+                                        let at = (i + semi_rel + 2).min(clen);
+                                        crate::xml::parser::tokenizer::window_at_data(cdata, at)
+                                    };
+                                    self.parse_entity_content(ent2, ref_win)?;
                                     // UPSTREAM-PARITY (parser.c xmlParseReference):
                                     // every general-entity reference is subject to
                                     // the amplification check; the accumulation
@@ -2572,6 +2622,9 @@ impl XmlParser {
             return;
         }
         self.sync_input_position();
+        // UPSTREAM-PARITY: `cur` sits at the tag's closing `>` when the SAX
+        // start-element callback fires (depth-error window capture).
+        self.sync_cur_at(end_pos);
 
         // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): the first validity
         // check runs before the element is processed — a validating parse
@@ -2882,12 +2935,32 @@ impl XmlParser {
     ///   must be NULL or a valid `_xmlParserInput` whose `line` and `col`
     ///   fields are written.
     fn sync_input_position(&mut self) {
-        let (line, col, _pos) = self.tokenizer.current_pos();
+        let (line, col, byte_pos) = self.tokenizer.current_pos();
         unsafe {
             let ctxt = &mut *self.ctxt;
             if !ctxt.input.is_null() {
                 (*ctxt.input).line = line as c_int;
                 (*ctxt.input).col = col as c_int;
+                // UPSTREAM-PARITY (input->cur): keep the C input's `cur` at
+                // the parser's current byte offset so error-context capture
+                // (depth error windows, HOSTILE-FAILURE F1) sees the right
+                // position.
+                if !(*ctxt.input).base.is_null() {
+                    (*ctxt.input).cur = (*ctxt.input).base.add(byte_pos);
+                }
+            }
+        }
+    }
+
+    /// Point the C input's `cur` at an exact byte offset (upstream's `cur`
+    /// sits at the tag's closing `>` when the SAX start-element callback
+    /// fires — the depth-error window must be captured there,
+    /// HOSTILE-FAILURE F1).
+    fn sync_cur_at(&mut self, byte_pos: usize) {
+        unsafe {
+            let ctxt = &mut *self.ctxt;
+            if !ctxt.input.is_null() && !(*ctxt.input).base.is_null() {
+                (*ctxt.input).cur = (*ctxt.input).base.add(byte_pos);
             }
         }
     }
@@ -3087,17 +3160,30 @@ impl XmlParser {
             let s1 = str1.and_then(|s| std::ffi::CString::new(s).ok());
             let s2 = str2.and_then(|s| std::ffi::CString::new(s).ok());
             let s3 = str3.and_then(|s| std::ffi::CString::new(s).ok());
-            let fname = self
-                .tokenizer
-                .input()
-                .current_ref()
-                .filename()
-                .map(|f| std::ffi::CString::new(f).unwrap_or_default());
+            // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr): the error
+            // location is the current input's filename/line/col, but when
+            // the current input has no filename and the input stack is
+            // nested (inputNr > 1) upstream falls back to the PARENT
+            // input's location — entity-content errors are attributed to
+            // the referencing document (HOSTILE-CALLBACKS C1/C2).
+            let (fname_opt, fline, fcol) = self.tokenizer.input().error_context();
+            let fname = fname_opt.map(|f| std::ffi::CString::new(f).unwrap_or_default());
             let file_ptr = fname.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
+            let parent_context = self.tokenizer.input().depth() > 1
+                && self.tokenizer.input().current_ref().filename().is_none();
+            let line = if parent_context { fline as c_int } else { line };
+            let col = if parent_context { fcol as c_int } else { col };
             let s1_ptr = s1.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
             let s2_ptr = s2.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
             let s3_ptr = s3.as_ref().map(|c| c.as_ptr()).unwrap_or(ptr::null());
             let window_ref = window.as_ref().map(|(w, caret)| (w.as_slice(), *caret));
+            // UPSTREAM-PARITY (error.c xmlFormatError): the "cur input" tail
+            // (current input's info + window after the parent window) — set
+            // by the entity-loop raise (HOSTILE-FAILURE F2).
+            let tail = self.cur_error_tail.take();
+            let tail_ref = tail
+                .as_ref()
+                .map(|(l, w)| (*l, w.as_ref().map(|(wb, c)| (wb.as_slice(), *c))));
             let delivery = self.error_delivery();
             unsafe {
                 crate::xml::errors::raise_error_streamed(
@@ -3116,6 +3202,7 @@ impl XmlParser {
                     window_ref,
                     enc_bytes,
                     delivery,
+                    tail_ref,
                 );
             }
         }
@@ -3268,15 +3355,7 @@ impl XmlParser {
     ///   choose the delivery, and `userData` is captured for the custom
     ///   callback.
     fn error_delivery(&self) -> crate::xml::errors::GenericDelivery {
-        use crate::xml::errors::GenericDelivery;
-        unsafe {
-            let sax = &*(*self.ctxt).sax;
-            match sax.error {
-                None => GenericDelivery::None,
-                Some(cb) if is_legacy_error_handler(cb) => GenericDelivery::Stream,
-                Some(cb) => GenericDelivery::Custom(cb, (*self.ctxt).userData),
-            }
-        }
+        unsafe { crate::xml::errors::parser_delivery(self.ctxt) }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

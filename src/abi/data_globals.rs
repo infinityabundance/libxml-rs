@@ -109,61 +109,28 @@ static LAST_ERROR_MIRROR_LOCK: parking_lot::Mutex<()> = parking_lot::Mutex::new(
 // Parser defaults (upstream globals.c)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// `int xmlDoValidityCheckingDefaultValue` (default 0)
-#[no_mangle]
-pub static mut xmlDoValidityCheckingDefaultValue: c_int = 0;
+// ═══════════════════════════════════════════════════════════════════════════════
+// Parser-default / error-handler / node-hook / IO-hook globals
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Phase 13 (HOSTILE-THREADS): the 18 globals below were moved to
+// THREAD-LOCAL storage (`crate::xml::globals::tls`), matching upstream 2.15
+// LIBXML_THREAD_ENABLED (`xmlGetThreadLocalStorage`, globals.c). The oracle
+// DSO exports only the `__xmlXxx()` accessor FUNCTIONS for them (nm -D: no
+// data symbols), so the candidate removed the plain data exports and the
+// accessors now return pointers into the per-thread cells; the candidate
+// headers use the upstream macro/accessor contract. See tls.rs.
+//
+// Still exported as plain global data (executed oracle keeps these global):
+// xmlParserVersion, xmlParserMaxDepth, xmlDefaultBufferSize,
+// xmlBufferAllocScheme, xmlParserDebugEntities, xmlLastError (R-000135
+// mirror), the allocator hooks, the SAX handler structs and the character
+// tables.
 
-/// `int xmlGetWarningsDefaultValue` (default 1)
-#[no_mangle]
-pub static mut xmlGetWarningsDefaultValue: c_int = 1;
-
-/// `int xmlLoadExtDtdDefaultValue` (default 0)
-#[no_mangle]
-pub static mut xmlLoadExtDtdDefaultValue: c_int = 0;
-
-/// `int xmlPedanticParserDefaultValue` (default 0)
-#[no_mangle]
-pub static mut xmlPedanticParserDefaultValue: c_int = 0;
-
-/// `int xmlLineNumbersDefaultValue` (default 1 — upstream globals.c
-/// `xmlLineNumbersDefaultValueThrDef = 1`)
-#[no_mangle]
-pub static mut xmlLineNumbersDefaultValue: c_int = 1;
-
-/// `int xmlKeepBlanksDefaultValue` (default 1)
-#[no_mangle]
-pub static mut xmlKeepBlanksDefaultValue: c_int = 1;
-
-/// `int xmlSubstituteEntitiesDefaultValue` (default 0)
-#[no_mangle]
-pub static mut xmlSubstituteEntitiesDefaultValue: c_int = 0;
-
-/// `int xmlParserDebugEntities` (default 0)
+/// `int xmlParserDebugEntities` (default 0) — candidate-only data export
+/// (CUSTODIAN_EXTENSION); NOT TLS-era in the executed oracle.
 #[no_mangle]
 pub static mut xmlParserDebugEntities: c_int = 0;
-
-/// `int xmlIndentTreeOutput` (default 1 — upstream globals.c
-/// `xmlIndentTreeOutputThrDef = 1`)
-#[no_mangle]
-pub static mut xmlIndentTreeOutput: c_int = 1;
-
-/// `const xmlChar *xmlTreeIndentString` (default "  " — upstream globals.c
-/// `xmlTreeIndentStringThrDef = "  "`)
-#[no_mangle]
-pub static mut xmlTreeIndentString: *const xmlChar = {
-    static S: [u8; 3] = *b"  \0";
-    S.as_ptr()
-};
-
-/// `int xmlSaveNoEmptyTags` (default 0)
-#[no_mangle]
-pub static mut xmlSaveNoEmptyTags: c_int = 0;
-
-/// Upstream `xmlRegisterNodeFunc xmlRegisterNodeDefaultValue` (default NULL)
-#[no_mangle]
-pub static mut xmlRegisterNodeDefaultValue: Option<
-    unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
-> = None;
 
 /// Upstream static `xmlRegisterCallbacks` (tree.c): the gate that arms the
 /// node register/deregister hooks once a callback has been registered.
@@ -180,7 +147,7 @@ pub fn register_node_hook(node: *mut crate::abi::structs::_xmlNode) {
     if !XML_REGISTER_CALLBACKS.load(core::sync::atomic::Ordering::Relaxed) {
         return;
     }
-    let hook = unsafe { xmlRegisterNodeDefaultValue };
+    let hook = crate::xml::globals::get_register_node_default();
     if let Some(h) = hook {
         if !node.is_null() {
             // SAFETY: the hook is a valid C callback registered by the user.
@@ -199,7 +166,7 @@ pub fn deregister_node_hook(node: *mut crate::abi::structs::_xmlNode) {
     if !XML_REGISTER_CALLBACKS.load(core::sync::atomic::Ordering::Relaxed) {
         return;
     }
-    let hook = unsafe { xmlDeregisterNodeDefaultValue };
+    let hook = crate::xml::globals::get_deregister_node_default();
     if let Some(h) = hook {
         if !node.is_null() {
             // SAFETY: the hook is a valid C callback registered by the user.
@@ -207,12 +174,6 @@ pub fn deregister_node_hook(node: *mut crate::abi::structs::_xmlNode) {
         }
     }
 }
-
-/// `xmlDeregisterNodeFunc xmlDeregisterNodeDefaultValue` (default NULL)
-#[no_mangle]
-pub static mut xmlDeregisterNodeDefaultValue: Option<
-    unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode),
-> = None;
 
 /// `const char *xmlParserVersion` — matched to the system oracle build
 /// (libxml2 2.15.3 GIT build: LIBXML_VERSION_STRING "21503" plus the
@@ -246,33 +207,20 @@ pub static mut xmlDefaultBufferSize: c_int = 4096;
 pub static mut xmlBufferAllocScheme: c_int = 1;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Error callback globals (upstream xmlerror.h)
+// Error callback globals (upstream xmlerror.h) — THREAD-LOCAL since Phase 13
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// `xmlGenericErrorFunc xmlGenericError` — the generic error callback.
-///
-/// Upstream defaults to `xmlGenericErrorDefaultFunc` (a variadic stderr
-/// printer, error.c); the candidate's shim below reproduces it, so a
-/// freshly-initialized library routes errors to stderr exactly like upstream.
-#[cfg(target_arch = "x86_64")]
-#[no_mangle]
-pub static mut xmlGenericError: Option<xmlGenericErrorFunc> = Some(XML_GENERIC_ERROR_DEFAULT);
-
-#[cfg(not(target_arch = "x86_64"))]
-#[no_mangle]
-pub static mut xmlGenericError: Option<xmlGenericErrorFunc> = None;
-
-/// `void *xmlGenericErrorContext` — context for the generic error callback.
-#[no_mangle]
-pub static mut xmlGenericErrorContext: *mut c_void = core::ptr::null_mut();
-
-/// `xmlStructuredErrorFunc xmlStructuredError` — the structured error callback.
-#[no_mangle]
-pub static mut xmlStructuredError: Option<xmlStructuredErrorFunc> = None;
-
-/// `void *xmlStructuredErrorContext` — context for the structured callback.
-#[no_mangle]
-pub static mut xmlStructuredErrorContext: *mut c_void = core::ptr::null_mut();
+//
+// `xmlGenericError` / `xmlGenericErrorContext` / `xmlStructuredError` /
+// `xmlStructuredErrorContext` live in per-thread cells
+// (`crate::xml::globals::tls`), matching upstream 2.15
+// LIBXML_THREAD_ENABLED: `xmlSetGenericErrorFunc`/`xmlSetStructuredErrorFunc`
+// affect only the calling thread, and the oracle DSO exports only the
+// `__xmlGenericError` family of accessor FUNCTIONS (no data symbols).
+//
+// The default `xmlGenericError` value is `xmlGenericErrorDefaultFunc` (the
+// R-000161 x86-64 variadic stderr shim), exactly like upstream error.c; the
+// shim below reproduces it, so a freshly-initialized library routes errors
+// to stderr exactly like upstream.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Variadic default error handlers (upstream error.c / xsltutils.c)
@@ -349,10 +297,10 @@ pub unsafe extern "C" fn xmlGenericErrorDefaultFuncV(
     ap: *mut VaListTag,
 ) -> c_int {
     unsafe {
-        if crate::abi::data_globals::xmlGenericErrorContext.is_null() {
-            crate::abi::data_globals::xmlGenericErrorContext = stderr_file();
+        if crate::xml::globals::get_generic_error_ctx().is_null() {
+            crate::xml::globals::set_generic_error_ctx(stderr_file());
         }
-        let stream = crate::abi::data_globals::xmlGenericErrorContext;
+        let stream = crate::xml::globals::get_generic_error_ctx();
         if msg.is_null() || stream.is_null() {
             return 0;
         }
@@ -413,7 +361,8 @@ pub unsafe extern "C" fn xmlGenericErrorDefaultFunc() -> c_int {
 
 /// Default value of the exported `xmlGenericError` data global.
 #[cfg(target_arch = "x86_64")]
-const XML_GENERIC_ERROR_DEFAULT: xmlGenericErrorFunc = unsafe {
+#[doc(hidden)]
+pub(crate) const XML_GENERIC_ERROR_DEFAULT: xmlGenericErrorFunc = unsafe {
     // SAFETY: the shim and the function-pointer type have identical ABI
     // (a code pointer); the declared arity is a Rust-side fiction required
     // to store a variadic entry in the non-variadic pointer type.
@@ -708,24 +657,10 @@ pub static mut xsltDocDefaultLoader: Option<
 > = None;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// I/O filename callback globals (upstream xmlIO.h)
+// I/O filename callback globals (upstream xmlIO.h) — THREAD-LOCAL since
+// Phase 13 (see tls.rs); the `xml*Default` accessor functions below read/write
+// the per-thread slots.
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/// `xmlParserInputBufferCreateFilenameFunc xmlParserInputBufferCreateFilenameValue`
-#[no_mangle]
-pub static mut xmlParserInputBufferCreateFilenameValue: Option<
-    unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
-> = None;
-
-/// `xmlOutputBufferCreateFilenameFunc xmlOutputBufferCreateFilenameValue`
-#[no_mangle]
-pub static mut xmlOutputBufferCreateFilenameValue: Option<
-    unsafe extern "C" fn(
-        *const c_char,
-        crate::abi::structs::xmlCharEncodingHandlerPtr,
-        c_int,
-    ) -> *mut crate::abi::structs::_xmlOutputBuffer,
-> = None;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Default SAX v1 handler structs + locator (upstream globals.c 2.15.3)
@@ -984,12 +919,10 @@ unsafe fn dup_cstr(s: *const u8) -> *mut c_char {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlKeepBlanksDefault(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlKeepBlanksDefaultValue = v;
-        }
-        xmlKeepBlanksDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_keep_blanks_default(v);
     }
+    crate::xml::globals::get_keep_blanks_default()
 }
 
 /// Upstream `xmlLineNumbersDefault(int v)`.
@@ -1005,12 +938,10 @@ pub unsafe extern "C" fn xmlKeepBlanksDefault(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlLineNumbersDefault(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlLineNumbersDefaultValue = v;
-        }
-        xmlLineNumbersDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_line_numbers_default(v);
     }
+    crate::xml::globals::get_line_numbers_default()
 }
 
 /// Upstream `xmlSubstituteEntitiesDefault(int v)`.
@@ -1026,12 +957,10 @@ pub unsafe extern "C" fn xmlLineNumbersDefault(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlSubstituteEntitiesDefault(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlSubstituteEntitiesDefaultValue = v;
-        }
-        xmlSubstituteEntitiesDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_substitute_entities_default(v);
     }
+    crate::xml::globals::get_substitute_entities_default()
 }
 
 /// Upstream `xmlPedanticParserDefault(int v)`.
@@ -1047,12 +976,10 @@ pub unsafe extern "C" fn xmlSubstituteEntitiesDefault(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlPedanticParserDefault(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlPedanticParserDefaultValue = v;
-        }
-        xmlPedanticParserDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_pedantic_parser_default(v);
     }
+    crate::xml::globals::get_pedantic_parser_default()
 }
 
 /// Upstream `xmlDoValidityCheckingDefaultValue` accessor is the global
@@ -1078,15 +1005,13 @@ pub unsafe extern "C" fn xmlPedanticParserDefault(v: c_int) -> c_int {
 pub unsafe extern "C" fn xmlRegisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
-    unsafe {
-        // UPSTREAM-PARITY (tree.c): registering any callback arms the
-        // xmlRegisterCallbacks gate.
-        XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
-        if func.is_some() {
-            xmlRegisterNodeDefaultValue = func;
-        }
-        xmlRegisterNodeDefaultValue
+    // UPSTREAM-PARITY (tree.c): registering any callback arms the
+    // xmlRegisterCallbacks gate.
+    XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
+    if func.is_some() {
+        crate::xml::globals::set_register_node_default(func);
     }
+    crate::xml::globals::get_register_node_default()
 }
 
 /// Upstream `xmlDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
@@ -1109,15 +1034,13 @@ pub unsafe extern "C" fn xmlRegisterNodeDefault(
 pub unsafe extern "C" fn xmlDeregisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
-    unsafe {
-        // UPSTREAM-PARITY (tree.c): registering any callback arms the
-        // xmlRegisterCallbacks gate.
-        XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
-        if func.is_some() {
-            xmlDeregisterNodeDefaultValue = func;
-        }
-        xmlDeregisterNodeDefaultValue
+    // UPSTREAM-PARITY (tree.c): registering any callback arms the
+    // xmlRegisterCallbacks gate.
+    XML_REGISTER_CALLBACKS.store(true, core::sync::atomic::Ordering::Relaxed);
+    if func.is_some() {
+        crate::xml::globals::set_deregister_node_default(func);
     }
+    crate::xml::globals::get_deregister_node_default()
 }
 
 /// Upstream `__xmlIndentTreeOutput(void)` (parser.h) — returns a pointer to
@@ -1134,7 +1057,7 @@ pub unsafe extern "C" fn xmlDeregisterNodeDefault(
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlIndentTreeOutput() -> *mut c_int {
-    core::ptr::addr_of_mut!(xmlIndentTreeOutput)
+    crate::xml::globals::indent_tree_output_ptr()
 }
 
 /// Upstream `__xmlSaveNoEmptyTags(void)` (parser.h) — returns a pointer to
@@ -1151,7 +1074,7 @@ pub unsafe extern "C" fn __xmlIndentTreeOutput() -> *mut c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlSaveNoEmptyTags() -> *mut c_int {
-    core::ptr::addr_of_mut!(xmlSaveNoEmptyTags)
+    crate::xml::globals::save_no_empty_tags_ptr()
 }
 
 /// Upstream `__xmlTreeIndentString(void)` (parser.h) — returns a pointer to
@@ -1168,7 +1091,7 @@ pub unsafe extern "C" fn __xmlSaveNoEmptyTags() -> *mut c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn __xmlTreeIndentString() -> *mut *const xmlChar {
-    core::ptr::addr_of_mut!(xmlTreeIndentString)
+    crate::xml::globals::tree_indent_string_ptr()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1194,12 +1117,10 @@ pub unsafe extern "C" fn __xmlTreeIndentString() -> *mut *const xmlChar {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefDoValidityCheckingDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlDoValidityCheckingDefaultValue = v;
-        }
-        xmlDoValidityCheckingDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_validity_checking_default(v);
     }
+    crate::xml::globals::get_validity_checking_default()
 }
 
 /// Upstream `xmlThrDefGetWarningsDefaultValue(int v)`.
@@ -1215,12 +1136,10 @@ pub unsafe extern "C" fn xmlThrDefDoValidityCheckingDefaultValue(v: c_int) -> c_
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefGetWarningsDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlGetWarningsDefaultValue = v;
-        }
-        xmlGetWarningsDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_get_warnings_default(v);
     }
+    crate::xml::globals::get_get_warnings_default()
 }
 
 /// Upstream `xmlThrDefLoadExtDtdDefaultValue(int v)`.
@@ -1236,12 +1155,10 @@ pub unsafe extern "C" fn xmlThrDefGetWarningsDefaultValue(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefLoadExtDtdDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlLoadExtDtdDefaultValue = v;
-        }
-        xmlLoadExtDtdDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_load_ext_dtd_default(v);
     }
+    crate::xml::globals::get_load_ext_dtd_default()
 }
 
 /// Upstream `xmlThrDefPedanticParserDefaultValue(int v)`.
@@ -1257,12 +1174,10 @@ pub unsafe extern "C" fn xmlThrDefLoadExtDtdDefaultValue(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefPedanticParserDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlPedanticParserDefaultValue = v;
-        }
-        xmlPedanticParserDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_pedantic_parser_default(v);
     }
+    crate::xml::globals::get_pedantic_parser_default()
 }
 
 /// Upstream `xmlThrDefLineNumbersDefaultValue(int v)`.
@@ -1278,12 +1193,10 @@ pub unsafe extern "C" fn xmlThrDefPedanticParserDefaultValue(v: c_int) -> c_int 
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefLineNumbersDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlLineNumbersDefaultValue = v;
-        }
-        xmlLineNumbersDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_line_numbers_default(v);
     }
+    crate::xml::globals::get_line_numbers_default()
 }
 
 /// Upstream `xmlThrDefKeepBlanksDefaultValue(int v)`.
@@ -1299,12 +1212,10 @@ pub unsafe extern "C" fn xmlThrDefLineNumbersDefaultValue(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefKeepBlanksDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlKeepBlanksDefaultValue = v;
-        }
-        xmlKeepBlanksDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_keep_blanks_default(v);
     }
+    crate::xml::globals::get_keep_blanks_default()
 }
 
 /// Upstream `xmlThrDefSubstituteEntitiesDefaultValue(int v)`.
@@ -1320,12 +1231,10 @@ pub unsafe extern "C" fn xmlThrDefKeepBlanksDefaultValue(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSubstituteEntitiesDefaultValue(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlSubstituteEntitiesDefaultValue = v;
-        }
-        xmlSubstituteEntitiesDefaultValue
+    if v != 0 {
+        crate::xml::globals::set_substitute_entities_default(v);
     }
+    crate::xml::globals::get_substitute_entities_default()
 }
 
 /// Upstream `xmlThrDefParserDebugEntities(int v)`.
@@ -1362,12 +1271,10 @@ pub unsafe extern "C" fn xmlThrDefParserDebugEntities(v: c_int) -> c_int {
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefIndentTreeOutput(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlIndentTreeOutput = v;
-        }
-        xmlIndentTreeOutput
+    if v != 0 {
+        crate::xml::globals::set_indent_tree_output(v);
     }
+    crate::xml::globals::get_indent_tree_output()
 }
 
 /// Upstream `xmlThrDefTreeIndentString(const char *v)` — sets the indent
@@ -1389,12 +1296,10 @@ pub unsafe extern "C" fn xmlThrDefIndentTreeOutput(v: c_int) -> c_int {
 /// courts; those pass byte-for-byte against the upstream oracle.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefTreeIndentString(v: *const c_char) -> *const c_char {
-    unsafe {
-        if !v.is_null() {
-            xmlTreeIndentString = v as *const xmlChar;
-        }
-        xmlTreeIndentString as *const c_char
+    if !v.is_null() {
+        crate::xml::globals::set_tree_indent_string(v as *const crate::abi::types::xmlChar);
     }
+    crate::xml::globals::get_tree_indent_string() as *const c_char
 }
 
 /// Upstream `xmlThrDefSaveNoEmptyTags(int v)`.
@@ -1410,12 +1315,10 @@ pub unsafe extern "C" fn xmlThrDefTreeIndentString(v: *const c_char) -> *const c
 /// teardown or from a signal handler, is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn xmlThrDefSaveNoEmptyTags(v: c_int) -> c_int {
-    unsafe {
-        if v != 0 {
-            xmlSaveNoEmptyTags = v;
-        }
-        xmlSaveNoEmptyTags
+    if v != 0 {
+        crate::xml::globals::set_save_no_empty_tags(v);
     }
+    crate::xml::globals::get_save_no_empty_tags()
 }
 
 /// Upstream `xmlThrDefRegisterNodeDefault(xmlRegisterNodeFunc func)`.
@@ -1438,12 +1341,10 @@ pub unsafe extern "C" fn xmlThrDefSaveNoEmptyTags(v: c_int) -> c_int {
 pub unsafe extern "C" fn xmlThrDefRegisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
-    unsafe {
-        if func.is_some() {
-            xmlRegisterNodeDefaultValue = func;
-        }
-        xmlRegisterNodeDefaultValue
+    if func.is_some() {
+        crate::xml::globals::set_register_node_default(func);
     }
+    crate::xml::globals::get_register_node_default()
 }
 
 /// Upstream `xmlThrDefDeregisterNodeDefault(xmlDeregisterNodeFunc func)`.
@@ -1466,12 +1367,10 @@ pub unsafe extern "C" fn xmlThrDefRegisterNodeDefault(
 pub unsafe extern "C" fn xmlThrDefDeregisterNodeDefault(
     func: Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)>,
 ) -> Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
-    unsafe {
-        if func.is_some() {
-            xmlDeregisterNodeDefaultValue = func;
-        }
-        xmlDeregisterNodeDefaultValue
+    if func.is_some() {
+        crate::xml::globals::set_deregister_node_default(func);
     }
+    crate::xml::globals::get_deregister_node_default()
 }
 
 /// Upstream `xmlThrDefSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc func)`.
@@ -1499,10 +1398,7 @@ pub unsafe extern "C" fn xmlThrDefSetGenericErrorFunc(
     ctx: *mut c_void,
     func: Option<xmlGenericErrorFunc>,
 ) {
-    unsafe {
-        xmlGenericErrorContext = ctx;
-        xmlGenericError = func;
-    }
+    crate::xml::globals::set_generic_error_func(ctx, func);
 }
 
 /// Upstream `xmlThrDefSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc func)`.
@@ -1530,10 +1426,7 @@ pub unsafe extern "C" fn xmlThrDefSetStructuredErrorFunc(
     ctx: *mut c_void,
     func: Option<xmlStructuredErrorFunc>,
 ) {
-    unsafe {
-        xmlStructuredErrorContext = ctx;
-        xmlStructuredError = func;
-    }
+    crate::xml::globals::set_structured_error_func(ctx, func);
 }
 
 /// Upstream `xmlThrDefDefaultBufferSize(int v)`.
@@ -1605,12 +1498,10 @@ pub unsafe extern "C" fn xmlThrDefParserInputBufferCreateFilenameDefault(
 ) -> Option<
     unsafe extern "C" fn(*const c_char, c_int) -> *mut crate::abi::structs::_xmlParserInputBuffer,
 > {
-    unsafe {
-        if func.is_some() {
-            xmlParserInputBufferCreateFilenameValue = func;
-        }
-        xmlParserInputBufferCreateFilenameValue
+    if func.is_some() {
+        crate::xml::globals::set_parser_input_buffer_create_filename_value(func);
     }
+    crate::xml::globals::get_parser_input_buffer_create_filename_value()
 }
 
 /// Upstream `xmlThrDefOutputBufferCreateFilenameDefault(...)`.
@@ -1645,12 +1536,10 @@ pub unsafe extern "C" fn xmlThrDefOutputBufferCreateFilenameDefault(
         c_int,
     ) -> *mut crate::abi::structs::_xmlOutputBuffer,
 > {
-    unsafe {
-        if func.is_some() {
-            xmlOutputBufferCreateFilenameValue = func;
-        }
-        xmlOutputBufferCreateFilenameValue
+    if func.is_some() {
+        crate::xml::globals::set_output_buffer_create_filename_value(func);
     }
+    crate::xml::globals::get_output_buffer_create_filename_value()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1711,7 +1600,7 @@ pub unsafe extern "C" fn __xmlDeregisterNodeDefaultValue(
 ) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlDeregisterNodeDefaultValue)
+    crate::xml::globals::deregister_node_ptr()
 }
 
 /// Upstream `__xmlDoValidityCheckingDefaultValue(void)` — returns a pointer to `xmlDoValidityCheckingDefaultValue`.
@@ -1729,7 +1618,7 @@ pub unsafe extern "C" fn __xmlDeregisterNodeDefaultValue(
 pub unsafe extern "C" fn __xmlDoValidityCheckingDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlDoValidityCheckingDefaultValue)
+    crate::xml::globals::do_validity_ptr()
 }
 
 /// Upstream `__xmlGenericError(void)` — returns a pointer to `xmlGenericError`.
@@ -1747,7 +1636,7 @@ pub unsafe extern "C" fn __xmlDoValidityCheckingDefaultValue() -> *mut c_int {
 pub unsafe extern "C" fn __xmlGenericError() -> *mut Option<xmlGenericErrorFunc> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlGenericError)
+    crate::xml::globals::generic_error_ptr()
 }
 
 /// Upstream `__xmlGenericErrorContext(void)` — returns a pointer to `xmlGenericErrorContext`.
@@ -1765,7 +1654,7 @@ pub unsafe extern "C" fn __xmlGenericError() -> *mut Option<xmlGenericErrorFunc>
 pub unsafe extern "C" fn __xmlGenericErrorContext() -> *mut *mut c_void {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlGenericErrorContext)
+    crate::xml::globals::generic_error_ctx_ptr()
 }
 
 /// Upstream `__xmlGetWarningsDefaultValue(void)` — returns a pointer to `xmlGetWarningsDefaultValue`.
@@ -1783,7 +1672,7 @@ pub unsafe extern "C" fn __xmlGenericErrorContext() -> *mut *mut c_void {
 pub unsafe extern "C" fn __xmlGetWarningsDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlGetWarningsDefaultValue)
+    crate::xml::globals::get_warnings_ptr()
 }
 
 /// Upstream `__xmlKeepBlanksDefaultValue(void)` — returns a pointer to `xmlKeepBlanksDefaultValue`.
@@ -1801,7 +1690,7 @@ pub unsafe extern "C" fn __xmlGetWarningsDefaultValue() -> *mut c_int {
 pub unsafe extern "C" fn __xmlKeepBlanksDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlKeepBlanksDefaultValue)
+    crate::xml::globals::keep_blanks_ptr()
 }
 
 /// Upstream `__xmlLineNumbersDefaultValue(void)` — returns a pointer to `xmlLineNumbersDefaultValue`.
@@ -1819,7 +1708,7 @@ pub unsafe extern "C" fn __xmlKeepBlanksDefaultValue() -> *mut c_int {
 pub unsafe extern "C" fn __xmlLineNumbersDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlLineNumbersDefaultValue)
+    crate::xml::globals::line_numbers_ptr()
 }
 
 /// Upstream `__xmlLoadExtDtdDefaultValue(void)` — returns a pointer to `xmlLoadExtDtdDefaultValue`.
@@ -1837,7 +1726,7 @@ pub unsafe extern "C" fn __xmlLineNumbersDefaultValue() -> *mut c_int {
 pub unsafe extern "C" fn __xmlLoadExtDtdDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlLoadExtDtdDefaultValue)
+    crate::xml::globals::load_ext_dtd_ptr()
 }
 
 /// Upstream `__xmlOutputBufferCreateFilenameValue(void)` — returns a pointer to `xmlOutputBufferCreateFilenameValue`.
@@ -1861,7 +1750,7 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilenameValue() -> *mut Option<
 > {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlOutputBufferCreateFilenameValue)
+    crate::xml::globals::output_create_filename_ptr()
 }
 
 /// Upstream `__xmlParserDebugEntities(void)` — returns a pointer to `xmlParserDebugEntities`.
@@ -1899,7 +1788,7 @@ pub unsafe extern "C" fn __xmlParserInputBufferCreateFilenameValue() -> *mut Opt
 > {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlParserInputBufferCreateFilenameValue)
+    crate::xml::globals::parser_input_create_filename_ptr()
 }
 
 /// Upstream `__xmlParserVersion(void)` — returns a pointer to `xmlParserVersion`.
@@ -1935,7 +1824,7 @@ pub unsafe extern "C" fn __xmlParserVersion() -> *mut *const c_char {
 pub unsafe extern "C" fn __xmlPedanticParserDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlPedanticParserDefaultValue)
+    crate::xml::globals::pedantic_ptr()
 }
 
 /// Upstream `__xmlRegisterNodeDefaultValue(void)` — returns a pointer to `xmlRegisterNodeDefaultValue`.
@@ -1954,7 +1843,7 @@ pub unsafe extern "C" fn __xmlRegisterNodeDefaultValue(
 ) -> *mut Option<unsafe extern "C" fn(*mut crate::abi::structs::_xmlNode)> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlRegisterNodeDefaultValue)
+    crate::xml::globals::register_node_ptr()
 }
 
 /// Upstream `__xmlStructuredError(void)` — returns a pointer to `xmlStructuredError`.
@@ -1972,7 +1861,7 @@ pub unsafe extern "C" fn __xmlRegisterNodeDefaultValue(
 pub unsafe extern "C" fn __xmlStructuredError() -> *mut Option<xmlStructuredErrorFunc> {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlStructuredError)
+    crate::xml::globals::structured_error_ptr()
 }
 
 /// Upstream `__xmlStructuredErrorContext(void)` — returns a pointer to `xmlStructuredErrorContext`.
@@ -1990,7 +1879,7 @@ pub unsafe extern "C" fn __xmlStructuredError() -> *mut Option<xmlStructuredErro
 pub unsafe extern "C" fn __xmlStructuredErrorContext() -> *mut *mut c_void {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlStructuredErrorContext)
+    crate::xml::globals::structured_error_ctx_ptr()
 }
 
 /// Upstream `__xmlSubstituteEntitiesDefaultValue(void)` — returns a pointer to `xmlSubstituteEntitiesDefaultValue`.
@@ -2008,7 +1897,7 @@ pub unsafe extern "C" fn __xmlStructuredErrorContext() -> *mut *mut c_void {
 pub unsafe extern "C" fn __xmlSubstituteEntitiesDefaultValue() -> *mut c_int {
     // SAFETY: returning a pointer to an exported static; the caller may
     // read/write it exactly as with upstream's deprecated accessor.
-    core::ptr::addr_of_mut!(xmlSubstituteEntitiesDefaultValue)
+    crate::xml::globals::substitute_entities_ptr()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

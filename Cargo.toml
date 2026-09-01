@@ -1,8 +1,8 @@
 [package]
 name = "libxml-rs"
-version = "0.1.0-alpha.37"
+version = "0.1.0-alpha.38"
 edition = "2021"
-description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure; three-DSO ELF packaging (libxml2.so.16 core + libxslt.so.1/libexslt.so.0 facades, upstream NEEDED chain); fail-closed oracle-isolated function-signature ABI plane (SOURCE_PROTOTYPE + MACHINE_ABI fingerprints, zero silent omissions) and the libc default allocator (ALLOCATOR-DEFAULT-001) verified byte-identical; proof-scoped safety commentary (0 unaccounted unsafe sites); residual ledger 79 FIXED / 3 OPEN; 1183 tests passing."
+description = "Native-Rust forensic reimplementation of libxml2+libxslt with C ABI drop-in replacement. Cross-version oracle matrix (libxml2 2.7.8-2.15.3, libxslt 1.1.26-1.1.45) with semantic epochs correlated to upstream commits; full xmllint/xmlcatalog/xsltproc CLIs; differential-court-verified C API closure; three-DSO ELF packaging (libxml2.so.16 core + libxslt.so.1/libexslt.so.0 facades, upstream NEEDED chain); fail-closed oracle-isolated function-signature ABI plane (SOURCE_PROTOTYPE + MACHINE_ABI fingerprints, zero silent omissions) and the libc default allocator (ALLOCATOR-DEFAULT-001) verified byte-identical; Phase-12 real downstream substitution (binary/static/docker substitution, export-surface disposition, ELF version graphs); Phase-13 hostile audit courts (ABI/ownership/allocator/callbacks/failure/threads/oracle-contamination) byte-identical vs the system oracle incl. the upstream thread-local globals model; proof-scoped safety commentary (0 unaccounted unsafe sites); residual ledger 95 FIXED / 4 OPEN; 1188 tests passing."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/infinityabundance/libxml-rs"
 homepage = "https://github.com/infinityabundance/libxml-rs"

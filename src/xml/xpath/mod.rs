@@ -95,10 +95,16 @@ use types::XPathValue;
 ///
 /// Returns `None` on parse error.
 pub fn compile(expr_str: &str) -> Option<CompiledExpr> {
-    match parse_xpath(expr_str) {
-        Ok(expr) => Some(CompiledExpr::new(expr_str.to_string(), expr)),
-        Err(_) => None,
-    }
+    compile_result(expr_str).ok()
+}
+
+/// Parse and compile an XPath expression string, exposing the parse error
+/// (message + byte offset) for upstream-faithful diagnostics
+/// (HOSTILE-FAILURE F3).
+pub fn compile_result(
+    expr_str: &str,
+) -> Result<CompiledExpr, crate::xml::xpath::parser::ParseError> {
+    parse_xpath(expr_str).map(|expr| CompiledExpr::new(expr_str.to_string(), expr))
 }
 
 /// Evaluate a compiled XPath expression.

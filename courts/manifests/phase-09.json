@@ -1,8 +1,8 @@
 {
   "tools": {
     "xsltproc": {
-      "date": "2026-08-31T21:00:33Z",
-      "candidate_commit": "5f0ab2eaed89f4e2a6793822d6539c2b85216dde",
+      "date": "2026-09-01T02:56:38Z",
+      "candidate_commit": "b5b4618a115b6d7d996ffe9febc9e11eab5fe88c",
       "oracle_identity": "Using libxml 21503-GITv2.15.3, libxslt 10145-GITv1.1.45 and libexslt 825-GITv1.1.45\nxsltproc was compiled against libxml 21501, libxslt 10145 and libexslt 825\nlibxslt 10145 was compiled against libxml 21501\nlibexslt 825 was compiled against libxml 21501",
       "pass": 21,
       "fail": 0,

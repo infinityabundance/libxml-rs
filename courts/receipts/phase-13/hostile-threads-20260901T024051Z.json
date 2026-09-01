@@ -1,0 +1,51 @@
+{
+ "court": "HOSTILE-THREADS",
+ "phase": "13",
+ "timestamp": "20260901T024051Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-threads-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2",
+   "-lpthread"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2",
+   "-lpthread"
+  ]
+ },
+ "verdict": "PASS",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": true,
+ "stderr_identical": true,
+ "oracle_stdout": "T0: good=50 bad=0 lastcode=89\nT1: good=50 bad=0 lastcode=89\nT2: good=50 bad=0 lastcode=89\nT3: good=50 bad=0 lastcode=89\nT4: good=50 bad=0 lastcode=89\nT5: good=50 bad=0 lastcode=89\nT2 codes=68->0\nT3 globals=ok\nT3-0: good=0 bad=0 lastcode=0\nT3-1: good=0 bad=0 lastcode=0\nT3-2: good=0 bad=0 lastcode=0\nT3-3: good=0 bad=0 lastcode=0\nT3-4: good=0 bad=0 lastcode=0\nT3-5: good=0 bad=0 lastcode=0\nHOSTILE-THREADS VERDICT PASS\n",
+ "candidate_stdout": "T0: good=50 bad=0 lastcode=89\nT1: good=50 bad=0 lastcode=89\nT2: good=50 bad=0 lastcode=89\nT3: good=50 bad=0 lastcode=89\nT4: good=50 bad=0 lastcode=89\nT5: good=50 bad=0 lastcode=89\nT2 codes=68->0\nT3 globals=ok\nT3-0: good=0 bad=0 lastcode=0\nT3-1: good=0 bad=0 lastcode=0\nT3-2: good=0 bad=0 lastcode=0\nT3-3: good=0 bad=0 lastcode=0\nT3-4: good=0 bad=0 lastcode=0\nT3-5: good=0 bad=0 lastcode=0\nHOSTILE-THREADS VERDICT PASS\n",
+ "oracle_stderr": "t:1: parser error : StartTag: invalid element name\n<<<\n ^\n",
+ "candidate_stderr": "t:1: parser error : StartTag: invalid element name\n<<<\n ^\n"
+}

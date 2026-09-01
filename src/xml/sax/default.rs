@@ -754,34 +754,65 @@ pub(crate) mod default_sax_handler {
                 256
             };
             if c.nodeNr >= max_depth {
-                let msg = std::ffi::CString::new(format!(
+                // UPSTREAM-PARITY (parserInternals.c nodePush): stream the
+                // error through the parser's fragment channel with the
+                // current input's file/line/col and source window
+                // (HOSTILE-FAILURE F1).
+                let msg = format!(
                     "Excessive depth in document: {}, use XML_PARSE_HUGE option\n",
                     c.nodeNr
-                ))
-                .unwrap_or_default();
+                );
+                let msg_c = std::ffi::CString::new(msg).unwrap_or_default();
+                let mut file_ptr = ptr::null();
+                let mut line = 0i32;
+                let mut col = 0i32;
+                let mut window: Option<(Vec<u8>, usize)> = None;
+                if !c.input.is_null() {
+                    let inp = &*c.input;
+                    file_ptr = inp.filename;
+                    line = inp.line;
+                    col = inp.col;
+                    if !inp.base.is_null()
+                        && !inp.end.is_null()
+                        && (inp.end as usize) >= (inp.base as usize)
+                    {
+                        // SAFETY: the input's base/end point into the live
+                        // parser InputBuffer (alive for the whole parse).
+                        let len = inp.end.offset_from(inp.base) as usize;
+                        let data = core::slice::from_raw_parts(inp.base, len);
+                        let byte_pos = if !inp.cur.is_null() {
+                            inp.cur.offset_from(inp.base) as usize
+                        } else {
+                            0
+                        };
+                        window = crate::xml::parser::tokenizer::window_at_data(data, byte_pos);
+                    }
+                }
                 c.errNo = crate::abi::types::XML_ERR_RESOURCE_LIMIT;
                 c.wellFormed = 0;
                 c.nbErrors = c.nbErrors.wrapping_add(1);
                 // UPSTREAM-PARITY (xmlCtxtVErr): RESOURCE_LIMIT is a
                 // catastrophic error — disableSAX = 2 really stops the parser.
                 c.disableSAX = 2;
-                crate::xml::errors::raise_error(
+                let delivery = crate::xml::errors::parser_delivery(ctxt);
+                let window_ref = window.as_ref().map(|(w, caret)| (w.as_slice(), *caret));
+                crate::xml::errors::raise_error_streamed(
                     ctxt as *mut c_void,
-                    ptr::null_mut(),
-                    ptr::null_mut(),
-                    ptr::null_mut(),
-                    ptr::null_mut(),
                     crate::abi::types::XML_FROM_PARSER,
                     crate::abi::types::XML_ERR_RESOURCE_LIMIT,
                     crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    file_ptr,
+                    line,
+                    col,
+                    ptr::null(),
+                    ptr::null(),
                     ptr::null(),
                     0,
-                    ptr::null(),
-                    ptr::null(),
-                    ptr::null(),
-                    0,
-                    0,
-                    msg.as_ptr(),
+                    msg_c.as_ptr(),
+                    window_ref,
+                    None,
+                    delivery,
+                    None,
                 );
                 return;
             }

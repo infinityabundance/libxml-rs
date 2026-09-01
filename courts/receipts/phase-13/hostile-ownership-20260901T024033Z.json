@@ -1,0 +1,49 @@
+{
+ "court": "HOSTILE-OWNERSHIP",
+ "phase": "13",
+ "timestamp": "20260901T024033Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-ownership-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "PASS",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": true,
+ "stderr_identical": true,
+ "oracle_stdout": "O1 newchild NULL parent=(nil) name=(null)\nO1 parent link=(null)\nO2 root=(ptr) child=c\nO2 after unlink: parent=(null) children=(null)\nO2 re-added=(same)\nO2 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <c/>\n</r>\n]\nO3 copy after free=(ptr)\nO3 copy name=r children=(set)\nO3 copy child=a content=(null)\nO4 replaced=(ptr) children=b\nO4 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <b/>\n</r>\n]\nO5 reader=(ptr)\nO5 node=r type=1\nO5 node=#text type=3\nO5 node=r type=15\nO5 read ret=0\nO5 reader freed\nO6 buffer=(ptr)\nO6 use=3 content=abc\nO6 after empty use=0\nO6 after addhead=Z\nO6 freed\nO7 a=a b=b\nO7 final: size=62 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <a/>\n  <b/>\n</r>\n]\nO8 copydoc after free=(ptr)\nO8 root=r children=(set)\nO9 moved=(ptr) doc-of-node=(set)\nO10 regs during parse=4\nO10 deregs during free=4\nO11 freed chain, remaining=c\nO11 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <c/>\n</r>\n]\nO12 all NULL-handle ops inert\nHOSTILE-OWNERSHIP VERDICT PASS\n",
+ "candidate_stdout": "O1 newchild NULL parent=(nil) name=(null)\nO1 parent link=(null)\nO2 root=(ptr) child=c\nO2 after unlink: parent=(null) children=(null)\nO2 re-added=(same)\nO2 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <c/>\n</r>\n]\nO3 copy after free=(ptr)\nO3 copy name=r children=(set)\nO3 copy child=a content=(null)\nO4 replaced=(ptr) children=b\nO4 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <b/>\n</r>\n]\nO5 reader=(ptr)\nO5 node=r type=1\nO5 node=#text type=3\nO5 node=r type=15\nO5 read ret=0\nO5 reader freed\nO6 buffer=(ptr)\nO6 use=3 content=abc\nO6 after empty use=0\nO6 after addhead=Z\nO6 freed\nO7 a=a b=b\nO7 final: size=62 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <a/>\n  <b/>\n</r>\n]\nO8 copydoc after free=(ptr)\nO8 root=r children=(set)\nO9 moved=(ptr) doc-of-node=(set)\nO10 regs during parse=4\nO10 deregs during free=4\nO11 freed chain, remaining=c\nO11 final: size=55 content=[<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r>\n  <c/>\n</r>\n]\nO12 all NULL-handle ops inert\nHOSTILE-OWNERSHIP VERDICT PASS\n",
+ "oracle_stderr": "",
+ "candidate_stderr": ""
+}

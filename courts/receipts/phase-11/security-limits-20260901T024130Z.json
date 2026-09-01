@@ -1,0 +1,33 @@
+{
+ "court": "SECURITY-LIMITS",
+ "phase": "11.1-V",
+ "timestamp": "20260901T024130Z",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "-I/usr/include/libxml2",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
+  "argv": [
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "PASS",
+ "oracle_stdout": "case billion-laughs: code=114\ncase billion-laughs-huge: code=114\ncase entity-loop: code=89\ncase deep-nesting: code=114\ncase deep-nesting-huge: code=76\ncase amplification-raised: code=114\ncase nonet-entity: ok\ncase ext-entity: EXTDATA\ncase xinclude: XIDATA\ncase catalog: load=0 resolve=http://resolved.example/x\n",
+ "candidate_stdout": "case billion-laughs: code=114\ncase billion-laughs-huge: code=114\ncase entity-loop: code=89\ncase deep-nesting: code=114\ncase deep-nesting-huge: code=76\ncase amplification-raised: code=114\ncase nonet-entity: ok\ncase ext-entity: EXTDATA\ncase xinclude: XIDATA\ncase catalog: load=0 resolve=http://resolved.example/x\n",
+ "oracle_stderr": "",
+ "candidate_stderr": "",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ }
+}

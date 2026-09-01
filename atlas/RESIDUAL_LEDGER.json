@@ -2,7 +2,7 @@
  "schema_version": 2,
  "generator": "tools/evidence/ledger_gen.py",
  "generated": "2026-08-31T21:50:00Z",
- "policy": "§70: Markdown generated from JSON; §71: every residual retains history after fixing. JSON is the only hand-maintained truth.",
+ "policy": "\u00a770: Markdown generated from JSON; \u00a771: every residual retains history after fixing. JSON is the only hand-maintained truth.",
  "phases": [
   "0",
   "8",
@@ -37,7 +37,8 @@
   "11.1-Z",
   "11.1-Z.2",
   "11.1-Z.3",
-  "12"
+  "12",
+  "13"
  ],
  "ledger": [
   {
@@ -51,8 +52,8 @@
    ],
    "discovery_date": "2026-08-20",
    "fixed_date": "2026-08-20",
-   "root_cause": "The resolve_origin function used the original source line number from #line directives as dict keys. When multiple directives shared the same original line number, they overwrote each other, causing incorrect file attribution. Furthermore, the #line mapping approach is fundamentally flawed because loc.line from clang's AST is in the original source file coordinate space, while #line directive positions are in the preprocessed output coordinate space — these are different and cannot be compared directly.",
-   "fix": "Replaced the #line mapping approach entirely. The new resolve_origin uses clang's AST location fields directly: (1) loc.file for type declarations from included files, (2) loc.includedFrom presence to detect function declarations from included files (filtered out — they'll be captured when their own header is processed), (3) absence of both for direct declarations in the main file.",
+   "root_cause": "The resolve_origin function used the original source line number from #line directives as dict keys. When multiple directives shared the same original line number, they overwrote each other, causing incorrect file attribution. Furthermore, the #line mapping approach is fundamentally flawed because loc.line from clang's AST is in the original source file coordinate space, while #line directive positions are in the preprocessed output coordinate space \u2014 these are different and cannot be compared directly.",
+   "fix": "Replaced the #line mapping approach entirely. The new resolve_origin uses clang's AST location fields directly: (1) loc.file for type declarations from included files, (2) loc.includedFrom presence to detect function declarations from included files (filtered out \u2014 they'll be captured when their own header is processed), (3) absence of both for direct declarations in the main file.",
    "evidence": "45 system functions leaked into header inventory; most HTML functions (44+) were missing; tree functions were missing.",
    "classification": "CANDIDATE_BUG",
    "history": [
@@ -356,7 +357,7 @@
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxslt 1.1.x (core XPath functions always available during transforms)",
-   "root_cause": "register_xslt_functions registered only the XSLT extension functions (document(), key(), …) and EXSLT, never the XPath 1.0 core function library. Every XPath function call (count(library/book), substring('hello',1,2), …) failed evaluation with an unknown-function error, surfacing as 'Invalid expression' and empty output.",
+   "root_cause": "register_xslt_functions registered only the XSLT extension functions (document(), key(), \u2026) and EXSLT, never the XPath 1.0 core function library. Every XPath function call (count(library/book), substring('hello',1,2), \u2026) failed evaluation with an unknown-function error, surfacing as 'Invalid expression' and empty output.",
    "fix": "Register crate::xml::xpath::functions::core_functions() in the transform context before the XSLT-specific functions.",
    "regression_courts": [
     "test_xslt_core_functions_in_value_of"
@@ -384,7 +385,7 @@
    ],
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
-   "oracle_versions": "libxslt 1.1.x (XSLT 1.0 §7.6.2)",
+   "oracle_versions": "libxslt 1.1.x (XSLT 1.0 \u00a77.6.2)",
    "root_cause": "Literal result element attributes were copied verbatim (id=\"{@id}\" appeared literally in the output); xsl:element/xsl:attribute/xsl:processing-instruction names were not AVT-evaluated either.",
    "fix": "Implemented eval_avt ({{/}} escapes, {expr} evaluation via eval_xpath, unmatched { literal) and wired it into literal attributes and the name/namespace attributes of xsl:element, xsl:attribute, and xsl:processing-instruction.",
    "regression_courts": [
@@ -417,8 +418,8 @@
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxslt 1.1.x (RVT semantics, exsltCommon.c)",
-   "root_cause": "(1) compile_variable set var->tree = inst->children — nodes owned by the stylesheet document; xsltFreeStackElem freed them, and xsltFreeStylesheet freed them again (double-free / heap corruption). (2) Inline variable content was flattened to a string, so exsl:node-set($var)/path navigation returned nothing.",
-   "fix": "xsltFreeStackElem no longer frees the stylesheet-owned tree. register_global_value deep-copies inline content into a context-owned RVT document registered in the docCache (freed exactly once at context teardown, after the XPath context) and binds the variable to a node-set containing the RVT document node — matching upstream xmlXPathNewValueTree.",
+   "root_cause": "(1) compile_variable set var->tree = inst->children \u2014 nodes owned by the stylesheet document; xsltFreeStackElem freed them, and xsltFreeStylesheet freed them again (double-free / heap corruption). (2) Inline variable content was flattened to a string, so exsl:node-set($var)/path navigation returned nothing.",
+   "fix": "xsltFreeStackElem no longer frees the stylesheet-owned tree. register_global_value deep-copies inline content into a context-owned RVT document registered in the docCache (freed exactly once at context teardown, after the XPath context) and binds the variable to a node-set containing the RVT document node \u2014 matching upstream xmlXPathNewValueTree.",
    "regression_courts": [
     "test_xslt_variable_inline_content_rtf",
     "test_xslt_exsl_node_set_on_rtf"
@@ -447,8 +448,8 @@
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxml2 2.x (xmlNodeGetContent)",
-   "root_cause": "For element nodes, node_get_content concatenated only direct text/CDATA children, so <book><title>Rust</title></book> had an empty string-value and <library>…</library> only whitespace.",
-   "fix": "Recurse into element children so the string-value is the concatenation of all descendant text nodes (XPath 1.0 §4.2 semantics).",
+   "root_cause": "For element nodes, node_get_content concatenated only direct text/CDATA children, so <book><title>Rust</title></book> had an empty string-value and <library>\u2026</library> only whitespace.",
+   "fix": "Recurse into element children so the string-value is the concatenation of all descendant text nodes (XPath 1.0 \u00a74.2 semantics).",
    "regression_courts": [
     "test_node_get_content_recurses_descendants",
     "test_xslt_core_functions_in_value_of"
@@ -537,7 +538,7 @@
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxslt 1.1.45 (differential xsltproc corpus)",
    "root_cause": "process_if/process_choose tested (*obj).boolval, which is only valid for boolean objects; node-set tests (test=\"author\"), numbers, and strings always converted to false.",
-   "fix": "Added xpath_obj_boolean applying XPath 1.0 §4.3 boolean conversion (node-set non-empty, number non-zero/non-NaN, string non-empty).",
+   "fix": "Added xpath_obj_boolean applying XPath 1.0 \u00a74.3 boolean conversion (node-set non-empty, number non-zero/non-NaN, string non-empty).",
    "regression_courts": [
     "test_xslt_if_node_set_test",
     "CLI-XSLTPROC-0006"
@@ -567,7 +568,7 @@
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxslt 1.1.45 / libxml2 2.15.3 (differential corpus)",
-   "root_cause": "node_string_value treated type 13 as attribute — but 13 is XML_HTML_DOCUMENT_NODE; attributes are type 2 and their value lives in the first text child (not content). Every string(@attr), @attr='x' predicate, and attribute-based sort returned empty.",
+   "root_cause": "node_string_value treated type 13 as attribute \u2014 but 13 is XML_HTML_DOCUMENT_NODE; attributes are type 2 and their value lives in the first text child (not content). Every string(@attr), @attr='x' predicate, and attribute-based sort returned empty.",
    "fix": "Attributes (type 2) read the first text child; type 13 handled as a document node (descendant text).",
    "regression_courts": [
     "test_xslt_attribute_string_value",
@@ -667,8 +668,8 @@
    "discovery_date": "2026-08-29",
    "fixed_date": "2026-08-29",
    "oracle_versions": "libxslt 1.1.45 (differential corpus ct.xsl)",
-   "root_cause": "Local xsl:variable/xsl:param and xsl:with-param were pushed onto the transform variable/parameter stacks only — the XPath evaluator reads the internal XPathContext.variables hash, so $name resolved empty. process_param checked the wrong stack for passed values.",
-   "fix": "xsltPushVariable/xsltPushParam register their values in the XPath context hash (unregistered on pop); process_param consults the hash; object_to_xpathvalue handles XPATH_XSLT_TREE (RTF → node-set of the document node) so local RTF variables stringify and remain navigable.",
+   "root_cause": "Local xsl:variable/xsl:param and xsl:with-param were pushed onto the transform variable/parameter stacks only \u2014 the XPath evaluator reads the internal XPathContext.variables hash, so $name resolved empty. process_param checked the wrong stack for passed values.",
+   "fix": "xsltPushVariable/xsltPushParam register their values in the XPath context hash (unregistered on pop); process_param consults the hash; object_to_xpathvalue handles XPATH_XSLT_TREE (RTF \u2192 node-set of the document node) so local RTF variables stringify and remain navigable.",
    "regression_courts": [
     "test_xslt_call_template_with_params",
     "CLI-XSLTPROC-0010"
@@ -731,7 +732,7 @@
    "oracle_versions": "libxml2 2.15.3 (xmllint --debug on entity-containing documents)",
    "root_cause": "Upstream parses a referenced entity's content into ent->children (xmlCtxtParseEntity) and xmlCtxtDumpEntityDecl dumps that tree; our entity declarations store only the raw content string, so the debug dump synthesizes a TEXT compact node for plain content and nothing for markup content. The document tree, serialization and XPath are unaffected (the --noent re-parse path builds the correct in-document nodes).",
    "observable_residual": "xmllint --debug on a document that references an entity whose content contains markup shows the raw content= line but not the parsed child element under ENTITYDECL.",
-   "triangulation": "E-004 (atlas/SEMANTIC_EPOCHS.md): the historical matrix shows the entity-content child node changed TEXT → TEXT compact at 2.13.0 (commit 8d04f0ee \"tree: Refactor text node updates\", first release v2.13.0). The crate's synthesized TEXT compact node therefore matches the current (2.13.0+) epoch, i.e. the 2.15.3 system oracle, not the pre-2.13 behavior. The remaining gap (markup entity content not parsed into children) is unchanged in every upstream version from 2.7.8 to 2.15.3.",
+   "triangulation": "E-004 (atlas/SEMANTIC_EPOCHS.md): the historical matrix shows the entity-content child node changed TEXT \u2192 TEXT compact at 2.13.0 (commit 8d04f0ee \"tree: Refactor text node updates\", first release v2.13.0). The crate's synthesized TEXT compact node therefore matches the current (2.13.0+) epoch, i.e. the 2.15.3 system oracle, not the pre-2.13 behavior. The remaining gap (markup entity content not parsed into children) is unchanged in every upstream version from 2.7.8 to 2.15.3.",
    "regression_courts": [
     "CLI-XMLLINT-0033",
     "CLI-XMLLINT-0034"
@@ -766,7 +767,7 @@
    "oracle_versions": "libxml2 2.15.3 (xmllint --debug on <a p=\"AT&amp;T\"/>)",
    "root_cause": "Upstream attribute values containing entity/character references take the xmlNodeParseAttValue path and are never compact; our tokenizer decodes references before the SAX layer (substitute_refs), losing the \"had references\" signal, so short decoded values are marked compact.",
    "observable_residual": "TEXT compact vs upstream TEXT for entity-containing attribute values in --debug output. Content, serialization and XPath results are identical.",
-   "triangulation": "The matrix's attr-entity case (<a p=\"AT&amp;T\">) is byte-identical across the entire 2.7.8 → 2.15.3 span — upstream never changed this observable. The crate's compact marking of entity-containing attribute values is a divergence from every epoch, not a version drift.",
+   "triangulation": "The matrix's attr-entity case (<a p=\"AT&amp;T\">) is byte-identical across the entire 2.7.8 \u2192 2.15.3 span \u2014 upstream never changed this observable. The crate's compact marking of entity-containing attribute values is a divergence from every epoch, not a version drift.",
    "regression_courts": [
     "CLI-XMLLINT-0033"
    ],
@@ -799,7 +800,7 @@
    "oracle_versions": "libxml2 2.15.3 (xmllint on a document referencing a markup entity in an attribute value)",
    "root_cause": "Upstream reports the XML_ERR_LT_IN_ATTRIBUTE fatal error twice (parser + validation paths) with the caret at the &; ours reports it once with the caret past the start tag. The message text and exit code (4) match.",
    "observable_residual": "Single diagnostic vs upstream's double diagnostic; caret column differs by one.",
-   "triangulation": "E-005 (atlas/SEMANTIC_EPOCHS.md): the matrix's attr-markup-entity case shows a real upstream epoch: reported once with exit 1 from 2.7.8 → 2.12.6, reported twice with exit 4 from 2.13.0 → 2.15.3 (boundary pinned to 2.13.0; correlates with NEWS 2.13.0 \"xmllint: Rework parsing\"/error consolidation). The crate's single report is the pre-2.13 epoch while its exit code 4 is the 2.13+ epoch — a hybrid of two epochs. The caret column differs from all upstream versions (ours points one column right of upstream's).",
+   "triangulation": "E-005 (atlas/SEMANTIC_EPOCHS.md): the matrix's attr-markup-entity case shows a real upstream epoch: reported once with exit 1 from 2.7.8 \u2192 2.12.6, reported twice with exit 4 from 2.13.0 \u2192 2.15.3 (boundary pinned to 2.13.0; correlates with NEWS 2.13.0 \"xmllint: Rework parsing\"/error consolidation). The crate's single report is the pre-2.13 epoch while its exit code 4 is the 2.13+ epoch \u2014 a hybrid of two epochs. The caret column differs from all upstream versions (ours points one column right of upstream's).",
    "regression_courts": [
     "CLI-XMLLINT-0034"
    ],
@@ -816,7 +817,7 @@
      "note": "fixed in the 11.1-X residual closure loop; CLI-XMLLINT-0034 byte-identical (57/57 CLI courts PASS)"
     }
    ],
-   "fix": "11.1-X: substitute_refs now scans the entire entity value for '<' from the value start position and reports XML_ERR_LT_IN_ATTRIBUTE twice (parser + validation paths) with the caret at the '&' when XML_PARSE_NOENT is not set, once with --noent — matching the 2.13+ epoch (E-005). CLI-XMLLINT-0034 regresses the observable.",
+   "fix": "11.1-X: substitute_refs now scans the entire entity value for '<' from the value start position and reports XML_ERR_LT_IN_ATTRIBUTE twice (parser + validation paths) with the caret at the '&' when XML_PARSE_NOENT is not set, once with --noent \u2014 matching the 2.13+ epoch (E-005). CLI-XMLLINT-0034 regresses the observable.",
    "lesson": "Diagnostic counts and caret positions are epoch-pinned observables: the 2.13.0 error consolidation doubled this report and moved the caret; both must match the current oracle."
   },
   {
@@ -1088,7 +1089,7 @@
    ],
    "discovery_date": "2026-08-29",
    "root_cause": "The default candidate allocator does not maintain upstream's per-block metadata table (xmlMallocLoc-style block list). Consequently xmlMemSize returns 0, the *Loc variants accept-and-ignore file/line, and xmlMemDisplayLast/xmlMemoryDump print aggregate counters instead of upstream's per-block dump.",
-   "fix": "11.1-J allocator instrumentation evolved into the 11.1-Z.3 final shape: the DEFAULT allocator (the five exported variables) is plain libc malloc/realloc/free/strdup with no tracking — byte-identical with upstream 2.15.0 globals.c defaults (xmlMalloc = malloc etc.), so xmlMemSize returns 0 and xmlMemUsed/xmlMemBlocks are 0 under the default (R-000178). The debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants) maintains the upstream-style per-block registry (ptr -> size/file/line): xmlMemSize returns the recorded size for debug-surface blocks, the *Loc variants record the allocation site and accept-and-ignore file/line exactly like upstream's ATTRIBUTE_UNUSED parameters, and the counters track the debug surface — matching upstream's MEMHDR debug allocator (verified byte-identical with the oracle). xmlMemDisplayLast/xmlMemShow/xmlMemDisplay/xmlMemoryDump are no-ops (upstream 2.15.0 removed the feature).",
+   "fix": "11.1-J allocator instrumentation evolved into the 11.1-Z.3 final shape: the DEFAULT allocator (the five exported variables) is plain libc malloc/realloc/free/strdup with no tracking \u2014 byte-identical with upstream 2.15.0 globals.c defaults (xmlMalloc = malloc etc.), so xmlMemSize returns 0 and xmlMemUsed/xmlMemBlocks are 0 under the default (R-000178). The debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants) maintains the upstream-style per-block registry (ptr -> size/file/line): xmlMemSize returns the recorded size for debug-surface blocks, the *Loc variants record the allocation site and accept-and-ignore file/line exactly like upstream's ATTRIBUTE_UNUSED parameters, and the counters track the debug surface \u2014 matching upstream's MEMHDR debug allocator (verified byte-identical with the oracle). xmlMemDisplayLast/xmlMemShow/xmlMemDisplay/xmlMemoryDump are no-ops (upstream 2.15.0 removed the feature).",
    "evidence": [
     "src/abi/allocator.rs"
    ],
@@ -1207,8 +1208,8 @@
     "courts/suites/data-abi/data-globals-probe.c"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab — upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions — documented safe divergence (stable Rust cannot define variadic extern fns).",
-   "fix": "All 11 remaining data symbols are now exported and court-verified byte-identical against the oracle DSO. (1) Added _xmlSAXHandlerV1, xmlChSRange/xmlChLRange/xmlChRangeGroup mirrors to structs.rs (measured by the RUST-MIRROR-ABI court, 0 mismatches). (2) Created tools/archaeology/gen_chvalid_tables.py — a deterministic generator extracting the char-class tables verbatim from upstream codegen/ranges.inc (sha256 bound) into src/xml/unicode_tables.rs (xmlIsPubidChar_tab[256] + the six xmlIs*Group range tables, counts verified against the declared values). (3) Created src/xml/chvalid.rs implementing xmlCharInRange, xmlIs{BaseChar,Blank,Char,Combining,Digit,Extender,Ideographic,PubidChar}, xmlIsLetter and xmlIsBlankNode with the exact upstream Q-macro semantics. (4) Exported xmlDefaultSAXHandler/htmlDefaultSAXHandler (xmlSAXHandlerV1) and xmlDefaultSAXLocator as #[no_mangle] consts reproducing the upstream globals.c initializer lists exactly — the differential court caught an initializer error (htmlDefaultSAXHandler reference/externalSubset slots) before sealing. (5) Added the xmlParserError/Warning/ValidityError/ValidityWarning legacy SAX handlers (non-variadic documented divergence) referenced by the handler structs. (6) xmlLastError: deep-copy mirror of the thread-local error state (sync on raise, free on reset, upstream xmlResetError semantics). (7) New DATA-GLOBALS-001 court (tools/abi/data_globals_probe.py + committed C probe) compiles the probe against the system libxml2 and the candidate DSO and requires byte-identical output: pubid table hex, every range group entry, SAX handler slot patterns, xmlLastError zero state, FNV-1a hashes of the nine xmlIs* functions over the full BMP + supplementary samples, xmlIsBlankNode behavior. Verdict PASS (oracle sha256 e7575963… == candidate). PARITY_OBLIGATIONS.json regenerated: DATA MISSING 11 → 0 (both projects).",
+   "root_cause": "Upstream exposes ~45 public data globals (xmlDoValidityCheckingDefaultValue, xmlLoadExtDtdDefaultValue, xmlKeepBlanksDefaultValue, xmlGenericError, xmlStructuredError, xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, xmlXPathNAN/PINF/NINF, char-class tables, xmlStringText, xsltMaxDepth/xsltMaxVars, ...). The candidate keeps parser defaults in Rust atomics and has not exported the C-visible globals; downstream code that reads/writes them directly (e.g. xmlDoValidityCheckingDefaultValue = 1) would fail to link. 5 data symbols (xmlFree/xmlMalloc/xmlMallocAtomic/xmlMemStrdup/xmlRealloc) are already exported. CLOSED SO FAR: all parser-default ints, error callbacks/contexts, buffer globals, static strings, XPath NaN/Inf, libxslt globals (xsltLibxmlVersion, xsltGenericError[Context], xsltGenericDebugContext, xsltExtMarker, xsltDocDefaultLoader, xsltMaxDepth=30000 fixed from 3000, xsltMaxVars), and the I/O filename callbacks are exported as #[no_mangle] statics wired to the parser-default accessors (single source of truth). Remaining: xmlDefaultSAXHandler/htmlDefaultSAXHandler/xmlDefaultSAXLocator (const-initialized struct instances), the 7 char-class tables (xmlIs*Group, xmlIsPubidChar_tab \u2014 upstream table data must be extracted from xmlunicode.c), and xmlLastError (conflicts with the thread-local error model; needs a global mirror synced by the error module). xsltGenericError/xsltDocDefaultLoader default to NULL instead of upstream's variadic default functions \u2014 documented safe divergence (stable Rust cannot define variadic extern fns).",
+   "fix": "All 11 remaining data symbols are now exported and court-verified byte-identical against the oracle DSO. (1) Added _xmlSAXHandlerV1, xmlChSRange/xmlChLRange/xmlChRangeGroup mirrors to structs.rs (measured by the RUST-MIRROR-ABI court, 0 mismatches). (2) Created tools/archaeology/gen_chvalid_tables.py \u2014 a deterministic generator extracting the char-class tables verbatim from upstream codegen/ranges.inc (sha256 bound) into src/xml/unicode_tables.rs (xmlIsPubidChar_tab[256] + the six xmlIs*Group range tables, counts verified against the declared values). (3) Created src/xml/chvalid.rs implementing xmlCharInRange, xmlIs{BaseChar,Blank,Char,Combining,Digit,Extender,Ideographic,PubidChar}, xmlIsLetter and xmlIsBlankNode with the exact upstream Q-macro semantics. (4) Exported xmlDefaultSAXHandler/htmlDefaultSAXHandler (xmlSAXHandlerV1) and xmlDefaultSAXLocator as #[no_mangle] consts reproducing the upstream globals.c initializer lists exactly \u2014 the differential court caught an initializer error (htmlDefaultSAXHandler reference/externalSubset slots) before sealing. (5) Added the xmlParserError/Warning/ValidityError/ValidityWarning legacy SAX handlers (non-variadic documented divergence) referenced by the handler structs. (6) xmlLastError: deep-copy mirror of the thread-local error state (sync on raise, free on reset, upstream xmlResetError semantics). (7) New DATA-GLOBALS-001 court (tools/abi/data_globals_probe.py + committed C probe) compiles the probe against the system libxml2 and the candidate DSO and requires byte-identical output: pubid table hex, every range group entry, SAX handler slot patterns, xmlLastError zero state, FNV-1a hashes of the nine xmlIs* functions over the full BMP + supplementary samples, xmlIsBlankNode behavior. Verdict PASS (oracle sha256 e7575963\u2026 == candidate). PARITY_OBLIGATIONS.json regenerated: DATA MISSING 11 \u2192 0 (both projects).",
    "evidence": [
     "courts/receipts/phase-11/data-globals-20260829T203735Z.json",
     "courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json",
@@ -1227,7 +1228,7 @@
      "note": "closed: 11 data symbols exported with upstream layout and initial values; DATA-GLOBALS-001 differential court byte-identical vs the oracle DSO; obligations regenerated (DATA MISSING = 0). Follow-up (11.1-K): the remaining NULL-default divergence for xsltGenericError/xmlGenericError was closed with the variadic asm shims (R-000161); xsltDocDefaultLoader remains NULL (loader path documented separately). (FIXED->FIXED tail merged by the 11.1-X ledger integrity repair.)"
     }
    ],
-   "lesson": "Data-global parity needs value-level differential evidence, not just symbol presence: the DATA-GLOBALS-001 court compares the actual table bytes, handler slot patterns and function results against the oracle DSO. Symbol kind/size are covered by nm/readelf plus the three-way mirror court; initial values are covered by the differential probe. Function-pointer initializers must be transcribed from the upstream initializer lists exactly — a wrong NULL/non-NULL slot was caught only by the differential court."
+   "lesson": "Data-global parity needs value-level differential evidence, not just symbol presence: the DATA-GLOBALS-001 court compares the actual table bytes, handler slot patterns and function results against the oracle DSO. Symbol kind/size are covered by nm/readelf plus the three-way mirror court; initial values are covered by the differential probe. Function-pointer initializers must be transcribed from the upstream initializer lists exactly \u2014 a wrong NULL/non-NULL slot was caught only by the differential court."
   },
   {
    "id": "R-000136",
@@ -1277,7 +1278,7 @@
    ],
    "discovery_date": "2026-08-29",
    "root_cause": "Modern libxml2 keeps these as genuine no-ops (subsystems initialize lazily; xmlDefaultSAXHandlerInit fills a global handler the candidate builds on demand; xmlCheckThreadLocalStorage always passes with Rust thread-locals). The candidate exports them with matching no-op behavior; the only observable difference is xmlDefaultSAXHandlerInit not populating the (still missing) xmlDefaultSAXHandler global, tracked in R-000135.",
-   "fix": "11.1-X: the deprecated init/cleanup entry points are dispositioned as intentional safe divergences with evidence: each one is exported and its body reproduces the oracle's observable behaviour. Upstream bodies are themselves empty or near-empty (xmlInitializeGlobalState, xmlInitializeDict, xmlInitializePredefinedEntities, xmlCleanupPredefinedEntities, xmlDefaultSAXHandlerInit, xmlCheckThreadLocalStorage), so the candidate's no-op is the oracle's behaviour, not a divergence. The PARITY_OBLIGATIONS STUB census (15 libxml2 + 1 libexslt) records the export+body disposition for each symbol; the remaining no-op set (htmlDefaultSAXHandlerInit, htmlInitAutoClose, htmlParseCharRef, xmlFileMatch, xmlParserInputRead, xmlDictCleanup, xmlRelaxNGCleanupTypes, xmlSchemaCleanupTypes, xmlSprintfElementContent, xmlXPathInit, xmlXPathRegisterAllFunctions) matches the corresponding upstream empty/trivial bodies byte-for-byte in observable effect.\n\n11.1-Z: the disposition is completed for the full 14-symbol no-op set. htmlElementAllowedHere (upstream constant return 1), xmlRelaxNGInitTypes (upstream empty after lazy init; candidate returns 0) and xmlSchemaFreeWildcard (the candidate never allocates wildcard objects, so the free is a safe no-op) are now recorded alongside the other eleven in PARITY_OBLIGATIONS DOCUMENTED_NOOPS, each mapped to this residual. The STUB census therefore drops to 0 for libxml2/libxslt/libexslt — no externally relevant stubs remain (11.1-Z acceptance).",
+   "fix": "11.1-X: the deprecated init/cleanup entry points are dispositioned as intentional safe divergences with evidence: each one is exported and its body reproduces the oracle's observable behaviour. Upstream bodies are themselves empty or near-empty (xmlInitializeGlobalState, xmlInitializeDict, xmlInitializePredefinedEntities, xmlCleanupPredefinedEntities, xmlDefaultSAXHandlerInit, xmlCheckThreadLocalStorage), so the candidate's no-op is the oracle's behaviour, not a divergence. The PARITY_OBLIGATIONS STUB census (15 libxml2 + 1 libexslt) records the export+body disposition for each symbol; the remaining no-op set (htmlDefaultSAXHandlerInit, htmlInitAutoClose, htmlParseCharRef, xmlFileMatch, xmlParserInputRead, xmlDictCleanup, xmlRelaxNGCleanupTypes, xmlSchemaCleanupTypes, xmlSprintfElementContent, xmlXPathInit, xmlXPathRegisterAllFunctions) matches the corresponding upstream empty/trivial bodies byte-for-byte in observable effect.\n\n11.1-Z: the disposition is completed for the full 14-symbol no-op set. htmlElementAllowedHere (upstream constant return 1), xmlRelaxNGInitTypes (upstream empty after lazy init; candidate returns 0) and xmlSchemaFreeWildcard (the candidate never allocates wildcard objects, so the free is a safe no-op) are now recorded alongside the other eleven in PARITY_OBLIGATIONS DOCUMENTED_NOOPS, each mapped to this residual. The STUB census therefore drops to 0 for libxml2/libxslt/libexslt \u2014 no externally relevant stubs remain (11.1-Z acceptance).",
    "evidence": [
     "atlas/PARITY_OBLIGATIONS.json (EXPORTED_NOOP)"
    ],
@@ -1313,7 +1314,7 @@
     "src/xml/tree/mod.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "The ABI evidence system proved upstream-C-header ↔ candidate-C-header parity but never proved implementation-representation parity: the C ABI court compiles probes against C headers only and does not inspect the Rust #[repr(C)] mirrors. The Rust _xmlElement had 7 fields (56 bytes) while the candidate header and upstream tree.h define 14 fields (104 bytes). Every element declaration allocated via xmlMalloc(sizeof(_xmlElement)) was therefore 48 bytes too small; a C consumer reading elem->content at its real offset would read beyond the allocation.",
+   "root_cause": "The ABI evidence system proved upstream-C-header \u2194 candidate-C-header parity but never proved implementation-representation parity: the C ABI court compiles probes against C headers only and does not inspect the Rust #[repr(C)] mirrors. The Rust _xmlElement had 7 fields (56 bytes) while the candidate header and upstream tree.h define 14 fields (104 bytes). Every element declaration allocated via xmlMalloc(sizeof(_xmlElement)) was therefore 48 bytes too small; a C consumer reading elem->content at its real offset would read beyond the allocation.",
    "fix": "Rewrote the Rust mirror with the exact upstream layout (_private, type, name, children, last, parent, next, prev, doc, etype, content, attributes, prefix, contModel); reworked add_element_decl/copy_element/free_element for the new field set (etype now carries EMPTY/ANY/MIXED/ELEMENT; type_ is XML_ELEMENT_DECL); switched all readers from type_ to etype; free_element now releases contModel via the validation content-model NFA free. Also added opaque xmlID/xmlRef mirror structs. Committed as 4090561b.",
    "evidence": [
     "src/abi/structs.rs",
@@ -1327,7 +1328,7 @@
      "status": "FIXED"
     }
    ],
-   "lesson": "The C-header ABI court is blind to the Rust implementation representation. A permanent three-way court (upstream C header ↔ candidate C header ↔ Rust repr(C)) is now required so this class of defect is caught by construction."
+   "lesson": "The C-header ABI court is blind to the Rust implementation representation. A permanent three-way court (upstream C header \u2194 candidate C header \u2194 Rust repr(C)) is now required so this class of defect is caught by construction."
   },
   {
    "id": "R-000140",
@@ -1351,7 +1352,7 @@
    ],
    "discovery_date": "2026-08-29",
    "root_cause": "The candidate's libxslt Rust mirrors were authored against an invented layout rather than the upstream C headers. The RUST-MIRROR-ABI court (first run, commit ef00daf) measured 121 mismatches across eight structs: _xsltStylesheet (280 vs 440 bytes), _xsltTransformContext, _xsltTemplate (missing the match field entirely in the mirror's field order), _xsltStackElem (invented style/inst fields; real comp/computed/level/context fields absent), _xsltKeyDef (missing match/use), _xsltKeyTable (invented table/nb/max/depth array fields; real struct is next/name/nameURI/keys), _xsltDocument and _xsltDecimalFormat. A C consumer traversing these fields directly would read the wrong offsets. This is the same defect class as _xmlElement (R-000139), now caught for the whole libxslt family by the permanent three-way mirror court.",
-   "fix": "Rewrote all eight mirrors from the authoritative clang -fdump-record-layouts-complete field lists of the candidate C headers (verbatim 1.1.42) and remapped every downstream accessor: transform context (sec/error/errctx, extFunctions/extElements, output, maxTemplateDepth/maxTemplateVars, varsTab stack, initialContextNode/initialContextDoc, no paramsTab/keyTables/contextSize fields — those live on xpathCtxt or the document wrapper), template (match string in r#match, compiled pattern carried in params, import depth in position), stylesheet (no params field; caller params merge into variables with XSLT_VAR_PARAM; preserve-space head in nsDefs; XSLT_REFACTORED-gated compCtxt/principalData omitted because the oracle DSO ships with XSLT_REFACTORED disabled), key tables (candidate array storage moved behind the keys void* slot as a private sidecar), stack elements (no style field), decimal formats (nsUri is const), plus document wrapper (main/doc/keys/includes/preproc/nbKeysComputed) and the whole xslt module compile+test pass. Committed with the mirror PASS receipt.",
+   "fix": "Rewrote all eight mirrors from the authoritative clang -fdump-record-layouts-complete field lists of the candidate C headers (verbatim 1.1.42) and remapped every downstream accessor: transform context (sec/error/errctx, extFunctions/extElements, output, maxTemplateDepth/maxTemplateVars, varsTab stack, initialContextNode/initialContextDoc, no paramsTab/keyTables/contextSize fields \u2014 those live on xpathCtxt or the document wrapper), template (match string in r#match, compiled pattern carried in params, import depth in position), stylesheet (no params field; caller params merge into variables with XSLT_VAR_PARAM; preserve-space head in nsDefs; XSLT_REFACTORED-gated compCtxt/principalData omitted because the oracle DSO ships with XSLT_REFACTORED disabled), key tables (candidate array storage moved behind the keys void* slot as a private sidecar), stack elements (no style field), decimal formats (nsUri is const), plus document wrapper (main/doc/keys/includes/preproc/nbKeysComputed) and the whole xslt module compile+test pass. Committed with the mirror PASS receipt.",
    "evidence": [
     "courts/receipts/phase-11/rust-mirror-abi-2026-08-29T20:08:38Z.json",
     "src/abi/structs.rs"
@@ -1513,7 +1514,7 @@
     "atlas/RESIDUAL_LEDGER.md"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "canonical_md groups residuals by phase but only renders phases present in the JSON 'phases' display list. Residuals labeled 11.1-G / 11.1-H / 11.1-I (21 of them, including R-000139 and R-000140) were silently omitted from the generated Markdown while run_check's byte-identity comparison passed vacuously against the equally-stale committed file. The evidence-integrity court therefore certified a document that was missing a third of the ledger. This is the same defect class as the original §70 violation (Markdown vs JSON drift): the generator itself had a silent-omission path.",
+   "root_cause": "canonical_md groups residuals by phase but only renders phases present in the JSON 'phases' display list. Residuals labeled 11.1-G / 11.1-H / 11.1-I (21 of them, including R-000139 and R-000140) were silently omitted from the generated Markdown while run_check's byte-identity comparison passed vacuously against the equally-stale committed file. The evidence-integrity court therefore certified a document that was missing a third of the ledger. This is the same defect class as the original \u00a770 violation (Markdown vs JSON drift): the generator itself had a silent-omission path.",
    "fix": "Added the 11.1-G / 11.1-H / 11.1-I phase labels to the canonical phases list and added a run_check validation that fails when any residual's phase is absent from the list, so a future phase label can never silently disappear from the generated document again. Regenerated the Markdown (49/49 residuals render) and re-passed the evidence-integrity court.",
    "evidence": [
     "tools/evidence/ledger_gen.py",
@@ -1527,7 +1528,7 @@
      "status": "FIXED"
     }
    ],
-   "lesson": "A byte-identity check between generated and committed documents only proves determinism of the generator — it proves nothing about generator completeness. Any filtering step inside the generator (here: phase allow-list) must be validated by the court itself, or omitted content passes certification silently. The court must assert that every record in the source of truth appears in the generated artifact."
+   "lesson": "A byte-identity check between generated and committed documents only proves determinism of the generator \u2014 it proves nothing about generator completeness. Any filtering step inside the generator (here: phase allow-list) must be validated by the court itself, or omitted content passes certification silently. The court must assert that every record in the source of truth appears in the generated artifact."
   },
   {
    "id": "R-000147",
@@ -1554,7 +1555,7 @@
      "status": "FIXED"
     }
    ],
-   "lesson": "The tree's namespace model is populated by the SAX2 default handler, and the handler must resolve attribute prefixes against the parser's namespace scope, not the node's current tree linkage — the element is not in the tree yet when its attributes are built. A missing attr->ns silently degrades many higher-level APIs (ns lookup, reader attribute URI, XPath) without any visible parse failure."
+   "lesson": "The tree's namespace model is populated by the SAX2 default handler, and the handler must resolve attribute prefixes against the parser's namespace scope, not the node's current tree linkage \u2014 the element is not in the tree yet when its attributes are built. A missing attr->ns silently degrades many higher-level APIs (ns lookup, reader attribute URI, XPath) without any visible parse failure."
   },
   {
    "id": "R-000148",
@@ -1566,7 +1567,7 @@
     "src/xml/reader/mod.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "The extended READER-001 probe showed the oracle reporting attr name=x:a for a namespaced attribute while the candidate reported name=a. Upstream xmlTextReaderConstName returns constQString(reader, node->ns->prefix, node->name) — i.e. 'prefix:localname' — for any element or attribute whose namespace has a prefix; the tree stores only the local name in node->name.",
+   "root_cause": "The extended READER-001 probe showed the oracle reporting attr name=x:a for a namespaced attribute while the candidate reported name=a. Upstream xmlTextReaderConstName returns constQString(reader, node->ns->prefix, node->name) \u2014 i.e. 'prefix:localname' \u2014 for any element or attribute whose namespace has a prefix; the tree stores only the local name in node->name.",
    "fix": "cache_attribute_info now rebuilds 'prefix:localname' for namespace-qualified attributes (matching the element-name logic already present for elements) and keeps the local name for unqualified ones. Sealed by READER-001 (attr name=x:a byte-identical).",
    "evidence": [
     "courts/suites/data-abi/reader-family-probe.c",
@@ -1581,7 +1582,7 @@
      "status": "FIXED"
     }
    ],
-   "lesson": "Reader names are a presentation contract: qualified for namespaced nodes, local otherwise, fixed constants for typed nodes. Deriving them from the tree requires the same constQString logic for attributes as for elements — the naive 'copy node->name' shortcut diverges on the first namespaced attribute."
+   "lesson": "Reader names are a presentation contract: qualified for namespaced nodes, local otherwise, fixed constants for typed nodes. Deriving them from the tree requires the same constQString logic for attributes as for elements \u2014 the naive 'copy node->name' shortcut diverges on the first namespaced attribute."
   },
   {
    "id": "R-000149",
@@ -1620,7 +1621,7 @@
     "src/xml/reader/mod.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Upstream xmlTextReaderConstName returns fixed dictionary strings for typed nodes — '#text' for TEXT, '#cdata-section' for CDATA, '#comment' for COMMENT, '#document' for DOCUMENT/HTML_DOCUMENT, '#document-fragment' for DOCUMENT_FRAG — while the candidate returned NULL for those node kinds. Consumers like Nokogiri/lxml read ConstName on every node and distinguish node kinds by these names.",
+   "root_cause": "Upstream xmlTextReaderConstName returns fixed dictionary strings for typed nodes \u2014 '#text' for TEXT, '#cdata-section' for CDATA, '#comment' for COMMENT, '#document' for DOCUMENT/HTML_DOCUMENT, '#document-fragment' for DOCUMENT_FRAG \u2014 while the candidate returned NULL for those node kinds. Consumers like Nokogiri/lxml read ConstName on every node and distinguish node kinds by these names.",
    "fix": "cache_name_and_value now sets the upstream fixed name for those node kinds. Sealed by READER-001 (node=#text type=3 / type=14 lines byte-identical) and the updated test_read_simple_document expectation.",
    "evidence": [
     "courts/suites/data-abi/reader-family-probe.c",
@@ -1675,7 +1676,7 @@
     "src/xml/writer/mod.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Upstream xmlTextWriterStartDTD writes `<!DOCTYPE name` WITHOUT the `[`; the first DTD child (StartDTDElement/StartDTDAttlist/StartDTDEntity) or raw content emits ` [` (+newline when indented) on the DTD->DTD_TEXT transition, and EndDTD emits `]` only when content was written. The candidate's original StartDTD wrote `[` immediately and EndDTD wrote `]>` unconditionally — coincidentally identical for the old WriteDTD path but wrong for every Start/End composition (e.g. a bare StartDTD+EndDTD produced `<!DOCTYPE name []>` instead of `<!DOCTYPE name>`).",
+   "root_cause": "Upstream xmlTextWriterStartDTD writes `<!DOCTYPE name` WITHOUT the `[`; the first DTD child (StartDTDElement/StartDTDAttlist/StartDTDEntity) or raw content emits ` [` (+newline when indented) on the DTD->DTD_TEXT transition, and EndDTD emits `]` only when content was written. The candidate's original StartDTD wrote `[` immediately and EndDTD wrote `]>` unconditionally \u2014 coincidentally identical for the old WriteDTD path but wrong for every Start/End composition (e.g. a bare StartDTD+EndDTD produced `<!DOCTYPE name []>` instead of `<!DOCTYPE name>`).",
    "fix": "StartDTD no longer writes the bracket; a dtd_child_transition helper writes ` [` on the first DTD child; EndDTD writes `]` only from the DTDText state. The DTD child starts also push/pop dtd_depth so the upstream indentation (one indent string per open declaration) and the indent return counts match. Sealed by WRITER-001.",
    "evidence": [
     "courts/suites/data-abi/writer-family-probe.c",
@@ -1728,7 +1729,7 @@
     "src/xml/writer/mod.rs"
    ],
    "discovery_date": "2026-08-29",
-   "root_cause": "Three upstream quirks the candidate did not reproduce: (1) xmlEncodeSpecialChars (xmlEscapeText with XML_ESCAPE_QUOT) escapes &<>\" but NOT the apostrophe, and xmlBufAttrSerializeTxtContent (XML_ESCAPE_ATTR) likewise never escapes ' regardless of the writer's qchar — the qchar only selects the outer quotes; (2) the default indent string is a single space, not two; (3) xmlTextWriterStartPI writes no indentation (PIs appear at column 0).",
+   "root_cause": "Three upstream quirks the candidate did not reproduce: (1) xmlEncodeSpecialChars (xmlEscapeText with XML_ESCAPE_QUOT) escapes &<>\" but NOT the apostrophe, and xmlBufAttrSerializeTxtContent (XML_ESCAPE_ATTR) likewise never escapes ' regardless of the writer's qchar \u2014 the qchar only selects the outer quotes; (2) the default indent string is a single space, not two; (3) xmlTextWriterStartPI writes no indentation (PIs appear at column 0).",
    "fix": "encode_special_chars and write_attr_escaped no longer escape the apostrophe (the qchar-aware quote logic was removed); the default indent string is now one space; StartPI no longer writes an indent. Sealed by WRITER-001.",
    "evidence": [
     "courts/suites/data-abi/writer-family-probe.c",
@@ -1816,7 +1817,7 @@
    "oracle_versions": "libxml2 2.15.3 (system)",
    "root_cause": "Upstream serves UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..9/10/11/13..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252 via iconv/ICU plus static 8-bit tables; the crate ships no iconv/ICU backend, so those encodings report XML_ERR_UNSUPPORTED_ENCODING (32) where the oracle returns a converter. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths are byte-identical (ENCODING-001).",
    "observable_residual": "A C consumer requesting an iconv-only encoding gets XML_ERR_UNSUPPORTED_ENCODING instead of a handler; conversion through those encodings is unavailable in the candidate.",
-   "triangulation": "The reference system oracle (libxml2 2.15.3, built with Iconv and ICU enabled) returns usable converters for UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252, while the candidate reports XML_ERR_UNSUPPORTED_ENCODING — a REAL current Linux-x86-64 observable parity gap. No upstream epoch provides these converters without iconv/ICU, so closing the gap requires implementing an iconv (or ICU) backend in the crate: a future implementation work item, not a permanent waiver.",
+   "triangulation": "The reference system oracle (libxml2 2.15.3, built with Iconv and ICU enabled) returns usable converters for UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP and windows-1252, while the candidate reports XML_ERR_UNSUPPORTED_ENCODING \u2014 a REAL current Linux-x86-64 observable parity gap. No upstream epoch provides these converters without iconv/ICU, so closing the gap requires implementing an iconv (or ICU) backend in the crate: a future implementation work item, not a permanent waiver.",
    "regression_courts": [
     "ENCODING-001"
    ],
@@ -1829,10 +1830,10 @@
     {
      "status": "OPEN",
      "date": "2026-08-30",
-     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend — a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED — the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item)."
+     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend \u2014 a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED \u2014 the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item)."
     }
    ],
-   "disposition": "11.1-Z.1 reclassification (UNRESOLVED, not INTENTIONAL_SAFE_DIVERGENCE): this is a current executed-platform difference — on the 2.15.3 system oracle (Iconv+ICU enabled) the encodings above return handlers; the candidate returns XML_ERR_UNSUPPORTED_ENCODING. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths stay byte-identical (ENCODING-001). Closure requires an iconv/ICU backend — tracked as UNRESOLVED so it must eventually be implemented rather than waived.",
+   "disposition": "11.1-Z.1 reclassification (UNRESOLVED, not INTENTIONAL_SAFE_DIVERGENCE): this is a current executed-platform difference \u2014 on the 2.15.3 system oracle (Iconv+ICU enabled) the encodings above return handlers; the candidate returns XML_ERR_UNSUPPORTED_ENCODING. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths stay byte-identical (ENCODING-001). Closure requires an iconv/ICU backend \u2014 tracked as UNRESOLVED so it must eventually be implemented rather than waived.",
    "lesson": "A bounded backend dependency must not be waived as \"safe divergence\" when the executed oracle serves the converters: an honest UNRESOLVED record keeps the implementation work item visible until the iconv/ICU backend lands."
   },
   {
@@ -1920,7 +1921,7 @@
    "discovery_date": "2026-08-30",
    "oracle_versions": "libxslt 1.1.45 (system)",
    "root_cause": "The upstream 1.1.45 bodies are literally `return(1)` (xsltSecurityAllow), `return(0)` (xsltSecurityForbid, xsltGetDebuggerStatus, xsltExtensionInstructionResultRegister) or empty (xsltFreeLocales, and xsltFreeAVTList in the candidate because AVTs are stored as raw strings). The ledger's static stub heuristic flags constant-return/empty bodies; these are exact upstream semantics, not placeholders.",
-   "observable_residual": "None — the candidate matches the oracle byte-for-byte on these entry points.",
+   "observable_residual": "None \u2014 the candidate matches the oracle byte-for-byte on these entry points.",
    "triangulation": "Classification-only residual: the ledger labels them INTENTIONAL_NOOP so the closure count is honest.",
    "regression_courts": [
     "DSO-LOADER"
@@ -2007,7 +2008,7 @@
    ],
    "discovery_date": "2026-08-30",
    "oracle_versions": "libxml2 2.15.3, libxslt 1.1.45 (system)",
-   "root_cause": "The 11.1-L callback audit found five real ABI/behavior gaps. (1) xmlXPathRegisterFunc[NS] stored the C function pointer but registered a Rust stub that always errored ('C extension function cannot be called ... not yet supported') — registered XPath functions never ran. (2) The parser's NOENT entity-substitution path left external entities unresolved: xmlLoadExternalEntity (which does consult the registered loader) was never called, so custom entity loaders never fired. (3) xmlRegisterNodeDefault/xmlDeregisterNodeDefault stored the hooks but no node creation/free path invoked them (upstream gates them on the xmlRegisterCallbacks flag). (4) xmlListAppend did a plain push_back (upstream inserts sorted when a comparator is set) and xmlListWalk/xmlListReverseWalk had the stop-return INVERTED (stopped on non-zero; upstream stops on 0). (5) The callback surface was invisible in the headers: xpathInternals.h declared nothing (and the initial extraction captured only first lines of multi-line #define macros, leaving xmlXPathReturn* EMPTY), xmlIO.h lacked the match/open typedefs, parser.h lacked the entity-loader declarations, tree.h lacked the node-registration callbacks, hash.h/list.h/xmlerror.h had non-const or wrong callback typedefs, parserInternals.h had no parser.h include, and libxslt/xsltutils.h lacked xsltDebugSetDefaultTrace/xsltDebugGetDefaultTrace. Separately, the 5 allocator entry points (xmlMalloc/xmlMallocAtomic/xmlRealloc/xmlFree/xmlMemStrdup) were exported as FUNCTIONS while upstream exports them as DATA function-pointer variables (xmlmemory.h XMLPUBVAR) — the documented allocator-override mechanism (xmlMalloc = custom) could not link.",
+   "root_cause": "The 11.1-L callback audit found five real ABI/behavior gaps. (1) xmlXPathRegisterFunc[NS] stored the C function pointer but registered a Rust stub that always errored ('C extension function cannot be called ... not yet supported') \u2014 registered XPath functions never ran. (2) The parser's NOENT entity-substitution path left external entities unresolved: xmlLoadExternalEntity (which does consult the registered loader) was never called, so custom entity loaders never fired. (3) xmlRegisterNodeDefault/xmlDeregisterNodeDefault stored the hooks but no node creation/free path invoked them (upstream gates them on the xmlRegisterCallbacks flag). (4) xmlListAppend did a plain push_back (upstream inserts sorted when a comparator is set) and xmlListWalk/xmlListReverseWalk had the stop-return INVERTED (stopped on non-zero; upstream stops on 0). (5) The callback surface was invisible in the headers: xpathInternals.h declared nothing (and the initial extraction captured only first lines of multi-line #define macros, leaving xmlXPathReturn* EMPTY), xmlIO.h lacked the match/open typedefs, parser.h lacked the entity-loader declarations, tree.h lacked the node-registration callbacks, hash.h/list.h/xmlerror.h had non-const or wrong callback typedefs, parserInternals.h had no parser.h include, and libxslt/xsltutils.h lacked xsltDebugSetDefaultTrace/xsltDebugGetDefaultTrace. Separately, the 5 allocator entry points (xmlMalloc/xmlMallocAtomic/xmlRealloc/xmlFree/xmlMemStrdup) were exported as FUNCTIONS while upstream exports them as DATA function-pointer variables (xmlmemory.h XMLPUBVAR) \u2014 the documented allocator-override mechanism (xmlMalloc = custom) could not link.",
    "fix": "(1) Built the parser-context bridge: xmlXPathRegisterFunc[NS] now registers a Rust closure that synthesizes the upstream xmlXPathParserContext (value stack + context pointer), pushes the evaluated args as XPath objects, invokes the C function, and pops/converts the result (call_c_xpath_function); the XSLT engine registers a namespaced function_lookup fallback that resolves prefix:local against the stylesheet namespaces and dispatches to xsltFindExtFunction through the same bridge. (2) The NOENT external-entity path now calls xmlLoadExternalEntity and pushes the loaded content as a new input; the DTD SYSTEM-only declaration no longer misstores the URI as the public ID. (3) Added the xmlRegisterCallbacks gate + register_node_hook/deregister_node_hook, invoked from new_doc/new_node/new_text/new_comment/new_pi + the parser's compact-text path and free_doc/free_node. (4) xmlListAppend does the upstream sorted insert; both walks honor the 0-stops return. (5) Closed the callback header surface: full oracle-verbatim xpathInternals.h declarations incl. correctly-extracted multi-line macros + valuePush/valuePop aliases, xmlIO.h callback typedefs + declarations, parser.h entity loader, tree.h node-registration callbacks, hash/list/xmlerror const-correct typedefs, parserInternals.h parser.h include, xsltutils.h debug-trace declarations; fixed xmlSAXHandlerV1 typedef ordering (parser.h) and removed the duplicate xmlSchemaPtr plus wrong xmlXPathValuePush/xmlXPathNodeSetDel int prototypes. The allocator entry points are now DATA function-pointer globals initialized to the impls (xmlMallocImpl etc.), matching the oracle ABI; ~950 internal call sites updated mechanically.",
    "evidence": [
     "courts/suites/data-abi/callback-family-probe.c",
@@ -2238,7 +2239,7 @@
     {
      "status": "OPEN",
      "date": "2026-08-30",
-     "note": "discovered by the 11.1-S build/version-reporting audit; the header-compile court keeps xslt.h's upstream-correct XSLTPUBVAR declaration while the build-pkgconfig court deliberately avoids the divergent API (see courts/suites/build-pkgconfig/test-libxslt.c note). Closure scheduled for 11.1-X: export the value as a data symbol (const int, matching upstream R type) and drop/rename the function-form export. | 11.1-T DSO-LOADER court confirms the divergence at the dynamic-loader level: dlsym(xsltLibxsltVersion) resolves to a function symbol (T) while the oracle exports it as read-only data (R). The court's symbol-type parity check excludes this one symbol by design and defers to this residual. Also fixed in 11.1-T: the DSO now carries the upstream SONAME libxml2.so.16 (consumers record NEEDED=libxml2.so.16 like oracle-linked binaries), and top-level versioned symlinks make LD_LIBRARY_PATH=<artifact> resolve all three SONAMEs to the candidate (a missing libdir in the path previously let the loader silently fall back to the system libxml2 — contamination, now guarded by the court's dladdr identity check). | fixed in 11.1-X; nm -D symbol-type comparison matches the oracle for all four version symbols"
+     "note": "discovered by the 11.1-S build/version-reporting audit; the header-compile court keeps xslt.h's upstream-correct XSLTPUBVAR declaration while the build-pkgconfig court deliberately avoids the divergent API (see courts/suites/build-pkgconfig/test-libxslt.c note). Closure scheduled for 11.1-X: export the value as a data symbol (const int, matching upstream R type) and drop/rename the function-form export. | 11.1-T DSO-LOADER court confirms the divergence at the dynamic-loader level: dlsym(xsltLibxsltVersion) resolves to a function symbol (T) while the oracle exports it as read-only data (R). The court's symbol-type parity check excludes this one symbol by design and defers to this residual. Also fixed in 11.1-T: the DSO now carries the upstream SONAME libxml2.so.16 (consumers record NEEDED=libxml2.so.16 like oracle-linked binaries), and top-level versioned symlinks make LD_LIBRARY_PATH=<artifact> resolve all three SONAMEs to the candidate (a missing libdir in the path previously let the loader silently fall back to the system libxml2 \u2014 contamination, now guarded by the court's dladdr identity check). | fixed in 11.1-X; nm -D symbol-type comparison matches the oracle for all four version symbols"
     },
     {
      "status": "FIXED",
@@ -2247,7 +2248,7 @@
     }
    ],
    "lesson": "ABI parity includes the symbol TYPE: a function export where the oracle ships a data variable is a link-time incompatibility even when the name resolves.",
-   "fix": "11.1-X: the exported symbol types now match the oracle DSO (nm -D verified against the system oracle): xsltLibxsltVersion is a data symbol (R), xsltEngineVersion a data symbol (D), exsltLibexsltVersion/exsltLibxsltVersion are data symbols (R), and exsltLibraryVersion a data symbol (D) — upstream 1.1.45 declares all four as read-only data variables, not functions.",
+   "fix": "11.1-X: the exported symbol types now match the oracle DSO (nm -D verified against the system oracle): xsltLibxsltVersion is a data symbol (R), xsltEngineVersion a data symbol (D), exsltLibexsltVersion/exsltLibxsltVersion are data symbols (R), and exsltLibraryVersion a data symbol (D) \u2014 upstream 1.1.45 declares all four as read-only data variables, not functions.",
    "regression_courts": [
     "DSO-LOADER",
     "ABI-DATA"
@@ -2272,7 +2273,7 @@
    ],
    "discovery_date": "2026-08-30",
    "oracle_versions": "libxml2 2.15.0 source (oracle/historical/src), libxslt 1.1.45 (archaeology), config.h/xmlversion.h captures",
-   "root_cause": "The reference system executes only Linux x86-64. 11.1-U classified every upstream platform-conditional family from source archaeology and generated cross-compile expectations for the available targets. Cross-compilation exposed and fixed real portability defects: x86_64-only cfg gates on the streamed generic-error channel (now a portable fallback on other ABIs), c_ulong-vs-u64 width bugs in xmlSchemaValidateFacetWhtsp and generate-id(), c_long calibration arithmetic, c_char(u8-on-aarch64) buffer typing in the xmlShell debugger, LC_ALL_MASK missing on musl, and i32 time_t on 32-bit (y2038 — inherent to 32-bit time_t).",
+   "root_cause": "The reference system executes only Linux x86-64. 11.1-U classified every upstream platform-conditional family from source archaeology and generated cross-compile expectations for the available targets. Cross-compilation exposed and fixed real portability defects: x86_64-only cfg gates on the streamed generic-error channel (now a portable fallback on other ABIs), c_ulong-vs-u64 width bugs in xmlSchemaValidateFacetWhtsp and generate-id(), c_long calibration arithmetic, c_char(u8-on-aarch64) buffer typing in the xmlShell debugger, LC_ALL_MASK missing on musl, and i32 time_t on 32-bit (y2038 \u2014 inherent to 32-bit time_t).",
    "observable_residual": "On Windows/macOS/BSD/big-endian and for 32-bit/arm64/musl RUNTIME execution there is no executed evidence; the atlas documents each obligation explicitly (OBLIG-PLATFORM-*) so the surface cannot silently disappear.",
    "classification": "INTENTIONAL_SAFE_DIVERGENCE",
    "history": [
@@ -2298,7 +2299,7 @@
    ],
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxml2 2.15.3 (system)",
-   "root_cause": "The TREE-001 structural probe (11.1-N) observed URL=t.xml<V> (heap-reuse garbage appended to the URL) and the same for xmlNodeGetBase. Two defects: (1) alloc_parser_input duplicated the filename with xml_strdup(fname.as_ptr()) where fname is a Rust String whose as_ptr() is NOT NUL-terminated — xml_strlen scans past the allocation (ASan: heap-buffer-overflow) and the copy lands in freed/reused memory; (2) the four parserInternals entry points used populate_parser_input directly, which borrows the boxed InputBuffer's Rust String into _xmlParserInput.filename — dangling once the context is freed. xpath pop_string had the same non-NUL-terminated xml_strdup defect.",
+   "root_cause": "The TREE-001 structural probe (11.1-N) observed URL=t.xml<V> (heap-reuse garbage appended to the URL) and the same for xmlNodeGetBase. Two defects: (1) alloc_parser_input duplicated the filename with xml_strdup(fname.as_ptr()) where fname is a Rust String whose as_ptr() is NOT NUL-terminated \u2014 xml_strlen scans past the allocation (ASan: heap-buffer-overflow) and the copy lands in freed/reused memory; (2) the four parserInternals entry points used populate_parser_input directly, which borrows the boxed InputBuffer's Rust String into _xmlParserInput.filename \u2014 dangling once the context is freed. xpath pop_string had the same non-NUL-terminated xml_strdup defect.",
    "observable_residual": "doc->URL / base print t.xml followed by heap-reuse garbage (non-deterministic single character) on the second parse; ASan heap-buffer-overflow in xml_strdup via alloc_parser_input.",
    "fix": "alloc_parser_input and the parserInternals sites now duplicate filenames with xml_strndup(fname.as_ptr(), fname.len()) (exact length, explicit NUL); populate_parser_input was replaced by populate_parser_input_without_filename + owned dup at all four parserInternals sites; pi_parse_content_node_list frees the popped input (struct + owned filename) and pi_pop_pe frees the filename before the struct, making every _xmlParserInput free path symmetric with free_parser_input; xpath pop_string uses xml_strndup. The input filename is now owned uniformly across every construction path.",
    "evidence": [
@@ -2408,7 +2409,7 @@
    ],
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxslt 1.1.45 (system)",
-   "root_cause": "The candidate cast the XPath result to string and appended a text node unconditionally. Upstream xsltValueOf/xsltCopyOf (transform.c 1.1.45) guard with `if (value[0] != 0)` — an empty cast result must not create a text node, otherwise an otherwise-empty element serializes as <out></out> rather than the oracle's <out/>.",
+   "root_cause": "The candidate cast the XPath result to string and appended a text node unconditionally. Upstream xsltValueOf/xsltCopyOf (transform.c 1.1.45) guard with `if (value[0] != 0)` \u2014 an empty cast result must not create a text node, otherwise an otherwise-empty element serializes as <out></out> rather than the oracle's <out/>.",
    "fix": "11.1-Z: process_value_of and the copy-of atomic path now skip append_text_node when the first byte of the cast string is NUL, matching upstream's `if (value[0] != 0)` guard. New regression case CLI-XSLTPROC-0020 (byte-identical vs the oracle).",
    "lesson": "Result-tree text insertion is observable: an empty cast string is 'no text at all', not an empty text node; the empty-text-node difference changes empty-element serialization (<out/> vs <out></out>).",
    "regression_courts": [
@@ -2477,7 +2478,7 @@
    ],
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxslt 1.1.45 (system)",
-   "root_cause": "The candidate exported xsltGenericDebug as a #[no_mangle] extern fn (symbol type T). Upstream xsltutils.c:632 defines `xmlGenericErrorFunc xsltGenericDebug = xsltGenericDebugDefaultFunc;` — a global function-pointer DATA variable (oracle nm type D) defaulting to a handler that writes the message to xsltGenericDebugContext (a FILE*) when it is non-NULL. The 11.1-Z.1 full-surface type scan (every oracle symbol vs the candidate DSOs) found this single remaining R-000167-class ABI type divergence.",
+   "root_cause": "The candidate exported xsltGenericDebug as a #[no_mangle] extern fn (symbol type T). Upstream xsltutils.c:632 defines `xmlGenericErrorFunc xsltGenericDebug = xsltGenericDebugDefaultFunc;` \u2014 a global function-pointer DATA variable (oracle nm type D) defaulting to a handler that writes the message to xsltGenericDebugContext (a FILE*) when it is non-NULL. The 11.1-Z.1 full-surface type scan (every oracle symbol vs the candidate DSOs) found this single remaining R-000167-class ABI type divergence.",
    "fix": "11.1-Z.1: xsltGenericDebug is now exported as DATA from src/abi/data_globals.rs (`#[no_mangle] pub static mut xsltGenericDebug: Option<xmlGenericErrorFunc> = Some(XSLT_GENERIC_DEBUG_DEFAULT);`) with a faithful default handler reproducing upstream xsltGenericDebugDefaultFunc (NULL-context suppression + write to the context FILE*). xsltSetGenericDebugFunc now writes the exported data global and xsltGenericDebugContext (upstream xsltutils.c:650 semantics). The old exported fn was removed. Full-surface type scan: 0 mismatches across libxml2/libxslt/libexslt.",
    "lesson": "A function-pointer global must be exported as DATA, not as a function: consumers take its ADDRESS and read it as a variable; the parity matrix's per-DSO data reconciliation exposes any residual type divergence (libxslt data reconciled 10/11 before the fix).",
    "regression_courts": [
@@ -2514,7 +2515,7 @@
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxml2 2.15.3 (system)",
    "root_cause": "The candidate's c14n_serialize_node emitted the reference text (&foo;) for XML_ENTITY_REF_NODE nodes. Upstream c14n.c xmlC14NProcessNode treats XML_ENTITY_REF_NODE (and XML_ENTITY_NODE / XML_NAMESPACE_DECL) as invalid: xmlC14NErrInvalidNode(ctx, \"XML_ENTITY_REF_NODE\", \"processing node\") and the whole dump returns -1. A C consumer that depends on the -1 error (e.g. rejecting unexpanded entity documents) silently got canonical output instead. Found by the 11.1-Z.1 broad differential run of the C14N API probe over the full CLI corpus (dclent.xml).",
-   "fix": "11.1-Z.1: C14nContext gains an invalid_node flag set by the XML_ENTITY_REF_NODE branch; all three dump paths (c14n_doc_dump_memory, c14n_execute, c14n_doc_save_to) return -1 with no output when it is set — matching the oracle. New regression test test_c14n_entity_ref_node_fails_like_upstream (parses a DTD doc with NOENT unset, expects -1 + NULL result); the C14N API probe differential over the full CLI corpus is 0 mismatches.",
+   "fix": "11.1-Z.1: C14nContext gains an invalid_node flag set by the XML_ENTITY_REF_NODE branch; all three dump paths (c14n_doc_dump_memory, c14n_execute, c14n_doc_save_to) return -1 with no output when it is set \u2014 matching the oracle. New regression test test_c14n_entity_ref_node_fails_like_upstream (parses a DTD doc with NOENT unset, expects -1 + NULL result); the C14N API probe differential over the full CLI corpus is 0 mismatches.",
    "lesson": "Canonical XML defines a closed node model: an unexpanded entity reference is not representable in the output, and upstream surfaces that as an error, not a serialization. More-permissive output is an observable divergence for consumers that branch on the return value.",
    "regression_courts": [
     "test_c14n_entity_ref_node_fails_like_upstream",
@@ -2584,10 +2585,10 @@
    ],
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxml2 2.15.3, libxslt 1.1.45 (system)",
-   "root_cause": "The exported surface was built against an older header snapshot without a function-level mirror. The worst instance was xmlGcMemSetup/xmlGcMemGet: the header (correctly mirroring the oracle) declares five arguments including mallocAtomicFunc and an int return, but the Rust exports took four arguments, omitted mallocAtomicFunc and returned nothing — on x86-64 SysV a C caller's RDX (mallocAtomic) was read as realloc and RCX (realloc) as strdup, installing the wrong callbacks. xmlC14NExecute's entire register layout was shifted (7 oracle args vs 6 candidate), xmlAutomataNewCountTrans/xmlAutomataNewOnceTrans swapped min/max with data, and the allocator state itself had two sources of truth (an internal ALLOCATOR RwLock consulted by the *Impl bodies vs the five exported xmlMalloc-family variables). A function-signature court now compares oracle header, candidate header and actual Rust extern \"C\" signature for every export.",
+   "root_cause": "The exported surface was built against an older header snapshot without a function-level mirror. The worst instance was xmlGcMemSetup/xmlGcMemGet: the header (correctly mirroring the oracle) declares five arguments including mallocAtomicFunc and an int return, but the Rust exports took four arguments, omitted mallocAtomicFunc and returned nothing \u2014 on x86-64 SysV a C caller's RDX (mallocAtomic) was read as realloc and RCX (realloc) as strdup, installing the wrong callbacks. xmlC14NExecute's entire register layout was shifted (7 oracle args vs 6 candidate), xmlAutomataNewCountTrans/xmlAutomataNewOnceTrans swapped min/max with data, and the allocator state itself had two sources of truth (an internal ALLOCATOR RwLock consulted by the *Impl bodies vs the five exported xmlMalloc-family variables). A function-signature court now compares oracle header, candidate header and actual Rust extern \"C\" signature for every export.",
    "observable_residual": "A C consumer calling the pre-fix signatures would misread arguments and receive wrong callbacks/returns; after the fix the three planes match (ABI-FUNCTION-SIGNATURE 3319 compared, 0 findings).",
    "triangulation": "ABI-FUNCTION-SIGNATURE court (tools/abi/function_signature_court.py): oracle-vs-candidate-vs-Rust prototype mirror, PASS at 3319 compared / 0 findings. ALLOCATOR-HOOK differential court: xmlMemSetup/get, Gc variant, direct variable assignment and NULL rejection are byte-identical with the oracle.",
-   "fix": "11.1-Z.2: (1) allocator merged to the upstream single-source-of-truth model — the five exported function-pointer variables ARE the state; xmlMemSetup/xmlGcMemSetup validate NULLs (return -1), assign the variables (xmlGcMemSetup assigns xmlMallocAtomic = mallocAtomicFunc), xmlMemGet/xmlGcMemGet read them through NULL-tolerant outputs and return 0; the *Impl bodies are indirections through the variables so every internal allocation observes the override; the ALLOCATOR RwLock was removed. (2) Every remaining real signature mismatch fixed to the 2.15.3 oracle (list in surface). (3) Candidate header drift fixed to the oracle (xmlTextWriter* int returns, xmlDebugDumpNode depth arg, xmlParseURIReference/URIUnescapeString returns, xmlNewTextReaderFilename 1-arg, xslt function-pointer typedefs). (4) Variadic shims: the four legacy SAX v1 handlers became x86-64 asm shims formatting the varargs (upstream xmlVFormatLegacyError); xmlStrPrintf/xsltTransformError classified as shims.",
+   "fix": "11.1-Z.2: (1) allocator merged to the upstream single-source-of-truth model \u2014 the five exported function-pointer variables ARE the state; xmlMemSetup/xmlGcMemSetup validate NULLs (return -1), assign the variables (xmlGcMemSetup assigns xmlMallocAtomic = mallocAtomicFunc), xmlMemGet/xmlGcMemGet read them through NULL-tolerant outputs and return 0; the *Impl bodies are indirections through the variables so every internal allocation observes the override; the ALLOCATOR RwLock was removed. (2) Every remaining real signature mismatch fixed to the 2.15.3 oracle (list in surface). (3) Candidate header drift fixed to the oracle (xmlTextWriter* int returns, xmlDebugDumpNode depth arg, xmlParseURIReference/URIUnescapeString returns, xmlNewTextReaderFilename 1-arg, xslt function-pointer typedefs). (4) Variadic shims: the four legacy SAX v1 handlers became x86-64 asm shims formatting the varargs (upstream xmlVFormatLegacyError); xmlStrPrintf/xsltTransformError classified as shims.",
    "lesson": "A sealed evidence plane can still have a whole defect class the existing courts cannot see: the struct-mirror court proved layouts but nothing proved C function prototypes against the installed headers and the actual Rust signatures. The three-way prototype mirror (oracle header / candidate header / Rust extern) is the function-level equivalent of the struct mirror and is now a permanent court. Any future signature change is caught at the source.",
    "classification": "CANDIDATE_BUG",
    "history": [
@@ -2618,8 +2619,8 @@
    ],
    "discovery_date": "2026-08-31",
    "oracle_versions": "libxml2 2.15.3, libxslt 1.1.45 (system)",
-   "root_cause": "Cargo emits one cdylib (the core, also installed as libxml2.so.16 via the symlink chain). The libxslt/libexslt DSOs are whole-archive re-links of the same staticlib with version-script localization (local: *), so every non-xslt/exslt symbol resolves to a private copy inside the facade — including all Rust statics (the allocator variables, hook globals, parser globals, error state). Upstream libxslt.so.1 leaves the libxml2 symbols undefined and resolves them into the single libxml2.so.16 instance, so hooks/globals are shared. The candidate's facades are ELF-correct (SONAME, NEEDED chain, export surface, consumer link+run) but state-partitioned. Thin re-export facades were tested and cannot work: with the symbols undefined the consumer static link fails (modern ld refuses a U entry as a definition), and the core cannot satisfy the facades' references to the crate's mangled internal symbols (xmlMallocImpl etc. are not exported). Fixing this requires splitting the crate so the xslt/exslt code references only exported core symbols — a Phase-13-scale restructuring, out of scope for 11.1-Z.2.",
-   "observable_residual": "A C consumer that installs an allocator/entity loader/node callbacks or changes a parser global through -lxml2 and then runs an XSLT transform through -lxslt does not see those hooks fire inside the transform (the DSO-STATE-COHERENCE court pins the exact profile: transform-phase allocator/register/deregister/loader observations all 0, keepBlanks not shared — 56-byte result vs the oracle's 41). Transforms themselves work: documents built through -lxml2 are consumed correctly by -lxslt (shared struct layouts); only cross-DSO state is partitioned. This is the deliberately-open Phase 12 architectural target (machine-enforced DSO boundary lint), not a Phase-11 defect.",
+   "root_cause": "Cargo emits one cdylib (the core, also installed as libxml2.so.16 via the symlink chain). The libxslt/libexslt DSOs are whole-archive re-links of the same staticlib with version-script localization (local: *), so every non-xslt/exslt symbol resolves to a private copy inside the facade \u2014 including all Rust statics (the allocator variables, hook globals, parser globals, error state). Upstream libxslt.so.1 leaves the libxml2 symbols undefined and resolves them into the single libxml2.so.16 instance, so hooks/globals are shared. The candidate's facades are ELF-correct (SONAME, NEEDED chain, export surface, consumer link+run) but state-partitioned. Thin re-export facades were tested and cannot work: with the symbols undefined the consumer static link fails (modern ld refuses a U entry as a definition), and the core cannot satisfy the facades' references to the crate's mangled internal symbols (xmlMallocImpl etc. are not exported). Fixing this requires splitting the crate so the xslt/exslt code references only exported core symbols \u2014 a Phase-13-scale restructuring, out of scope for 11.1-Z.2.",
+   "observable_residual": "A C consumer that installs an allocator/entity loader/node callbacks or changes a parser global through -lxml2 and then runs an XSLT transform through -lxslt does not see those hooks fire inside the transform (the DSO-STATE-COHERENCE court pins the exact profile: transform-phase allocator/register/deregister/loader observations all 0, keepBlanks not shared \u2014 56-byte result vs the oracle's 41). Transforms themselves work: documents built through -lxml2 are consumed correctly by -lxslt (shared struct layouts); only cross-DSO state is partitioned. This is the deliberately-open Phase 12 architectural target (machine-enforced DSO boundary lint), not a Phase-11 defect.",
    "triangulation": "DSO-STATE-COHERENCE court (courts/suites/data-abi/dso-state-coherence-probe.c): every hook observation is True for the oracle (shared instance) and False for the candidate facades; the documented-partition profile is asserted so any silent architectural change is caught. The three-DSO ELF contract (SONAMEs, NEEDED chains, per-DSO export surfaces, consumer link+run) is verified by the DSO-LOADER court.",
    "evidence": [
     "courts/suites/data-abi/dso-state-coherence-probe.c",
@@ -2631,7 +2632,7 @@
     {
      "status": "OPEN",
      "date": "2026-08-31",
-     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile. Phase 12 target: eliminate the partitioning with a machine-enforced DSO boundary lint — src/xslt + the libxslt ABI layer may call ONLY a sanctioned libxml2 public-ABI gateway (no crate-private XML implementation internals, no XML-layer private globals, no allocator implementation internals), so with function/data sections + linker GC libxslt.so.1 owns XSLT state and resolves XML operations through libxml2.so.16, and libexslt.so.0 calls libxslt.so.1 + libxml2.so.16 — still one Cargo crate."
+     "note": "demonstrated by the 11.1-Z.2 DSO-STATE-COHERENCE court; thin-facade alternative proven impossible at the ELF level (consumer static link + mangled-internal dependency); accepted as a bounded divergence with the court pinning the exact partition profile. Phase 12 target: eliminate the partitioning with a machine-enforced DSO boundary lint \u2014 src/xslt + the libxslt ABI layer may call ONLY a sanctioned libxml2 public-ABI gateway (no crate-private XML implementation internals, no XML-layer private globals, no allocator implementation internals), so with function/data sections + linker GC libxslt.so.1 owns XSLT state and resolves XML operations through libxml2.so.16, and libexslt.so.0 calls libxslt.so.1 + libxml2.so.16 \u2014 still one Cargo crate."
     }
    ]
   },
@@ -2650,7 +2651,7 @@
    "fixed_date": "2026-08-31",
    "root_cause": "The pre-Z.3 default allocator routed through Rust's global allocator with fabricated Layouts: default_free deallocated every pointer with Layout::from_size_align_unchecked(1, 1) and default_realloc passed the requested NEW size as the OLD allocation layout to std::alloc::realloc. Rust's allocator API requires the deallocation/reallocation layout to correspond to the original allocation; both uses are invalid-layout UB (the source itself commented the free path as 'technically UB'). It does not become valid because the platform allocator underneath probably ignores the size. The default also maintained an accounting registry (MEM_USED/MEM_BLOCKS/BLOCKS), which diverges from upstream 2.15.0: globals.c initializes the exported variables to the plain C runtime functions (xmlMalloc = malloc etc.), so xmlMemUsed/xmlMemBlocks/xmlMemSize are 0 while the default is installed (verified empirically against the system oracle). A second latent defect in the same surface: xmlMallocAtomicLoc zeroed its allocation via xmlMallocZero, while upstream xmlMallocAtomicLoc -> xmlMemMalloc is a plain (non-zeroed) allocation.",
    "fix": "Replaced the default hooks with libc malloc/realloc/free/strdup wrappers (default_malloc = libc::malloc, default_realloc = libc::realloc, default_free = libc::free, default_strdup = libc::malloc + copy with NULL -> NULL, matching upstream xmlPosixStrdup/xmlCharStrdup). The *Default bodies are now pure libc calls with NO accounting, so xmlMemUsed/xmlMemBlocks/xmlMemSize return 0 under the default exactly like the oracle's plain-malloc default. The registry + counters now back ONLY the debug-named surface (xmlMemMalloc/xmlMemFree/xmlMemRealloc/xmlMemoryStrdup and the *Loc variants), which upstream keeps as a separately-tagged, always-libc-backed, tracked debug allocator; the *Loc variants now delegate to shared debug_malloc/debug_realloc/debug_strdup/debug_free helpers (counter + registry maintenance, matching upstream xmlMemMalloc et al.). xmlMallocAtomicLoc no longer zeroes (upstream xmlMallocAtomicLoc -> xmlMemMalloc is not zeroed). xmlMemDisplay/xmlMemDisplayLast/xmlMemShow/xmlMemoryDump are now no-ops matching upstream 2.15.0 ('This feature was removed.').",
-   "observable_residual": "None on the executed platform: the ALLOCATOR-DEFAULT-001 differential court proves byte-identical behavior with the system oracle across many sizes, zero-size, grow/shrink realloc, realloc-to-zero, realloc/malloc failure, strdup, free(NULL), direct exported-variable calls, 100k alloc/free churn, xmlMemSize/xmlMemUsed/xmlMemBlocks exactness (0 under the default on both sides) and no-op display entry points. The debug surface (xmlMemMalloc/*Loc) is also byte-identical with the oracle (tracked sizes/counters, verified by the same differential probes and unit tests). The valgrind memory-safety sweep is not executable in this environment (valgrind 3.25.1 SIGILLs in the dynamic loader on every binary, including /bin/true) — recorded as unavailable in the court receipt.",
+   "observable_residual": "None on the executed platform: the ALLOCATOR-DEFAULT-001 differential court proves byte-identical behavior with the system oracle across many sizes, zero-size, grow/shrink realloc, realloc-to-zero, realloc/malloc failure, strdup, free(NULL), direct exported-variable calls, 100k alloc/free churn, xmlMemSize/xmlMemUsed/xmlMemBlocks exactness (0 under the default on both sides) and no-op display entry points. The debug surface (xmlMemMalloc/*Loc) is also byte-identical with the oracle (tracked sizes/counters, verified by the same differential probes and unit tests). The valgrind memory-safety sweep is not executable in this environment (valgrind 3.25.1 SIGILLs in the dynamic loader on every binary, including /bin/true) \u2014 recorded as unavailable in the court receipt.",
    "triangulation": "ALLOCATOR-DEFAULT-001 (tools/abi/allocator_default_probe.py + courts/suites/data-abi/allocator-default-probe.c): identical SHA-256 of the oracle and candidate probe outputs; plus ALLOCATOR-HOOK-001 (hook swap still byte-identical), the allocator unit tests (test_default_libc_semantics, test_debug_surface_tracked, test_mem_stats), and the empirical oracle probes recorded during Z.3.",
    "regression_courts": [
     "ALLOCATOR-DEFAULT",
@@ -2667,7 +2668,7 @@
     {
      "status": "OPEN",
      "date": "2026-08-31",
-     "note": "discovered in the 11.1-Z.3 review: default_free deallocates every pointer with a fabricated 1-byte layout and default_realloc passes the requested new size as the old allocation layout — both invalid-layout UB under the Rust allocator contract; the default also diverged from the oracle's untracked plain-malloc default"
+     "note": "discovered in the 11.1-Z.3 review: default_free deallocates every pointer with a fabricated 1-byte layout and default_realloc passes the requested new size as the old allocation layout \u2014 both invalid-layout UB under the Rust allocator contract; the default also diverged from the oracle's untracked plain-malloc default"
     },
     {
      "status": "FIXED",
@@ -2689,7 +2690,7 @@
    ],
    "discovery_date": "2026-08-31",
    "fixed_date": null,
-   "root_cause": "Upstream 2.15 removed libxml2.syms and exports everything unversioned; the executed distro oracle follows that. Versioning the candidate core with the upstream LIBXML2_2.x chain made every oracle-linked consumer emit ld.so 'no version information available' warnings when the DSO resolves via RUNPATH — an observable substitution difference (measured in the first Phase-12 iteration, reverted).",
+   "root_cause": "Upstream 2.15 removed libxml2.syms and exports everything unversioned; the executed distro oracle follows that. Versioning the candidate core with the upstream LIBXML2_2.x chain made every oracle-linked consumer emit ld.so 'no version information available' warnings when the DSO resolves via RUNPATH \u2014 an observable substitution difference (measured in the first Phase-12 iteration, reverted).",
    "fix": null,
    "observable_residual": "Executed-oracle parity is exact (both unversioned; ELF-VERSIONING court 14/14). The named-node contract for NON-executed distro binaries (Debian-style consumers requiring LIBXML2_2.x nodes) is a bounded, documented gap: the candidate exports everything the oracle exports unversioned; a distro-built binary's versioned references bind to the unversioned definitions (version-info mismatch warnings possible) until a versioned-profile build is produced.",
    "triangulation": "ELF-VERSIONING + BINARY-SUBSTITUTION court (courts/suites/phase12/elf-versioning): oracle-linked consumer -> candidate runtime byte-identical, no ld.so version warnings; libxslt carries the exact 27-node LIBXML2_1.x graph with the oracle's per-symbol nodes (the versioned side of the contract is fully implemented).",
@@ -2704,11 +2705,11 @@
    ],
    "classification": "DOCUMENTED_DIVERGENCE",
    "history": [
-       {
-           "status": "OPEN",
-           "date": "2026-08-31",
-           "note": "discovered in the first Phase-12 iteration: versioning the core with the upstream LIBXML2_2.x chain produced ld.so 'no version information available' warnings on every RUNPATH-resolved oracle-linked binary (the executed oracle is unversioned); reverted to the unversioned core and documented the bounded gap for non-executed distro binaries"
-       }
+    {
+     "status": "OPEN",
+     "date": "2026-08-31",
+     "note": "discovered in the first Phase-12 iteration: versioning the core with the upstream LIBXML2_2.x chain produced ld.so 'no version information available' warnings on every RUNPATH-resolved oracle-linked binary (the executed oracle is unversioned); reverted to the unversioned core and documented the bounded gap for non-executed distro binaries"
+    }
    ]
   },
   {
@@ -2723,7 +2724,7 @@
    ],
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
-   "root_cause": "The exported xmlNewChild delegated to new_child(parent, ns, name) and ignored the content parameter entirely — the element was created childless, so tree2.c's <node1>content of node 1</node1> serialized as <node1/>.",
+   "root_cause": "The exported xmlNewChild delegated to new_child(parent, ns, name) and ignored the content parameter entirely \u2014 the element was created childless, so tree2.c's <node1>content of node 1</node1> serialized as <node1/>.",
    "fix": "xmlNewChild now mirrors upstream exactly: create the element (new_child), then if content is non-NULL append a text child (new_text + add_child) so the document propagates.",
    "observable_residual": "None on the executed platform: tree2.c (unmodified upstream example) is byte-identical with the oracle (EXTERNAL-CONSUMERS 15/15); unit test test_xml_new_child_with_content.",
    "triangulation": "EXTERNAL-CONSUMERS court tree2 case + src/abi/exports_xml2.rs test_xml_new_child_with_content.",
@@ -2791,7 +2792,7 @@
    "id": "R-000182",
    "status": "FIXED",
    "phase": "12",
-   "title": "Push-parser chunk accumulation lost: xmlParseChunk with terminate=0 dropped the accumulated input, so the terminating call parsed only the last chunk ('Document is empty' — parse4)",
+   "title": "Push-parser chunk accumulation lost: xmlParseChunk with terminate=0 dropped the accumulated input, so the terminating call parsed only the last chunk ('Document is empty' \u2014 parse4)",
    "surface": "xmlParseChunk / xmlCreatePushParserCtxt (push parsing; parse4.c)",
    "component": [
     "src/xml/parser/helpers.rs",
@@ -2800,8 +2801,8 @@
    ],
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
-   "root_cause": "parse_chunk took the stashed base buffer, pushed the new chunk, built an XmlParser, and for terminate=0 returned 0 WITHOUT re-stashing the combined input — the accumulated stream vanished and the terminating call parsed only its own (often empty) chunk.",
-   "fix": "parse_chunk now appends each chunk to the base InputBuffer (new InputBuffer::push_bytes — upstream xmlParseChunk grows the parser input) and re-stashes it when terminate=0; the terminating call parses the whole accumulated stream.",
+   "root_cause": "parse_chunk took the stashed base buffer, pushed the new chunk, built an XmlParser, and for terminate=0 returned 0 WITHOUT re-stashing the combined input \u2014 the accumulated stream vanished and the terminating call parsed only its own (often empty) chunk.",
+   "fix": "parse_chunk now appends each chunk to the base InputBuffer (new InputBuffer::push_bytes \u2014 upstream xmlParseChunk grows the parser input) and re-stashes it when terminate=0; the terminating call parses the whole accumulated stream.",
    "observable_residual": "None on the executed platform: parse4.c byte-identical with the oracle; unit test test_push_chunk_accumulates.",
    "triangulation": "EXTERNAL-CONSUMERS court parse4 case + src/xml/parser/helpers.rs test_push_chunk_accumulates.",
    "regression_courts": [
@@ -2839,7 +2840,7 @@
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
    "root_cause": "The reader is a whole-tree implementation (parse once, build traversal events) while upstream prunes the stream as it reads (NODE_IS_PRESERVED / NODE_IS_SPRESERVED bits, preserves counter). PreservePattern returned 0 and preserved nothing.",
-   "fix": "Implemented pattern preservation as the equivalent post-parse pass: xmlTextReaderPreservePattern compiles the pattern (xmlPatterncompile) into reader->patternTab (freed on Drop); after the parse, apply_pattern_preservation marks matched nodes + their element ancestors and prunes every other node (a node survives iff it or an element ancestor is matched — SPRESERVED subtrees survive whole, DTD nodes survive); prune_unpreserved unlinks + frees the rest. The earlier reader->preserve flag fix (CurrentDoc ownership) completes the reader3.c lifecycle.",
+   "fix": "Implemented pattern preservation as the equivalent post-parse pass: xmlTextReaderPreservePattern compiles the pattern (xmlPatterncompile) into reader->patternTab (freed on Drop); after the parse, apply_pattern_preservation marks matched nodes + their element ancestors and prunes every other node (a node survives iff it or an element ancestor is matched \u2014 SPRESERVED subtrees survive whole, DTD nodes survive); prune_unpreserved unlinks + frees the rest. The earlier reader->preserve flag fix (CurrentDoc ownership) completes the reader3.c lifecycle.",
    "observable_residual": "None on the executed platform: reader3.c byte-identical with the oracle (only preserved nodes survive the reader free; document dumped unformatted); unit test test_preserve_pattern_prunes.",
    "triangulation": "EXTERNAL-CONSUMERS court reader3 case (byte-identical dump of the pruned doc) + reader unit test.",
    "regression_courts": [
@@ -2877,7 +2878,7 @@
    ],
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
-   "root_cause": "(a) XINCLUDE_NS was b\"http://www.w3.org/2001/XInclude\" — the upstream XINCLUDE_OLD_NS draft — so is_xinclude_element never matched the 2003 namespace the parser materializes. (b) io_read_file/parse_xml_document opened hrefs with libc::open only; upstream xmlXIncludeLoadDoc -> xmlNewInputFromFile -> xmlParserInputBufferCreateFilename consults the registered input callback table, so sql: URIs were never dispatched.",
+   "root_cause": "(a) XINCLUDE_NS was b\"http://www.w3.org/2001/XInclude\" \u2014 the upstream XINCLUDE_OLD_NS draft \u2014 so is_xinclude_element never matched the 2003 namespace the parser materializes. (b) io_read_file/parse_xml_document opened hrefs with libc::open only; upstream xmlXIncludeLoadDoc -> xmlNewInputFromFile -> xmlParserInputBufferCreateFilename consults the registered input callback table, so sql: URIs were never dispatched.",
    "fix": "XINCLUDE_NS is now the 2003 namespace with the 2001 draft accepted as a legacy alias (is_xinclude_ns_uri, mirroring upstream XINCLUDE_NS/XINCLUDE_OLD_NS); the XInclude loader routes hrefs through a new read_uri_via_input_callbacks helper (match -> open -> read loop -> close, upstream xmlParserInputBufferCreateFilename semantics) before falling back to the file path; the debug dump namespace check updated to 2003.",
    "observable_residual": "None on the executed platform: io1.c byte-identical with the oracle (custom sql: scheme + XInclude + xmlDocDump); the C-level xmlParserInputBufferCreateFilename export remains a documented shallow allocation for the general file path (the parser's own file path uses the internal input machinery).",
    "triangulation": "EXTERNAL-CONSUMERS court io1 case + the xinclude module tests.",
@@ -2949,7 +2950,7 @@
    "id": "R-000186",
    "status": "FIXED",
    "phase": "12",
-   "title": "Facade DSOs required GLIBC_2.39 (weak pidfd_spawnp/pidfd_getpid refs from Rust std survived the plain cc re-link), making the facades unloadable on older glibc (Debian bookworm 2.36) — the core itself required only GLIBC_2.34",
+   "title": "Facade DSOs required GLIBC_2.39 (weak pidfd_spawnp/pidfd_getpid refs from Rust std survived the plain cc re-link), making the facades unloadable on older glibc (Debian bookworm 2.36) \u2014 the core itself required only GLIBC_2.34",
    "surface": "libxslt.so.1 / libexslt.so.0 facade ELF version requirements (Docker substitution portability)",
    "component": [
     "tools/packaging/facade-gen.sh",
@@ -2998,8 +2999,8 @@
    ],
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
-   "root_cause": "The executed distro oracle hides the five thread-alloc accessors (no --with-thread-alloc / hidden visibility), so the candidate surface — generated from the executed oracle — omitted them; a source-built upstream libxml2 (--with-thread-alloc, the Dockerfile.oracle profile) exports them and its libxslt references __xmlFree/__xmlMalloc/__xmlRealloc, so substitution failed with 'undefined symbol: __xmlFree'.",
-   "fix": "Implemented the five accessors per upstream semantics (each returns addr_of_mut! of the corresponding exported variable — R-000176 single source of truth, so (*__xmlMalloc()) is the candidate's xmlMalloc variable) and registered them as CUSTODIAN_EXTENSION exports in the disposition ledger + generated libxml2.syms. Fixed a latent fail-open in export_surface.py: the candidate surface is now the DSO dynsym UNION the staticlib #[no_mangle] surface, so a new export hidden by the version script can never be silently omitted (the accessors were invisible to nm_dyn until the map included them).",
+   "root_cause": "The executed distro oracle hides the five thread-alloc accessors (no --with-thread-alloc / hidden visibility), so the candidate surface \u2014 generated from the executed oracle \u2014 omitted them; a source-built upstream libxml2 (--with-thread-alloc, the Dockerfile.oracle profile) exports them and its libxslt references __xmlFree/__xmlMalloc/__xmlRealloc, so substitution failed with 'undefined symbol: __xmlFree'.",
+   "fix": "Implemented the five accessors per upstream semantics (each returns addr_of_mut! of the corresponding exported variable \u2014 R-000176 single source of truth, so (*__xmlMalloc()) is the candidate's xmlMalloc variable) and registered them as CUSTODIAN_EXTENSION exports in the disposition ledger + generated libxml2.syms. Fixed a latent fail-open in export_surface.py: the candidate surface is now the DSO dynsym UNION the staticlib #[no_mangle] surface, so a new export hidden by the version script can never be silently omitted (the accessors were invisible to nm_dyn until the map included them).",
    "observable_residual": "None on the executed platform: DOCKER-SUBSTITUTION 17/17 with the source-profile oracle; the executed distro oracle surface is a strict subset (1718 = 1713 + 5 documented CUSTODIAN_EXTENSION accessors).",
    "triangulation": "DOCKER-SUBSTITUTION court (source-profile substitution) + EXPORT-SURFACE-DISPOSITION ledger + DYNSYM-SURFACE (all 1718 shipped resolve; 584 INTERNAL_LEAK hidden) + SHIPPED-SURFACE --check.",
    "regression_courts": [
@@ -3050,16 +3051,16 @@
    ],
    "classification": "CANDIDATE_BUG",
    "history": [
-       {
-           "status": "OPEN",
-           "date": "2026-09-01",
-           "note": "discovered while verifying the __xml* accessor surface: the negative test flagged 149 inherited libgcc_s/libc symbols as visible leaks"
-       },
-       {
-           "status": "FIXED",
-           "date": "2026-09-01",
-           "note": "negative check switched to the DSO's own dynsym"
-       }
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "discovered while verifying the __xml* accessor surface: the negative test flagged 149 inherited libgcc_s/libc symbols as visible leaks"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "negative check switched to the DSO's own dynsym"
+    }
    ]
   },
   {
@@ -3073,7 +3074,7 @@
    ],
    "discovery_date": "2026-09-01",
    "fixed_date": "2026-09-01",
-   "root_cause": "The Dockerfile installed the build toolchain without libicu-dev while the build script enables --with-icu (the executed host oracle is Iconv+ICU-enabled — R-000157's oracle profile).",
+   "root_cause": "The Dockerfile installed the build toolchain without libicu-dev while the build script enables --with-icu (the executed host oracle is Iconv+ICU-enabled \u2014 R-000157's oracle profile).",
    "fix": "Added libicu-dev to the apt install list; the oracle image now builds libxml2 2.15.3 + libxslt 1.1.45 with the ICU profile.",
    "observable_residual": "None: the canonical oracle image builds and the DOCKER-SUBSTITUTION court runs entirely inside it.",
    "triangulation": "DOCKER-SUBSTITUTION court image build + in-VM oracle version receipt.",
@@ -3085,16 +3086,290 @@
    ],
    "classification": "CANDIDATE_BUG",
    "history": [
-       {
-           "status": "OPEN",
-           "date": "2026-09-01",
-           "note": "first docker build of the oracle image failed at ./configure: ICU not found"
-       },
-       {
-           "status": "FIXED",
-           "date": "2026-09-01",
-           "note": "libicu-dev installed in the Dockerfile"
-       }
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "first docker build of the oracle image failed at ./configure: ICU not found"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "libicu-dev installed in the Dockerfile"
+    }
+   ]
+  },
+  {
+   "id": "R-000190",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-THREADS: the error-handler slots (xmlGenericError/Context, xmlStructuredError/Context) and the other 14 TLS-era globals were GLOBAL data instead of thread-local (upstream 2.15 LIBXML_THREAD_ENABLED xmlGetThreadLocalStorage model)",
+   "surface": "Error-handler/parser-default/node-hook/IO-hook globals (globals.c 2.15, xmlerror.h/parser.h/xmlIO.h/tree.h)",
+   "component": [
+    "src/xml/globals/tls.rs",
+    "src/xml/globals/mod.rs",
+    "src/abi/data_globals.rs",
+    "include/libxml/globals.h",
+    "include/libxml/parser.h",
+    "include/libxml/xmlerror.h",
+    "include/libxml/xmlIO.h",
+    "include/libxml/tree.h"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "The candidate exported the 18 TLS-era globals as plain data symbols and the __xml* accessors returned addr_of_mut! of them; upstream 2.15 with LIBXML_THREAD_ENABLED keeps them in per-thread storage (globals.c xmlGetThreadLocalStorage) and the oracle DSO exports ONLY the __xml* accessor FUNCTIONS. A handler installed in one thread was therefore observable from every other thread (HOSTILE-THREADS T2: after the workers installed a no-op structured handler, the main thread's own diagnostics were swallowed on the candidate while the oracle still printed them).",
+   "fix": "Moved all 18 TLS-era globals into thread_local! cells (src/xml/globals/tls.rs), single source of truth per thread; the __xml* accessors now return pointers into the current thread's cells; removed the 18 plain data-symbol exports and switched the candidate headers to the upstream macro/accessor contract (#define xmlXxx (*__xmlXxx())); regenerated the export-surface disposition (libxml2 CUSTODIAN_EXTENSION 45->31).",
+   "observable_residual": "None: xmlSetStructuredErrorFunc/xmlSetGenericErrorFunc are thread-scoped exactly like the oracle; the xmlLastError global mirror (R-000135) is unchanged.",
+   "triangulation": "HOSTILE-THREADS probe (T1 concurrent parses, T2 error isolation, T3 concurrent global reads) byte-identical vs the system oracle; GLOBALS-THREADING and DATA-GLOBALS-001 courts still byte-identical; ABI-FUNCTION-SIGNATURE 3277/3277.",
+   "regression_courts": [
+    "HOSTILE-THREADS",
+    "GLOBALS-THREADING-001",
+    "DATA-GLOBALS-001",
+    "ABI-FUNCTION-SIGNATURE",
+    "HEADER-COMPILE",
+    "EXPORT-SURFACE-DISPOSITION"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-threads-*.json",
+    "src/xml/globals/tls.rs"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-THREADS probe failed: candidate stderr empty where oracle printed the main-thread T2 error \u2014 workers' TLS-scoped structured handler was globally visible on the candidate"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "18 TLS-era globals moved to thread-local cells; data symbols removed; headers use the upstream accessor/macro contract"
+    }
+   ]
+  },
+  {
+   "id": "R-000191",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-ABI: buffer/limits contracts diverged under extreme sizes and NULLs (xmlReadMemory INT_MAX wild-read, xmlBufferCreate/CreateSize negative/overflow, xmlParseChunk NULL/negative, buf_add/buf_add_head edge contract)",
+   "surface": "Parser entry points and buffer primitives under hostile arguments",
+   "component": [
+    "src/abi/exports_xml2.rs",
+    "src/abi/exports_parser.rs",
+    "src/abi/exports_buffer.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "xmlReadMemory accepted size >= INT_MAX and streamed ~2 GiB from the caller's buffer (upstream's own unsized wild read); xmlBufferCreate/CreateSize mishandled negative/overflow sizes; xmlParseChunk did not reject NULL/negative chunks with XML_ERR_ARGUMENT; buf_add/buf_add_head did not reproduce the upstream edge contract (NULL -> -1, negative len -> strlen, 0 -> 0, 0x80000000 cap).",
+   "fix": "xmlReadMemory now rejects size == INT_MAX up front (observable result matches the oracle's deterministic probe outcome); xmlBufferCreate/CreateSize follow the upstream contract (xml_buffer_create_upstream); xmlParseChunk NULL/negative -> XML_ERR_ARGUMENT; buf_add/buf_add_head implement the upstream edge contract exactly.",
+   "observable_residual": "None on the executed platform: 72 NULL/extreme-size attacks byte-identical vs the oracle.",
+   "triangulation": "HOSTILE-ABI probe (72 attacks) byte-identical; security-limits probe unchanged.",
+   "regression_courts": [
+    "HOSTILE-ABI"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-abi-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-ABI probe exposed the buffer/limits divergences"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "upstream-faithful buffer contracts + INT_MAX rejection"
+    }
+   ]
+  },
+  {
+   "id": "R-000192",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-OWNERSHIP: NULL-handling divergences (xmlNewNode/xmlNewPI accepted NULL names, create_int_subset NULL-doc, utf8_strlen(NULL))",
+   "surface": "Tree construction and string helpers under NULL attacks",
+   "component": [
+    "src/xml/tree/mod.rs",
+    "src/xml/dtd/mod.rs",
+    "src/xml/string.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "xmlNewNode/xmlNewPI did not reject NULL names like upstream; create_int_subset with a NULL document created an attached DTD instead of an unattached one; utf8_strlen(NULL) did not return -1.",
+   "fix": "NULL names rejected with upstream messages; create_int_subset(NULL, ...) allocates an unattached DTD exactly like upstream; utf8_strlen(NULL) -> -1.",
+   "observable_residual": "None: HOSTILE-OWNERSHIP O1-O12 byte-identical.",
+   "triangulation": "HOSTILE-OWNERSHIP probe (O1-O12) byte-identical.",
+   "regression_courts": [
+    "HOSTILE-OWNERSHIP"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-ownership-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-OWNERSHIP probe exposed the NULL-handling divergences"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "upstream NULL contracts implemented"
+    }
+   ]
+  },
+  {
+   "id": "R-000193",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-ALLOCATOR: xmlStrcat/xmlStrncat leaked the old buffer on realloc failure; xml_buf_add did not reproduce the upstream failure contract",
+   "surface": "String/buffer append paths under allocator-failure injection",
+   "component": [
+    "src/xml/string.rs",
+    "src/abi/exports_buffer.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "xmlStrcat/xmlStrncat did not free the previous buffer when the reallocation failed (upstream xmlstring.c frees it and returns NULL), leaking under failure injection; xml_buf_add returned the wrong result on failure.",
+   "fix": "xmlStrcat/xmlStrncat free `cur` on realloc failure and return NULL; xml_buf_add implements the upstream contract (0 on success, -1 on failure, no partial write).",
+   "observable_residual": "None: HOSTILE-ALLOCATOR H1-H6 byte-identical under size-based failure injection.",
+   "triangulation": "HOSTILE-ALLOCATOR probe (H1-H6) byte-identical; allocator-hook and allocator-default courts unchanged.",
+   "regression_courts": [
+    "HOSTILE-ALLOCATOR",
+    "ALLOCATOR-HOOK"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-allocator-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-ALLOCATOR probe exposed the realloc-failure leak"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "upstream xmlstring.c failure contract implemented"
+    }
+   ]
+  },
+  {
+   "id": "R-000194",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-CALLBACKS: xmlSAXUserParseMemory/File freed the caller's SAX handler (stack ownership), returned -1 instead of errNo, lost the error-context parent input, and did not propagate I/O source failures",
+   "surface": "SAX callback lifecycle and error-context plumbing under hostile callbacks",
+   "component": [
+    "src/abi/exports_parser.rs",
+    "src/xml/parser/state.rs",
+    "src/xml/parser/input.rs",
+    "src/xml/errors/mod.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "xmlSAXUserParseMemory/xmlSAXUserParseFile copied the caller's SAX into the parser context and then freed it at teardown (freeing a stack object or the caller's storage), returned -1 instead of the raised error number, resolved the error context against the wrong input when the user SAX raised during a nested input, and swallowed read-callback failures (reporting an empty document instead of the I/O error).",
+   "fix": "The user-SAX wrappers deep-copy the handler into library-owned storage and free only that copy; they return errNo; the error context falls back to the parent input; I/O source failures raise XML_IO_UNKNOWN and the 'Document is empty' path is only taken when the source genuinely produced no bytes.",
+   "observable_residual": "None: HOSTILE-CALLBACKS C1-C10 byte-identical.",
+   "triangulation": "HOSTILE-CALLBACKS probe (C1-C10) byte-identical.",
+   "regression_courts": [
+    "HOSTILE-CALLBACKS",
+    "CALLBACK-001"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-callbacks-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-CALLBACKS probe exposed the SAX ownership/errNo/error-context/I/O-failure divergences"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "user-SAX copy ownership, errNo return, parent-input error context, I/O failure propagation implemented"
+    }
+   ]
+  },
+  {
+   "id": "R-000195",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "HOSTILE-FAILURE: diagnostic-surface divergences (regexp handle typedefs missing, depth-limit error not streamed, entity-loop legacy 'cur input' tail, XPath compile diagnostics, xmlParseDTD I/O warning, xmlRegexpCompile invalid patterns)",
+   "surface": "Error/diagnostic output for hostile documents and malformed inputs",
+   "component": [
+    "include/libxml/xmlregexp.h",
+    "src/xml/parser/tokenizer.rs",
+    "src/xml/errors/mod.rs",
+    "src/xml/xpath/",
+    "src/xml/regex/mod.rs",
+    "src/abi/exports_xml2.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "The drop-in headers did not declare the xmlRegexpPtr/xmlRegExecCtxtPtr handles (F8); the depth-limit error was raised without the source window (F1); the entity-loop error lacked upstream's legacy 'cur input' tail line (F2); xmlXPathCompile produced no diagnostics with byte offsets (F3); xmlParseDTD did not emit the file-load I/O warning (F7); xmlRegexpCompile returned a compiled object for invalid patterns instead of NULL (F8).",
+   "fix": "Declared the regexp handle typedefs verbatim from the oracle header; factorized window_at_data and streamed the depth error with a window; plumbed the legacy tail through raise_error_streamed/format_error_streamed; added compile_result + byte offsets to the XPath lexer diagnostics; made xmlParseDTD emit the I/O warning; xmlRegexpCompile returns NULL when the NFA cannot be built.",
+   "observable_residual": "None: HOSTILE-FAILURE F1-F10 byte-identical, including the legacy tail line.",
+   "triangulation": "HOSTILE-FAILURE probe (F1-F10) byte-identical; HEADER-COMPILE 596/596.",
+   "regression_courts": [
+    "HOSTILE-FAILURE",
+    "HEADER-COMPILE"
+   ],
+   "evidence": [
+    "courts/receipts/phase-13/hostile-failure-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "HOSTILE-FAILURE probe exposed the diagnostic-surface divergences"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "regexp typedefs, streamed windows, legacy tail, XPath diagnostics, DTD I/O warning, invalid-regexp NULL implemented"
+    }
+   ]
+  },
+  {
+   "id": "R-000196",
+   "status": "FIXED",
+   "phase": "13",
+   "title": "format-number(-inf) emitted heap garbage: xml_strdup_joined was called on a NON-NUL-terminated '-Infinity' buffer (read-past-end until a NUL), exposed by the Phase-13 TLS data-segment layout shift (CLI-XSLTPROC-0017)",
+   "surface": "xsltFormatNumberConversion negative-infinity path (numbering/mod.rs)",
+   "component": [
+    "src/xslt/numbering/mod.rs"
+   ],
+   "discovery_date": "2026-09-01",
+   "fixed_date": "2026-09-01",
+   "root_cause": "The -Infinity branch assembled `joined = minusSign + infinity` as a Vec WITHOUT a NUL terminator and passed it to xml_strdup_joined, which measures the input with strlen (xml_strdup) \u2014 so the copy read past the Vec's end until an arbitrary NUL, emitting heap garbage (6 bytes EF BF BD 74 71 7F in the CLI-XSLTPROC-0017 heap layout). The bug predates Phase 13 (present at the Phase-12 seal) and was hidden by the previous heap layout; the Phase-13 TLS conversion (18 data symbols removed) shifted the layout and made it observable.",
+   "fix": "NUL-terminate the joined buffer (joined.push(0)) before xml_strdup_joined; the positive-infinity/NaN branches already point at NUL-terminated statics.",
+   "observable_residual": "None: CLI-XSLTPROC-0017 and the full xsltproc court (21/21) are byte-identical again.",
+   "triangulation": "xsltproc CLI court 21/21; minimal repro (fmtmin3.xsl) byte-identical; the failing heap layout was reproduced before the fix and eliminated after it.",
+   "regression_courts": [
+    "CLI-XSLTPROC"
+   ],
+   "evidence": [
+    "courts/receipts/phase-09/xsltproc-*.json"
+   ],
+   "classification": "CANDIDATE_BUG",
+   "history": [
+    {
+     "status": "OPEN",
+     "date": "2026-09-01",
+     "note": "CLI-XSLTPROC-0017 failed after the Phase-13 TLS data-segment shift: '-Infinity' followed by 6 garbage bytes"
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-01",
+     "note": "joined buffer NUL-terminated before xml_strdup_joined"
+    }
    ]
   }
  ]

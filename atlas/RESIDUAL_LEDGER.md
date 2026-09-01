@@ -1146,6 +1146,106 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-09-01 (first docker build of the oracle image failed at ./configure: ICU not found); FIXED 2026-09-01 (libicu-dev installed in the Dockerfile)
 
+## Phase 13 Residuals
+
+### R-000190: HOSTILE-THREADS: the error-handler slots (xmlGenericError/Context, xmlStructuredError/Context) and the other 14 TLS-era globals were GLOBAL data instead of thread-local (upstream 2.15 LIBXML_THREAD_ENABLED xmlGetThreadLocalStorage model) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/xml/globals/tls.rs, src/xml/globals/mod.rs, src/abi/data_globals.rs, include/libxml/globals.h, include/libxml/parser.h, include/libxml/xmlerror.h, include/libxml/xmlIO.h, include/libxml/tree.h
+- **Surface:** Error-handler/parser-default/node-hook/IO-hook globals (globals.c 2.15, xmlerror.h/parser.h/xmlIO.h/tree.h)
+- **Root cause:** The candidate exported the 18 TLS-era globals as plain data symbols and the __xml* accessors returned addr_of_mut! of them; upstream 2.15 with LIBXML_THREAD_ENABLED keeps them in per-thread storage (globals.c xmlGetThreadLocalStorage) and the oracle DSO exports ONLY the __xml* accessor FUNCTIONS. A handler installed in one thread was therefore observable from every other thread (HOSTILE-THREADS T2: after the workers installed a no-op structured handler, the main thread's own diagnostics were swallowed on the candidate while the oracle still printed them).
+- **Observable residual:** None: xmlSetStructuredErrorFunc/xmlSetGenericErrorFunc are thread-scoped exactly like the oracle; the xmlLastError global mirror (R-000135) is unchanged.
+- **Fix:** Moved all 18 TLS-era globals into thread_local! cells (src/xml/globals/tls.rs), single source of truth per thread; the __xml* accessors now return pointers into the current thread's cells; removed the 18 plain data-symbol exports and switched the candidate headers to the upstream macro/accessor contract (#define xmlXxx (*__xmlXxx())); regenerated the export-surface disposition (libxml2 CUSTODIAN_EXTENSION 45->31).
+- **Phase 11 triangulation:** HOSTILE-THREADS probe (T1 concurrent parses, T2 error isolation, T3 concurrent global reads) byte-identical vs the system oracle; GLOBALS-THREADING and DATA-GLOBALS-001 courts still byte-identical; ABI-FUNCTION-SIGNATURE 3277/3277.
+- **Regression courts:** HOSTILE-THREADS, GLOBALS-THREADING-001, DATA-GLOBALS-001, ABI-FUNCTION-SIGNATURE, HEADER-COMPILE, EXPORT-SURFACE-DISPOSITION.
+- **Evidence:** ['courts/receipts/phase-13/hostile-threads-*.json', 'src/xml/globals/tls.rs']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-THREADS probe failed: candidate stderr empty where oracle printed the main-thread T2 error — workers' TLS-scoped structured handler was globally visible on the candidate); FIXED 2026-09-01 (18 TLS-era globals moved to thread-local cells; data symbols removed; headers use the upstream accessor/macro contract)
+
+### R-000191: HOSTILE-ABI: buffer/limits contracts diverged under extreme sizes and NULLs (xmlReadMemory INT_MAX wild-read, xmlBufferCreate/CreateSize negative/overflow, xmlParseChunk NULL/negative, buf_add/buf_add_head edge contract) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/abi/exports_xml2.rs, src/abi/exports_parser.rs, src/abi/exports_buffer.rs
+- **Surface:** Parser entry points and buffer primitives under hostile arguments
+- **Root cause:** xmlReadMemory accepted size >= INT_MAX and streamed ~2 GiB from the caller's buffer (upstream's own unsized wild read); xmlBufferCreate/CreateSize mishandled negative/overflow sizes; xmlParseChunk did not reject NULL/negative chunks with XML_ERR_ARGUMENT; buf_add/buf_add_head did not reproduce the upstream edge contract (NULL -> -1, negative len -> strlen, 0 -> 0, 0x80000000 cap).
+- **Observable residual:** None on the executed platform: 72 NULL/extreme-size attacks byte-identical vs the oracle.
+- **Fix:** xmlReadMemory now rejects size == INT_MAX up front (observable result matches the oracle's deterministic probe outcome); xmlBufferCreate/CreateSize follow the upstream contract (xml_buffer_create_upstream); xmlParseChunk NULL/negative -> XML_ERR_ARGUMENT; buf_add/buf_add_head implement the upstream edge contract exactly.
+- **Phase 11 triangulation:** HOSTILE-ABI probe (72 attacks) byte-identical; security-limits probe unchanged.
+- **Regression courts:** HOSTILE-ABI.
+- **Evidence:** ['courts/receipts/phase-13/hostile-abi-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-ABI probe exposed the buffer/limits divergences); FIXED 2026-09-01 (upstream-faithful buffer contracts + INT_MAX rejection)
+
+### R-000192: HOSTILE-OWNERSHIP: NULL-handling divergences (xmlNewNode/xmlNewPI accepted NULL names, create_int_subset NULL-doc, utf8_strlen(NULL)) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/xml/tree/mod.rs, src/xml/dtd/mod.rs, src/xml/string.rs
+- **Surface:** Tree construction and string helpers under NULL attacks
+- **Root cause:** xmlNewNode/xmlNewPI did not reject NULL names like upstream; create_int_subset with a NULL document created an attached DTD instead of an unattached one; utf8_strlen(NULL) did not return -1.
+- **Observable residual:** None: HOSTILE-OWNERSHIP O1-O12 byte-identical.
+- **Fix:** NULL names rejected with upstream messages; create_int_subset(NULL, ...) allocates an unattached DTD exactly like upstream; utf8_strlen(NULL) -> -1.
+- **Phase 11 triangulation:** HOSTILE-OWNERSHIP probe (O1-O12) byte-identical.
+- **Regression courts:** HOSTILE-OWNERSHIP.
+- **Evidence:** ['courts/receipts/phase-13/hostile-ownership-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-OWNERSHIP probe exposed the NULL-handling divergences); FIXED 2026-09-01 (upstream NULL contracts implemented)
+
+### R-000193: HOSTILE-ALLOCATOR: xmlStrcat/xmlStrncat leaked the old buffer on realloc failure; xml_buf_add did not reproduce the upstream failure contract (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/xml/string.rs, src/abi/exports_buffer.rs
+- **Surface:** String/buffer append paths under allocator-failure injection
+- **Root cause:** xmlStrcat/xmlStrncat did not free the previous buffer when the reallocation failed (upstream xmlstring.c frees it and returns NULL), leaking under failure injection; xml_buf_add returned the wrong result on failure.
+- **Observable residual:** None: HOSTILE-ALLOCATOR H1-H6 byte-identical under size-based failure injection.
+- **Fix:** xmlStrcat/xmlStrncat free `cur` on realloc failure and return NULL; xml_buf_add implements the upstream contract (0 on success, -1 on failure, no partial write).
+- **Phase 11 triangulation:** HOSTILE-ALLOCATOR probe (H1-H6) byte-identical; allocator-hook and allocator-default courts unchanged.
+- **Regression courts:** HOSTILE-ALLOCATOR, ALLOCATOR-HOOK.
+- **Evidence:** ['courts/receipts/phase-13/hostile-allocator-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-ALLOCATOR probe exposed the realloc-failure leak); FIXED 2026-09-01 (upstream xmlstring.c failure contract implemented)
+
+### R-000194: HOSTILE-CALLBACKS: xmlSAXUserParseMemory/File freed the caller's SAX handler (stack ownership), returned -1 instead of errNo, lost the error-context parent input, and did not propagate I/O source failures (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/abi/exports_parser.rs, src/xml/parser/state.rs, src/xml/parser/input.rs, src/xml/errors/mod.rs
+- **Surface:** SAX callback lifecycle and error-context plumbing under hostile callbacks
+- **Root cause:** xmlSAXUserParseMemory/xmlSAXUserParseFile copied the caller's SAX into the parser context and then freed it at teardown (freeing a stack object or the caller's storage), returned -1 instead of the raised error number, resolved the error context against the wrong input when the user SAX raised during a nested input, and swallowed read-callback failures (reporting an empty document instead of the I/O error).
+- **Observable residual:** None: HOSTILE-CALLBACKS C1-C10 byte-identical.
+- **Fix:** The user-SAX wrappers deep-copy the handler into library-owned storage and free only that copy; they return errNo; the error context falls back to the parent input; I/O source failures raise XML_IO_UNKNOWN and the 'Document is empty' path is only taken when the source genuinely produced no bytes.
+- **Phase 11 triangulation:** HOSTILE-CALLBACKS probe (C1-C10) byte-identical.
+- **Regression courts:** HOSTILE-CALLBACKS, CALLBACK-001.
+- **Evidence:** ['courts/receipts/phase-13/hostile-callbacks-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-CALLBACKS probe exposed the SAX ownership/errNo/error-context/I/O-failure divergences); FIXED 2026-09-01 (user-SAX copy ownership, errNo return, parent-input error context, I/O failure propagation implemented)
+
+### R-000195: HOSTILE-FAILURE: diagnostic-surface divergences (regexp handle typedefs missing, depth-limit error not streamed, entity-loop legacy 'cur input' tail, XPath compile diagnostics, xmlParseDTD I/O warning, xmlRegexpCompile invalid patterns) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** include/libxml/xmlregexp.h, src/xml/parser/tokenizer.rs, src/xml/errors/mod.rs, src/xml/xpath/, src/xml/regex/mod.rs, src/abi/exports_xml2.rs
+- **Surface:** Error/diagnostic output for hostile documents and malformed inputs
+- **Root cause:** The drop-in headers did not declare the xmlRegexpPtr/xmlRegExecCtxtPtr handles (F8); the depth-limit error was raised without the source window (F1); the entity-loop error lacked upstream's legacy 'cur input' tail line (F2); xmlXPathCompile produced no diagnostics with byte offsets (F3); xmlParseDTD did not emit the file-load I/O warning (F7); xmlRegexpCompile returned a compiled object for invalid patterns instead of NULL (F8).
+- **Observable residual:** None: HOSTILE-FAILURE F1-F10 byte-identical, including the legacy tail line.
+- **Fix:** Declared the regexp handle typedefs verbatim from the oracle header; factorized window_at_data and streamed the depth error with a window; plumbed the legacy tail through raise_error_streamed/format_error_streamed; added compile_result + byte offsets to the XPath lexer diagnostics; made xmlParseDTD emit the I/O warning; xmlRegexpCompile returns NULL when the NFA cannot be built.
+- **Phase 11 triangulation:** HOSTILE-FAILURE probe (F1-F10) byte-identical; HEADER-COMPILE 596/596.
+- **Regression courts:** HOSTILE-FAILURE, HEADER-COMPILE.
+- **Evidence:** ['courts/receipts/phase-13/hostile-failure-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (HOSTILE-FAILURE probe exposed the diagnostic-surface divergences); FIXED 2026-09-01 (regexp typedefs, streamed windows, legacy tail, XPath diagnostics, DTD I/O warning, invalid-regexp NULL implemented)
+
+### R-000196: format-number(-inf) emitted heap garbage: xml_strdup_joined was called on a NON-NUL-terminated '-Infinity' buffer (read-past-end until a NUL), exposed by the Phase-13 TLS data-segment layout shift (CLI-XSLTPROC-0017) (FIXED)
+
+- **Status:** FIXED (2026-09-01, Phase 13)
+- **Component:** src/xslt/numbering/mod.rs
+- **Surface:** xsltFormatNumberConversion negative-infinity path (numbering/mod.rs)
+- **Root cause:** The -Infinity branch assembled `joined = minusSign + infinity` as a Vec WITHOUT a NUL terminator and passed it to xml_strdup_joined, which measures the input with strlen (xml_strdup) — so the copy read past the Vec's end until an arbitrary NUL, emitting heap garbage (6 bytes EF BF BD 74 71 7F in the CLI-XSLTPROC-0017 heap layout). The bug predates Phase 13 (present at the Phase-12 seal) and was hidden by the previous heap layout; the Phase-13 TLS conversion (18 data symbols removed) shifted the layout and made it observable.
+- **Observable residual:** None: CLI-XSLTPROC-0017 and the full xsltproc court (21/21) are byte-identical again.
+- **Fix:** NUL-terminate the joined buffer (joined.push(0)) before xml_strdup_joined; the positive-infinity/NaN branches already point at NUL-terminated statics.
+- **Phase 11 triangulation:** xsltproc CLI court 21/21; minimal repro (fmtmin3.xsl) byte-identical; the failing heap layout was reproduced before the fix and eliminated after it.
+- **Regression courts:** CLI-XSLTPROC.
+- **Evidence:** ['courts/receipts/phase-09/xsltproc-*.json']
+- **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-01 (CLI-XSLTPROC-0017 failed after the Phase-13 TLS data-segment shift: '-Infinity' followed by 6 garbage bytes); FIXED 2026-09-01 (joined buffer NUL-terminated before xml_strdup_joined)
+
 ## Classification Legend
 
 - `CANDIDATE_BUG` — see classification policy in §45/§71

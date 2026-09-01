@@ -1,0 +1,51 @@
+{
+ "court": "HOSTILE-THREADS",
+ "phase": "13",
+ "timestamp": "20260901T020617Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-threads-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2",
+   "-lpthread"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2",
+   "-lpthread"
+  ]
+ },
+ "verdict": "FAIL",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": false,
+ "stderr_identical": false,
+ "oracle_stdout": "T0: good=50 bad=0 lastcode=89\nT5: good=50 bad=0 lastcode=89\nT3: good=50 bad=0 lastcode=89\nT1: good=50 bad=0 lastcode=89\nT4: good=50 bad=0 lastcode=89\nT2: good=50 bad=0 lastcode=89\nT2 codes=68->0\nT3 globals=ok\nT102: good=50 bad=0 lastcode=89\nT104: good=50 bad=0 lastcode=89\nT100: good=50 bad=0 lastcode=89\nT101: good=50 bad=0 lastcode=89\nT105: good=50 bad=0 lastcode=89\nT103: good=50 bad=0 lastcode=89\nHOSTILE-THREADS VERDICT PASS\n",
+ "candidate_stdout": "T5: good=50 bad=0 lastcode=89\nT2: good=50 bad=0 lastcode=89\nT0: good=50 bad=0 lastcode=89\nT4: good=50 bad=0 lastcode=89\nT3: good=50 bad=0 lastcode=89\nT1: good=50 bad=0 lastcode=89\nT2 codes=68->0\nT3 globals=ok\nT101: good=50 bad=0 lastcode=89\nT100: good=50 bad=0 lastcode=89\nT102: good=50 bad=0 lastcode=89\nT105: good=50 bad=0 lastcode=89\nT103: good=50 bad=0 lastcode=89\nT104: good=50 bad=0 lastcode=89\nHOSTILE-THREADS VERDICT PASS\n",
+ "oracle_stderr": "t:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : t:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: t:1: parser error : parser Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nStartTag: invalid element name\nt:1: t:1: error : parser StartTag: invalid element name\nerror : parser StartTag: invalid element name\nerror : Detected an entity reference loop\n<<<\n<<<\n ^\n ^\n<<<\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \nt:1: parser &a;\n   ^\nt:1: <!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n ^\nparser error : StartTag: invalid element name\n<<<\n ^\nerror : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \nt:1:                                       ^\nEntity: line 1: \n&a;\n   ^\nEntity: line 1: \n&a;\n   ^\n&a;\n   ^\nt:1: parser error : StartTag: invalid element name\nt:1: t:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : StartTag: invalid element name\n<<<\n<<<\n ^\nt:1: parser parser t:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\nerror :                                       ^\nEntity: line 1: \n&a;\n   ^\n ^\nt:1: parser parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : Detected an entity reference loop\nerror : t:1: Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \nDetected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\nt:1:                                       ^\n&a;\nerror : StartTag: invalid element name\n   ^\nparser parser error : error : Detected an entity reference loop\n<<<\nDetected an entity reference loop\nt:1: Entity: line 1: \n ^\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n<!DOCTYPE r [<!ENTIT",
+ "candidate_stderr": "t:1: t:1: parser t:1: t:1: t:1: parser error : StartTag: invalid element name\n<<<\nparser  ^\nerror : StartTag: invalid element name\nparser t:1: parser error : <<<\n ^\nerror : StartTag: invalid element name\n<<<\n ^\nerror : StartTag: invalid element name\n<<<\n ^\nparser error : StartTag: invalid element name\n<<<\n ^\nStartTag: invalid element name\n<<<\n ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \nt:1: t:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \nt:1: &a;\n&a;\n   ^\nparser parser error : Detected an entity reference loop\n   ^\nerror : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n                                      ^\nEntity: line 1: \n&a;\n&a;\n   ^\n   ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n&a;\n   ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n&a;\n   ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n&a;\n   ^\nt:1: t:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\nparser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                           "
+}

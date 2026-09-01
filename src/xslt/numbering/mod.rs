@@ -817,6 +817,11 @@ pub(crate) unsafe fn xslt_format_number_conversion(
                 let inf = fmt_char(fmt, |f| (*f).infinity, &DEF_INFINITY);
                 let mut joined = unsafe_bytes(ms).to_vec();
                 joined.extend_from_slice(unsafe_bytes(inf));
+                // NUL-terminate before xml_strdup: xml_strdup measures with
+                // strlen, so a non-terminated buffer would read past its end
+                // (heap-layout-dependent garbage — exposed by the Phase-13
+                // TLS data-segment shift on CLI-XSLTPROC-0017).
+                joined.push(0);
                 *result = xml_strdup_joined(&joined);
                 return status;
             }

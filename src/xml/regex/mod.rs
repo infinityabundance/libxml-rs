@@ -1543,6 +1543,12 @@ pub unsafe extern "C" fn xmlRegexpCompile(pattern: *const xmlChar) -> *mut XmlRe
     let pattern_bytes = unsafe { core::slice::from_raw_parts(pattern, len) };
 
     let nfa = compile_pattern(pattern_bytes);
+    // UPSTREAM-PARITY (regexp.c xmlRegexpCompile): an invalid pattern is
+    // rejected up front — unbalanced brackets/groups return NULL
+    // (HOSTILE-FAILURE F8).
+    if nfa.is_none() {
+        return ptr::null_mut();
+    }
     let pattern_copy = xml_strdup(pattern);
 
     let compiled = xmlMallocImpl(core::mem::size_of::<XmlRegexp>()) as *mut XmlRegexp;

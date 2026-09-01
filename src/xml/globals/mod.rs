@@ -35,6 +35,17 @@
 //! xmlDefaultSAXHandler, xmlLastError, xmlParserVersion, ...) exposed as
 //! public ABI data symbols (R-000135).
 //!
+//! Phase 13 (HOSTILE-THREADS): the 2.15 LIBXML_THREAD_ENABLED model keeps the
+//! parser defaults, the error-handler slots and the node/IO hooks in
+//! THREAD-LOCAL storage (globals.c `xmlGetThreadLocalStorage`); the oracle
+//! DSO exports only the `__xml*` accessor functions for them. The candidate
+//! mirrors that model with `tls` cells (single source of truth per thread);
+//! the C-visible data symbols were removed for those 18 globals and the
+//! candidate headers now use the upstream macro/accessor contract.
+//! Everything else (`xmlParserVersion`, `xmlDefaultSAXHandler`, the
+//! allocator hooks, the `xmlLastError` mirror, ...) remains plain global
+//! data, matching the executed oracle.
+//!
 //! # Conceptual behavior
 //!
 //! Manages parser defaults, generic/structured error callbacks, catalog
@@ -44,12 +55,13 @@
 //!
 //! # Ownership & safety invariants
 //!
-//! SAFETY: exported C-visible globals keep upstream documented racy semantics
-//! for direct readers, while the internal Rust accessors serialize (handler,
-//! ctx) slot pairs under ERROR_HANDLER_LOCK so readers never observe a new
-//! handler with an old context (R-000171). The xmlLastError mirror is deep-
-//! copied under LAST_ERROR_MIRROR_LOCK (R-000170: concurrent sync/reset
-//! double-freed the mirror strings). Error state is thread-local.
+//! SAFETY: the TLS-era globals are per-thread cells (see `tls`); the
+//! (handler, ctx) slot pairs are serialized under ERROR_HANDLER_LOCK so
+//! readers never observe a new handler with an old context (R-000171) — the
+//! lock now serializes same-thread set/get, since each thread owns its own
+//! slots. The xmlLastError mirror is deep- copied under
+//! LAST_ERROR_MIRROR_LOCK (R-000170: concurrent sync/reset double-freed the
+//! mirror strings). Error state is thread-local.
 //!
 //! # Historical quirks & epochs
 //!
@@ -97,12 +109,16 @@ use core::cell::RefCell;
 use core::ffi::c_void;
 use core::ptr;
 use core::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 
 use crate::abi::allocator;
 use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
-use crate::abi::structs::_xmlError;
+use crate::abi::structs::{_xmlError, _xmlNode, _xmlOutputBuffer, _xmlParserInputBuffer};
+use crate::abi::types::xmlChar;
 use crate::abi::versioning;
+
+pub mod tls;
+use tls::{tls_get, tls_ptr, tls_set};
 
 /// Serializes the exported error-handler slot pairs
 /// (`xmlGenericError`/`xmlGenericErrorContext` and
@@ -186,130 +202,173 @@ thread_local! {
 // Public Accessors — Parser Defaults
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Get the default validity checking value.
+/// Get the default validity checking value (thread-local, upstream 2.15).
 pub fn get_validity_checking_default() -> c_int {
-    // SAFETY: reading an exported int global; matches upstream semantics.
-    unsafe { crate::abi::data_globals::xmlDoValidityCheckingDefaultValue }
+    tls_get(&tls::DO_VALIDITY)
 }
 
-/// Set the default validity checking value.
+/// Set the default validity checking value (thread-local, upstream 2.15).
 pub fn set_validity_checking_default(val: c_int) {
-    // SAFETY: writing an exported int global; matches upstream semantics.
-    unsafe {
-        crate::abi::data_globals::xmlDoValidityCheckingDefaultValue = val;
-    }
+    tls_set(&tls::DO_VALIDITY, val);
 }
 
-/// Get the default warnings value.
+/// Get the default warnings value (thread-local, upstream 2.15).
 pub fn get_do_warnings_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlGetWarningsDefaultValue).
-    unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue }
+    tls_get(&tls::GET_WARNINGS)
 }
 
-/// Set the default warnings value.
+/// Set the default warnings value (thread-local, upstream 2.15).
 pub fn set_do_warnings_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlGetWarningsDefaultValue = val;
-    }
+    tls_set(&tls::GET_WARNINGS, val);
 }
 
-/// Get the indent tree output default.
+/// Get the indent tree output default (thread-local, upstream 2.15).
 pub fn get_indent_tree_output() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlIndentTreeOutput).
-    unsafe { crate::abi::data_globals::xmlIndentTreeOutput }
+    tls_get(&tls::INDENT_TREE_OUTPUT)
 }
 
-/// Set the indent tree output default.
+/// Set the indent tree output default (thread-local, upstream 2.15).
 pub fn set_indent_tree_output(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlIndentTreeOutput = val;
-    }
+    tls_set(&tls::INDENT_TREE_OUTPUT, val);
 }
 
-/// Get the keep blanks default value.
+/// Get the keep blanks default value (thread-local, upstream 2.15).
 pub fn get_keep_blanks_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlKeepBlanksDefaultValue).
-    unsafe { crate::abi::data_globals::xmlKeepBlanksDefaultValue }
+    tls_get(&tls::KEEP_BLANKS)
 }
 
-/// Set the keep blanks default value.
+/// Set the keep blanks default value (thread-local, upstream 2.15).
 pub fn set_keep_blanks_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlKeepBlanksDefaultValue = val;
-    }
+    tls_set(&tls::KEEP_BLANKS, val);
 }
 
-/// Get the load external DTD default value.
+/// Get the load external DTD default value (thread-local, upstream 2.15).
 pub fn get_load_ext_dtd_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlLoadExtDtdDefaultValue).
-    unsafe { crate::abi::data_globals::xmlLoadExtDtdDefaultValue }
+    tls_get(&tls::LOAD_EXT_DTD)
 }
 
-/// Set the load external DTD default value.
+/// Set the load external DTD default value (thread-local, upstream 2.15).
 pub fn set_load_ext_dtd_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlLoadExtDtdDefaultValue = val;
-    }
+    tls_set(&tls::LOAD_EXT_DTD, val);
 }
 
-/// Get the pedantic parser default.
+/// Get the pedantic parser default (thread-local, upstream 2.15).
 pub fn get_pedantic_parser_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlPedanticParserDefaultValue).
-    unsafe { crate::abi::data_globals::xmlPedanticParserDefaultValue }
+    tls_get(&tls::PEDANTIC)
 }
 
-/// Set the pedantic parser default.
+/// Set the pedantic parser default (thread-local, upstream 2.15).
 pub fn set_pedantic_parser_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlPedanticParserDefaultValue = val;
-    }
+    tls_set(&tls::PEDANTIC, val);
 }
 
-/// Get the substitute entities default.
+/// Get the substitute entities default (thread-local, upstream 2.15).
 pub fn get_substitute_entities_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlSubstituteEntitiesDefaultValue).
-    unsafe { crate::abi::data_globals::xmlSubstituteEntitiesDefaultValue }
+    tls_get(&tls::SUBSTITUTE_ENTITIES)
 }
 
-/// Set the substitute entities default.
+/// Set the substitute entities default (thread-local, upstream 2.15).
 pub fn set_substitute_entities_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlSubstituteEntitiesDefaultValue = val;
-    }
+    tls_set(&tls::SUBSTITUTE_ENTITIES, val);
 }
 
-/// Get the save no empty tags default.
+/// Get the save no empty tags default (thread-local, upstream 2.15).
 pub fn get_save_no_empty_tags() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlSaveNoEmptyTags).
-    unsafe { crate::abi::data_globals::xmlSaveNoEmptyTags }
+    tls_get(&tls::SAVE_NO_EMPTY_TAGS)
 }
 
-/// Set the save no empty tags default.
+/// Set the save no empty tags default (thread-local, upstream 2.15).
 pub fn set_save_no_empty_tags(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlSaveNoEmptyTags = val;
-    }
+    tls_set(&tls::SAVE_NO_EMPTY_TAGS, val);
 }
 
-/// Get the get warnings default.
+/// Get the get warnings default (thread-local, upstream 2.15).
 pub fn get_get_warnings_default() -> c_int {
-    // SAFETY: reading an exported int global (upstream xmlGetWarningsDefaultValue).
-    unsafe { crate::abi::data_globals::xmlGetWarningsDefaultValue }
+    tls_get(&tls::GET_WARNINGS)
 }
 
-/// Set the get warnings default.
+/// Set the get warnings default (thread-local, upstream 2.15).
 pub fn set_get_warnings_default(val: c_int) {
-    // SAFETY: writing an exported int global.
-    unsafe {
-        crate::abi::data_globals::xmlGetWarningsDefaultValue = val;
-    }
+    tls_set(&tls::GET_WARNINGS, val);
+}
+
+/// Get `xmlLineNumbersDefaultValue` (thread-local, upstream 2.15).
+pub fn get_line_numbers_default() -> c_int {
+    tls_get(&tls::LINE_NUMBERS)
+}
+
+/// Set `xmlLineNumbersDefaultValue` (thread-local, upstream 2.15).
+pub fn set_line_numbers_default(val: c_int) {
+    tls_set(&tls::LINE_NUMBERS, val);
+}
+
+/// Get `xmlTreeIndentString` (thread-local, upstream 2.15).
+pub fn get_tree_indent_string() -> *const xmlChar {
+    tls_get(&tls::TREE_INDENT_STRING)
+}
+
+/// Set `xmlTreeIndentString` (thread-local, upstream 2.15).
+pub fn set_tree_indent_string(val: *const xmlChar) {
+    tls_set(&tls::TREE_INDENT_STRING, val);
+}
+
+/// Get `xmlRegisterNodeDefaultValue` (thread-local, upstream 2.15).
+pub fn get_register_node_default() -> Option<unsafe extern "C" fn(*mut _xmlNode)> {
+    tls_get(&tls::REGISTER_NODE)
+}
+
+/// Set `xmlRegisterNodeDefaultValue` (thread-local, upstream 2.15).
+pub fn set_register_node_default(val: Option<unsafe extern "C" fn(*mut _xmlNode)>) {
+    tls_set(&tls::REGISTER_NODE, val);
+}
+
+/// Get `xmlDeregisterNodeDefaultValue` (thread-local, upstream 2.15).
+pub fn get_deregister_node_default() -> Option<unsafe extern "C" fn(*mut _xmlNode)> {
+    tls_get(&tls::DEREGISTER_NODE)
+}
+
+/// Set `xmlDeregisterNodeDefaultValue` (thread-local, upstream 2.15).
+pub fn set_deregister_node_default(val: Option<unsafe extern "C" fn(*mut _xmlNode)>) {
+    tls_set(&tls::DEREGISTER_NODE, val);
+}
+
+/// Get `xmlParserInputBufferCreateFilenameValue` (thread-local, upstream
+/// 2.15).
+pub fn get_parser_input_buffer_create_filename_value(
+) -> Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer> {
+    tls_get(&tls::PARSER_INPUT_CREATE_FILENAME)
+}
+
+/// Set `xmlParserInputBufferCreateFilenameValue` (thread-local, upstream
+/// 2.15).
+pub fn set_parser_input_buffer_create_filename_value(
+    val: Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer>,
+) {
+    tls_set(&tls::PARSER_INPUT_CREATE_FILENAME, val);
+}
+
+/// Get `xmlOutputBufferCreateFilenameValue` (thread-local, upstream 2.15).
+pub fn get_output_buffer_create_filename_value() -> Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        crate::abi::structs::xmlCharEncodingHandlerPtr,
+        c_int,
+    ) -> *mut _xmlOutputBuffer,
+> {
+    tls_get(&tls::OUTPUT_CREATE_FILENAME)
+}
+
+/// Set `xmlOutputBufferCreateFilenameValue` (thread-local, upstream 2.15).
+pub fn set_output_buffer_create_filename_value(
+    val: Option<
+        unsafe extern "C" fn(
+            *const c_char,
+            crate::abi::structs::xmlCharEncodingHandlerPtr,
+            c_int,
+        ) -> *mut _xmlOutputBuffer,
+    >,
+) {
+    tls_set(&tls::OUTPUT_CREATE_FILENAME, val);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -323,33 +382,38 @@ pub fn set_get_warnings_default(val: c_int) {
 /// - `handler` must be a valid function pointer or NULL (to reset to default).
 /// - If non-NULL, the handler may be called at any time with `ctx`.
 pub unsafe fn set_generic_error_func(ctx: *mut c_void, handler: Option<xmlGenericErrorFunc>) {
-    // SAFETY: writing the exported C globals xmlGenericErrorContext /
-    // xmlGenericError; matches upstream xmlSetGenericErrorFunc (NULL resets
-    // to the built-in default stderr printer, error.c). The (ctx, func)
-    // pair is written atomically under ERROR_HANDLER_LOCK.
+    // SAFETY: writing the per-thread error-handler slots
+    // xmlGenericErrorContext / xmlGenericError (TLS, upstream 2.15
+    // xmlSetGenericErrorFunc: NULL resets to the built-in default stderr
+    // printer, error.c). The (ctx, func) pair is written atomically under
+    // ERROR_HANDLER_LOCK (same-thread serialization, R-000171).
     let resolved = match handler {
         Some(h) => Some(h),
         None => crate::abi::data_globals::default_generic_error_func(),
     };
     let _guard = ERROR_HANDLER_LOCK.lock();
-    unsafe {
-        crate::abi::data_globals::xmlGenericErrorContext = ctx;
-        crate::abi::data_globals::xmlGenericError = resolved;
-    }
+    tls_set(&tls::GENERIC_ERROR_CTX, ctx);
+    tls_set(&tls::GENERIC_ERROR, resolved);
 }
 
-/// Get the generic error handler context.
+/// Set the generic error handler context (thread-local; used by the default
+/// stderr printer to lazily default the context per thread, upstream
+/// error.c).
+pub fn set_generic_error_ctx(ctx: *mut c_void) {
+    let _guard = ERROR_HANDLER_LOCK.lock();
+    tls_set(&tls::GENERIC_ERROR_CTX, ctx);
+}
+
+/// Get the generic error handler context (thread-local).
 pub fn get_generic_error_ctx() -> *mut c_void {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    // SAFETY: reading the exported C global xmlGenericErrorContext.
-    unsafe { crate::abi::data_globals::xmlGenericErrorContext }
+    tls_get(&tls::GENERIC_ERROR_CTX)
 }
 
-/// Get the generic error handler function pointer.
+/// Get the generic error handler function pointer (thread-local).
 pub fn get_generic_error_func() -> Option<xmlGenericErrorFunc> {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    // SAFETY: reading the exported C global xmlGenericError.
-    unsafe { crate::abi::data_globals::xmlGenericError }
+    tls_get(&tls::GENERIC_ERROR)
 }
 
 /// Read the generic error (func, ctx) pair atomically.
@@ -360,41 +424,39 @@ pub fn with_generic_error<R>(f: impl FnOnce(Option<xmlGenericErrorFunc>, *mut c_
     let (h, c) = {
         let _guard = ERROR_HANDLER_LOCK.lock();
         (
-            unsafe { crate::abi::data_globals::xmlGenericError },
-            unsafe { crate::abi::data_globals::xmlGenericErrorContext },
+            tls_get(&tls::GENERIC_ERROR),
+            tls_get(&tls::GENERIC_ERROR_CTX),
         )
     };
     f(h, c)
 }
 
-/// Set the structured error handler.
+/// Set the structured error handler (thread-local, upstream 2.15).
 ///
 /// # SAFETY
 ///
 /// - `handler` must be a valid function pointer or NULL.
 pub unsafe fn set_structured_error_func(ctx: *mut c_void, handler: Option<xmlStructuredErrorFunc>) {
-    // SAFETY: writing the exported C globals xmlStructuredErrorContext /
-    // xmlStructuredError; matches upstream xmlSetStructuredErrorFunc. The
-    // (ctx, func) pair is written atomically under ERROR_HANDLER_LOCK.
+    // SAFETY: writing the per-thread error-handler slots
+    // xmlStructuredErrorContext / xmlStructuredError (TLS, upstream 2.15
+    // xmlSetStructuredErrorFunc). The (ctx, func) pair is written
+    // atomically under ERROR_HANDLER_LOCK (same-thread serialization,
+    // R-000171).
     let _guard = ERROR_HANDLER_LOCK.lock();
-    unsafe {
-        crate::abi::data_globals::xmlStructuredErrorContext = ctx;
-        crate::abi::data_globals::xmlStructuredError = handler;
-    }
+    tls_set(&tls::STRUCTURED_ERROR_CTX, ctx);
+    tls_set(&tls::STRUCTURED_ERROR, handler);
 }
 
-/// Get the structured error handler context.
+/// Get the structured error handler context (thread-local).
 pub fn get_structured_error_ctx() -> *mut c_void {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    // SAFETY: reading the exported C global xmlStructuredErrorContext.
-    unsafe { crate::abi::data_globals::xmlStructuredErrorContext }
+    tls_get(&tls::STRUCTURED_ERROR_CTX)
 }
 
-/// Get the structured error handler function pointer.
+/// Get the structured error handler function pointer (thread-local).
 pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
     let _guard = ERROR_HANDLER_LOCK.lock();
-    // SAFETY: reading the exported C global xmlStructuredError.
-    unsafe { crate::abi::data_globals::xmlStructuredError }
+    tls_get(&tls::STRUCTURED_ERROR)
 }
 
 /// Read the structured error (func, ctx) pair atomically.
@@ -405,10 +467,10 @@ pub fn get_structured_error_func() -> Option<xmlStructuredErrorFunc> {
 ///
 /// # Safety
 ///
-/// - The two `unsafe` reads of the exported `xmlStructuredError`/
-///   `xmlStructuredErrorContext` data variables are performed under
-///   `ERROR_HANDLER_LOCK`, matching the write side (xmlSetStructuredError), so
-///   the pair is observed atomically; the values are only borrowed for the
+/// - The two reads of the per-thread `xmlStructuredError`/
+///   `xmlStructuredErrorContext` TLS slots are performed under
+///   `ERROR_HANDLER_LOCK`, matching the write side (xmlSetStructuredError),
+///   so the pair is observed atomically; the values are only borrowed for the
 ///   duration of the closure and never dereferenced here.
 pub fn with_structured_error<R>(
     f: impl FnOnce(Option<xmlStructuredErrorFunc>, *mut c_void) -> R,
@@ -416,11 +478,83 @@ pub fn with_structured_error<R>(
     let (h, c) = {
         let _guard = ERROR_HANDLER_LOCK.lock();
         (
-            unsafe { crate::abi::data_globals::xmlStructuredError },
-            unsafe { crate::abi::data_globals::xmlStructuredErrorContext },
+            tls_get(&tls::STRUCTURED_ERROR),
+            tls_get(&tls::STRUCTURED_ERROR_CTX),
         )
     };
     f(h, c)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// `__xmlXxx()` pointer accessors (upstream threads.c / globals.c)
+// ═══════════════════════════════════════════════════════════════════════════════
+// The deprecated thread-local API exports one `__xmlXxx(void)` accessor per
+// TLS-era global; each returns a pointer to the CURRENT thread's slot so
+// callers can read/write it directly (upstream `#define xmlXxx
+// (*__xmlXxx())`). The candidate's exports (`crate::abi::data_globals`)
+// delegate here; the returned pointers alias the `tls` cells and stay valid
+// for the lifetime of the thread.
+
+pub(crate) fn do_validity_ptr() -> *mut c_int {
+    tls_ptr(&tls::DO_VALIDITY)
+}
+pub(crate) fn get_warnings_ptr() -> *mut c_int {
+    tls_ptr(&tls::GET_WARNINGS)
+}
+pub(crate) fn load_ext_dtd_ptr() -> *mut c_int {
+    tls_ptr(&tls::LOAD_EXT_DTD)
+}
+pub(crate) fn pedantic_ptr() -> *mut c_int {
+    tls_ptr(&tls::PEDANTIC)
+}
+pub(crate) fn line_numbers_ptr() -> *mut c_int {
+    tls_ptr(&tls::LINE_NUMBERS)
+}
+pub(crate) fn keep_blanks_ptr() -> *mut c_int {
+    tls_ptr(&tls::KEEP_BLANKS)
+}
+pub(crate) fn substitute_entities_ptr() -> *mut c_int {
+    tls_ptr(&tls::SUBSTITUTE_ENTITIES)
+}
+pub(crate) fn indent_tree_output_ptr() -> *mut c_int {
+    tls_ptr(&tls::INDENT_TREE_OUTPUT)
+}
+pub(crate) fn tree_indent_string_ptr() -> *mut *const xmlChar {
+    tls_ptr(&tls::TREE_INDENT_STRING)
+}
+pub(crate) fn save_no_empty_tags_ptr() -> *mut c_int {
+    tls_ptr(&tls::SAVE_NO_EMPTY_TAGS)
+}
+pub(crate) fn register_node_ptr() -> *mut Option<unsafe extern "C" fn(*mut _xmlNode)> {
+    tls_ptr(&tls::REGISTER_NODE)
+}
+pub(crate) fn deregister_node_ptr() -> *mut Option<unsafe extern "C" fn(*mut _xmlNode)> {
+    tls_ptr(&tls::DEREGISTER_NODE)
+}
+pub(crate) fn parser_input_create_filename_ptr(
+) -> *mut Option<unsafe extern "C" fn(*const c_char, c_int) -> *mut _xmlParserInputBuffer> {
+    tls_ptr(&tls::PARSER_INPUT_CREATE_FILENAME)
+}
+pub(crate) fn output_create_filename_ptr() -> *mut Option<
+    unsafe extern "C" fn(
+        *const c_char,
+        crate::abi::structs::xmlCharEncodingHandlerPtr,
+        c_int,
+    ) -> *mut _xmlOutputBuffer,
+> {
+    tls_ptr(&tls::OUTPUT_CREATE_FILENAME)
+}
+pub(crate) fn generic_error_ptr() -> *mut Option<xmlGenericErrorFunc> {
+    tls_ptr(&tls::GENERIC_ERROR)
+}
+pub(crate) fn generic_error_ctx_ptr() -> *mut *mut c_void {
+    tls_ptr(&tls::GENERIC_ERROR_CTX)
+}
+pub(crate) fn structured_error_ptr() -> *mut Option<xmlStructuredErrorFunc> {
+    tls_ptr(&tls::STRUCTURED_ERROR)
+}
+pub(crate) fn structured_error_ctx_ptr() -> *mut *mut c_void {
+    tls_ptr(&tls::STRUCTURED_ERROR_CTX)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

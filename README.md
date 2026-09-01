@@ -98,18 +98,85 @@ their Markdown views, `--check` proves byte-reproducibility, and
 `tools/evidence/readme_counts.py` generates the Project Status and
 test-coverage tables in this README. The obligations ledger now covers all
 three oracle projects (libxml2 2.15.3, libxslt 1.1.45, libexslt 0.8.25):
-**0 missing** across 1683 obligations, with the residual closure loop at
-**79 FIXED / 3 OPEN** (82 residuals; the OPEN entries are R-000157
+**0 missing** across 1683 obligations, with the residual ledger at
+**96 FIXED / 4 OPEN** (100 residuals; the OPEN entries are R-000157
 UNRESOLVED — iconv/ICU-only encodings, a real executed-platform gap pending
-an iconv/ICU backend — R-000168, the unexecuted-platform obligation, and
-R-000177, the documented cross-DSO state partitioning of the facades, a
-deliberately-open Phase-12 architectural target).
+an iconv/ICU backend — R-000168, the unexecuted-platform obligation,
+R-000177, the cross-DSO state partitioning of the facades (a deliberately-
+open Phase-12 architectural target), and R-000179, the versioned-distro
+binary contract gap).
 The 11.1-Z.1 amendment shipped three real ELF DSOs (core `libxml2.so.16` +
 post-link facades `libxslt.so.1` and `libexslt.so.0` with the upstream NEEDED
 chain), fixed the parity-matrix per-project DSO accounting, bound the
 generated-evidence input identities (Doxygen inventories + headers), corrected
 the verification-ladder state machine, and added the real
 PREPROCESSOR-SURFACE / AST-SURFACE courts.
+
+### Phase 12 (real downstream substitution)
+
+Phase 12 proved the ecosystem cannot tell the custodian implementation apart
+from upstream — the Phase-11 seal is a `1c35e4e1…`-rooted functional tree
+(commits `fed3cd03` and `d2f72696`, crate `0.1.0-alpha.37`):
+
+- **EXPORT-SURFACE-DISPOSITION**: every candidate DSO export classified
+  CURRENT_ORACLE_EXPORT / HISTORICAL_COMPAT_EXPORT / CUSTODIAN_EXTENSION /
+  INTERNAL_LEAK; the shipped `libxml2.so.16` is the exact executed-oracle
+  surface (version scripts hide the leaks), with the staticlib kept as the
+  full implementation surface.
+- **ELF-VERSIONING + BINARY-SUBSTITUTION** (14/14): the upstream
+  `LIBXML2_1.x` named-version graph (27 nodes) for `libxslt.so.1` with the
+  oracle's per-symbol node assignment; consumers compiled and linked against
+  the ORIGINAL oracle DSOs run unchanged against the candidate DSOs via
+  runtime substitution — DT_VERNEED satisfied, no ld.so warnings.
+- **DYNSYM-SURFACE** (12/12) and **DSO-BOUNDARY-LINT**: the loader-visible
+  surface is the intended contract and nothing escaped from the Rust
+  implementation; the xslt layer may only reach libxml2 state through the
+  sanctioned public ABI gateway (R-000177 machine lint).
+- **STATIC-SUBSTITUTION** (13/13) and **DOCKER-SUBSTITUTION** (17/17, inside
+  a minimal VM): static-linked and containerized unmodified external C
+  consumers (xmllint/xsltproc builds, testWriter.c-style sources) link and
+  run byte-identically.
+- **EXTERNAL-CONSUMERS** (15/15): pkg-config/xml2-config/xslt-config
+  substitution for downstream build systems.
+
+### Phase 13 (hostile audit)
+
+Phase 13 attacked the candidate with NULLs, extremes and UB-adjacent defined
+behavior, court by court, requiring byte-identical stdout/stderr/exit vs the
+system oracle (probe receipts in `courts/receipts/phase-13/`):
+
+- **HOSTILE-ABI** (72 NULL/extreme-size attacks): fixed real buffer/limits
+  divergences — `xmlReadMemory` INT_MAX wild-read rejection, upstream-faithful
+  `xmlBufferCreate/CreateSize`, `xmlParseChunk` NULL/negative →
+  XML_ERR_ARGUMENT, `buf_add`/`buf_add_head` edge contract (R-000191).
+- **HOSTILE-OWNERSHIP** (O1–O12): `xmlNewNode`/`xmlNewPI` NULL-name
+  rejection, `create_int_subset` NULL-doc unattached DTD, `utf8_strlen(NULL)`
+  → -1 (R-000192).
+- **HOSTILE-ALLOCATOR** (H1–H6, size-based failure injection): real ownership
+  bug — `xmlStrcat`/`xmlStrncat` now free the old buffer on realloc failure
+  (R-000193).
+- **HOSTILE-CALLBACKS** (C1–C10): real bugs — `xmlSAXUserParseMemory/File`
+  copy the caller's SAX into own storage (was freeing stack), return errNo,
+  parent-input error-context fallback, I/O source-failure propagation
+  (R-000194).
+- **HOSTILE-FAILURE** (F1–F10): missing `xmlRegexpPtr`/`xmlRegExecCtxtPtr`
+  typedefs, streamed depth-limit error with source window, the legacy
+  entity-loop "cur input" tail, XPath compile diagnostics with byte offsets,
+  `xmlParseDTD` I/O warning, invalid-regexp → NULL (R-000195).
+- **HOSTILE-THREADS** (T1–T3): the error-handler slots and the other 14
+  TLS-era globals were GLOBAL data; upstream 2.15 keeps them thread-local
+  (`xmlGetThreadLocalStorage`) and exports only the `__xml*` accessor
+  FUNCTIONS. The candidate moved all 18 to `thread_local!` cells
+  (`src/xml/globals/tls.rs`), removed the data-symbol exports and switched
+  the headers to the upstream macro/accessor contract — a handler installed
+  in one thread is no longer visible from another (R-000190).
+- **HOSTILE-ORACLE-CONTAMINATION** (dimension 7): readelf/nm/probe prove the
+  candidate DSOs carry no system libxml2/libxslt/libexslt dependency and
+  every symbol resolves inside the candidate directory.
+
+The Phase-13 courts found and permanently courted each defect class; the
+hostile receipts, the TLS-globals model and the header contract changes are
+sealed with the Phase-13 commit.
 
 ### Phase 10 (historical)
 
@@ -205,7 +272,7 @@ docker build -f docker/Dockerfile.oracle -t libxml-rs/oracle:2.12.0 docker/
 
 ### Published artifacts
 
-- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.36`
+- crates.io: [`libxml-rs`](https://crates.io/crates/libxml-rs) `0.1.0-alpha.38`
 - GitHub: <https://github.com/infinityabundance/libxml-rs>
 
 ### Oracle verification
@@ -372,7 +439,8 @@ at your option.
 | C headers | gcc & clang header-compile courts green (596/596, evidence: courts/receipts/header-compile-*) |
 | CLI parity | `xmllint` + `xmlcatalog` + `xsltproc` differential oracle parity (evidence: courts/receipts/CLI-*) |
 | Oracle infrastructure | 12 historical libxml2 + 5 libxslt oracles + system 2.15.3/1.1.45/0.8.25 oracles; evidence: oracle/historical, atlas/DOXYGEN_SURFACE_ATLAS.json |
-| Downstream testing | Not started (Phase 12) |
+| Downstream testing | Phase 12 sealed: EXTERNAL-CONSUMERS 15/15, ELF-VERSIONING + BINARY-SUBSTITUTION 14/14, DYNSYM-SURFACE 12/12, STATIC-SUBSTITUTION 13/13, DOCKER-SUBSTITUTION 17/17, EXPORT-SURFACE-DISPOSITION (evidence: courts/receipts/phase-12/) |
+| Hostile audit | Phase 13 sealed: HOSTILE-ABI / OWNERSHIP / ALLOCATOR / CALLBACKS / FAILURE / THREADS / ORACLE-CONTAMINATION differential courts byte-identical vs the system oracle (evidence: courts/receipts/phase-13/) |
 <!-- GENERATED-STATUS:END -->
 
 See [`atlas/PARITY_MATRIX.md`](atlas/PARITY_MATRIX.md) for the detailed,

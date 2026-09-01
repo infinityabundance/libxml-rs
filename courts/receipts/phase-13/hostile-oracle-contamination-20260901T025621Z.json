@@ -1,0 +1,84 @@
+{
+ "court": "HOSTILE-ORACLE-CONTAMINATION",
+ "phase": "13",
+ "timestamp": "20260901T025621Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-oracle-contamination-probe.c",
+ "verdict": "PASS",
+ "checks": [
+  {
+   "check": "core-no-xml-family-NEEDED",
+   "ok": true,
+   "detail": "core NEEDED=['libgcc_s.so.1', 'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2']"
+  },
+  {
+   "check": "xslt-facade-NEEDs-candidate-core",
+   "ok": true,
+   "detail": "libxslt NEEDED=['libxml2.so.16', 'libgcc_s.so.1', 'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2']"
+  },
+  {
+   "check": "exslt-facade-NEEDs-candidate-xslt+core",
+   "ok": true,
+   "detail": "libexslt NEEDED=['libxslt.so.1', 'libxml2.so.16', 'libgcc_s.so.1', 'libm.so.6', 'libc.so.6', 'ld-linux-x86-64.so.2']"
+  },
+  {
+   "check": "core-no-undefined-xml-family-symbols",
+   "ok": true,
+   "detail": "undefined xml-family: []"
+  },
+  {
+   "check": "libxslt-no-undefined-xml-family-symbols",
+   "ok": true,
+   "detail": "undefined xml-family: []"
+  },
+  {
+   "check": "libexslt-no-undefined-xml-family-symbols",
+   "ok": true,
+   "detail": "undefined xml-family: []"
+  },
+  {
+   "check": "runtime-exit-clean",
+   "ok": true,
+   "detail": "exit=0"
+  },
+  {
+   "check": "dlopen-all-three-SONAMEs",
+   "ok": true,
+   "detail": [
+    "dlopen(libxml2.so.16)=ok handle=(ptr)",
+    "dlopen(libxslt.so.1)=ok handle=(ptr)",
+    "dlopen(libexslt.so.0)=ok handle=(ptr)"
+   ]
+  },
+  {
+   "check": "resolved-xmlReadMemory-inside-candidate",
+   "ok": true,
+   "detail": "xmlReadMemory -> /mnt/1tb_kingston/libxml-rs/target/debug/lib/libxml2.so.16"
+  },
+  {
+   "check": "resolved-xsltApplyStylesheet-inside-candidate",
+   "ok": true,
+   "detail": "xsltApplyStylesheet -> /mnt/1tb_kingston/libxml-rs/target/debug/lib/libxslt.so.1"
+  },
+  {
+   "check": "resolved-exsltRegisterAll-inside-candidate",
+   "ok": true,
+   "detail": "exsltRegisterAll -> /mnt/1tb_kingston/libxml-rs/target/debug/lib/libexslt.so.0"
+  },
+  {
+   "check": "all-symbols-resolved",
+   "ok": true,
+   "detail": "resolved=['exsltRegisterAll', 'xmlReadMemory', 'xsltApplyStylesheet']"
+  },
+  {
+   "check": "candidate-version-marker",
+   "ok": true,
+   "detail": "xmlParserVersion=['21503-GITv2.15.3']"
+  }
+ ],
+ "findings": [],
+ "runtime": {
+  "exit": 0,
+  "stdout": "dlopen(libxml2.so.16)=ok handle=(ptr)\ndlopen(libxslt.so.1)=ok handle=(ptr)\ndlopen(libexslt.so.0)=ok handle=(ptr)\nxmlReadMemory from: /mnt/1tb_kingston/libxml-rs/target/debug/lib/libxml2.so.16\nxsltApplyStylesheet from: /mnt/1tb_kingston/libxml-rs/target/debug/lib/libxslt.so.1\nexsltRegisterAll from: /mnt/1tb_kingston/libxml-rs/target/debug/lib/libexslt.so.0\nxmlParserVersion: 21503-GITv2.15.3\n__xmlGenericError ptr: (ptr)\nHOSTILE-ORACLE-CONTAMINATION VERDICT PASS\n",
+  "stderr": ""
+ }
+}

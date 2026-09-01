@@ -14,11 +14,12 @@
 #include <libxml/tree.h>
 #include <libxml/xmlerror.h>
 #include <libxml/xmlIO.h>
-#include <libxml/dict.h>
+#include <libxml/xmlIO.h>
 #include <libxml/hash.h>
 #include <libxml/valid.h>
 #include <libxml/encoding.h>
 #include <libxml/SAX2.h>
+#include <libxml/entities.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -852,6 +853,110 @@ XMLPUBFUN int xmlThrDefLoadExtDtdDefaultValue(int v);
 XMLPUBFUN int xmlThrDefPedanticParserDefaultValue(int v);
 XMLPUBFUN int xmlThrDefSubstituteEntitiesDefaultValue(int v);
 /* [11.1-S] end: oracle-extracted declarations */
+
+/* [13.1] begin: thread-local global accessors + macro aliases
+ *
+ * Phase 13 (HOSTILE-THREADS): upstream 2.15 with LIBXML_THREAD_ENABLED keeps
+ * these globals per-thread; the headers declare `(*__xmlXxx())` accessor
+ * FUNCTIONS and alias the public names to them, and the DSO exports only the
+ * accessors (nm -D: no data symbols). The candidate implements the same
+ * contract (see src/xml/globals/tls.rs), so consumers compiled against these
+ * headers get thread-local semantics like the oracle. Guarded by
+ * XML_GLOBALS_NO_REDEFINITION exactly like upstream parser.h.
+ */
+XML_DEPRECATED
+XMLPUBFUN int *__xmlDoValidityCheckingDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlGetWarningsDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlKeepBlanksDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlLineNumbersDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlLoadExtDtdDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlPedanticParserDefaultValue(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlSubstituteEntitiesDefaultValue(void);
+#ifdef LIBXML_OUTPUT_ENABLED
+XML_DEPRECATED
+XMLPUBFUN int *__xmlIndentTreeOutput(void);
+XML_DEPRECATED
+XMLPUBFUN const char **__xmlTreeIndentString(void);
+XML_DEPRECATED
+XMLPUBFUN int *__xmlSaveNoEmptyTags(void);
+#endif
+
+#ifndef XML_GLOBALS_NO_REDEFINITION
+  /**
+   * Thread-local setting to enable validation. Defaults to 0.
+   *
+   * @deprecated Use the parser option XML_PARSE_DTDVALID.
+   */
+  #define xmlDoValidityCheckingDefaultValue \
+    (*__xmlDoValidityCheckingDefaultValue())
+  /**
+   * Thread-local setting to disable warnings. Defaults to 1.
+   *
+   * @deprecated Use the parser option XML_PARSE_NOERROR.
+   */
+  #define xmlGetWarningsDefaultValue \
+    (*__xmlGetWarningsDefaultValue())
+  /**
+   * Thread-local setting to keep or remove blank nodes. Defaults to 1.
+   *
+   * @deprecated Use the parser option XML_PARSE_NOBLANKS.
+   */
+  #define xmlKeepBlanksDefaultValue (*__xmlKeepBlanksDefaultValue())
+  /**
+   * Thread-local setting to output line numbers. Defaults to 1.
+   *
+   * @deprecated Use xmlLineNumbersDefault().
+   */
+  #define xmlLineNumbersDefaultValue \
+    (*__xmlLineNumbersDefaultValue())
+  /**
+   * Thread-local setting to load external DTDs. Defaults to 0.
+   *
+   * @deprecated Use the parser option XML_PARSE_DTDLOAD.
+   */
+  #define xmlLoadExtDtdDefaultValue (*__xmlLoadExtDtdDefaultValue())
+  /**
+   * Thread-local setting to enable pedantic parsing. Defaults to 0.
+   *
+   * @deprecated Use the parser option XML_PARSE_PEDANTIC.
+   */
+  #define xmlPedanticParserDefaultValue \
+    (*__xmlPedanticParserDefaultValue())
+  /**
+   * Thread-local setting to substitute entities. Defaults to 0.
+   *
+   * @deprecated Use the parser option XML_PARSE_NOENT.
+   */
+  #define xmlSubstituteEntitiesDefaultValue \
+    (*__xmlSubstituteEntitiesDefaultValue())
+#ifdef LIBXML_OUTPUT_ENABLED
+  /**
+   * Thread-local setting to indent tree output. Defaults to 1.
+   *
+   * @deprecated Use xmlThrDefIndentTreeOutput().
+   */
+  #define xmlIndentTreeOutput (*__xmlIndentTreeOutput())
+  /**
+   * Thread-local setting containing the tree indent string. Defaults to "  ".
+   *
+   * @deprecated Use xmlThrDefTreeIndentString().
+   */
+  #define xmlTreeIndentString (*__xmlTreeIndentString())
+  /**
+   * Thread-local setting to suppress empty tags in output. Defaults to 0.
+   *
+   * @deprecated Use xmlThrDefSaveNoEmptyTags().
+   */
+  #define xmlSaveNoEmptyTags (*__xmlSaveNoEmptyTags())
+#endif
+#endif /* XML_GLOBALS_NO_REDEFINITION */
+/* [13.1] end: thread-local global accessors + macro aliases */
 
 #ifdef __cplusplus
 }

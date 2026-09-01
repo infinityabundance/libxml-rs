@@ -1045,6 +1045,26 @@ XMLPUBFUN int xmlValidateName (const xmlChar *value, int space);
 XMLPUBFUN int xmlValidateQName (const xmlChar *value, int space);
 /* [11.1-S] end: oracle-extracted declarations */
 
+/* [13.1] begin: thread-local node-hook accessors + macro aliases
+ *
+ * Phase 13 (HOSTILE-THREADS): upstream 2.15 keeps the node
+ * register/deregister hooks per-thread (globals.c xmlGetThreadLocalStorage);
+ * the oracle headers alias the names to `(*__xmlXxx())` accessor functions
+ * and the oracle DSO exports only the accessors. The candidate implements
+ * the same contract (src/xml/globals/tls.rs). Guarded by
+ * XML_GLOBALS_NO_REDEFINITION exactly like upstream tree.h.
+ */
+XMLPUBFUN xmlRegisterNodeFunc *__xmlRegisterNodeDefaultValue(void);
+XMLPUBFUN xmlDeregisterNodeFunc *__xmlDeregisterNodeDefaultValue(void);
+
+#ifndef XML_GLOBALS_NO_REDEFINITION
+  #define xmlRegisterNodeDefaultValue \
+    (*__xmlRegisterNodeDefaultValue())
+  #define xmlDeregisterNodeDefaultValue \
+    (*__xmlDeregisterNodeDefaultValue())
+#endif /* XML_GLOBALS_NO_REDEFINITION */
+/* [13.1] end: thread-local node-hook accessors + macro aliases */
+
 #ifdef __cplusplus
 }
 #endif

@@ -1106,6 +1106,53 @@ XMLPUBFUN void xmlThrDefSetGenericErrorFunc(void *ctx, xmlGenericErrorFunc handl
 XMLPUBFUN void xmlThrDefSetStructuredErrorFunc(void *ctx, xmlStructuredErrorFunc handler);
 /* [11.1-S] end: oracle-extracted declarations */
 
+/* [13.1] begin: thread-local error-handler accessors + macro aliases
+ *
+ * Phase 13 (HOSTILE-THREADS): upstream 2.15 with LIBXML_THREAD_ENABLED keeps
+ * the error-handler slots per-thread; `xmlSetGenericErrorFunc` /
+ * `xmlSetStructuredErrorFunc` affect only the calling thread and the DSO
+ * exports only these accessor FUNCTIONS (nm -D: no data symbols for the
+ * handler slots). The candidate implements the same contract
+ * (src/xml/globals/tls.rs); `xmlLastError` keeps its global mirror
+ * declaration above (R-000135). Guarded by XML_GLOBALS_NO_REDEFINITION
+ * exactly like upstream xmlerror.h.
+ */
+XMLPUBFUN xmlGenericErrorFunc *__xmlGenericError(void);
+XMLPUBFUN void **__xmlGenericErrorContext(void);
+XMLPUBFUN xmlStructuredErrorFunc *__xmlStructuredError(void);
+XMLPUBFUN void **__xmlStructuredErrorContext(void);
+
+#ifndef XML_GLOBALS_NO_REDEFINITION
+  /**
+   * Thread-local variable containing the generic error callback.
+   *
+   * @deprecated See xmlSetStructuredErrorFunc().
+   */
+  #define xmlGenericError (*__xmlGenericError())
+  /**
+   * Thread-local variable containing user data for the generic
+   * error handler.
+   *
+   * @deprecated See xmlSetStructuredErrorFunc().
+   */
+  #define xmlGenericErrorContext (*__xmlGenericErrorContext())
+  /**
+   * Thread-local variable containing the structured error
+   * callback.
+   *
+   * @deprecated Use a per-context error handler.
+   */
+  #define xmlStructuredError (*__xmlStructuredError())
+  /**
+   * Thread-local variable containing user data for the
+   * structured error handler.
+   *
+   * @deprecated Use a per-context error handler.
+   */
+  #define xmlStructuredErrorContext (*__xmlStructuredErrorContext())
+#endif /* XML_GLOBALS_NO_REDEFINITION */
+/* [13.1] end: thread-local error-handler accessors + macro aliases */
+
 #ifdef __cplusplus
 }
 #endif

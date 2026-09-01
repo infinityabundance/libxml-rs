@@ -247,6 +247,9 @@ pub struct Lexer {
     ch: u8,
     /// Whether we're at the start of an expression (helps with `-` vs `-`)
     at_start: bool,
+    /// Byte offset at which each produced token starts (parallel to the
+    /// caller's token stream; feeds upstream's XPath error caret).
+    token_starts: Vec<usize>,
 }
 
 impl Lexer {
@@ -259,7 +262,14 @@ impl Lexer {
             pos: 0,
             ch,
             at_start: true,
+            token_starts: Vec::new(),
         }
+    }
+
+    /// Byte offsets at which each produced token starts (parallel to the
+    /// caller's token stream).
+    pub fn token_starts(&self) -> &[usize] {
+        &self.token_starts
     }
 
     /// Advance to the next character.
@@ -419,6 +429,9 @@ impl Lexer {
     /// Get the next token.
     pub fn next_token(&mut self) -> Token {
         self.skip_ws();
+        // Record the token's byte offset (upstream `ctxt->cur - ctxt->base`
+        // for the XPath error caret).
+        self.token_starts.push(self.pos);
 
         if self.ch == 0 {
             return Token::Eof;

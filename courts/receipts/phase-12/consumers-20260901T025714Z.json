@@ -1,0 +1,27 @@
+{
+  "court": "EXTERNAL-CONSUMERS",
+  "phase": "12",
+  "timestamp": "20260901T025714Z",
+  "schema": "external-consumers-1",
+  "source": "oracle/historical/src/libxml2-2.15.0/example (unmodified)",
+  "cases": [
+    {"item":"consumer:parse1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:parse2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:parse3 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:parse4 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:reader1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:reader2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:reader3 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:reader4 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:tree1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:tree2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:xpath1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:xpath2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:io1 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:io2 (byte-identical, rc=0)","status":"PASS"},
+    {"item":"consumer:testWriter (byte-identical, rc=0)","status":"PASS"}
+  ],
+  "summary": { "passed": 15, "failed": 0 },
+  "failures": {
+  }
+}

@@ -718,8 +718,13 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
 /// # SAFETY
 ///
 /// - `ns` may be NULL.
-/// - `name` must be a valid null-terminated string or NULL.
+/// - `name` must be a valid null-terminated string or NULL (NULL returns
+///   NULL — upstream tree.c `xmlNewNode` rejects a NULL name up front,
+///   HOSTILE-ABI A48).
 pub unsafe fn new_node(ns: *mut _xmlNs, name: *const xmlChar) -> *mut _xmlNode {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
     let node = allocator::xmlMallocZero(size_of::<_xmlNode>() as usize) as *mut _xmlNode;
     if node.is_null() {
         return ptr::null_mut();
@@ -1607,6 +1612,11 @@ pub unsafe fn new_comment(content: *const xmlChar) -> *mut _xmlNode {
 /// - `name` must be a valid null-terminated string.
 /// - `content` must be a valid null-terminated string or NULL.
 pub unsafe fn new_pi(name: *const xmlChar, content: *const xmlChar) -> *mut _xmlNode {
+    // UPSTREAM-PARITY (tree.c xmlNewPI): a NULL target name is rejected up
+    // front — HOSTILE-ABI A46.
+    if name.is_null() {
+        return ptr::null_mut();
+    }
     let node = allocator::xmlMallocZero(size_of::<_xmlNode>() as usize) as *mut _xmlNode;
     if node.is_null() {
         return ptr::null_mut();
@@ -4974,7 +4984,9 @@ mod tests {
         unsafe {
             assert!(!new_doc(ptr::null()).is_null()); // Should succeed with default version
             let doc = new_doc(ptr::null());
-            assert!(!new_node(ptr::null_mut(), ptr::null()).is_null()); // Should succeed
+            // UPSTREAM-PARITY (tree.c xmlNewNode): a NULL name is rejected
+            // up front (HOSTILE-ABI A48).
+            assert!(new_node(ptr::null_mut(), ptr::null()).is_null());
             free_node(ptr::null_mut()); // Should not crash
             free_doc(ptr::null_mut()); // Should not crash
             unlink_node(ptr::null_mut()); // Should not crash

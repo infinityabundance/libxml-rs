@@ -1,0 +1,49 @@
+{
+ "court": "HOSTILE-ALLOCATOR",
+ "phase": "13",
+ "timestamp": "20260901T024119Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-allocator-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "PASS",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": true,
+ "stderr_identical": true,
+ "oracle_stdout": "H1 setup-NULL=-1\nH1 allocator-unchanged=(yes)\nH2 xmlReadMemory=(nil)\nH2 xmlNewDoc=(nil)\nH2 xmlStrdup=(nil)\nH2 xmlMalloc(16)=(nil)\nH2 xmlMalloc(0)=(nil)\nH2 xmlBufferCreate=(nil)\nH2 xmlNewTextReader=(nil)\nH2 xmlFree(NULL) inert\nH2 revived parse=(ptr)\nH3 small parse=(nil)\nH3 large parse=(nil)\nH4 buffer=(ptr)\nH4 bufferAdd-grow=0\nH4 xmlStrncat=(nil)\nH5 xmlStrdup=(ptr)\nH5 xmlMemStrdup=(nil)\nH5 revived xmlStrdup=(ptr)\nH6 get-match=(yes)\nH6 restored=(yes)\nHOSTILE-ALLOCATOR VERDICT PASS\n",
+ "candidate_stdout": "H1 setup-NULL=-1\nH1 allocator-unchanged=(yes)\nH2 xmlReadMemory=(nil)\nH2 xmlNewDoc=(nil)\nH2 xmlStrdup=(nil)\nH2 xmlMalloc(16)=(nil)\nH2 xmlMalloc(0)=(nil)\nH2 xmlBufferCreate=(nil)\nH2 xmlNewTextReader=(nil)\nH2 xmlFree(NULL) inert\nH2 revived parse=(ptr)\nH3 small parse=(nil)\nH3 large parse=(nil)\nH4 buffer=(ptr)\nH4 bufferAdd-grow=0\nH4 xmlStrncat=(nil)\nH5 xmlStrdup=(ptr)\nH5 xmlMemStrdup=(nil)\nH5 revived xmlStrdup=(ptr)\nH6 get-match=(yes)\nH6 restored=(yes)\nHOSTILE-ALLOCATOR VERDICT PASS\n",
+ "oracle_stderr": "",
+ "candidate_stderr": ""
+}

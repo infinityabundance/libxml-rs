@@ -1772,6 +1772,16 @@ pub unsafe extern "C" fn xmlCtxtReadIO(
     }
     unsafe {
         let input = helpers::input_from_io(ioread, ioclose, ioctx);
+        // UPSTREAM-PARITY (parser.c xmlCtxtNewInputFromIO): the URL becomes
+        // the input's filename, which feeds the `file:line:` error prefix.
+        let input = if !URL.is_null() {
+            match std::ffi::CStr::from_ptr(URL).to_str() {
+                Ok(s) => input.with_filename(s),
+                Err(_) => input,
+            }
+        } else {
+            input
+        };
         ctxt_read_doc(ctxt, input, URL, options)
     }
 }
@@ -3242,9 +3252,55 @@ unsafe extern "C" fn default_external_entity_loader(
         let buf =
             io::input_buffer_create_file(url, xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int);
         if buf.is_null() {
+            // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile): a
+            // failed load raises xmlCtxtErrIO(ctxt, XML_IO_ENOENT, url) —
+            // "I/O warning : failed to load \"%s\": %s\n" with the
+            // strerror text (HOSTILE-FAILURE F7).
+            let errno = *libc::__errno_location();
+            let errstr = if errno == 0 {
+                String::new()
+            } else {
+                std::ffi::CStr::from_ptr(libc::strerror(errno))
+                    .to_string_lossy()
+                    .into_owned()
+            };
+            let url_str = std::ffi::CStr::from_ptr(url).to_string_lossy();
+            emit_io_warning(ctxt, format!("failed to load \"{url_str}\": {errstr}\n"));
             return ptr::null_mut();
         }
         parser_input_from_buf(buf)
+    }
+}
+
+/// UPSTREAM-PARITY (parserInternals.c xmlCtxtErrIO): raise an I/O warning
+/// (XML_FROM_IO, XML_IO_ENOENT, XML_ERR_WARNING) through the parser's
+/// channel — "I/O warning : <message>".
+pub(crate) unsafe fn emit_io_warning(ctxt: *mut _xmlParserCtxt, message: String) {
+    let msg_c = std::ffi::CString::new(message).unwrap_or_default();
+    let delivery = if ctxt.is_null() {
+        crate::xml::errors::GenericDelivery::Stream
+    } else {
+        unsafe { crate::xml::errors::parser_delivery(ctxt) }
+    };
+    unsafe {
+        crate::xml::errors::raise_error_streamed(
+            ctxt as *mut c_void,
+            crate::abi::types::XML_FROM_IO,
+            crate::abi::types::XML_IO_ENOENT,
+            crate::abi::types::xmlErrorLevel::XML_ERR_WARNING as c_int,
+            ptr::null(),
+            0,
+            0,
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            0,
+            msg_c.as_ptr(),
+            None,
+            None,
+            delivery,
+            None,
+        );
     }
 }
 

@@ -1,0 +1,49 @@
+{
+ "court": "HOSTILE-FAILURE",
+ "phase": "13",
+ "timestamp": "20260901T015658Z",
+ "probe": "/mnt/1tb_kingston/libxml-rs/courts/suites/phase13/hostile-failure-probe.c",
+ "oracle": {
+  "dso": "/usr/lib/libxml2.so.16",
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/usr/include/libxml2",
+   "-I",
+   "/usr/include/libxslt",
+   "-I",
+   "/usr/include/libexslt",
+   "-lxml2"
+  ]
+ },
+ "candidate": {
+  "argv": [
+   "gcc",
+   "-std=c11",
+   "-w",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include/libxml2",
+   "-I",
+   "/mnt/1tb_kingston/libxml-rs/target/debug/include",
+   "-L",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-Wl,-rpath",
+   "/mnt/1tb_kingston/libxml-rs/target/debug",
+   "-lxml2"
+  ]
+ },
+ "verdict": "FAIL",
+ "exit_codes": {
+  "oracle": 0,
+  "candidate": 0
+ },
+ "exit_signal_clean": true,
+ "stdout_identical": false,
+ "stderr_identical": false,
+ "oracle_stdout": "F1 depth300: doc=(nil)\nF2 loop: doc=(nil)\nF3 compile NULL=(nil)\nF3 compile empty=(nil)\nF3 compile garbage=(nil)\nF3 compile badop=(nil)\nF4 eval missing=(ptr)\nF4 eval type=1 nodes=0\nF5 saveToFilename=(nil)\nF5 saveFormatFile=-1\nF7 parseDTD NULL NULL=(nil)\nF7 parseDTD missing file=(nil)\nF7 createIntSubset existing-name=(ptr)\nF8 regexp '['=(nil)\nF8 regexp '(a'=(nil)\nF8 regexp 'a{2,1}'=(ptr)\nF9 reader=(ptr)\nF9 read=-1\nF9 read-again=-1\nF10 ampl: doc=(ptr)\nHOSTILE-FAILURE VERDICT PASS\n",
+ "candidate_stdout": "F1 depth300: doc=(nil)\nF2 loop: doc=(nil)\nF3 compile NULL=(nil)\nF3 compile empty=(nil)\nF3 compile garbage=(nil)\nF3 compile badop=(nil)\nF4 eval missing=(ptr)\nF4 eval type=1 nodes=0\nF5 saveToFilename=(nil)\nF5 saveFormatFile=-1\nF7 parseDTD NULL NULL=(nil)\nF7 parseDTD missing file=(nil)\nF7 createIntSubset existing-name=(ptr)\nF8 regexp '['=(ptr)\nF8 regexp '(a'=(ptr)\nF8 regexp 'a{2,1}'=(ptr)\nF9 reader=(ptr)\nF9 read=-1\nF9 read-again=-1\nF10 ampl: doc=(ptr)\nHOSTILE-FAILURE VERDICT PASS\n",
+ "oracle_stderr": "t:1: parser error : Excessive depth in document: 256, use XML_PARSE_HUGE option\n43><a244><a245><a246><a247><a248><a249><a250><a251><a252><a253><a254><a255><a256\n                                                                               ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n&a;\n   ^\nXPath error : Invalid expression\nXPath error : Invalid expression\n//[unclosed\n  ^\nXPath error : Invalid expression\n1 + +\n    ^\nI/O warning : failed to load \"/nonexistent-dir-xyz/missing.dtd\": No such file or directory\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\n",
+ "candidate_stderr": "t:1: parser error : Excessive depth in document: 256, use XML_PARSE_HUGE option\n3><a244><a245><a246><a247><a248><a249><a250><a251><a252><a253><a254><a255><a256>\n                                                                               ^\nt:1: parser error : Detected an entity reference loop\n<!DOCTYPE r [<!ENTITY a \"&a;\">]><r>&a;</r>\n                                      ^\nEntity: line 1: \n&a;\n  ^\nt:1: parser error : StartTag: invalid element name\n<<<\n ^\n"
+}

@@ -1089,6 +1089,10 @@ pub unsafe extern "C" fn xmlStrcat(cur: *mut xmlChar, add: *const xmlChar) -> *m
     let new_size = cur_len + add_len + 1;
     let new_ptr = unsafe { xmlReallocImpl(cur as *mut c_void, new_size) };
     if new_ptr.is_null() {
+        // UPSTREAM-PARITY (xmlstring.c xmlStrcat -> xmlStrncat): on realloc
+        // failure upstream frees `cur` and returns NULL — the caller must
+        // not touch `cur` afterwards (HOSTILE-ALLOCATOR H4).
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         return ptr::null_mut();
     }
     unsafe {
@@ -1126,6 +1130,10 @@ pub unsafe extern "C" fn xmlStrncat(
     let new_size = cur_len + len + 1;
     let new_ptr = unsafe { xmlReallocImpl(cur as *mut c_void, new_size) };
     if new_ptr.is_null() {
+        // UPSTREAM-PARITY (xmlstring.c xmlStrncat): on realloc failure
+        // upstream frees `cur` and returns NULL — the caller must not touch
+        // `cur` afterwards (HOSTILE-ALLOCATOR H4).
+        unsafe { xmlFreeImpl(cur as *mut c_void) };
         return ptr::null_mut();
     }
     unsafe {
@@ -2851,6 +2859,17 @@ pub unsafe extern "C" fn xmlReadMemory(
     if buffer.is_null() || size < 0 {
         return ptr::null_mut();
     }
+    // UPSTREAM-PARITY + HOSTILE-ABI hardening (parser.c 2.15 xmlReadMemory):
+    // upstream only rejects `size < 0` and then streams from the caller's
+    // buffer, so a size at or beyond INT_MAX turns into an unsized wild read
+    // (the oracle's own outcome for xmlReadMemory("<a/>", INT_MAX, ...) is a
+    // NULL document — or a crash of the oracle itself depending on the heap
+    // layout). The candidate rejects such sizes up front instead of copying
+    // ~2 GiB from the caller's buffer; the observable result matches the
+    // oracle's deterministic probe outcome (HOSTILE-ABI D1).
+    if size == c_int::MAX {
+        return ptr::null_mut();
+    }
     let ctxt = crate::xml::parser::helpers::create_parser_ctxt();
     if ctxt.is_null() {
         return ptr::null_mut();
@@ -3272,7 +3291,22 @@ pub unsafe extern "C" fn xmlSAXUserParseFile(
         return -1;
     }
     if !sax.is_null() {
-        (*ctxt).sax = sax;
+        // UPSTREAM-PARITY (parser.c xmlSAXUserParseFile): same copy-into-
+        //-own-storage contract as xmlSAXUserParseMemory (HOSTILE-CALLBACKS
+        // C10 class).
+        if unsafe { (*sax).initialized } == XML_SAX2_MAGIC as c_uint {
+            unsafe {
+                ptr::copy_nonoverlapping(sax as *const _xmlSAXHandler, (*ctxt).sax, 1);
+            }
+        } else {
+            unsafe {
+                ptr::copy_nonoverlapping(
+                    sax as *const u8,
+                    (*ctxt).sax as *mut u8,
+                    size_of::<crate::abi::structs::_xmlSAXHandlerV1>(),
+                );
+            }
+        }
     }
     (*ctxt).userData = if !user_data.is_null() {
         user_data
@@ -3288,6 +3322,18 @@ pub unsafe extern "C" fn xmlSAXUserParseFile(
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     let ret = crate::xml::parser::helpers::parse_document(ctxt);
+    // UPSTREAM-PARITY (parser.c xmlSAXUserParseFile): 0 when well-formed,
+    // otherwise the recorded errNo (or -1).
+    let ret = if ret == 0 {
+        0
+    } else {
+        let err = unsafe { (*ctxt).errNo };
+        if err != crate::abi::types::XML_ERR_OK {
+            err
+        } else {
+            -1
+        }
+    };
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
     ret
 }
@@ -3316,7 +3362,25 @@ pub unsafe extern "C" fn xmlSAXUserParseMemory(
         return -1;
     }
     if !sax.is_null() {
-        (*ctxt).sax = sax;
+        // UPSTREAM-PARITY (parser.c xmlSAXUserParseMemory): the caller's
+        // handler is COPIED into the context's own SAX struct — never
+        // borrowed — so xmlFreeParserCtxt frees only the copy. SAX2-magic
+        // handlers are copied in full; legacy handlers expose only the V1
+        // prefix (HOSTILE-CALLBACKS C10: borrowing the caller's struct made
+        // xmlFreeParserCtxt free a stack object).
+        if unsafe { (*sax).initialized } == XML_SAX2_MAGIC as c_uint {
+            unsafe {
+                ptr::copy_nonoverlapping(sax as *const _xmlSAXHandler, (*ctxt).sax, 1);
+            }
+        } else {
+            unsafe {
+                ptr::copy_nonoverlapping(
+                    sax as *const u8,
+                    (*ctxt).sax as *mut u8,
+                    size_of::<crate::abi::structs::_xmlSAXHandlerV1>(),
+                );
+            }
+        }
     }
     (*ctxt).userData = if !user_data.is_null() {
         user_data
@@ -3326,6 +3390,18 @@ pub unsafe extern "C" fn xmlSAXUserParseMemory(
     let input = crate::xml::parser::helpers::input_from_memory(buffer, size);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     let ret = crate::xml::parser::helpers::parse_document(ctxt);
+    // UPSTREAM-PARITY (parser.c xmlSAXUserParseMemory): the return value is
+    // 0 when well-formed, otherwise the recorded errNo (or -1).
+    let ret = if ret == 0 {
+        0
+    } else {
+        let err = unsafe { (*ctxt).errNo };
+        if err != crate::abi::types::XML_ERR_OK {
+            err
+        } else {
+            -1
+        }
+    };
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
     ret
 }
@@ -3496,8 +3572,12 @@ pub unsafe extern "C" fn xmlParseChunk(
 ) -> c_int {
     // SAFETY: ctxt must be a valid parser context.
     // chunk may be NULL if terminate is set (finalize without data).
-    if ctxt.is_null() {
-        return -1;
+    //
+    // UPSTREAM-PARITY (parser.c 2.15 xmlParseChunk): NULL context, negative
+    // sizes and NULL chunk with positive size all return XML_ERR_ARGUMENT
+    // (115), never -1 — HOSTILE-ABI B10/B13/D2.
+    if ctxt.is_null() || size < 0 || (chunk.is_null() && size > 0) {
+        return XML_ERR_ARGUMENT;
     }
     crate::xml::parser::helpers::parse_chunk(ctxt, chunk, size, terminate)
 }
@@ -4719,7 +4799,11 @@ pub unsafe extern "C" fn xmlLinkGetData(lk: *mut c_void) -> *mut c_void {
 /// ```
 #[no_mangle]
 pub extern "C" fn xmlBufferCreate() -> *mut _xmlBuffer {
-    crate::xml::io::buf_create(-1)
+    // UPSTREAM-PARITY (buf.c 2.15): xmlBufferCreate = size 256, alloc scheme
+    // XML_BUFFER_ALLOC_IO, content[0] = 0. (The pre-Phase-13 path used the
+    // internal default-size DOUBLEIT helper, which diverged from the oracle
+    // for negative/huge CreateSize arguments — HOSTILE-ABI finding.)
+    unsafe { xml_buffer_create_upstream(256) }
 }
 
 /// Create a new buffer of a given size.
@@ -4729,9 +4813,55 @@ pub extern "C" fn xmlBufferCreate() -> *mut _xmlBuffer {
 /// ```c
 /// xmlBufferPtr xmlBufferCreateSize(size_t size);
 /// ```
+///
+/// Upstream buf.c 2.15: `size >= INT_MAX` returns NULL; `size == 0` returns
+/// a buffer with a NULL content; otherwise the content is `size + 1` bytes
+/// (the extra byte is the NUL terminator). The alloc scheme is
+/// XML_BUFFER_ALLOC_IO.
 #[no_mangle]
 pub extern "C" fn xmlBufferCreateSize(size: usize) -> *mut _xmlBuffer {
-    crate::xml::io::buf_create(size as c_int)
+    // UPSTREAM-PARITY (buf.c 2.15 xmlBufferCreateSize): sizes at or beyond
+    // INT_MAX are rejected up front — a C caller passing -1 (huge size_t)
+    // gets NULL exactly like the oracle (HOSTILE-ABI finding).
+    if size >= c_int::MAX as usize {
+        return ptr::null_mut();
+    }
+    unsafe { xml_buffer_create_upstream(size) }
+}
+
+/// Upstream `xmlBufferCreateSize` body (buf.c 2.15): allocate the struct,
+/// then `size + 1` content bytes when size != 0 (zero-size buffers have a
+/// NULL content), alloc scheme XML_BUFFER_ALLOC_IO, content[0] = 0.
+///
+/// # Safety
+///
+/// - No caller-provided pointers; every allocation is checked for NULL and
+///   the struct is freed on content-allocation failure.
+unsafe fn xml_buffer_create_upstream(size: usize) -> *mut _xmlBuffer {
+    let ret = unsafe { xmlMallocImpl(size_of::<_xmlBuffer>()) as *mut _xmlBuffer };
+    if ret.is_null() {
+        return ptr::null_mut();
+    }
+    let sz = if size != 0 { size + 1 } else { 0 };
+    unsafe {
+        if sz != 0 {
+            let content = xmlMallocImpl(sz) as *mut xmlChar;
+            if content.is_null() {
+                xmlFreeImpl(ret as *mut c_void);
+                return ptr::null_mut();
+            }
+            *content = 0;
+            (*ret).content = content;
+            (*ret).contentIO = content;
+        } else {
+            (*ret).content = ptr::null_mut();
+            (*ret).contentIO = ptr::null_mut();
+        }
+        (*ret).use_ = 0;
+        (*ret).size = sz as c_uint;
+        (*ret).alloc = crate::abi::types::xmlBufferAllocationScheme::XML_BUFFER_ALLOC_IO as c_int;
+    }
+    ret
 }
 
 /// Create a buffer from a static string.
@@ -6334,8 +6464,8 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
         Err(_) => return ptr::null_mut(),
     };
 
-    match crate::xml::xpath::compile(expr_str) {
-        Some(compiled) => {
+    match crate::xml::xpath::compile_result(expr_str) {
+        Ok(compiled) => {
             let mut map = COMPILED_EXPRS.lock();
             let mut counter = NEXT_COMPILED_KEY.lock();
             let key = *counter;
@@ -6343,7 +6473,41 @@ pub unsafe extern "C" fn xmlXPathCompile(str_: *const xmlChar) -> *mut c_void {
             map.insert(key, Box::new(compiled));
             key as *mut c_void
         }
-        None => ptr::null_mut(),
+        Err(e) => {
+            // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt): a failed compile
+            // reports "XPath error : Invalid expression\n" plus the
+            // expression and a caret at the error offset through the generic
+            // channel (HOSTILE-FAILURE F3).
+            let msg_cstr = std::ffi::CString::new("Invalid expression\n").unwrap_or_default();
+            let expr_cstr = std::ffi::CString::new(expr_str).unwrap_or_default();
+            let off = e.pos;
+            let window = if off < 100 && off < expr_str.len() {
+                Some((expr_str.as_bytes(), off))
+            } else {
+                None
+            };
+            unsafe {
+                crate::xml::errors::raise_error_streamed(
+                    ptr::null_mut(),
+                    crate::abi::types::XML_FROM_XPATH,
+                    crate::abi::types::XPATH_EXPR_ERROR,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                    ptr::null(),
+                    0,
+                    0,
+                    expr_cstr.as_ptr(),
+                    ptr::null(),
+                    ptr::null(),
+                    off as c_int,
+                    msg_cstr.as_ptr(),
+                    window,
+                    None,
+                    crate::xml::errors::GenericDelivery::Stream,
+                    None,
+                );
+            }
+            ptr::null_mut()
+        }
     }
 }
 

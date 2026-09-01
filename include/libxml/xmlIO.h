@@ -214,6 +214,28 @@ XMLPUBFUN xmlParserInputBufferCreateFilenameFunc
 	xmlThrDefParserInputBufferCreateFilenameDefault(
 		xmlParserInputBufferCreateFilenameFunc func);
 
+/* [13.1] begin: thread-local IO-hook accessors + macro aliases
+ *
+ * Phase 13 (HOSTILE-THREADS): upstream 2.15 keeps the input/output
+ * create-filename callbacks per-thread (globals.c xmlGetThreadLocalStorage);
+ * the oracle headers alias the names to `(*__xmlXxx())` accessor functions
+ * and the oracle DSO exports only the accessors. The candidate implements
+ * the same contract (src/xml/globals/tls.rs). Guarded by
+ * XML_GLOBALS_NO_REDEFINITION exactly like upstream xmlIO.h.
+ */
+XMLPUBFUN xmlParserInputBufferCreateFilenameFunc *
+	__xmlParserInputBufferCreateFilenameValue(void);
+XMLPUBFUN xmlOutputBufferCreateFilenameFunc *
+	__xmlOutputBufferCreateFilenameValue(void);
+
+#ifndef XML_GLOBALS_NO_REDEFINITION
+  #define xmlParserInputBufferCreateFilenameValue \
+    (*__xmlParserInputBufferCreateFilenameValue())
+  #define xmlOutputBufferCreateFilenameValue \
+    (*__xmlOutputBufferCreateFilenameValue())
+#endif /* XML_GLOBALS_NO_REDEFINITION */
+/* [13.1] end: thread-local IO-hook accessors + macro aliases */
+
 /* [11.1-L] end: extracted declarations */
 #ifdef __cplusplus
 }

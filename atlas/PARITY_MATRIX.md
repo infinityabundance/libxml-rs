@@ -12,7 +12,7 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_clang_ast | 1403 |
 | oracle_headers | 1408 |
 | oracle_dso | 1395 |
-| candidate_headers | 1395 |
+| candidate_headers | 1413 |
 | candidate_dso | 1672 |
 | fully_reconciled | 1395 |
 | unresolved_oracle_only | 0 |
@@ -26,11 +26,11 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 | oracle_clang_ast | 17 |
 | oracle_headers | 18 |
 | oracle_dso | 22 |
-| candidate_headers | 38 |
-| candidate_dso | 41 |
+| candidate_headers | 24 |
+| candidate_dso | 27 |
 | fully_reconciled | 22 |
 | unresolved_oracle_only | 0 |
-| candidate_extra | 19 |
+| candidate_extra | 5 |
 
 ### struct fields
 
@@ -173,8 +173,8 @@ Every total below is recomputed from evidence on every run (Doxygen system inven
 
 ## libxml2
 
-- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1395, candidate DSO 1672, reconciled all four 1374, oracle-only 0, candidate-only 264
-- data: oracle headers 18, oracle DSO 22, candidate headers 38, candidate DSO 41, reconciled all four 18, oracle-only 0, candidate-only 20
+- functions: oracle headers 1408, oracle DSO 1395, candidate headers 1413, candidate DSO 1672, reconciled all four 1392, oracle-only 0, candidate-only 264
+- data: oracle headers 18, oracle DSO 22, candidate headers 24, candidate DSO 27, reconciled all four 18, oracle-only 0, candidate-only 6
 
 ## libxslt
 

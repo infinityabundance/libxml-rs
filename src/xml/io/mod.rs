@@ -310,7 +310,18 @@ pub(crate) fn buf_length(buf: *mut _xmlBuffer) -> c_int {
 /// Write `len` bytes from `str` to an xmlBuffer.
 ///
 /// Grows the buffer if needed. Always maintains null termination.
-/// Returns the number of bytes written, or -1 on error.
+/// Returns 0 on success, -1 on error (upstream buf.c `xmlBufferAdd`).
+///
+/// # UPSTREAM-PARITY (buf.c 2.15)
+///
+/// - NULL `buf` or NULL `str` returns -1;
+/// - `alloc == XML_BUFFER_ALLOC_IMMUTABLE` returns -1;
+/// - `len < 0` is treated as `xmlStrlen(str)` (the API has no separate
+///   length-overload — hostile callers pass -1 and upstream scans);
+/// - `len == 0` returns 0 without copying;
+/// - the resize must stay below the allocator's 0x80000000-byte block
+///   limit (`needSize > 0x80000000` fails like `xmlBufferResize`);
+/// - success returns 0 (not the byte count).
 ///
 /// # Safety
 ///
@@ -320,7 +331,22 @@ pub(crate) fn buf_length(buf: *mut _xmlBuffer) -> c_int {
 ///   `content` pointer replaced, so borrowed pointers into the old content
 ///   become invalid.
 pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> c_int {
-    if buf.is_null() || str.is_null() || len <= 0 {
+    if buf.is_null() || str.is_null() {
+        return -1;
+    }
+
+    let mut len = len;
+    if len < 0 {
+        // UPSTREAM-PARITY: negative len means strlen(str).
+        let mut i: usize = 0;
+        unsafe {
+            while *str.add(i) != 0 {
+                i += 1;
+            }
+        }
+        len = i as c_int;
+    }
+    if len == 0 {
         return 0;
     }
 
@@ -332,8 +358,13 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
         return -1;
     }
 
-    // Ensure capacity: need use_ + len + 1 (for null terminator)
+    // Ensure capacity: need use_ + len + 1 (for null terminator). The
+    // upstream allocator rejects allocations beyond 0x80000000 bytes, so
+    // hostile lengths must fail fast before any copy (HOSTILE-ABI C-series).
     let needed = b.use_.saturating_add(len).saturating_add(1);
+    if needed > 0x8000_0000 {
+        return -1;
+    }
     if needed > b.size {
         // Grow buffer
         let new_size = if b.alloc == XML_BUFFER_ALLOC_EXACT {
@@ -368,7 +399,7 @@ pub(crate) fn buf_add(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> 
         ptr::write(b.content.add(b.use_ as usize), 0);
     }
 
-    len as c_int
+    0
 }
 
 /// Cat a null-terminated string to an xmlBuffer.
@@ -447,13 +478,31 @@ pub(crate) fn buf_shrink(buf: *mut _xmlBuffer, len: c_uint) -> c_int {
 ///   copied to the front; the buffer may be reallocated, invalidating
 ///   pointers into the old content.
 pub(crate) fn buf_add_head(buf: *mut _xmlBuffer, str: *const xmlChar, len: c_int) -> c_int {
-    if buf.is_null() || str.is_null() || len <= 0 {
+    if buf.is_null() || str.is_null() {
         return -1;
+    }
+
+    let mut len = len;
+    if len < 0 {
+        // UPSTREAM-PARITY: negative len means strlen(str).
+        let mut i: usize = 0;
+        unsafe {
+            while *str.add(i) != 0 {
+                i += 1;
+            }
+        }
+        len = i as c_int;
+    }
+    if len == 0 {
+        return 0;
     }
     let len = len as c_uint;
     unsafe {
         let b = &mut *buf;
         let needed = b.use_.saturating_add(len).saturating_add(1);
+        if needed > 0x8000_0000 {
+            return -1;
+        }
         if needed > b.size {
             let new_size = needed.saturating_mul(2).max(MIN_BUFFER_SIZE);
             let new_content =
@@ -621,7 +670,15 @@ pub(crate) fn xml_buf_length(buf: *mut _xmlBuf) -> c_int {
 
 /// Add `len` bytes from `str` to an xmlBuf.
 ///
-/// Returns the number of bytes added, or -1 on error.
+/// Returns 0 on success, -1 on error (upstream buf.c `xmlBufAdd`).
+///
+/// # UPSTREAM-PARITY (buf.c 2.15)
+///
+/// - NULL `buf` returns -1; a buf in error state returns -1;
+/// - `len == 0` returns 0; NULL `str` with non-zero `len` returns -1;
+/// - success returns 0 (not the byte count); hostile negative `len` is
+///   rejected up front (upstream's `size_t len` would become a huge
+///   allocation request that the allocator then blocks).
 ///
 /// # Safety
 ///
@@ -630,14 +687,30 @@ pub(crate) fn xml_buf_length(buf: *mut _xmlBuf) -> c_int {
 ///   content may be reallocated, invalidating pointers into the old
 ///   content.
 pub(crate) fn xml_buf_add(buf: *mut _xmlBuf, str: *const xmlChar, len: c_int) -> c_int {
-    if buf.is_null() || str.is_null() || len <= 0 {
+    if buf.is_null() {
+        return -1;
+    }
+    if len < 0 {
+        return -1;
+    }
+    if len == 0 {
         return 0;
+    }
+    if str.is_null() {
+        return -1;
     }
 
     let len = len as c_uint;
     let b = unsafe { &mut *buf };
 
+    if b.error != 0 {
+        return -1;
+    }
+
     let needed = b.use_.saturating_add(len).saturating_add(1);
+    if needed > 0x8000_0000 {
+        return -1;
+    }
     if needed > b.size {
         let new_size = needed.saturating_mul(2).max(MIN_BUFFER_SIZE);
         let new_content =
@@ -658,7 +731,7 @@ pub(crate) fn xml_buf_add(buf: *mut _xmlBuf, str: *const xmlChar, len: c_int) ->
         ptr::write(b.content.add(b.use_ as usize), 0);
     }
 
-    len as c_int
+    0
 }
 
 /// Cat a null-terminated string to an xmlBuf.
@@ -1403,12 +1476,15 @@ unsafe extern "C" fn buffer_write_callback(
     buffer: *const c_char,
     len: c_int,
 ) -> c_int {
-    if context.is_null() || buffer.is_null() || len <= 0 {
-        return -1;
+    // UPSTREAM-PARITY (xmlIO.c xmlBufferWrite): the callback reports the
+    // byte count written on success (NOT xmlBufferAdd's 0), and surfaces
+    // xmlBufferAdd errors as -XML_ERR_NO_MEMORY. The oracle's
+    // xmlOutputBufferFlush therefore returns len for buffer-based output.
+    let ret = buf_add(context as *mut _xmlBuffer, buffer as *const xmlChar, len);
+    if ret != 0 {
+        return -crate::abi::types::XML_ERR_NO_MEMORY;
     }
-
-    let target_buf = context as *mut _xmlBuffer;
-    buf_add(target_buf, buffer as *const xmlChar, len)
+    len
 }
 
 /// Internal helper: create an _xmlOutputBuffer struct.
@@ -2590,7 +2666,7 @@ mod tests {
 
         let s1: &[u8] = b"Hello\0";
         let ret = buf_add(buf, s1.as_ptr() as *const xmlChar, 5);
-        assert_eq!(ret, 5);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufferAdd returns 0 on success
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 5);
@@ -2603,7 +2679,7 @@ mod tests {
         // Add more to trigger growth
         let s2: &[u8] = b" World!\0";
         let ret = buf_add(buf, s2.as_ptr() as *const xmlChar, 7);
-        assert_eq!(ret, 7);
+        assert_eq!(ret, 0);
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 12);
@@ -2619,8 +2695,9 @@ mod tests {
     #[test]
     fn test_buf_add_null() {
         let buf = buf_create(10);
+        // UPSTREAM-PARITY: xmlBufferAdd with a NULL string returns -1.
         let ret = buf_add(buf, ptr::null(), 5);
-        assert_eq!(ret, 0);
+        assert_eq!(ret, -1);
         buf_free(buf);
     }
 
@@ -2635,7 +2712,7 @@ mod tests {
         let buf = buf_create(10);
         let s: &[u8] = b"Hello\0";
         let ret = buf_cat(buf, s.as_ptr() as *const xmlChar);
-        assert_eq!(ret, 5);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufferCat returns 0 on success
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 5);
@@ -2653,7 +2730,7 @@ mod tests {
     fn test_buf_ccat() {
         let buf = buf_create(10);
         let ret = buf_ccat(buf, b'A' as xmlChar);
-        assert_eq!(ret, 1);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufferCCat returns 0 on success
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 1);
@@ -2796,7 +2873,7 @@ mod tests {
         let buf = xml_buf_create(10);
         let s: &[u8] = b"Hello\0";
         let ret = xml_buf_add(buf, s.as_ptr() as *const xmlChar, 5);
-        assert_eq!(ret, 5);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufAdd returns 0 on success
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 5);
@@ -2809,7 +2886,7 @@ mod tests {
         let buf = xml_buf_create(10);
         let s: &[u8] = b"Hello\0";
         let ret = xml_buf_cat(buf, s.as_ptr() as *const xmlChar);
-        assert_eq!(ret, 5);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufCat returns 0 on success
 
         xml_buf_free(buf);
     }
@@ -3155,7 +3232,7 @@ mod tests {
         large_data.push(0);
 
         let ret = buf_add(buf, large_data.as_ptr() as *const xmlChar, 5000);
-        assert_eq!(ret, 5000);
+        assert_eq!(ret, 0); // UPSTREAM-PARITY: xmlBufferAdd returns 0 on success
 
         let b = unsafe { &*buf };
         assert_eq!(b.use_, 5000);

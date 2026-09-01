@@ -13,7 +13,7 @@
      "oracle_clang_ast": 1403,
      "oracle_headers": 1408,
      "oracle_dso": 1395,
-     "candidate_headers": 1395,
+     "candidate_headers": 1413,
      "candidate_dso": 1672,
      "fully_reconciled": 1395,
      "unresolved_oracle_only": 0,
@@ -24,11 +24,11 @@
      "oracle_clang_ast": 17,
      "oracle_headers": 18,
      "oracle_dso": 22,
-     "candidate_headers": 38,
-     "candidate_dso": 41,
+     "candidate_headers": 24,
+     "candidate_dso": 27,
      "fully_reconciled": 22,
      "unresolved_oracle_only": 0,
-     "candidate_extra": 19
+     "candidate_extra": 5
     },
     "struct_fields": {
      "abi_ledger_measurable": 658,
