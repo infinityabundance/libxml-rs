@@ -1848,6 +1848,106 @@ fn convert_input_to_utf8(encoding: *const c_char, data: &[u8]) -> Option<Vec<u8>
     }
 }
 
+/// Parse a leading `<!DOCTYPE ...>` declaration from HTML input bytes.
+///
+/// Returns `Some((name, external_id, system_id))` when the input begins (after
+/// optional whitespace) with a case-insensitive `<!DOCTYPE`. Quoted external
+/// and system identifiers are unwrapped; unquoted identifiers are taken as-is
+/// up to the closing `>`. Returns `None` when no DOCTYPE is declared.
+fn parse_html_doctype_decl(input: &[u8]) -> Option<(Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+    let mut i = 0usize;
+    while i < input.len() && input[i].is_ascii_whitespace() {
+        i += 1;
+    }
+    if i + 2 >= input.len() || input[i] != b'<' || !(input[i + 1] == b'!') {
+        return None;
+    }
+    let kw = b"DOCTYPE";
+    if !input.get(i + 2..i + 2 + kw.len()).is_some_and(|s| {
+        s.iter()
+            .enumerate()
+            .all(|(k, b)| b.to_ascii_uppercase() == kw[k])
+    }) {
+        return None;
+    }
+    i += 2 + kw.len();
+    // Skip whitespace after DOCTYPE, then read the root name.
+    while i < input.len() && input[i].is_ascii_whitespace() {
+        i += 1;
+    }
+    let name_start = i;
+    while i < input.len() && !input[i].is_ascii_whitespace() && input[i] != b'>' {
+        i += 1;
+    }
+    if name_start == i {
+        return None;
+    }
+    let name = input[name_start..i].to_vec();
+    // Skip whitespace, then optional PUBLIC/SYSTEM id.
+    let mut ext: Option<Vec<u8>> = None;
+    let mut sys: Option<Vec<u8>> = None;
+    while i < input.len() && input[i].is_ascii_whitespace() {
+        i += 1;
+    }
+    if i < input.len() && input[i] != b'>' {
+        // a PUBLIC/SYSTEM keyword may follow
+        let word_start = i;
+        while i < input.len() && input[i].is_ascii_alphabetic() {
+            i += 1;
+        }
+        let word = input[word_start..i].to_ascii_uppercase();
+        if word == b"PUBLIC" {
+            while i < input.len() && input[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            // external identifier (PUBLIC) comes first
+            if i < input.len() && (input[i] == b'"' || input[i] == b'\'') {
+                let q = input[i];
+                i += 1;
+                let v_start = i;
+                while i < input.len() && input[i] != q {
+                    i += 1;
+                }
+                ext = Some(input[v_start..i].to_vec());
+                if i < input.len() {
+                    i += 1;
+                }
+            }
+            while i < input.len() && input[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            // system literal (may be absent)
+            if i < input.len()
+                && i + 1 < input.len()
+                && (input[i] == b'"' || input[i] == b'\'')
+                && input[i] != b'>'
+            {
+                let q = input[i];
+                i += 1;
+                let v_start = i;
+                while i < input.len() && input[i] != q {
+                    i += 1;
+                }
+                sys = Some(input[v_start..i].to_vec());
+            }
+        } else if word == b"SYSTEM" {
+            while i < input.len() && input[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            if i < input.len() && (input[i] == b'"' || input[i] == b'\'') {
+                let q = input[i];
+                i += 1;
+                let v_start = i;
+                while i < input.len() && input[i] != q {
+                    i += 1;
+                }
+                sys = Some(input[v_start..i].to_vec());
+            }
+        }
+    }
+    Some((name, ext, sys))
+}
+
 /// Parse HTML from a buffer.
 ///
 /// # Safety
@@ -1880,18 +1980,51 @@ unsafe fn html_parse_buffer(
         // (visible when serialized with the XML serializer, e.g. --xmlout).
         (*doc).standalone = 1;
     }
-    // UPSTREAM-PARITY: htmlParseDocument creates a default DTD
-    // (`<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
-    // "http://www.w3.org/TR/REC-html40/loose.dtd">) when the source does
-    // not declare one; XML_SAVE_NO_DOCTYPE / HTML_PARSE_NODEFDTD suppresses
-    // it (handled by the caller).
-    let default_dtd = crate::xml::dtd::create_int_subset(
-        doc,
-        b"html\0" as *const u8 as *const xmlChar,
-        b"-//W3C//DTD HTML 4.0 Transitional//EN\0" as *const u8 as *const xmlChar,
-        b"http://www.w3.org/TR/REC-html40/loose.dtd\0" as *const u8 as *const xmlChar,
-    );
-    let _ = default_dtd;
+    // UPSTREAM-PARITY: htmlParseDocument honours a DOCTYPE declared in the
+    // source (htmlParseDocTypeDecl fills doc->intSubset with the declared
+    // name/public/system ids); only when the source declares none does it
+    // create the default HTML 4.0 DTD. nokogiri reads those ids back for
+    // dtd.html_dtd?/html5_dtd?, so a source `<!DOCTYPE html>` must NOT pick up
+    // the default HTML 4.0 DTD.
+    let raw_input = unsafe { slice::from_raw_parts(buffer as *const u8, size as usize) };
+    if let Some((name, ext, sys)) = parse_html_doctype_decl(raw_input) {
+        let name_cstr = crate::xml::string::bytes_to_xmlstr(&name);
+        let ext_cstr = ext
+            .map(|s| crate::xml::string::bytes_to_xmlstr(&s))
+            .unwrap_or(ptr::null_mut());
+        let sys_cstr = sys
+            .map(|s| crate::xml::string::bytes_to_xmlstr(&s))
+            .unwrap_or(ptr::null_mut());
+        unsafe {
+            crate::xml::dtd::create_int_subset(
+                doc,
+                name_cstr as *const xmlChar,
+                ext_cstr as *const xmlChar,
+                sys_cstr as *const xmlChar,
+            );
+        }
+        if !name_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void) };
+        }
+        if !ext_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(ext_cstr as *mut c_void) };
+        }
+        if !sys_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(sys_cstr as *mut c_void) };
+        }
+    } else {
+        // Source declares no DOCTYPE: use the default HTML 4.0 DTD.
+        // XML_SAVE_NO_DOCTYPE / HTML_PARSE_NODEFDTD suppression is handled by
+        // the caller.
+        unsafe {
+            crate::xml::dtd::create_int_subset(
+                doc,
+                b"html\0" as *const u8 as *const xmlChar,
+                b"-//W3C//DTD HTML 4.0 Transitional//EN\0" as *const u8 as *const xmlChar,
+                b"http://www.w3.org/TR/REC-html40/loose.dtd\0" as *const u8 as *const xmlChar,
+            );
+        }
+    }
     ctxt.doc = doc;
 
     // UPSTREAM-PARITY: a declared input encoding is converted to UTF-8 before
