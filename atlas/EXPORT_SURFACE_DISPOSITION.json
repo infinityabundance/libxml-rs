@@ -9912,7 +9912,7 @@
      "kind": "R",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "xmlStringCurrentChar": {
@@ -9954,14 +9954,14 @@
      "kind": "R",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "xmlStringTextNoenc": {
      "kind": "R",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
-     "in_headers": false,
+     "in_headers": true,
      "in_upstream_syms": false
     },
     "xmlStrlen": {

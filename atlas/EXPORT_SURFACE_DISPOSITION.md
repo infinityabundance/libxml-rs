@@ -1423,14 +1423,14 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xmlStreamPushAttr` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStreamPushNode` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStreamWantsAnyNode` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlStringComment` | R | CURRENT_ORACLE_EXPORT | True | False | False |
+| `xmlStringComment` | R | CURRENT_ORACLE_EXPORT | True | True | False |
 | `xmlStringCurrentChar` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStringDecodeEntities` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStringGetNodeList` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStringLenDecodeEntities` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStringLenGetNodeList` | T | CURRENT_ORACLE_EXPORT | True | True | True |
-| `xmlStringText` | R | CURRENT_ORACLE_EXPORT | True | False | False |
-| `xmlStringTextNoenc` | R | CURRENT_ORACLE_EXPORT | True | False | False |
+| `xmlStringText` | R | CURRENT_ORACLE_EXPORT | True | True | False |
+| `xmlStringTextNoenc` | R | CURRENT_ORACLE_EXPORT | True | True | False |
 | `xmlStrlen` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStrncasecmp` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xmlStrncat` | T | CURRENT_ORACLE_EXPORT | True | True | True |
