@@ -861,7 +861,14 @@ impl XmlTokenizer {
 
         // Peek ahead to see if the next characters are "xml" (case-insensitive)
         let next_bytes = self.peek_bytes(3);
-        let is_xml_decl = next_bytes.len() >= 3
+        // UPSTREAM-PARITY (parser.c xmlParsePI): `<?xml?>` is an XML
+        // declaration ONLY when it begins at the very start of the document
+        // (byte offset 0). If any whitespace/content precedes it, it is an
+        // ordinary processing instruction with target "xml" and must be
+        // retained as a PI node (nokogiri `test_document_with_initial_space`
+        // expects the leading-space+`<?xml?>` input to yield a PI child).
+        let is_xml_decl = start_pos == 0
+            && next_bytes.len() >= 3
             && (next_bytes[0] == b'x' || next_bytes[0] == b'X')
             && (next_bytes[1] == b'm' || next_bytes[1] == b'M')
             && (next_bytes[2] == b'l' || next_bytes[2] == b'L');

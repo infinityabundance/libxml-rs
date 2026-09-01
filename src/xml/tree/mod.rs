@@ -1405,14 +1405,27 @@ pub unsafe fn unlink_node(node: *mut _xmlNode) {
         unsafe { (*next).prev = prev };
     }
 
-    // Fix up parent's children/last pointers
+    // Fix up parent's children/last pointers. UPSTREAM-PARITY
+    // (tree.c xmlUnlinkNodeInternal): an attribute node is tracked by the
+    // parent element's `properties` chain, not by children/last — when the
+    // unlinked node is an attribute, advance the `properties` head past it so
+    // the parent no longer references a (possibly freed) attribute. Without
+    // this, nokogiri unlinks an attribute and later frees it while the element
+    // still hangs off the stale `properties` slot, and an XPath attribute-axis
+    // walk dereferences freed memory.
     let parent = n.parent;
     if !parent.is_null() {
-        if unsafe { (*parent).children } == node {
-            unsafe { (*parent).children = next };
-        }
-        if unsafe { (*parent).last } == node {
-            unsafe { (*parent).last = prev };
+        if n.type_ == XML_ATTRIBUTE_NODE as c_int {
+            if unsafe { (*parent).properties } == node as *mut _xmlAttr {
+                unsafe { (*parent).properties = next as *mut _xmlAttr };
+            }
+        } else {
+            if unsafe { (*parent).children } == node {
+                unsafe { (*parent).children = next };
+            }
+            if unsafe { (*parent).last } == node {
+                unsafe { (*parent).last = prev };
+            }
         }
     }
 
@@ -3206,6 +3219,12 @@ struct DumpState {
     /// `xmlns="http://www.w3.org/1999/xhtml"` and non-HTML-empty elements
     /// serialize as open/close instead of self-closing.
     xhtml: bool,
+    /// HTML output mode (nokogiri SaveOptions::AS_HTML): empty HTML void
+    /// elements stay `<br>`-style (no slash, no end tag) and other empty
+    /// non-void elements serialize as `<a></a>`.
+    as_html: bool,
+    /// `XML_SAVE_NO_EMPTY`: empty non-void elements get an explicit end tag.
+    no_empty: bool,
 }
 
 impl DumpState {
@@ -3220,6 +3239,8 @@ impl DumpState {
             no_decl: 0,
             encoding: ptr::null(),
             xhtml: false,
+            as_html: false,
+            no_empty: false,
         }
     }
 
@@ -3258,6 +3279,8 @@ impl DumpState {
             no_decl,
             encoding,
             xhtml: false,
+            as_html: false,
+            no_empty: false,
         }
     }
 }
@@ -4051,7 +4074,27 @@ unsafe fn node_dump_internal(
                 attr = unsafe { (*attr).next };
             }
             if n.children.is_null() {
-                if state.xhtml && !xhtml_is_empty(n.name) {
+                if state.as_html {
+                    // UPSTREAM-PARITY (nokogiri to_html / AS_HTML save): in
+                    // HTML output an empty HTML void element stays
+                    // `<br>`-style (no slash, no end tag); any other empty
+                    // element serializes as `<a></a>`.
+                    if xhtml_is_empty(n.name) {
+                        io::buf_ccat(buf, b'>');
+                    } else {
+                        io::buf_ccat(buf, b'>');
+                        io::buf_add(buf, b"</" as *const u8, 2);
+                        write_qname(buf, cur);
+                        io::buf_ccat(buf, b'>');
+                    }
+                } else if state.no_empty {
+                    // UPSTREAM-PARITY (xmlsave.c XML_SAVE_NO_EMPTY): empty
+                    // elements get an explicit end tag.
+                    io::buf_ccat(buf, b'>');
+                    io::buf_add(buf, b"</" as *const u8, 2);
+                    write_qname(buf, cur);
+                    io::buf_ccat(buf, b'>');
+                } else if state.xhtml && !xhtml_is_empty(n.name) {
                     // UPSTREAM-PARITY (xhtmlNodeDumpOutput C.2): in XHTML
                     // mode only the HTML-empty elements stay self-closing;
                     // everything else (e.g. <html>) serializes as
@@ -4303,6 +4346,40 @@ pub(crate) unsafe fn serialize_node_opts_enc(
     unsafe {
         serialize_node_opts_xhtml(node, buf, format, level, indent, no_decl, encoding, false)
     };
+}
+
+/// Serialize a node with the full save-option set (node, buffer, format,
+/// level, indent, no-declaration, no-empty-tags, HTML mode, encoding).
+/// Mirrors the fields nokogiri's `xmlSaveToIO`/`xmlSaveTree` path threads so
+/// HTML serialization (`SaveOptions::AS_HTML`) controls empty-element output.
+///
+/// # SAFETY
+///
+/// - `node` must be NULL or a valid `_xmlNode`; `buf` a valid `_xmlBuffer`;
+///   `indent`/`encoding` NULL or valid NUL-terminated strings.
+#[allow(clippy::too_many_arguments)]
+pub(crate) unsafe fn serialize_node_opts_enc_full(
+    node: *mut _xmlNode,
+    buf: *mut _xmlBuffer,
+    format: c_int,
+    level: c_int,
+    indent: *const xmlChar,
+    no_decl: c_int,
+    no_empty: c_int,
+    as_html: c_int,
+    encoding: *const xmlChar,
+) {
+    unsafe {
+        if node.is_null() || buf.is_null() {
+            return;
+        }
+        let parent = (*node).parent;
+        let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
+        state.no_empty = no_empty != 0;
+        state.as_html = as_html != 0;
+        let mut lvl = level;
+        node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
+    }
 }
 
 /// Serialize a node with full options plus XHTML mode (upstream

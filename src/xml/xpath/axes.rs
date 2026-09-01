@@ -308,6 +308,18 @@ unsafe fn attribute_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
     if node.is_null() {
         return;
     }
+    // UPSTREAM-PARITY (xpath.c xmlXPathNextAttribute): the attribute axis
+    // iterates the `properties` chain ONLY for element nodes. For any other
+    // context node type (DTD, text, doc node, …) upstream returns an empty
+    // set. `properties` lives at offset 88 of _xmlNode, but non-element node
+    // types reuse that storage for their own fields (e.g. a DTD's `entities`)
+    // — walking it as an attribute chain reads foreign/freed memory. This
+    // guard keeps nokogiri's `@*/attribute::` evaluation on a DTD context
+    // node (e.g. a document type node carrying the DTD) from crashing into a
+    // stale property list.
+    if (*node).type_ != xmlElementType::XML_ELEMENT_NODE as c_int {
+        return;
+    }
     let mut prop = (*node).properties;
     while !prop.is_null() {
         // Attributes are represented as _xmlAttr nodes, which are also _xmlNode

@@ -623,6 +623,15 @@ impl XmlParser {
                     // Free old encoding
                 }
                 (*self.ctxt).encoding = enc_cstr as *mut xmlChar;
+                // UPSTREAM-PARITY (parser.c xmlParseXMLDecl): the declared
+                // encoding is also recorded on the document, so `doc->encoding`
+                // / nokogiri `Document#encoding` reflects the declaration.
+                if !(*self.ctxt).myDoc.is_null() {
+                    let my_doc = (*self.ctxt).myDoc;
+                    if (*my_doc).encoding.is_null() {
+                        (*my_doc).encoding = crate::xml::string::xml_strdup((*self.ctxt).encoding);
+                    }
+                }
             }
         }
 

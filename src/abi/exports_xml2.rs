@@ -2838,6 +2838,34 @@ pub unsafe extern "C" fn xmlRecoverMemory(buffer: *const c_char, size: c_int) ->
 }
 
 /// Read an XML document from a file (upstream parser.h).
+/// Canonically record an explicit input `encoding` on `doc->encoding` when
+/// the caller supplied one and the document has no encoding of its own.
+///
+/// Mirrors upstream: the encoding name is canonicalized via the encoding
+/// handler table (so `utf-8`/`UTF8` become `UTF-8`, `latin1` becomes
+/// `ISO-8859-1`, …) rather than stored verbatim.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid `_xmlDoc` with a NULL `encoding` field.
+/// - `encoding` must be a valid NUL-terminated C string.
+unsafe fn canonical_doc_encoding(doc: *mut _xmlDoc, encoding: *const c_char) {
+    let handler = crate::xml::encoding::xmlFindCharEncodingHandler(encoding);
+    if handler.is_null() {
+        return;
+    }
+    // SAFETY: handler is non-NULL; name is a NUL-terminated owned buffer.
+    let name = unsafe { (*handler).name }; // *mut c_char
+    if name.is_null() {
+        return;
+    }
+    // SAFETY: name is a valid NUL-terminated string; caller frees via xmlFree.
+    unsafe {
+        (*doc).encoding = crate::xml::string::xml_strdup(name as *const xmlChar);
+    }
+}
+
+/// Parse an XML document from a C memory buffer.
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -2888,6 +2916,13 @@ pub unsafe extern "C" fn xmlReadMemory(
     // the recovery path (the partial tree keeps the document identity).
     if !doc.is_null() && !URL.is_null() && (*doc).URL.is_null() {
         (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
+    }
+    // UPSTREAM-PARITY (xmlCtxtReadMemory): an explicit `encoding` argument
+    // is recorded on the document when the document carries no encoding
+    // declaration of its own, so `doc->encoding` (nokogiri Document#encoding)
+    // reflects what the caller requested.
+    if !doc.is_null() && (*doc).encoding.is_null() && !encoding.is_null() {
+        canonical_doc_encoding(doc, encoding);
     }
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
     if parsed != 0 {
@@ -3007,16 +3042,31 @@ pub unsafe extern "C" fn xmlReadIO(
     let input = crate::xml::parser::helpers::input_from_io(ioread, ioclose, ioctx);
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
     (*ctxt).options = options;
-    if crate::xml::parser::helpers::parse_document(ctxt) != 0 {
-        let doc = (*ctxt).myDoc;
-        crate::xml::parser::helpers::free_parser_ctxt(ctxt);
-        return doc;
-    }
+    let parsed = crate::xml::parser::helpers::parse_document(ctxt);
     let doc = (*ctxt).myDoc;
-    if !doc.is_null() && !URL.is_null() {
+    // UPSTREAM-PARITY (xmlReadIO -> xmlCtxtReadIO): the URL is attached to the
+    // document on success AND on the recovery path (the partial tree keeps the
+    // document identity).
+    if !doc.is_null() && !URL.is_null() && (*doc).URL.is_null() {
         (*doc).URL = crate::xml::string::xml_strdup(URL as *const xmlChar);
     }
+    if !doc.is_null() && (*doc).encoding.is_null() && !encoding.is_null() {
+        canonical_doc_encoding(doc, encoding);
+    }
     crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+    if parsed != 0 {
+        // UPSTREAM-PARITY: on a hard (non-recoverable) parse error the
+        // partially built document is discarded and NULL is returned; only with
+        // XML_PARSE_RECOVER is the partial tree kept. nokogiri's read_io/strict
+        // path relies on NULL here to raise a SyntaxError.
+        if options & 1 << 0 != 0 {
+            return doc;
+        }
+        if !doc.is_null() {
+            crate::xml::tree::free_doc(doc);
+        }
+        return ptr::null_mut();
+    }
     doc
 }
 

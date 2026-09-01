@@ -82,6 +82,11 @@ pub const XML_SAVE_FORMAT: c_int = 1 << 0;
 pub const XML_SAVE_NO_DECL: c_int = 1 << 1;
 /// XML_SAVE_NO_EMPTY — don't emit empty tags.
 pub const XML_SAVE_NO_EMPTY: c_int = 1 << 2;
+/// Candidate-internal: nokogiri passes `SaveOptions::AS_HTML` (64) to emit
+/// HTML-style output (HTML-void elements stay `<br>`-style, non-void empty
+/// elements get an explicit end tag). Mirrors nokogiri's flag value, which is
+/// 64 (2^6); upstream uses `XML_SAVE_AS_HTML = (1<<10)`.
+pub const XML_SAVE_AS_HTML: c_int = 1 << 6;
 
 /// Candidate-internal save context (opaque upstream).
 #[derive(Debug)]
@@ -98,6 +103,10 @@ pub struct _xmlSaveCtxt {
     /// Whether empty elements must be written with an explicit end tag
     /// (`XML_SAVE_NO_EMPTY`).
     pub no_empty: c_int,
+    /// HTML output mode (nokogiri `SaveOptions::AS_HTML` = 64): empty HTML
+    /// void elements (br/img/…) serialise as `<br>` and other empty
+    /// non-void elements as `<a></a>`.
+    pub as_html: c_int,
     /// Optional indentation string used when formatting is enabled.
     pub indent: *mut xmlChar,
     /// The encoding name carried into the XML declaration (upstream
@@ -147,6 +156,11 @@ unsafe fn save_ctxt_new(
         0
     };
     (*ctxt).no_empty = if (options & XML_SAVE_NO_EMPTY) != 0 {
+        1
+    } else {
+        0
+    };
+    (*ctxt).as_html = if (options & XML_SAVE_AS_HTML) != 0 {
         1
     } else {
         0
@@ -272,8 +286,12 @@ unsafe fn save_doc_or_tree(ctxt: *mut _xmlSaveCtxt, node: *mut _xmlNode) -> c_lo
     let indent = (*ctxt).indent;
     let format = (*ctxt).format;
     let no_decl = (*ctxt).no_decl;
+    let no_empty = (*ctxt).no_empty;
+    let as_html = (*ctxt).as_html;
     let encoding = (*ctxt).encoding as *const xmlChar;
-    crate::xml::tree::serialize_node_opts_enc(node, buf, format, 0, indent, no_decl, encoding);
+    crate::xml::tree::serialize_node_opts_enc_full(
+        node, buf, format, 0, indent, no_decl, no_empty, as_html, encoding,
+    );
 
     let before = io::buf_length(buf);
     let content = io::buf_content(buf);
@@ -480,6 +498,11 @@ unsafe fn save_ctxt_wrap(
         0
     };
     (*ctxt).no_empty = if (options & XML_SAVE_NO_EMPTY) != 0 {
+        1
+    } else {
+        0
+    };
+    (*ctxt).as_html = if (options & XML_SAVE_AS_HTML) != 0 {
         1
     } else {
         0
