@@ -11,12 +11,19 @@
 
 #include <libxml/xmlversion.h>
 #include <libxml/parser.h>
+#include <libxml/HTMLparser.h>
 #include <libxml/chvalid.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Global variables used for predefined strings (upstream parserInternals.h). */
+XMLPUBVAR const xmlChar xmlStringText[];
+XMLPUBVAR const xmlChar xmlStringTextNoenc[];
+XML_DEPRECATED
+XMLPUBVAR const xmlChar xmlStringComment[];
 
 /* Deprecated character classification (parserInternals.h 2.15.3). */
 XMLPUBFUN int xmlIsLetter(int c);

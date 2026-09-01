@@ -10,6 +10,7 @@
 #include <libxml/xmlversion.h>
 #include <libxml/xmlerror.h>
 #include <libxml/parser.h>
+#include <libxml/HTMLparser.h>
 
 #ifdef __cplusplus
 extern "C" {
