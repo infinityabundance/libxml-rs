@@ -249,6 +249,34 @@ unsafe fn vctxt_error(ctxt: *mut _xmlValidCtxt, msg: *const c_char) {
         if let Some(err) = c.error {
             err(c.userData, msg);
         }
+        // UPSTREAM-PARITY (valid.c xmlErrValid -> __xmlRaiseError): raise the
+        // error through the global STRUCTURED handler as well, so consumers
+        // like nokogiri that install a structured error func (xmlSetStructured
+        // ErrorFunc in DTD#validate) collect it into their error list. Only
+        // when a structured handler is registered — the generic fallback would
+        // double-report what the validation context's own `error` callback
+        // (used by xmllint --valid) already printed.
+        let has_structured = crate::xml::globals::with_structured_error(|h, _| h.is_some());
+        if has_structured {
+            crate::xml::errors::raise_error(
+                ctxt as *mut c_void,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                crate::abi::types::XML_FROM_VALID,
+                0,
+                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                ptr::null(),
+                0,
+                ptr::null(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                0,
+                msg,
+            );
+        }
     }
 }
 
@@ -1028,6 +1056,42 @@ pub unsafe fn validate_element(
             let name_str = string::xmlstr_to_string(elem_name);
             let err_msg = format!("No declaration for element {}\0", name_str);
             vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+            // UPSTREAM-PARITY (valid.c xmlValidateElement): even when an
+            // element has no declaration, upstream still reports undeclared
+            // attributes and recurses into children so every descendant
+            // violation is counted (nokogiri's DTD#validate expects 45 for
+            // staff.xml: 36 element + 9 attribute errors).
+            if !dtd_ref.attributes.is_null() {
+                let mut attr_prop = e.properties;
+                while !attr_prop.is_null() {
+                    let a_ref = &*attr_prop;
+                    if !a_ref.name.is_null() {
+                        let ad = hash::hash_lookup3(
+                            dtd_ref.attributes as *mut hash::HashTable,
+                            a_ref.name,
+                            ptr::null(),
+                            elem_name,
+                        );
+                        if ad.is_null() {
+                            let aname_str = string::xmlstr_to_string(a_ref.name);
+                            let ename_str = string::xmlstr_to_string(elem_name);
+                            let aerr = format!(
+                                "No declaration for attribute {} of element {}\0",
+                                aname_str, ename_str
+                            );
+                            vctxt_error(ctxt, aerr.as_ptr() as *const c_char);
+                        }
+                    }
+                    attr_prop = (*attr_prop).next;
+                }
+            }
+            let mut child = e.children;
+            while !child.is_null() {
+                if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                    validate_element(ctxt, doc, child);
+                }
+                child = (*child).next;
+            }
             vctxt_pop_node(ctxt);
             return 0;
         }
@@ -1120,10 +1184,18 @@ pub unsafe fn validate_element(
                 );
 
                 if attr_decl.is_null() {
-                    // Undeclared attribute — not a validation error per se
-                    // in DTD validation, but might be in Schema validation.
-                    // UPSTREAM-PARITY: libxml2 skips undeclared attrs in
-                    // DTD validation mode.
+                    // UPSTREAM-PARITY (valid.c xmlValidateElement): an
+                    // attribute with no declaration is reported as an error
+                    // ("No declaration for attribute %s of element %s") —
+                    // not skipped.
+                    let aname_str = string::xmlstr_to_string(attr_name);
+                    let ename_str = string::xmlstr_to_string(elem_name);
+                    let err_msg = format!(
+                        "No declaration for attribute {} of element {}\0",
+                        aname_str, ename_str
+                    );
+                    vctxt_error(ctxt, err_msg.as_ptr() as *const c_char);
+                    valid = 0;
                     attr_prop = attr_ref.next;
                     continue;
                 }
@@ -1797,6 +1869,30 @@ pub unsafe fn validate_dtd(
                 Some(validate_elem_content_cb),
                 &ctx as *const ValidateDtdCtx as *mut c_void,
             );
+        }
+
+        // UPSTREAM-PARITY (valid.c xmlValidateDtd): beyond DTD-internal
+        // consistency, xmlValidateDtd walks every element of the document and
+        // validates it against the DTD (content model, attributes, required
+        // attributes, ID/IDREF). The doc is passed explicitly so an external
+        // subset can validate a document it wasn't loaded from.
+        if !doc.is_null() {
+            let d = &*doc;
+            let mut root = d.children;
+            while !root.is_null() {
+                if (*root).type_ == XML_ELEMENT_NODE as c_int {
+                    break;
+                }
+                root = (*root).next;
+            }
+            if !root.is_null() {
+                // validate_element recurses; a 0 return marks the doc invalid
+                // but all errors are still reported via vctxt_error handlers.
+                let el_valid = validate_element(ctxt, doc, root);
+                if el_valid == 0 {
+                    c.valid = 0;
+                }
+            }
         }
 
         c.valid
