@@ -365,6 +365,16 @@ fn eval_variable(ctx: &mut XPathContext, name: &str) -> Result<XPathValue, Strin
         .ok_or_else(|| format!("Undefined variable: ${}", name))
 }
 
+/// Resolve a function-call name to the qualified `{URI}local` key used by
+/// `xmlXPathRegisterFuncNS`. Unprefixed names stay as-is; a `prefix:local`
+/// name is expanded using the context's registered namespace map. Returns
+/// `None` when the prefix is undeclared or the name is unprefixed.
+fn resolve_function_qualified_name(ctx: &XPathContext, name: &str) -> Option<String> {
+    let (prefix, local) = name.split_once(':')?;
+    let uri = ctx.namespaces.get(prefix)?;
+    Some(format!("{{{}}}{}", uri, local))
+}
+
 /// Evaluate a function call.
 fn eval_function_call(
     ctx: &mut XPathContext,
@@ -377,11 +387,20 @@ fn eval_function_call(
         evaluated_args.push(eval(ctx, arg)?);
     }
 
-    // Look up the function
-    // Take a raw pointer to the boxed function so the immutable borrow of
-    // `ctx` ends before we call it with `&mut ctx`.
-    let func_ptr: Option<*const crate::xml::xpath::context::BoxedXPathFunction> =
-        ctx.lookup_function(name).map(|f| f as *const _);
+    // Look up the function. Namespaced function calls (nokogiri's
+    // `nokogiri-builtin:css-class` registered via xmlXPathRegisterFuncNS with
+    // URI `https://www.nokogiri.org/default_ns/ruby/builtins`) are stored under
+    // the `{URI}local` qualified key. The raw name (e.g. `exsl:node-set`) is
+    // tried first so the XSLT function_lookup closure (which splits on ':') and
+    // prefix-string-registered functions resolve; the qualified key falls back.
+    let mut func_ptr: Option<*const crate::xml::xpath::context::BoxedXPathFunction> = None;
+    if let Some(f) = ctx.lookup_function(name) {
+        func_ptr = Some(f as *const _);
+    } else if let Some(qname) = resolve_function_qualified_name(ctx, name) {
+        if let Some(f) = ctx.lookup_function(&qname) {
+            func_ptr = Some(f as *const _);
+        }
+    }
     match func_ptr {
         Some(p) => {
             // SAFETY: `p` points into `ctx.functions`, which is alive for the
