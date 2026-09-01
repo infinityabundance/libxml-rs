@@ -62,6 +62,7 @@ STEPS = [
      ["atlas/PARITY_OBLIGATIONS.json", "atlas/PARITY_OBLIGATIONS.md"]),
     ("subsystem_census", "tools/evidence/subsystem_census.py",
      ["atlas/SUBSYSTEM_CENSUS.json", "atlas/SUBSYSTEM_CENSUS.md"]),
+    ("readme_counts", "tools/evidence/readme_counts.py", ["README.md"]),
     ("ledger_gen", "tools/evidence/ledger_gen.py",
      ["atlas/RESIDUAL_LEDGER.md"]),
 ]
@@ -130,6 +131,11 @@ def run_step(step, check_dir=None):
     cmd = [PY, os.path.join(ROOT, script)]
     if name == "ledger_gen" and check_dir is None:
         cmd.append("gen")
+    if name == "readme_counts" and check_dir is not None:
+        # Phase-14 evidence amendment: the README's generated sections join the
+        # reproducibility gate (readme_counts.py --check writes nothing and
+        # fails on drift).
+        cmd.append("--check")
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
     detail = (r.stdout or "") + (r.stderr or "")
     if r.returncode != 0:

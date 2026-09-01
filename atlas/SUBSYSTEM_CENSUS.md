@@ -396,37 +396,37 @@ Verdict: **IMPLEMENTED_UNVERIFIED**. Courts: —
 
 | subsystem | oracle DSO fn | cand fn | obligations | implemented | stub | unknown | missing | sem-verified | verdict | courts |
 |---|---|---|---|---|---|---|---|---|---|---|
-| xslt-attribute-sets | 4 | 0 | 5 | 0 | 0 | 4 | 5 | 0 | PARTIAL | 0 |
-| xslt-compilation | 3 | 0 | 4 | 0 | 0 | 3 | 4 | 0 | PARTIAL | 0 |
-| xslt-debugger | 33 | 0 | 38 | 0 | 0 | 33 | 38 | 6 | PARTIAL | 1 |
-| xslt-decimal-formats | 35 | 0 | 40 | 0 | 0 | 35 | 40 | 7 | PARTIAL | 1 |
-| xslt-documents | 8 | 0 | 9 | 0 | 0 | 8 | 9 | 0 | PARTIAL | 0 |
-| xslt-errors | 33 | 0 | 38 | 0 | 0 | 33 | 38 | 6 | PARTIAL | 1 |
-| xslt-exports | 38 | 0 | 38 | 0 | 0 | 38 | 38 | 12 | PARTIAL | 1 |
-| xslt-extension-elements | 34 | 0 | 34 | 0 | 0 | 34 | 34 | 7 | PARTIAL | 2 |
-| xslt-extension-functions | 44 | 0 | 44 | 0 | 0 | 44 | 44 | 7 | PARTIAL | 2 |
-| xslt-extra | 4 | 0 | 4 | 0 | 0 | 4 | 4 | 0 | PARTIAL | 0 |
-| xslt-global-state | 44 | 0 | 53 | 0 | 0 | 44 | 53 | 11 | PARTIAL | 2 |
-| xslt-imports | 6 | 0 | 6 | 0 | 0 | 6 | 6 | 0 | PARTIAL | 0 |
-| xslt-includes | 69 | 0 | 74 | 0 | 0 | 69 | 74 | 9 | PARTIAL | 1 |
-| xslt-keys | 5 | 0 | 5 | 0 | 0 | 5 | 5 | 0 | PARTIAL | 0 |
-| xslt-lifecycle | 40 | 0 | 49 | 0 | 0 | 40 | 49 | 11 | PARTIAL | 1 |
-| xslt-loader-hooks | 8 | 0 | 9 | 0 | 0 | 8 | 9 | 0 | PARTIAL | 0 |
-| xslt-namespace-alias | 9 | 0 | 9 | 0 | 0 | 9 | 9 | 0 | PARTIAL | 0 |
-| xslt-numbering | 4 | 0 | 4 | 0 | 0 | 4 | 4 | 1 | PARTIAL | 1 |
-| xslt-output | 66 | 0 | 71 | 0 | 0 | 66 | 71 | 9 | PARTIAL | 1 |
-| xslt-parameters | 35 | 0 | 40 | 0 | 0 | 35 | 40 | 6 | PARTIAL | 1 |
-| xslt-patterns | 9 | 0 | 9 | 0 | 0 | 9 | 9 | 0 | PARTIAL | 0 |
-| xslt-priorities | 46 | 0 | 51 | 0 | 0 | 46 | 51 | 6 | PARTIAL | 1 |
-| xslt-profiling | 34 | 0 | 39 | 0 | 0 | 34 | 39 | 6 | PARTIAL | 1 |
-| xslt-rvt | 51 | 0 | 56 | 0 | 0 | 51 | 56 | 6 | PARTIAL | 1 |
-| xslt-security | 11 | 0 | 11 | 0 | 0 | 11 | 11 | 4 | PARTIAL | 2 |
-| xslt-sorting | 34 | 0 | 39 | 0 | 0 | 34 | 39 | 6 | PARTIAL | 1 |
-| xslt-templates | 11 | 0 | 11 | 0 | 0 | 11 | 11 | 0 | PARTIAL | 0 |
-| xslt-transform-ctxt | 43 | 0 | 52 | 0 | 0 | 43 | 52 | 12 | PARTIAL | 2 |
-| xslt-transform-exec | 33 | 0 | 33 | 0 | 0 | 33 | 33 | 3 | PARTIAL | 1 |
-| xslt-variables | 14 | 0 | 14 | 0 | 0 | 14 | 14 | 0 | PARTIAL | 0 |
-| xslt-whitespace | 34 | 0 | 39 | 0 | 0 | 34 | 39 | 6 | PARTIAL | 1 |
+| xslt-attribute-sets | 4 | 0 | 5 | 4 | 0 | 0 | 5 | 0 | PARTIAL | 0 |
+| xslt-compilation | 3 | 0 | 4 | 3 | 0 | 0 | 4 | 0 | PARTIAL | 0 |
+| xslt-debugger | 33 | 0 | 38 | 32 | 0 | 0 | 38 | 6 | PARTIAL | 1 |
+| xslt-decimal-formats | 35 | 0 | 40 | 34 | 0 | 0 | 40 | 7 | PARTIAL | 1 |
+| xslt-documents | 8 | 0 | 9 | 8 | 0 | 0 | 9 | 0 | PARTIAL | 0 |
+| xslt-errors | 33 | 0 | 38 | 32 | 0 | 0 | 38 | 6 | PARTIAL | 1 |
+| xslt-exports | 38 | 0 | 38 | 35 | 0 | 0 | 38 | 12 | PARTIAL | 1 |
+| xslt-extension-elements | 34 | 0 | 34 | 34 | 0 | 0 | 34 | 7 | PARTIAL | 2 |
+| xslt-extension-functions | 44 | 0 | 44 | 44 | 0 | 0 | 44 | 7 | PARTIAL | 2 |
+| xslt-extra | 4 | 0 | 4 | 4 | 0 | 0 | 4 | 0 | PARTIAL | 0 |
+| xslt-global-state | 44 | 0 | 53 | 43 | 0 | 0 | 53 | 11 | PARTIAL | 2 |
+| xslt-imports | 6 | 0 | 6 | 6 | 0 | 0 | 6 | 0 | PARTIAL | 0 |
+| xslt-includes | 69 | 0 | 74 | 68 | 0 | 0 | 74 | 9 | PARTIAL | 1 |
+| xslt-keys | 5 | 0 | 5 | 5 | 0 | 0 | 5 | 0 | PARTIAL | 0 |
+| xslt-lifecycle | 40 | 0 | 49 | 39 | 0 | 0 | 49 | 11 | PARTIAL | 1 |
+| xslt-loader-hooks | 8 | 0 | 9 | 8 | 0 | 0 | 9 | 0 | PARTIAL | 0 |
+| xslt-namespace-alias | 9 | 0 | 9 | 9 | 0 | 0 | 9 | 0 | PARTIAL | 0 |
+| xslt-numbering | 4 | 0 | 4 | 4 | 0 | 0 | 4 | 1 | PARTIAL | 1 |
+| xslt-output | 66 | 0 | 71 | 65 | 0 | 0 | 71 | 9 | PARTIAL | 1 |
+| xslt-parameters | 35 | 0 | 40 | 34 | 0 | 0 | 40 | 6 | PARTIAL | 1 |
+| xslt-patterns | 9 | 0 | 9 | 9 | 0 | 0 | 9 | 0 | PARTIAL | 0 |
+| xslt-priorities | 46 | 0 | 51 | 45 | 0 | 0 | 51 | 6 | PARTIAL | 1 |
+| xslt-profiling | 34 | 0 | 39 | 33 | 0 | 0 | 39 | 6 | PARTIAL | 1 |
+| xslt-rvt | 51 | 0 | 56 | 50 | 0 | 0 | 56 | 6 | PARTIAL | 1 |
+| xslt-security | 11 | 0 | 11 | 9 | 0 | 0 | 11 | 4 | PARTIAL | 2 |
+| xslt-sorting | 34 | 0 | 39 | 33 | 0 | 0 | 39 | 6 | PARTIAL | 1 |
+| xslt-templates | 11 | 0 | 11 | 11 | 0 | 0 | 11 | 0 | PARTIAL | 0 |
+| xslt-transform-ctxt | 43 | 0 | 52 | 42 | 0 | 0 | 52 | 12 | PARTIAL | 2 |
+| xslt-transform-exec | 33 | 0 | 33 | 33 | 0 | 0 | 33 | 3 | PARTIAL | 1 |
+| xslt-variables | 14 | 0 | 14 | 14 | 0 | 0 | 14 | 0 | PARTIAL | 0 |
+| xslt-whitespace | 34 | 0 | 39 | 33 | 0 | 0 | 39 | 6 | PARTIAL | 1 |
 
 ### Detail
 
@@ -434,8 +434,7 @@ Verdict: **IMPLEMENTED_UNVERIFIED**. Courts: —
 Plan item: *attribute sets*  
 Membership: attributes.h  
 Sources: attributes.c  
-Oracle DSO functions 4, globals 1, header-declared-only 0; candidate exports 0; obligations 5 (0 implemented, 0 stub, 4 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltApplyAttributeSet, xsltFreeAttributeSetsHashes, xsltParseStylesheetAttributeSet, xsltResolveStylesheetAttributeSet  
+Oracle DSO functions 4, globals 1, header-declared-only 0; candidate exports 0; obligations 5 (4 implemented, 0 stub, 0 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltApplyAttributeSet, xsltFreeAttributeSetsHashes, xsltMaxDepth, xsltParseStylesheetAttributeSet, xsltResolveStylesheetAttributeSet  
 Verdict: **PARTIAL**. Courts: —
 
@@ -443,8 +442,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *compilation*  
 Membership: preproc.h  
 Sources: preproc.c  
-Oracle DSO functions 3, globals 1, header-declared-only 0; candidate exports 0; obligations 4 (0 implemented, 0 stub, 3 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltDocumentComp, xsltFreeStylePreComps, xsltStylePreCompute  
+Oracle DSO functions 3, globals 1, header-declared-only 0; candidate exports 0; obligations 4 (3 implemented, 0 stub, 0 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltDocumentComp, xsltExtMarker, xsltFreeStylePreComps, xsltStylePreCompute  
 Verdict: **PARTIAL**. Courts: —
 
@@ -452,8 +450,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *debugger hooks where applicable*  
 Membership: xsltutils.h  
 Sources: xsltutils.c  
-Oracle DSO functions 33, globals 5, header-declared-only 5; candidate exports 0; obligations 38 (0 implemented, 0 stub, 33 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 33, globals 5, header-declared-only 5; candidate exports 0; obligations 38 (32 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -461,8 +458,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *decimal formats*  
 Membership: xsltutils.h  
 Sources: xsltutils.c  
-Oracle DSO functions 35, globals 5, header-declared-only 5; candidate exports 0; obligations 40 (0 implemented, 0 stub, 35 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 7.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDecimalFormatGetByName, xsltDecimalFormatGetByQName, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 35, globals 5, header-declared-only 5; candidate exports 0; obligations 40 (34 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 7.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDecimalFormatGetByName, xsltDecimalFormatGetByQName, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -470,8 +466,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *documents*  
 Membership: documents.h  
 Sources: documents.c  
-Oracle DSO functions 8, globals 1, header-declared-only 0; candidate exports 0; obligations 9 (0 implemented, 0 stub, 8 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltFindDocument, xsltFreeDocuments, xsltFreeStyleDocuments, xsltLoadDocument, xsltLoadStyleDocument, xsltNewDocument, xsltNewStyleDocument, xsltSetLoaderFunc  
+Oracle DSO functions 8, globals 1, header-declared-only 0; candidate exports 0; obligations 9 (8 implemented, 0 stub, 0 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltDocDefaultLoader, xsltFindDocument, xsltFreeDocuments, xsltFreeStyleDocuments, xsltLoadDocument, xsltLoadStyleDocument, xsltNewDocument, xsltNewStyleDocument, xsltSetLoaderFunc  
 Verdict: **PARTIAL**. Courts: —
 
@@ -479,8 +474,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *errors*  
 Membership: xsltutils.h  
 Sources: xsltutils.c, transform.c  
-Oracle DSO functions 33, globals 5, header-declared-only 5; candidate exports 0; obligations 38 (0 implemented, 0 stub, 33 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 33, globals 5, header-declared-only 5; candidate exports 0; obligations 38 (32 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -488,8 +482,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *all exported internals historically relied upon by consumers*  
 Membership: xsltInternals.h, xsltconfig.h, xsltlocale.h  
 Sources: xslt.c, xsltutils.c, transform.c  
-Oracle DSO functions 38, globals 0, header-declared-only 0; candidate exports 0; obligations 38 (0 implemented, 0 stub, 38 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 12.  
-Unknowns: xsltAllocateExtra, xsltAllocateExtraCtxt, xsltCompileAttr, xsltCreateRVT, xsltDecimalFormatGetByName, xsltDecimalFormatGetByQName, xsltEvalAVT, xsltExtensionInstructionResultFinalize, xsltExtensionInstructionResultRegister, xsltFlagRVTs, xsltFormatNumberConversion, xsltFreeAVTList, xsltFreeLocale, xsltFreeLocales, xsltFreeRVTs, xsltFreeStackElemList, xsltFreeStylesheet, xsltInitAllDocKeys, xsltInitCtxtKey, xsltIsBlank, xsltLoadStylesheetPI, xsltLocaleStrcmp, xsltNewLocale, xsltNewStylesheet, xsltNumberFormat, xsltParseStylesheetDoc, xsltParseStylesheetFile, xsltParseStylesheetImportedDoc, xsltParseStylesheetOutput, xsltParseStylesheetProcess, xsltParseStylesheetUser, xsltParseTemplateContent, xsltRegisterLocalRVT, xsltRegisterPersistRVT, xsltRegisterTmpRVT, xsltReleaseRVT, xsltStrxfrm, xsltUninit  
+Oracle DSO functions 38, globals 0, header-declared-only 0; candidate exports 0; obligations 38 (35 implemented, 0 stub, 0 unknown, 3 intentional noop, 0 n/a); obligation gap 0; semantic-verified 12.  
 Missing exports: xsltAllocateExtra, xsltAllocateExtraCtxt, xsltCompileAttr, xsltCreateRVT, xsltDecimalFormatGetByName, xsltDecimalFormatGetByQName, xsltEvalAVT, xsltExtensionInstructionResultFinalize, xsltExtensionInstructionResultRegister, xsltFlagRVTs, xsltFormatNumberConversion, xsltFreeAVTList, xsltFreeLocale, xsltFreeLocales, xsltFreeRVTs, xsltFreeStackElemList, xsltFreeStylesheet, xsltInitAllDocKeys, xsltInitCtxtKey, xsltIsBlank, xsltLoadStylesheetPI, xsltLocaleStrcmp, xsltNewLocale, xsltNewStylesheet, xsltNumberFormat, xsltParseStylesheetDoc, xsltParseStylesheetFile, xsltParseStylesheetImportedDoc, xsltParseStylesheetOutput, xsltParseStylesheetProcess, xsltParseStylesheetUser, xsltParseTemplateContent, xsltRegisterLocalRVT, xsltRegisterPersistRVT, xsltRegisterTmpRVT, xsltReleaseRVT, xsltStrxfrm, xsltUninit  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -497,8 +490,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *extension elements*  
 Membership: extensions.h  
 Sources: extensions.c  
-Oracle DSO functions 34, globals 0, header-declared-only 0; candidate exports 0; obligations 34 (0 implemented, 0 stub, 34 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 7.  
-Unknowns: xsltCheckExtPrefix, xsltCheckExtURI, xsltDebugDumpExtensions, xsltExtElementLookup, xsltExtModuleElementLookup, xsltExtModuleElementPreComputeLookup, xsltExtModuleFunctionLookup, xsltExtModuleTopLevelLookup, xsltFreeCtxtExts, xsltFreeExts, xsltGetExtData, xsltGetExtInfo, xsltInitCtxtExts, xsltInitElemPreComp, xsltInitGlobals, xsltNewElemPreComp, xsltPreComputeExtModuleElement, xsltRegisterExtElement, xsltRegisterExtFunction, xsltRegisterExtModule, xsltRegisterExtModuleElement, xsltRegisterExtModuleFull, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltRegisterExtPrefix, xsltRegisterTestModule, xsltShutdownCtxtExts, xsltShutdownExts, xsltStyleGetExtData, xsltUnregisterExtModule, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathGetTransformContext  
+Oracle DSO functions 34, globals 0, header-declared-only 0; candidate exports 0; obligations 34 (34 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 7.  
 Missing exports: xsltCheckExtPrefix, xsltCheckExtURI, xsltDebugDumpExtensions, xsltExtElementLookup, xsltExtModuleElementLookup, xsltExtModuleElementPreComputeLookup, xsltExtModuleFunctionLookup, xsltExtModuleTopLevelLookup, xsltFreeCtxtExts, xsltFreeExts, xsltGetExtData, xsltGetExtInfo, xsltInitCtxtExts, xsltInitElemPreComp, xsltInitGlobals, xsltNewElemPreComp, xsltPreComputeExtModuleElement, xsltRegisterExtElement, xsltRegisterExtFunction, xsltRegisterExtModule, xsltRegisterExtModuleElement, xsltRegisterExtModuleFull, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltRegisterExtPrefix, xsltRegisterTestModule, xsltShutdownCtxtExts, xsltShutdownExts, xsltStyleGetExtData, xsltUnregisterExtModule, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathGetTransformContext  
 Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 
@@ -506,8 +498,7 @@ Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 Plan item: *extension functions*  
 Membership: functions.h, extensions.h  
 Sources: functions.c, extensions.c  
-Oracle DSO functions 44, globals 0, header-declared-only 0; candidate exports 0; obligations 44 (0 implemented, 0 stub, 44 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 7.  
-Unknowns: xsltCheckExtPrefix, xsltCheckExtURI, xsltDebugDumpExtensions, xsltDocumentFunction, xsltElementAvailableFunction, xsltExtElementLookup, xsltExtModuleElementLookup, xsltExtModuleElementPreComputeLookup, xsltExtModuleFunctionLookup, xsltExtModuleTopLevelLookup, xsltFormatNumberFunction, xsltFreeCtxtExts, xsltFreeExts, xsltFunctionAvailableFunction, xsltGenerateIdFunction, xsltGetExtData, xsltGetExtInfo, xsltInitCtxtExts, xsltInitElemPreComp, xsltInitGlobals, xsltKeyFunction, xsltNewElemPreComp, xsltPreComputeExtModuleElement, xsltRegisterAllFunctions, xsltRegisterExtElement, xsltRegisterExtFunction, xsltRegisterExtModule, xsltRegisterExtModuleElement, xsltRegisterExtModuleFull, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltRegisterExtPrefix, xsltRegisterTestModule, xsltShutdownCtxtExts, xsltShutdownExts, xsltStyleGetExtData, xsltSystemPropertyFunction, xsltUnparsedEntityURIFunction, xsltUnregisterExtModule, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathFunctionLookup, xsltXPathGetTransformContext  
+Oracle DSO functions 44, globals 0, header-declared-only 0; candidate exports 0; obligations 44 (44 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 7.  
 Missing exports: xsltCheckExtPrefix, xsltCheckExtURI, xsltDebugDumpExtensions, xsltDocumentFunction, xsltElementAvailableFunction, xsltExtElementLookup, xsltExtModuleElementLookup, xsltExtModuleElementPreComputeLookup, xsltExtModuleFunctionLookup, xsltExtModuleTopLevelLookup, xsltFormatNumberFunction, xsltFreeCtxtExts, xsltFreeExts, xsltFunctionAvailableFunction, xsltGenerateIdFunction, xsltGetExtData, xsltGetExtInfo, xsltInitCtxtExts, xsltInitElemPreComp, xsltInitGlobals, xsltKeyFunction, xsltNewElemPreComp, xsltPreComputeExtModuleElement, xsltRegisterAllFunctions, xsltRegisterExtElement, xsltRegisterExtFunction, xsltRegisterExtModule, xsltRegisterExtModuleElement, xsltRegisterExtModuleFull, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltRegisterExtPrefix, xsltRegisterTestModule, xsltShutdownCtxtExts, xsltShutdownExts, xsltStyleGetExtData, xsltSystemPropertyFunction, xsltUnparsedEntityURIFunction, xsltUnregisterExtModule, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathFunctionLookup, xsltXPathGetTransformContext  
 Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 
@@ -515,8 +506,7 @@ Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 Plan item: *extra/nonstandard extensions*  
 Membership: extra.h  
 Sources: extra.c  
-Oracle DSO functions 4, globals 0, header-declared-only 0; candidate exports 0; obligations 4 (0 implemented, 0 stub, 4 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltDebug, xsltFunctionNodeSet, xsltRegisterAllExtras, xsltRegisterExtras  
+Oracle DSO functions 4, globals 0, header-declared-only 0; candidate exports 0; obligations 4 (4 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltDebug, xsltFunctionNodeSet, xsltRegisterAllExtras, xsltRegisterExtras  
 Verdict: **PARTIAL**. Courts: —
 
@@ -524,8 +514,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *global state*  
 Membership: xsltutils.h, xslt.h  
 Sources: xslt.c, extensions.c, xsltutils.c  
-Oracle DSO functions 44, globals 9, header-declared-only 5; candidate exports 0; obligations 53 (0 implemented, 0 stub, 44 unknown, 0 intentional noop, 9 n/a); obligation gap 5; semantic-verified 11.  
-Unknowns: xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetSecurityPrefs, xsltGetUTF8Char, xsltInit, xsltMessage, xsltPrintErrorContext, xsltRegisterAllExtras, xsltRegisterExtModuleElement, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSecurityPrefs, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 44, globals 9, header-declared-only 5; candidate exports 0; obligations 53 (43 implemented, 0 stub, 0 unknown, 1 intentional noop, 9 n/a); obligation gap 5; semantic-verified 11.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEngineVersion, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetSecurityPrefs, xsltGetUTF8Char, xsltInit, xsltLibxmlVersion, xsltLibxsltVersion, xsltMaxVars, xsltMessage, xsltPrintErrorContext, xsltRegisterAllExtras, xsltRegisterExtModuleElement, xsltRegisterExtModuleFunction, xsltRegisterExtModuleTopLevel, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSecurityPrefs, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltUnregisterExtModuleElement, xsltUnregisterExtModuleFunction, xsltUnregisterExtModuleTopLevel, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 
@@ -533,8 +522,7 @@ Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 Plan item: *imports*  
 Membership: imports.h  
 Sources: imports.c  
-Oracle DSO functions 6, globals 0, header-declared-only 0; candidate exports 0; obligations 6 (0 implemented, 0 stub, 6 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltFindElemSpaceHandling, xsltFindTemplate, xsltNeedElemSpaceHandling, xsltNextImport, xsltParseStylesheetImport, xsltParseStylesheetInclude  
+Oracle DSO functions 6, globals 0, header-declared-only 0; candidate exports 0; obligations 6 (6 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltFindElemSpaceHandling, xsltFindTemplate, xsltNeedElemSpaceHandling, xsltNextImport, xsltParseStylesheetImport, xsltParseStylesheetInclude  
 Verdict: **PARTIAL**. Courts: —
 
@@ -542,8 +530,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *includes*  
 Membership: xsltutils.h, transform.h  
 Sources: xslt.c  
-Oracle DSO functions 69, globals 5, header-declared-only 6; candidate exports 0; obligations 74 (0 implemented, 0 stub, 69 unknown, 0 intentional noop, 5 n/a); obligation gap 6; semantic-verified 9.  
-Unknowns: xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCalibrateAdjust, xsltCallTemplate, xsltChoose, xsltComment, xsltComputeSortResult, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentElem, xsltDocumentFunction, xsltDocumentSortFunction, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltGetXIncludeDefault, xsltIf, xsltLoadDocument, xsltLoadStyleDocument, xsltLocalVariablePop, xsltLocalVariablePush, xsltMessage, xsltNewTransformContext, xsltNumber, xsltPrintErrorContext, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSetXIncludeDefault, xsltSort, xsltSplitQName, xsltText, xsltTimestamp, xsltTransformError, xsltValueOf, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 69, globals 5, header-declared-only 6; candidate exports 0; obligations 74 (68 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 6; semantic-verified 9.  
 Missing exports: xslDebugStatus, xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCalibrateAdjust, xsltCallTemplate, xsltChoose, xsltComment, xsltComputeSortResult, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentElem, xsltDocumentFunction, xsltDocumentSortFunction, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltGetXIncludeDefault, xsltIf, xsltLoadDocument, xsltLoadStyleDocument, xsltLocalVariablePop, xsltLocalVariablePush, xsltMessage, xsltNewTransformContext, xsltNumber, xsltPrintErrorContext, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSetXIncludeDefault, xsltSort, xsltSplitQName, xsltText, xsltTimestamp, xsltTransformError, xsltValueOf, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -551,8 +538,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *keys*  
 Membership: keys.h  
 Sources: keys.c  
-Oracle DSO functions 5, globals 0, header-declared-only 0; candidate exports 0; obligations 5 (0 implemented, 0 stub, 5 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltAddKey, xsltFreeDocumentKeys, xsltFreeKeys, xsltGetKey, xsltInitCtxtKeys  
+Oracle DSO functions 5, globals 0, header-declared-only 0; candidate exports 0; obligations 5 (5 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltAddKey, xsltFreeDocumentKeys, xsltFreeKeys, xsltGetKey, xsltInitCtxtKeys  
 Verdict: **PARTIAL**. Courts: —
 
@@ -560,8 +546,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *stylesheet lifecycle*  
 Membership: xslt.h, xsltutils.h  
 Sources: xslt.c, xsltutils.c  
-Oracle DSO functions 40, globals 9, header-declared-only 5; candidate exports 0; obligations 49 (0 implemented, 0 stub, 40 unknown, 0 intentional noop, 9 n/a); obligation gap 5; semantic-verified 11.  
-Unknowns: xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltFreeStylesheet, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltInit, xsltMessage, xsltNewStylesheet, xsltParseStylesheetDoc, xsltParseStylesheetFile, xsltParseStylesheetProcess, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 40, globals 9, header-declared-only 5; candidate exports 0; obligations 49 (39 implemented, 0 stub, 0 unknown, 1 intentional noop, 9 n/a); obligation gap 5; semantic-verified 11.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEngineVersion, xsltFreeStylesheet, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltInit, xsltLibxmlVersion, xsltLibxsltVersion, xsltMaxVars, xsltMessage, xsltNewStylesheet, xsltParseStylesheetDoc, xsltParseStylesheetFile, xsltParseStylesheetProcess, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -569,8 +554,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *loader hooks*  
 Membership: documents.h  
 Sources: documents.c  
-Oracle DSO functions 8, globals 1, header-declared-only 0; candidate exports 0; obligations 9 (0 implemented, 0 stub, 8 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltFindDocument, xsltFreeDocuments, xsltFreeStyleDocuments, xsltLoadDocument, xsltLoadStyleDocument, xsltNewDocument, xsltNewStyleDocument, xsltSetLoaderFunc  
+Oracle DSO functions 8, globals 1, header-declared-only 0; candidate exports 0; obligations 9 (8 implemented, 0 stub, 0 unknown, 0 intentional noop, 1 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltDocDefaultLoader, xsltFindDocument, xsltFreeDocuments, xsltFreeStyleDocuments, xsltLoadDocument, xsltLoadStyleDocument, xsltNewDocument, xsltNewStyleDocument, xsltSetLoaderFunc  
 Verdict: **PARTIAL**. Courts: —
 
@@ -578,8 +562,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *namespace alias*  
 Membership: namespaces.h  
 Sources: namespaces.c  
-Oracle DSO functions 9, globals 0, header-declared-only 0; candidate exports 0; obligations 9 (0 implemented, 0 stub, 9 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltCopyNamespace, xsltCopyNamespaceList, xsltFreeNamespaceAliasHashes, xsltGetCNsProp, xsltGetNamespace, xsltGetNsProp, xsltGetPlainNamespace, xsltGetSpecialNamespace, xsltNamespaceAlias  
+Oracle DSO functions 9, globals 0, header-declared-only 0; candidate exports 0; obligations 9 (9 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltCopyNamespace, xsltCopyNamespaceList, xsltFreeNamespaceAliasHashes, xsltGetCNsProp, xsltGetNamespace, xsltGetNsProp, xsltGetPlainNamespace, xsltGetSpecialNamespace, xsltNamespaceAlias  
 Verdict: **PARTIAL**. Courts: —
 Note: namespaces.h has no Clang-AST function records; membership is by explicit name.
@@ -588,8 +571,7 @@ Note: namespaces.h has no Clang-AST function records; membership is by explicit 
 Plan item: *numbering*  
 Membership: numbersInternals.h  
 Sources: numbers.c  
-Oracle DSO functions 4, globals 0, header-declared-only 0; candidate exports 0; obligations 4 (0 implemented, 0 stub, 4 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 1.  
-Unknowns: xsltFormatNumberConversion, xsltFormatNumberFunction, xsltNumber, xsltNumberFormat  
+Oracle DSO functions 4, globals 0, header-declared-only 0; candidate exports 0; obligations 4 (4 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 1.  
 Missing exports: xsltFormatNumberConversion, xsltFormatNumberFunction, xsltNumber, xsltNumberFormat  
 Verdict: **PARTIAL**. Courts: XSLT-001
 Note: numbersInternals.h has no Clang-AST function records; membership is by explicit name.
@@ -598,8 +580,7 @@ Note: numbersInternals.h has no Clang-AST function records; membership is by exp
 Plan item: *output/serialization*  
 Membership: xsltutils.h, transform.h  
 Sources: xsltutils.c, transform.c  
-Oracle DSO functions 66, globals 5, header-declared-only 6; candidate exports 0; obligations 71 (0 implemented, 0 stub, 66 unknown, 0 intentional noop, 5 n/a); obligation gap 6; semantic-verified 9.  
-Unknowns: xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCalibrateAdjust, xsltCallTemplate, xsltChoose, xsltComment, xsltComputeSortResult, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentElem, xsltDocumentSortFunction, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltGetXIncludeDefault, xsltIf, xsltLocalVariablePop, xsltLocalVariablePush, xsltMessage, xsltNewTransformContext, xsltNumber, xsltPrintErrorContext, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSetXIncludeDefault, xsltSort, xsltSplitQName, xsltText, xsltTimestamp, xsltTransformError, xsltValueOf, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 66, globals 5, header-declared-only 6; candidate exports 0; obligations 71 (65 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 6; semantic-verified 9.  
 Missing exports: xslDebugStatus, xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCalibrateAdjust, xsltCallTemplate, xsltChoose, xsltComment, xsltComputeSortResult, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentElem, xsltDocumentSortFunction, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltGetXIncludeDefault, xsltIf, xsltLocalVariablePop, xsltLocalVariablePush, xsltMessage, xsltNewTransformContext, xsltNumber, xsltPrintErrorContext, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSetXIncludeDefault, xsltSort, xsltSplitQName, xsltText, xsltTimestamp, xsltTransformError, xsltValueOf, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -607,8 +588,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *parameters*  
 Membership: xsltutils.h  
 Sources: variables.c, xsltutils.c  
-Oracle DSO functions 35, globals 5, header-declared-only 5; candidate exports 0; obligations 40 (0 implemented, 0 stub, 35 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltParseStylesheetParam, xsltPrintErrorContext, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 35, globals 5, header-declared-only 5; candidate exports 0; obligations 40 (34 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltParseStylesheetParam, xsltPrintErrorContext, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -616,8 +596,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *patterns*  
 Membership: pattern.h  
 Sources: pattern.c  
-Oracle DSO functions 9, globals 0, header-declared-only 0; candidate exports 0; obligations 9 (0 implemented, 0 stub, 9 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltAddTemplate, xsltCleanupTemplates, xsltCompMatchClearCache, xsltCompilePattern, xsltFreeCompMatchList, xsltFreeTemplateHashes, xsltGetTemplate, xsltNormalizeCompSteps, xsltTestCompMatchList  
+Oracle DSO functions 9, globals 0, header-declared-only 0; candidate exports 0; obligations 9 (9 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltAddTemplate, xsltCleanupTemplates, xsltCompMatchClearCache, xsltCompilePattern, xsltFreeCompMatchList, xsltFreeTemplateHashes, xsltGetTemplate, xsltNormalizeCompSteps, xsltTestCompMatchList  
 Verdict: **PARTIAL**. Courts: —
 
@@ -625,8 +604,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *priorities*  
 Membership: xsltutils.h, templates.h  
 Sources: templates.c, xslt.c  
-Oracle DSO functions 46, globals 5, header-declared-only 5; candidate exports 0; obligations 51 (0 implemented, 0 stub, 46 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltAttrListTemplateProcess, xsltAttrTemplateProcess, xsltAttrTemplateValueProcess, xsltAttrTemplateValueProcessNode, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEvalAttrValueTemplate, xsltEvalStaticAttrValueTemplate, xsltEvalTemplateString, xsltEvalXPathPredicate, xsltEvalXPathString, xsltEvalXPathStringNs, xsltFindTemplate, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetTemplate, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTemplateProcess, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 46, globals 5, header-declared-only 5; candidate exports 0; obligations 51 (45 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltAttrListTemplateProcess, xsltAttrTemplateProcess, xsltAttrTemplateValueProcess, xsltAttrTemplateValueProcessNode, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEvalAttrValueTemplate, xsltEvalStaticAttrValueTemplate, xsltEvalTemplateString, xsltEvalXPathPredicate, xsltEvalXPathString, xsltEvalXPathStringNs, xsltFindTemplate, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetTemplate, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTemplateProcess, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -634,8 +612,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *profiling*  
 Membership: xsltutils.h  
 Sources: xsltutils.c  
-Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (0 implemented, 0 stub, 34 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltProfileStylesheet, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (33 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltProfileStylesheet, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -643,8 +620,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *RVTs*  
 Membership: xsltutils.h, variables.h  
 Sources: variables.c, xsltutils.c  
-Oracle DSO functions 51, globals 5, header-declared-only 5; candidate exports 0; obligations 56 (0 implemented, 0 stub, 51 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltAddStackElemList, xsltCalibrateAdjust, xsltComputeSortResult, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEvalGlobalVariables, xsltEvalOneUserParam, xsltEvalUserParams, xsltFreeGlobalVariables, xsltFreeRVTs, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltParseGlobalParam, xsltParseGlobalVariable, xsltParseStylesheetCallerParam, xsltParseStylesheetParam, xsltParseStylesheetVariable, xsltPrintErrorContext, xsltQuoteOneUserParam, xsltQuoteUserParams, xsltRegisterLocalRVT, xsltRegisterTmpRVT, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltVariableLookup, xsltXPathCompile, xsltXPathCompileFlags, xsltXPathVariableLookup  
+Oracle DSO functions 51, globals 5, header-declared-only 5; candidate exports 0; obligations 56 (50 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltAddStackElemList, xsltCalibrateAdjust, xsltComputeSortResult, xsltCopyTextString, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEvalGlobalVariables, xsltEvalOneUserParam, xsltEvalUserParams, xsltFreeGlobalVariables, xsltFreeRVTs, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltParseGlobalParam, xsltParseGlobalVariable, xsltParseStylesheetCallerParam, xsltParseStylesheetParam, xsltParseStylesheetVariable, xsltPrintErrorContext, xsltQuoteOneUserParam, xsltQuoteUserParams, xsltRegisterLocalRVT, xsltRegisterTmpRVT, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltVariableLookup, xsltXPathCompile, xsltXPathCompileFlags, xsltXPathVariableLookup  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -652,8 +628,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *security preferences*  
 Membership: security.h  
 Sources: security.c  
-Oracle DSO functions 11, globals 0, header-declared-only 0; candidate exports 0; obligations 11 (0 implemented, 0 stub, 11 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 4.  
-Unknowns: xsltCheckRead, xsltCheckWrite, xsltFreeSecurityPrefs, xsltGetDefaultSecurityPrefs, xsltGetSecurityPrefs, xsltNewSecurityPrefs, xsltSecurityAllow, xsltSecurityForbid, xsltSetCtxtSecurityPrefs, xsltSetDefaultSecurityPrefs, xsltSetSecurityPrefs  
+Oracle DSO functions 11, globals 0, header-declared-only 0; candidate exports 0; obligations 11 (9 implemented, 0 stub, 0 unknown, 2 intentional noop, 0 n/a); obligation gap 0; semantic-verified 4.  
 Missing exports: xsltCheckRead, xsltCheckWrite, xsltFreeSecurityPrefs, xsltGetDefaultSecurityPrefs, xsltGetSecurityPrefs, xsltNewSecurityPrefs, xsltSecurityAllow, xsltSecurityForbid, xsltSetCtxtSecurityPrefs, xsltSetDefaultSecurityPrefs, xsltSetSecurityPrefs  
 Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 
@@ -661,8 +636,7 @@ Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 Plan item: *sorting*  
 Membership: xsltutils.h  
 Sources: xslt.c, xsltutils.c  
-Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (0 implemented, 0 stub, 34 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSort, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (33 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSort, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -670,8 +644,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *templates*  
 Membership: templates.h  
 Sources: templates.c  
-Oracle DSO functions 11, globals 0, header-declared-only 0; candidate exports 0; obligations 11 (0 implemented, 0 stub, 11 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltAttrListTemplateProcess, xsltAttrTemplateProcess, xsltAttrTemplateValueProcess, xsltAttrTemplateValueProcessNode, xsltEvalAttrValueTemplate, xsltEvalStaticAttrValueTemplate, xsltEvalTemplateString, xsltEvalXPathPredicate, xsltEvalXPathString, xsltEvalXPathStringNs, xsltTemplateProcess  
+Oracle DSO functions 11, globals 0, header-declared-only 0; candidate exports 0; obligations 11 (11 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltAttrListTemplateProcess, xsltAttrTemplateProcess, xsltAttrTemplateValueProcess, xsltAttrTemplateValueProcessNode, xsltEvalAttrValueTemplate, xsltEvalStaticAttrValueTemplate, xsltEvalTemplateString, xsltEvalXPathPredicate, xsltEvalXPathString, xsltEvalXPathStringNs, xsltTemplateProcess  
 Verdict: **PARTIAL**. Courts: —
 
@@ -679,8 +652,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *transformation contexts*  
 Membership: xslt.h, xsltutils.h  
 Sources: transform.c, xslt.c  
-Oracle DSO functions 43, globals 9, header-declared-only 5; candidate exports 0; obligations 52 (0 implemented, 0 stub, 43 unknown, 0 intentional noop, 9 n/a); obligation gap 5; semantic-verified 12.  
-Unknowns: xsltApplyStylesheet, xsltApplyStylesheetUser, xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltFreeSecurityPrefs, xsltFreeTransformContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltInit, xsltMessage, xsltNewSecurityPrefs, xsltNewTransformContext, xsltPrintErrorContext, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 43, globals 9, header-declared-only 5; candidate exports 0; obligations 52 (42 implemented, 0 stub, 0 unknown, 1 intentional noop, 9 n/a); obligation gap 5; semantic-verified 12.  
 Missing exports: xslDebugStatus, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltCalibrateAdjust, xsltCleanupGlobals, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltEngineVersion, xsltFreeSecurityPrefs, xsltFreeTransformContext, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltInit, xsltLibxmlVersion, xsltLibxsltVersion, xsltMaxVars, xsltMessage, xsltNewSecurityPrefs, xsltNewTransformContext, xsltPrintErrorContext, xsltRunStylesheet, xsltRunStylesheetUser, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 
@@ -688,8 +660,7 @@ Verdict: **PARTIAL**. Courts: CALLBACK-001, XSLT-001
 Plan item: *transform execution*  
 Membership: transform.h  
 Sources: transform.c  
-Oracle DSO functions 33, globals 0, header-declared-only 1; candidate exports 0; obligations 33 (0 implemented, 0 stub, 33 unknown, 0 intentional noop, 0 n/a); obligation gap 1; semantic-verified 3.  
-Unknowns: xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCallTemplate, xsltChoose, xsltComment, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDocumentElem, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGetXIncludeDefault, xsltIf, xsltLocalVariablePop, xsltLocalVariablePush, xsltNewTransformContext, xsltNumber, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSetXIncludeDefault, xsltSort, xsltText, xsltValueOf  
+Oracle DSO functions 33, globals 0, header-declared-only 1; candidate exports 0; obligations 33 (33 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 1; semantic-verified 3.  
 Missing exports: xsltApplyImports, xsltApplyOneTemplate, xsltApplyStripSpaces, xsltApplyStylesheet, xsltApplyStylesheetUser, xsltApplyTemplates, xsltAttribute, xsltCallTemplate, xsltChoose, xsltComment, xsltCopy, xsltCopyOf, xsltCopyTextString, xsltDocumentElem, xsltElement, xsltForEach, xsltFreeTransformContext, xsltGetXIncludeDefault, xsltIf, xsltLocalVariablePop, xsltLocalVariablePush, xsltNewTransformContext, xsltNumber, xsltProcessOneNode, xsltProcessingInstruction, xsltProfileStylesheet, xsltRegisterAllElement, xsltRunStylesheet, xsltRunStylesheetUser, xsltSetXIncludeDefault, xsltSort, xsltText, xsltValueOf  
 Verdict: **PARTIAL**. Courts: XSLT-001
 
@@ -697,8 +668,7 @@ Verdict: **PARTIAL**. Courts: XSLT-001
 Plan item: *variables*  
 Membership: variables.h  
 Sources: variables.c  
-Oracle DSO functions 14, globals 0, header-declared-only 0; candidate exports 0; obligations 14 (0 implemented, 0 stub, 14 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
-Unknowns: xsltAddStackElemList, xsltEvalGlobalVariables, xsltEvalOneUserParam, xsltEvalUserParams, xsltFreeGlobalVariables, xsltParseGlobalParam, xsltParseGlobalVariable, xsltParseStylesheetCallerParam, xsltParseStylesheetParam, xsltParseStylesheetVariable, xsltQuoteOneUserParam, xsltQuoteUserParams, xsltVariableLookup, xsltXPathVariableLookup  
+Oracle DSO functions 14, globals 0, header-declared-only 0; candidate exports 0; obligations 14 (14 implemented, 0 stub, 0 unknown, 0 intentional noop, 0 n/a); obligation gap 0; semantic-verified 0.  
 Missing exports: xsltAddStackElemList, xsltEvalGlobalVariables, xsltEvalOneUserParam, xsltEvalUserParams, xsltFreeGlobalVariables, xsltParseGlobalParam, xsltParseGlobalVariable, xsltParseStylesheetCallerParam, xsltParseStylesheetParam, xsltParseStylesheetVariable, xsltQuoteOneUserParam, xsltQuoteUserParams, xsltVariableLookup, xsltXPathVariableLookup  
 Verdict: **PARTIAL**. Courts: —
 
@@ -706,8 +676,7 @@ Verdict: **PARTIAL**. Courts: —
 Plan item: *whitespace*  
 Membership: xsltutils.h  
 Sources: xslt.c  
-Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (0 implemented, 0 stub, 34 unknown, 0 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
-Unknowns: xsltApplyStripSpaces, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
+Oracle DSO functions 34, globals 5, header-declared-only 5; candidate exports 0; obligations 39 (33 implemented, 0 stub, 0 unknown, 1 intentional noop, 5 n/a); obligation gap 5; semantic-verified 6.  
 Missing exports: xslDebugStatus, xsltApplyStripSpaces, xsltCalibrateAdjust, xsltComputeSortResult, xsltDebugGetDefaultTrace, xsltDebugSetDefaultTrace, xsltDefaultSortFunction, xsltDoSortFunction, xsltDocumentSortFunction, xsltGenericDebug, xsltGenericDebugContext, xsltGenericError, xsltGenericErrorContext, xsltGetCNsProp, xsltGetDebuggerStatus, xsltGetNsProp, xsltGetProfileInformation, xsltGetQNameURI, xsltGetQNameURI2, xsltGetUTF8Char, xsltMessage, xsltPrintErrorContext, xsltSaveProfiling, xsltSaveResultTo, xsltSaveResultToFd, xsltSaveResultToFile, xsltSaveResultToFilename, xsltSaveResultToString, xsltSetCtxtParseOptions, xsltSetCtxtSortFunc, xsltSetGenericDebugFunc, xsltSetGenericErrorFunc, xsltSetSortFunc, xsltSetTransformErrorFunc, xsltSplitQName, xsltTimestamp, xsltTransformError, xsltXPathCompile, xsltXPathCompileFlags  
 Verdict: **PARTIAL**. Courts: XSLT-001
 

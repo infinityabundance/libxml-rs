@@ -2,7 +2,7 @@
  "schema": "evidence-generation-receipt-1",
  "phase": "11.1-W",
  "mode": "check",
- "candidate_git_head": "b5b4618a115b6d7d996ffe9febc9e11eab5fe88c",
+ "candidate_git_head": "e06af5be52d607d661f1f2ac0a0c61adc6914679",
  "tools": {
   "python": "Python 3.14.7",
   "doxygen": "1.18.0",
@@ -24,10 +24,10 @@
   "oracle DSO libxml2": "cb46deac2d3f95552f94e3f6a3f6bdb518790c16244a323a98768a6437b8c78e",
   "oracle DSO libxslt": "46436b0421e58c1eabe7b4d2e98f8f9f8a70e30801cdb8a34a58f027b5a4d8bf",
   "oracle DSO libexslt": "406216d657d5733d7b9bd5bc029df737d95538d2df114d12f61c79ea0ba17613",
-  "candidate DSO": "9c66ba67ff53a3da770fe48883fe02e8e00f36bc1fba1c225f1b9a75fa1e7a0b",
-  "candidate SONAME libxml2": "9c66ba67ff53a3da770fe48883fe02e8e00f36bc1fba1c225f1b9a75fa1e7a0b",
-  "candidate SONAME libxslt": "631b9c4bf3d272592890747d6aad1bd0b2c09f601371b0b967db1c2502aa6330",
-  "candidate SONAME libexslt": "9adf150f6e5a43934521b9751a0720526c301f1150f2ba8f0679d76919bd4c6e",
+  "candidate DSO": "68c18d334ee1967facaea9c0da58ea16a6c640f7ec11876a53e4fb78d4db96c6",
+  "candidate SONAME libxml2": "68c18d334ee1967facaea9c0da58ea16a6c640f7ec11876a53e4fb78d4db96c6",
+  "candidate SONAME libxslt": "f0179b97115cddca328555450ca1599efa54fbca8db0e6414b89440c98719f4c",
+  "candidate SONAME libexslt": "e11178975a993cc9b66435da941f64857e1f337c40b33099c9284004ea24dd7f",
   "candidate headers": "0fa30371a8d72dd4210c65be4a329636da99d3f4e966f27061b7a192dd274df7",
   "residual ledger JSON (hand-maintained)": "14a23cf1292dd9633a6c5ec2a35bf04bc777b45d11a9585de04a0de6a9de773c",
   "symbol court index": "e76ffb6c88db37c542b9036c42de3f305f3a8d39d6492dc5e8ebb0dad9767b9c"
@@ -76,10 +76,10 @@
   {
    "step": "parity_obligations",
    "ok": true,
-   "detail": "libxml2: funcs=1400 data=22\n    STUB: 1\n    INTENTIONAL_NOOP: 27\n    IMPLEMENTED_UNVERIFIED: 1109\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    MISSING: 232\n    DATA_MISSING: 12\nlibexslt: funcs=13 data=4\n    MISSING: 13\n    DATA_MISSING: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
+   "detail": "libxml2: funcs=1400 data=22\n    STUB: 1\n    INTENTIONAL_NOOP: 27\n    IMPLEMENTED_UNVERIFIED: 1109\n    CURRENT_PARITY_VERIFIED: 263\n    DATA_EXPORTED_UNVERIFIED: 22\nlibxslt: funcs=232 data=12\n    INTENTIONAL_NOOP: 6\n    IMPLEMENTED_UNVERIFIED: 197\n    CURRENT_PARITY_VERIFIED: 29\n    DATA_EXPORTED_UNVERIFIED: 12\nlibexslt: funcs=13 data=4\n    IMPLEMENTED_UNVERIFIED: 13\n    DATA_EXPORTED_UNVERIFIED: 4\nledger -> /mnt/1tb_kingston/libxml-rs/atlas/PARITY_OBLIGATIONS.json\n",
    "hashes": {
-    "atlas/PARITY_OBLIGATIONS.json": "2d8564ae9df7c91037a881b1349ab7c1b84505d7766176eb4e6078bfb91a0ed9",
-    "atlas/PARITY_OBLIGATIONS.md": "0aff1c22cd3125a068464f8d8702b8d7e3fd4dd33e231b663668edbf3f406b77"
+    "atlas/PARITY_OBLIGATIONS.json": "b7af64bb1bd1aceb202ee33b0dc9c0295d3a28b2a635ae2c53cc73b8dcc8ee8f",
+    "atlas/PARITY_OBLIGATIONS.md": "cd4654c57c8cb29a476b54c75501eca4825466fd2b6d21f07bff30bc25cdb3d0"
    }
   },
   {
@@ -87,8 +87,16 @@
    "ok": true,
    "detail": "wrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.json\nwrote /mnt/1tb_kingston/libxml-rs/atlas/SUBSYSTEM_CENSUS.md\nverdict totals: {\"IMPLEMENTED_UNVERIFIED\": 43, \"PARTIAL\": 42}\nuncategorized: 0 []\n",
    "hashes": {
-    "atlas/SUBSYSTEM_CENSUS.json": "9baa5461047e18d4883f8b2695eff3e7b947e7b8665cebd42d6cf8b987f86ea2",
-    "atlas/SUBSYSTEM_CENSUS.md": "bdcacab8a527f42563a6ad22dfbdf40b75715707f207a79b53b48e7156c06219"
+    "atlas/SUBSYSTEM_CENSUS.json": "5133c26d81db35803588f370ab32f89b9f04faf0c5fc266720081e2d28b42145",
+    "atlas/SUBSYSTEM_CENSUS.md": "adaad6f419a6224d8fb838ab4764c1650fda79d7cd4397bcad90562bd4ec1f99"
+   }
+  },
+  {
+   "step": "readme_counts",
+   "ok": true,
+   "detail": "README.md: generated sections refreshed\n",
+   "hashes": {
+    "README.md": "f0269bd3d7fe5eeace5ac5ca79600b442781ddfab00336d4a2a7d70144b16d41"
    }
   },
   {

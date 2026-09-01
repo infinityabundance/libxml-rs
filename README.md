@@ -431,7 +431,7 @@ at your option.
 |---|---|
 | API completeness | libxml2 1395 oracle functions, 1395 fully reconciled; libxslt 232/232 reconciled; libexslt 13 oracle functions (evidence: atlas/PARITY_MATRIX.json, atlas/API_PARITY_LEDGER.json) |
 | ABI compatibility | 0 mismatches across 937 measured entities (struct/enum layouts), verdict PASS (evidence: atlas/ABI_PARITY_LEDGER.json) |
-| Parity obligations | 1683 obligations; 261 missing, 263 parity-verified by per-symbol courts (evidence: atlas/PARITY_OBLIGATIONS.json) |
+| Parity obligations | 1683 obligations; 0 missing, 292 parity-verified by per-symbol courts (evidence: atlas/PARITY_OBLIGATIONS.json) |
 | Subsystem census | 85 subsystems classified; verdicts: IMPLEMENTED_UNVERIFIED 43, PARTIAL 42 (evidence: atlas/SUBSYSTEM_CENSUS.json) |
 | Surface reconciliation | libxml2: doxygen 1374 / AST 1403 / DSO 1395 functions; libxslt: 235 / 231 / 232 (evidence: atlas/SURFACE_RECONCILIATION.json) |
 | Historical surface epochs | libxml2 2785 entities across 11 boundaries (evidence: atlas/HISTORICAL_SURFACE_EPOCHS.json) |

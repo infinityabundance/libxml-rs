@@ -45,7 +45,17 @@ ORACLE_DSOS = {
     "libxslt": "/usr/lib/libxslt.so.1",
     "libexslt": "/usr/lib/libexslt.so.0",
 }
-CANDIDATE_DSO = os.path.join(ROOT, "target", "debug", "liblibxml_rs.so")
+# Phase-14 evidence amendment (three-DSO contract): each project's obligations
+# are checked against the REAL DSO that carries that project's symbols — the
+# core libxml2.so.16 for libxml2, and the libxslt.so.1 / libexslt.so.0
+# facades for the other two. Pre-amendment the generator pointed all three at
+# the combined liblibxml_rs.so, which after the three-DSO split made every
+# xslt*/exslt* symbol look MISSING (they had moved into the facades).
+CANDIDATE_DSOS = {
+    "libxml2": os.path.join(ROOT, "target", "debug", "libxml2.so.16"),
+    "libxslt": os.path.join(ROOT, "target", "debug", "lib", "libxslt.so.1"),
+    "libexslt": os.path.join(ROOT, "target", "debug", "lib", "libexslt.so.0"),
+}
 PREFIXES = {"libxml2": ("xml", "html", "__xml", "xlink"),
            "libxslt": ("xslt", "exslt", "xsl"),
            "libexslt": ("exslt",)}
@@ -399,8 +409,9 @@ def main():
             print(f"skip {project}: {path} not found")
             continue
         oracle = dso_symbols(path, PREFIXES[project])
-        cand = dso_symbols(CANDIDATE_DSO, PREFIXES[project]) if \
-            os.path.exists(CANDIDATE_DSO) else {}
+        cand_path = CANDIDATE_DSOS.get(project)
+        cand = dso_symbols(cand_path, PREFIXES[project]) if (
+            cand_path and os.path.exists(cand_path)) else {}
         entries = []
         for sym in sorted(oracle):
             kind = oracle[sym]
@@ -468,7 +479,7 @@ def main():
                 dim[dname][e[dname]] += 1
         ledger["projects"][project] = {
             "oracle_dso": path,
-            "candidate_dso": CANDIDATE_DSO,
+            "candidate_dso": cand_path,
             "oracle_functions": sum(1 for e in entries if e["kind"] == "FUNC"),
             "oracle_data": sum(1 for e in entries if e["kind"] == "DATA"),
             "candidate_functions": sum(1 for s, k in cand.items() if k in ("T", "t")),
