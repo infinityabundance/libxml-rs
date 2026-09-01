@@ -754,6 +754,11 @@ impl XmlTokenizer {
                 if b >= 0x80 && self.input.peek_char().is_none() {
                     self.record_encoding_error();
                     self.input.skip_raw_bytes(1);
+                    // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar
+                    // encoding_error): the byte is consumed and replaced
+                    // with XML_INVALID_CHAR (U+FFFD) in the content — not
+                    // dropped.
+                    value.extend_from_slice(b"\xEF\xBF\xBD");
                     continue;
                 }
             }
@@ -1450,6 +1455,11 @@ impl XmlTokenizer {
                 if b >= 0x80 && self.input.peek_char().is_none() {
                     self.record_encoding_error();
                     self.input.skip_raw_bytes(1);
+                    // UPSTREAM-PARITY (parserInternals.c xmlCurrentChar
+                    // encoding_error): the byte is consumed and replaced
+                    // with XML_INVALID_CHAR (U+FFFD) in the character data
+                    // — not dropped (the tree carries the replacement).
+                    content.extend_from_slice(b"\xEF\xBF\xBD");
                     continue;
                 }
             }
