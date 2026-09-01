@@ -1021,32 +1021,63 @@ pub(crate) fn char_enc_out(
         return 0;
     }
 
-    let in_data = unsafe { core::slice::from_raw_parts(in_buf.content, in_buf.use_ as usize) };
+    let mut in_data = unsafe { core::slice::from_raw_parts(in_buf.content, in_buf.use_ as usize) };
 
-    let out_capacity = (in_buf.use_ as usize).saturating_mul(3).max(256);
-    let mut out_vec = vec![0u8; out_capacity];
-    let mut out_len = out_capacity as c_int;
-    let mut in_len = in_buf.use_ as c_int;
-
-    let ret = unsafe {
-        output_func(
-            out_vec.as_mut_ptr(),
-            &mut out_len,
-            in_data.as_ptr(),
-            &mut in_len,
-        )
-    };
-
-    if ret < 0 {
-        return -1;
+    // UPSTREAM-PARITY (encoding.c xmlCharEncOutput): the output conversion
+    // runs in a loop; when the converter reports an INPUT error (a character
+    // not representable in the output encoding — the ASCII handler stops at
+    // the first byte >= 0x80), the offending UTF-8 character is decoded and
+    // replaced by a DECIMAL character reference (&#NNN;), then conversion
+    // continues. This is how libxml2 serializes non-ASCII text into an
+    // ASCII output buffer (lxml's default `tostring` encoding, which
+    // produces `&#195;&#169;` for the mojibake case).
+    const ENC_INPUT_ERROR: c_int = -2;
+    let mut total_written: usize = 0;
+    loop {
+        let out_capacity = (in_data.len().saturating_mul(3)).max(64) + 16;
+        let mut out_vec = vec![0u8; out_capacity];
+        let mut out_len = out_capacity as c_int;
+        let mut in_len = in_data.len() as c_int;
+        let ret = unsafe {
+            output_func(
+                out_vec.as_mut_ptr(),
+                &mut out_len,
+                in_data.as_ptr(),
+                &mut in_len,
+            )
+        };
+        let written = out_len.max(0) as usize;
+        if written > 0 {
+            append_to_xml_buffer(out_buf, &out_vec[..written]);
+            total_written += written;
+        }
+        let consumed = in_len.max(0) as usize;
+        if ret == ENC_INPUT_ERROR && consumed < in_data.len() {
+            // Decode the UTF-8 character at the offending position and emit
+            // a decimal character reference (upstream xmlSerializeDecCharRef).
+            let mut clen: c_int = 4;
+            let cp = unsafe {
+                crate::abi::exports_misc::xmlGetUTF8Char(in_data[consumed..].as_ptr(), &mut clen)
+            };
+            if cp <= 0 || clen <= 0 || (consumed + clen as usize) > in_data.len() {
+                return -1;
+            }
+            let ref_str = format!("&#{};", cp);
+            append_to_xml_buffer(out_buf, ref_str.as_bytes());
+            total_written += ref_str.len();
+            in_data = &in_data[consumed + clen as usize..];
+            if in_data.is_empty() {
+                break;
+            }
+            continue;
+        }
+        if ret < 0 {
+            return -1;
+        }
+        break;
     }
 
-    let written = ret as usize;
-
-    // Append to output buffer
-    append_to_xml_buffer(out_buf, &out_vec[..written]);
-
-    written as c_int
+    total_written as c_int
 }
 
 /// Append bytes to an `_xmlBuffer`, reallocating if needed.
@@ -1414,6 +1445,13 @@ unsafe extern "C" fn latin1_output_func(
 // ── ASCII ─────────────────────────────────────────────────────────────────
 
 /// ASCII input function: verify and pass through ASCII data to UTF-8.
+///
+/// Returns the number of bytes written, `-1` on invalid arguments, or
+/// `-2` (the candidate's input-error code) when a byte >= 0x80 is reached
+/// — in that case `*inlen`/`*outlen` hold the bytes consumed/written before
+/// the offending character, so the output converter (`char_enc_out`) can
+/// decode the UTF-8 character and replace it with a decimal character
+/// reference (upstream `asciiToAscii` returns XML_ENC_ERR_INPUT).
 unsafe extern "C" fn ascii_input_func(
     out: *mut c_uchar,
     outlen: *mut c_int,
@@ -1440,7 +1478,11 @@ unsafe extern "C" fn ascii_input_func(
     while pos < avail_in && pos < avail_out {
         let byte = in_data[pos];
         if byte > 0x7F {
-            return -1; // Not valid ASCII
+            // Not valid ASCII: report how much was consumed so the caller
+            // can substitute a character reference and retry.
+            *outlen = pos as c_int;
+            *inlen = pos as c_int;
+            return -2;
         }
         out_slice[pos] = byte;
         pos += 1;

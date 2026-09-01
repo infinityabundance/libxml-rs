@@ -121,6 +121,7 @@ CUSTODIAN_EXTENSIONS = {
     "__xmlRealloc": "R-000176/Phase-12: LIBXML_THREAD_ALLOC_ENABLED accessor (upstream globals.c); source-profile export",
     "__xmlFree": "R-000176/Phase-12: LIBXML_THREAD_ALLOC_ENABLED accessor (upstream globals.c); source-built consumers reference it",
     "__xmlMemStrdup": "R-000176/Phase-12: LIBXML_THREAD_ALLOC_ENABLED accessor (upstream globals.c); source-profile export",
+    "xsltRegisterAllExslt": "R-000177/Phase-14: cross-DSO EXSLT registration gateway exported from libxslt.so.1 — exsltRegisterAll runs in the libexslt facade but the transform reads the registry in libxslt (whole-archive facades partition statics); mirrors upstream's libexslt-calls-into-libxslt dependency direction (xsltRegisterExtModule, extensions.c); lxml's exsltRegisterAll resolves through this gateway",
 }
 
 # Candidate header trees per project (for header-declared provenance).

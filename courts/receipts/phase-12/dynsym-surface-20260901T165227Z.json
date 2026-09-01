@@ -1,0 +1,74 @@
+{
+ "court": "DYNSYM-SURFACE",
+ "phase": "12",
+ "schema": "dynsym-surface-1",
+ "timestamp": "20260901T165227Z",
+ "ledger": "atlas/EXPORT_SURFACE_DISPOSITION.json",
+ "cases": [
+  {
+   "item": "libxml2:dso-present",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxml2:dlopen",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxml2:dlsym-positive (1705 shipped)",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxml2:dlsym-negative (580 leaks hidden)",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxslt:dso-present",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxslt:dlopen",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxslt:dlsym-positive (252 shipped)",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libxslt:dlsym-negative (12 leaks hidden)",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libexslt:dso-present",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libexslt:dlopen",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libexslt:dlsym-positive (17 shipped)",
+   "status": "PASS",
+   "detail": ""
+  },
+  {
+   "item": "libexslt:dlsym-negative (1 leaks hidden)",
+   "status": "PASS",
+   "detail": ""
+  }
+ ],
+ "summary": {
+  "passed": 12,
+  "failed": 0
+ },
+ "verdict": "PASS"
+}

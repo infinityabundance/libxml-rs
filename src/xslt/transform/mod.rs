@@ -1034,49 +1034,30 @@ pub(crate) unsafe fn report_xpath_eval_failure(
     elem_name: &str,
 ) {
     unsafe {
-        let xpath_ctxt = (*ctxt).xpathCtxt;
-        if !xpath_ctxt.is_null() {
-            let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
-            if !internal.is_null() {
-                if let Some(msg) = &(*internal).error {
-                    let line = format!("XPath error : {}\n", msg);
-                    libc::write(2, line.as_ptr() as *const libc::c_void, line.len());
-                }
-            }
-        }
-        // UPSTREAM-PARITY (transform.c xsltTransformError): the runtime
-        // error line carries the stylesheet URL, the instruction line and
-        // the instruction element name. The stylesheet's own doc URL is the
-        // fallback when the instruction node's doc carries none.
-        let url = if inst.is_null() || (*inst).doc.is_null() || (*(*inst).doc).URL.is_null() {
-            if !ctxt.is_null()
-                && !(*ctxt).style.is_null()
-                && !(*(*ctxt).style).doc.is_null()
-                && !(*(*(*ctxt).style).doc).URL.is_null()
-            {
-                let u = (*(*(*ctxt).style).doc).URL;
-                let l = libc::strlen(u as *const libc::c_char);
-                String::from_utf8_lossy(core::slice::from_raw_parts(u, l)).into_owned()
-            } else {
-                "unknown".to_string()
-            }
-        } else {
-            let u = (*(*inst).doc).URL;
-            let l = libc::strlen(u as *const libc::c_char);
-            String::from_utf8_lossy(core::slice::from_raw_parts(u, l)).into_owned()
-        };
-        let line_no = if inst.is_null() { 0 } else { (*inst).line };
-        let line = format!(
-            "runtime error: file {} line {} element {}\n",
-            url, line_no, elem_name
-        );
-        libc::write(2, line.as_ptr() as *const libc::c_void, line.len());
-        let tail = "XPath evaluation returned no result.\n";
-        libc::write(2, tail.as_ptr() as *const libc::c_void, tail.len());
         // UPSTREAM-PARITY (transform.c xsltValueOf / xsltCopyOf): an XPath
-        // evaluation failure stops the transformation — the stylesheet yields
-        // no result and xsltproc exits 10 (XSLT_STATE_STOPPED, not ERROR
-        // which maps to exit 9).
+        // evaluation failure is reported through xsltTransformError — the
+        // context line ("runtime error: file ... element value-of") and the
+        // message are emitted as SEPARATE handler calls, so library
+        // consumers (lxml's _receiveXSLTError error_log) record the
+        // "runtime error, element '...'" entry before "XPath evaluation
+        // returned no result.". The XPath diagnostic itself was already
+        // delivered by the evaluation path (raise_xpath_error → the XPath
+        // context's error handler / generic channel), so it is not repeated
+        // here. The transformation stops (XSLT_STATE_STOPPED, not ERROR —
+        // xsltproc exits 10). The element name for the context line comes
+        // from the instruction node itself (upstream xsltPrintErrorContext).
+        let _ = elem_name;
+        let style = if ctxt.is_null() {
+            ptr::null_mut()
+        } else {
+            (*ctxt).style
+        };
+        crate::xslt::errors::xsltTransformError(
+            ctxt,
+            style,
+            inst,
+            c"XPath evaluation returned no result.\n".as_ptr() as *const c_char,
+        );
         (*ctxt).state = XSLT_STATE_STOPPED;
     }
 }
@@ -2628,15 +2609,67 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
             Some(v) => v.as_string(),
             None => return Err("document() requires an argument".to_string()),
         };
-        // Resolve against the context document's URL if available.
-        let uri = value;
-        // Load the document via the transform context (retrieved through
-        // the XPath context's user data is not available here; use the
-        // document cache via the stylesheet's context is unavailable, so
-        // fall back to parsing the URI directly).
-        let _ = ctx;
-        let _ = uri;
-        Ok(XPathValue::NodeSet(NodeSet::new()))
+        let tctxt = ctx.func_lookup_data as *mut _xsltTransformContext;
+        if tctxt.is_null() {
+            return Ok(XPathValue::NodeSet(NodeSet::new()));
+        }
+        unsafe {
+            // UPSTREAM-PARITY (functions.c xsltDocumentFunction): the URI is
+            // resolved against the current instruction's document (the
+            // stylesheet) with xmlBuildURI, then loaded through the
+            // transform's document loader (xsltLoadDocument), which invokes
+            // the registered xsltDocLoaderFunc — lxml's loader records
+            // resolver failures so XSLTApplyError("Cannot resolve URI ...")
+            // surfaces after the run, exactly like the oracle.
+            let mut base: *mut xmlChar = ptr::null_mut();
+            let inst = (*tctxt).inst;
+            if !inst.is_null() {
+                base = crate::abi::exports_tree::xmlNodeGetBase((*inst).doc, inst);
+            } else if !(*tctxt).style.is_null() && !(*(*tctxt).style).doc.is_null() {
+                base = crate::abi::exports_tree::xmlNodeGetBase(
+                    (*(*tctxt).style).doc,
+                    (*(*tctxt).style).doc as *mut _xmlNode,
+                );
+            }
+            let value_c = crate::xml::string::bytes_to_xmlstr(value.as_bytes());
+            let resolved = crate::abi::exports_uri::xmlBuildURI(
+                value_c as *const c_char,
+                base as *const c_char,
+            );
+            if !base.is_null() {
+                crate::abi::allocator::xmlFreeImpl(base as *mut c_void);
+            }
+            if !value_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(value_c as *mut c_void);
+            }
+            let load_uri: Vec<u8> = if resolved.is_null() {
+                value.as_bytes().to_vec()
+            } else {
+                let l = libc::strlen(resolved as *const libc::c_char);
+                core::slice::from_raw_parts(resolved as *const u8, l).to_vec()
+            };
+            if !resolved.is_null() {
+                crate::abi::allocator::xmlFreeImpl(resolved as *mut c_void);
+            }
+            let mut load_c = load_uri;
+            load_c.push(0);
+            let doc =
+                crate::xslt::documents::xsltLoadDocument(tctxt, load_c.as_ptr() as *const xmlChar);
+            if doc.is_null() {
+                // UPSTREAM-PARITY: a failed load selects the stylesheet doc
+                // only for the special URIs (handled by the load failure
+                // fallback in xsltDocumentFunctionLoadDocument); otherwise an
+                // empty node-set is pushed and the transform continues — the
+                // loader's recorded exception surfaces at the end.
+                return Ok(XPathValue::NodeSet(NodeSet::new()));
+            }
+            // The node-set contains the DOCUMENT node (upstream pushes
+            // xmlXPathNewNodeSet((xmlNodePtr) doc)); child steps like
+            // document('x')/r/v navigate from it.
+            let mut ns = NodeSet::new();
+            ns.push(doc as *mut _xmlNode);
+            Ok(XPathValue::NodeSet(ns))
+        }
     });
 
     // key() — looks up the key tables built by xsltInitKeys. The value is

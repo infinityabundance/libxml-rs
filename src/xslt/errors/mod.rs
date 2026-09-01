@@ -78,8 +78,11 @@
 //! - Writing debug output unconditionally would break the upstream
 //!   NULL-context suppression contract exercised by the CLI corpus.
 
+use crate::abi::callbacks::xmlGenericErrorFunc;
 use crate::abi::structs::*;
+use std::os::raw::c_char;
 use std::os::raw::c_int;
+use std::os::raw::c_void;
 use std::ptr;
 
 // ── Error domains ─────────────────────────────────────────────────────────
@@ -323,74 +326,84 @@ pub fn xsltTransformError(
 
     // UPSTREAM-PARITY (xsltutils.c xsltTransformError): an error moves the
     // transform context out of the OK state.
+    let mut node = inst;
+    let mut errtype: &'static str = "error";
     if !ctxt.is_null() {
         // SAFETY: ctxt must be a valid _xsltTransformContext.
         let ctx = unsafe { &mut *ctxt };
         if ctx.state == crate::xslt::transform::XSLT_STATE_OK {
             ctx.state = crate::xslt::transform::XSLT_STATE_ERROR;
         }
-        let mut node = inst;
         if node.is_null() {
             node = ctx.inst;
         }
-        // Build the context line (xsltPrintErrorContext) and the full
-        // message, then emit through the handler if one is registered.
-        let context_line = print_error_context(ctxt, style, node);
-        let full = format!("{}{}", context_line, text);
-        let mut cmsg = full.into_bytes();
-        let msg_len = cmsg.len();
-        cmsg.push(0);
-        let ctx = unsafe { &*ctxt };
-        if let Some(handler) = ctx.error {
-            unsafe { handler(ctx.errctx, cmsg.as_ptr() as *const std::os::raw::c_char) };
-            return;
-        }
-        let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg_len) };
-        return;
+        errtype = "runtime error";
+    } else if !style.is_null() {
+        errtype = "compilation error";
     }
 
-    // No transform context: compile-time errors and standalone messages.
-    // (Upstream xsltPrintErrorContext is still invoked with NULL ctxt and
-    // the given style/node.)
-    let context_line = print_error_context(ptr::null_mut(), style, inst);
-    let full = format!("{}{}", context_line, text);
-    let mut cmsg = full.into_bytes();
+    let errctx = if ctxt.is_null() {
+        ptr::null_mut()
+    } else {
+        // SAFETY: ctxt must be a valid _xsltTransformContext.
+        unsafe { (*ctxt).errctx }
+    };
+    let handler = if ctxt.is_null() {
+        None
+    } else {
+        // SAFETY: ctxt must be a valid _xsltTransformContext.
+        unsafe { (*ctxt).error }
+    };
+
+    // UPSTREAM-PARITY (xsltutils.c xsltTransformError): the error context
+    // line (xsltPrintErrorContext) and the message are emitted as TWO
+    // separate calls with the printf FORMAT intact — consumers like lxml's
+    // _receiveXSLTError parse the format string to extract the file/line/
+    // element fields and build their log entries ("runtime error, element
+    // 'value-of'"), so a pre-formatted string would lose the fields.
+    emit_error_context_line(handler, errctx, style, node, errtype);
+
+    let mut cmsg = text.into_bytes();
     let msg_len = cmsg.len();
     cmsg.push(0);
-    let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg_len) };
-    let _ = style;
+    if let Some(handler) = handler {
+        // SAFETY: handler is the caller-registered C callback (upstream
+        // xmlGenericErrorFunc is variadic; the Rust typedef is
+        // non-variadic, so the call is made through a variadic fn-pointer
+        // with the same ABI); the "%s" + NUL-terminated message matches
+        // upstream's error(errctx, "%s", str).
+        let hv: unsafe extern "C" fn(*mut c_void, *const c_char, ...) =
+            unsafe { core::mem::transmute(handler) };
+        unsafe {
+            hv(
+                errctx,
+                c"%s".as_ptr() as *const c_char,
+                cmsg.as_ptr() as *const c_char,
+            )
+        };
+    } else {
+        let _ = unsafe { libc::write(2, cmsg.as_ptr() as *const libc::c_void, msg_len) };
+    }
 }
 
-/// Build the error context line printed before an XSLT error message
-/// (upstream xsltutils.c `xsltPrintErrorContext`). The line is one of:
+/// Emit the error-context line (upstream xsltPrintErrorContext) through the
+/// registered handler with the upstream printf format, or to stderr when no
+/// handler is installed. The five format variants mirror xsltutils.c
+/// exactly; the "runtime error"/"compilation error"/"error" type is the
+/// FIRST %s argument so format-parsing consumers attribute it correctly.
 ///
-/// ```text
-/// error\n
-/// error: file F\n
-/// error: file F line N\n
-/// error: file F element E\n
-/// error: file F line N element E\n
-/// error: element E\n
-/// compilation error ... / runtime error ...
-/// ```
+/// # SAFETY
 ///
-/// # Safety
-///
-/// - `node` must be NULL or a valid `_xmlNode`; it is dereferenced for
-///   its `type_`, `doc`, and `name` fields, `xmlGetLineNo` is called on
-///   it, and when it is a document node it is cast to `_xmlDoc` to read
-///   the `URL` field.
-/// - The `doc` field of `node` must be NULL or a valid `_xmlDoc` while
-///   `node` is alive; the `URL` and `name` fields of `node` must be NULL
-///   or valid NUL-terminated strings since they are read with
-///   `CStr::from_ptr`.
-/// - `ctxt` and `style` are only used in NULL comparisons and may be
-///   NULL.
-fn print_error_context(
-    ctxt: *mut _xsltTransformContext,
+/// - `handler` must be NULL or a valid variadic C callback callable with
+///   `errctx` and a printf format plus matching arguments.
+/// - `ctxt`, `style`, `node` follow the `xsltTransformError` contract.
+fn emit_error_context_line(
+    handler: Option<xmlGenericErrorFunc>,
+    errctx: *mut c_void,
     style: *mut _xsltStylesheet,
     node: *mut _xmlNode,
-) -> String {
+    errtype: &'static str,
+) {
     let mut line = 0i64;
     let mut file: *const std::os::raw::c_char = ptr::null();
     let mut name: *const std::os::raw::c_char = ptr::null();
@@ -415,42 +428,99 @@ fn print_error_context(
         }
     }
 
-    let errtype = if !ctxt.is_null() {
-        "runtime error"
-    } else if !style.is_null() {
-        "compilation error"
-    } else {
-        "error"
-    };
-
-    let s = |p: *const std::os::raw::c_char| -> String {
-        if p.is_null() {
-            String::new()
-        } else {
-            unsafe { std::ffi::CStr::from_ptr(p).to_string_lossy().into_owned() }
-        }
-    };
-    let file_s = s(file);
-    let name_s = s(name);
+    let type_cstr = std::ffi::CString::new(errtype).unwrap_or_default();
+    let type_c = type_cstr.as_ptr() as *const std::os::raw::c_char;
     let has_file = !file.is_null();
     let has_name = !name.is_null();
-
-    if has_file && line != 0 && has_name {
-        format!(
-            "{}: file {} line {} element {}\n",
-            errtype, file_s, line, name_s
-        )
-    } else if has_file && has_name {
-        format!("{}: file {} element {}\n", errtype, file_s, name_s)
-    } else if has_file && line != 0 {
-        format!("{}: file {} line {}\n", errtype, file_s, line)
-    } else if has_file {
-        format!("{}: file {}\n", errtype, file_s)
-    } else if has_name {
-        format!("{}: element {}\n", errtype, name_s)
+    if let Some(handler) = handler {
+        // SAFETY: the format/argument pairs match upstream
+        // xsltPrintErrorContext, and the C callback is variadic (upstream
+        // xmlGenericErrorFunc); the non-variadic Rust typedef is called
+        // through a variadic fn-pointer with the same ABI.
+        let hv: unsafe extern "C" fn(*mut c_void, *const c_char, ...) =
+            unsafe { core::mem::transmute(handler) };
+        unsafe {
+            if has_file && line != 0 && has_name {
+                hv(
+                    errctx,
+                    c"%s: file %s line %d element %s\n".as_ptr() as *const c_char,
+                    type_c,
+                    file,
+                    line as c_int,
+                    name,
+                );
+            } else if has_file && has_name {
+                hv(
+                    errctx,
+                    c"%s: file %s element %s\n".as_ptr() as *const c_char,
+                    type_c,
+                    file,
+                    name,
+                );
+            } else if has_file && line != 0 {
+                hv(
+                    errctx,
+                    c"%s: file %s line %d\n".as_ptr() as *const c_char,
+                    type_c,
+                    file,
+                    line as c_int,
+                );
+            } else if has_file {
+                hv(
+                    errctx,
+                    c"%s: file %s\n".as_ptr() as *const c_char,
+                    type_c,
+                    file,
+                );
+            } else if has_name {
+                hv(
+                    errctx,
+                    c"%s: element %s\n".as_ptr() as *const c_char,
+                    type_c,
+                    name,
+                );
+            } else {
+                hv(errctx, c"%s\n".as_ptr() as *const c_char, type_c);
+            }
+        }
     } else {
-        format!("{}\n", errtype)
+        let file_s = if file.is_null() {
+            String::new()
+        } else {
+            unsafe {
+                std::ffi::CStr::from_ptr(file)
+                    .to_string_lossy()
+                    .into_owned()
+            }
+        };
+        let name_s = if name.is_null() {
+            String::new()
+        } else {
+            unsafe {
+                std::ffi::CStr::from_ptr(name)
+                    .to_string_lossy()
+                    .into_owned()
+            }
+        };
+        let line_str = if has_file && line != 0 && has_name {
+            format!(
+                "{}: file {} line {} element {}\n",
+                errtype, file_s, line, name_s
+            )
+        } else if has_file && has_name {
+            format!("{}: file {} element {}\n", errtype, file_s, name_s)
+        } else if has_file && line != 0 {
+            format!("{}: file {} line {}\n", errtype, file_s, line)
+        } else if has_file {
+            format!("{}: file {}\n", errtype, file_s)
+        } else if has_name {
+            format!("{}: element {}\n", errtype, name_s)
+        } else {
+            format!("{}\n", errtype)
+        };
+        let _ = unsafe { libc::write(2, line_str.as_ptr() as *const libc::c_void, line_str.len()) };
     }
+    let _ = style;
 }
 
 /// Get the last XSLT error message as a NUL-terminated heap string.

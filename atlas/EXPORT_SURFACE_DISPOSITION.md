@@ -5,8 +5,8 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 ## libxml2
 
 - oracle exports: 1422
-- candidate exports: 1704
-- dispositions: CURRENT_ORACLE_EXPORT 1422, CUSTODIAN_EXTENSION 31, HISTORICAL_COMPAT_EXPORT 251, INTERNAL_LEAK 580
+- candidate exports: 1705
+- dispositions: CURRENT_ORACLE_EXPORT 1422, CUSTODIAN_EXTENSION 32, HISTORICAL_COMPAT_EXPORT 251, INTERNAL_LEAK 580
 
 | symbol | kind | disposition | in oracle | in headers | in upstream syms |
 |---|---|---|---|---|---|
@@ -2080,7 +2080,7 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xsltDefaultPriorityFromNode` | T | INTERNAL_LEAK | False | False | False |
 | `xsltDefaultSortFunction` | T | INTERNAL_LEAK | False | False | False |
 | `xsltDoSortFunction` | T | INTERNAL_LEAK | False | False | False |
-| `xsltDocDefaultLoader` | B | INTERNAL_LEAK | False | False | False |
+| `xsltDocDefaultLoader` | D | INTERNAL_LEAK | False | False | False |
 | `xsltDocumentComp` | T | INTERNAL_LEAK | False | False | False |
 | `xsltDocumentElem` | T | INTERNAL_LEAK | False | False | False |
 | `xsltDocumentFunction` | T | INTERNAL_LEAK | False | False | False |
@@ -2223,6 +2223,7 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xsltQuoteOneUserParam` | T | INTERNAL_LEAK | False | False | False |
 | `xsltQuoteUserParams` | T | INTERNAL_LEAK | False | False | False |
 | `xsltRegisterAllElement` | T | INTERNAL_LEAK | False | False | False |
+| `xsltRegisterAllExslt` | T | CUSTODIAN_EXTENSION | False | False | False |
 | `xsltRegisterAllExtras` | T | INTERNAL_LEAK | False | False | False |
 | `xsltRegisterAllFunctions` | T | INTERNAL_LEAK | False | False | False |
 | `xsltRegisterExtElement` | T | INTERNAL_LEAK | False | False | False |
@@ -2298,8 +2299,8 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 ## libxslt
 
 - oracle exports: 244
-- candidate exports: 251
-- dispositions: CURRENT_ORACLE_EXPORT 244, CUSTODIAN_EXTENSION 5, HISTORICAL_COMPAT_EXPORT 2, INTERNAL_LEAK 12
+- candidate exports: 252
+- dispositions: CURRENT_ORACLE_EXPORT 244, CUSTODIAN_EXTENSION 6, HISTORICAL_COMPAT_EXPORT 2, INTERNAL_LEAK 12
 
 | symbol | kind | disposition | in oracle | in headers | in upstream syms |
 |---|---|---|---|---|---|
@@ -2352,7 +2353,7 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xsltDefaultPriorityFromNode` | T | INTERNAL_LEAK | False | False | False |
 | `xsltDefaultSortFunction` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltDoSortFunction` | T | CURRENT_ORACLE_EXPORT | True | False | True |
-| `xsltDocDefaultLoader` | B | CURRENT_ORACLE_EXPORT | True | False | False |
+| `xsltDocDefaultLoader` | D | CURRENT_ORACLE_EXPORT | True | False | False |
 | `xsltDocumentComp` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltDocumentElem` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltDocumentFunction` | T | CURRENT_ORACLE_EXPORT | True | False | True |
@@ -2495,6 +2496,7 @@ Every symbol exported by a shipped candidate DSO, classified against the execute
 | `xsltQuoteOneUserParam` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltQuoteUserParams` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltRegisterAllElement` | T | CURRENT_ORACLE_EXPORT | True | True | True |
+| `xsltRegisterAllExslt` | T | CUSTODIAN_EXTENSION | False | False | False |
 | `xsltRegisterAllExtras` | T | CURRENT_ORACLE_EXPORT | True | True | True |
 | `xsltRegisterAllFunctions` | T | CURRENT_ORACLE_EXPORT | True | False | True |
 | `xsltRegisterExtElement` | T | CURRENT_ORACLE_EXPORT | True | True | True |

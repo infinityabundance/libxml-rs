@@ -199,6 +199,23 @@ pub fn register_all() {
     saxon::register_all();
 }
 
+/// Cross-DSO EXSLT registration gateway (R-000177).
+///
+/// `exsltRegisterAll` runs in the `libexslt.so.0` facade, but the transform
+/// (and the EXSLT registry it copies into each XPath context at
+/// `xsltApplyStylesheet`) lives in `libxslt.so.1` — the whole-archive
+/// facades partition statics, so a registration performed inside libexslt is
+/// invisible to libxslt's transform. Upstream solves this by having libexslt
+/// register INTO libxslt's extension-module registry (`xsltRegisterExtModule`,
+/// extensions.c, exported by libxslt); the candidate mirrors that dependency
+/// direction with this exported libxslt entry point, which performs the
+/// registration inside the transform layer. lxml calls `exsltRegisterAll()`
+/// (xslt.pxi) after loading all three candidate DSOs.
+#[no_mangle]
+pub extern "C" fn xsltRegisterAllExslt() {
+    register_all();
+}
+
 /// The C ABI entry point: register all EXSLT modules.
 ///
 /// # UPSTREAM-PARITY
@@ -210,8 +227,35 @@ pub fn register_all() {
 /// Oracle behavior: registers every EXSLT function so it becomes available
 /// to subsequently created transform contexts. Calling it twice is a no-op
 /// (re-registration overwrites identical entries).
+///
+/// The registration is performed inside the transform layer
+/// (`xsltRegisterAllExslt`, exported by `libxslt.so.1`): the whole-archive
+/// facades partition statics, so a plain internal call would bind to the
+/// libexslt facade's own private registry copy which the libxslt transform
+/// never reads (R-000177). The gateway is located with `dlsym` on the
+/// already-loaded libxslt (RTLD_NOLOAD — never loads anything) and invoked;
+/// in a single-binary (staticlib) build no `libxslt.so.1` is loaded and the
+/// local `register_all()` is used instead. Mirrors upstream's dependency
+/// direction: libexslt registers INTO libxslt's extension-module registry
+/// (`xsltRegisterExtModule`, extensions.c).
 #[no_mangle]
 pub extern "C" fn exsltRegisterAll() {
+    // SAFETY: the gateway is a plain extern "C" fn with no arguments; the
+    // symbol is our own exported entry point.
+    unsafe {
+        let handle = libc::dlopen(
+            c"libxslt.so.1".as_ptr(),
+            libc::RTLD_NOLOAD | libc::RTLD_LAZY,
+        );
+        if !handle.is_null() {
+            let sym = libc::dlsym(handle, c"xsltRegisterAllExslt".as_ptr());
+            if !sym.is_null() {
+                let gateway: extern "C" fn() = core::mem::transmute(sym);
+                gateway();
+                return;
+            }
+        }
+    }
     register_all();
 }
 

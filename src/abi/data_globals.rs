@@ -88,9 +88,11 @@
 //! the locks must not be removed even though upstream is racy.
 
 use core::ffi::c_void;
+use core::ptr;
 use std::os::raw::{c_char, c_int, c_uint};
 
 use crate::abi::callbacks::{xmlGenericErrorFunc, xmlStructuredErrorFunc};
+use crate::abi::exports_xslt_compile::xsltDocLoaderFunc;
 use crate::abi::types::xmlChar;
 
 /// Serializes writes to the exported `xmlLastError` mirror.
@@ -641,20 +643,37 @@ const XSLT_GENERIC_DEBUG_DEFAULT: xmlGenericErrorFunc = xsltGenericDebugDefaultF
 #[no_mangle]
 pub static xsltExtMarker: [xmlChar; 1] = [0];
 
+/// Upstream `xsltDocDefaultLoaderFunc` (documents.c): parse the URI as a
+/// document with the given parser options — a DIRECT parse that never
+/// re-enters the registered loader. Consumers capture the exported data
+/// global at load time (lxml's `_xslt_doc_loader` falls back to
+/// `XSLT_DOC_DEFAULT_LOADER` when its resolver cannot handle a URI) and
+/// must get a real function, not NULL.
+///
+/// # SAFETY
+///
+/// - `uri` must be NULL or a valid NUL-terminated string.
+unsafe extern "C" fn xslt_doc_default_loader_func(
+    uri: *const xmlChar,
+    _dict: *mut c_void,
+    options: c_int,
+    _ctxt: *mut c_void,
+    _kind: c_int,
+) -> *mut crate::abi::structs::_xmlDoc {
+    if uri.is_null() {
+        return ptr::null_mut();
+    }
+    crate::abi::exports_xml2::xmlReadFile(uri as *const c_char, ptr::null(), options)
+}
+
 /// `xsltDocLoaderFunc xsltDocDefaultLoader` — the document loader callback.
-/// Upstream defaults to `xsltDocDefaultLoaderFunc`; the candidate defaults
-/// to NULL and its internal loader path is used — documented safe
-/// divergence (residual R-000135).
+/// Upstream initializes it to `xsltDocDefaultLoaderFunc`; the candidate
+/// mirrors that with the direct-parsing default above (R-000135: the
+/// previous NULL default made lxml's import-time capture of this data
+/// global jump to address zero when its resolver fell back to the default
+/// loader).
 #[no_mangle]
-pub static mut xsltDocDefaultLoader: Option<
-    unsafe extern "C" fn(
-        *const xmlChar,
-        *mut c_void,
-        c_int,
-        *mut crate::abi::structs::_xsltStylesheet,
-        *mut crate::abi::structs::_xsltTransformContext,
-    ) -> *mut crate::abi::structs::_xmlDoc,
-> = None;
+pub static mut xsltDocDefaultLoader: Option<xsltDocLoaderFunc> = Some(xslt_doc_default_loader_func);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // I/O filename callback globals (upstream xmlIO.h) — THREAD-LOCAL since

@@ -363,6 +363,7 @@ LIBXML2_1.1.45 {
       xsltFreeTransformResult;
       xsltGetStylesheetDoc;
       xsltParseStylesheetMemory;
+      xsltRegisterAllExslt;
       xsltSetDebuggerCallbacks;
       xsltSetDebuggerStatus;
       xsltSetStylesheetDoc;

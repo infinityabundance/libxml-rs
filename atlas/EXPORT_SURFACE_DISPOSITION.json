@@ -8,12 +8,12 @@
    "oracle_dso": "/usr/lib/libxml2.so.16",
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/liblibxml_rs.so",
    "oracle_exports": 1422,
-   "candidate_exports": 1704,
-   "candidate_surface_union": 2284,
+   "candidate_exports": 1705,
+   "candidate_surface_union": 2285,
    "counts": {
     "INTERNAL_LEAK": 580,
     "CURRENT_ORACLE_EXPORT": 1422,
-    "CUSTODIAN_EXTENSION": 31,
+    "CUSTODIAN_EXTENSION": 32,
     "HISTORICAL_COMPAT_EXPORT": 251
    },
    "symbols": {
@@ -14508,7 +14508,7 @@
      "in_upstream_syms": false
     },
     "xsltDocDefaultLoader": {
-     "kind": "B",
+     "kind": "D",
      "disposition": "INTERNAL_LEAK",
      "in_oracle": false,
      "in_headers": false,
@@ -15504,6 +15504,13 @@
     "xsltRegisterAllElement": {
      "kind": "T",
      "disposition": "INTERNAL_LEAK",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
+    },
+    "xsltRegisterAllExslt": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
      "in_oracle": false,
      "in_headers": false,
      "in_upstream_syms": false
@@ -16011,12 +16018,12 @@
    "oracle_dso": "/usr/lib/libxslt.so.1",
    "candidate_dso": "/mnt/1tb_kingston/libxml-rs/target/debug/lib/libxslt.so.1.1.45",
    "oracle_exports": 244,
-   "candidate_exports": 251,
-   "candidate_surface_union": 263,
+   "candidate_exports": 252,
+   "candidate_surface_union": 264,
    "counts": {
     "CURRENT_ORACLE_EXPORT": 244,
     "INTERNAL_LEAK": 12,
-    "CUSTODIAN_EXTENSION": 5,
+    "CUSTODIAN_EXTENSION": 6,
     "HISTORICAL_COMPAT_EXPORT": 2
    },
    "symbols": {
@@ -16364,7 +16371,7 @@
      "in_upstream_syms": true
     },
     "xsltDocDefaultLoader": {
-     "kind": "B",
+     "kind": "D",
      "disposition": "CURRENT_ORACLE_EXPORT",
      "in_oracle": true,
      "in_headers": false,
@@ -17363,6 +17370,13 @@
      "in_oracle": true,
      "in_headers": true,
      "in_upstream_syms": true
+    },
+    "xsltRegisterAllExslt": {
+     "kind": "T",
+     "disposition": "CUSTODIAN_EXTENSION",
+     "in_oracle": false,
+     "in_headers": false,
+     "in_upstream_syms": false
     },
     "xsltRegisterAllExtras": {
      "kind": "T",

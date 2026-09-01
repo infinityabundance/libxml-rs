@@ -1686,6 +1686,7 @@
     xmlXPtrNewRangePoints;
     xmlXPtrRangeToFunction;
     xmlXPtrWrapLocationSet;
+    xsltRegisterAllExslt;
     htmlDefaultSAXHandler;
     xmlBufferAllocScheme;
     xmlDefaultBufferSize;

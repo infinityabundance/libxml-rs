@@ -1832,6 +1832,29 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
         return 0;
     }
 
+    // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): the encoding
+    // conversion runs FIRST, independent of the I/O callback — buffer-based
+    // consumers (lxml's _tostring reads `c_buffer.conv` after
+    // xmlOutputBufferFlush) observe the CONVERTED bytes even when no write
+    // callback is installed.
+    let conv = ob.conv as *mut _xmlBuffer;
+    if !ob.encoder.is_null() {
+        let handler = ob.encoder as *mut _xmlCharEncodingHandler;
+        if conv.is_null() {
+            ob.error = 1;
+            return -1;
+        }
+
+        // Ensure conv buffer is empty before converting
+        buf_empty(conv);
+
+        let ret = encoding::char_enc_out(handler, conv, buf);
+        if ret < 0 {
+            ob.error = 1;
+            return -1;
+        }
+    }
+
     let write_cb = match ob.writecallback {
         Some(cb) => cb,
         None => {
@@ -1846,19 +1869,6 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
     };
 
     let total_written = if !ob.encoder.is_null() {
-        // Convert buffer content via encoder
-        let handler = ob.encoder as *mut _xmlCharEncodingHandler;
-        let conv = ob.conv as *mut _xmlBuffer;
-
-        // Ensure conv buffer is empty before converting
-        buf_empty(conv);
-
-        let ret = encoding::char_enc_out(handler, conv, buf);
-        if ret < 0 {
-            ob.error = 1;
-            return -1;
-        }
-
         // Write converted data via callback
         let conv_b = unsafe { &*conv };
         if conv_b.use_ > 0 {
@@ -2082,7 +2092,7 @@ pub(crate) fn output_buffer_get_size(out: *mut _xmlOutputBuffer) -> usize {
 ///   `_xmlOutputBuffer` with a fresh internal buffer and no I/O callbacks,
 ///   checking allocations for NULL.
 pub(crate) fn output_buffer_create(
-    _encoder: *mut crate::abi::structs::_xmlCharEncodingHandler,
+    encoder: *mut crate::abi::structs::_xmlCharEncodingHandler,
 ) -> *mut _xmlOutputBuffer {
     let obuf = allocate_output_buffer();
     if obuf.is_null() {
@@ -2093,9 +2103,24 @@ pub(crate) fn output_buffer_create(
         unsafe { xmlFreeImpl(obuf as *mut c_void) };
         return ptr::null_mut();
     }
+    // UPSTREAM-PARITY (xmlIO.c xmlAllocOutputBuffer): a conversion buffer is
+    // allocated whenever an encoder is installed — xmlOutputBufferFlush
+    // converts buffer -> conv and buffer-based consumers (lxml's
+    // _tostring) read the converted bytes from conv.
+    let conv = if encoder.is_null() {
+        ptr::null_mut()
+    } else {
+        buf_create(-1)
+    };
+    if !encoder.is_null() && conv.is_null() {
+        unsafe { xmlFreeImpl(buf as *mut c_void) };
+        unsafe { xmlFreeImpl(obuf as *mut c_void) };
+        return ptr::null_mut();
+    }
     unsafe {
         (*obuf).buffer = buf as *mut c_void;
-        (*obuf).encoder = _encoder as *mut c_void;
+        (*obuf).conv = conv as *mut c_void;
+        (*obuf).encoder = encoder as *mut c_void;
     }
     obuf
 }

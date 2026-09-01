@@ -489,7 +489,7 @@ impl InputBuffer {
             self.pos = 2;
             self.col = 3;
             self.bom_consumed = true;
-            // We don't try to decode UTF-16 yet; mark and continue
+            self.convert_detected_utf16();
             return;
         }
 
@@ -499,12 +499,46 @@ impl InputBuffer {
             self.pos = 2;
             self.col = 3;
             self.bom_consumed = true;
+            self.convert_detected_utf16();
             return;
         }
 
         // No BOM found. Default to UTF-8 and check for XML declaration.
         self.encoding = Encoding::Utf8;
         self.detect_encoding_from_xml_declaration();
+    }
+
+    /// Convert a BOM-detected UTF-16 input buffer to UTF-8 in place.
+    ///
+    /// Upstream's input-switch machinery (`xmlSwitchEncoding`) installs the
+    /// UTF-16 decoder as soon as the BOM is seen, so the parser never
+    /// observes the raw 16-bit code units. The candidate's `InputBuffer`
+    /// buffers the raw bytes, so the conversion happens here: the whole
+    /// buffer (including the BOM, which the converters skip) is decoded to
+    /// UTF-8 and the position resets to the start of the converted stream.
+    fn convert_detected_utf16(&mut self) {
+        let raw = self.data.clone();
+        let converted = match self.encoding {
+            Encoding::Utf16Le => crate::xml::encoding::utf16le_to_utf8(&raw),
+            Encoding::Utf16Be => crate::xml::encoding::utf16be_to_utf8(&raw),
+            _ => return,
+        };
+        match converted {
+            Ok(conv) => {
+                self.data = conv;
+                self.pos = 0;
+                self.col = 1;
+                self.bom_consumed = false;
+            }
+            Err(()) => {
+                // Undecodable input: keep the raw bytes; the tokenizer will
+                // report the invalid-character error like upstream.
+                self.encoding = Encoding::Utf8;
+                self.pos = 0;
+                self.col = 1;
+                self.bom_consumed = false;
+            }
+        }
     }
 
     /// Try to detect encoding from an XML declaration at the start of the input.
@@ -1237,18 +1271,21 @@ mod tests {
     fn test_utf16le_bom_detection() {
         let data = vec![0xFF, 0xFE, b'h', 0x00, b'i', 0x00];
         let buf = InputBuffer::from_memory(&data, None);
-        assert!(buf.bom_was_consumed());
+        // UPSTREAM-PARITY: the UTF-16 input is converted to UTF-8 as soon as
+        // the BOM is seen (xmlSwitchEncoding), so the buffer starts at the
+        // converted stream with the BOM consumed.
         assert_eq!(buf.encoding(), &Encoding::Utf16Le);
-        assert_eq!(buf.pos, 2);
+        assert_eq!(buf.pos, 0);
+        assert_eq!(buf.remaining(), b"hi");
     }
 
     #[test]
     fn test_utf16be_bom_detection() {
         let data = vec![0xFE, 0xFF, 0x00, b'h', 0x00, b'i'];
         let buf = InputBuffer::from_memory(&data, None);
-        assert!(buf.bom_was_consumed());
         assert_eq!(buf.encoding(), &Encoding::Utf16Be);
-        assert_eq!(buf.pos, 2);
+        assert_eq!(buf.pos, 0);
+        assert_eq!(buf.remaining(), b"hi");
     }
 
     #[test]
