@@ -2695,8 +2695,40 @@ pub(crate) unsafe fn serialize_node_enc(
 
             // Write start tag
             io::buf_ccat(buf, b'<');
+            // UPSTREAM-PARITY (HTMLtree.c htmlNodeDumpOutputInternal): an
+            // element with a bound prefix writes `prefix:name`, and its
+            // local namespace declarations (nsDef) are dumped right after
+            // the name — namespaced trees (lxml.html.html5parser's XHTML
+            // tree) serialize with their namespace declarations.
+            if !n.ns.is_null() && !(*n.ns).prefix.is_null() {
+                io::buf_cat(buf, (*n.ns).prefix);
+                io::buf_ccat(buf, b':');
+            }
             if !n.name.is_null() {
                 io::buf_cat(buf, n.name);
+            }
+            if !n.nsDef.is_null() {
+                let mut ns = n.nsDef;
+                while !ns.is_null() {
+                    let nsp = unsafe { &*ns };
+                    // UPSTREAM-PARITY (xmlsave.c xmlNsDumpOutput): only
+                    // LOCAL namespaces with a URI are written; the "xml"
+                    // prefix declaration is skipped.
+                    let is_xml = !nsp.prefix.is_null() && xmlstr_to_bytes(nsp.prefix) == b"xml";
+                    if nsp.type_ == XML_LOCAL_NAMESPACE as c_int && !nsp.href.is_null() && !is_xml {
+                        io::buf_ccat(buf, b' ');
+                        if nsp.prefix.is_null() {
+                            io::buf_add(buf, b"xmlns=\"" as *const u8, 7);
+                        } else {
+                            io::buf_add(buf, b"xmlns:" as *const u8, 6);
+                            io::buf_cat(buf, nsp.prefix);
+                            io::buf_add(buf, b"=\"" as *const u8, 2);
+                        }
+                        html_serialize_attr_value(buf, nsp.href);
+                        io::buf_ccat(buf, b'\"');
+                    }
+                    ns = nsp.next;
+                }
             }
 
             // Write attributes
@@ -2831,6 +2863,12 @@ pub(crate) unsafe fn serialize_node_enc(
 
                 // Write end tag
                 io::buf_add(buf, b"</" as *const u8, 2);
+                // UPSTREAM-PARITY (HTMLtree.c htmlNodeDumpOutputInternal
+                // end-tag emission): the namespace prefix is repeated.
+                if !n.ns.is_null() && !(*n.ns).prefix.is_null() {
+                    io::buf_cat(buf, (*n.ns).prefix);
+                    io::buf_ccat(buf, b':');
+                }
                 if !n.name.is_null() {
                     io::buf_cat(buf, n.name);
                 }
