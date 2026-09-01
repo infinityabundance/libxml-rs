@@ -1379,6 +1379,21 @@ pub unsafe fn unlink_node(node: *mut _xmlNode) {
 
     let n = unsafe { &mut *node };
 
+    // UPSTREAM-PARITY (tree.c xmlUnlinkNode): an unlinked DTD node is
+    // detached from the document's internal/external subset pointers so a
+    // later xmlFreeDoc doesn't free it again (nokogiri pins an unlinked DTD
+    // and frees it via xmlFreeDtd, then frees the doc — without clearing
+    // doc->intSubset the doc double-frees the DTD).
+    let doc = n.doc;
+    if n.type_ == XML_DTD_NODE as c_int && !doc.is_null() {
+        if (*doc).intSubset == node as *mut _xmlDtd {
+            (*doc).intSubset = ptr::null_mut();
+        }
+        if (*doc).extSubset == node as *mut _xmlDtd {
+            (*doc).extSubset = ptr::null_mut();
+        }
+    }
+
     // Fix up prev/next chain
     let prev = n.prev;
     let next = n.next;
