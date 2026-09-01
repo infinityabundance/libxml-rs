@@ -712,8 +712,10 @@ impl XmlParser {
             self.parse_internal_subset(content)?;
         }
 
-        // If there's an external ID and DTDLOAD is set, parse external subset
-        if ext_id.is_some() && (self.options & XML_PARSE_DTDLOAD) != 0 {
+        // If there's an external ID (PUBLIC or SYSTEM) and DTDLOAD/DTDATTR is
+        // set, parse the external subset (upstream xmlParserLoadSubset). A
+        // SYSTEM-only DOCTYPE (no PUBLIC id) still references an external DTD.
+        if (ext_id.is_some() || sys_id.is_some()) && (self.options & XML_PARSE_DTDLOAD) != 0 {
             self.parse_external_subset(&root_name, ext_id.as_deref(), sys_id.as_deref())?;
         }
 
@@ -1242,6 +1244,12 @@ impl XmlParser {
 
     /// Parse the external DTD subset.
     ///
+    /// When XML_PARSE_DTDLOAD is set upstream resolves and parses the
+    /// referenced external DTD, merging its declarations into the document's
+    /// external subset (`doc->extSubset`). The candidate mirrors this for the
+    /// common file case: resolve `sys_id` relative to the document URL's
+    /// directory, read the file, and parse its declarations into the DTD node.
+    ///
     /// # Safety
     ///
     /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with a
@@ -1250,19 +1258,38 @@ impl XmlParser {
     ///   valid until the process exits.
     fn parse_external_subset(
         &mut self,
-        _name: &[u8],
-        _ext_id: Option<&[u8]>,
-        _sys_id: Option<&[u8]>,
+        name: &[u8],
+        ext_id: Option<&[u8]>,
+        sys_id: Option<&[u8]>,
     ) -> Result<(), ()> {
-        // TODO: Load and parse the external DTD subset
-        // This requires URI resolution and I/O
+        // Create the external subset DTD node (upstream xmlParserLoadSubset
+        // -> xmlNewDtd), which becomes doc->extSubset. nokogiri reads it back
+        // as Document#external_subset.
+        let name_cstr = Self::vec_to_cstr_null(name);
+        let ext_cstr = ext_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+        let sys_cstr = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+        let dtd = unsafe {
+            crate::abi::exports_xml2::xmlNewDtd(
+                (*self.ctxt).myDoc,
+                name_cstr as *const xmlChar,
+                ext_cstr as *const xmlChar,
+                sys_cstr as *const xmlChar,
+            )
+        };
+        if !dtd.is_null() {
+            unsafe {
+                (*self.ctxt).inSubset = 1;
+            }
+            if let Some(sys) = sys_id {
+                self.load_external_dtd_file(dtd, sys);
+            }
+            unsafe {
+                (*self.ctxt).inSubset = 0;
+            }
+        }
 
         // Fire externalSubset SAX event
         if !self.is_sax_disabled() {
-            let name_cstr = Self::vec_to_cstr_null(_name);
-            let ext_cstr = _ext_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
-            let sys_cstr = _sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
-
             unsafe {
                 let sax = &*(*self.ctxt).sax;
                 let ctx = (*self.ctxt).userData;
@@ -1270,7 +1297,157 @@ impl XmlParser {
             }
         }
 
+        if !name_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void) };
+        }
+        if !ext_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(ext_cstr as *mut c_void) };
+        }
+        if !sys_cstr.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(sys_cstr as *mut c_void) };
+        }
+
         Ok(())
+    }
+
+    /// Resolve a DTD system ID relative to the document URL's directory,
+    /// read the file, and parse its declarations into `dtd`.
+    fn load_external_dtd_file(&self, dtd: *mut _xmlDtd, sys_id: &[u8]) {
+        let path = self.resolve_dtd_path(sys_id);
+        let content = match path {
+            Some(p) => std::fs::read(&p).ok(),
+            None => None,
+        };
+        let Some(content) = content else { return };
+        if content.is_empty() {
+            return;
+        }
+        // Parse declarations from the external file (same grammar as the
+        // internal subset, but the file root has no <!DOCTYPE> wrapper).
+        let mut i = 0usize;
+        while i < content.len() {
+            while i < content.len() && content[i].is_ascii_whitespace() {
+                i += 1;
+            }
+            if i >= content.len() {
+                break;
+            }
+            if content[i] != b'<' {
+                i += 1;
+                continue;
+            }
+            if content[i..].starts_with(b"<!--") {
+                match find_subseq(&content[i..], b"-->") {
+                    Some(p) => i += p + 3,
+                    None => break,
+                }
+                continue;
+            }
+            if content[i..].starts_with(b"<?") {
+                match find_subseq(&content[i..], b"?>") {
+                    Some(p) => i += p + 2,
+                    None => break,
+                }
+                continue;
+            }
+            if content[i..].starts_with(b"<!")
+                && !content[i..].starts_with(b"<!ELEMENT")
+                && !content[i..].starts_with(b"<!ATTLIST")
+                && !content[i..].starts_with(b"<!ENTITY")
+                && !content[i..].starts_with(b"<!NOTATION")
+            {
+                // A nested <!DOCTYPE> or comments already handled; skip past
+                // the declaration end.
+                let rest = &content[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        i += 2 + gt + 1;
+                        continue;
+                    }
+                    None => break,
+                }
+            }
+            if content[i..].starts_with(b"<!ELEMENT") {
+                let rest = &content[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        Self::parse_element_decl(dtd, &rest[..gt]);
+                        i += 2 + gt + 1;
+                        continue;
+                    }
+                    None => break,
+                }
+            }
+            if content[i..].starts_with(b"<!ATTLIST") {
+                let rest = &content[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        Self::parse_attlist_decl(dtd, &rest[..gt]);
+                        i += 2 + gt + 1;
+                        continue;
+                    }
+                    None => break,
+                }
+            }
+            if content[i..].starts_with(b"<!ENTITY") {
+                let rest = &content[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        Self::parse_entity_decl(dtd, &rest[..gt]);
+                        i += 2 + gt + 1;
+                        continue;
+                    }
+                    None => break,
+                }
+            }
+            if content[i..].starts_with(b"<!NOTATION") {
+                let rest = &content[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        Self::parse_notation_decl(dtd, &rest[..gt]);
+                        i += 2 + gt + 1;
+                        continue;
+                    }
+                    None => break,
+                }
+            }
+            i += 1;
+        }
+    }
+
+    /// Resolve a DTD system id to a filesystem path, honoring a relative
+    /// reference against the document URL's directory.
+    fn resolve_dtd_path(&self, sys_id: &[u8]) -> Option<std::path::PathBuf> {
+        let sys = core::str::from_utf8(sys_id).ok()?;
+        if sys.contains("://") {
+            // Non-file URI (http etc.): no local resolution.
+            return None;
+        }
+        let doc_url = unsafe { (*self.ctxt).myDoc };
+        let dir = if !doc_url.is_null() {
+            let url = unsafe { (*doc_url).URL };
+            if url.is_null() {
+                None
+            } else {
+                let url_str = unsafe { std::ffi::CStr::from_ptr(url as *const c_char) }
+                    .to_str()
+                    .ok();
+                url_str.and_then(|u| {
+                    let p = std::path::Path::new(u);
+                    p.parent().map(|d| d.to_path_buf())
+                })
+            }
+        } else {
+            None
+        };
+        let sys_path = std::path::Path::new(sys);
+        if sys_path.is_absolute() {
+            Some(sys_path.to_path_buf())
+        } else if let Some(d) = dir {
+            Some(d.join(sys_path))
+        } else {
+            Some(sys_path.to_path_buf())
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

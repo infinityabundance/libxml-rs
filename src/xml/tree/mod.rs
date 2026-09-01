@@ -2647,6 +2647,13 @@ pub unsafe fn new_dtd(
         return ptr::null_mut();
     }
 
+    // UPSTREAM-PARITY (tree.c xmlNewDtd): a document that already has an
+    // external subset cannot take another — upstream returns NULL.
+    if !doc.is_null() && !(*doc).extSubset.is_null() {
+        allocator::xmlFreeImpl(dtd as *mut c_void);
+        return ptr::null_mut();
+    }
+
     unsafe {
         (*dtd).type_ = XML_DTD_NODE as c_int;
         (*dtd).name = dup_xml_str(name);
@@ -2655,13 +2662,15 @@ pub unsafe fn new_dtd(
         (*dtd).parent = doc;
         (*dtd).doc = doc;
 
-        // UPSTREAM-PARITY (tree.c xmlNewDtd): the declaration hash tables are
-        // created lazily by the xmlAdd* functions on first use; an empty DTD
-        // exposes NULL table pointers.
+        // UPSTREAM-PARITY (tree.c xmlNewDtd): a freshly created DTD node
+        // becomes the document's EXTERNAL subset (doc->extSubset); the
+        // internal subset is created via xmlCreateIntSubset.
+        // nokogiri create_external_subset reads doc->extSubset back as
+        // Document#external_subset.
 
-        // Attach to document
-        if !doc.is_null() && (*doc).intSubset.is_null() {
-            (*doc).intSubset = dtd;
+        // Attach to document as the external subset
+        if !doc.is_null() {
+            (*doc).extSubset = dtd;
         }
     }
 
@@ -3248,13 +3257,17 @@ impl DumpState {
     /// the XML_SAVE_NO_DECL option, and an encoding name for the XML
     /// declaration (upstream `ctxt->encoding`; NULL = use `doc->encoding`).
     ///
+    /// When `indent` is NULL the caller's global `xmlTreeIndentString` is
+    /// used (upstream xmlsave.c: `if (ctxt->indent == NULL) indent =
+    /// xmlTreeIndentString`; nokogiri sets that global before xmlSaveToIO).
+    ///
     /// # SAFETY
     ///
     /// - `indent` must be NULL or a valid NUL-terminated string that stays
     ///   alive for the whole dump.
     /// - `encoding` must be NULL or a valid NUL-terminated string that stays
     ///   alive for the whole dump.
-    const unsafe fn with_indent_enc(
+    unsafe fn with_indent_enc(
         format: c_int,
         indent: *const xmlChar,
         no_decl: c_int,
@@ -3262,7 +3275,16 @@ impl DumpState {
     ) -> Self {
         let f = if format != 0 { 1 } else { 0 };
         let (ptr, len) = if indent.is_null() {
-            (INDENT.as_ptr(), INDENT.len() as c_int)
+            let g = crate::xml::globals::get_tree_indent_string();
+            if g.is_null() {
+                (INDENT.as_ptr(), INDENT.len() as c_int)
+            } else {
+                let mut n = 0i32;
+                while unsafe { *g.add(n as usize) } != 0 {
+                    n += 1;
+                }
+                (g, n)
+            }
         } else {
             let mut n = 0i32;
             while unsafe { *indent.add(n as usize) } != 0 {
@@ -5249,7 +5271,10 @@ mod tests {
             let dtd = new_dtd(doc, c_str("root"), c_str("-//TEST//DTD"), c_str("test.dtd"));
             assert!(!dtd.is_null());
             assert_eq!((*dtd).type_, XML_DTD_NODE as c_int);
-            assert_eq!(get_int_subset(doc), dtd);
+            // UPSTREAM-PARITY (tree.c xmlNewDtd): xmlNewDtd creates the
+            // document's EXTERNAL subset, so the DTD is reachable as
+            // doc->extSubset (the xmlCreateIntSubset call sets intSubset).
+            assert_eq!((*doc).extSubset, dtd);
             free_doc(doc);
         }
     }
