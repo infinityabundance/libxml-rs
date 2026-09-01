@@ -2424,10 +2424,15 @@ pub(crate) const fn cleanup_parser() {
 ///
 /// Equivalent to `htmlNewDoc` in libxml2.
 ///
-/// Creates a new document with type XML_HTML_DOCUMENT_NODE and
-/// auto-creates html/head/body elements.
+/// Creates a new HTML document (type XML_HTML_DOCUMENT_NODE) WITHOUT any
+/// implicit html/head/body skeleton. Upstream `htmlNewDoc`/`htmlNewDocNoDtD`
+/// create only the document (the HTML parser grows the html/head/body
+/// elements lazily); eagerly seeding the skeleton would insert a real
+/// `<html>` root that diverges from upstream and breaks consumers like
+/// nokogiri's `HTML4::Document.new` builder (a later `<b>` add would look
+/// like a second root).
 ///
-/// # Safety
+/// # SAFETY
 ///
 /// - `version` must be a valid null-terminated xmlChar string or NULL.
 pub(crate) unsafe fn new_doc(version: *const xmlChar) -> *mut _xmlDoc {
@@ -2439,16 +2444,6 @@ pub(crate) unsafe fn new_doc(version: *const xmlChar) -> *mut _xmlDoc {
     unsafe {
         (*doc).type_ = XML_HTML_DOCUMENT_NODE as c_int;
         (*doc).properties = XML_DOC_WELLFORMED as c_int;
-    }
-
-    // Create implicit html/head/body
-    let mut ctxt = HtmlParserCtxt::new();
-    ctxt.doc = doc;
-
-    unsafe {
-        ensure_html(&mut ctxt);
-        ensure_head(&mut ctxt);
-        ensure_body(&mut ctxt);
     }
 
     doc
@@ -3606,8 +3601,10 @@ mod tests {
     // new_doc / new_doc_no_dtd
     // ═════════════════════════════════════════════════════════════════════════
 
-    /// Verifies `new_doc` creates an HTML document with implicit `html`,
-    /// `head` and `body` elements.
+    /// Verifies `new_doc` creates an HTML document WITHOUT an implicit
+    /// `html`/`head`/`body` skeleton (upstream htmlNewDoc does not seed them;
+    /// the HTML parser grows them lazily). `html_doc_to_string` of an empty
+    /// body-less HTML doc emits just the trailing newline.
     ///
     /// # Safety
     ///
@@ -3623,9 +3620,9 @@ mod tests {
             assert_eq!((*doc).type_, XML_HTML_DOCUMENT_NODE as c_int);
 
             let s = html_doc_to_string(doc);
-            assert!(s.contains("<html>"));
-            assert!(s.contains("<head>"));
-            assert!(s.contains("<body>"));
+            assert!(!s.contains("<html>"), "htmlNewDoc must not seed <html>");
+            assert!(!s.contains("<head>"), "htmlNewDoc must not seed <head>");
+            assert!(!s.contains("<body>"), "htmlNewDoc must not seed <body>");
 
             tree::free_doc(doc);
         }
