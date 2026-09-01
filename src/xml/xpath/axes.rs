@@ -514,7 +514,18 @@ unsafe fn matches_name_test(node: *mut _xmlNode, name_test: &NameTest) -> bool {
         }
         NameTest::LocalName(local) => {
             let name = crate::xml::string::xmlstr_to_string(node_ref.name);
-            name == *local
+            // UPSTREAM-PARITY (xpath.c name-test matching): an UNPREFIXED name
+            // test matches nodes with no namespace URI unless a default namespace
+            // is in scope. nokogiri registers no default unprefixed binding, so
+            // `//foo` must not match `<a:foo>`/default-namespaced `<foo>` nodes
+            // (test_remove_namespaces expects 0).
+            if node_ref.ns.is_null() && name == *local {
+                return true;
+            }
+            // Some callers (lxml) bind a default namespace for unprefixed
+            // names; the compiler resolves those into NameTest::QNameUri, so the
+            // plain LocalName path still requires an empty namespace URI.
+            false
         }
         NameTest::QName { prefix, local } => {
             let name = crate::xml::string::xmlstr_to_string(node_ref.name);
