@@ -692,8 +692,13 @@ pub static mut xsltDocDefaultLoader: Option<xsltDocLoaderFunc> = Some(xslt_doc_d
 // export.
 
 /// `const xmlSAXHandlerV1 xmlDefaultSAXHandler` (globals.c 2.15.3).
+///
+/// `#[no_mangle]` data symbol that C consumers (PHP's DOM/XML extensions)
+/// MUTATE (they overwrite the error/warning callbacks on the shared default
+/// handler). Rust places non-`mut` statics in read-only memory; a write to
+/// it would segfault. Make it `static mut` so it lives in writable data.
 #[no_mangle]
-pub static xmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
+pub static mut xmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
     crate::abi::structs::_xmlSAXHandlerV1 {
         internalSubset: Some(crate::abi::exports_xml2::xmlSAX2InternalSubset),
         isStandalone: Some(crate::abi::exports_xml2::xmlSAX2IsStandalone),
@@ -726,8 +731,11 @@ pub static xmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
     };
 
 /// `const xmlSAXHandlerV1 htmlDefaultSAXHandler` (globals.c 2.15.3).
+///
+/// Mutable (see xmlDefaultSAXHandler) so C consumers (PHP) that overwrite
+/// the shared default handler's callbacks don't fault on read-only memory.
 #[no_mangle]
-pub static htmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
+pub static mut htmlDefaultSAXHandler: crate::abi::structs::_xmlSAXHandlerV1 =
     crate::abi::structs::_xmlSAXHandlerV1 {
         internalSubset: Some(crate::abi::exports_xml2::xmlSAX2InternalSubset),
         isStandalone: None,
