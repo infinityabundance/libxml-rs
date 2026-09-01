@@ -488,6 +488,12 @@ unsafe fn matches_name_test(node: *mut _xmlNode, name_test: &NameTest) -> bool {
     }
 
     let node_ref = &*node;
+    // Defensive: an attribute/element node must carry a name for a name test
+    // to match; a NULL or non-canonical name pointer is skipped rather than
+    // dereferenced (prevents a crash on a partially-torn-down property list).
+    if node_ref.name.is_null() {
+        return false;
+    }
 
     match name_test {
         NameTest::Any => {
