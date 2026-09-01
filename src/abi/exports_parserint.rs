@@ -4058,6 +4058,12 @@ unsafe fn pi_parse_content_node_list(
             pi_err_memory(ctxt);
             return ptr::null_mut();
         }
+        // UPSTREAM-PARITY (parser.c xmlParseBalancedChunkMemoryInternal): the
+        // synthetic document root the in-context parse appends to carries the
+        // document; tree::add_child propagates it to the parsed children, so
+        // the unlinked result nodes have a valid node->doc (nokogiri's
+        // noko_xml_document_pin_node dereferences node->doc on every one).
+        (*root).doc = (*ctxt).myDoc;
         if pi_input_push(ctxt, input) < 0 {
             crate::xml::tree::free_node(root);
             xmlFreeImpl(root_name_owned as *mut c_void);
