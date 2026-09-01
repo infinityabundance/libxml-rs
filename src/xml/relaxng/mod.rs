@@ -1387,33 +1387,119 @@ fn rng_validate_element_pattern(
         // Push the element name onto the path
         ctxt.path.push(node_name.clone());
 
-        // Validate child patterns against this element
-        let mut valid = true;
-        if pattern.children.is_empty() {
-            // No content pattern — element must be empty
-            let mut child = (*node).children;
-            while !child.is_null() {
-                if (*child).type_ == XML_ELEMENT_NODE as c_int {
-                    let child_name = get_node_qname(child);
-                    ctxt.record_error(format!(
-                        "Unexpected child element '{}' in empty element '{}' at '{}'",
-                        child_name,
-                        node_name,
-                        ctxt.current_path()
-                    ));
-                    valid = false;
-                }
-                child = (*child).next;
-            }
-        } else {
-            // Validate the content pattern against this element
-            // For element patterns, the child pattern validates the element's content
-            for child_pat in &pattern.children {
-                valid &= rng_validate_pattern(child_pat, node, schema, ctxt);
-            }
-        }
+        // Validate child patterns against this element's CHILDREN.
+        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGValidateElement): the
+        // content patterns describe the element's children, not the element
+        // itself. The pre-fix code validated them against the element node
+        // directly, so any nested element pattern failed its name match and
+        // every non-empty schema rejected every document (Phase 14 lxml
+        // RelaxNG court).
+        let valid = rng_validate_content(&pattern.children, node, schema, ctxt);
 
         ctxt.path.pop();
+        valid
+    }
+}
+
+/// Validate an element's content model (the child patterns of an element
+/// pattern) against the element's child nodes.
+///
+/// An empty content model requires no element children; a single structural
+/// pattern (sequence/choice/interleave/group/zeroOrMore/oneOrMore/optional)
+/// consumes the child list with its own logic; anything else is an implicit
+/// sequence over the element's element-children, where a `text` pattern
+/// validates against the element itself (any text is allowed) without
+/// consuming a child.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an _xmlNode or NULL.
+fn rng_validate_content(
+    content: &[RelaxNgPattern],
+    node: *mut _xmlNode,
+    schema: &RelaxNgSchema,
+    ctxt: &mut RelaxNgValidCtxt,
+) -> bool {
+    if content.is_empty() {
+        return rng_validate_empty_pattern(node, ctxt);
+    }
+    if content.len() == 1 {
+        let p = &content[0];
+        match p.pattern_type {
+            RelaxNgPatternType::Sequence
+            | RelaxNgPatternType::Choice
+            | RelaxNgPatternType::Interleave
+            | RelaxNgPatternType::Group
+            | RelaxNgPatternType::ZeroOrMore
+            | RelaxNgPatternType::OneOrMore
+            | RelaxNgPatternType::Optional => {
+                return rng_validate_pattern(p, node, schema, ctxt);
+            }
+            RelaxNgPatternType::Text => return rng_validate_text_pattern(node, ctxt),
+            _ => {}
+        }
+    }
+
+    unsafe {
+        // Collect the element's element-children in document order.
+        let mut child_nodes: Vec<*mut _xmlNode> = Vec::new();
+        let mut child = (*node).children;
+        while !child.is_null() {
+            if (*child).type_ == XML_ELEMENT_NODE as c_int {
+                child_nodes.push(child);
+            }
+            child = (*child).next;
+        }
+
+        let mut valid = true;
+        let mut child_idx = 0;
+        for child_pat in content {
+            // A text pattern matches any text content of the element and
+            // does not consume an element child.
+            if child_pat.pattern_type == RelaxNgPatternType::Text {
+                valid &= rng_validate_text_pattern(node, ctxt);
+                continue;
+            }
+            if child_idx >= child_nodes.len() {
+                match child_pat.pattern_type {
+                    RelaxNgPatternType::Optional | RelaxNgPatternType::ZeroOrMore => {
+                        // These are fine to have no matching children.
+                        continue;
+                    }
+                    RelaxNgPatternType::OneOrMore => {
+                        ctxt.record_error(format!(
+                            "Expected at least one matching child for oneOrMore at '{}'",
+                            ctxt.current_path()
+                        ));
+                        valid = false;
+                        continue;
+                    }
+                    _ => {
+                        ctxt.record_error(format!(
+                            "Expected more child elements for content model at '{}'",
+                            ctxt.current_path()
+                        ));
+                        valid = false;
+                        continue;
+                    }
+                }
+            }
+            let child_node = child_nodes[child_idx];
+            valid &= rng_validate_pattern(child_pat, child_node, schema, ctxt);
+            child_idx += 1;
+        }
+
+        // Check for extra children.
+        if child_idx < child_nodes.len() {
+            let extra_name = get_node_qname(child_nodes[child_idx]);
+            ctxt.record_error(format!(
+                "Unexpected extra element '{}' in content model at '{}'",
+                extra_name,
+                ctxt.current_path()
+            ));
+            valid = false;
+        }
+
         valid
     }
 }

@@ -6060,6 +6060,17 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
         return ptr::null_mut();
     }
     let internal = &mut *internal;
+    // UPSTREAM-PARITY (xpath.c xmlXPathEvalExpression): the evaluation
+    // context node and position come from the C context fields — consumers
+    // (lxml XPathElementEvaluator) set xpathCtxt->node per evaluation — so
+    // mirror them into the internal context before evaluating. The pre-fix
+    // code never did, so relative paths ("a", "./a", "a/@i") evaluated
+    // against a NULL context node and returned an empty node-set (Phase 14
+    // lxml XPath court).
+    internal.set_context_node((*ctxt).node);
+    internal.context_position = (*ctxt).proximityPosition;
+    internal.context_size = (*ctxt).contextSize;
+    internal.proximity_position = (*ctxt).proximityPosition;
     // Clear any stale error so a fresh evaluation either succeeds or records
     // its own failure message (the XSLT layer surfaces it verbatim).
     internal.clear_error();
