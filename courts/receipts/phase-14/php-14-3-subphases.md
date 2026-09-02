@@ -13,10 +13,40 @@ push each closure; keep `CURRENT-STATE.md` current.
 
 ## Subphases (ordered; gate between each = full-suite re-measure)
 
-- **SP-14.3.1 ext/xml** (21 fails). SAX2/expat-compat layer: attribute encode/
-  decode + entity options, notation-decl handler, error-string table, object
-  handler multiple-sets, huge option, parser closures. Root-causes visible in
-  `ext/xml/tests/*.diff`.
+- **SP-14.3.1 ext/xml** (21 fails; measured clusters below). SAX2/expat-compat
+  layer. Current re-measure (ext/xml alone, 2026-09-02): 11 skipped; 21 failed;
+  famsig groups:
+  --- SP14.3.1-1  SAX DTD-decl callbacks absent  -> drives
+       xml_set_notation_decl_handler_basic (notation_decl_handler +
+       unparsed_entity_decl_handler events never fire at all; candidate drops the
+       whole expected block). Root: internal-subset scan registers NOTATION /
+       NDATA ENTITY but never dispatches SAX notationDecl/unparsedEntityDecl.
+       (Note: unparsed_entity NDATA metadata itself was fixed in Fix-6.)
+       FIX DESIGN: parse_internal_subset NOTATION branch after
+         Self::parse_notation_decl(d,args) and the NDATA ENTITY branch after
+         Self::parse_entity_decl(d,args) must SaxDispatcher::notation_decl(sax,
+         ctx,name,pub,sys) and ::unparsed_entity_decl(sax,ctx,name,pub,sys,
+         notation), each only when the SAX handler slot is present and only when
+         not in the external-subset (inSubset) case that the SAX2 default fires
+         from xmlParseNotationDecl/xmlParseEntityDecl. Parse name + optional
+         SYSTEM/PUBLIC ids from `args`; for unparsed reuse find_ndata_notation.
+         Guard phpt: ext/xml/tests/xml_set_notation_decl_handler_basic.phpt.
+  --- SP14.3.1-2  push-parse ends drop the final element (xml004, xml_closures_001
+       lose <elem4></elem4>). Root: xml_parse + xml_parse_into_struct finalization
+       or input-feed boundary drops a trailing element under the structure/
+       closure path.
+  --- SP14.3.1-3  structure/namespace tag mangling (bug50576: [://WWW.FPDSNG...]
+       - empty-uri default attribute/namespace in xml_parse_into_struct).
+  --- SP14.3.1-4  xml_parse_into_struct empty/False/misval (bug35447 character-
+       entity attribute recode inside structure attrs; bug71592 empty result;
+       bug25666/bug72714/bug73135 crashes/empty).
+  --- SP14.3.1-5  end-element locator col/byte (bug26614_libxml_gte2_11).
+  --- SP14.3.1-6  PARSE_HUGE option semantics (XML_OPTION_PARSE_HUGE).
+  --- SP14.3.1-7  recursion-on-callback guard (gh12254).
+  --- SP14.3.1-8  crash cluster gh20439_1/2 + bug27908 (structure/push finalize).
+  --- SP14.3.1-9  residual: xml_set_object_multiple_times{,_errors} and
+       xml_error_string_basic_libxml (error-code/string table + double handler
+       set).
 - **SP-14.3.2 ext/simplexml** (9 fails). Engine-backed: `LIBXML_RECOVER` /
   `LIBXML_NO_XXE`, doc/encoding parity, serialization.
 - **SP-14.3.3 ext/dom XML engine** (the large dom bucket): serialize /
