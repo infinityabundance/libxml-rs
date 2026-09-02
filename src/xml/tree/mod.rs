@@ -2126,6 +2126,55 @@ pub unsafe fn search_ns_by_href(
         cur = n.parent;
     }
 
+    // UPSTREAM-PARITY (tree.c xmlSearchNsByHrefSafe): the reserved "xml"
+    // namespace is implicitly in scope everywhere. When no declaration is
+    // found along the ancestry but the caller queries the XML namespace URI
+    // and the node belongs to a document, ensure (and return) the
+    // document-level xml namespace that the parser keeps on doc->oldNs. This
+    // is how an attribute/element created in the XML namespace correctly binds
+    // prefix "xml" even on a document with no explicit xmlns:xml declaration
+    // (php DOMDocument::createAttributeNS('http://www.w3.org/XML/1998/
+    // namespace', 'xml') must produce xml-prefixed, not "default").
+    let is_xml_ns_uri = unsafe {
+        crate::abi::exports_xml2::xmlStrEqual(
+            href,
+            c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+        ) != 0
+    };
+    let node_doc = unsafe { (*node).doc };
+    if is_xml_ns_uri && !node_doc.is_null() {
+        // Reuse an existing document-level xml declaration if present.
+        let mut old = unsafe { (*node_doc).oldNs };
+        while !old.is_null() {
+            let os = unsafe { &*old };
+            if !os.prefix.is_null()
+                && unsafe {
+                    crate::abi::exports_xml2::xmlStrEqual(
+                        os.prefix,
+                        c"xml".as_ptr() as *const xmlChar,
+                    ) != 0
+                }
+            {
+                return old;
+            }
+            old = unsafe { (*old).next };
+        }
+        // Materialise the implicit document-level xml declaration (mirror the
+        // parser's ensure_doc_xml_ns) so the query returns a stable live ns.
+        let new_ns = crate::abi::allocator::xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs;
+        if new_ns.is_null() {
+            return ptr::null_mut();
+        }
+        (*new_ns).type_ = crate::abi::types::XML_LOCAL_NAMESPACE as c_int;
+        (*new_ns).href = crate::xml::string::xml_strdup(
+            c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+        );
+        (*new_ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
+        (*new_ns).next = (*node_doc).oldNs;
+        (*node_doc).oldNs = new_ns;
+        return new_ns;
+    }
+
     ptr::null_mut()
 }
 
@@ -5335,6 +5384,42 @@ mod tests {
             assert_eq!((*attr).ns, ns);
             assert!(!(*attr).name.is_null());
 
+            free_doc(doc);
+        }
+    }
+
+    /// Phase 14 PHP DOM regression (gh12870_b): searching for the reserved XML
+    /// namespace URI must bind prefix `xml` (it is implicitly in scope), even
+    /// on a freshly built document with no xmlns:xml declaration. Without the
+    /// doc->oldNs fallback php DOMDocument::createAttributeNS
+    /// ('http://www.w3.org/XML/1998/namespace', 'xml') resolved to a synthetic
+    /// "default" prefix instead of the fixed xml prefix.
+    ///
+    /// # Safety
+    ///
+    /// - The doc/root are valid while search_ns_by_href runs; the doc is freed
+    ///   with `free_doc` (freeing the materialised doc-level xml declaration).
+    #[test]
+    fn test_search_ns_by_href_xml_namespace_returns_xml_prefix() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+            // root->doc is set by doc_set_root_element; documentElement::first
+            // usage in php starts from root. Query must succeed.
+            let found = search_ns_by_href(
+                doc,
+                root,
+                c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+            );
+            assert!(!found.is_null());
+            assert!(!(*found).prefix.is_null());
+            assert!(
+                crate::abi::exports_xml2::xmlStrEqual(
+                    (*found).prefix,
+                    c"xml".as_ptr() as *const xmlChar
+                ) != 0
+            );
             free_doc(doc);
         }
     }
