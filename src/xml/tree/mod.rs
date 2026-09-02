@@ -907,8 +907,24 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
     };
 
     // Free the name.
+    // UPSTREAM-PARITY (tree.c xmlNewText / xmlNewComment + xmlCopyNode): text,
+    // CDATA, comment and PI nodes store their `name` as one of the SHARED static
+    // markers xmlStringText / xmlStringTextNoenc / xmlStringComment (never
+    // dict- or heap-owned) and those must never be freed here — freeing one
+    // aborts with "free(): invalid pointer" at teardown (PHP modern/spec
+    // Node_isDefaultNamespace was the trigger). The only non-dict node names the
+    // candidate attaches are these statics, so pointer-equality guards fully
+    // close the leak/double-free.
     if !n.name.is_null() && !crate::abi::exports_hash::dict_owns_str(dict, n.name) {
-        allocator::xmlFreeImpl(n.name as *mut c_void);
+        let sentinels = [
+            crate::abi::data_globals::xmlStringText.as_ptr() as *const c_void,
+            crate::abi::data_globals::xmlStringTextNoenc.as_ptr() as *const c_void,
+            crate::abi::data_globals::xmlStringComment.as_ptr() as *const c_void,
+        ];
+        let is_sentinel = sentinels.iter().any(|&p| p == n.name as *const c_void);
+        if !is_sentinel {
+            allocator::xmlFreeImpl(n.name as *mut c_void);
+        }
     }
 
     // Free content (for text/CDATA nodes). Compact text content lives inside
@@ -5182,6 +5198,31 @@ mod tests {
 
             // Crucially: the doc teardown must not double-free the attribute.
             free_doc(doc);
+        }
+    }
+
+    /// Phase 14 PHP DOM regression (modern/spec Node_isDefaultNamespace): text,
+    /// CDATA, comment and PI nodes may carry their `name` as the SHARED static
+    /// marker `xmlStringText`/`xmlStringComment` (upstream tree.c xmlNewText/
+    /// xmlNewComment). `free_node` must not `xmlFree` such a name or teardown
+    /// aborts with `free(): invalid pointer`. Regression guard for the sentinel
+    /// name-free skip.
+    ///
+    /// # Safety
+    ///
+    /// - The node is a freshly xmlMalloc'd text node, fully zero-initialised
+    ///   except its type and sentinel `name`; it owns no other allocations, so
+    ///   `free_node` releases only the struct.
+    #[test]
+    fn test_free_text_node_with_static_name_sentinel() {
+        unsafe {
+            let node = allocator::xmlMallocZero(size_of::<_xmlNode>()) as *mut _xmlNode;
+            assert!(!node.is_null());
+            (*node).type_ = XML_TEXT_NODE as c_int;
+            // A text node whose name aliases the shared static marker text.
+            (*node).name = crate::abi::data_globals::xmlStringText.as_ptr();
+            // no children/content owned by the node.
+            free_node(node); // must not free the static marker.
         }
     }
 
