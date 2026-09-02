@@ -31,10 +31,14 @@ push each closure; keep `CURRENT-STATE.md` current.
          from xmlParseNotationDecl/xmlParseEntityDecl. Parse name + optional
          SYSTEM/PUBLIC ids from `args`; for unparsed reuse find_ndata_notation.
          Guard phpt: ext/xml/tests/xml_set_notation_decl_handler_basic.phpt.
-  --- SP14.3.1-2  push-parse ends drop the final element (xml004, xml_closures_001
-       lose <elem4></elem4>). Root: xml_parse + xml_parse_into_struct finalization
-       or input-feed boundary drops a trailing element under the structure/
-       closure path.
+  --- SP14.3.1-2  [MEASURED 2026] xml004/xml_closures_001 lose <elem4> and all
+       following content after an external-parameter-loaded entity reference
+       ("&included-entity;" from inc.ent). NOT chunk/push-specific: the
+       xml004-probe shows elem4 dropped in a single xml_parse call too; DOM
+       load also can't resolve it without DTDLOAD (external param entity). The
+       candidate SAX path drops the trailing element inside the element where
+       the external/parameter entity content was expanded (element-scope resume
+       after entity push_input). xml004-probe.php is the reproducer.
   --- SP14.3.1-3  structure/namespace tag mangling (bug50576: [://WWW.FPDSNG...]
        - empty-uri default attribute/namespace in xml_parse_into_struct).
   --- SP14.3.1-4  xml_parse_into_struct empty/False/misval (bug35447 character-

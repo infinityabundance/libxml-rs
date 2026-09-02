@@ -75,7 +75,7 @@ Fix 6 committed (e12b2ed0, R-14.3-ENTITY-NDATA-METADATA FIXED): parse external
   ext/dom remeasure no new failures. NEXT residual in this atom: the
   empty-public-id ExternalID="" storage ("" collapses to NULL).
 
-SP-14.3.1-1 closed (HEAD after this: R-14.3-SAX-NOTATION-UNPARSED-DECL FIXED):
+SP-14.3.1-1 closed (96381efc, R-14.3-SAX-NOTATION-UNPARSED-DECL FIXED):
   internal-subset NOTATION -> SAX notationDecl and NDATA-unparsed ENTITY ->
   unparsedEntityDecl now dispatch (fire_sax_notation_decl /
   fire_sax_unparsed_entity_decl) when a handler is set. ext/xml
