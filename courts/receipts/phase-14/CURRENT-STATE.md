@@ -43,10 +43,21 @@ Fix 5 committed (0972f2c4, R-14.3-SAX-NOENT-ENTITY-REGISTRY FIXED): engine-level
   - measured ext/xml + ext/simplexml combined: 1291-subset 225 run -> 183 passed /
     30 failed / 12 skipped.
   - receipt/analysis: courts/receipts/phase-14/php-14-3-sax-entity-registry-rootcause.md
-  - known residual within this family (recorded, next): NOENT-substituted CONTENT
-    is coalesced into one characters() event (CD[ENTy]) vs the oracle's separate
-    runs (CD[ENT] CD[y]); attribute-value whitespace normalization; per-extension
-    trace via consumers/*probe.php. Not yet pushed to origin/main.
+  - known residual within this raw-entity family (recorded; the content
+    characters()-event boundary aspect closed by Fix 5b, see below):
+    attribute-value whitespace normalization; markup-bearing entity content
+    reported by PHP's compat layer as a single default event (php-consumer
+    nuance; pure-libxml SAX parity holds).
+
+Fix 5b committed (5a8d0af4, R-14.3-SAX-CONTENT-ENTITY-BOUNDARY FIXED): characters()
+  event segmentation across a substituted general entity. tokenizer.rs
+  scan_characters breaks a character run when the input-stack depth falls below
+  the depth it started at (entity-content input boundary). Pure-libxml push-SAAS
+  probe now byte-identical to the oracle for plain / adjacent / leading /
+  trailing / markup-content entities (CD[ab] CD[ENT] CD[cd] not CD[ab] CD[ENTcd]);
+  invisible to tree building (SAX2 coalesces). cargo test --lib 1199 pass;
+  clippy/fmt clean; ext/xml + ext/simplexml 30 unchanged (no regression).
+  Probes: cdseg-probe.php (php) + entprobe.c multi-doc push-SAAS.
 
 Open residuals remaining to closure (in phase order, one root cause each):
 - ~19 remaining crash-class members across dom, simplexml, xml, xsl.
