@@ -63,3 +63,14 @@ Open residuals remaining to closure (in phase order, one root cause each):
 - ~19 remaining crash-class members across dom, simplexml, xml, xsl.
 - ~290 output-mismatch failures grouped by root cause.
 - then 14.3-Q binary substitution, 14.3-S ZTS, and 14.3-T full gate.
+
+Fix 6 committed (e12b2ed0, R-14.3-ENTITY-NDATA-METADATA FIXED): parse external
+  general entities declared SYSTEM/PUBLIC with an NDATA notation as
+  XML_EXTERNAL_GENERAL_UNPARSED_ENTITY, carrying the notation name on the entity
+  content (nameless NDATA keeps an empty string). DOMEntity publicId/systemId/
+  notationName for NDATA/PUBLIC-SYSTEM entities now byte-identical to the oracle
+  (entitymeta-probe.php); DOMEntity_fields.phpt narrowed from whole-output failure
+  to a single residual microcase: PUBLIC with an empty public id () reports
+  NULL instead of string(0)"". cargo test --lib 1199 pass; clippy/fmt clean;
+  ext/dom remeasure no new failures. NEXT residual in this atom: the
+  empty-public-id ExternalID="" storage ("" collapses to NULL).
