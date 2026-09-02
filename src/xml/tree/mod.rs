@@ -1478,6 +1478,37 @@ pub unsafe fn add_child(parent: *mut _xmlNode, cur: *mut _xmlNode) -> *mut _xmlN
         unlink_node(cur);
     }
 
+    // UPSTREAM-PARITY (tree.c xmlAddChild): attaching an ATTRIBUTE node routes
+    // it into the parent element's PROPERTIES list, not its children list
+    // (lxml/PHP `element->setAttributeNode(attr)` calls xmlAddChild(elem, attr)
+    // literally). Without this branch the attribute was appended to `children`
+    // and then serialized as a bogus child text node / doubly freed on teardown.
+    // The attribute keeps its own name (already set by xmlNewProp) and is
+    // appended after the existing properties, mirroring how set_prop links new
+    // attributes so serialization, clone, and free all treat it as a real attr.
+    if c.type_ == XML_ATTRIBUTE_NODE as c_int {
+        c.parent = parent;
+        c.prev = ptr::null_mut();
+        c.next = ptr::null_mut();
+        if p.properties.is_null() {
+            p.properties = cur as *mut crate::abi::structs::_xmlAttr;
+        } else {
+            let mut last = p.properties;
+            while !unsafe { (*last).next }.is_null() {
+                last = unsafe { (*last).next };
+            }
+            unsafe { (*last).next = cur as *mut crate::abi::structs::_xmlAttr };
+            c.prev = last as *mut _xmlNode;
+        }
+        // Re-parent into the element's document so the attribute and its text
+        // value share the owner element's doc (propagate_doc also descends into
+        // attribute text children).
+        if !p.doc.is_null() && c.doc != p.doc {
+            propagate_doc(cur, p.doc);
+        }
+        return cur;
+    }
+
     // Update parent/child links
     c.parent = parent;
 
@@ -5104,6 +5135,52 @@ mod tests {
             assert_eq!((*sibling).prev, child2);
             assert_eq!((*root).last, sibling);
 
+            free_doc(doc);
+        }
+    }
+
+    /// Phase 14 PHP DOM regression (domattributes): attaching an ATTRIBUTE
+    /// node with `xmlAddChild(element, attr)` must route it into the element's
+    /// PROPERTIES list, not its children list. php's `element->setAttributeNode`
+    /// (new DOMAttr + setAttributeNode) does exactly this via xmlAddChild. The
+    /// pre-fix behaviour appended the attribute to `children` — the attribute
+    /// serialized as a bogus child text node and doubly freed on teardown.
+    ///
+    /// # Safety
+    ///
+    /// - `root`/`attr` are built and linked as in upstream: an element under a
+    ///   doc, and a standalone attr from `xmlNewProp(NULL, ...)`, then attached
+    ///   with `add_child`. The doc is freed once with `free_doc` (proving no
+    ///   double free of the attached attribute).
+    #[test]
+    fn test_add_child_attribute_goes_to_properties() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("chapter"));
+            doc_set_root_element(doc, root);
+
+            // Mirror php DOMAttr::__construct: a standalone (doc NULL,
+            // unlinked) attribute with a text value.
+            let attr = crate::abi::exports_tree::xmlNewProp(
+                ptr::null_mut(),
+                c"num".as_ptr() as *const crate::abi::types::xmlChar,
+                c"1".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!attr.is_null());
+            assert_eq!((*attr).type_, XML_ATTRIBUTE_NODE as c_int);
+
+            // xmlAddChild(element, attr) — upstream routes attrs to properties.
+            let ret = add_child(root, attr as *mut _xmlNode);
+            assert_eq!(ret, attr as *mut _xmlNode);
+            assert_eq!((*root).properties, attr);
+            assert!(
+                (*root).children.is_null(),
+                "attr must NOT become a child node"
+            );
+            assert!(!(*attr).children.is_null());
+            assert_eq!((*(*attr).children).parent, attr as *mut _xmlNode);
+
+            // Crucially: the doc teardown must not double-free the attribute.
             free_doc(doc);
         }
     }
