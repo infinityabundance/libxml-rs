@@ -821,6 +821,11 @@ impl XmlParser {
                     if let Some(d) = dtd {
                         Self::parse_entity_decl(d, args);
                     }
+                    // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
+                    // non-parameter NDATA (unparsed) external entity is
+                    // declared the SAX unparsedEntityDecl event fires (php
+                    // expat/notation handler).
+                    self.fire_sax_unparsed_entity_decl(args);
                 } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
                     if let Some(d) = dtd {
                         Self::parse_attlist_decl(d, args);
@@ -829,6 +834,9 @@ impl XmlParser {
                     if let Some(d) = dtd {
                         Self::parse_notation_decl(d, args);
                     }
+                    // UPSTREAM-PARITY (parser.c xmlParseNotationDecl): the
+                    // SAX notationDecl event fires for a DTD notation.
+                    self.fire_sax_notation_decl(args);
                 }
                 i += 2 + gt + 1;
                 continue;
@@ -854,6 +862,131 @@ impl XmlParser {
                 None
             } else {
                 Some(s)
+            }
+        }
+    }
+
+    /// Split a decl argument string into its (leading) name and optional
+    /// SYSTEM/PUBLIC ids: `(name, pub, sys)` with `name` always present.
+    fn split_dtd_name_ids(
+        args: &[u8],
+        _base_candidates: bool,
+    ) -> (Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>) {
+        let a = args.trim_ascii_start();
+        let name_end = a
+            .iter()
+            .position(|&b| b.is_ascii_whitespace())
+            .unwrap_or(a.len());
+        let name = a[..name_end].to_vec();
+        let tail = a[name_end..].trim_ascii_start();
+        let span = tail;
+        let (public_id, sys) = if span.starts_with(b"PUBLIC") {
+            match split_two_quoted(&span[6..]) {
+                (Some(p), Some(s)) => (Some(p.to_vec()), Some(s.to_vec())),
+                (Some(p), None) => (Some(p.to_vec()), None),
+                _ => (None, None),
+            }
+        } else if span.starts_with(b"SYSTEM") {
+            match read_quoted(&span[6..]) {
+                Some(s) => (None, Some(s.to_vec())),
+                None => (None, None),
+            }
+        } else {
+            (None, None)
+        };
+        (name, public_id, sys)
+    }
+
+    /// Fire the SAX `notationDecl` callback for a `<!NOTATION ...>` decl whose
+    /// argument text is `args` (everything after the leading `NOTATION` keyword).
+    /// Mirrors upstream `xmlParseNotationDecl` (SAX `notationDecl`).
+    fn fire_sax_notation_decl(&self, args: &[u8]) {
+        if self.is_sax_disabled() {
+            return;
+        }
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            if sax.notationDecl.is_none() {
+                return;
+            }
+            let ctx = (*self.ctxt).userData;
+            let (name, public_id, sys) = Self::split_dtd_name_ids(args, false);
+            if name.is_empty() {
+                return;
+            }
+            let name_c = Self::vec_to_cstr_null(&name);
+            let pub_c = public_id
+                .as_deref()
+                .map(Self::vec_to_cstr_null)
+                .unwrap_or(ptr::null());
+            let sys_c = sys
+                .as_deref()
+                .map(Self::vec_to_cstr_null)
+                .unwrap_or(ptr::null());
+            SaxDispatcher::notation_decl(sax, ctx, name_c, pub_c, sys_c);
+            crate::abi::allocator::xmlFreeImpl(name_c as *mut c_void);
+            if !pub_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
+            }
+            if !sys_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(sys_c as *mut c_void);
+            }
+        }
+    }
+
+    /// Fire the SAX `unparsedEntityDecl` callback when an NDATA (unparsed)
+    /// external general entity declaration is parsed.
+    /// Mirrors upstream `xmlParseEntityDecl` NDATA branch.
+    fn fire_sax_unparsed_entity_decl(&self, args: &[u8]) {
+        if self.is_sax_disabled() {
+            return;
+        }
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            if sax.unparsedEntityDecl.is_none() {
+                return;
+            }
+            let a = args.trim_ascii_start();
+            // Parameter entities can never be unparsed (NDATA).
+            if a.starts_with(b"%") {
+                return;
+            }
+            let (name, _, _) = Self::split_dtd_name_ids(args, true);
+            if name.is_empty() {
+                return;
+            }
+            let (has_ndata, notation) = find_ndata_notation(a);
+            if !has_ndata {
+                return;
+            }
+            let (_, public_id, sys2) = Self::split_dtd_name_ids(args, true);
+            // Only unparsed EXTERNAL entities fire this event; require a
+            // SYSTEM or PUBLIC id. (`notation` may be empty when the notation
+            // name is elided.)
+            if sys2.is_none() && public_id.is_none() {
+                return;
+            }
+            let ctx = (*self.ctxt).userData;
+            let name_c = Self::vec_to_cstr_null(&name);
+            let pub_c = public_id
+                .as_deref()
+                .map(Self::vec_to_cstr_null)
+                .unwrap_or(ptr::null());
+            let sys_c = sys2
+                .as_deref()
+                .map(Self::vec_to_cstr_null)
+                .unwrap_or(ptr::null());
+            let notation_c = notation.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+            SaxDispatcher::unparsed_entity_decl(sax, ctx, name_c, pub_c, sys_c, notation_c);
+            crate::abi::allocator::xmlFreeImpl(name_c as *mut c_void);
+            if !pub_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
+            }
+            if !sys_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(sys_c as *mut c_void);
+            }
+            if !notation_c.is_null() {
+                crate::abi::allocator::xmlFreeImpl(notation_c as *mut c_void);
             }
         }
     }
