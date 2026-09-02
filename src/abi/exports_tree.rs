@@ -639,7 +639,19 @@ unsafe fn free_prop_impl(cur: *mut _xmlAttr) {
     if !(*cur).children.is_null() {
         unsafe { tree::free_node_list((*cur).children) };
     }
-    if !(*cur).name.is_null() {
+    // UPSTREAM-PARITY (tree.c xmlFreeProp + DICT_FREE): attribute names may
+    // be dict-interned (parser dictNames / lxml `_fixHtmlDictNodeNames`), so
+    // the name is freed only when the owning document has no dictionary or the
+    // dictionary does not own the string. The unguarded free here double-freed
+    // interned names: php_libxml_node_free calls xmlFreeProp for an attribute
+    // node, and xmlDictFree at doc teardown then freed the same string (Phase
+    // 14.3 Bug-2 — SimpleXML attribute set/unset double free).
+    let dict = if (*cur).doc.is_null() {
+        ptr::null_mut()
+    } else {
+        unsafe { (*(*cur).doc).dict as *mut c_void }
+    };
+    if !(*cur).name.is_null() && !crate::abi::exports_hash::dict_owns_str(dict, (*cur).name) {
         unsafe { xmlFreeImpl((*cur).name as *mut c_void) };
     }
     unsafe { xmlFreeImpl(cur as *mut c_void) };

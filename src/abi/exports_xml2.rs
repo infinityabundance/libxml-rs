@@ -8595,4 +8595,65 @@ mod tests {
             crate::xml::tree::free_doc(doc);
         }
     }
+
+    /// Phase 14.3 Bug-2 regression: `xmlFreeProp` must not free a
+    /// dict-interned attribute name. PHP's SimpleXML unset path
+    /// (`sxe_unlink_node` -> `php_libxml_node_free` -> `xmlFreeProp`) frees an
+    /// attribute whose name the parser interned in the document dictionary;
+    /// the pre-fix `free_prop_impl` freed the interned string, and
+    /// `xmlDictFree` at doc teardown freed it again (double free). Mirrors the
+    /// PHP sequence: unlink the attribute, free it via `xmlFreeProp`, then
+    /// free the document.
+    ///
+    /// # Safety
+    ///
+    /// - doc/dict/root/attr are built and freed exactly once; a double free
+    ///   (the bug) aborts the test process under glibc tcache detection.
+    #[test]
+    fn test_xml_free_prop_preserves_dict_interned_attr_name() {
+        unsafe {
+            use crate::abi::allocator::xmlMallocZero;
+            use crate::abi::structs::{_xmlAttr, _xmlNode};
+            use core::mem::size_of;
+
+            let dict = super::xmlDictCreate();
+            assert!(!dict.is_null());
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            (*doc).dict = dict;
+            let root = crate::xml::tree::new_node(
+                core::ptr::null_mut(),
+                c"root".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!root.is_null());
+            crate::xml::tree::doc_set_root_element(doc, root);
+
+            // Intern the attribute name exactly as the dictNames parser does.
+            let iname = super::xmlDictLookup(
+                dict,
+                c"id".as_ptr() as *const crate::abi::types::xmlChar,
+                -1,
+            );
+            assert!(!iname.is_null());
+
+            // Build the attribute node with the borrowed dict-interned name
+            // (mirrors parser_set_prop attribute creation).
+            let attr = xmlMallocZero(size_of::<_xmlAttr>()) as *mut _xmlAttr;
+            assert!(!attr.is_null());
+            (*attr).type_ = crate::abi::types::xmlElementType::XML_ATTRIBUTE_NODE as i32;
+            (*attr).name = iname as *mut crate::abi::types::xmlChar;
+            (*attr).parent = root;
+            (*attr).doc = doc;
+            (*root).properties = attr;
+
+            // PHP SimpleXML unset: xmlUnlinkNode(attr) then xmlFreeProp(attr).
+            crate::xml::tree::unlink_node(attr as *mut _xmlNode);
+            crate::abi::exports_tree::xmlFreeProp(attr);
+
+            // Teardown: xmlDictFree reaches refcount 0 and frees the interned
+            // string once. A pre-fix double free aborts here.
+            crate::xml::tree::free_doc(doc);
+        }
+    }
 }

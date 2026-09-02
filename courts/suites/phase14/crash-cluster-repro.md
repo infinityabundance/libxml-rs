@@ -1,6 +1,33 @@
 # Phase 14.3 — Candidate crash-class reproduction (diagnostic)
 
-Status: Bug-1 FIXED. Other crash-class members remain OPEN (root cause per member).
+Status: Bug-1 FIXED; Bug-2 FIXED. Other crash-class members remain OPEN.
+
+## RESOLUTION — Bug-2 (SimpleXML attribute set/unset double free) FIXED
+
+Root cause: the `xmlFreeProp` export path (`free_prop_impl` in
+`src/abi/exports_tree.rs`) freed `attr->name` UNCONDITIONALLY, while the
+`tree::free_prop` path (used by doc teardown) already carried the DICT_FREE
+guard. PHP's SimpleXML unset calls `xmlFreeProp` directly on a parsed-document
+attribute whose name the parser interned in the document dictionary; the
+unguarded free put a dangling pointer in the dict, and `xmlDictFree` at doc
+teardown freed it again (glibc `free(): double free`).
+
+Proof:
+- Native gdb trace showed the same interned string (dict entry len 2 = "id")
+  freed first during SimpleXML unset (via php_libxml_node_free -> xmlFreeProp)
+  and again in dict_free; free_prop/free_node guards never fired for it.
+- Fix: free_prop_impl frees the name only when `dict_owns_str` is false.
+- Rust regression
+  `abi::exports_xml2::tests::test_xml_free_prop_preserves_dict_interned_attr_name`
+  passes (pre-fix aborts).
+- C oracle differential `consumers/freeprop_dict_probe.c` byte-identical
+  (15000 iterations, both sides).
+- PHPT ext/simplexml 007 and 030 now PASS on candidate.
+- Full candidate suite 320 -> 315 failures, zero regressions (also closed
+  Element_removeAttributeNS, gh20281, Element_getElementsByClassName_...).
+
+Remaining crash-class members are separate roots to be driven to zero one per
+residual.
 
 ## Discovery
 The Phase-14.3 fail-closed result interpreter (`consumers/php-court-result.py`)

@@ -1,0 +1,18 @@
+{
+  "schema": "phase14.3/php-rootcause-receipt/1",
+  "phase": "14.3",
+  "residual": "R-14.3-XMLFREEPROP-DICT-NAME",
+  "status": "FIXED",
+  "upstream_behavior": "libxml2 tree.c xmlFreeProp honours DICT_FREE: an attribute name that the document dictionary owns (parser dictNames interning) is shared and must NOT be freed by xmlFreeProp; xmlDictFree at document teardown owns the storage. PHP ext/libxml php_libxml_node_free calls xmlFreeProp for XML_ATTRIBUTE_NODE.",
+  "candidate_defect": "free_prop_impl (behind the xmlFreeProp / xmlFreePropList exports) freed attr->name unconditionally, without the dict_owns_str guard that tree::free_prop already had. Freeing an interned name put a dangling pointer in the dict; xmlDictFree at doc teardown freed it again (double free).",
+  "php_trigger": "SimpleXML attribute unset: ext/simplexml sxe_prop_dim_delete -> sxe_unlink_node -> php_libxml_node_free -> xmlFreeProp on a parsed-doc attribute. Reproduced by ext/simplexml/tests/007.phpt and 030.phpt (double free/abort); also ext/dom modern/spec Element_removeAttributeNS, modern/html/interactions gh20281, modern/common Element_getElementsByClassName_item_random_access.",
+  "generic_fix": "src/abi/exports_tree.rs free_prop_impl: free the attribute name only when the owning document has no dictionary or the dictionary does not own the string (dict_owns_str guard), matching tree::free_prop / upstream DICT_FREE.",
+  "regression_rust_test": "abi::exports_xml2::tests::test_xml_free_prop_preserves_dict_interned_attr_name (passes; pre-fix aborts with a glibc double-free).",
+  "regression_c_court": "consumers/freeprop_dict_probe.c: parse + unlink + xmlFreeProp + xmlFreeDoc x15000; oracle and candidate both print 'OK freeprop-dict 15000'.",
+  "php_verification": {
+    "phpt_ext_simplexml_007": "PASS on candidate (was double-free/abort)",
+    "full_suite_candidate": "315 failed / 40 skipped (down from 320); closed exactly ext/simplexml 007+030, ext/dom Element_removeAttributeNS, gh20281, Element_getElementsByClassName_item_random_access; zero regressions"
+  },
+  "provider_provenance": "candidate run resolved libxml2/libxslt/libexslt exclusively under /candidate/lib",
+  "rules_honoured": "no PHP source change, no .phpt change, no expected-output normalisation; root-caused via native double-free backtrace + dict/attr instrumentation."
+}
