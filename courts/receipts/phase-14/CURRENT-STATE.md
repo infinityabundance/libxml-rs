@@ -314,3 +314,30 @@ KEY-2 + SP-14.3.1-8 closed (R-14.3-CONTENT-MARKUP-DECL + the SP-8 push/EOF
     HEAD), test_content_markup_decl_clears_wellformed.
     cargo test --lib 1222 pass; clippy no new warnings; fmt clean.
   - receipt dir: php-14-3-sp8-content-markup-20260902/
+
+KEY-3 closed (PI-vs-XML-decl routing + reserved-name/not-finished codes):
+  full suite 276 -> 275 — ext/xml 1 -> **0** (SP-14.3.1 fully closed;
+  xml_error_string_basic_libxml PASS); zero regressions (dom 166 / simplexml 9
+  / xmlreader 29 / xmlwriter 19 / xsl 52 unchanged).
+  - root cause: `<?xml` was routed to the XML-declaration scanner for ANY
+    case-insensitive `<?xml` at byte offset 0. Upstream xmlParseDocument only
+    treats `<?xml` + BLANK (CMP5 + IS_BLANK(NXT(5))) at the LOGICAL document
+    start as a declaration; every other `<?xml...` is an ordinary PI whose
+    target must pass xmlParsePITarget. So `<?xml?>`/`<?xml>`/`<?XML?>`/even
+    leading-space `<?xml?>` were misparsed as declarations (codes 4/57), and
+    the legal `<?xml-stylesheet ...?>` PI was broken (57).
+  - fixes: tokenizer routes declarations only at the base input's logical
+    start (doc_start_offset — 3 after a retained UTF-8 BOM, so bug35447 stays
+    green) with lowercase `xml` + blank; otherwise xmlParsePITarget semantics:
+    exact lowercase "xml" / case-variant 3-char targets -> FATAL
+    XML_ERR_RESERVED_XML_NAME (64), xml-prefixed non-W3C targets -> warning,
+    xml-stylesheet/xml-model exempt; a PI never closed by `?>` records
+    XML_ERR_PI_NOT_FINISHED (47) LAST (so `<?xml>` ends at 47 exactly like the
+    oracle — the later error overwrites errNo); PI tokens carry unterminated so
+    incremental probes pause. InputStack gains doc_start_offset()/at_base_input().
+  - oracle-pinned (php probes, byte-identical): `<?xml?>`/` <?xml?>`/`<?XML?>`
+    -> 64; `<?xml>` -> 47; `<?xml version="dummy">` -> 57;
+    `<?xml-stylesheet ...?><r/>` and BOM+decl -> ok.
+  - guards: tests.rs test_pi_vs_xml_decl_routing_error_codes.
+    cargo test --lib 1223 pass; clippy no new warnings; fmt clean.
+  - receipt dir: php-14-3-pi-decl-routing-20260902/

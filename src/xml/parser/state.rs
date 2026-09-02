@@ -760,7 +760,21 @@ impl XmlParser {
                     }
                     self.sax_comment(&data);
                 }
-                XmlToken::ProcessingInstruction { target, data, .. } => {
+                XmlToken::ProcessingInstruction {
+                    target,
+                    data,
+                    unterminated,
+                    ..
+                } => {
+                    // A PI cut off by the end of the available input (no
+                    // `?>`) may complete on a later push call: an incremental
+                    // probe or eager-partial delivery must NOT fire the
+                    // partial PI or deliver its "never end" error; it pauses
+                    // (KEY-3, mirroring unterminated comments/CDATA).
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.sax_pi(&target, &data);
                 }
                 XmlToken::Characters(data) => {
@@ -2216,7 +2230,17 @@ impl XmlParser {
                     }
                     self.sax_comment(&data);
                 }
-                XmlToken::ProcessingInstruction { target, data, .. } => {
+                XmlToken::ProcessingInstruction {
+                    target,
+                    data,
+                    unterminated,
+                    ..
+                } => {
+                    // See parse_prolog's PI arm (KEY-3): pause in probes.
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.sax_pi(&target, &data);
                 }
                 XmlToken::Characters(data) => {
@@ -2750,7 +2774,19 @@ impl XmlParser {
                         }
                         self.sax_comment(&data);
                     }
-                    XmlToken::ProcessingInstruction { target, data, .. } => {
+                    XmlToken::ProcessingInstruction {
+                        target,
+                        data,
+                        unterminated,
+                        ..
+                    } => {
+                        // See parse_prolog's PI arm (KEY-3): an unterminated
+                        // PI (no `?>`) pauses in probes; the element itself
+                        // stays open (only the PI is incomplete).
+                        if unterminated && (self.probe || self.partial_delivery) {
+                            self.truncated_abort = true;
+                            return Err(());
+                        }
                         self.sax_pi(&target, &data);
                     }
                     XmlToken::Cdata {
@@ -3653,7 +3689,17 @@ impl XmlParser {
                     }
                     self.sax_comment(&data);
                 }
-                XmlToken::ProcessingInstruction { target, data, .. } => {
+                XmlToken::ProcessingInstruction {
+                    target,
+                    data,
+                    unterminated,
+                    ..
+                } => {
+                    // See parse_prolog's PI arm (KEY-3): pause in probes.
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.sax_pi(&target, &data);
                 }
                 XmlToken::Characters(data) => {

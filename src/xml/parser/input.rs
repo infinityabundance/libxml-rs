@@ -492,6 +492,17 @@ impl InputBuffer {
         }
     }
 
+    /// Whether a UTF-8 BOM (`EF BB BF`) was consumed and retained at the
+    /// start of the buffer (its bytes occupy offsets 0..3). UTF-16 BOMs are
+    /// stripped during conversion, so they report 0.
+    pub(crate) const fn bom_bytes_consumed(&self) -> usize {
+        if self.bom_consumed {
+            3
+        } else {
+            0
+        }
+    }
+
     /// Whether the underlying source failed (read callback returned an
     /// error).
     pub const fn has_source_error(&self) -> bool {
@@ -1173,6 +1184,22 @@ impl InputStack {
     /// Returns `(line, col, byte_offset)` for the current input.
     pub fn current_pos(&self) -> (usize, usize, usize) {
         self.inputs[self.current].pos()
+    }
+
+    /// Byte offset (in the base input) where the document content logically
+    /// begins: 0 normally, or 3 when a UTF-8 BOM was consumed and retained in
+    /// the buffer. The XML declaration is "at the start of the document" when
+    /// its token begins at this offset (KEY-3: xmlParseDocument runs the
+    /// declaration check at the logical start, after the input layer stripped
+    /// any BOM).
+    pub(crate) fn doc_start_offset(&self) -> usize {
+        self.inputs[0].bom_bytes_consumed()
+    }
+
+    /// Whether the parser is reading the base document input (no entity
+    /// expansion on the stack).
+    pub(crate) const fn at_base_input(&self) -> bool {
+        self.current == 0
     }
 
     /// Resolve the error location the way upstream `xmlCtxtVErr` does

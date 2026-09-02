@@ -114,11 +114,15 @@ pub(crate) enum XmlToken {
     Comment { data: Vec<u8>, unterminated: bool },
 
     /// Processing instruction: `<?target ...?>`, with the byte offset of
-    /// the leading `<?` (for document-level "invalid element name" errors).
+    /// the leading `<?` (for document-level "invalid element name" errors)
+    /// and whether the `?>` terminator was reached (upstream xmlParsePI:
+    /// EOF without `?>` raises XML_ERR_PI_NOT_FINISHED; incremental probes
+    /// pause instead of delivering the partial PI).
     ProcessingInstruction {
         target: Vec<u8>,
         data: Vec<u8>,
         start_pos: usize,
+        unterminated: bool,
     },
 
     /// CDATA section: `<![CDATA[ ... ]]>` (carries the `<` byte offset and
@@ -951,29 +955,37 @@ impl XmlTokenizer {
         // Consume '?'
         self.input.read_char();
 
-        // Peek ahead to see if the next characters are "xml" (case-insensitive)
-        let next_bytes = self.peek_bytes(3);
-        // UPSTREAM-PARITY (parser.c xmlParsePI): `<?xml?>` is an XML
-        // declaration ONLY when it begins at the very start of the document
-        // (byte offset 0). If any whitespace/content precedes it, it is an
-        // ordinary processing instruction with target "xml" and must be
-        // retained as a PI node (nokogiri `test_document_with_initial_space`
-        // expects the leading-space+`<?xml?>` input to yield a PI child).
-        let is_xml_decl = start_pos == 0
-            && next_bytes.len() >= 3
-            && (next_bytes[0] == b'x' || next_bytes[0] == b'X')
-            && (next_bytes[1] == b'm' || next_bytes[1] == b'M')
-            && (next_bytes[2] == b'l' || next_bytes[2] == b'L');
+        // Peek ahead to see if the next characters are "xml" (case-sensitive)
+        // followed by a blank.
+        let next_bytes = self.peek_bytes(4);
+        // UPSTREAM-PARITY (parser.c xmlParseDocument): `<?xml` is an XML
+        // declaration ONLY at the very start of the document AND when the
+        // character after "xml" is a blank (space/tab/CR/LF) — lowercase only
+        // (CMP5 + IS_BLANK(NXT(5))). Every other `<?xml...` is an ordinary PI
+        // whose target must pass xmlParsePITarget (the reserved "xml" target
+        // names are FATAL XML_ERR_RESERVED_XML_NAME; "xml-stylesheet" /
+        // "xml-model" are exempt). The previous any-case-insensitive
+        // `<?xml`-at-0 routing misparsed `<?xml?>`, `<?xml>`, `<?XML ...?>`
+        // and even the legal `<?xml-stylesheet ...?>` as XML declarations
+        // (KEY-3, xml_error_string rows 47/64).
+        let is_xml_decl = self.input.at_base_input()
+            && start_pos == self.input.doc_start_offset()
+            && next_bytes.len() >= 4
+            && next_bytes[0] == b'x'
+            && next_bytes[1] == b'm'
+            && next_bytes[2] == b'l'
+            && matches!(next_bytes[3], b' ' | b'\t' | b'\r' | b'\n');
 
         if is_xml_decl {
             // Consume "xml"
-            self.input.read_char(); // x/X
-            self.input.read_char(); // m/M
-            self.input.read_char(); // l/L
+            self.input.read_char(); // x
+            self.input.read_char(); // m
+            self.input.read_char(); // l
             return self.scan_xml_decl_rest();
         }
 
-        // Regular processing instruction
+        // Regular processing instruction. Mirror upstream xmlParsePITarget:
+        // a target that starts with "xml" (case-insensitive) is reserved.
         let target = self.scan_name();
         if target.is_empty() {
             // upstream xmlParsePI: target == NULL → "xmlParsePI : no target
@@ -993,7 +1005,56 @@ impl XmlTokenizer {
                 target,
                 data: Vec::new(),
                 start_pos,
+                unterminated: false,
             };
+        }
+        let xml_reserved = target.len() >= 3
+            && matches!(target[0], b'x' | b'X')
+            && matches!(target[1], b'm' | b'M')
+            && matches!(target[2], b'l' | b'L');
+        if xml_reserved {
+            if target == b"xml" {
+                // Exact lowercase "xml" PI: this would be an XML declaration
+                // had it been at the start with a blank after it.
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_RESERVED_XML_NAME,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "XML declaration allowed only at the start of the document\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            } else if target.len() == 3 {
+                // "XML"/"xMl"/... case variant of the reserved name.
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_RESERVED_XML_NAME,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                    "Reserved XML Name\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            } else if target != b"xml-stylesheet" && target != b"xml-model" {
+                // xml-prefixed target not in the W3C list: warning only
+                // (upstream xmlParsePITarget).
+                self.record_error(
+                    crate::abi::types::XML_FROM_PARSER,
+                    crate::abi::types::XML_ERR_RESERVED_XML_NAME,
+                    crate::abi::types::xmlErrorLevel::XML_ERR_WARNING as c_int,
+                    "xmlParsePITarget: invalid name prefix 'xml'\n".to_string(),
+                    None,
+                    None,
+                    None,
+                    0,
+                    None,
+                );
+            }
         }
 
         // Skip whitespace before data
@@ -1007,16 +1068,17 @@ impl XmlTokenizer {
 
         // Read data until "?>"
         let mut data = Vec::new();
+        let mut terminated = false;
         loop {
             if self.input.is_eof() {
                 break;
             }
             if self.input.peek_char() == Some('?') {
-                // Peek for '>'
                 let _saved = self.input.current().pos();
                 self.input.read_char();
                 if self.input.peek_char() == Some('>') {
                     self.input.read_char();
+                    terminated = true;
                     break;
                 }
                 // Not "?>", push the '?' back... we can't easily unread.
@@ -1028,6 +1090,28 @@ impl XmlTokenizer {
                 Some(c) => Self::push_char(&mut data, c),
                 None => break,
             }
+        }
+
+        if !terminated {
+            // upstream xmlParsePI end: EOF without "?>" →
+            // "ParsePI: PI %s never end ...\n" (XML_ERR_PI_NOT_FINISHED).
+            // The scan may continue on a later push call, so an incremental
+            // probe pauses instead of delivering the error (SP-14.3.1-8
+            // pattern, same as unterminated comments/CDATA).
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_PI_NOT_FINISHED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                format!(
+                    "ParsePI: PI {} never end ...\n",
+                    String::from_utf8_lossy(&target)
+                ),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
         }
 
         // Trim trailing whitespace from data (libxml2 behavior)
@@ -1043,6 +1127,7 @@ impl XmlTokenizer {
             target,
             data,
             start_pos,
+            unterminated: !terminated,
         }
     }
 

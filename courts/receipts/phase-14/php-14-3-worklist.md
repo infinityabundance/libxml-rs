@@ -1,8 +1,8 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **276 failed** (dom 166 | xsl 52 |
-xmlreader 29 | xmlwriter 19 | simplexml 9 | xml 1) after KEY-1 + KEY-2 +
-SP-14.3.1-8 closures (f190faeb + 4414132 + KEY-2 commit).
+Authoritative current full-suite count: **275 failed** (dom 166 | xsl 52 |
+xmlreader 29 | xmlwriter 19 | simplexml 9 | xml **0**) after KEY-1 + KEY-2 +
+SP-14.3.1-8 + KEY-3 closures. ext/xml is fully green (SP-14.3.1 closed).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
@@ -12,7 +12,9 @@ Legend: [ ] not started | [~] in progress | [x] closed+committed (ext subset PAS
 Method per atom: mirror upstream at the Rust engine layer; commit; run the owning
 extension subset to confirm the targeted test(s) flip PASS with no sibling regress.
 
-## SP-14.3.1  ext/xml  (20)
+## SP-14.3.1  ext/xml  (20)  ->  CLOSED (0 remaining)
+All atoms below closed by commit 52f4168 (SP-14.3.1-8 + KEY-2) and KEY-3
+(php-14-3-pi-decl-routing-20260902); full ext/xml suite = 0 failures.
 - [x] SP-14.3.1-1  SAX notationDecl + NDATA unparsedEntityDecl dispatch
        (xml_set_notation_decl_handler_basic)  -> commit 96381efc (ext/xml 21->20)
 - [x] SP-14.3.1-2  xml004/xml_closures_001: elem4 + tail dropped after external/

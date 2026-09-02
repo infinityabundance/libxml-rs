@@ -1,6 +1,9 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **KEY-3 closed (2026-09-02):** PI-vs-XML-decl routing + reserved-name /
+  not-finished codes. ext/xml 1 → **0** — SP-14.3.1 fully closed. Full suite
+  **276 → 275**, zero regressions. Receipt: php-14-3-pi-decl-routing-20260902/.
 - **KEY-2 + SP-14.3.1-8 closed (2026-09-02):** content-`<!`-markup rule
   (ENTITY/DOCTYPE/ELEMENT-in-content → NAME_REQUIRED 68 + wf=0) + the
   push/default-markup closure (sync_input_position live-buffer repoint,
@@ -20,11 +23,11 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 276 after KEY-1/KEY-2/SP-14.3.1-8):
+Split at 289 (now 275 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 166 | | ext/xml | 5 -> 1 |
+| ext/dom | 169 -> 166 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 |
 

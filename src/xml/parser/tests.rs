@@ -514,13 +514,67 @@ fn test_undeclared_entity_fatal_without_extsubset_or_perefs() {
 
         // Internal subset without parameter-entity references (and no external
         // subset) is still fatal per the WFC wording.
-        let (doc2, wf2, err2) = read_memory_ctx(
-            b"<!DOCTYPE root [ <!ENTITY e \"E\"> ]><root>a&nope;b</root>",
-            0,
-        );
-        assert!(doc2.is_null());
-        assert_eq!(wf2, 0);
-        assert_eq!(err2, 26);
+        // A prolog DOCTYPE with an internal subset stays legal.
+        let (d, wf, err) =
+            read_memory_ctx(b"<!DOCTYPE root [ <!ENTITY e \"E\"> ]><root>a</root>", 0);
+        assert!(!d.is_null());
+        assert_eq!(wf, 1);
+        assert_eq!(err, 0);
+        tree::free_doc(d);
+    }
+}
+
+// ── KEY-3 regression guard (PI / XML-decl routing + reserved-name codes) ────
+
+/// `<?xml` is an XML declaration only at the logical document start with a
+/// blank after "xml" (upstream xmlParseDocument CMP5 + IS_BLANK(NXT(5))); any
+/// other `<?xml...` is a PI whose reserved target raises XML_ERR_RESERVED_XML_NAME
+/// (64), and a PI never closed by `?>` raises XML_ERR_PI_NOT_FINISHED (47).
+/// These are the xml_error_string_basic_libxml rows (KEY-3): `<?xml?>` -> 64,
+/// `<?xml>` -> 47, `<?xml version="dummy">` -> 57. A UTF-8 BOM before the
+/// declaration does not stop it being a declaration (bug35447).
+///
+/// # Safety
+///
+/// - As `test_undeclared_entity_fatal_without_extsubset_or_perefs`.
+#[test]
+fn test_pi_vs_xml_decl_routing_error_codes() {
+    unsafe {
+        // `<?xml?>` / `<?XML?>` / leading-space `<?xml?>`: reserved name 64.
+        for doc in [&b"<?xml?>"[..], &b"<?XML?>"[..], &b" <?xml?>"[..]] {
+            let (d, wf, err) = read_memory_ctx(doc, 0);
+            assert!(d.is_null());
+            assert_eq!(wf, 0);
+            assert_eq!(
+                err,
+                crate::abi::types::XML_ERR_RESERVED_XML_NAME,
+                "{} -> 64",
+                String::from_utf8_lossy(doc)
+            );
+        }
+        // `<?xml>` (PI never closed): PI_NOT_FINISHED 47 is the final error.
+        let (d, wf, err) = read_memory_ctx(b"<?xml>", 0);
+        assert!(d.is_null());
+        assert_eq!(wf, 0);
+        assert_eq!(err, crate::abi::types::XML_ERR_PI_NOT_FINISHED);
+        // `<?xml version="dummy">`: declaration never closed -> 57.
+        let (d, wf, err) = read_memory_ctx(b"<?xml version=\"dummy\">", 0);
+        assert!(d.is_null());
+        assert_eq!(wf, 0);
+        assert_eq!(err, crate::abi::types::XML_ERR_XMLDECL_NOT_FINISHED);
+        // Real declarations stay legal: plain, after a UTF-8 BOM (bug35447),
+        // and the W3C `<?xml-stylesheet ...?>` PI is not reserved.
+        for doc in [
+            &b"<?xml version=\"1.0\"?><r/>"[..],
+            &b"\xEF\xBB\xBF<?xml version=\"1.0\"?><r/>"[..],
+            &b"<?xml-stylesheet type=\"text/xsl\" href=\"x\"?><r/>"[..],
+        ] {
+            let (d, wf, err) = read_memory_ctx(doc, 0);
+            assert!(!d.is_null());
+            assert_eq!(wf, 1);
+            assert_eq!(err, 0);
+            tree::free_doc(d);
+        }
     }
 }
 
