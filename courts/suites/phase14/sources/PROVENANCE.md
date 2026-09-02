@@ -33,8 +33,10 @@
 #   court source:      php-8.5.10.tar.gz  (pristine upstream tarball)
 #   build:             ./configure --disable-all --enable-cli --enable-dom
 #                      --enable-simplexml --enable-xml --enable-xmlreader
-#                      --enable-xmlwriter --enable-xsl --with-libxml
-#                      (libxml discovered via pkg-config)
+#                      --enable-xmlwriter --with-xsl --with-libxml
+#                             (PHP 8.5 uses --with-xsl; single source of truth in
+#                              consumers/php-court-spec.sh — the stale --enable-xsl
+#                              spelling has been removed everywhere)
 #   test command:      make test TESTS="ext/dom ext/simplexml ext/xml
 #                      ext/xmlreader ext/xmlwriter ext/xsl"
 #

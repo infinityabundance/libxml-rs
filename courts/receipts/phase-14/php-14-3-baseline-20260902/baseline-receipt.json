@@ -1,0 +1,52 @@
+{
+  "schema": "phase14.3/php-baseline-receipt/1",
+  "phase": "14.3",
+  "subphase": "14.3-C re-baseline of current HEAD",
+  "candidate_head": "9afc59045c7863541e9899fed096e89111b2706c",
+  "note": "Public main moved to 9afc5904 (reserved XML namespace binding in xmlSearchNsByHref). Both the oracle and the candidate PHP consumer were re-built from pristine php-8.5.10 in CLEAN-SEAL mode against the current HEAD DSO set, and the full six-extension suite was re-run. These receipts are the authoritative Phase-14.3 starting state.",
+  "sealed": "2026-09-02T00:00:00Z",
+  "php": {
+    "version": "8.5.10",
+    "tarball": "php-8.5.10.tar.gz",
+    "sha256": "f5c0ac99b85b3d677de475c2e4f509f9b4f54663f3ee5a84d6d9481a521d4100",
+    "configure": "--prefix=/usr/local/php --disable-all --enable-cli --enable-dom --enable-simplexml --enable-xml --enable-xmlreader --enable-xmlwriter --with-xsl --with-libxml",
+    "extensions": ["dom", "simplexml", "xml", "xmlreader", "xmlwriter", "xsl"],
+    "mode": "CLEAN_SEAL (fresh volume, fresh extraction, configure + make + make test from scratch)"
+  },
+  "oracle": {
+    "libxml2": "2.15.3 (source-built in /usr/local)",
+    "libxslt": "1.1.45",
+    "libexslt": "0.8.25",
+    "totals": { "tests": 1291, "failed": 0, "skipped": 40 },
+    "verdict": "PASS",
+    "result_file": "php-oracle-result.json",
+    "log_file": "logs/php-oracle-full.log"
+  },
+  "candidate": {
+    "provider": "libxml-rs host target/debug mounted read-only at /candidate",
+    "dso": ["libxml2.so.16", "libxslt.so.1", "libexslt.so.0"],
+    "dso_shas": {
+      "libxml2.so.16.1.3": "ec4ff2396f26bdad2147bce55a6e554bee9797b187709dd78e2033be232e0a93",
+      "libxslt.so.1.1.45": "a73b4d6b7d40a956c063ce320fc9b9c333acee72a88c5cec7f49221127e8f571",
+      "libexslt.so.0.8.25": "a5795b87cc05479eb410243ae6e6d10573d19403ea79827bbcec825ad3e74411"
+    },
+    "runtime_ldd_resolution": "php sapi/cli/php resolves libxml2.so.16 + libxslt.so.1 + libexslt.so.0 exclusively under /candidate/lib",
+    "totals": { "tests": 1291, "failed": 321, "skipped": 40 },
+    "crash_class_failures": 31,
+    "verdict": "FAIL",
+    "result_file": "php-candidate-result.json",
+    "log_file": "logs/php-candidate-full.log",
+    "skip_set_matches_oracle": true
+  },
+  "verified_invariants": {
+    "oracle_verdict_PASS": true,
+    "candidate_failure_count": 321,
+    "candidate_skip_set_equals_oracle_skip_set": true,
+    "both_accountings_clean": true,
+    "log_hashes_match_stored": true
+  },
+  "full_accounting_required_for_seal": {
+    "oracle": "1291 / 0 failed / 40 skipped",
+    "candidate_target": "1291 / 0 failed / 40 skipped  (currently 321 candidate failures to close)"
+  }
+}
