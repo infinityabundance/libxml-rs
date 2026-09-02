@@ -264,6 +264,23 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // now fill ctxt->lastError with strdup'd copies).
         crate::xml::globals::free_error_strings(&(*ctxt).lastError);
 
+        // UPSTREAM-PARITY (parser SAX-compat entity registry): a document the
+        // parser created internally (SAX_COMPAT_MODE docs kept so expat-style
+        // SAX consumers can resolve NOENT general entities — see
+        // state.rs::ensure_entity_registry_dtd) is never delivered to the
+        // caller, so it must be reclaimed here. Normal caller-owned documents
+        // are NOT `XML_DOC_INTERNAL` and are detached by the front-ends before
+        // the context is freed, so they are untouched.
+        let my_doc = (*ctxt).myDoc;
+        if !my_doc.is_null()
+            && ((*my_doc).properties
+                & (crate::abi::types::xmlDocProperties::XML_DOC_INTERNAL as c_int))
+                != 0
+        {
+            (*ctxt).myDoc = ptr::null_mut();
+            crate::xml::tree::free_doc(my_doc);
+        }
+
         // Free the context itself.
         xmlFreeImpl(ctxt as *mut c_void);
     }

@@ -744,14 +744,6 @@ impl XmlParser {
             (*self.ctxt).inSubset = 1;
         }
 
-        let dtd = unsafe {
-            let doc = (*self.ctxt).myDoc;
-            if doc.is_null() || (*doc).intSubset.is_null() {
-                return Ok(());
-            }
-            (*doc).intSubset
-        };
-
         // Extract the text between the outermost '[' and ']'.
         let Some(open) = content.iter().position(|&b| b == b'[') else {
             return Ok(());
@@ -763,6 +755,18 @@ impl XmlParser {
             return Ok(());
         }
         let subset = &content[open + 1..close];
+
+        // The declaration registry document to register into. In a parse that
+        // builds a real tree (DOM/reader) this is the document's own
+        // `intSubset`. In a push/expat-compat SAX parse (`xml_parser`/ext/xml)
+        // there is no real document, so unlike upstream we must not drop the
+        // internal subset: internal general entities must still be registered
+        // for later NOENT substitution. Heuristically pre-create the registry
+        // only when the subset actually declares a general entity, mirroring
+        // upstream `xmlParseEntityDecl` (parser.c: lazily keep a
+        // SAX_COMPAT_MODE document + "fake" intSubset and register the entity
+        // via xmlSAX2EntityDecl).
+        let mut dtd = Self::current_int_subset_opt(unsafe { (*self.ctxt).myDoc });
 
         let mut i = 0usize;
         while i < subset.len() {
@@ -804,13 +808,27 @@ impl XmlParser {
                 let kw = &decl[..kw_end];
                 let args = &decl[kw_end..];
                 if kw.eq_ignore_ascii_case(b"ELEMENT") {
-                    Self::parse_element_decl(dtd, args);
+                    if let Some(d) = dtd {
+                        Self::parse_element_decl(d, args);
+                    }
                 } else if kw.eq_ignore_ascii_case(b"ENTITY") {
-                    Self::parse_entity_decl(dtd, args);
+                    // A general (non-parameter) internal entity declaration
+                    // must always be registered (upstream expat-compat
+                    // behavior), even when no document tree is being built.
+                    if dtd.is_none() {
+                        dtd = self.ensure_entity_registry_dtd();
+                    }
+                    if let Some(d) = dtd {
+                        Self::parse_entity_decl(d, args);
+                    }
                 } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
-                    Self::parse_attlist_decl(dtd, args);
+                    if let Some(d) = dtd {
+                        Self::parse_attlist_decl(d, args);
+                    }
                 } else if kw.eq_ignore_ascii_case(b"NOTATION") {
-                    Self::parse_notation_decl(dtd, args);
+                    if let Some(d) = dtd {
+                        Self::parse_notation_decl(d, args);
+                    }
                 }
                 i += 2 + gt + 1;
                 continue;
@@ -823,6 +841,65 @@ impl XmlParser {
         }
 
         Ok(())
+    }
+
+    /// Return the document's current `intSubset`, or None when absent.
+    fn current_int_subset_opt(doc: *mut _xmlDoc) -> Option<*mut _xmlDtd> {
+        if doc.is_null() {
+            return None;
+        }
+        unsafe {
+            let s = (*doc).intSubset;
+            if s.is_null() {
+                None
+            } else {
+                Some(s)
+            }
+        }
+    }
+
+    /// Ensure a DTD to register internal general entities into.
+    ///
+    /// When a real document tree exists this is its `intSubset`. Otherwise
+    /// (expat-compat SAX parse such as PHP `ext/xml`) we lazily keep an
+    /// internal SAX-compatibility-mode document on `ctxt->myDoc` exactly like
+    /// upstream `xmlParseEntityDecl` (parser.c): marked `XML_DOC_INTERNAL`, with
+    /// a `"fake"` intSubset, so later `xmlGetDocEntity`/PHP's compat `getEntity`
+    /// still resolves NOENT-substituted entities that the SAX consumer never
+    /// renders as a tree.
+    fn ensure_entity_registry_dtd(&mut self) -> Option<*mut _xmlDtd> {
+        unsafe {
+            let ctxt = self.ctxt;
+            let doc = (*ctxt).myDoc;
+            let doc = if doc.is_null() {
+                let d = crate::xml::tree::new_doc(
+                    c"SAX compatibility mode document".as_ptr() as *const xmlChar
+                );
+                if d.is_null() {
+                    return None;
+                }
+                // An internal, parser-owned document (never handed to the
+                // SAX consumer; upstream `xmlNewDoc(SAX_COMPAT_MODE)` + `
+                // properties = XML_DOC_INTERNAL`).
+                (*d).properties |= crate::abi::types::xmlDocProperties::XML_DOC_INTERNAL as c_int;
+                (*ctxt).myDoc = d;
+                d
+            } else {
+                doc
+            };
+            if (*doc).intSubset.is_null() {
+                let sd = crate::xml::dtd::create_int_subset(
+                    doc,
+                    c"fake".as_ptr() as *const xmlChar,
+                    ptr::null(),
+                    ptr::null(),
+                );
+                if sd.is_null() {
+                    return None;
+                }
+            }
+            Some((*doc).intSubset)
+        }
     }
 
     /// Parse a `<!ELEMENT name contentmodel>` declaration.
@@ -2952,7 +3029,7 @@ impl XmlParser {
 
             // Build the attribute array for SAX2: [localname1, prefix1, uri1, valueStart1, valueEnd1, ...]
             let mut attr_vec: Vec<*const xmlChar> = Vec::with_capacity(attrs.len() * 5);
-            for (prefix, localname, value, had_ref) in attrs {
+            for (prefix, localname, value, _had_ref) in attrs {
                 let local_cstr = Self::vec_to_cstr_null(localname);
                 let prefix_cstr = prefix
                     .as_ref()
@@ -2972,18 +3049,19 @@ impl XmlParser {
                 attr_vec.push(prefix_cstr);
                 attr_vec.push(uri_cstr);
                 attr_vec.push(value_cstr);
-                // UPSTREAM-PARITY (parser.c xmlParseStartTag2 / SAX2.c
-                // xmlSAX2AttributeNs): when the raw value contained an
-                // entity/character reference the value was duplicated and is
-                // null-terminated, so valueEnd points at the NUL byte
-                // (*valueEnd == 0); otherwise valueEnd is NULL. The handler
-                // uses this to decide the compact xmlSAX2TextNode path vs the
-                // non-compact xmlNodeParseAttValue path (R-000120).
-                if *had_ref {
-                    attr_vec.push({ value_cstr.add(value.len()) } as *const xmlChar);
-                } else {
-                    attr_vec.push(ptr::null());
-                }
+                // UPSTREAM-PARITY (parser.c xmlParseStartTag2, SAX2 atts
+                // array): valueEnd is ALWAYS valueStart + length. The byte
+                // AT valueEnd differs by case — for a raw in-place value it
+                // is the closing quote; when the value was duplicated
+                // (reference present / normalization) it is the NUL
+                // terminator (*valueEnd == 0), which SAX2.c
+                // xmlSAX2AttributeNs uses to choose the compact
+                // xmlSAX2TextNode path vs the non-compact
+                // xmlNodeParseAttValue path (R-000120). External SAX2
+                // consumers (PHP ext/xml compat) compute the value length
+                // as valueEnd - valueStart unconditionally, so NULL is
+                // never valid here.
+                attr_vec.push({ value_cstr.add(value.len()) } as *const xmlChar);
             }
 
             let localname_cstr = self.sax_name_cstr(&localname);
