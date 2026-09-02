@@ -2322,12 +2322,115 @@ pub unsafe fn get_ns_prop(
 /// - `value` must be a valid null-terminated string or NULL.
 pub unsafe fn set_ns_prop(
     node: *mut _xmlNode,
-    _ns: *mut _xmlNs,
+    ns: *mut _xmlNs,
     name: *const xmlChar,
     value: *const xmlChar,
 ) -> *mut _xmlAttr {
-    // Phase 1: use xmlSetProp (namespace-aware version will be in Phase 2+).
-    set_prop(node, name, value)
+    if node.is_null() || name.is_null() {
+        return ptr::null_mut();
+    }
+    let n = unsafe { &mut *node };
+
+    // Namespace-aware variant of xmlSetProp (upstream xmlSetNsProp / tree.c
+    // xmlSetNsPropInternal): find an existing attribute that shares name AND
+    // namespace (href); when found, update its value, otherwise create a new
+    // namespaced attribute bound to `ns`. The legacy Phase-1 stub ignored `ns`
+    // and created an UNNAMESPACED attribute, which broke the modern DOM ns
+    // mapper that materialises xmlns declarations as real XMLNS-ns attributes
+    // (php dom_mark_namespaces_as_attributes_too -> xmlSetNsProp).
+
+    let mut existing = n.properties;
+    while !existing.is_null() {
+        let attr = unsafe { &*existing };
+        let same_ns = if !ns.is_null() {
+            // Both declare the same href (prefix may legitimately come from
+            // different mapper instances, so compare by href).
+            if unsafe { (*existing).ns }.is_null() {
+                false
+            } else {
+                let an = unsafe { &*(*existing).ns };
+                let bn = unsafe { &*ns };
+                (!an.href.is_null()
+                    && !bn.href.is_null()
+                    && unsafe {
+                        crate::abi::exports_xml2::xmlStrEqual(
+                            an.href as *const crate::abi::types::xmlChar,
+                            bn.href as *const crate::abi::types::xmlChar,
+                        ) != 0
+                    })
+                    || (an.href.is_null() && bn.href.is_null())
+            }
+        } else {
+            unsafe { (*existing).ns }.is_null()
+        };
+        if !attr.name.is_null()
+            && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
+            && same_ns
+        {
+            // Update existing attribute value (mirror set_prop: free old text
+            // children and set the new text value).
+            if !attr.children.is_null() {
+                free_node_list(attr.children);
+                let attr_mut = existing;
+                unsafe {
+                    (*attr_mut).children = ptr::null_mut();
+                    (*attr_mut).last = ptr::null_mut();
+                }
+            }
+            if !value.is_null() {
+                let text = new_text(value);
+                if !text.is_null() {
+                    let attr_mut = existing;
+                    unsafe {
+                        (*attr_mut).children = text;
+                        (*attr_mut).last = text;
+                        (*text).parent = existing as *mut _xmlNode;
+                        (*text).doc = n.doc;
+                    }
+                }
+            }
+            return existing;
+        }
+        existing = unsafe { (*existing).next };
+    }
+
+    // Create a new namespaced attribute.
+    let attr = allocator::xmlMallocZero(size_of::<_xmlAttr>() as usize) as *mut _xmlAttr;
+    if attr.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
+        (*attr).name = dup_xml_str(name);
+        (*attr).ns = ns;
+        (*attr).parent = node;
+        (*attr).doc = n.doc;
+    }
+    if !value.is_null() {
+        let text = new_text(value);
+        if !text.is_null() {
+            unsafe {
+                (*attr).children = text;
+                (*attr).last = text;
+                (*text).parent = attr as *mut _xmlNode;
+                (*text).doc = n.doc;
+            }
+        }
+    }
+    // Attach to the node's property list.
+    unsafe {
+        if n.properties.is_null() {
+            n.properties = attr;
+        } else {
+            let mut last = n.properties;
+            while !(*last).next.is_null() {
+                last = (*last).next;
+            }
+            (*last).next = attr;
+            (*attr).prev = last;
+        }
+    }
+    attr
 }
 
 /// Remove a property from a node.
@@ -5197,6 +5300,41 @@ mod tests {
             assert_eq!((*(*attr).children).parent, attr as *mut _xmlNode);
 
             // Crucially: the doc teardown must not double-free the attribute.
+            free_doc(doc);
+        }
+    }
+
+    /// Phase 14 PHP DOM regression (modern/spec serialize_*_xmlns and the
+    /// modern Dom\XMLDocument namespace mapper): xmlSetNsProp must bind the new
+    /// attribute to the given `ns`, not drop it. php's modern DOM materialises
+    /// xmlns declarations as real attributes in the XMLNS namespace via
+    /// xmlSetNsProp(node, xmlnsNs, prefix|xmlns, href); the legacy stub ignored
+    /// `ns` and created an UNNAMESPACED `a="urn:a"` attribute, so the doc
+    /// serialized with a spurious bare attribute and a missing/duplicated
+    /// namespace declaration.
+    ///
+    /// # Safety
+    ///
+    /// - The doc/root/ns are valid while `set_ns_prop` runs; the namespace is
+    ///   a detached, dedicated declaration on `root`; the doc is freed with
+    ///   `free_doc`.
+    #[test]
+    fn test_set_ns_prop_binds_namespace() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+
+            // xmlNewNs(node, href, prefix): declares xmlns:a="urn:a" on root.
+            let ns = new_ns(root, c_str("urn:a"), c_str("a"));
+
+            let attr = set_ns_prop(root, ns, c_str("a"), c_str("urn:a"));
+            assert!(!attr.is_null());
+            assert_eq!((*root).properties, attr);
+            // CRITICAL: the attribute must carry the namespace, not be bare.
+            assert_eq!((*attr).ns, ns);
+            assert!(!(*attr).name.is_null());
+
             free_doc(doc);
         }
     }
