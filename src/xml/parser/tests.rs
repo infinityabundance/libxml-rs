@@ -31,6 +31,7 @@ use crate::abi::types::xmlChar;
 use crate::xml::parser::helpers;
 use crate::xml::tree;
 use core::ptr;
+use std::os::raw::c_int;
 
 /// Helper: parse a byte slice and return the document.
 unsafe fn parse_bytes(bytes: &[u8]) -> *mut _xmlDoc {
@@ -425,5 +426,130 @@ fn test_ancestor_declared_prefix_binds_uri() {
         let a_href = crate::xml::string::xmlstr_to_bytes((*(*attr).ns).href as *const xmlChar);
         assert_eq!(a_href, b"http://u/p");
         tree::free_doc(doc);
+    }
+}
+
+// ── SP-14.3.1-2 regression tests (undeclared-entity severity, R-14.3) ──
+
+/// Parse a document through the exported `xmlCtxtReadMemory` and return
+/// `(doc, wellFormed, errNo)`. The context is freed; the returned doc (when
+/// non-NULL) is owned by the caller.
+///
+/// # Safety
+///
+/// - `xml` is a static byte buffer valid for the call; the returned document
+///   (when non-NULL) is valid until `tree::free_doc`d by the caller.
+unsafe fn read_memory_ctx(xml: &[u8], options: c_int) -> (*mut _xmlDoc, c_int, c_int) {
+    unsafe {
+        let ctxt = crate::abi::exports_parser::xmlNewParserCtxt();
+        assert!(!ctxt.is_null());
+        let doc = crate::abi::exports_parser::xmlCtxtReadMemory(
+            ctxt,
+            xml.as_ptr() as *const i8,
+            xml.len() as i32,
+            core::ptr::null(),
+            core::ptr::null(),
+            options,
+        );
+        let wf = (*ctxt).wellFormed;
+        let err = (*ctxt).errNo;
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        (doc, wf, err)
+    }
+}
+
+/// A reference to an undeclared general entity is FATAL (WFC: Entity
+/// Declared) only when the document is standalone or has neither an external
+/// subset nor parameter-entity references — upstream `xmlHandleUndeclaredEntity`.
+///
+/// # Safety
+///
+/// - The static buffers are valid for the parse; `read_memory_ctx` frees the
+///   context and returns an owned doc (NULL in these fatal cases).
+#[test]
+fn test_undeclared_entity_fatal_without_extsubset_or_perefs() {
+    unsafe {
+        // No DTD at all: fatal, errNo 26 (XML_ERR_UNDECLARED_ENTITY).
+        let (doc, wf, err) = read_memory_ctx(b"<root>a&nope;b</root>", 0);
+        assert!(doc.is_null(), "undeclared ref without DTD must fail");
+        assert_eq!(wf, 0);
+        assert_eq!(err, 26);
+
+        // Internal subset without parameter-entity references (and no external
+        // subset) is still fatal per the WFC wording.
+        let (doc2, wf2, err2) = read_memory_ctx(
+            b"<!DOCTYPE root [ <!ENTITY e \"E\"> ]><root>a&nope;b</root>",
+            0,
+        );
+        assert!(doc2.is_null());
+        assert_eq!(wf2, 0);
+        assert_eq!(err2, 26);
+    }
+}
+
+/// When the document has an external subset or parameter-entity references,
+/// an undeclared general entity is NON-fatal and the parse continues past it.
+///
+/// # Safety
+///
+/// - The static buffers are valid for the parse; the returned docs are owned
+///   and freed exactly once via `tree::free_doc`.
+#[test]
+fn test_undeclared_entity_nonfatal_with_extsubset_or_perefs() {
+    unsafe {
+        // External subset declared (SYSTEM), not loaded: warning level, parse
+        // succeeds and keeps the rest of the content (oracle: wellFormed=1,
+        // errNo stays 0, doc=yes).
+        let (doc, wf, err) = read_memory_ctx(
+            b"<!DOCTYPE root SYSTEM \"nope.dtd\"><root>a&nope;b</root>",
+            0,
+        );
+        assert!(!doc.is_null(), "ext-subset doc must parse");
+        assert_eq!(wf, 1);
+        assert_eq!(err, 0);
+        tree::free_doc(doc);
+
+        // Internal subset containing a parameter-entity reference: same.
+        let (doc2, wf2, err2) = read_memory_ctx(
+            b"<!DOCTYPE root [ <!ENTITY % p SYSTEM \"x\"> %p; ]><root>a&nope;b</root>",
+            0,
+        );
+        assert!(!doc2.is_null(), "PE-ref doc must parse");
+        assert_eq!(wf2, 1);
+        assert_eq!(err2, 0);
+        tree::free_doc(doc2);
+    }
+}
+
+/// With XML_PARSE_NOENT (entity substitution requested and no XML_PARSE_NO_XXE)
+/// the undeclared reference is reported as XML_WAR_UNDECLARED_ENTITY (27) at
+/// ERROR level, errNo = 27, and parsing still continues (oracle: wellFormed=1,
+/// doc=yes, errNo=27). This is the configuration PHP's expat-compat parser
+/// uses, and the behavior xml004/xml_closures_001 depend on.
+///
+/// # Safety
+///
+/// - The static buffers are valid for the parse; the returned docs are owned
+///   and freed exactly once via `tree::free_doc`.
+#[test]
+fn test_undeclared_entity_noent_nonfatal_error_27() {
+    unsafe {
+        let (doc, wf, err) = read_memory_ctx(
+            b"<!DOCTYPE root SYSTEM \"nope.dtd\"><root>a&nope;b</root>",
+            crate::abi::types::XML_PARSE_NOENT,
+        );
+        assert!(!doc.is_null(), "NOENT ext-subset doc must parse");
+        assert_eq!(wf, 1);
+        assert_eq!(err, 27);
+        tree::free_doc(doc);
+
+        let (doc2, wf2, err2) = read_memory_ctx(
+            b"<!DOCTYPE root [ <!ENTITY % p SYSTEM \"x\"> %p; ]><root>a&nope;b</root>",
+            crate::abi::types::XML_PARSE_NOENT,
+        );
+        assert!(!doc2.is_null(), "NOENT PE-ref doc must parse");
+        assert_eq!(wf2, 1);
+        assert_eq!(err2, 27);
+        tree::free_doc(doc2);
     }
 }

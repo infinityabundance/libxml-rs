@@ -3598,11 +3598,52 @@ pub unsafe extern "C" fn xmlCtxtUseOptions(ctxt: *mut _xmlParserCtxt, options: c
     if ctxt.is_null() {
         return -1;
     }
-    // Phase 1: STUB
+    // UPSTREAM-PARITY (parser.c 2.15 xmlCtxtUseOptions ->
+    // xmlCtxtSetOptionsInternal): options in the keep mask can only ever be
+    // enabled (historic never-clear bits); the remaining handled bits are
+    // taken from the caller's `options`. The historical struct members
+    // (recovery / replaceEntities / loadsubset / validate / pedantic /
+    // keepBlanks / dictNames) are derived from the option bits exactly like
+    // upstream, because deprecated APIs and consumers (e.g. PHP's expat
+    // compat layer, which sanitizes then calls xmlCtxtUseOptions with
+    // XML_PARSE_OLDSAX | XML_PARSE_NOENT) read those members directly.
+    const KEEP_MASK: c_int = XML_PARSE_NOERROR
+        | XML_PARSE_NOWARNING
+        | XML_PARSE_NONET
+        | XML_PARSE_NSCLEAN
+        | XML_PARSE_NOCDATA
+        | XML_PARSE_COMPACT
+        | XML_PARSE_OLD10
+        | XML_PARSE_HUGE
+        | XML_PARSE_OLDSAX
+        | XML_PARSE_IGNORE_ENC
+        | XML_PARSE_BIG_LINES;
+    const ALL_MASK: c_int = XML_PARSE_RECOVER
+        | XML_PARSE_NOENT
+        | XML_PARSE_DTDLOAD
+        | XML_PARSE_DTDATTR
+        | XML_PARSE_DTDVALID
+        | XML_PARSE_NOERROR
+        | XML_PARSE_NOWARNING
+        | XML_PARSE_PEDANTIC
+        | XML_PARSE_NOBLANKS
+        | XML_PARSE_SAX1
+        | XML_PARSE_NONET
+        | XML_PARSE_NODICT
+        | XML_PARSE_NSCLEAN
+        | XML_PARSE_NOCDATA
+        | XML_PARSE_COMPACT
+        | XML_PARSE_OLD10
+        | XML_PARSE_HUGE
+        | XML_PARSE_OLDSAX
+        | XML_PARSE_IGNORE_ENC
+        | XML_PARSE_BIG_LINES
+        | XML_PARSE_NO_XXE;
     unsafe {
-        (*ctxt).options = options;
+        let merged = ((*ctxt).options & KEEP_MASK) | (options & ALL_MASK);
+        crate::abi::exports_parser::apply_options(ctxt, merged);
     }
-    0
+    options & !ALL_MASK
 }
 
 /// Parse a well-balanced chunk (for push parsing).

@@ -681,6 +681,18 @@ impl XmlParser {
         let after_root = &trimmed[root_name.len()..].trim_ascii_start();
         let (ext_id, sys_id) = Self::extract_external_id(after_root);
 
+        // UPSTREAM-PARITY (parser.c xmlParseDocTypeDecl): a DOCTYPE whose
+        // ExternalID is a SYSTEM or PUBLIC id marks ctxt->hasExternalSubset
+        // — whether or not the external subset is ever loaded (a
+        // non-validating processor is not obligated to load it). The flag
+        // gates the fatal branch of xmlHandleUndeclaredEntity ([WFC: Entity
+        // Declared]).
+        if ext_id.is_some() || sys_id.is_some() {
+            unsafe {
+                (*self.ctxt).hasExternalSubset = 1;
+            }
+        }
+
         // Check for internal subset (content between [...])
         let has_internal = content.contains(&b'[');
 
@@ -777,7 +789,29 @@ impl XmlParser {
                 break;
             }
             if subset[i] != b'<' {
-                // Parameter-entity reference (%name;) or stray text: skip.
+                // Stray text outside a markup declaration: a well-formed
+                // parameter-entity reference (%Name;) is the only construct
+                // with parser-visible meaning here.
+                // UPSTREAM-PARITY (parser.c xmlParsePERefInternal): parsing
+                // a %Name; reference sets ctxt->hasPErefs BEFORE the entity
+                // is resolved (line 7618) — it also fires for undeclared
+                // parameter entities. The flag gates
+                // xmlHandleUndeclaredEntity's fatal branch: documents whose
+                // declarations may live in external parameter entities (or an
+                // external subset) relax [WFC: Entity Declared] to a
+                // non-fatal report, because a non-validating processor is not
+                // obligated to load them.
+                if subset[i] == b'%' {
+                    let rest = &subset[i + 1..];
+                    let name_len = rest.iter().take_while(|&&b| dtd_name_char(b)).count();
+                    if name_len > 0 && rest.get(name_len) == Some(&b';') {
+                        unsafe {
+                            (*self.ctxt).hasPErefs = 1;
+                        }
+                        i += 1 + name_len + 1;
+                        continue;
+                    }
+                }
                 i += 1;
                 continue;
             }
@@ -2571,26 +2605,95 @@ impl XmlParser {
             };
 
             if entity.is_null() {
-                // UPSTREAM-PARITY (xmlParseReference): an undeclared entity
-                // in a document without external subset/PE refs is fatal:
-                // "Entity '%s' not defined\n" (26), str1 = name, at the
-                // current position (after the ';'). In recovery mode the
-                // reference event still fires, building an entity-ref node
-                // without a backing declaration.
-                self.raise_error_now(
-                    XML_FROM_PARSER,
-                    XML_ERR_UNDECLARED_ENTITY,
-                    xmlErrorLevel::XML_ERR_FATAL as c_int,
-                    format!("Entity '{}' not defined\n", String::from_utf8_lossy(name)),
-                    Some(name.to_vec()),
-                    None,
-                    None,
-                    0,
-                );
-                if !self.is_recovery() {
-                    return Err(());
+                // UPSTREAM-PARITY (parser.c xmlHandleUndeclaredEntity +
+                // the ent==NULL continuation of xmlParseReference): the
+                // severity of an undeclared entity reference depends on the
+                // document's DTD state.
+                //
+                // [WFC: Entity Declared] makes the reference FATAL only for a
+                // standalone document or one with neither an external subset
+                // nor parameter-entity references: a non-validating processor
+                // is not obligated to load declarations from external subsets
+                // or external parameter entities, so it must not abort on
+                // references that those unloaded declarations might define.
+                // With XML_PARSE_DTDVALID the [VC: Entity Declared] validity
+                // error is raised instead; otherwise the reference is a
+                // non-fatal XML_WAR_UNDECLARED_ENTITY error/warning and
+                // parsing continues — PHP's expat-compat parser observes the
+                // document's remaining content after an undeclared reference
+                // (xml004/xml_closures_001).
+                let fatal = unsafe {
+                    let c = &*self.ctxt;
+                    c.standalone == 1 || (c.hasExternalSubset == 0 && c.hasPErefs == 0)
+                };
+                let msg = format!("Entity '{}' not defined\n", String::from_utf8_lossy(name));
+                if fatal {
+                    self.raise_error_now(
+                        XML_FROM_PARSER,
+                        XML_ERR_UNDECLARED_ENTITY,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        msg,
+                        Some(name.to_vec()),
+                        None,
+                        None,
+                        0,
+                    );
+                    if !self.is_recovery() {
+                        return Err(());
+                    }
+                } else {
+                    let (code, level, domain) = unsafe {
+                        let c = &*self.ctxt;
+                        if c.validate != 0 {
+                            // [VC: Entity Declared] — validity error, level
+                            // XML_ERR_ERROR, domain XML_FROM_DTD (upstream
+                            // xmlValidityError). Non-fatal; parsing continues.
+                            (
+                                XML_ERR_UNDECLARED_ENTITY,
+                                xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                XML_FROM_DTD,
+                            )
+                        } else if (c.loadsubset & !crate::abi::constants::XML_SKIP_IDS != 0)
+                            || (c.replaceEntities != 0 && c.options & XML_PARSE_NO_XXE == 0)
+                        {
+                            // xmlErrMsgStr: non-fatal error (XML_ERR_ERROR)
+                            // when the external subset is loaded or entity
+                            // substitution was requested without NO_XXE.
+                            (
+                                XML_WAR_UNDECLARED_ENTITY,
+                                xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                XML_FROM_PARSER,
+                            )
+                        } else {
+                            // xmlWarningMsg: plain warning.
+                            (
+                                XML_WAR_UNDECLARED_ENTITY,
+                                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                                XML_FROM_PARSER,
+                            )
+                        }
+                    };
+                    self.raise_error_now(
+                        domain,
+                        code,
+                        level,
+                        msg,
+                        Some(name.to_vec()),
+                        None,
+                        None,
+                        0,
+                    );
                 }
-                if !self.is_sax_disabled() {
+                unsafe {
+                    (*self.ctxt).valid = 0;
+                }
+                // UPSTREAM-PARITY (xmlParseReference): an undeclared
+                // reference dispatches the SAX reference event only when
+                // entities are not substituted (replaceEntities == 0). In
+                // recovery mode this builds an entity-ref node without a
+                // backing declaration; the expat-compat default handler has
+                // already seen the raw "&name;" text through getEntity.
+                if !self.is_sax_disabled() && unsafe { (*self.ctxt).replaceEntities == 0 } {
                     let name_cstr = Self::vec_to_cstr_null(name);
                     unsafe {
                         let sax = &*(*self.ctxt).sax;
@@ -4052,6 +4155,19 @@ fn find_subseq(haystack: &[u8], needle: &[u8]) -> Option<usize> {
         return None;
     }
     haystack.windows(needle.len()).position(|w| w == needle)
+}
+
+/// XML NameStartChar test over raw DTD-subset bytes (upstream
+/// `xmlIsNameStartChar`). Non-ASCII bytes are accepted loosely because the
+/// subset scan works on the declared encoding's bytes; ASCII follows the XML
+/// grammar exactly.
+const fn dtd_name_start(b: u8) -> bool {
+    b.is_ascii_alphabetic() || b == b'_' || b == b':' || b >= 0x80
+}
+
+/// XML NameChar test over raw DTD-subset bytes (upstream `xmlIsNameChar`).
+const fn dtd_name_char(b: u8) -> bool {
+    dtd_name_start(b) || b.is_ascii_digit() || b == b'-' || b == b'.'
 }
 
 /// Find the closing `>` of a markup declaration, honoring quoted strings.

@@ -80,3 +80,28 @@ SP-14.3.1-1 closed (96381efc, R-14.3-SAX-NOTATION-UNPARSED-DECL FIXED):
   unparsedEntityDecl now dispatch (fire_sax_notation_decl /
   fire_sax_unparsed_entity_decl) when a handler is set. ext/xml
   xml_set_notation_decl_handler_basic flips PASS; ext/xml suite 21 -> 20 failed.
+
+SP-14.3.1-2 closed (R-14.3-UNDECLARED-ENTITY-SEVERITY FIXED):
+  xml004 + xml_closures_001 PASS; ext/xml 20 -> 18 failed, zero regressions.
+  - root cause: parse_reference raised EVERY undeclared general entity as
+    XML_ERR_UNDECLARED_ENTITY (26) FATAL, dropping the element tail after
+    `&included-entity;` (xmltest.xml's `%incent;`/SYSTEM ext subset were never
+    tracked). Upstream xmlHandleUndeclaredEntity makes the reference FATAL
+    only when standalone==1 or (hasExternalSubset==0 && hasPErefs==0);
+    otherwise XML_WAR_UNDECLARED_ENTITY (27) ERROR/WARNING and the parse
+    continues.
+  - fixes: parse_dtd sets ctxt->hasExternalSubset when the DOCTYPE carries a
+    SYSTEM/PUBLIC id; parse_internal_subset sets ctxt->hasPErefs on a
+    well-formed %Name; reference (upstream xmlParsePERefInternal); the
+    undeclared branch mirrors xmlHandleUndeclaredEntity (fatal | DTDVALID
+    validity error | xmlErrMsgStr 27-ERROR when loadsubset or
+    replaceEntities && !NO_XXE | xmlWarningMsg 27-WARNING) + valid=0 + SAX
+    reference event only when replaceEntities==0; xmlCtxtUseOptions now
+    mirrors xmlCtxtSetOptionsInternal member updates (was an options-only
+    stub; replaceEntities stayed 0 under PHP's NOENT compat path).
+  - guards: tests.rs undeclared-entity severity trio (fatal plain/intsub 26;
+    non-fatal extsub/PE-ref; NOENT -> errNo 27) + consumers/
+    undecl-entity-probe.c; oracle-pinned on the system 2.15.3 and php-oracle
+    containers. cargo test --lib 1202 pass; clippy/fmt clean.
+  - receipt/analysis: php-14-3-undeclared-entity-20260902/ (log sp1-xml3.log
+    ext/xml 67 run -> 38 pass / 18 fail / 11 skip).

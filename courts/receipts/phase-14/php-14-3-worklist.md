@@ -11,9 +11,12 @@ extension subset to confirm the targeted test(s) flip PASS with no sibling regre
 ## SP-14.3.1  ext/xml  (20)
 - [x] SP-14.3.1-1  SAX notationDecl + NDATA unparsedEntityDecl dispatch
        (xml_set_notation_decl_handler_basic)  -> commit 96381efc (ext/xml 21->20)
-- [ ] SP-14.3.1-2  xml004/xml_closures_001: elem4 + tail dropped after external/
-       parameter-entity include in SAX push (xml004-probe.php). BLOCKS-ON external
-       entity + param-subset loader + element scope resume.
+- [x] SP-14.3.1-2  xml004/xml_closures_001: elem4 + tail dropped after external/
+       parameter-entity include in SAX push (xml004-probe.php). Root:
+       undeclared-entity severity now mirrors xmlHandleUndeclaredEntity
+       (fatal only standalone/no-ext-subset/no-PE-refs; else 27 warn/err and
+       continue) + hasExternalSubset/hasPErefs tracking + xmlCtxtUseOptions
+       member updates. ext/xml 20 -> 18 failed.
 - [ ] SP-14.3.1-3  xml_parse_into_struct namespace tag/attr encoding: bug50576
        empty-uri default ns, bug25666/xml009/xml010 uri@local naming, bug72714
        (SKIP_TAGSTART + NS).
