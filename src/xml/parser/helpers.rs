@@ -97,6 +97,32 @@ unsafe impl Sync for StashPtr {}
 static PARSER_INPUT_STASH: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, StashPtr>>> =
     once_cell::sync::Lazy::new(Default::default);
 
+/// Per-context incremental-push state (SP-14.3.1-3): whether the accumulated
+/// input has already parsed as a complete document and delivered its events.
+/// Once delivered, further non-terminating `xmlParseChunk` calls only buffer
+/// (the remaining input can only be epilog), and the terminating call runs a
+/// silent probe so nothing is delivered twice.
+#[derive(Default)]
+struct PushState {
+    /// A non-final call parsed the accumulated input to a clean document end
+    /// and the completing parse delivered all events.
+    completed: bool,
+}
+
+static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
+    once_cell::sync::Lazy::new(Default::default);
+
+fn push_state(ctxt: *mut _xmlParserCtxt) -> parking_lot::MappedMutexGuard<'static, PushState> {
+    parking_lot::MutexGuard::map(PUSH_STATE.lock(), |m| {
+        m.entry(ctxt as usize).or_insert_with(PushState::default)
+    })
+}
+
+/// Drop the incremental-push state for `ctxt`, if any.
+pub(crate) fn free_push_state(ctxt: *mut _xmlParserCtxt) {
+    PUSH_STATE.lock().remove(&(ctxt as usize));
+}
+
 /// Stash the boxed input buffer for `ctxt` (takes ownership of `buf`).
 pub(crate) fn stash_input_buffer(ctxt: *mut _xmlParserCtxt, buf: *mut InputBuffer) {
     PARSER_INPUT_STASH
@@ -254,6 +280,9 @@ pub(crate) unsafe fn free_parser_ctxt(ctxt: *mut _xmlParserCtxt) {
         // setup_parser_input). `ctxt._private` is application data and is
         // NEVER touched here (11.1-X).
         free_stashed_input_buffer(ctxt);
+        // Drop incremental-push state so a later context allocated at the
+        // same address starts clean (SP-14.3.1-3).
+        free_push_state(ctxt);
 
         // Free the parser dictionary (upstream xmlFreeParserCtxt).
         if !(*ctxt).dict.is_null() {
@@ -510,6 +539,21 @@ pub(crate) unsafe fn parse_document(ctxt: *mut _xmlParserCtxt) -> c_int {
 ///
 /// Returns `0` on success (or if more data is expected), `-1` on error.
 ///
+/// # Upstream contract (SP-14.3.1-3)
+///
+/// Upstream `xmlParseChunk` parses each chunk eagerly and fires events as
+/// data becomes available; a non-terminating call on a COMPLETE document
+/// therefore delivers everything, which consumers such as PHP ext/xml's
+/// expat-compat layer rely on (`xml_parse()` defaults `isFinal = false` —
+/// bug25666/xml009/xml010). The candidate accumulates the input and parses
+/// it as a whole. To keep both models: on every non-terminating call the
+/// accumulated input is probed with a silent parse (no handler delivery, no
+/// diagnostics — SP-14.3.1-3); when the probe reaches a clean document end
+/// the buffer is parsed again with full delivery exactly once, and later
+/// calls (epilog only) merely buffer until the terminating call, which runs
+/// a silent probe plus, if the document is no longer clean (trailing junk),
+/// a diagnostics-only pass so late errors still surface.
+///
 /// # Safety
 ///
 /// - `ctxt` must be a valid pointer to a `_xmlParserCtxt`.
@@ -544,20 +588,76 @@ pub(crate) unsafe fn parse_chunk(
 
     // Append the chunk to the accumulated input (upstream xmlParseChunk
     // grows ctxt->input's base with each chunk; the candidate parses the
-    // whole accumulated stream on the terminating call).
+    // whole accumulated stream).
     base.push_bytes(chunk_slice);
 
-    if terminate != 0 {
+    if terminate == 0 {
+        // Non-final call. Once the document completed and delivered, later
+        // calls can only bring epilog content; just buffer until the final
+        // call (which re-validates silently).
+        if !push_state(ctxt).completed {
+            // Silent completeness probe. Parse the whole accumulated input
+            // with delivery deferred: it must not invoke handlers (the
+            // probe re-runs on every call and a partial document must not
+            // leak half its events).
+            let probe_buf = base.duplicate_for_reparse();
+            let input_stack = InputStack::new(probe_buf);
+            // SAFETY: ctxt is a valid, initialised parser context.
+            let mut probe = unsafe { XmlParser::new_with_mode(input_stack, ctxt, true) };
+            let rc = probe.parse_document();
+            if rc == 0 || (rc != 0 && !probe.is_paused() && !probe.was_truncated_abort()) {
+                // The accumulated input parsed through to its end: either a
+                // clean document end or a failure on a COMPLETE token at the
+                // end of the input (e.g. an end-tag mismatch closing the
+                // root). Upstream parses each chunk eagerly and fires the
+                // events either way, so deliver them now exactly once
+                // (PHP xml_parse defaults isFinal=false — bug25666/xml009).
+                push_state(ctxt).completed = true;
+                let delivery_buf = base.duplicate_for_reparse();
+                let input_stack = InputStack::new(delivery_buf);
+                // SAFETY: ctxt is a valid, initialised parser context.
+                let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
+                parser.parse_document();
+            }
+        }
+        // More data may still arrive: stash the accumulated buffer for the
+        // next xmlParseChunk call. A probe/early-delivery never changes the
+        // reported status of a non-final call (still 0 = more data
+        // expected); errors are delivered by the completing parse above or
+        // the final call.
+        stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
+        0
+    } else if push_state(ctxt).completed {
+        // Final call after an early delivery. Never deliver twice: probe
+        // silently; if the accumulated input no longer parses cleanly
+        // (trailing junk in the epilog), re-run with diagnostics enabled but
+        // SAX delivery suppressed so the errors surface exactly once.
+        let probe_buf = base.duplicate_for_reparse();
+        let input_stack = InputStack::new(probe_buf);
+        // SAFETY: ctxt is a valid, initialised parser context.
+        let mut probe = unsafe { XmlParser::new_with_mode(input_stack, ctxt, true) };
+        let rc = probe.parse_document();
+        free_push_state(ctxt);
+        if unsafe { (*ctxt).wellFormed } == 0 || rc != 0 {
+            // The tail broke the document: surface the real diagnostics
+            // (the completing parse already delivered the clean prefix).
+            let diag_buf = base.duplicate_for_reparse();
+            let input_stack = InputStack::new(diag_buf);
+            // SAFETY: ctxt is a valid, initialised parser context.
+            let mut parser = unsafe { XmlParser::new_with_flags(input_stack, ctxt, false, true) };
+            let drc = parser.parse_document();
+            return if drc == 0 { 0 } else { -1 };
+        }
+        0
+    } else {
+        // Plain final parse of everything accumulated so far.
         let input_stack = InputStack::new(base);
         // SAFETY: ctxt is a valid, initialised parser context.
         let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
-        parser.parse_document()
+        let rc = parser.parse_document();
+        free_push_state(ctxt);
+        rc
         // parser is dropped here.
-    } else {
-        // More data expected: stash the accumulated buffer for the next
-        // xmlParseChunk call.
-        stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
-        0
     }
 }
 

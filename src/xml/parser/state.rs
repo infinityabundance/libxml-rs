@@ -175,6 +175,35 @@ pub(crate) struct XmlParser {
     /// Whether the handler uses SAX1 callbacks only.
     #[allow(dead_code)]
     sax1: bool,
+    /// Incremental push-probe mode (helpers::parse_chunk). When set, SAX
+    /// dispatch and error delivery are suppressed and an end-of-input inside
+    /// an open construct pauses the parse silently instead of raising
+    /// "Premature end of data" — the parse only reports success when the
+    /// accumulated input forms a complete document (SP-14.3.1-3).
+    probe: bool,
+    /// Set when a probe parse paused at an end-of-input that could continue.
+    paused: bool,
+    /// Suppress SAX delivery only (diagnostics still delivered). Used by the
+    /// final xmlParseChunk pass after an early delivery: the completing parse
+    /// already delivered every event, so the final pass must not rebuild the
+    /// tree or re-invoke handlers, but trailing-epilog errors must surface.
+    sax_suppressed: bool,
+    /// The parse aborted on a construct truncated by the end of the
+    /// currently available input (an unterminated start tag / CDATA). An
+    /// incremental probe must NOT deliver in that case: a later push call may
+    /// complete the construct, and delivering the partial events now could
+    /// not be retracted (SP-14.3.1-3). Distinguishes "<a" (wait) from a
+    /// complete-but-invalid document like "</foo>" closing "<foo:a>"
+    /// (deliver; upstream parsed it eagerly — bug25666).
+    truncated_abort: bool,
+    /// SAX-mode namespace scope stack (prefix, href) of the currently open
+    /// elements. Upstream keeps the in-scope namespace stack on the parser
+    /// context (`ctxt->nsTab`/`nsNr`, pushed by `xmlParseStartTag2` and popped
+    /// at element end), which is what makes an ancestor-declared prefix
+    /// resolve for pure-SAX parses (no tree, `ctxt->node == NULL`). The
+    /// candidate consults it when no tree is being built (PHP expat-compat
+    /// SAX2 mode) and falls back to `xmlSearchNs` on the tree otherwise.
+    ns_scope: Vec<(Vec<u8>, Vec<u8>)>,
     /// Legacy-format "cur input" tail for the next raised parser error:
     /// upstream `xmlFormatError` prints the current (entity) input's
     /// `Entity: line N: ` info + window after the parent window
@@ -197,6 +226,30 @@ impl XmlParser {
     ///
     /// `ctxt` must be a valid, properly initialized `_xmlParserCtxt`.
     pub unsafe fn new(input: InputStack, ctxt: *mut _xmlParserCtxt) -> Self {
+        Self::new_with_mode(input, ctxt, false)
+    }
+
+    /// Create a new parser, optionally in incremental push-probe mode
+    /// (`probe == true`, see the `probe` field docs).
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid, properly initialized `_xmlParserCtxt`.
+    pub unsafe fn new_with_mode(input: InputStack, ctxt: *mut _xmlParserCtxt, probe: bool) -> Self {
+        Self::new_with_flags(input, ctxt, probe, false)
+    }
+
+    /// Create a new parser with explicit probe / SAX-suppression flags.
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid, properly initialized `_xmlParserCtxt`.
+    pub unsafe fn new_with_flags(
+        input: InputStack,
+        ctxt: *mut _xmlParserCtxt,
+        probe: bool,
+        sax_suppressed: bool,
+    ) -> Self {
         let options = unsafe { (*ctxt).options };
         let initialized = unsafe { (*(*ctxt).sax).initialized };
         let sax1 = initialized != crate::abi::types::XML_SAX2_MAGIC as u32;
@@ -215,8 +268,56 @@ impl XmlParser {
             ctxt,
             options,
             sax1,
+            probe,
+            paused: false,
+            sax_suppressed,
+            truncated_abort: false,
+            ns_scope: Vec::new(),
             cur_error_tail: None,
         }
+    }
+
+    /// Return whether the parser dispatches through the SAX2 element
+    /// callbacks (`startElementNs`/`endElementNs`) — upstream
+    /// `xmlCtxtInitializeLate` (parser.c): SAX2 only when
+    /// `XML_PARSE_SAX1` is not set, `sax->initialized == XML_SAX2_MAGIC` and
+    /// SAX2 element handlers exist (or no SAX1 element handlers at all). PHP
+    /// ext/xml's expat-compat layer resets `sax->initialized = 1` for
+    /// `xml_parser_create()` (non-namespace) and keeps the magic for
+    /// `xml_parser_create_ns()`; the two configurations must dispatch
+    /// through SAX1 (raw QName + full attribute list, no namespace
+    /// processing) and SAX2 respectively — bug50576/bug72714.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` whose
+    ///   `sax` is a valid `_xmlSAXHandler`; only `initialized` and the
+    ///   element-handler slots are read.
+    fn sax2_mode(&self) -> bool {
+        if (self.options & XML_PARSE_SAX1) != 0 {
+            return false;
+        }
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            if sax.initialized != crate::abi::types::XML_SAX2_MAGIC as u32 {
+                return false;
+            }
+            sax.startElementNs.is_some()
+                || sax.endElementNs.is_some()
+                || (sax.startElement.is_none() && sax.endElement.is_none())
+        }
+    }
+
+    /// Return whether the most recent probe parse paused at an
+    /// end-of-input that could still continue (incomplete document).
+    pub(crate) const fn is_paused(&self) -> bool {
+        self.paused
+    }
+
+    /// Return whether the most recent parse aborted on a construct truncated
+    /// by the end of the available input (see `truncated_abort`).
+    pub(crate) const fn was_truncated_abort(&self) -> bool {
+        self.truncated_abort
     }
 
     /// Get a mutable reference to the tokenizer.
@@ -324,8 +425,13 @@ impl XmlParser {
         }
 
         // UPSTREAM-PARITY (xmlParseDocument): an empty input is reported as
-        // "Document is empty" before anything else.
+        // "Document is empty" before anything else. In an incremental probe
+        // the empty input is simply "more data expected" — it pauses.
         if self.tokenizer.is_input_empty() {
+            if self.probe {
+                self.paused = true;
+                return -2;
+            }
             self.raise_error_now(
                 XML_FROM_PARSER,
                 XML_ERR_DOCUMENT_EMPTY,
@@ -347,6 +453,12 @@ impl XmlParser {
         let root_seen = match self.parse_prolog() {
             Ok(v) => v,
             Err(()) => {
+                if self.probe && self.paused {
+                    // End of the currently available input inside the prolog:
+                    // the document may continue on a later push call.
+                    self.sax_end_document();
+                    return -2;
+                }
                 if !self.is_recovery() {
                     self.sax_end_document();
                     return -1;
@@ -365,6 +477,11 @@ impl XmlParser {
             (*self.ctxt).instate = XML_PARSER_CONTENT;
         }
         if self.parse_content().is_err() && !self.is_recovery() {
+            if self.probe && self.paused {
+                // Same pause: the root element is not finished yet.
+                self.sax_end_document();
+                return -2;
+            }
             self.sax_end_document();
             return -1;
         }
@@ -481,7 +598,12 @@ impl XmlParser {
                 XmlToken::Eof => {
                     // Empty document or end of prolog without a root:
                     // upstream "Start tag expected, '<' not found" (only
-                    // while wellFormed).
+                    // while wellFormed). In an incremental probe the root
+                    // element simply has not arrived yet — pause silently.
+                    if self.probe {
+                        self.paused = true;
+                        return Err(());
+                    }
                     if unsafe { (*self.ctxt).wellFormed } != 0 {
                         self.raise_error_now(
                             XML_FROM_PARSER,
@@ -935,7 +1057,7 @@ impl XmlParser {
     /// argument text is `args` (everything after the leading `NOTATION` keyword).
     /// Mirrors upstream `xmlParseNotationDecl` (SAX `notationDecl`).
     fn fire_sax_notation_decl(&self, args: &[u8]) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         unsafe {
@@ -972,7 +1094,7 @@ impl XmlParser {
     /// external general entity declaration is parsed.
     /// Mirrors upstream `xmlParseEntityDecl` NDATA branch.
     fn fire_sax_unparsed_entity_decl(&self, args: &[u8]) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         unsafe {
@@ -1754,7 +1876,12 @@ impl XmlParser {
             } => {
                 if unterminated {
                     // Errors (incl. "Couldn't find end of Start Tag") were
-                    // already raised; upstream's element parse failed.
+                    // already raised; upstream's element parse failed. The
+                    // construct may continue on a later push call, so an
+                    // incremental probe must not deliver.
+                    if self.probe {
+                        self.truncated_abort = true;
+                    }
                     return Err(());
                 }
                 self.parse_element(name, attributes, attr_end, attr_start, end_pos, empty)?;
@@ -1885,14 +2012,6 @@ impl XmlParser {
         // Push element name onto the context name stack
         self.push_name(&name);
 
-        // Separate namespace declarations from regular attributes
-        let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
-        let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)> = Vec::new();
-        // Parallel to `regular_attrs`: the byte offset just past each
-        // attribute value's closing quote (upstream's position for
-        // namespace diagnostics).
-        let mut attr_pos: Vec<usize> = Vec::new();
-
         // UPSTREAM-PARITY: attribute values are parsed with
         // xmlParseAttValueInternal, which substitutes character references
         // always, predefined entities always, and declared entities when
@@ -1912,22 +2031,60 @@ impl XmlParser {
         }
         let attributes = new_attributes;
 
-        for (idx, (attr_name, attr_value, _had_ref)) in attributes.iter().enumerate() {
-            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): the default
-            // namespace declaration warns when the URI is not absolute
-            // (xmlns: URI %s is not absolute); the prefixed form warns only
-            // in pedantic mode. The diagnostic is attributed to the position
-            // just past the value's closing quote.
-            if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
-                if attr_name == b"xmlns" {
-                    if !attr_value.is_empty() && !has_uri_scheme(attr_value) {
+        // SAX1 vs SAX2 element dispatch follows upstream xmlCtxtInitializeLate
+        // (parser.c). SAX1 consumers (PHP xml_parser_create, non-namespace
+        // expat-compat) receive the raw QName and the full attribute list with
+        // xmlns declarations as ordinary attributes and NO namespace
+        // processing — upstream xmlParseStartTag. bug50576/bug72714.
+        let sax2 = self.sax2_mode();
+
+        // Separate namespace declarations from regular attributes.
+        let mut ns_decls: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        let mut regular_attrs: Vec<(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)> = Vec::new();
+        // Parallel to `regular_attrs`: the byte offset just past each
+        // attribute value's closing quote (upstream's position for
+        // namespace diagnostics).
+        let mut attr_pos: Vec<usize> = Vec::new();
+
+        if sax2 {
+            for (idx, (attr_name, attr_value, _had_ref)) in attributes.iter().enumerate() {
+                // UPSTREAM-PARITY (parser.c xmlParseStartTag2): the default
+                // namespace declaration warns when the URI is not absolute
+                // (xmlns: URI %s is not absolute); the prefixed form warns only
+                // in pedantic mode. The diagnostic is attributed to the position
+                // just past the value's closing quote.
+                if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
+                    if attr_name == b"xmlns" {
+                        if !attr_value.is_empty() && !has_uri_scheme(attr_value) {
+                            let pos = attr_end.get(idx).copied().unwrap_or(0);
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_WAR_NS_URI_RELATIVE,
+                                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                                format!(
+                                    "xmlns: URI {} is not absolute\n",
+                                    String::from_utf8_lossy(attr_value)
+                                ),
+                                Some(attr_value.clone()),
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        }
+                    } else if self.is_pedantic()
+                        && !attr_value.is_empty()
+                        && !has_uri_scheme(attr_value)
+                    {
+                        let prefix = &attr_name[b"xmlns:".len()..];
                         let pos = attr_end.get(idx).copied().unwrap_or(0);
                         self.raise_error_at(
                             XML_FROM_NAMESPACE,
                             XML_WAR_NS_URI_RELATIVE,
                             xmlErrorLevel::XML_ERR_WARNING as c_int,
                             format!(
-                                "xmlns: URI {} is not absolute\n",
+                                "xmlns:{}: URI {} is not absolute\n",
+                                String::from_utf8_lossy(prefix),
                                 String::from_utf8_lossy(attr_value)
                             ),
                             Some(attr_value.clone()),
@@ -1937,252 +2094,269 @@ impl XmlParser {
                             pos,
                         );
                     }
-                } else if self.is_pedantic()
-                    && !attr_value.is_empty()
-                    && !has_uri_scheme(attr_value)
-                {
-                    let prefix = &attr_name[b"xmlns:".len()..];
+                }
+                // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace
+                // declaration errors are reported (non-fatal) and the invalid
+                // declaration is skipped. R-000166.
+                if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
                     let pos = attr_end.get(idx).copied().unwrap_or(0);
-                    self.raise_error_at(
-                        XML_FROM_NAMESPACE,
-                        XML_WAR_NS_URI_RELATIVE,
-                        xmlErrorLevel::XML_ERR_WARNING as c_int,
-                        format!(
-                            "xmlns:{}: URI {} is not absolute\n",
-                            String::from_utf8_lossy(prefix),
-                            String::from_utf8_lossy(attr_value)
-                        ),
-                        Some(attr_value.clone()),
-                        None,
-                        None,
-                        0,
-                        pos,
-                    );
-                }
-            }
-            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace
-            // declaration errors are reported (non-fatal) and the invalid
-            // declaration is skipped. R-000166.
-            if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
-                let pos = attr_end.get(idx).copied().unwrap_or(0);
-                let xml_ns_uri = b"http://www.w3.org/XML/1998/namespace";
-                let xmlns_uri = b"http://www.w3.org/2000/xmlns/";
-                let (decl_prefix, decl_value): (Vec<u8>, Vec<u8>) = if attr_name == b"xmlns" {
-                    (Vec::new(), attr_value.clone())
-                } else {
-                    (attr_name[b"xmlns:".len()..].to_vec(), attr_value.clone())
-                };
-                let mut skip_decl = false;
-                if decl_prefix == b"xml" {
-                    if decl_value != xml_ns_uri {
-                        self.raise_error_at(
-                            XML_FROM_NAMESPACE,
-                            XML_NS_ERR_XML_NAMESPACE as c_int,
-                            xmlErrorLevel::XML_ERR_ERROR as c_int,
-                            "xml namespace prefix mapped to wrong URI\n".to_string(),
-                            None,
-                            None,
-                            None,
-                            0,
-                            pos,
-                        );
-                    }
-                    skip_decl = true;
-                } else if decl_value == xml_ns_uri {
-                    if attr_name == b"xmlns" {
-                        // Default xmlns with the xml namespace URI.
-                        self.raise_error_at(
-                            XML_FROM_NAMESPACE,
-                            XML_NS_ERR_XML_NAMESPACE as c_int,
-                            xmlErrorLevel::XML_ERR_ERROR as c_int,
-                            "xml namespace URI cannot be the default namespace\n".to_string(),
-                            None,
-                            None,
-                            None,
-                            0,
-                            pos,
-                        );
+                    let xml_ns_uri = b"http://www.w3.org/XML/1998/namespace";
+                    let xmlns_uri = b"http://www.w3.org/2000/xmlns/";
+                    let (decl_prefix, decl_value): (Vec<u8>, Vec<u8>) = if attr_name == b"xmlns" {
+                        (Vec::new(), attr_value.clone())
                     } else {
+                        (attr_name[b"xmlns:".len()..].to_vec(), attr_value.clone())
+                    };
+                    let mut skip_decl = false;
+                    if decl_prefix == b"xml" {
+                        if decl_value != xml_ns_uri {
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_NS_ERR_XML_NAMESPACE as c_int,
+                                xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                "xml namespace prefix mapped to wrong URI\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        }
+                        skip_decl = true;
+                    } else if decl_value == xml_ns_uri {
+                        if attr_name == b"xmlns" {
+                            // Default xmlns with the xml namespace URI.
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_NS_ERR_XML_NAMESPACE as c_int,
+                                xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                "xml namespace URI cannot be the default namespace\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        } else {
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_NS_ERR_XML_NAMESPACE as c_int,
+                                xmlErrorLevel::XML_ERR_ERROR as c_int,
+                                "xml namespace URI mapped to wrong prefix\n".to_string(),
+                                None,
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        }
+                        skip_decl = true;
+                    } else if decl_prefix == b"xmlns" {
                         self.raise_error_at(
                             XML_FROM_NAMESPACE,
                             XML_NS_ERR_XML_NAMESPACE as c_int,
                             xmlErrorLevel::XML_ERR_ERROR as c_int,
-                            "xml namespace URI mapped to wrong prefix\n".to_string(),
+                            "redefinition of the xmlns prefix is forbidden\n".to_string(),
                             None,
                             None,
                             None,
                             0,
                             pos,
                         );
+                        skip_decl = true;
+                    } else if decl_value == xmlns_uri {
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_XML_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            "reuse of the xmlns namespace name is forbidden\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                        skip_decl = true;
+                    } else if decl_value.is_empty() && attr_name != b"xmlns" {
+                        // UPSTREAM-PARITY: only PREFIXED declarations with an
+                        // empty URI are errors (xmlns:p=""); the default
+                        // xmlns="" legitimately undeclares the default
+                        // namespace (R-000166).
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_XML_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            format!(
+                                "xmlns:{}: Empty XML namespace is not allowed\n",
+                                String::from_utf8_lossy(&decl_prefix)
+                            ),
+                            None,
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                        skip_decl = true;
                     }
-                    skip_decl = true;
-                } else if decl_prefix == b"xmlns" {
-                    self.raise_error_at(
-                        XML_FROM_NAMESPACE,
-                        XML_NS_ERR_XML_NAMESPACE as c_int,
-                        xmlErrorLevel::XML_ERR_ERROR as c_int,
-                        "redefinition of the xmlns prefix is forbidden\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                        pos,
-                    );
-                    skip_decl = true;
-                } else if decl_value == xmlns_uri {
-                    self.raise_error_at(
-                        XML_FROM_NAMESPACE,
-                        XML_NS_ERR_XML_NAMESPACE as c_int,
-                        xmlErrorLevel::XML_ERR_ERROR as c_int,
-                        "reuse of the xmlns namespace name is forbidden\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                        pos,
-                    );
-                    skip_decl = true;
-                } else if decl_value.is_empty() && attr_name != b"xmlns" {
-                    // UPSTREAM-PARITY: only PREFIXED declarations with an
-                    // empty URI are errors (xmlns:p=""); the default
-                    // xmlns="" legitimately undeclares the default
-                    // namespace (R-000166).
-                    self.raise_error_at(
-                        XML_FROM_NAMESPACE,
-                        XML_NS_ERR_XML_NAMESPACE as c_int,
-                        xmlErrorLevel::XML_ERR_ERROR as c_int,
-                        format!(
-                            "xmlns:{}: Empty XML namespace is not allowed\n",
-                            String::from_utf8_lossy(&decl_prefix)
-                        ),
-                        None,
-                        None,
-                        None,
-                        0,
-                        pos,
-                    );
-                    skip_decl = true;
-                }
-                if skip_decl {
-                    continue;
-                }
-            }
-            if attr_name == b"xmlns" {
-                // Default namespace declaration: xmlns="uri"
-                ns_decls.push((Vec::new(), attr_value.clone()));
-            } else if let Some(prefix) = attr_name.strip_prefix(b"xmlns:") {
-                // Prefixed namespace declaration: xmlns:prefix="uri"
-                ns_decls.push((prefix.to_vec(), attr_value.clone()));
-            } else {
-                // Regular attribute
-                // Split qualified name into prefix and localname
-                if let Some(colons) = attr_name.iter().position(|&b| b == b':') {
-                    let prefix = attr_name[..colons].to_vec();
-                    if prefix == b"xml" {
-                        // UPSTREAM-PARITY: using the xml: prefix materializes
-                        // the xml namespace on the document (visible in
-                        // --debug dumps as a document-level namespace).
-                        self.ensure_doc_xml_ns();
+                    if skip_decl {
+                        continue;
                     }
-                    let localname = attr_name[colons + 1..].to_vec();
-                    regular_attrs.push((Some(prefix), localname, attr_value.clone(), *_had_ref));
-                    attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
+                }
+                if attr_name == b"xmlns" {
+                    // Default namespace declaration: xmlns="uri"
+                    ns_decls.push((Vec::new(), attr_value.clone()));
+                } else if let Some(prefix) = attr_name.strip_prefix(b"xmlns:") {
+                    // Prefixed namespace declaration: xmlns:prefix="uri"
+                    ns_decls.push((prefix.to_vec(), attr_value.clone()));
                 } else {
-                    regular_attrs.push((None, attr_name.clone(), attr_value.clone(), *_had_ref));
-                    attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
+                    // Regular attribute
+                    // Split qualified name into prefix and localname
+                    if let Some(colons) = attr_name.iter().position(|&b| b == b':') {
+                        let prefix = attr_name[..colons].to_vec();
+                        if prefix == b"xml" {
+                            // UPSTREAM-PARITY: using the xml: prefix materializes
+                            // the xml namespace on the document (visible in
+                            // --debug dumps as a document-level namespace).
+                            self.ensure_doc_xml_ns();
+                        }
+                        let localname = attr_name[colons + 1..].to_vec();
+                        regular_attrs.push((
+                            Some(prefix),
+                            localname,
+                            attr_value.clone(),
+                            *_had_ref,
+                        ));
+                        attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
+                    } else {
+                        regular_attrs.push((
+                            None,
+                            attr_name.clone(),
+                            attr_value.clone(),
+                            *_had_ref,
+                        ));
+                        attr_pos.push(attr_end.get(idx).copied().unwrap_or(0));
+                    }
                 }
             }
-        }
 
-        // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace prefixes
-        // used on attributes and on the element itself must be declared by
-        // this tag's declarations or by an ancestor's; otherwise
-        // XML_NS_ERR_UNDEFINED_NAMESPACE is raised. The xml prefix is
-        // always bound. Rejected declarations (empty xmlns:p="", wrong
-        // xml/xmlns bindings) are skipped above, so they correctly count as
-        // undeclared. R-000166.
-        let parent_node = unsafe { (*self.ctxt).node };
-        let my_doc = unsafe { (*self.ctxt).myDoc };
-        let prefix_declared = |prefix: &[u8]| -> bool {
-            if prefix == b"xml" {
-                return true;
+            // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace prefixes
+            // used on attributes and on the element itself must be declared by
+            // this tag's declarations or by an ancestor's; otherwise
+            // XML_NS_ERR_UNDEFINED_NAMESPACE is raised. The xml prefix is
+            // always bound. Rejected declarations (empty xmlns:p="", wrong
+            // xml/xmlns bindings) are skipped above, so they correctly count as
+            // undeclared. R-000166.
+            let parent_node = unsafe { (*self.ctxt).node };
+            let my_doc = unsafe { (*self.ctxt).myDoc };
+            // Ancestor prefixes from the parser-scoped namespace stack (pure-SAX
+            // parses have no tree; upstream keeps this on ctxt->nsTab).
+            // Snapshot BEFORE the current element's own declarations are pushed
+            // (they are checked separately via `ns_decls`).
+            let ancestor_prefixes: Vec<Vec<u8>> = self
+                .ns_scope
+                .iter()
+                .rev()
+                .map(|(dp, _)| dp.clone())
+                .collect();
+            let prefix_declared = |prefix: &[u8]| -> bool {
+                if prefix == b"xml" {
+                    return true;
+                }
+                if ns_decls.iter().any(|(dp, _)| dp == prefix) {
+                    return true;
+                }
+                if parent_node.is_null() {
+                    // Pure-SAX parse (no tree): the ancestor declarations live on
+                    // the parser-scoped namespace stack (upstream ctxt->nsTab).
+                    return ancestor_prefixes.iter().any(|dp| dp == prefix);
+                }
+                if !parent_node.is_null() {
+                    // SAFETY: the document and parent are valid; the prefix is
+                    // NUL-terminated for the search.
+                    let mut prefix_c = prefix.to_vec();
+                    prefix_c.push(0);
+                    let ns = unsafe {
+                        crate::xml::tree::search_ns(
+                            my_doc,
+                            parent_node,
+                            prefix_c.as_ptr() as *const xmlChar,
+                        )
+                    };
+                    return !ns.is_null();
+                }
+                false
+            };
+            let element_local = match name.iter().position(|&b| b == b':') {
+                Some(colons) => &name[colons + 1..],
+                None => name.as_slice(),
+            };
+            for (i, (prefix, localname, _, _)) in regular_attrs.iter().enumerate() {
+                if let Some(p) = prefix {
+                    if !prefix_declared(p) {
+                        let pos = attr_pos.get(i).copied().unwrap_or(end_pos);
+                        self.raise_error_at(
+                            XML_FROM_NAMESPACE,
+                            XML_NS_ERR_UNDEFINED_NAMESPACE as c_int,
+                            xmlErrorLevel::XML_ERR_ERROR as c_int,
+                            format!(
+                                "Namespace prefix {} for {} on {} is not defined\n",
+                                String::from_utf8_lossy(p),
+                                String::from_utf8_lossy(localname),
+                                String::from_utf8_lossy(element_local)
+                            ),
+                            Some(p.clone()),
+                            None,
+                            None,
+                            0,
+                            pos,
+                        );
+                    }
+                }
             }
-            if ns_decls.iter().any(|(dp, _)| dp == prefix) {
-                return true;
-            }
-            if !parent_node.is_null() {
-                // SAFETY: the document and parent are valid; the prefix is
-                // NUL-terminated for the search.
-                let mut prefix_c = prefix.to_vec();
-                prefix_c.push(0);
-                let ns = unsafe {
-                    crate::xml::tree::search_ns(
-                        my_doc,
-                        parent_node,
-                        prefix_c.as_ptr() as *const xmlChar,
-                    )
-                };
-                return !ns.is_null();
-            }
-            false
-        };
-        let element_local = match name.iter().position(|&b| b == b':') {
-            Some(colons) => &name[colons + 1..],
-            None => name.as_slice(),
-        };
-        for (i, (prefix, localname, _, _)) in regular_attrs.iter().enumerate() {
-            if let Some(p) = prefix {
-                if !prefix_declared(p) {
-                    let pos = attr_pos.get(i).copied().unwrap_or(end_pos);
+            if let Some(colons) = name.iter().position(|&b| b == b':') {
+                let prefix = &name[..colons];
+                if !prefix_declared(prefix) {
                     self.raise_error_at(
                         XML_FROM_NAMESPACE,
                         XML_NS_ERR_UNDEFINED_NAMESPACE as c_int,
                         xmlErrorLevel::XML_ERR_ERROR as c_int,
                         format!(
-                            "Namespace prefix {} for {} on {} is not defined\n",
-                            String::from_utf8_lossy(p),
-                            String::from_utf8_lossy(localname),
+                            "Namespace prefix {} on {} is not defined\n",
+                            String::from_utf8_lossy(prefix),
                             String::from_utf8_lossy(element_local)
                         ),
-                        Some(p.clone()),
+                        Some(prefix.to_vec()),
                         None,
                         None,
                         0,
-                        pos,
+                        end_pos,
                     );
                 }
             }
-        }
-        if let Some(colons) = name.iter().position(|&b| b == b':') {
-            let prefix = &name[..colons];
-            if !prefix_declared(prefix) {
-                self.raise_error_at(
-                    XML_FROM_NAMESPACE,
-                    XML_NS_ERR_UNDEFINED_NAMESPACE as c_int,
-                    xmlErrorLevel::XML_ERR_ERROR as c_int,
-                    format!(
-                        "Namespace prefix {} on {} is not defined\n",
-                        String::from_utf8_lossy(prefix),
-                        String::from_utf8_lossy(element_local)
-                    ),
-                    Some(prefix.to_vec()),
-                    None,
-                    None,
-                    0,
-                    end_pos,
-                );
+
+            // UPSTREAM-PARITY: elements using the xml: prefix materialize the
+            // xml namespace on the document as well.
+            if name.starts_with(b"xml:") {
+                self.ensure_doc_xml_ns();
             }
-        }
+        } // end of the SAX2-only namespace classification + validation region
 
-        // UPSTREAM-PARITY: elements using the xml: prefix materialize the
-        // xml namespace on the document as well.
-        if name.starts_with(b"xml:") {
-            self.ensure_doc_xml_ns();
+        // Fire startElement SAX event. The default SAX2 handler manages
+        // nodeTab/nodeNr internally. For SAX2 parses the element's own
+        // namespace declarations are registered on the parser-scoped
+        // namespace stack afterwards, so that pure-SAX consumers (no tree,
+        // `ctxt->node == NULL`) resolve ancestor-declared prefixes — PHP's
+        // expat-compat `xml_parser_create_ns` (bug25666/xml009/xml010).
+        let ns_scope_mark = self.ns_scope.len();
+        if sax2 {
+            self.sax_start_element(&name, &attributes, &regular_attrs, &ns_decls, end_pos);
+            if unsafe { (*self.ctxt).node }.is_null() {
+                self.ns_scope.extend(ns_decls.iter().cloned());
+            }
+        } else {
+            // SAX1 dispatch: raw QName + every attribute (xmlns included).
+            self.sax1_start_element(&name, &attributes, end_pos);
         }
-
-        // Fire startElement SAX event
-        // The default SAX handler manages nodeTab/nodeNr internally.
-        self.sax_start_element(&name, &regular_attrs, &ns_decls, end_pos);
 
         // If not an empty element, parse content until matching end tag
         if !empty {
@@ -2196,7 +2370,19 @@ impl XmlParser {
                 let next = self.tokenizer.next_token_raw();
                 self.raise_pending_errors();
                 match next {
-                    XmlToken::EndTag { name: end_name, .. } => {
+                    XmlToken::EndTag {
+                        name: end_name,
+                        unterminated,
+                        ..
+                    } => {
+                        // An end tag cut off by the end of the currently
+                        // available input (chunk boundary): in an incremental
+                        // probe this pauses — the tag may complete on a
+                        // later push call — and never delivers (SP-14.3.1-3).
+                        if unterminated && self.probe {
+                            self.truncated_abort = true;
+                            return Err(());
+                        }
                         // Check for matching end tag
                         if end_name != name {
                             // UPSTREAM-PARITY (xmlParseElementEnd):
@@ -2240,7 +2426,11 @@ impl XmlParser {
                         if unterminated {
                             // Errors were already raised; the child element
                             // failed to parse (upstream xmlParseElementStart
-                            // returned -1).
+                            // returned -1). The construct may continue on a
+                            // later push call: probes must not deliver.
+                            if self.probe {
+                                self.truncated_abort = true;
+                            }
                             self.pop_name();
                             return Err(());
                         }
@@ -2281,6 +2471,11 @@ impl XmlParser {
                         if unterminated {
                             // "Premature end of data in CDATA section" was
                             // already recorded; the CDATA content is dropped.
+                            // The section may continue on a later push call:
+                            // probes must not deliver.
+                            if self.probe {
+                                self.truncated_abort = true;
+                            }
                             self.pop_name();
                             return Err(());
                         }
@@ -2295,7 +2490,14 @@ impl XmlParser {
                         // element raises "Premature end of data in tag %s
                         // line %d" (77) — but only while wellFormed (a prior
                         // fatal error already reported the real cause). In
-                        // recovery mode the element is closed silently.
+                        // recovery mode the element is closed silently. In an
+                        // incremental probe the end of the currently
+                        // available input inside an open element pauses the
+                        // parse (more data may complete it later).
+                        if self.probe {
+                            self.paused = true;
+                            return Err(());
+                        }
                         if self.is_recovery() {
                             break;
                         }
@@ -2336,6 +2538,10 @@ impl XmlParser {
         // Fire endElement SAX event
         // The default SAX handler pops nodeTab/nodeNr internally.
         self.sax_end_element(&name);
+
+        // Pop the element's own namespace declarations from the
+        // parser-scoped stack (registered after the start event above).
+        self.ns_scope.truncate(ns_scope_mark);
 
         // Pop element name from context stack
         self.pop_name();
@@ -2593,7 +2799,22 @@ impl XmlParser {
             }
 
             // Resolve the declared entity through the SAX getEntity handler.
-            let entity = if !self.is_sax_disabled() {
+            let entity = if self.probe {
+                // Incremental probe: resolve entities side-effect-free. PHP's
+                // expat-compat getEntity has user-visible side effects (it
+                // feeds the raw "&name;" text to the default handler), which
+                // must not fire during a probe — the completing parse
+                // dispatches it.
+                let name_cstr = Self::vec_to_cstr_null(name);
+                unsafe {
+                    let pre = crate::abi::exports_misc::xmlGetPredefinedEntity(name_cstr);
+                    if pre.is_null() {
+                        crate::xml::tree::get_doc_entity((*self.ctxt).myDoc, name_cstr)
+                    } else {
+                        pre
+                    }
+                }
+            } else if !self.is_sax_disabled() {
                 let name_cstr = Self::vec_to_cstr_null(name);
                 unsafe {
                     let sax = &*(*self.ctxt).sax;
@@ -2693,7 +2914,10 @@ impl XmlParser {
                 // recovery mode this builds an entity-ref node without a
                 // backing declaration; the expat-compat default handler has
                 // already seen the raw "&name;" text through getEntity.
-                if !self.is_sax_disabled() && unsafe { (*self.ctxt).replaceEntities == 0 } {
+                if !self.is_sax_disabled()
+                    && !self.probe
+                    && unsafe { (*self.ctxt).replaceEntities == 0 }
+                {
                     let name_cstr = Self::vec_to_cstr_null(name);
                     unsafe {
                         let sax = &*(*self.ctxt).sax;
@@ -2775,7 +2999,7 @@ impl XmlParser {
                     return Err(());
                 }
                 // Not substituting: dispatch the reference event.
-                if !self.is_sax_disabled() {
+                if !self.is_sax_disabled() && !self.probe {
                     let name_cstr = Self::vec_to_cstr_null(name);
                     unsafe {
                         let sax = &*(*self.ctxt).sax;
@@ -2953,7 +3177,21 @@ impl XmlParser {
                                 // General entity: resolve, recurse, and emit an
                                 // entity-ref node carrying the entity.
                                 let name_cstr = Self::vec_to_cstr_null(inner);
-                                let ent2 = if !self.is_sax_disabled() {
+                                let ent2 = if self.probe {
+                                    // Side-effect-free probe resolution (the
+                                    // compat getEntity feeds the default
+                                    // handler — must not fire in probes).
+                                    let pre =
+                                        crate::abi::exports_misc::xmlGetPredefinedEntity(name_cstr);
+                                    if pre.is_null() {
+                                        crate::xml::tree::get_doc_entity(
+                                            (*self.ctxt).myDoc,
+                                            name_cstr,
+                                        )
+                                    } else {
+                                        pre
+                                    }
+                                } else if !self.is_sax_disabled() {
                                     let sax = &*(*self.ctxt).sax;
                                     let ctx = (*self.ctxt).userData;
                                     SaxDispatcher::get_entity(sax, ctx, name_cstr)
@@ -3112,7 +3350,7 @@ impl XmlParser {
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
     fn sax_start_document(&mut self) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         unsafe {
@@ -3130,7 +3368,7 @@ impl XmlParser {
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
     fn sax_end_document(&mut self) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         unsafe {
@@ -3157,11 +3395,12 @@ impl XmlParser {
     fn sax_start_element(
         &mut self,
         _name: &[u8],
+        _raw_attributes: &[(Vec<u8>, Vec<u8>, bool)],
         attrs: &[(Option<Vec<u8>>, Vec<u8>, Vec<u8>, bool)],
         ns_decls: &[(Vec<u8>, Vec<u8>)],
         end_pos: usize,
     ) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         self.sync_input_position();
@@ -3235,7 +3474,37 @@ impl XmlParser {
             } else if let Some((_, u)) = ns_decls.iter().find(|(dp, _)| dp.is_empty()) {
                 return Some(u.clone());
             }
-            // Ancestor scope.
+            // Ancestor scope. For a pure-SAX parse there is no tree
+            // (ctxt->node == NULL), so walk the parser-scoped namespace
+            // stack — upstream ctxt->nsTab, pushed by xmlParseStartTag2 when
+            // the xmlns declarations are processed and popped at element end
+            // (SP-14.3.1-3, bug25666/xml009/xml010).
+            if parent_node.is_null() {
+                for (sp, su) in self.ns_scope.iter().rev() {
+                    match prefix {
+                        Some(p) => {
+                            if sp == p {
+                                if su.is_empty() {
+                                    // xmlns:p="" is a rejected declaration
+                                    // and never reaches the scope; an empty
+                                    // default href means the element is in
+                                    // NO namespace (URI NULL).
+                                    return None;
+                                }
+                                return Some(su.clone());
+                            }
+                        }
+                        None => {
+                            if sp.is_empty() {
+                                if su.is_empty() {
+                                    return None;
+                                }
+                                return Some(su.clone());
+                            }
+                        }
+                    }
+                }
+            }
             unsafe {
                 if !parent_node.is_null() {
                     // UPSTREAM-PARITY (parser.c xmlParserNsLookupUri): a
@@ -3373,6 +3642,55 @@ impl XmlParser {
         }
     }
 
+    /// Fire a SAX1 `startElement` event (upstream `xmlParseStartTag` SAX1
+    /// dispatch): the RAW QName and a NULL-terminated SAX1 attribute array
+    /// `[name1, value1, name2, value2, ..., NULL]` built from every
+    /// attribute — xmlns declarations included, no namespace processing.
+    ///
+    /// `attributes` is the substituted `(raw_name, value, had_ref)` list.
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt` with
+    ///   valid `sax`/`userData`; the caller-owned slices live for the call;
+    ///   the NUL-terminated C strings passed to the SAX callback are
+    ///   intentionally leaked and stay valid for the duration of the
+    ///   callback.
+    fn sax1_start_element(
+        &mut self,
+        name: &[u8],
+        attributes: &[(Vec<u8>, Vec<u8>, bool)],
+        end_pos: usize,
+    ) {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+            return;
+        }
+        self.sync_input_position();
+        // UPSTREAM-PARITY: `cur` sits at the tag's closing `>` when the SAX
+        // start-element callback fires.
+        self.sync_cur_at(end_pos);
+        unsafe {
+            let sax = &*(*self.ctxt).sax;
+            let ctx = (*self.ctxt).userData;
+            let name_cstr = Self::vec_to_cstr_null(name);
+            let mut att_vec: Vec<*const xmlChar> = Vec::with_capacity(attributes.len() * 2 + 1);
+            for (n, v, _had_ref) in attributes {
+                att_vec.push(Self::vec_to_cstr_null(n));
+                att_vec.push(Self::vec_to_cstr_null(v));
+            }
+            att_vec.push(ptr::null());
+            let atts_ptr = att_vec.as_ptr() as *mut *const xmlChar;
+            core::mem::forget(att_vec);
+            // Dispatch through the context's own SAX struct: `userData` is
+            // the consumer's opaque context (PHP ext/xml compat passes its
+            // XML_Parser object) and must NOT be reinterpreted as a parser
+            // context here.
+            if let Some(cb) = sax.startElement {
+                cb(ctx, name_cstr, atts_ptr);
+            }
+        }
+    }
+
     /// Fire `endElement` SAX event.
     ///
     /// # Safety
@@ -3381,7 +3699,22 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `name` is a caller-owned slice live for the
     ///   call.
     fn sax_end_element(&mut self, name: &[u8]) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+            return;
+        }
+        // SAX1 consumers (upstream xmlParseEndTag1) receive the raw QName
+        // through the SAX1 endElement callback with no namespace processing.
+        if !self.sax2_mode() {
+            if !self.is_sax_disabled() {
+                unsafe {
+                    let sax = &*(*self.ctxt).sax;
+                    let ctx = (*self.ctxt).userData;
+                    let name_cstr = Self::vec_to_cstr_null(name);
+                    if let Some(cb) = sax.endElement {
+                        cb(ctx, name_cstr);
+                    }
+                }
+            }
             return;
         }
         // UPSTREAM-PARITY (SAX2.c xmlSAX2EndElementNs): a validating parse
@@ -3449,7 +3782,30 @@ impl XmlParser {
             let uri_cstr = {
                 let node = (*self.ctxt).node;
                 if node.is_null() {
-                    ptr::null()
+                    // Pure-SAX parse (no tree): resolve through the
+                    // parser-scoped namespace stack (upstream ctxt->nsTab).
+                    let prefix = prefix_opt.as_deref();
+                    let uri = self
+                        .ns_scope
+                        .iter()
+                        .rev()
+                        .find(|(p, _)| match prefix {
+                            Some(pf) => p == pf,
+                            None => p.is_empty(),
+                        })
+                        .map(|(_, u)| u.clone());
+                    match uri {
+                        Some(u) => {
+                            if u.is_empty() {
+                                // xmlns="" undeclares the default namespace:
+                                // the SAX2 URI is NULL, not "".
+                                ptr::null()
+                            } else {
+                                Self::vec_to_cstr_null(&u)
+                            }
+                        }
+                        None => ptr::null(),
+                    }
                 } else {
                     let ns = (*node).ns;
                     if ns.is_null() {
@@ -3471,7 +3827,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_characters(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() || data.is_empty() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed || data.is_empty() {
             return;
         }
         self.sync_input_position();
@@ -3491,7 +3847,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_comment(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         self.sync_input_position();
@@ -3511,7 +3867,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `target` and `data` are caller-owned slices
     ///   live for the call.
     fn sax_pi(&mut self, target: &[u8], data: &[u8]) {
-        if self.is_sax_disabled() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
         self.sync_input_position();
@@ -3532,7 +3888,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_cdata(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() || data.is_empty() {
+        if self.is_sax_disabled() || self.probe || self.sax_suppressed || data.is_empty() {
             return;
         }
         self.sync_input_position();
@@ -3751,6 +4107,17 @@ impl XmlParser {
         window: Option<(Vec<u8>, usize)>,
         enc_bytes: Option<[u8; 4]>,
     ) {
+        // Incremental probe mode (helpers::parse_chunk) keeps the context
+        // bookkeeping — errNo / nbErrors / wellFormed drive the probe's
+        // completeness verdict and must stay faithful — but defers every
+        // DELIVERY to handlers (SP-14.3.1-3): probes re-parse the accumulated
+        // buffer on each push call, so invoking the structured/generic error
+        // channel here would duplicate diagnostics once the completing parse
+        // runs. A probe fatal must likewise not set disableSAX = 1 (that
+        // would suppress the events preceding the fatal in the completing
+        // parse); catastrophic stops (disableSAX = 2) stay effective because
+        // they gate the parse flow itself.
+        let defer_delivery = self.probe;
         unsafe {
             // UPSTREAM-PARITY (parserInternals.c xmlCtxtVErr): catastrophic
             // errors — XML_ERR_RESOURCE_LIMIT and XML_ERR_ENTITY_LOOP (plus
@@ -3768,7 +4135,10 @@ impl XmlParser {
                 {
                     return;
                 }
-                if level == xmlErrorLevel::XML_ERR_FATAL as c_int && !self.is_recovery() {
+                if level == xmlErrorLevel::XML_ERR_FATAL as c_int
+                    && !self.is_recovery()
+                    && !defer_delivery
+                {
                     (*self.ctxt).disableSAX = 1;
                 }
             }
@@ -3787,7 +4157,7 @@ impl XmlParser {
             }
         }
 
-        if unsafe { (*self.ctxt).options } & XML_PARSE_NOERROR == 0 {
+        if !defer_delivery && unsafe { (*self.ctxt).options } & XML_PARSE_NOERROR == 0 {
             let msg_cstr = std::ffi::CString::new(msg).unwrap_or_default();
             let s1 = str1.and_then(|s| std::ffi::CString::new(s).ok());
             let s2 = str2.and_then(|s| std::ffi::CString::new(s).ok());

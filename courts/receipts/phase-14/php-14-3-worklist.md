@@ -17,9 +17,15 @@ extension subset to confirm the targeted test(s) flip PASS with no sibling regre
        (fatal only standalone/no-ext-subset/no-PE-refs; else 27 warn/err and
        continue) + hasExternalSubset/hasPErefs tracking + xmlCtxtUseOptions
        member updates. ext/xml 20 -> 18 failed.
-- [ ] SP-14.3.1-3  xml_parse_into_struct namespace tag/attr encoding: bug50576
-       empty-uri default ns, bug25666/xml009/xml010 uri@local naming, bug72714
-       (SKIP_TAGSTART + NS).
+- [x] SP-14.3.1-3  xml_parse_into_struct namespace tag/attr encoding:
+       bug50576/bug25666/xml009/xml010/bug72714 all PASS. Roots closed:
+       (a) xmlParseChunk eager delivery — non-final calls probe silently and
+       one completing parse delivers exactly once (php xml_parse defaults
+       isFinal=false); (b) SAX1-vs-SAX2 dispatch by sax->initialized
+       (non-ns expat-compat gets raw-QName SAX1 events with xmlns attrs);
+       (c) parser-scoped ns scope stack for pure-SAX ancestor resolution.
+       Also closed bug73135 + xml_set_object_multiple_times{,_errors};
+       bug81351 kept green. ext/xml 18 -> 10 failed.
 - [ ] SP-14.3.1-4  xml_parse_into_struct empty/False result: bug35447 (char entity
        inside attr recode), bug71592.
 - [ ] SP-14.3.1-5  bug26614_libxml_gte2_11 end-element locator col/byte.

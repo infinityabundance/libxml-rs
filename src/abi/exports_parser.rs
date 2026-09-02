@@ -653,6 +653,8 @@ pub unsafe extern "C" fn xmlCtxtReset(ctxt: *mut _xmlParserCtxt) {
         // Free the stored InputBuffer (stashed by setup_parser_input; the
         // side table keeps ctxt._private application data — 11.1-X).
         helpers::free_stashed_input_buffer(ctxt);
+        // Drop any incremental-push state (SP-14.3.1-3).
+        helpers::free_push_state(ctxt);
 
         // Node stack (array only; nodes are owned by the doc).
         if !c.nodeTab.is_null() {

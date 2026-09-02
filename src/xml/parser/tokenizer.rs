@@ -98,7 +98,11 @@ pub(crate) enum XmlToken {
 
     /// End tag: `</name>` (carries the byte offset of the leading `<` so
     /// the parser can attribute document-level errors to the token start).
-    EndTag { name: Vec<u8>, start_pos: usize },
+    EndTag {
+        name: Vec<u8>,
+        start_pos: usize,
+        unterminated: bool,
+    },
 
     /// Comment: `<!-- ... -->`
     Comment(Vec<u8>),
@@ -455,11 +459,16 @@ impl XmlTokenizer {
         self.skip_whitespace();
 
         // Expect '>'
+        let unterminated = self.input.is_eof();
         if self.input.peek_char() == Some('>') {
             self.input.read_char();
         }
 
-        XmlToken::EndTag { name, start_pos }
+        XmlToken::EndTag {
+            name,
+            start_pos,
+            unterminated,
+        }
     }
 
     /// Scan a start tag: `<name ...>` or `<name ... />`, replicating

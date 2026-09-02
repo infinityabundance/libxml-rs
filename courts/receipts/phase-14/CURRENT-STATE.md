@@ -105,3 +105,38 @@ SP-14.3.1-2 closed (R-14.3-UNDECLARED-ENTITY-SEVERITY FIXED):
     containers. cargo test --lib 1202 pass; clippy/fmt clean.
   - receipt/analysis: php-14-3-undeclared-entity-20260902/ (log sp1-xml3.log
     ext/xml 67 run -> 38 pass / 18 fail / 11 skip).
+
+SP-14.3.1-3 closed (R-14.3-PUSH-DELIVERY + R-14.3-SAX1SAX2 + R-14.3-NS-SCOPE
+  FIXED): xml009/xml010/bug25666/bug50576/bug72714 PASS; ext/xml 18 -> 10
+  failed (also closed bug73135 + xml_set_object_multiple_times{,_errors});
+  zero regressions. Three engine root causes:
+  - R-14.3-PUSH-DELIVERY: php xml_parse defaults isFinal=false and upstream
+    xmlParseChunk parses each chunk eagerly, so a single non-final call with
+    a complete document must deliver. helpers::parse_chunk now probes each
+    non-final call with a silent parse (SAX + diagnostics deferred, EOF in an
+    open construct pauses) and, when the accumulated input parsed through to
+    its end (clean end OR a failure on a complete token at the input end —
+    bug25666's `</foo>`-closes-`<foo:a>`), runs one completing parse that
+    delivers exactly once; later calls only buffer (epilog) and the final
+    call re-validates silently with a sax-suppressed diagnostics pass for
+    trailing junk; push state is freed with the context (address reuse).
+  - R-14.3-SAX1SAX2: element dispatch now follows upstream xmlCtxtInitializeLate
+    (SAX1 when !(SAX1 flag) && initialized != XML_SAX2_MAGIC ...): the non-ns
+    expat-compat parser (initialized=1) gets the SAX1 startElement with the
+    RAW QName + full attribute list (xmlns declarations included) instead of
+    the SAX2 NS handler; dispatch goes through the context's own sax struct
+    (userData is the consumer's opaque object, not a parser context).
+  - R-14.3-NS-SCOPE: parser-scoped namespace scope stack (upstream nsTab)
+    for SAX2 pure-SAX parses (ctxt->node == NULL): ancestor xmlns decls now
+    resolve for elements/attrs and the prefix-declared check, so
+    <foo:a xmlns:bar=...><bar:b/> resolves and raises no bogus
+    undefined-prefix error (bug25666/bug81351/xml009).
+  - guards: tests.rs push delivery trio + SAX1 qname/xmlns + SAX2 ancestor
+    URI tests; C probes consumers/nspush-probe.c (candidate) +
+    nsoracle-probe.c (oracle) pin SAX1-vs-SAX2 dispatch; oracle-pinned on the
+    system 2.15.3 + php-oracle containers (bug81351 kept green).
+    cargo test --lib 1206 pass; phase-13 HOSTILE-ABI/ALLOCATOR/CALLBACKS/
+    FAILURE/OWNERSHIP probes PASS (parse_chunk change verified); clippy (no
+    new warnings) + fmt clean.
+  - receipt/analysis: php-14-3-push-delivery-20260902/ (log sp1-xml7.log
+    ext/xml 67 run -> 46 pass / 10 fail / 11 skip).

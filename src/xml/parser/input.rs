@@ -357,6 +357,25 @@ impl InputBuffer {
         }
     }
 
+    /// Produce an independent copy of this buffer at its current state, so
+    /// the same accumulated input can be parsed more than once (incremental
+    /// push probe/delivery: `helpers::parse_chunk` runs a silent completeness
+    /// probe and, when the accumulated input is a complete document, a
+    /// completing parse over an identical buffer).
+    pub(crate) fn duplicate_for_reparse(&self) -> InputBuffer {
+        InputBuffer {
+            source: InputSource::Memory(self.data.clone()),
+            data: self.data.clone(),
+            pos: self.pos,
+            line: self.line,
+            col: self.col,
+            encoding: self.encoding.clone(),
+            filename: self.filename.clone(),
+            bom_consumed: self.bom_consumed,
+            io_failed: self.io_failed,
+        }
+    }
+
     /// Create an `InputBuffer` from a file on disk.
     ///
     /// Returns `Err` if the file cannot be opened or read.

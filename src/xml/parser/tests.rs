@@ -31,6 +31,7 @@ use crate::abi::types::xmlChar;
 use crate::xml::parser::helpers;
 use crate::xml::tree;
 use core::ptr;
+use std::ffi::c_void;
 use std::os::raw::c_int;
 
 /// Helper: parse a byte slice and return the document.
@@ -551,5 +552,270 @@ fn test_undeclared_entity_noent_nonfatal_error_27() {
         assert_eq!(wf2, 1);
         assert_eq!(err2, 27);
         tree::free_doc(doc2);
+    }
+}
+
+// ── SP-14.3.1-3 regression guards (incremental push delivery, SAX1/SAX2
+// ── dispatch, parser-scoped namespace stack) ────────────────────────────────
+
+// Capture state for the C callbacks below. `thread_local!` keeps the tests
+// independent under Rust's parallel test runner: the callbacks run on the
+// same thread as their test.
+thread_local! {
+    static SAX1_STARTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static SAX1_ENDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static SAX1_CHARS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static SAX2_EVENTS: std::cell::RefCell<Vec<(Vec<u8>, Vec<u8>)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+    static SAX1_EVENTS: std::cell::RefCell<Vec<Vec<u8>>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+unsafe extern "C" fn sax1_start(
+    _ctx: *mut c_void,
+    name: *const xmlChar,
+    atts: *mut *const xmlChar,
+) {
+    SAX1_STARTS.with(|c| c.set(c.get() + 1));
+    if name.is_null() {
+        return;
+    }
+    let n = unsafe { std::ffi::CStr::from_ptr(name as *const i8) }
+        .to_bytes()
+        .to_vec();
+    let mut parts: Vec<Vec<u8>> = vec![n];
+    if !atts.is_null() {
+        let mut i = 0usize;
+        unsafe {
+            while !(*atts.add(i)).is_null() {
+                let k = std::ffi::CStr::from_ptr(*atts.add(i) as *const i8)
+                    .to_bytes()
+                    .to_vec();
+                let v = std::ffi::CStr::from_ptr(*atts.add(i + 1) as *const i8)
+                    .to_bytes()
+                    .to_vec();
+                parts.push(k);
+                parts.push(v);
+                i += 2;
+            }
+        }
+    }
+    SAX1_EVENTS.with(|e| e.borrow_mut().push(parts.into_iter().flatten().collect()));
+}
+
+unsafe extern "C" fn sax1_end(_ctx: *mut c_void, _name: *const xmlChar) {
+    SAX1_ENDS.with(|c| c.set(c.get() + 1));
+}
+
+unsafe extern "C" fn sax1_chars(_ctx: *mut c_void, _ch: *const xmlChar, _len: c_int) {
+    SAX1_CHARS.with(|c| c.set(c.get() + 1));
+}
+
+#[allow(clippy::too_many_arguments)]
+unsafe extern "C" fn sax2_start_ns(
+    _ctx: *mut c_void,
+    local: *const xmlChar,
+    _prefix: *const xmlChar,
+    uri: *const xmlChar,
+    _nb_ns: c_int,
+    _ns: *mut *const xmlChar,
+    _nb_atts: c_int,
+    _nb_def: c_int,
+    _atts: *mut *const xmlChar,
+) {
+    let local = if local.is_null() {
+        b"(null)".to_vec()
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(local as *const i8) }
+            .to_bytes()
+            .to_vec()
+    };
+    let uri = if uri.is_null() {
+        Vec::new()
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(uri as *const i8) }
+            .to_bytes()
+            .to_vec()
+    };
+    SAX2_EVENTS.with(|e| e.borrow_mut().push((local, uri)));
+}
+
+unsafe extern "C" fn sax2_end_ns(
+    _ctx: *mut c_void,
+    _local: *const xmlChar,
+    _prefix: *const xmlChar,
+    _uri: *const xmlChar,
+) {
+}
+
+/// Reset the capture state for the calling thread.
+fn reset_push_capture() {
+    SAX1_STARTS.with(|c| c.set(0));
+    SAX1_ENDS.with(|c| c.set(0));
+    SAX1_CHARS.with(|c| c.set(0));
+    SAX1_EVENTS.with(|e| e.borrow_mut().clear());
+    SAX2_EVENTS.with(|e| e.borrow_mut().clear());
+}
+
+/// Build a push-parser context with a SAX1 handler set (initialized = 1, the
+/// PHP expat-compat `xml_parser_create` configuration), or a SAX2-magic
+/// handler when `magic` is set.
+unsafe fn push_ctxt(
+    sax1_handlers: bool,
+) -> (
+    *mut crate::abi::structs::_xmlParserCtxt,
+    *mut crate::abi::structs::_xmlSAXHandler,
+) {
+    let mut h = crate::abi::structs::_xmlSAXHandler {
+        ..std::mem::zeroed()
+    };
+    if sax1_handlers {
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        h.characters = Some(sax1_chars);
+        h.initialized = 1;
+    } else {
+        h.initialized = crate::abi::types::XML_SAX2_MAGIC as u32;
+        h.startElementNs = Some(sax2_start_ns);
+        h.endElementNs = Some(sax2_end_ns);
+    }
+    let sax_ptr = Box::into_raw(Box::new(h));
+    let ctxt = crate::abi::exports_parser::xmlCreatePushParserCtxt(
+        sax_ptr,
+        ptr::null_mut(),
+        ptr::null(),
+        0,
+        ptr::null(),
+    );
+    assert!(!ctxt.is_null());
+    (ctxt, sax_ptr)
+}
+
+/// A complete document fed to xmlParseChunk WITHOUT the terminating flag must
+/// deliver all events (PHP xml_parse defaults isFinal=false; upstream parses
+/// each chunk eagerly). The oracle fires S(root) S(b) E(b) E(root) plus two
+/// character events for `<root>hello <b>world</b></root>`; the completing
+/// parse must deliver exactly that once.
+///
+/// # Safety
+///
+/// - The static handler structs and counter state are module-scoped; the
+///   context is freed at the end of the test.
+#[test]
+fn test_push_single_shot_without_terminate_delivers() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<root>hello <b>world</b></root>";
+        let (ctxt, sax_ptr) = push_ctxt(true);
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            0,
+        );
+        assert_eq!(rc, 0);
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 2);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 2);
+        assert_eq!(SAX1_CHARS.with(|c| c.get()), 2);
+        // A later terminating call must NOT re-deliver (events fire once).
+        let rc2 = crate::abi::exports_xml2::xmlParseChunk(ctxt, ptr::null(), 0, 1);
+        assert_eq!(rc2, 0);
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 2);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 2);
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// The same document fed in small non-terminating chunks and then finalized
+/// must also deliver each event exactly once.
+///
+/// # Safety
+///
+/// - As `test_push_single_shot_without_terminate_delivers`.
+#[test]
+fn test_push_chunked_delivers_once() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<root>hello <b>world</b></root>";
+        let (ctxt, sax_ptr) = push_ctxt(true);
+        for chunk in doc.chunks(4) {
+            let rc = crate::abi::exports_xml2::xmlParseChunk(
+                ctxt,
+                chunk.as_ptr() as *const i8,
+                chunk.len() as c_int,
+                0,
+            );
+            assert_eq!(rc, 0);
+        }
+        let rc = crate::abi::exports_xml2::xmlParseChunk(ctxt, ptr::null(), 0, 1);
+        assert_eq!(rc, 0);
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 2);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 2);
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// A document with a fatal error at its very end (the root end tag does not
+/// match the root start tag) still delivers the events that precede it when
+/// fed single-shot without terminate — upstream parsed them eagerly
+/// (bug25666: `</foo>` closing `<foo:a ...>`).
+///
+/// # Safety
+///
+/// - As `test_push_single_shot_without_terminate_delivers`.
+#[test]
+fn test_push_error_at_end_still_delivers() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<foo:a xmlns:foo=\"u\"><bar:b xmlns:bar=\"v\"/></foo>";
+        let (ctxt, sax_ptr) = push_ctxt(false); // SAX2-magic capture
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            0,
+        );
+        assert_eq!(rc, 0);
+        let evs = SAX2_EVENTS.with(|e| e.borrow().clone());
+        assert_eq!(evs.len(), 2, "both start events must be delivered");
+        assert_eq!(evs[0], (b"a".to_vec(), b"u".to_vec()));
+        // The child's prefix is declared on the ROOT — the parser-scoped
+        // namespace stack must resolve it (bug25666/xml009).
+        assert_eq!(evs[1], (b"b".to_vec(), b"v".to_vec()));
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// SAX1 dispatch (PHP expat-compat non-namespace parser) delivers the RAW
+/// QName and every attribute including xmlns declarations, with no namespace
+/// processing (upstream xmlParseStartTag; bug50576/bug72714).
+///
+/// # Safety
+///
+/// - As `test_push_single_shot_without_terminate_delivers`.
+#[test]
+fn test_push_sax1_raw_qname_and_xmlns_attributes() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<ns1:listOfAwards xmlns:ns1=\"http://www.fpdsng.com/FPDS\"/>\n";
+        let (ctxt, sax_ptr) = push_ctxt(true);
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc, 0);
+        let evs = SAX1_EVENTS.with(|e| e.borrow().clone());
+        assert_eq!(evs.len(), 1);
+        assert_eq!(
+            evs[0],
+            b"ns1:listOfAwardsxmlns:ns1http://www.fpdsng.com/FPDS".to_vec()
+        );
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
     }
 }
