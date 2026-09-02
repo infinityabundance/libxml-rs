@@ -133,3 +133,20 @@ Proof:
 
 Remaining crash-class members (now ~30) are separate roots to be driven to zero
 one per residual.
+
+## OPEN — Bug-2 (SimpleXML attribute set/unset double free)
+
+Minimal candidate-only repro (mode A or B), deterministic (aborts every run):
+
+    $xml = '<sxe id="elem1"><elem1 attr1="first"/></sxe>';
+    $sxe = simplexml_load_string($xml);
+    $sxe['id'] = "Changed1";   unset($sxe['id']);          // A: double free at teardown
+    // or $sxe->elem1['attr1']=12; unset($sxe->elem1['attr1']);  // B likewise
+    fwrite(STDERR,"end\n");   // reached; abort AFTER: free(): double free detected -> rc 134
+
+Oracle: identical body rc 0. Raw C `xmlRemoveProp`+`xmlFreeDoc` in 20k loops is
+clean on candidate, so the defect is above raw attribute removal (likely the
+SimpleXML over-write-exiting-attr then remove path, or set/unset alias
+ordering). Next: mimic overwriting a PRE-EXISTING attribute then removing it in
+a C loop to isolate the double free; inspect xmlSetProp-over-existing-node
+ownership vs teardown.
