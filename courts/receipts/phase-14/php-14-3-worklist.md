@@ -1,8 +1,11 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative split (full-suite run at /out/total-check.log, DSO @ 8f42257f):
-Total 305 failed.  dom 170 | xsl 58 | xmlreader 29 | xmlwriter 19 | simplexml 9 | xml 20
+Authoritative current full-suite count: **283 failed** (dom 169 | xsl 52 |
+xmlreader 29 | xmlwriter 19 | simplexml 9 | xml 5) at f190faeb + KEY-1.
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
+Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
+CURRENT-STATE.md; the per-extension atoms below remain the extension-level
+execution order.
 
 Legend: [ ] not started | [~] in progress | [x] closed+committed (ext subset PASSed)
 Method per atom: mirror upstream at the Rust engine layer; commit; run the owning

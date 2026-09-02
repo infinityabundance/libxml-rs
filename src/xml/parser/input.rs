@@ -297,6 +297,16 @@ pub(crate) struct InputBuffer {
     filename: Option<String>,
     /// Whether the BOM has been consumed.
     bom_consumed: bool,
+    /// Whether the buffered `data` has already been transcoded to UTF-8
+    /// (UTF-16 BOM decode or a native non-UTF-8 encoding declared in the XML
+    /// declaration, e.g. ISO-8859-1). While false, incremental `push_bytes`
+    /// calls keep re-running detection so a declaration that only becomes
+    /// visible once the accumulated input grows is still honored (KEY-1:
+    /// BOM-less declared-encoding inputs, xslt.xml `encoding="iso-8859-1"`).
+    converted_to_utf8: bool,
+    /// Set when the input starts with `<?xml` whose `?>` has not been seen
+    /// yet — the declaration may complete on a later push call.
+    decl_pending: bool,
     /// The source (file / callback) failed to produce data: upstream
     /// raises an I/O error on the first grow instead of parsing empty
     /// content (HOSTILE-CALLBACKS C4).
@@ -314,6 +324,7 @@ impl std::fmt::Debug for InputBuffer {
             .field("filename", &self.filename)
             .field("len", &self.data.len())
             .field("bom_consumed", &self.bom_consumed)
+            .field("converted_to_utf8", &self.converted_to_utf8)
             .finish()
     }
 }
@@ -337,6 +348,8 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename,
             bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
             io_failed: false,
         };
         ib.detect_bom_and_encoding();
@@ -352,16 +365,29 @@ impl InputBuffer {
             return;
         }
         let first_real_bytes = self.data.is_empty() && self.pos == 0 && !self.bom_consumed;
+        // Once the accumulated buffer has been transcoded to UTF-8, the raw
+        // tail still arrives in the declared (source) encoding. ISO-8859-1 is
+        // a byte-wise mapping, so convert just the new tail (KEY-1). For any
+        // other latched encoding, keep appending raw like upstream's buffered
+        // input does before the parser's own encoder processes it.
+        if self.converted_to_utf8 && matches!(self.encoding, Encoding::Iso8859_1) {
+            if let InputSource::Memory(d) = &mut self.source {
+                d.extend_from_slice(bytes);
+            }
+            let tail = crate::xml::encoding::latin1_to_utf8(bytes);
+            self.data.extend_from_slice(&tail);
+            return;
+        }
         self.data.extend_from_slice(bytes);
         if let InputSource::Memory(d) = &mut self.source {
             d.extend_from_slice(bytes);
         }
-        if first_real_bytes {
-            // The buffer was constructed empty (xmlParseChunk push mode), so
-            // BOM/encoding detection ran on nothing at construction. Re-run
-            // it now that the first bytes exist, so a leading UTF-8/UTF-16
-            // BOM is consumed exactly like upstream's input-layer detection
-            // (SP-14.3.1-4: bug35447 — UTF-8 BOM + xml_parse_into_struct).
+        // Re-run detection when the first real bytes arrive (the buffer was
+        // constructed empty) or when an in-progress `<?xml` declaration may
+        // have just completed on this push (KEY-1: a BOM-less declared
+        // encoding such as `encoding="iso-8859-1"` only becomes visible once
+        // enough of the stream has accumulated).
+        if first_real_bytes || (self.decl_pending && !self.converted_to_utf8) {
             self.detect_bom_and_encoding();
         }
     }
@@ -381,6 +407,8 @@ impl InputBuffer {
             encoding: self.encoding.clone(),
             filename: self.filename.clone(),
             bom_consumed: self.bom_consumed,
+            converted_to_utf8: self.converted_to_utf8,
+            decl_pending: self.decl_pending,
             io_failed: self.io_failed,
         }
     }
@@ -408,6 +436,8 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename,
             bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
             io_failed: false,
         };
         ib.detect_bom_and_encoding();
@@ -434,6 +464,8 @@ impl InputBuffer {
             encoding: Encoding::None,
             filename: None,
             bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
             io_failed: false,
         };
         ib.detect_bom_and_encoding();
@@ -454,6 +486,8 @@ impl InputBuffer {
             encoding: Encoding::Utf8,
             filename: None,
             bom_consumed: false,
+            converted_to_utf8: false,
+            decl_pending: false,
             io_failed: true,
         }
     }
@@ -534,6 +568,39 @@ impl InputBuffer {
         // No BOM found. Default to UTF-8 and check for XML declaration.
         self.encoding = Encoding::Utf8;
         self.detect_encoding_from_xml_declaration();
+        // The XML declaration may name a native non-UTF-8 encoding (e.g.
+        // `encoding="iso-8859-1"` on a BOM-less stream). Transcode the
+        // buffered bytes to UTF-8 so the parser never sees raw non-UTF-8
+        // bytes (KEY-1: upstream `xmlSwitchEncoding` after xmlParseXMLDecl;
+        // without this the tokenizer raises "Invalid bytes in character
+        // encoding" on every valid Latin-1 byte >= 0x80).
+        self.convert_declared_native_encoding();
+    }
+
+    /// Transcode `data` to UTF-8 when the XML declaration named an encoding
+    /// the crate has a built-in converter for. ISO-8859-1 is a byte-wise
+    /// mapping (every byte 0x80..=0xFF becomes a two-byte UTF-8 sequence, all
+    /// ASCII stays identical — including the declaration itself), so the whole
+    /// buffered stream converts safely regardless of how much has arrived.
+    /// Unknown encodings (R-000157: iconv/ICU-only names) are left untouched
+    /// so the existing unsupported-encoding handling applies unchanged.
+    fn convert_declared_native_encoding(&mut self) {
+        if self.converted_to_utf8 {
+            return;
+        }
+        match &self.encoding {
+            Encoding::Iso8859_1 => {
+                let raw = std::mem::take(&mut self.data);
+                self.data = crate::xml::encoding::latin1_to_utf8(&raw);
+                self.converted_to_utf8 = true;
+            }
+            Encoding::Ascii => {
+                // US-ASCII is a strict UTF-8 subset: no transcode, but latch so
+                // incremental pushes stop re-detecting.
+                self.converted_to_utf8 = true;
+            }
+            _ => {}
+        }
     }
 
     /// Convert a BOM-detected UTF-16 input buffer to UTF-8 in place.
@@ -557,6 +624,7 @@ impl InputBuffer {
                 self.pos = 0;
                 self.col = 1;
                 self.bom_consumed = false;
+                self.converted_to_utf8 = true;
             }
             Err(()) => {
                 // Undecodable input: keep the raw bytes; the tokenizer will
@@ -565,6 +633,7 @@ impl InputBuffer {
                 self.pos = 0;
                 self.col = 1;
                 self.bom_consumed = false;
+                self.converted_to_utf8 = false;
             }
         }
     }
@@ -578,18 +647,36 @@ impl InputBuffer {
 
         // Must start with "<?xml"
         if remaining.len() < 5 {
+            // Fewer than 5 bytes: a `<?xml` prefix may still be arriving on a
+            // later push call — but only when the stream actually started
+            // with `<?xml` so far. If fewer bytes than `<?xml` are present we
+            // cannot tell yet whether a declaration is coming; optimistically
+            // stay pending only when what we have is a prefix of `<?xml`.
+            self.decl_pending = remaining == b"<"
+                || remaining == b"<?"
+                || remaining == b"<?x"
+                || remaining == b"<?xm";
             return;
         }
         if &remaining[..5] != b"<?xml" {
+            // The document does not start with an XML declaration; a later
+            // push can never produce one (the declaration must be at offset 0).
+            self.decl_pending = false;
             return;
         }
 
-        // Find the end of the PI: "?>"
+        // Find the end of the PI: ">"
         let pi_end = remaining.windows(2).position(|w| w == b"?>");
         let pi_end = match pi_end {
             Some(e) => e + 2,
-            None => return, // Malformed PI, ignore
+            None => {
+                // `<?xml` declaration truncated by the end of the available
+                // input: it may complete on a later push call (KEY-1).
+                self.decl_pending = true;
+                return;
+            }
         };
+        self.decl_pending = false;
 
         // Look for 'encoding' in the PI
         let pi_content = &remaining[..pi_end];
@@ -1597,5 +1684,70 @@ mod tests {
     fn test_encoding_detection_unknown() {
         let buf = InputBuffer::from_memory(b"<?xml version='1.0' encoding='Shift_JIS'?>", None);
         assert_eq!(buf.encoding(), &Encoding::Other("shift_jis".to_string()));
+    }
+
+    // ── KEY-1: BOM-less declared native encoding is transcoded to UTF-8 ──
+
+    /// A BOM-less stream whose XML declaration names `iso-8859-1` must have
+    /// its bytes transcoded to UTF-8 (KEY-1): the parser otherwise raises
+    /// "Invalid bytes in character encoding" on every Latin-1 byte >= 0x80
+    /// (upstream `xmlSwitchEncoding` after `xmlParseXMLDecl`).
+    #[test]
+    fn test_declared_latin1_bytes_transcoded_to_utf8() {
+        // `<?xml version="1.0" encoding="iso-8859-1"?><r>ä</r>` in Latin-1.
+        let mut raw = b"<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><r>".to_vec();
+        raw.push(0xE4); // 'ä' in ISO-8859-1
+        raw.extend_from_slice(b"</r>");
+        let mut buf = InputBuffer::from_memory(&raw, None);
+        assert_eq!(buf.encoding(), &Encoding::Iso8859_1);
+        assert!(buf.converted_to_utf8, "Latin-1 data must be transcoded");
+        let all = buf.read_all_chars();
+        assert!(
+            all.contains('ä'),
+            "declared Latin-1 byte must decode to UTF-8 'ä', got {all:?}"
+        );
+        assert!(
+            !all.contains('�'),
+            "no U+FFFD replacement may appear (raw byte was misread as UTF-8), got {all:?}"
+        );
+    }
+
+    /// Incremental push: the declaration only becomes visible once enough of
+    /// the stream accumulated; detection must re-run and transcode then.
+    #[test]
+    fn test_declared_latin1_incremental_push_transcodes() {
+        let mut raw = b"<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><r>".to_vec();
+        raw.push(0xE4);
+        raw.extend_from_slice(b"</r>");
+        let mut buf = InputBuffer::from_memory(&[], None);
+        // Feed in small chunks so the full `<?xml ... ?>` declaration is not
+        // present until the third push (mid-stream completion).
+        for chunk in raw.chunks(7) {
+            buf.push_bytes(chunk);
+        }
+        assert_eq!(buf.encoding(), &Encoding::Iso8859_1);
+        assert!(buf.converted_to_utf8);
+        let all = buf.read_all_chars();
+        assert!(
+            all.contains('ä'),
+            "incremental Latin-1 push must decode to UTF-8 'ä', got {all:?}"
+        );
+    }
+
+    /// `duplicate_for_reparse` (push probe/delivery) must carry the converted
+    /// stream and the latch so a re-parse never re-transcodes or sees raw bytes.
+    #[test]
+    fn test_duplicate_of_converted_latin1_stays_utf8() {
+        let mut raw = b"<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><r>".to_vec();
+        raw.push(0xE4);
+        raw.extend_from_slice(b"</r>");
+        let buf = InputBuffer::from_memory(&raw, None);
+        let mut dup = buf.duplicate_for_reparse();
+        assert!(dup.converted_to_utf8);
+        let all = dup.read_all_chars();
+        assert!(
+            all.contains('ä'),
+            "duplicated converted buffer must still read as UTF-8, got {all:?}"
+        );
     }
 }

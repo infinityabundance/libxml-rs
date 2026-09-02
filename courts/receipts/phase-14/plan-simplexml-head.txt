@@ -1,0 +1,9 @@
+008.phpt
+bug44478.phpt
+bug63575.phpt
+bug76712.phpt
+bug79971_1.phpt
+gh12167.phpt
+gh17153.phpt
+xml_parsing_LIBXML_NO_XXE.phpt
+xml_parsing_LIBXML_RECOVER.phpt

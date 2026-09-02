@@ -256,3 +256,26 @@ SP-14.3.1-7 closed (R-14.3-COMPLETED-CTXT-REFUSES-REPARSE FIXED): gh12254 PASS;
     HOSTILE verdicts PASS; ext/xml 67 run -> 51 pass / 5 fail / 11 skip;
     five-extension remeasure unchanged.
   - receipt dir: php-14-3-reparse-guard-20260902/
+
+KEY-1 closed (declared-encoding-on-BOM-less transcoded to UTF-8): full suite
+  289 -> 283 (ext/xsl 58 -> 52; zero regressions: dom 169 / simplexml 9 /
+  xml 5 / xmlreader 29 / xmlwriter 19 unchanged).
+  - root cause: BOM-less stream with `<?xml encoding="iso-8859-1"?>` was never
+    transcoded (only UTF-16 BOM paths converted); the tokenizer read raw
+    Latin-1 bytes (e.g. 0xE4) as UTF-8 and raised XML_ERR_INVALID_ENCODING (81)
+    "Invalid bytes in character encoding", which the oracle never emits.
+    ext/xsl/tests/xslt.xml declares iso-8859-1 + one 0xE4 byte (line 20), so 27
+    xsl diffs carried the spurious preamble; 6 now PASS outright
+    (xslt001 + get/removeParameter-family + setparameter-nostring).
+  - fix: src/xml/parser/input.rs — convert_declared_native_encoding()
+    transcodes the buffered stream when the declaration names ISO-8859-1
+    (latch US-ASCII; iconv-only names untouched, R-000157 unchanged);
+    converted_to_utf8 + decl_pending latches threaded through all
+    constructors/duplicate_for_reparse; push_bytes re-detects while a `<?xml`
+    decl is pending and converts just the raw tail once latched.
+  - guards: input.rs test_declared_latin1_bytes_transcoded_to_utf8 /
+    _incremental_push_transcodes / test_duplicate_of_converted_latin1_stays_
+    utf8; tests.rs test_parse_declared_latin1_bomless_memory_doc.
+    cargo test --lib 1220 pass; clippy no new warnings (4 pre-existing);
+    fmt clean. Oracle-pinned: load + saveXML byte-identical on both sides.
+  - receipt dir: php-14-3-key1-declared-encoding-20260902/

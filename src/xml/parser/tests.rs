@@ -74,6 +74,42 @@ fn test_parse_empty_document() {
     }
 }
 
+// ── KEY-1 regression guard (declared encoding on BOM-less input) ───────────
+
+/// A BOM-less byte stream that declares `encoding="iso-8859-1"` and contains
+/// a Latin-1 byte >= 0x80 must parse to the same tree as the oracle (the raw
+/// byte is transcoded to UTF-8 at input setup, not rejected as "Invalid bytes
+/// in character encoding"). This is the engine-level half of the PHP
+/// `simplexml_load_file`/`DOMDocument::load` failure on `ext/xsl`'s
+/// `xslt.xml` (KEY-1).
+///
+/// # Safety
+///
+/// - As `test_parse_empty_document`; the text content pointer is read while
+///   the doc is alive.
+#[test]
+fn test_parse_declared_latin1_bomless_memory_doc() {
+    unsafe {
+        // `<?xml version="1.0" encoding="iso-8859-1"?><r>ä</r>` in Latin-1.
+        let mut xml = b"<?xml version=\"1.0\" encoding=\"iso-8859-1\"?><r>".to_vec();
+        xml.push(0xE4);
+        xml.extend_from_slice(b"</r>");
+        let doc = parse_bytes(&xml);
+        assert!(!doc.is_null(), "BOM-less declared Latin-1 doc must parse");
+        let root = (*doc).children;
+        assert!(!root.is_null());
+        let text = (*root).children;
+        assert!(!text.is_null(), "root should have the text child");
+        assert_eq!(
+            (*text).type_,
+            crate::abi::types::xmlElementType::XML_TEXT_NODE as i32
+        );
+        let content = crate::xml::string::xmlstr_to_bytes((*text).content as *const xmlChar);
+        assert_eq!(content, "ä".as_bytes(), "Latin-1 byte decodes to UTF-8 ä");
+        tree::free_doc(doc);
+    }
+}
+
 /// Parse a document with text content and verify the text node.
 ///
 /// # Safety
