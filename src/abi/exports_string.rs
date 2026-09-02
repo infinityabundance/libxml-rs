@@ -1223,7 +1223,7 @@ unsafe fn node_parse_att_value(
         }
         last = node;
     } else if head.is_null() {
-        head = new_doc_text(doc, b"" as *const u8 as *const xmlChar);
+        head = new_doc_text(doc, c"".as_ptr() as *const xmlChar);
         if head.is_null() {
             return -1;
         }

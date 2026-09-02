@@ -1,0 +1,18 @@
+{
+  "schema": "phase14.3/php-rootcause-receipt/1",
+  "phase": "14.3",
+  "residual": "R-14.3-EMPTY-STRING-DANGLING-PTR",
+  "status": "FIXED",
+  "upstream_behavior": "xmlNodeListGetString over a node list that produces no text returns a NUL-terminated empty string; the empty result must be a real, readable string.",
+  "candidate_defect": "Five sites used the Rust idiom `b\"\" as *const u8 as *const xmlChar` to build an empty xmlChar string. A zero-length byte-string literal casts to a DANGLING pointer (Rust emits address 0x1 for the empty slice), and xml_strdup/xml_strlen dereference it -> SIGSEGV. The path is reached when a non-text node list (element chain) yields no text content.",
+  "php_trigger": "SimpleXML string cast of an element whose children produce no direct text: trim($xml) in ext/simplexml 027/028 -> sxe_object_cast_ex -> xmlNodeListGetString -> crash in xml_strlen(0x1).",
+  "generic_fix": "Replace `b\"\" as *const u8 as *const xmlChar` with `c\"\".as_ptr() as *const xmlChar` (a real NUL-terminated static) at all five sites (exports_treedump.rs node_list_get_string_internal x3 + attr text default; exports_string.rs attr text default).",
+  "regression_rust_test": "abi::exports_xml2::tests::test_nodelist_getstring_empty_from_element_chain (passes; pre-fix crashes).",
+  "regression_c_court": "consumers/nodelist_getstring_probe.c: ELEM=[] len=0 and TEXT=[Joe] len=3 on both oracle and candidate.",
+  "php_verification": {
+    "phpt_ext_simplexml_027_028": "PASS on candidate (were SIGSEGV)",
+    "full_suite_candidate": "308 failed / 40 skipped (down from 310); closed exactly ext/simplexml 027 and 028; zero regressions"
+  },
+  "provider_provenance": "candidate run resolved libxml2/libxslt/libexslt exclusively under /candidate/lib",
+  "rules_honoured": "no PHP source change, no .phpt change, no expected-output normalisation."
+}

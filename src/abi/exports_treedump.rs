@@ -565,7 +565,9 @@ unsafe fn node_list_get_string_internal(
     flags: c_int,
 ) -> *mut xmlChar {
     if node.is_null() {
-        return xml_strdup(b"" as *const u8 as *const xmlChar);
+        // UPSTREAM-PARITY: c"" is a real NUL-terminated static (the b""
+        // idiom would hand a dangling 0x1 pointer to xml_strdup).
+        return xml_strdup(c"".as_ptr() as *const xmlChar);
     }
     unsafe {
         let n = &*node;
@@ -574,7 +576,7 @@ unsafe fn node_list_get_string_internal(
             && n.next.is_null()
         {
             if n.content.is_null() {
-                return xml_strdup(b"" as *const u8 as *const xmlChar);
+                return xml_strdup(c"".as_ptr() as *const xmlChar);
             }
             return xml_strdup(n.content);
         }
@@ -627,7 +629,7 @@ unsafe fn node_list_get_string_internal(
     let ret = if !content.is_null() && len > 0 {
         xml_strdup(content)
     } else {
-        xml_strdup(b"" as *const u8 as *const xmlChar)
+        xml_strdup(c"".as_ptr() as *const xmlChar)
     };
     io::buf_free(buf);
     ret
@@ -980,7 +982,7 @@ unsafe fn node_parse_att_value(
         }
         last = node;
     } else if head.is_null() {
-        head = new_doc_text(doc, b"" as *const u8 as *const xmlChar);
+        head = new_doc_text(doc, c"".as_ptr() as *const xmlChar);
         if head.is_null() {
             return -1;
         }

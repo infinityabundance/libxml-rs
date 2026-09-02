@@ -8656,4 +8656,57 @@ mod tests {
             crate::xml::tree::free_doc(doc);
         }
     }
+
+    /// Phase 14.3 regression: `xmlNodeListGetString` over a non-text node
+    /// list must return a NUL-terminated EMPTY string. The pre-fix
+    /// `xml_strdup(b"")` idiom handed xml_strdup a dangling 0x1 pointer
+    /// (Rust zero-length byte-string literal), crashing in xml_strlen when
+    /// SimpleXML string-casts an element whose children produce no text
+    /// (ext/simplexml 027/028).
+    ///
+    /// # Safety
+    ///
+    /// - doc/root/person are built and freed exactly once; returned strings
+    ///   are freed with `xmlFreeImpl`.
+    #[test]
+    fn test_nodelist_getstring_empty_from_element_chain() {
+        unsafe {
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let root = crate::xml::tree::new_node(
+                core::ptr::null_mut(),
+                c"people".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!root.is_null());
+            crate::xml::tree::doc_set_root_element(doc, root);
+            let person = crate::abi::exports_tree::xmlNewTextChild(
+                root,
+                core::ptr::null_mut(),
+                c"person".as_ptr() as *const crate::abi::types::xmlChar,
+                c"Joe".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!person.is_null());
+            super::xmlSetProp(
+                person,
+                c"gender".as_ptr() as *const crate::abi::types::xmlChar,
+                c"male".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+
+            // Element list head yields an empty string (pre-fix: crash).
+            let s1 = crate::abi::exports_treedump::xmlNodeListGetString(doc, (*root).children, 1);
+            assert!(!s1.is_null());
+            assert_eq!(*s1 as u8, 0);
+            crate::abi::allocator::xmlFreeImpl(s1 as *mut core::ffi::c_void);
+
+            // Text child list yields the element text.
+            let s2 = crate::abi::exports_treedump::xmlNodeListGetString(doc, (*person).children, 1);
+            assert!(!s2.is_null());
+            let b = crate::xml::string::xmlstr_to_bytes(s2);
+            assert_eq!(b, b"Joe");
+            crate::abi::allocator::xmlFreeImpl(s2 as *mut core::ffi::c_void);
+
+            crate::xml::tree::free_doc(doc);
+        }
+    }
 }

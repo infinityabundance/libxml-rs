@@ -22,8 +22,13 @@ Fix 3 committed (R-14.3-COPYDOC-ROOT-PARENT FIXED): 315 -> 310.
 Current tracked (post-Fix-3 full candidate run, iteration tree, same config):
 - candidate: 1291 / 310 failed / 40 skipped (skips == oracle)
 
+Fix 4 committed (R-14.3-EMPTY-STRING-DANGLING-PTR FIXED): 310 -> 308.
+  - b"" as *const u8 -> xml_strdup idiom handed a dangling 0x1 pointer;
+    replaced with c"".as_ptr() (real NUL static) at 5 sites.
+  - closed ext/simplexml 027 + 028; zero regressions.
+  - receipt dir: courts/receipts/phase-14/php-14-3-empty-string-ptr-20260902/
+
 Open residuals remaining to closure (in phase order, one root cause each):
-- ~20 remaining crash-class members (double free / SIGSEGV) across dom,
-  simplexml, xml, xsl.
+- ~19 remaining crash-class members across dom, simplexml, xml, xsl.
 - ~290 output-mismatch failures grouped by root cause.
 - then 14.3-Q binary substitution, 14.3-S ZTS, and 14.3-T full gate.
