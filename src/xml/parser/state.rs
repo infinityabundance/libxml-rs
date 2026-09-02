@@ -201,6 +201,20 @@ pub(crate) struct XmlParser {
     /// complete-but-invalid document like "</foo>" closing "<foo:a>"
     /// (deliver; upstream parsed it eagerly — bug25666).
     truncated_abort: bool,
+    /// Eager-partial delivery mode (SP-14.3.1-6): SAX and diagnostics stay ON
+    /// (unlike the silent probe) but an end-of-input inside an open construct
+    /// PAUSES the parse instead of raising "Premature end of data". Upstream
+    /// parses each xmlParseChunk eagerly and fires every event whose construct
+    /// completed, so a non-final call on an incomplete document delivers the
+    /// events it can (XML_OPTION_PARSE_HUGE multi-call flow); the terminating
+    /// call continues from where delivery stopped.
+    partial_delivery: bool,
+    /// Byte offset below which SAX events were already delivered by an earlier
+    /// eager-partial parse of the same accumulated input. Re-parses (later
+    /// non-final calls and the terminating call) suppress the events in
+    /// [0, `sax_suppress_until`) and fire only the new tail, so nothing is
+    /// delivered twice (SP-14.3.1-6). 0 = suppress nothing.
+    sax_suppress_until: usize,
     /// SAX-mode namespace scope stack (prefix, href) of the currently open
     /// elements. Upstream keeps the in-scope namespace stack on the parser
     /// context (`ctxt->nsTab`/`nsNr`, pushed by `xmlParseStartTag2` and popped
@@ -280,8 +294,18 @@ impl XmlParser {
             (*ctxt).nbWarnings = 0;
         }
 
+        let mut tokenizer = XmlTokenizer::new(input);
+        // UPSTREAM-PARITY (parserInternals.h): without XML_PARSE_HUGE a name
+        // longer than XML_MAX_NAME_LENGTH (50 000) is rejected; with it the
+        // limit is XML_MAX_TEXT_LENGTH (10 000 000) (SP-14.3.1-6).
+        tokenizer.set_max_name_length(if (options & crate::abi::types::XML_PARSE_HUGE) != 0 {
+            10_000_000
+        } else {
+            50_000
+        });
+
         XmlParser {
-            tokenizer: XmlTokenizer::new(input),
+            tokenizer,
             ctxt,
             options,
             sax1,
@@ -289,11 +313,64 @@ impl XmlParser {
             started_unwellformed,
             paused: false,
             sax_suppressed,
+            partial_delivery: false,
+            sax_suppress_until: 0,
             truncated_abort: false,
             ns_scope: Vec::new(),
             dtd_attr_defaults: Vec::new(),
             cur_error_tail: None,
         }
+    }
+
+    /// Create an eager-partial delivery parser (SP-14.3.1-6): SAX and
+    /// diagnostics stay on, an end-of-input inside an open construct pauses
+    /// silently, and events whose position falls at or below
+    /// `suppress_until` (already delivered by an earlier partial parse of the
+    /// same accumulated input) are skipped. The tokenizer additionally splits
+    /// character runs at `suppress_until`, so the event segmentation matches
+    /// the earlier partial parse exactly and no text is lost or doubled
+    /// across the delivery boundary. Used for NON-final calls: upstream parses
+    /// each chunk eagerly, so an incomplete document still delivers every
+    /// event whose construct completed.
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid, properly initialized `_xmlParserCtxt`;
+    /// `suppress_until` must be a byte offset into the accumulated input
+    /// (0 = suppress nothing).
+    pub unsafe fn new_with_partial_resume(
+        input: InputStack,
+        ctxt: *mut _xmlParserCtxt,
+        suppress_until: usize,
+    ) -> Self {
+        let mut parser = Self::new_with_resume(input, ctxt, suppress_until);
+        parser.partial_delivery = true;
+        parser
+    }
+
+    /// Create a resume parser (SP-14.3.1-6): like `new` but SAX events at or
+    /// below `suppress_until` (already delivered by earlier eager-partial
+    /// parses) are skipped and character runs split at the boundary. An
+    /// end-of-input inside an open construct still raises (terminating-call
+    /// semantics — upstream xmlParseChunk's terminate path reports
+    /// "Premature end of data"; bug81351).
+    ///
+    /// # Safety
+    ///
+    /// `ctxt` must be a valid, properly initialized `_xmlParserCtxt`;
+    /// `suppress_until` must be a byte offset into the accumulated input
+    /// (0 = suppress nothing).
+    pub unsafe fn new_with_resume(
+        input: InputStack,
+        ctxt: *mut _xmlParserCtxt,
+        suppress_until: usize,
+    ) -> Self {
+        let mut parser = Self::new_with_flags(input, ctxt, false, false);
+        parser.sax_suppress_until = suppress_until;
+        if suppress_until > 0 {
+            parser.tokenizer.set_split_chars_at(Some(suppress_until));
+        }
+        parser
     }
 
     /// Return whether the parser dispatches through the SAX2 element
@@ -445,9 +522,10 @@ impl XmlParser {
 
         // UPSTREAM-PARITY (xmlParseDocument): an empty input is reported as
         // "Document is empty" before anything else. In an incremental probe
-        // the empty input is simply "more data expected" — it pauses.
+        // (or an eager-partial delivery) the empty input is simply "more data
+        // expected" — it pauses without firing endDocument (SP-14.3.1-6).
         if self.tokenizer.is_input_empty() {
-            if self.probe {
+            if self.probe || self.partial_delivery {
                 self.paused = true;
                 return -2;
             }
@@ -472,10 +550,11 @@ impl XmlParser {
         let root_seen = match self.parse_prolog() {
             Ok(v) => v,
             Err(()) => {
-                if self.probe && self.paused {
+                if (self.probe || self.partial_delivery) && self.paused {
                     // End of the currently available input inside the prolog:
-                    // the document may continue on a later push call.
-                    self.sax_end_document();
+                    // the document may continue on a later push call. The
+                    // document is not finished, so no endDocument fires
+                    // (SP-14.3.1-6).
                     return -2;
                 }
                 if !self.is_recovery() {
@@ -496,9 +575,9 @@ impl XmlParser {
             (*self.ctxt).instate = XML_PARSER_CONTENT;
         }
         if self.parse_content().is_err() && !self.is_recovery() {
-            if self.probe && self.paused {
-                // Same pause: the root element is not finished yet.
-                self.sax_end_document();
+            if (self.probe || self.partial_delivery) && self.paused {
+                // Same pause: the root element is not finished yet (no
+                // endDocument — SP-14.3.1-6).
                 return -2;
             }
             self.sax_end_document();
@@ -617,9 +696,10 @@ impl XmlParser {
                 XmlToken::Eof => {
                     // Empty document or end of prolog without a root:
                     // upstream "Start tag expected, '<' not found" (only
-                    // while wellFormed). In an incremental probe the root
-                    // element simply has not arrived yet — pause silently.
-                    if self.probe {
+                    // while wellFormed). In an incremental probe (or an
+                    // eager-partial delivery) the root element simply has not
+                    // arrived yet — pause silently (SP-14.3.1-6).
+                    if self.probe || self.partial_delivery {
                         self.paused = true;
                         return Err(());
                     }
@@ -838,7 +918,7 @@ impl XmlParser {
         let has_internal = content.contains(&b'[');
 
         // Fire internalSubset SAX event
-        if !self.is_sax_disabled() {
+        if !self.is_sax_disabled() && !self.below_delivery_boundary() {
             let name_cstr = if !root_name.is_empty() {
                 Self::vec_to_cstr_null(root_name.as_slice())
             } else {
@@ -1111,7 +1191,7 @@ impl XmlParser {
     /// argument text is `args` (everything after the leading `NOTATION` keyword).
     /// Mirrors upstream `xmlParseNotationDecl` (SAX `notationDecl`).
     fn fire_sax_notation_decl(&self, args: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         unsafe {
@@ -1148,7 +1228,7 @@ impl XmlParser {
     /// external general entity declaration is parsed.
     /// Mirrors upstream `xmlParseEntityDecl` NDATA branch.
     fn fire_sax_unparsed_entity_decl(&self, args: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         unsafe {
@@ -2047,8 +2127,9 @@ impl XmlParser {
                     // Errors (incl. "Couldn't find end of Start Tag") were
                     // already raised; upstream's element parse failed. The
                     // construct may continue on a later push call, so an
-                    // incremental probe must not deliver.
-                    if self.probe {
+                    // incremental probe (or eager-partial delivery) must not
+                    // deliver.
+                    if self.probe || self.partial_delivery {
                         self.truncated_abort = true;
                     }
                     return Err(());
@@ -2596,8 +2677,9 @@ impl XmlParser {
                             // Errors were already raised; the child element
                             // failed to parse (upstream xmlParseElementStart
                             // returned -1). The construct may continue on a
-                            // later push call: probes must not deliver.
-                            if self.probe {
+                            // later push call: probes and eager-partial
+                            // deliveries must not deliver.
+                            if self.probe || self.partial_delivery {
                                 self.truncated_abort = true;
                             }
                             self.pop_name();
@@ -2641,8 +2723,9 @@ impl XmlParser {
                             // "Premature end of data in CDATA section" was
                             // already recorded; the CDATA content is dropped.
                             // The section may continue on a later push call:
-                            // probes must not deliver.
-                            if self.probe {
+                            // probes and eager-partial deliveries must not
+                            // deliver.
+                            if self.probe || self.partial_delivery {
                                 self.truncated_abort = true;
                             }
                             self.pop_name();
@@ -2660,10 +2743,11 @@ impl XmlParser {
                         // line %d" (77) — but only while wellFormed (a prior
                         // fatal error already reported the real cause). In
                         // recovery mode the element is closed silently. In an
-                        // incremental probe the end of the currently
-                        // available input inside an open element pauses the
-                        // parse (more data may complete it later).
-                        if self.probe {
+                        // incremental probe (or eager-partial delivery) the
+                        // end of the currently available input inside an open
+                        // element pauses the parse (more data may complete it
+                        // later; SP-14.3.1-6).
+                        if self.probe || self.partial_delivery {
                             self.paused = true;
                             return Err(());
                         }
@@ -3529,6 +3613,23 @@ impl XmlParser {
     // SAX dispatch helpers
     // ─────────────────────────────────────────────────────────────────────────
 
+    /// Return whether SAX delivery is disabled entirely (stopped / silent
+    /// probe / sax-suppressed diagnostics pass).
+    fn sax_blocked(&self) -> bool {
+        self.is_sax_disabled() || self.probe || self.sax_suppressed
+    }
+
+    /// Whether an event at the tokenizer's current byte position must be
+    /// skipped because it lies at or below the already-delivered prefix of the
+    /// accumulated input (eager-partial delivery resume, SP-14.3.1-6). Events
+    /// fire after their token was consumed, so the current position is the
+    /// token's end: a token ending at or before the boundary was delivered by
+    /// the earlier partial parse; only tokens ending past it are new.
+    fn below_delivery_boundary(&self) -> bool {
+        self.sax_suppress_until > 0
+            && self.tokenizer.input().current_pos().2 <= self.sax_suppress_until
+    }
+
     /// Fire `startDocument` SAX event.
     ///
     /// # Safety
@@ -3537,7 +3638,10 @@ impl XmlParser {
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
     fn sax_start_document(&mut self) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        // startDocument fires once per parse session: any parse with a
+        // delivery boundary is a continuation of an earlier eager-partial
+        // parse that already fired it (SP-14.3.1-6).
+        if self.sax_blocked() || self.sax_suppress_until > 0 {
             return;
         }
         unsafe {
@@ -3555,7 +3659,7 @@ impl XmlParser {
     ///   `sax` is a valid `_xmlSAXHandler` and whose `userData` matches the
     ///   handler.
     fn sax_end_document(&mut self) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() {
             return;
         }
         unsafe {
@@ -3587,7 +3691,7 @@ impl XmlParser {
         ns_decls: &[(Vec<u8>, Vec<u8>)],
         end_pos: usize,
     ) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();
@@ -3902,7 +4006,7 @@ impl XmlParser {
         attributes: &[(Vec<u8>, Vec<u8>, bool)],
         end_pos: usize,
     ) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();
@@ -3939,7 +4043,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `name` is a caller-owned slice live for the
     ///   call.
     fn sax_end_element(&mut self, name: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         // UPSTREAM-PARITY (parser.c xmlParseEndTag1/xmlParseEndTag2): the
@@ -4075,7 +4179,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_characters(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed || data.is_empty() {
+        if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();
@@ -4095,7 +4199,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_comment(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();
@@ -4115,7 +4219,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `target` and `data` are caller-owned slices
     ///   live for the call.
     fn sax_pi(&mut self, target: &[u8], data: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed {
+        if self.sax_blocked() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();
@@ -4136,7 +4240,7 @@ impl XmlParser {
     ///   valid `sax`/`userData`; `data` is a caller-owned slice live for the
     ///   call.
     fn sax_cdata(&mut self, data: &[u8]) {
-        if self.is_sax_disabled() || self.probe || self.sax_suppressed || data.is_empty() {
+        if self.sax_blocked() || data.is_empty() || self.below_delivery_boundary() {
             return;
         }
         self.sync_input_position();

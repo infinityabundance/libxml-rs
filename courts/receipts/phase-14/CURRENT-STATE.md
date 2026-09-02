@@ -208,3 +208,33 @@ SP-14.3.1-5 closed (R-14.3-END-LOCATOR FIXED): bug26614_libxml_gte2_11 PASS;
     cargo test --lib 1213 pass; fmt/clippy clean; five-extension remeasure
     unchanged (dom 169 / simplexml 9 / xmlreader 29 / xmlwriter 19 / xsl 58).
   - receipt dir: php-14-3-end-locator-20260902/
+
+SP-14.3.1-6 closed (R-14.3-PARSE-HUGE-LIMITS + R-14.3-MULTICALL-EAGER-DELIVERY
+  FIXED): XML_OPTION_PARSE_HUGE PASS; ext/xml 7 -> 6 failed (zero regressions;
+  bug81351 kept green). Two engine root causes:
+  - R-14.3-PARSE-HUGE-LIMITS: without XML_PARSE_HUGE an element name longer
+    than XML_MAX_NAME_LENGTH (50 000 bytes; 10 000 000 = XML_MAX_TEXT_LENGTH
+    with HUGE) failed the tag parse upstream with XML_ERR_NAME_REQUIRED (68)
+    "StartTag: invalid element name"; the candidate accepted any name length.
+    The tokenizer now enforces the limit (max_name_length set from the ctxt
+    options; upstream xmlParseName fast-path parity).
+  - R-14.3-MULTICALL-EAGER-DELIVERY: the -3 push model deferred ALL delivery
+    until the accumulated input formed a complete document, so a non-final
+    xml_parse on an INCOMPLETE doc fired nothing — but upstream parses each
+    xmlParseChunk eagerly and delivers every completed construct immediately
+    (the HUGE success case prints CONTAINER/A/A/SECOND during the first call
+    and only closes the container on the final call). parse_chunk now runs an
+    eager-partial delivery whenever the silent probe pauses at a clean
+    construct boundary (SAX + diagnostics on, EOF-in-open-construct pauses),
+    records delivered_bytes, and every later parse (non-final or terminating)
+    resumes from that boundary: SAX events at or below it are suppressed, the
+    tokenizer splits character runs there so segmentation matches, and the
+    terminating parse still raises premature-end errors (bug81351). startDocument
+    fires once per session. All events fire exactly once across the calls.
+  - guards: tests.rs test_push_multicall_eager_delivery_then_resume +
+    test_push_name_length_limit_without_huge (+huge control).
+    cargo test --lib 1215 pass; clippy no new warnings; fmt clean; phase-13
+    HOSTILE-ABI/ALLOCATOR/CALLBACKS/FAILURE/OWNERSHIP verdicts PASS; ext/xml
+    67 run -> 50 pass / 6 fail / 11 skip; five-extension remeasure unchanged
+    (dom 169 / simplexml 9 / xmlreader 29 / xmlwriter 19 / xsl 58).
+  - receipt dir: php-14-3-parse-huge-20260902/

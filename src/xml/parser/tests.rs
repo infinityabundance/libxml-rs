@@ -1272,6 +1272,136 @@ fn test_push_end_element_locator_is_one_past_gt() {
     }
 }
 
+// ── SP-14.3.1-6 regression guards (multi-call eager delivery, name limits) ─
+
+/// Upstream parses each xmlParseChunk eagerly, so a NON-final call on an
+/// INCOMPLETE document still delivers every event whose construct completed;
+/// the terminating call continues from there (XML_OPTION_PARSE_HUGE multi-call
+/// flow: the head delivers CONTAINER/A/A/SECOND, the tail only closes the
+/// container). Nothing is delivered twice.
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`; SAX1 events are captured
+///   in module-scoped state.
+#[test]
+fn test_push_multicall_eager_delivery_then_resume() {
+    unsafe {
+        reset_push_capture();
+        let head = b"<?xml version=\"1.0\"?><container><aaa/><aaa/><second>foo</second>";
+        let tail = b"</container>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1; // SAX1 expat-compat (xml_parser_create)
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        h.characters = Some(sax1_chars_log);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        // Call 1: NON-final with the incomplete head — upstream fires the
+        // completed constructs immediately.
+        let rc1 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            head.as_ptr() as *const i8,
+            head.len() as c_int,
+            0,
+        );
+        assert_eq!(rc1, 0);
+        assert_eq!((*ctxt).errNo, 0);
+        let starts1 = SAX1_EVENTS.with(|e| e.borrow().clone());
+        assert_eq!(
+            starts1.len(),
+            4,
+            "CONTAINER + aaa + aaa + second delivered on the non-final call"
+        );
+        // Call 2: final with the tail — only the container's end remains.
+        let rc2 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            tail.as_ptr() as *const i8,
+            tail.len() as c_int,
+            1,
+        );
+        assert_eq!(rc2, 0);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 4, "all four ends exactly once");
+        assert_eq!(
+            SAX1_EVENTS.with(|e| e.borrow().len()),
+            4,
+            "no start re-delivered by the terminating call"
+        );
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// Without XML_PARSE_HUGE an element name longer than XML_MAX_NAME_LENGTH
+/// (50 000 bytes) fails the start-tag parse with XML_ERR_NAME_REQUIRED (68)
+/// "StartTag: invalid element name" and the element is never reported — the
+/// parser stops (Request #68325 / XML_OPTION_PARSE_HUGE). With XML_PARSE_HUGE
+/// the limit becomes XML_MAX_TEXT_LENGTH (10 000 000) and the name parses.
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`.
+#[test]
+fn test_push_name_length_limit_without_huge() {
+    unsafe {
+        reset_push_capture();
+        let long_name: Vec<u8> = std::iter::repeat(b'A').take(50_001).collect();
+        let mut doc = b"<container><".to_vec();
+        doc.extend_from_slice(&long_name);
+        doc.extend_from_slice(b"/></container>");
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1;
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc, 68, "name-too-long is fatal without XML_PARSE_HUGE");
+        assert_eq!((*ctxt).errNo, 68);
+        assert_eq!((*ctxt).wellFormed, 0);
+        assert_eq!(
+            SAX1_STARTS.with(|c| c.get()),
+            1,
+            "only CONTAINER was reported"
+        );
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+
+        // With XML_PARSE_HUGE the same document parses (limit 10 000 000).
+        reset_push_capture();
+        let mut h2 = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h2.initialized = 1;
+        h2.startElement = Some(sax1_start);
+        h2.endElement = Some(sax1_end);
+        let (ctxt2, sax_ptr2) = push_ctxt_boxed(h2);
+        (*ctxt2).options |= crate::abi::types::XML_PARSE_HUGE;
+        let rc2 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt2,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc2, 0);
+        assert_eq!((*ctxt2).errNo, 0);
+        assert_eq!(
+            SAX1_STARTS.with(|c| c.get()),
+            2,
+            "container + the huge name"
+        );
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt2);
+        drop(Box::from_raw(sax_ptr2));
+    }
+}
+
 /// SAX1 dispatch (PHP expat-compat non-namespace parser) delivers the RAW
 /// QName and every attribute including xmlns declarations, with no namespace
 /// processing (upstream xmlParseStartTag; bug50576/bug72714).

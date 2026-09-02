@@ -164,6 +164,14 @@ pub(crate) struct XmlTokenizer {
     push_back: Option<XmlToken>,
     /// Parser errors recorded during scanning (drained by the parser).
     errors: Vec<ErrorInfo>,
+    /// Byte offset at which a character-data run must break so the event
+    /// segmentation matches an earlier eager-partial delivery of the same
+    /// accumulated input (SP-14.3.1-6). None = no split.
+    split_chars_at: Option<usize>,
+    /// Maximum accepted name length in bytes — upstream XML_MAX_NAME_LENGTH
+    /// (50 000) or XML_MAX_TEXT_LENGTH (10 000 000) with XML_PARSE_HUGE
+    /// (parserInternals.h; SP-14.3.1-6).
+    max_name_length: usize,
 }
 
 impl XmlTokenizer {
@@ -184,7 +192,20 @@ impl XmlTokenizer {
             input,
             push_back: None,
             errors: Vec::new(),
+            split_chars_at: None,
+            max_name_length: 50_000,
         }
+    }
+
+    /// Set the byte offset at which character-data runs split (see
+    /// `split_chars_at`).
+    pub const fn set_split_chars_at(&mut self, offset: Option<usize>) {
+        self.split_chars_at = offset;
+    }
+
+    /// Set the maximum accepted name length (see `max_name_length`).
+    pub const fn set_max_name_length(&mut self, limit: usize) {
+        self.max_name_length = limit;
     }
 
     /// Get a mutable reference to the input stack.
@@ -511,6 +532,36 @@ impl XmlTokenizer {
                 }
                 self.input.read_char();
             }
+            return XmlToken::StartTag {
+                name,
+                attributes,
+                attr_end: Vec::new(),
+                attr_start: Vec::new(),
+                end_pos: self.input.current_pos().2,
+                empty,
+                unterminated: true,
+            };
+        }
+
+        // UPSTREAM-PARITY (parser.c xmlParseStartTag2 + xmlParseName): a
+        // name longer than XML_MAX_NAME_LENGTH (50 000 bytes, or
+        // XML_MAX_TEXT_LENGTH with XML_PARSE_HUGE) fails the element-name
+        // parse — the tag then raises XML_ERR_NAME_REQUIRED "StartTag:
+        // invalid element name" and the element is never reported
+        // (SP-14.3.1-6: XML_OPTION_PARSE_HUGE — the 5 MB name must error
+        // without HUGE and parse with it).
+        if name.len() > self.max_name_length {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_NAME_REQUIRED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "StartTag: invalid element name\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
             return XmlToken::StartTag {
                 name,
                 attributes,
@@ -1476,6 +1527,16 @@ impl XmlTokenizer {
         loop {
             if self.input.is_eof() {
                 break;
+            }
+            // SP-14.3.1-6 delivery boundary: a character run crossing the
+            // already-delivered prefix of the accumulated input is split at
+            // the boundary so the re-parse's event segmentation matches the
+            // earlier eager-partial parse exactly (the prefix part was
+            // delivered; the suffix part must fire as its own event).
+            if let Some(split) = self.split_chars_at {
+                if !content.is_empty() && self.input.current_pos().2 >= split {
+                    break;
+                }
             }
             // An exhausted entity-content input was auto-popped: end the run at
             // the entity boundary (the following char belongs to the outer
