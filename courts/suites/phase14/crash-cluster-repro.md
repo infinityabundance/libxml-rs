@@ -29,37 +29,37 @@ Proof:
 Remaining crash-class members are separate roots to be driven to zero one per
 residual.
 
-## OPEN — Bug-3 (DOM document clone + navigation double free)
+## RESOLUTION — Bug-3 (DOM clone + navigation double free) FIXED
 
-Repro (candidate-only, deterministic):
+Root cause: `copy_doc` (src/xml/tree/mod.rs) forced the copied root element's
+parent to NULL, while upstream tree.c xmlCopyDoc keeps the NEW document node as
+the parent of every copied top-level child
+(xmlStaticCopyNodeList(doc->children, ret, (xmlNodePtr)ret)). PHP treats a
+node with parent == NULL as ownerless (php_libxml_node_free_resource): a
+proxy for the cloned root freed the whole subtree at teardown, and the cloned
+doc (which still referenced the root) double-freed it. Clone WITHOUT
+navigation created no root proxy, which is why only clone+navigate crashed.
 
-    $d = new DOMDocument; $d->loadXML('<p><b>hello</b><b><i>world</i></b></p>');
-    $c = clone $d;
-    $b1 = $c->firstChild->firstChild; $b2 = $b1->nextSibling; $i = $b2->firstChild;
-    // navigation works; double free at shutdown: "double free or corruption"
+Proof:
+- upstream archaeology tree.c xmlCopyDoc child copy parent argument.
+- native free traces (root struct freed once, then doc teardown re-free).
+- Fix: copy_doc sets each top-level child's parent = new doc and sets
+  new_doc.last.
+- Rust regression test_copy_doc_keeps_doc_as_root_parent (passes).
+- C oracle differential consumers/copydoc_parent_probe.c byte-identical
+  (20000 iterations both sides).
+- Full candidate suite 315 -> 310 failures, zero regressions; closed
+  DOMElement_append_hierarchy_test, DOMElement_insertAdjacentText,
+  DOMElement_prepend_hierarchy_test, xsl importStylesheet_clone_retained_
+  {document,node}.
 
-Oracle rc 0. Clone+unset WITHOUT navigation is clean, so proxy teardown after
-clone+navigation triggers it. PHP legacy DOMDocument clone calls xmlDocCopyNode
-(-> static_copy_node in exports_treedump.rs).
+(Investigation note: an early free trace pointed at free_parser_input, but
+that was a heap chunk-reuse artifact of the naive first/second-free watcher,
+not the mechanism; the parser-input theory was discarded after the copy_doc
+parent fix removed the crash.)
 
-First/second-free native trace: the same pointer is freed FIRST by
-xmlFreeParserCtxt -> free_parser_ctxt -> free_parser_input (a parser-input
-owned buffer), and THEN by free_node (name free) during PHP teardown. A parsed
-node's name/content aliases parser-input-owned storage instead of owning a
-copy: the node outlives the parse context, whose teardown frees the storage
-under it, so the later node free double-frees.
-
-Also verified upstream parity: xmlStaticCopyNode does NOT copy `_private`;
-local experiment (NULL _private on tree::copy_node copies) did NOT change the
-crash, and the fix belongs in the PARSER-side storage ownership, not the copy.
-
-Next: instrument the parser to find which node name/content pointers borrow
-parser-input buffers (element/attr name or text content created from input
-slices without xmlStrdup/xmlDictLookup ownership), then make that path own or
-dict-intern correctly. Suspect members: DOMElement_append_hierarchy_test,
-DOMElement_prepend_hierarchy_test, DOMElement_insertAdjacentText,
-DOMElement_replaceChildren, DOMDocument_saveXML_XML_SAVE_NO_DECL,
-DOMNode_isEqualNode (all clone/teardown crashes).
+Remaining crash-class members are separate roots to be driven to zero one per
+residual.
 
 ## Discovery
 The Phase-14.3 fail-closed result interpreter (`consumers/php-court-result.py`)

@@ -1,0 +1,18 @@
+{
+  "schema": "phase14.3/php-rootcause-receipt/1",
+  "phase": "14.3",
+  "residual": "R-14.3-COPYDOC-ROOT-PARENT",
+  "status": "FIXED",
+  "upstream_behavior": "libxml2 tree.c xmlCopyDoc copies the document children with the NEW document node as their parent (xmlStaticCopyNodeList(doc->children, ret, (xmlNodePtr)ret)) and recomputes ret->last. Consumers treat a node with parent == NULL as ownerless: PHP php_libxml_node_free_resource frees such nodes and their subtrees on proxy teardown.",
+  "candidate_defect": "copy_doc forced the copied root element's parent to NULL (and left doc->last NULL). A cloned DOMDocument's root therefore looked ownerless to PHP: creating a proxy for it (navigation) and destroying it freed the whole subtree while the cloned doc still referenced the root in doc->children, so the doc teardown double-freed it.",
+  "php_trigger": "Legacy DOMDocument clone + navigation: DOMElement_append_hierarchy_test, DOMElement_insertAdjacentText, DOMElement_prepend_hierarchy_test, ext/xsl importStylesheet_clone_retained_{document,node} (double free / corrupted-tree abort on teardown).",
+  "generic_fix": "src/xml/tree/mod.rs copy_doc: set every copied top-level child's parent to the new document node (and its doc), and set new_doc.last to the final child, matching upstream xmlCopyDoc.",
+  "regression_rust_test": "xml::tree::tests::test_copy_doc_keeps_doc_as_root_parent (passes).",
+  "regression_c_court": "consumers/copydoc_parent_probe.c: xmlCopyDoc + navigate + free both docs x20000; oracle and candidate both print 'OK copydoc-parent 20000'.",
+  "php_verification": {
+    "phpt_DOMElement_append_hierarchy_test": "PASS on candidate (was abort)",
+    "full_suite_candidate": "310 failed / 40 skipped (down from 315); closed exactly DOMElement_append_hierarchy_test, DOMElement_insertAdjacentText, DOMElement_prepend_hierarchy_test, xsl importStylesheet_clone_retained_document + _node; zero regressions"
+  },
+  "provider_provenance": "candidate run resolved libxml2/libxslt/libexslt exclusively under /candidate/lib",
+  "rules_honoured": "no PHP source change, no .phpt change, no expected-output normalisation; root-caused via upstream xmlCopyDoc archaeology + first/second-free native tracing."
+}

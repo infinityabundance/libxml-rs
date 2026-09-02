@@ -390,9 +390,24 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
         if recursive != 0 && !d.children.is_null() {
             (*new_doc).children = copy_node_list(d.children, recursive);
             if !(*new_doc).children.is_null() {
-                (*(*new_doc).children).parent = ptr::null_mut(); // root element parent is NULL
-                (*(*new_doc).children).doc = new_doc;
-                // Update doc for all descendants
+                // UPSTREAM-PARITY (tree.c xmlCopyDoc): every copied top-level
+                // child keeps the new DOCUMENT node as its parent
+                // (`xmlStaticCopyNodeList(doc->children, ret,
+                // (xmlNodePtr)ret)`). The pre-fix NULL parent made PHP treat a
+                // cloned document's root element as ownerless: its proxy
+                // teardown (php_libxml_node_free_resource, `parent == NULL`
+                // branch) freed the whole subtree while the cloned doc still
+                // referenced it, so the doc teardown double-freed the root
+                // (Phase 14.3 Bug-3 — DOMDocument clone + navigation).
+                let mut child = (*new_doc).children;
+                while !child.is_null() {
+                    (*child).parent = new_doc as *mut _xmlNode;
+                    (*child).doc = new_doc;
+                    if (*child).next.is_null() {
+                        (*new_doc).last = child;
+                    }
+                    child = (*child).next;
+                }
                 propagate_doc((*new_doc).children, new_doc);
             }
         }
@@ -6179,6 +6194,51 @@ mod tests {
             assert!(buf_eq_str(buf, "<foo/>"));
 
             io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    /// Phase 14.3 Bug-3 regression: `copy_doc` must link the copied
+    /// top-level children with the NEW document node as their parent (and set
+    /// `doc->last`), mirroring upstream xmlCopyDoc
+    /// (`xmlStaticCopyNodeList(doc->children, ret, (xmlNodePtr)ret)`). The
+    /// pre-fix NULL parent made PHP treat a cloned document's root element as
+    /// ownerless: its proxy teardown (php_libxml_node_free_resource,
+    /// `parent == NULL` branch) freed the whole subtree while the cloned doc
+    /// still referenced it, so the doc teardown double-freed the root
+    /// (DOMDocument clone + navigation crash).
+    ///
+    /// # Safety
+    ///
+    /// - doc/root are valid while copy_doc runs; both docs are freed with
+    ///   `free_doc`.
+    #[test]
+    fn test_copy_doc_keeps_doc_as_root_parent() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let root = new_node(ptr::null_mut(), c_str("root"));
+            doc_set_root_element(doc, root);
+            let child = new_child(root, ptr::null_mut(), c_str("kid"));
+            assert!(!child.is_null());
+
+            let copy = copy_doc(doc, 1);
+            assert!(!copy.is_null());
+            let copied_root = (*copy).children;
+            assert!(!copied_root.is_null());
+            // UPSTREAM-PARITY: root's parent is the DOCUMENT node.
+            assert_eq!((*copied_root).parent as *mut c_void, copy as *mut c_void);
+            assert_eq!((*copied_root).doc as *mut c_void, copy as *mut c_void);
+            // doc->last tracks the final child.
+            assert_eq!((*copy).last as *mut c_void, copied_root as *mut c_void);
+            // child keeps its element parent.
+            let copied_child = (*copied_root).children;
+            assert!(!copied_child.is_null());
+            assert_eq!(
+                (*copied_child).parent as *mut c_void,
+                copied_root as *mut c_void
+            );
+
+            free_doc(copy);
             free_doc(doc);
         }
     }
