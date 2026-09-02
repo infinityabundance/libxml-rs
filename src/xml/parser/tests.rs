@@ -581,6 +581,9 @@ thread_local! {
     /// Per-start-event (element local name, [(attr local name, value)]).
     static SAX2_START_LOG: std::cell::RefCell<Vec<(Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>)>> =
         const { std::cell::RefCell::new(Vec::new()) };
+    /// (line, byte-offset) of each endElement event (bug26614 locator guard).
+    static END_POS: std::cell::RefCell<Vec<(c_int, usize)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// Character-data callback logging the payloads (for entity-delivery guards).
@@ -718,6 +721,25 @@ unsafe extern "C" fn sax1_end(_ctx: *mut c_void, _name: *const xmlChar) {
     SAX1_ENDS.with(|c| c.set(c.get() + 1));
 }
 
+/// SAX1 endElement callback recording the parser's current line and byte
+/// offset (input->cur - input->base) at the moment the end event fires
+/// (bug26614 locator guard).
+///
+/// # Safety
+///
+/// - `ctx` is the parser context (push contexts here use NULL userData, so
+///   ctx == ctxt); `ctxt->input` must be valid.
+unsafe extern "C" fn sax1_end_pos(ctx: *mut c_void, _name: *const xmlChar) {
+    SAX1_ENDS.with(|c| c.set(c.get() + 1));
+    let ctxt = ctx as *mut crate::abi::structs::_xmlParserCtxt;
+    let input = unsafe { (*ctxt).input };
+    if !input.is_null() && !(*input).base.is_null() {
+        let line = unsafe { (*input).line };
+        let byte = unsafe { (*input).cur.offset_from((*input).base) };
+        END_POS.with(|p| p.borrow_mut().push((line, byte as usize)));
+    }
+}
+
 unsafe extern "C" fn sax1_chars(_ctx: *mut c_void, _ch: *const xmlChar, _len: c_int) {
     SAX1_CHARS.with(|c| c.set(c.get() + 1));
 }
@@ -770,6 +792,7 @@ fn reset_push_capture() {
     GE_NAMES.with(|g| g.borrow_mut().clear());
     GE_STOP_PIC.with(|s| s.set(false));
     SAX2_START_LOG.with(|l| l.borrow_mut().clear());
+    END_POS.with(|p| p.borrow_mut().clear());
 }
 
 /// Box a caller-provided SAX handler and create a push-parser context with
@@ -1190,6 +1213,60 @@ fn test_push_wf1_context_substitutes_entity_content() {
         assert_eq!(runs[0], b"a");
         assert_eq!(runs[1], b"ent");
         assert_eq!(runs[2], b"b");
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+// ── SP-14.3.1-5 regression guard (end-element locator) ──────────────────────
+
+/// The endElement SAX event reports the input position one byte past the end
+/// tag's closing '>' — xml_get_current_line_number/column/byte_index at the
+/// end callback (bug26614: `</DATA> at line 9, col %d (byte 96)` for the
+/// CDATA/comment/text variants; upstream xmlParseEndTag1/2 fire the callback
+/// after the tag was consumed).
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`; the end callback reads
+///   module-scoped capture state.
+#[test]
+fn test_push_end_element_locator_is_one_past_gt() {
+    unsafe {
+        reset_push_capture();
+        // bug26614.inc case 1: CDATA block between <data> and </data>.
+        let doc = b"<?xml version=\"1.0\" encoding=\"iso-8859-1\" ?>\n\
+                   <data>\n\
+                   <![CDATA[\n\
+                   multi\n\
+                   line\n\
+                   CDATA\n\
+                   block\n\
+                   ]]>\n\
+                   </data>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1; // SAX1 expat-compat (xml_parser_create)
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end_pos);
+        h.characters = Some(sax1_chars);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc, 0);
+        assert_eq!((*ctxt).errNo, 0);
+        let ends = END_POS.with(|p| p.borrow().clone());
+        assert_eq!(ends.len(), 1, "one endElement (</data>)");
+        assert_eq!(ends[0].0, 9, "line of the </data> end tag");
+        assert_eq!(
+            ends[0].1, 96,
+            "byte index one past the '>' of </data> (bug26614 oracle value)"
+        );
         crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
         drop(Box::from_raw(sax_ptr));
     }

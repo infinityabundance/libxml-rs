@@ -3942,6 +3942,14 @@ impl XmlParser {
         if self.is_sax_disabled() || self.probe || self.sax_suppressed {
             return;
         }
+        // UPSTREAM-PARITY (parser.c xmlParseEndTag1/xmlParseEndTag2): the
+        // endElement/endElementNs callback fires with the input already past
+        // the end tag's closing '>' — xml_get_current_line_number/column/
+        // byte_index report that position (bug26614: `</DATA> at line 9, col
+        // %d (byte 96)`, one byte past the '>' of `</data>`). The end tag was
+        // fully consumed by the tokenizer, so syncing here publishes the
+        // position right after the tag (SP-14.3.1-5).
+        self.sync_input_position();
         // SAX1 consumers (upstream xmlParseEndTag1) receive the raw QName
         // through the SAX1 endElement callback with no namespace processing.
         if !self.sax2_mode() {

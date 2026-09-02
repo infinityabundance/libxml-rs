@@ -29,7 +29,8 @@ extension subset to confirm the targeted test(s) flip PASS with no sibling regre
 - [x] SP-14.3.1-4  xml_parse_into_struct empty/False result: bug35447 (char entity
        inside attr recode), bug71592. ext/xml 10 -> 8 failed (also closed
        bug30875 + gh14834, which the ABI fix exposed as double-delivery).
-- [ ] SP-14.3.1-5  bug26614_libxml_gte2_11 end-element locator col/byte.
+- [x] SP-14.3.1-5  bug26614_libxml_gte2_11 end-element locator col/byte.
+       ext/xml 8 -> 7 failed.
 - [ ] SP-14.3.1-6  XML_OPTION_PARSE_HUGE depth/name limit semantics
        (`xml_parse` + `xml_parse_into_struct` must fail without HUGE).
 - [ ] SP-14.3.1-7  gh12254 recursion-on-callback guard (Parser must not be called

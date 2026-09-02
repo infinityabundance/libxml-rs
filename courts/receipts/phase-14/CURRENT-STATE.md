@@ -192,3 +192,19 @@ SP-14.3.1-4 closed (R-14.3-BOM-PUSH + R-14.3-INSTATE-ABI + R-14.3-EXT-ENTITY-REF
   - probes kept: consumers/{ext71592-probe.c,ext71592-probe.php,
     ctxoffset-probe.c,bom-probe.c,chunkrc-probe.c,intent-probe2.c} +
     extget-probe.c (residual).
+
+SP-14.3.1-5 closed (R-14.3-END-LOCATOR FIXED): bug26614_libxml_gte2_11 PASS;
+  ext/xml 8 -> 7 failed (zero regressions).
+  - root cause: sax_end_element fired the endElement/endElementNs callback
+    without syncing the C-visible input position, so
+    xml_get_current_line_number/column/byte_index at the end callback
+    reported the stale position of the PREVIOUS event (the last text run) —
+    `</DATA> at line 9, col 1 (byte 89)` instead of upstream's one-past-the-'>'
+    position (byte 96). The end tag is fully consumed by the tokenizer before
+    the event fires; sax_end_element now sync_input_position()s first, exactly
+    like upstream xmlParseEndTag1/2 which fire the callback after the tag.
+  - guards: tests.rs test_push_end_element_locator_is_one_past_gt (SAX1 push,
+    asserts line 9 / byte 96 for bug26614 case 1; oracle-pinned).
+    cargo test --lib 1213 pass; fmt/clippy clean; five-extension remeasure
+    unchanged (dom 169 / simplexml 9 / xmlreader 29 / xmlwriter 19 / xsl 58).
+  - receipt dir: php-14-3-end-locator-20260902/
