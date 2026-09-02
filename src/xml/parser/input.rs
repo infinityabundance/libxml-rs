@@ -351,9 +351,18 @@ impl InputBuffer {
         if bytes.is_empty() {
             return;
         }
+        let first_real_bytes = self.data.is_empty() && self.pos == 0 && !self.bom_consumed;
         self.data.extend_from_slice(bytes);
         if let InputSource::Memory(d) = &mut self.source {
             d.extend_from_slice(bytes);
+        }
+        if first_real_bytes {
+            // The buffer was constructed empty (xmlParseChunk push mode), so
+            // BOM/encoding detection ran on nothing at construction. Re-run
+            // it now that the first bytes exist, so a leading UTF-8/UTF-16
+            // BOM is consumed exactly like upstream's input-layer detection
+            // (SP-14.3.1-4: bug35447 — UTF-8 BOM + xml_parse_into_struct).
+            self.detect_bom_and_encoding();
         }
     }
 

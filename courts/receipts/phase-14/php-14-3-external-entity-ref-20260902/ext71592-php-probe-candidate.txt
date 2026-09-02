@@ -1,0 +1,5 @@
+START ROOT
+START P
+EXT-REF-HANDLER calls=1 base= sys=http://example.org/image.gif pub=image.gif
+rc=0 err=21 line=6 handler_calls=1 eq21=true
+bool(true)

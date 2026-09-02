@@ -129,7 +129,9 @@ use crate::xml::validation::{is_xml_name_char, is_xml_name_start};
 // Local constants
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const XML_PARSER_EOF_STATE: c_int = 9; // XML_PARSER_EOF
+// XML_PARSER_EOF is -1 in the real 2.15 header (xmlParserInputState); the
+// value is written into the ABI-visible ctxt->instate field.
+const XML_PARSER_EOF_STATE: c_int = xmlParserInputState::XML_PARSER_EOF as c_int;
 const XML_PARSER_BUFFER_SIZE: usize = 512;
 const LINE_LEN: usize = 80;
 

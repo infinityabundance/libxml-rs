@@ -107,6 +107,17 @@ struct PushState {
     /// A non-final call parsed the accumulated input to a clean document end
     /// and the completing parse delivered all events.
     completed: bool,
+    /// `ctxt->wellFormed` captured when the incremental parse started, before
+    /// any probe mutates the context. Consumers may pre-zero it — PHP
+    /// ext/xml's expat-compat layer sets `wellFormed = 0` right after creating
+    /// the push context — and every probe/delivery/final re-parse must observe
+    /// the same starting state, so `parse_chunk` restores it before each
+    /// `XmlParser` construction (SP-14.3.1-4: the reference-substitution gate
+    /// mirrors upstream's `if (!ctxt->wellFormed) return;`, which holds for the
+    /// whole document when the consumer disabled well-formed tracking).
+    start_well_formed: i32,
+    /// Whether `start_well_formed` was captured yet.
+    captured: bool,
 }
 
 static PUSH_STATE: once_cell::sync::Lazy<parking_lot::Mutex<HashMap<usize, PushState>>> =
@@ -116,6 +127,23 @@ fn push_state(ctxt: *mut _xmlParserCtxt) -> parking_lot::MappedMutexGuard<'stati
     parking_lot::MutexGuard::map(PUSH_STATE.lock(), |m| {
         m.entry(ctxt as usize).or_insert_with(PushState::default)
     })
+}
+
+/// Re-apply the `wellFormed` value the context had when the incremental parse
+/// started (see `PushState::start_well_formed`). Each probe/delivery/final
+/// re-parse must observe the same starting state: PHP's expat-compat layer
+/// zeroes `wellFormed` at create, and the engine mirrors upstream's
+/// `if (!ctxt->wellFormed) return;` reference guard for such contexts
+/// (SP-14.3.1-4).
+fn restore_start_well_formed(ctxt: *mut _xmlParserCtxt) {
+    let guard = PUSH_STATE.lock();
+    if let Some(st) = guard.get(&(ctxt as usize)) {
+        if st.captured {
+            unsafe {
+                (*ctxt).wellFormed = st.start_well_formed;
+            }
+        }
+    }
 }
 
 /// Drop the incremental-push state for `ctxt`, if any.
@@ -573,6 +601,18 @@ pub(crate) unsafe fn parse_chunk(
         &[]
     };
 
+    // UPSTREAM-PARITY (parser.c xmlParseChunk): a context whose parse was
+    // stopped by xmlStopParser (disableSAX == 2) refuses further chunks and
+    // reports the recorded error (SP-14.3.1-4, bug71592: PHP's expat-compat
+    // external-entity-ref handler returns FALSE → xmlStopParser + errNo =
+    // XML_ERROR_EXTERNAL_ENTITY_HANDLING; every later xmlParseChunk must
+    // return that error instead of parsing the remainder). disableSAX == 1 is
+    // the candidate's internal "a fatal was reported" marker and does not
+    // stop chunk delivery.
+    if unsafe { (*ctxt).disableSAX } == 2 {
+        return unsafe { (*ctxt).errNo };
+    }
+
     // Take ownership of the stashed InputBuffer (the base accumulated so
     // far — the constructor's initial chunk is stashed by
     // setup_parser_input), or start empty.
@@ -591,6 +631,17 @@ pub(crate) unsafe fn parse_chunk(
     // whole accumulated stream).
     base.push_bytes(chunk_slice);
 
+    // Capture the consumer-set wellFormed BEFORE the first parse mutates it
+    // (PHP expat-compat zeroes it at create; see PushState docs). Restored
+    // before every engine construction below.
+    {
+        let mut st = push_state(ctxt);
+        if !st.captured {
+            st.captured = true;
+            st.start_well_formed = unsafe { (*ctxt).wellFormed };
+        }
+    }
+
     if terminate == 0 {
         // Non-final call. Once the document completed and delivered, later
         // calls can only bring epilog content; just buffer until the final
@@ -603,6 +654,7 @@ pub(crate) unsafe fn parse_chunk(
             let probe_buf = base.duplicate_for_reparse();
             let input_stack = InputStack::new(probe_buf);
             // SAFETY: ctxt is a valid, initialised parser context.
+            restore_start_well_formed(ctxt);
             let mut probe = unsafe { XmlParser::new_with_mode(input_stack, ctxt, true) };
             let rc = probe.parse_document();
             if rc == 0 || (rc != 0 && !probe.is_paused() && !probe.was_truncated_abort()) {
@@ -616,15 +668,32 @@ pub(crate) unsafe fn parse_chunk(
                 let delivery_buf = base.duplicate_for_reparse();
                 let input_stack = InputStack::new(delivery_buf);
                 // SAFETY: ctxt is a valid, initialised parser context.
+                restore_start_well_formed(ctxt);
                 let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
                 parser.parse_document();
+                // UPSTREAM-PARITY (parser.c xmlParseChunk): the delivery
+                // parse's outcome is reported on the non-final call — the
+                // recorded error code once the document is no longer
+                // well-formed (a fatal error, or a stop from an
+                // entity-resolving SAX handler that leaves errNo set and
+                // wellFormed = 0), 0 otherwise. PHP's expat-compat XML_Parse
+                // maps a non-zero return to FALSE, so xml_parse() returns
+                // FALSE for bug71592 exactly like the oracle.
+                let mut failed = false;
+                if unsafe { (*ctxt).wellFormed } == 0 {
+                    failed = true;
+                }
+                // More data may still arrive: stash the accumulated buffer
+                // for the next xmlParseChunk call (upstream keeps the data in
+                // ctxt->input even after a failed non-final call). A
+                // probe/early-delivery never changes the reported status of a
+                // non-final call on a still-paused document (0 = more data
+                // expected).
+                stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
+                return if failed { unsafe { (*ctxt).errNo } } else { 0 };
             }
         }
-        // More data may still arrive: stash the accumulated buffer for the
-        // next xmlParseChunk call. A probe/early-delivery never changes the
-        // reported status of a non-final call (still 0 = more data
-        // expected); errors are delivered by the completing parse above or
-        // the final call.
+        // Incomplete document: buffer until the terminating call.
         stash_input_buffer(ctxt, Box::into_raw(Box::new(base)));
         0
     } else if push_state(ctxt).completed {
@@ -635,27 +704,42 @@ pub(crate) unsafe fn parse_chunk(
         let probe_buf = base.duplicate_for_reparse();
         let input_stack = InputStack::new(probe_buf);
         // SAFETY: ctxt is a valid, initialised parser context.
+        restore_start_well_formed(ctxt);
         let mut probe = unsafe { XmlParser::new_with_mode(input_stack, ctxt, true) };
         let rc = probe.parse_document();
-        free_push_state(ctxt);
         if unsafe { (*ctxt).wellFormed } == 0 || rc != 0 {
             // The tail broke the document: surface the real diagnostics
             // (the completing parse already delivered the clean prefix).
             let diag_buf = base.duplicate_for_reparse();
             let input_stack = InputStack::new(diag_buf);
             // SAFETY: ctxt is a valid, initialised parser context.
+            restore_start_well_formed(ctxt);
             let mut parser = unsafe { XmlParser::new_with_flags(input_stack, ctxt, false, true) };
-            let drc = parser.parse_document();
-            return if drc == 0 { 0 } else { -1 };
+            parser.parse_document();
+            free_push_state(ctxt);
+            // UPSTREAM-PARITY (parser.c xmlParseChunk): the terminating call
+            // reports the recorded error once the document is not
+            // well-formed; a clean tail reports 0.
+            if unsafe { (*ctxt).wellFormed } == 0 {
+                return unsafe { (*ctxt).errNo };
+            }
+            return 0;
         }
+        free_push_state(ctxt);
         0
     } else {
         // Plain final parse of everything accumulated so far.
         let input_stack = InputStack::new(base);
         // SAFETY: ctxt is a valid, initialised parser context.
+        restore_start_well_formed(ctxt);
         let mut parser = unsafe { XmlParser::new(input_stack, ctxt) };
         let rc = parser.parse_document();
         free_push_state(ctxt);
+        // UPSTREAM-PARITY (parser.c xmlParseChunk): report the recorded
+        // error code when the document ended not well-formed.
+        if unsafe { (*ctxt).wellFormed } == 0 {
+            return unsafe { (*ctxt).errNo };
+        }
         rc
         // parser is dropped here.
     }

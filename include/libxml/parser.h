@@ -191,22 +191,31 @@ typedef enum {
 /* Forward declarations */
 struct _xmlValidCtxt;
 
-/* Parser input states */
+/* Parser input states — verbatim from the upstream 2.15 header. The
+ * numbering is ABI: `xmlParserCtxt.instate` is read by consumers compiled
+ * against the real headers (PHP ext/xml expat-compat compares it against
+ * XML_PARSER_CONTENT while resolving entity references), so these values
+ * must match include/libxml/parser.h 2.15 exactly (SP-14.3.1-4, bug71592). */
 typedef enum {
-    XML_PARSER_EOF = -1,
-    XML_PARSER_START = 0,
-    XML_PARSER_MISC = 1,
-    XML_PARSER_DTD = 2,
-    XML_PARSER_PROLOG = 3,
-    XML_PARSER_CONTENT = 4,
-    XML_PARSER_CDATA_SECTION = 5,
-    XML_PARSER_ENTITY_REF = 6,
-    XML_PARSER_ENTITY_VALUE = 7,
-    XML_PARSER_ATTRIBUTE_VALUE = 8,
-    XML_PARSER_SYSTEM_LITERAL = 9,
-    XML_PARSER_EPILOG = 10,
-    XML_PARSER_IGNORE = 11,
-    XML_PARSER_PUBLIC_LITERAL = 12
+    XML_PARSER_EOF = -1,	/* nothing is to be parsed */
+    XML_PARSER_START = 0,	/* nothing has been parsed */
+    XML_PARSER_MISC,		/* Misc* before int subset */
+    XML_PARSER_PI,		/* Within a processing instruction */
+    XML_PARSER_DTD,		/* within some DTD content */
+    XML_PARSER_PROLOG,		/* Misc* after internal subset */
+    XML_PARSER_COMMENT,		/* within a comment */
+    XML_PARSER_START_TAG,	/* within a start tag */
+    XML_PARSER_CONTENT,		/* within the content */
+    XML_PARSER_CDATA_SECTION,	/* within a CDATA section */
+    XML_PARSER_END_TAG,		/* within a closing tag */
+    XML_PARSER_ENTITY_DECL,	/* within an entity declaration */
+    XML_PARSER_ENTITY_VALUE,	/* within an entity value in a decl */
+    XML_PARSER_ATTRIBUTE_VALUE,	/* within an attribute value */
+    XML_PARSER_SYSTEM_LITERAL,	/* within a SYSTEM value */
+    XML_PARSER_EPILOG,		/* the Misc* after the last end tag */
+    XML_PARSER_IGNORE,		/* within an IGNORED section */
+    XML_PARSER_PUBLIC_LITERAL,	/* within a PUBLIC value */
+    XML_PARSER_XML_DECL         /* before XML decl (but after BOM) */
 } xmlParserInputState;
 
 /* Phase 14 (DOWNSTREAM-LXML): internal bits in the 'loadsubset' context

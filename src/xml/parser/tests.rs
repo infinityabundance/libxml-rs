@@ -569,6 +569,117 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
     static SAX1_EVENTS: std::cell::RefCell<Vec<Vec<u8>>> =
         const { std::cell::RefCell::new(Vec::new()) };
+    // SP-14.3.1-4 capture state.
+    static SAX_CHAR_LOG: std::cell::RefCell<Vec<Vec<u8>>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+    static GE_NAMES: std::cell::RefCell<Vec<Vec<u8>>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+    /// When set, the getEntity callback resolves "pic" and stops the parser
+    /// with errNo = 21 exactly like PHP expat-compat's external-entity-ref
+    /// handler returning FALSE (bug71592).
+    static GE_STOP_PIC: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// Per-start-event (element local name, [(attr local name, value)]).
+    static SAX2_START_LOG: std::cell::RefCell<Vec<(Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Character-data callback logging the payloads (for entity-delivery guards).
+///
+/// # Safety
+///
+/// - `ch` must be NULL or valid for `len` readable bytes.
+unsafe extern "C" fn sax1_chars_log(_ctx: *mut c_void, ch: *const xmlChar, len: c_int) {
+    if !ch.is_null() && len > 0 {
+        let bytes = unsafe { core::slice::from_raw_parts(ch as *const u8, len as usize) }.to_vec();
+        SAX_CHAR_LOG.with(|l| l.borrow_mut().push(bytes));
+    }
+}
+
+/// getEntity callback mirroring PHP expat-compat `compat.c`: resolve via
+/// xmlGetPredefinedEntity then xmlGetDocEntity(ctxt->myDoc). With
+/// GE_STOP_PIC set it stops the parser for the "pic" entity and records
+/// errNo = XML_ERROR_EXTERNAL_ENTITY_HANDLING (21) — what compat's
+/// external_entity_ref_handler does when the PHP callback returns FALSE
+/// (SP-14.3.1-4, bug71592).
+///
+/// # Safety
+///
+/// - `ctx` is the parser context (the tests create push contexts with NULL
+///   userData, so ctx == ctxt); `name` is a valid NUL-terminated string; the
+///   returned entity is owned by the document's entity table.
+unsafe extern "C" fn sax_ge_resolve(ctx: *mut c_void, name: *const xmlChar) -> *mut _xmlEntity {
+    unsafe {
+        if !name.is_null() {
+            let n = std::ffi::CStr::from_ptr(name as *const i8)
+                .to_bytes()
+                .to_vec();
+            GE_NAMES.with(|g| g.borrow_mut().push(n));
+        }
+        let ctxt = ctx as *mut _xmlParserCtxt;
+        let mut ent = crate::abi::exports_misc::xmlGetPredefinedEntity(name);
+        if ent.is_null() {
+            ent = crate::xml::tree::get_doc_entity((*ctxt).myDoc, name);
+        }
+        if !ent.is_null() && GE_STOP_PIC.get() {
+            let n = std::ffi::CStr::from_ptr(name as *const i8).to_bytes();
+            if n == b"pic" {
+                crate::abi::exports_parser::xmlStopParser(ctxt);
+                (*ctxt).errNo = 21; // XML_ERROR_EXTERNAL_ENTITY_HANDLING
+            }
+        }
+        ent
+    }
+}
+
+/// SAX2 startElementNs callback logging the element local name and its
+/// attribute (local name, value) pairs (defaulted attributes included).
+///
+/// # Safety
+///
+/// - `local` must be NULL or a valid NUL-terminated string; `atts` must be
+///   NULL or valid for `nb_atts * 5` pointer slots (SAX2 layout).
+#[allow(clippy::too_many_arguments)]
+unsafe extern "C" fn sax2_start_ns_log(
+    _ctx: *mut c_void,
+    local: *const xmlChar,
+    _prefix: *const xmlChar,
+    _uri: *const xmlChar,
+    _nb_ns: c_int,
+    _ns: *mut *const xmlChar,
+    nb_atts: c_int,
+    _nb_def: c_int,
+    atts: *mut *const xmlChar,
+) {
+    let lname = if local.is_null() {
+        Vec::new()
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(local as *const i8) }
+            .to_bytes()
+            .to_vec()
+    };
+    let mut attrs: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+    if !atts.is_null() {
+        let n = nb_atts as usize;
+        for i in 0..n {
+            let a = unsafe { *atts.add(i * 5) };
+            let v = unsafe { *atts.add(i * 5 + 3) };
+            let vend = unsafe { *atts.add(i * 5 + 4) };
+            if a.is_null() {
+                continue;
+            }
+            let aname = unsafe { std::ffi::CStr::from_ptr(a as *const i8) }
+                .to_bytes()
+                .to_vec();
+            let aval = if v.is_null() || vend.is_null() || vend <= v {
+                Vec::new()
+            } else {
+                unsafe { core::slice::from_raw_parts(v as *const u8, vend.offset_from(v) as usize) }
+                    .to_vec()
+            };
+            attrs.push((aname, aval));
+        }
+    }
+    SAX2_START_LOG.with(|l| l.borrow_mut().push((lname, attrs)));
 }
 
 unsafe extern "C" fn sax1_start(
@@ -655,6 +766,32 @@ fn reset_push_capture() {
     SAX1_CHARS.with(|c| c.set(0));
     SAX1_EVENTS.with(|e| e.borrow_mut().clear());
     SAX2_EVENTS.with(|e| e.borrow_mut().clear());
+    SAX_CHAR_LOG.with(|l| l.borrow_mut().clear());
+    GE_NAMES.with(|g| g.borrow_mut().clear());
+    GE_STOP_PIC.with(|s| s.set(false));
+    SAX2_START_LOG.with(|l| l.borrow_mut().clear());
+}
+
+/// Box a caller-provided SAX handler and create a push-parser context with
+/// it (userData NULL → the context itself, mirroring upstream). Returns the
+/// context and the boxed handler pointer (freed by the caller with
+/// `Box::from_raw`).
+unsafe fn push_ctxt_boxed(
+    handler: crate::abi::structs::_xmlSAXHandler,
+) -> (
+    *mut crate::abi::structs::_xmlParserCtxt,
+    *mut crate::abi::structs::_xmlSAXHandler,
+) {
+    let sax_ptr = Box::into_raw(Box::new(handler));
+    let ctxt = crate::abi::exports_parser::xmlCreatePushParserCtxt(
+        sax_ptr,
+        ptr::null_mut(),
+        ptr::null(),
+        0,
+        ptr::null(),
+    );
+    assert!(!ctxt.is_null());
+    (ctxt, sax_ptr)
 }
 
 /// Build a push-parser context with a SAX1 handler set (initialized = 1, the
@@ -760,7 +897,10 @@ fn test_push_chunked_delivers_once() {
 /// A document with a fatal error at its very end (the root end tag does not
 /// match the root start tag) still delivers the events that precede it when
 /// fed single-shot without terminate — upstream parsed them eagerly
-/// (bug25666: `</foo>` closing `<foo:a ...>`).
+/// (bug25666: `</foo>` closing `<foo:a ...>`). The non-final call reports the
+/// parse outcome exactly like upstream xmlParseChunk: the recorded error code
+/// (76 = XML_ERR_TAG_NAME_MISMATCH) once the document ended not well-formed
+/// (verified against the 2.15.3 oracle with chunkrc-probe.c — SP-14.3.1-4).
 ///
 /// # Safety
 ///
@@ -777,13 +917,279 @@ fn test_push_error_at_end_still_delivers() {
             doc.len() as c_int,
             0,
         );
-        assert_eq!(rc, 0);
+        assert_eq!(
+            rc, 76,
+            "non-final call reports errNo once the document failed"
+        );
+        assert_eq!((*ctxt).wellFormed, 0);
+        assert_eq!((*ctxt).errNo, 76);
         let evs = SAX2_EVENTS.with(|e| e.borrow().clone());
         assert_eq!(evs.len(), 2, "both start events must be delivered");
         assert_eq!(evs[0], (b"a".to_vec(), b"u".to_vec()));
         // The child's prefix is declared on the ROOT — the parser-scoped
         // namespace stack must resolve it (bug25666/xml009).
         assert_eq!(evs[1], (b"b".to_vec(), b"v".to_vec()));
+        // A later terminating call must not re-deliver and must report the
+        // recorded error (upstream: xmlParseChunk returns errNo when
+        // wellFormed == 0; events fire once).
+        let rc2 = crate::abi::exports_xml2::xmlParseChunk(ctxt, ptr::null(), 0, 1);
+        assert_eq!(rc2, 76);
+        assert_eq!(SAX2_EVENTS.with(|e| e.borrow().len()), 2);
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+// ── SP-14.3.1-4 regression guards (BOM re-detection, DTD attribute defaults,
+// ── external-entity-ref stop semantics, expat-compat no-double-delivery) ────
+
+/// A leading UTF-8 BOM pushed as the first bytes of an initially-empty push
+/// buffer is consumed like upstream's input-layer detection (bug35447's real
+/// BOM variant): the first xmlParseChunk constructs the buffer empty, so BOM
+/// detection must re-run when the first bytes arrive instead of erroring on
+/// the raw BOM bytes. The same document also exercises the DTD ATTLIST default
+/// (`type (literal|pattern|sub) "literal"`) which xmlParseStartTag2 appends to
+/// the SAX2 attribute set (upstream ctxt->attsDefault).
+///
+/// # Safety
+///
+/// - The static buffers and module-scoped handler state are valid for the
+///   call; the context and boxed handler are freed at the end.
+#[test]
+fn test_push_utf8_bom_and_dtd_attr_defaults() {
+    unsafe {
+        reset_push_capture();
+        let doc: &[u8] = b"\xEF\xBB\xBF<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
+                          <!DOCTYPE bundle [\n\
+                          <!ELEMENT bundle (resource)+>\n\
+                          <!ELEMENT resource (#PCDATA)>\n\
+                          <!ATTLIST resource\n\
+                          key CDATA #REQUIRED\n\
+                          type (literal|pattern|sub) \"literal\"\n\
+                          >\n\
+                          ]>\n\
+                          <resource key=\"rSeeYou\">A bient</resource>\n";
+        // Control: the identical document WITHOUT the BOM/XML declaration must
+        // produce the defaulted attribute too — isolates the DTD path from the
+        // BOM/encoding path.
+        let doc_no_bom: &[u8] = b"<!DOCTYPE bundle [\n\
+                          <!ELEMENT bundle (resource)+>\n\
+                          <!ELEMENT resource (#PCDATA)>\n\
+                          <!ATTLIST resource\n\
+                          key CDATA #REQUIRED\n\
+                          type (literal|pattern|sub) \"literal\"\n\
+                          >\n\
+                          ]>\n\
+                          <resource key=\"rSeeYou\">A bient</resource>\n";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = crate::abi::types::XML_SAX2_MAGIC as u32;
+        h.startElementNs = Some(sax2_start_ns_log);
+        h.endElementNs = Some(sax2_end_ns);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        // First the control document.
+        let rc0 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc_no_bom.as_ptr() as *const i8,
+            doc_no_bom.len() as c_int,
+            1,
+        );
+        assert_eq!(rc0, 0, "control doc parses");
+        let starts0 = SAX2_START_LOG.with(|l| l.borrow().clone());
+        assert_eq!(starts0.len(), 1, "only the root element starts");
+        if starts0[0].1.len() != 2 {
+            panic!(
+                "control doc attrs = {:?}",
+                starts0[0]
+                    .1
+                    .iter()
+                    .map(|(k, v)| (
+                        String::from_utf8_lossy(k).into_owned(),
+                        String::from_utf8_lossy(v).into_owned()
+                    ))
+                    .collect::<Vec<_>>()
+            );
+        }
+        assert_eq!(starts0[0].1[0], (b"key".to_vec(), b"rSeeYou".to_vec()));
+        assert_eq!(starts0[0].1[1], (b"type".to_vec(), b"literal".to_vec()));
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+
+        // Now the BOM + XML-decl document.
+        reset_push_capture();
+        let mut h2 = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h2.initialized = crate::abi::types::XML_SAX2_MAGIC as u32;
+        h2.startElementNs = Some(sax2_start_ns_log);
+        h2.endElementNs = Some(sax2_end_ns);
+        let (ctxt2, sax_ptr2) = push_ctxt_boxed(h2);
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt2,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1, // single-shot FINAL, like xml_parse_into_struct
+        );
+        assert_eq!(rc, 0, "BOM-prefixed push parse must succeed");
+        assert_eq!((*ctxt2).errNo, 0);
+        let starts = SAX2_START_LOG.with(|l| l.borrow().clone());
+        assert_eq!(starts.len(), 1, "only the root element starts");
+        assert_eq!(starts[0].0, b"resource");
+        assert_eq!(starts[0].1.len(), 2, "key + defaulted type");
+        assert_eq!(starts[0].1[0], (b"key".to_vec(), b"rSeeYou".to_vec()));
+        assert_eq!(starts[0].1[1], (b"type".to_vec(), b"literal".to_vec()));
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt2);
+        drop(Box::from_raw(sax_ptr2));
+    }
+}
+
+/// bug71592: an external general parsed entity declared in the internal subset
+/// resolves through the SAX getEntity callback; when that callback stops the
+/// parser (PHP expat-compat's external-entity-ref handler returned FALSE →
+/// xmlStopParser + errNo = XML_ERROR_EXTERNAL_ENTITY_HANDLING), the reference
+/// expands to nothing, no further events fire (the trailing `</nop>` mismatch
+/// is never reached) and the chunk call reports errNo — matching the oracle
+/// (ext71592-probe.c).
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`; the getEntity callback
+///   reads module-scoped capture state.
+#[test]
+fn test_push_external_entity_ref_stop_keeps_handler_error() {
+    unsafe {
+        reset_push_capture();
+        GE_STOP_PIC.with(|s| s.set(true));
+        let doc = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+                   <!DOCTYPE root [\n\
+                   <!ENTITY pic PUBLIC \"image.gif\" \"http://example.org/image.gif\">\n\
+                   ]>\n\
+                   <root>\n<p>&pic;</p>\n<p></nop>\n</root>\n";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = crate::abi::types::XML_SAX2_MAGIC as u32;
+        h.getEntity = Some(sax_ge_resolve);
+        h.startElementNs = Some(sax2_start_ns);
+        h.endElementNs = Some(sax2_end_ns);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        // PHP expat-compat config: OLDSAX | NOENT (replaceEntities drives the
+        // external-parsed registration).
+        (*ctxt).options |= crate::abi::types::XML_PARSE_NOENT;
+        (*ctxt).replaceEntities = 1;
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            0,
+        );
+        assert_eq!(rc, 21, "chunk reports the external-entity-handling error");
+        assert_eq!((*ctxt).errNo, 21);
+        assert_eq!((*ctxt).wellFormed, 0);
+        assert_eq!((*ctxt).disableSAX, 2);
+        let names = GE_NAMES.with(|g| g.borrow().clone());
+        assert!(names.iter().any(|n| n == b"pic"));
+        let evs = SAX2_EVENTS.with(|e| e.borrow().clone());
+        assert_eq!(
+            evs.len(),
+            2,
+            "root + p start before the stop, nothing after"
+        );
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// Expat-compat contexts enter the parse already not-well-formed (PHP zeroes
+/// ctxt->wellFormed at create and never re-arms it); upstream xmlParseReference
+/// then returns at its `if (!ctxt->wellFormed) return;` guard and the ENGINE
+/// never re-parses resolved entity content — the compat get_entity side
+/// effects are the only delivery. The engine must not double-substitute
+/// (bug30875/gh14834 regressions: "a&ref;" produced "aentent").
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`; the chars callback logs
+///   payloads into module-scoped state.
+#[test]
+fn test_push_wf0_compat_context_single_entity_delivery() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<!DOCTYPE root [ <!ENTITY ref \"ent\"> ]><root>a&ref;b</root>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1; // SAX1 expat-compat
+        h.getEntity = Some(sax_ge_resolve);
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        h.characters = Some(sax1_chars_log);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        (*ctxt).options |= crate::abi::types::XML_PARSE_NOENT;
+        (*ctxt).replaceEntities = 1;
+        (*ctxt).wellFormed = 0; // XML_ParserCreate_MM zeroes it after create
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc, 0, "clean parse reports 0");
+        assert_eq!((*ctxt).errNo, 0);
+        let runs = SAX_CHAR_LOG.with(|l| l.borrow().clone());
+        let mut text = Vec::new();
+        for r in &runs {
+            text.extend_from_slice(r);
+        }
+        // get_entity resolved "ref" (compat delivers the content), so the
+        // engine must NOT re-substitute it.
+        assert_eq!(runs.len(), 2, "a and b only — no engine re-delivery of ent");
+        assert_eq!(runs[0], b"a");
+        assert_eq!(runs[1], b"b");
+        assert_eq!(&text, b"ab");
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+/// Control for the guard above: a well-formed-tracking context (wellFormed=1,
+/// the non-expat configuration) still substitutes resolved entity content
+/// through the engine, exactly like upstream with wellFormed == 1
+/// (intent-probe.c oracle behavior: CH(a) CH(ent)).
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`.
+#[test]
+fn test_push_wf1_context_substitutes_entity_content() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<!DOCTYPE root [ <!ENTITY ref \"ent\"> ]><root>a&ref;b</root>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1;
+        h.getEntity = Some(sax_ge_resolve);
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        h.characters = Some(sax1_chars_log);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        (*ctxt).options |= crate::abi::types::XML_PARSE_NOENT;
+        (*ctxt).replaceEntities = 1;
+        let rc = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc, 0);
+        assert_eq!((*ctxt).errNo, 0);
+        let runs = SAX_CHAR_LOG.with(|l| l.borrow().clone());
+        assert_eq!(runs.len(), 3, "a + ent + b substituted by the engine");
+        assert_eq!(runs[0], b"a");
+        assert_eq!(runs[1], b"ent");
+        assert_eq!(runs[2], b"b");
         crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
         drop(Box::from_raw(sax_ptr));
     }

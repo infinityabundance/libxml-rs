@@ -1,0 +1,126 @@
+
+Build complete.
+Don't forget to run 'make test'.
+
+
+=====================================================================
+PHP         : /srcb/php-src/sapi/cli/php 
+PHP_SAPI    : cli
+PHP_VERSION : 8.5.10
+ZEND_VERSION: 4.5.10
+PHP_OS      : Linux - Linux f0cac4040821 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64
+INI actual  : /srcb/php-src/tmp-php.ini
+More .INIs  :  
+---------------------------------------------------------------------
+PHP         : /srcb/php-src/sapi/cgi/php-cgi 
+PHP_SAPI    : cgi-fcgi
+PHP_VERSION : 8.5.10
+ZEND_VERSION: 4.5.10
+PHP_OS      : Linux - Linux f0cac4040821 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64
+INI actual  : /srcb/php-src/tmp-php.ini
+More .INIs  : 
+--------------------------------------------------------------------- 
+---------------------------------------------------------------------
+PHP         : /srcb/php-src/sapi/phpdbg/phpdbg 
+PHP_SAPI    : phpdbg
+PHP_VERSION : 8.5.10
+ZEND_VERSION: 4.5.10
+PHP_OS      : Linux - Linux f0cac4040821 7.2.2-1-cachyos #1 SMP PREEMPT_DYNAMIC Fri, 28 Aug 2026 08:05:11 +0000 x86_64
+INI actual  : /srcb/php-src/tmp-php.ini
+More .INIs  : 
+---------------------------------------------------------------------
+CWD         : /srcb/php-src
+Extra dirs  : 
+VALGRIND    : Not used
+=====================================================================
+Running selected tests.
+TEST 1/67 [ext/xml/tests/XML_OPTION_PARSE_HUGE.phpt][1;31mFAIL[0m Request #68325 (XML_OPTION_PARSE_HUGE cannot be set for xml_parser_create) [ext/xml/tests/XML_OPTION_PARSE_HUGE.phpt] 
+TEST 2/67 [ext/xml/tests/XML_OPTION_PARSE_HUGE_during_parsing.phpt][1;32mPASS[0m Request #68325 (XML_OPTION_PARSE_HUGE cannot be set for xml_parser_create - setting during parsing) [ext/xml/tests/XML_OPTION_PARSE_HUGE_during_parsing.phpt] 
+TEST 3/67 [ext/xml/tests/bug25666.phpt][1;32mPASS[0m Bug #25666 (XML namespaces broken in libxml-based SAX interface) [ext/xml/tests/bug25666.phpt] 
+TEST 4/67 [ext/xml/tests/bug26528.phpt][1;32mPASS[0m Bug #26528 (HTML entities are not being decoded) [ext/xml/tests/bug26528.phpt] 
+TEST 5/67 [ext/xml/tests/bug26614.phpt][1;33mSKIP[0m Bug #26614 (CDATA sections skipped on line count) [ext/xml/tests/bug26614.phpt] reason: test is for Expat
+TEST 6/67 [ext/xml/tests/bug26614_libxml_gte2_11.phpt][1;31mFAIL[0m Bug #26614 (CDATA sections skipped on line count) [ext/xml/tests/bug26614_libxml_gte2_11.phpt] 
+TEST 7/67 [ext/xml/tests/bug26614_libxml_pre2_11.phpt][1;33mSKIP[0m Bug #26614 (CDATA sections skipped on line count) [ext/xml/tests/bug26614_libxml_pre2_11.phpt] reason: libxml2 test variant for version < 2.11
+TEST 8/67 [ext/xml/tests/bug27908.phpt][1;31mFAIL[0m Bug #27908 (default handler not being called) [ext/xml/tests/bug27908.phpt] 
+TEST 9/67 [ext/xml/tests/bug30875.phpt][1;32mPASS[0m Bug #30875 (xml_parse_into_struct() does not resolve entities) [ext/xml/tests/bug30875.phpt] 
+TEST 10/67 [ext/xml/tests/bug32001.phpt][1;33mSKIP[0m Bug #32001 (xml_parse*() goes into infinite loop when autodetection in effect), using UTF-* [ext/xml/tests/bug32001.phpt] reason: Required extension missing: iconv
+TEST 11/67 [ext/xml/tests/bug32001b.phpt][1;33mSKIP[0m Bug #32001 (xml_parse*() goes into infinite loop when autodetection in effect), using EUC-JP, Shift_JIS, GB2312 [ext/xml/tests/bug32001b.phpt] reason: Required extension missing: iconv
+TEST 12/67 [ext/xml/tests/bug35447.phpt][1;32mPASS[0m Bug #35447 (xml_parse_into_struct() chokes on the UTF-8 BOM) [ext/xml/tests/bug35447.phpt] 
+TEST 13/67 [ext/xml/tests/bug46699.phpt][1;31mFAIL[0m Bug #46699: (xml_parse crash when parser is namespace aware) [ext/xml/tests/bug46699.phpt] 
+TEST 14/67 [ext/xml/tests/bug50576.phpt][1;32mPASS[0m Bug #50576 (XML_OPTION_SKIP_TAGSTART option has no effect) [ext/xml/tests/bug50576.phpt] 
+TEST 15/67 [ext/xml/tests/bug65236.phpt][1;32mPASS[0m Bug #65236 (heap corruption in xml parser) [ext/xml/tests/bug65236.phpt] 
+TEST 16/67 [ext/xml/tests/bug70962.phpt][1;32mPASS[0m Bug #70962 (XML_OPTION_SKIP_WHITE strips embedded whitespace) [ext/xml/tests/bug70962.phpt] 
+TEST 17/67 [ext/xml/tests/bug71592.phpt][1;32mPASS[0m Bug #71592 (External entity processing never fails) [ext/xml/tests/bug71592.phpt] 
+TEST 18/67 [ext/xml/tests/bug72099.phpt][1;32mPASS[0m Bug #72099: xml_parse_into_struct segmentation fault [ext/xml/tests/bug72099.phpt] 
+TEST 19/67 [ext/xml/tests/bug72714.phpt][1;32mPASS[0m Bug #72714 (xml_startElementHandler() segmentation fault) [ext/xml/tests/bug72714.phpt] 
+TEST 20/67 [ext/xml/tests/bug72793.phpt][1;32mPASS[0m Bug #72793: xml_parser_free leaks mem when execute xml_set_object [ext/xml/tests/bug72793.phpt] 
+TEST 21/67 [ext/xml/tests/bug73135.phpt][1;32mPASS[0m Bug #73135 (xml_parse() segmentation fault) [ext/xml/tests/bug73135.phpt] 
+TEST 22/67 [ext/xml/tests/bug76874.phpt][1;32mPASS[0m Bug #76874: xml_parser_free() should never leak memory [ext/xml/tests/bug76874.phpt] 
+TEST 23/67 [ext/xml/tests/bug78563.phpt][1;32mPASS[0m Bug #78563: parsers should not be clonable [ext/xml/tests/bug78563.phpt] 
+TEST 24/67 [ext/xml/tests/bug78563_final.phpt][1;32mPASS[0m Bug #78563: parsers should not be extendable [ext/xml/tests/bug78563_final.phpt] 
+TEST 25/67 [ext/xml/tests/bug78563_serialize.phpt][1;32mPASS[0m Bug #78563: parsers should not be serializable [ext/xml/tests/bug78563_serialize.phpt] 
+TEST 26/67 [ext/xml/tests/bug81351.phpt][1;32mPASS[0m Bug #81351 (xml_parse may fail, but has no error code) [ext/xml/tests/bug81351.phpt] 
+TEST 27/67 [ext/xml/tests/bug81481.phpt][1;33mSKIP[0m Bug #81481 (xml_get_current_byte_index limited to 32-bit numbers on 64-bit builds) [ext/xml/tests/bug81481.phpt] reason: resource-heavy test
+TEST 28/67 [ext/xml/tests/gh12254.phpt][1;31mFAIL[0m GH-12254: xml_parse_into_struct() memory leak when called twice [ext/xml/tests/gh12254.phpt] 
+TEST 29/67 [ext/xml/tests/gh14124.phpt][1;32mPASS[0m GH-14124 (Segmentation fault on unknown address 0x0001ffff8041 with XML extension under certain memory limit) [ext/xml/tests/gh14124.phpt] 
+TEST 30/67 [ext/xml/tests/gh14637.phpt][1;32mPASS[0m GH-14637 memory leak under memory limit [ext/xml/tests/gh14637.phpt] 
+TEST 31/67 [ext/xml/tests/gh14834.phpt][1;32mPASS[0m GH-14834 (Error installing PHP when --with-pear is used) [ext/xml/tests/gh14834.phpt] 
+TEST 32/67 [ext/xml/tests/gh15868.phpt][1;32mPASS[0m GH-15868 (Assertion failure in xml_parse_into_struct after exception) [ext/xml/tests/gh15868.phpt] 
+TEST 33/67 [ext/xml/tests/gh17187_1.phpt][1;32mPASS[0m GH-17187 (unreachable program point in zend_hash) [ext/xml/tests/gh17187_1.phpt] 
+TEST 34/67 [ext/xml/tests/gh17187_2.phpt][1;32mPASS[0m GH-17187 (unreachable program point in zend_hash) [ext/xml/tests/gh17187_2.phpt] 
+TEST 35/67 [ext/xml/tests/gh20439_1.phpt][1;31mFAIL[0m GH-20439 (xml_set_default_handler() does not properly handle special characters in attributes when passing data to callback) [ext/xml/tests/gh20439_1.phpt] 
+TEST 36/67 [ext/xml/tests/gh20439_2.phpt][1;31mFAIL[0m GH-20439 (xml_set_default_handler() does not properly handle special characters in attributes when passing data to callback) - closing solidus variant [ext/xml/tests/gh20439_2.phpt] 
+TEST 37/67 [ext/xml/tests/set_element_handler_trampoline.phpt][1;32mPASS[0m Test xml_set_element_handler handlers as trampoline callback [ext/xml/tests/set_element_handler_trampoline.phpt] 
+TEST 38/67 [ext/xml/tests/set_element_handler_trampoline_errors.phpt][1;32mPASS[0m Test xml_set_element_handler handlers as trampoline callback [ext/xml/tests/set_element_handler_trampoline_errors.phpt] 
+TEST 39/67 [ext/xml/tests/set_handler_deprecation_empty_string.phpt][1;32mPASS[0m Unsetting a handler via an empty string should emit a deprecation [ext/xml/tests/set_handler_deprecation_empty_string.phpt] 
+TEST 40/67 [ext/xml/tests/set_handler_errors.phpt][1;32mPASS[0m Error conditions when setting invalid handler callables [ext/xml/tests/set_handler_errors.phpt] 
+TEST 41/67 [ext/xml/tests/set_handler_trampoline.phpt][1;32mPASS[0m Test XMLParser generic handlers as trampoline callback [ext/xml/tests/set_handler_trampoline.phpt] 
+TEST 42/67 [ext/xml/tests/toffset_bounds.phpt][1;32mPASS[0m XML_OPTION_SKIP_TAGSTART bounds [ext/xml/tests/toffset_bounds.phpt] 
+TEST 43/67 [ext/xml/tests/xml001.phpt][1;33mSKIP[0m XML parser test, function callbacks [ext/xml/tests/xml001.phpt] reason: this test is not intended for libxml SAX parser
+TEST 44/67 [ext/xml/tests/xml002.phpt][1;33mSKIP[0m XML parser test, object tuple callbacks [ext/xml/tests/xml002.phpt] reason: this test is not intended for libxml SAX parser
+TEST 45/67 [ext/xml/tests/xml003.phpt][1;33mSKIP[0m XML parser test, xml_set_object callbacks [ext/xml/tests/xml003.phpt] reason: this test is not intended for libxml SAX parser
+TEST 46/67 [ext/xml/tests/xml004.phpt][1;32mPASS[0m XML parser case folding test [ext/xml/tests/xml004.phpt] 
+TEST 47/67 [ext/xml/tests/xml007.phpt][1;33mSKIP[0m xml_parse_into_struct/umlauts in tags [ext/xml/tests/xml007.phpt] reason: strtoupper on non-ascii not supported on this platform
+TEST 48/67 [ext/xml/tests/xml009.phpt][1;32mPASS[0m XML parser test, default namespaces [ext/xml/tests/xml009.phpt] 
+TEST 49/67 [ext/xml/tests/xml010.phpt][1;32mPASS[0m XML parser test, attributes [ext/xml/tests/xml010.phpt] 
+TEST 50/67 [ext/xml/tests/xml011.phpt][1;32mPASS[0m XML Parser test: concat character data and set empty handlers [ext/xml/tests/xml011.phpt] 
+TEST 51/67 [ext/xml/tests/xml_closures_001.phpt][1;32mPASS[0m XML parser test using closures as callbacks [ext/xml/tests/xml_closures_001.phpt] 
+TEST 52/67 [ext/xml/tests/xml_error_string_basic_expat.phpt][1;33mSKIP[0m xml_error_string() - Basic test on 5 error codes [ext/xml/tests/xml_error_string_basic_expat.phpt] reason: test is for Expat
+TEST 53/67 [ext/xml/tests/xml_error_string_basic_libxml.phpt][1;31mFAIL[0m xml_error_string() - Basic test on 5 error codes [ext/xml/tests/xml_error_string_basic_libxml.phpt] 
+TEST 54/67 [ext/xml/tests/xml_parse_into_struct_variation.phpt][1;32mPASS[0m Test xml_parse_into_struct() function : variation [ext/xml/tests/xml_parse_into_struct_variation.phpt] 
+TEST 55/67 [ext/xml/tests/xml_parser_free_deprecated.phpt][1;32mPASS[0m xml_parser_free() deprecation message [ext/xml/tests/xml_parser_free_deprecated.phpt] 
+TEST 56/67 [ext/xml/tests/xml_parser_get_option_variation3.phpt][1;32mPASS[0m xml_parser_get_option() with XML_OPTION_SKIP_TAGSTART and XML_OPTION_SKIP_WHITE [ext/xml/tests/xml_parser_get_option_variation3.phpt] 
+TEST 57/67 [ext/xml/tests/xml_parser_get_option_variation4.phpt][1;32mPASS[0m xml_parser_get_option() - Test parameter not set [ext/xml/tests/xml_parser_get_option_variation4.phpt] 
+TEST 58/67 [ext/xml/tests/xml_parser_set_option_basic.phpt][1;32mPASS[0m Test xml_set_notation_decl_handler function : basic [ext/xml/tests/xml_parser_set_option_basic.phpt] 
+TEST 59/67 [ext/xml/tests/xml_parser_set_option_errors.phpt][1;32mPASS[0m xml_parser_set_option(): Setting options to invalid values [ext/xml/tests/xml_parser_set_option_errors.phpt] 
+TEST 60/67 [ext/xml/tests/xml_parser_set_option_nonexistent_option.phpt][1;32mPASS[0m xml_parser_set_option(): Non-existent option [ext/xml/tests/xml_parser_set_option_nonexistent_option.phpt] 
+TEST 61/67 [ext/xml/tests/xml_set_element_handler_errors.phpt][1;32mPASS[0m Error conditions when setting invalid handler callables for xml_set_element_handler() [ext/xml/tests/xml_set_element_handler_errors.phpt] 
+TEST 62/67 [ext/xml/tests/xml_set_notation_decl_handler_basic.phpt][1;32mPASS[0m Test xml_set_notation_decl_handler function : basic [ext/xml/tests/xml_set_notation_decl_handler_basic.phpt] 
+TEST 63/67 [ext/xml/tests/xml_set_object_multiple_times.phpt][1;32mPASS[0m Swap underlying object to call methods with xml_set_object() [ext/xml/tests/xml_set_object_multiple_times.phpt] 
+TEST 64/67 [ext/xml/tests/xml_set_object_multiple_times_errors.phpt][1;32mPASS[0m Swap underlying object to call methods with xml_set_object() new object has missing methods [ext/xml/tests/xml_set_object_multiple_times_errors.phpt] 
+TEST 65/67 [ext/xml/tests/xml_set_processing_instruction_handler_basic.phpt][1;32mPASS[0m Test xml_set_processing_instruction_handler function : basic [ext/xml/tests/xml_set_processing_instruction_handler_basic.phpt] 
+TEST 66/67 [ext/xml/tests/xml_set_start_namespace_decl_handler_basic_expat.phpt][1;33mSKIP[0m Test xml_set_start_namespace_decl_handler function: basic [ext/xml/tests/xml_set_start_namespace_decl_handler_basic_expat.phpt] reason: test is for Expat
+TEST 67/67 [ext/xml/tests/xml_set_start_namespace_decl_handler_basic_libxml.phpt][1;32mPASS[0m Test xml_set_start_namespace_decl_handler function: basic [ext/xml/tests/xml_set_start_namespace_decl_handler_basic_libxml.phpt] 
+=====================================================================
+Number of tests :    67                56
+Tests skipped   :    11 ( 16.4%) --------
+Tests warned    :     0 (  0.0%) (  0.0%)
+Tests failed    :     8 ( 11.9%) ( 14.3%)
+Tests passed    :    48 ( 71.6%) ( 85.7%)
+---------------------------------------------------------------------
+Time taken      : 4.432 seconds
+=====================================================================
+
+=====================================================================
+FAILED TEST SUMMARY
+---------------------------------------------------------------------
+Request #68325 (XML_OPTION_PARSE_HUGE cannot be set for xml_parser_create) [ext/xml/tests/XML_OPTION_PARSE_HUGE.phpt]
+Bug #26614 (CDATA sections skipped on line count) [ext/xml/tests/bug26614_libxml_gte2_11.phpt]
+Bug #27908 (default handler not being called) [ext/xml/tests/bug27908.phpt]
+Bug #46699: (xml_parse crash when parser is namespace aware) [ext/xml/tests/bug46699.phpt]
+GH-12254: xml_parse_into_struct() memory leak when called twice [ext/xml/tests/gh12254.phpt]
+GH-20439 (xml_set_default_handler() does not properly handle special characters in attributes when passing data to callback) [ext/xml/tests/gh20439_1.phpt]
+GH-20439 (xml_set_default_handler() does not properly handle special characters in attributes when passing data to callback) - closing solidus variant [ext/xml/tests/gh20439_2.phpt]
+xml_error_string() - Basic test on 5 error codes [ext/xml/tests/xml_error_string_basic_libxml.phpt]
+=====================================================================
+make: *** [Makefile:190: test] Error 1

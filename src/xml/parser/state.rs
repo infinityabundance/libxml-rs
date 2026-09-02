@@ -86,14 +86,22 @@ use std::os::raw::{c_char, c_int, c_ulong, c_void};
 // Parser constants (parser states)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const XML_PARSER_START: c_int = 0;
-const XML_PARSER_MISC: c_int = 1;
-const XML_PARSER_PROLOG: c_int = 2;
-const XML_PARSER_CONTENT: c_int = 3;
-#[allow(dead_code)]
-const XML_PARSER_CDATA_SECTION: c_int = 4;
-#[allow(dead_code)]
-const XML_PARSER_ENTITY_REF: c_int = 5;
+// `ctxt->instate` is an ABI-visible field: consumers compiled against the
+// real libxml2 headers (PHP ext/xml expat-compat `compat.c` gate on
+// `instate == XML_PARSER_CONTENT` while resolving entity references) compare
+// against the header's `xmlParserInputState` numbering. The single source of
+// truth is `abi::types::xmlParserInputState` (which mirrors include/libxml/
+// parser.h 2.15 verbatim); these aliases keep the write sites readable and
+// make a future drift a compile-time error (SP-14.3.1-4, bug71592).
+use crate::abi::types::xmlParserInputState as ParserState;
+const XML_PARSER_START: c_int = ParserState::XML_PARSER_START as c_int;
+const XML_PARSER_MISC: c_int = ParserState::XML_PARSER_MISC as c_int;
+const XML_PARSER_PROLOG: c_int = ParserState::XML_PARSER_PROLOG as c_int;
+const XML_PARSER_CONTENT: c_int = ParserState::XML_PARSER_CONTENT as c_int;
+const XML_PARSER_DTD: c_int = ParserState::XML_PARSER_DTD as c_int;
+const XML_PARSER_EOF: c_int = ParserState::XML_PARSER_EOF as c_int;
+const XML_PARSER_EPILOG: c_int = ParserState::XML_PARSER_EPILOG as c_int;
+const XML_PARSER_XML_DECL: c_int = ParserState::XML_PARSER_XML_DECL as c_int;
 
 /// XML_WAR_NS_URI_RELATIVE (include/libxml/xmlerror.h:100) — the namespace
 /// URI warning for relative (non-absolute) xmlns URIs.
@@ -141,20 +149,6 @@ fn is_legacy_warning_handler(cb: warningSAXFunc) -> bool {
     ptr == crate::xml::errors::XML_PARSER_WARNING_SAX1 as errorSAXFunc as usize
         || ptr == crate::xml::sax::default::default_sax_handler::warning as warningSAXFunc as usize
 }
-#[allow(dead_code)]
-const XML_PARSER_ENTITY_VALUE: c_int = 6;
-#[allow(dead_code)]
-const XML_PARSER_ATTRIBUTE_VALUE: c_int = 7;
-const XML_PARSER_DTD: c_int = 8;
-const XML_PARSER_EOF: c_int = 9;
-const XML_PARSER_EPILOG: c_int = 10;
-#[allow(dead_code)]
-const XML_PARSER_PI: c_int = 11;
-#[allow(dead_code)]
-const XML_PARSER_IGNORE: c_int = 12;
-#[allow(dead_code)]
-const XML_PARSER_COMMENT: c_int = 13;
-const XML_PARSER_XML_DECL: c_int = 14;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // XmlParser
@@ -181,6 +175,17 @@ pub(crate) struct XmlParser {
     /// "Premature end of data" — the parse only reports success when the
     /// accumulated input forms a complete document (SP-14.3.1-3).
     probe: bool,
+    /// The context was ALREADY not-well-formed when this parse began
+    /// (`ctxt->wellFormed == 0` before the per-parse reset). PHP ext/xml's
+    /// expat-compat layer zeroes `wellFormed` right after creating the push
+    /// context and never re-arms it, so upstream parses run with
+    /// wellFormed == 0 for the whole document: xmlParseReference then returns
+    /// at its `if (!ctxt->wellFormed) return;` guard and the ENGINE never
+    /// re-parses resolved entity content — the expat-compat `get_entity` side
+    /// effects (h_cdata / h_default / external-entity-ref feeds) are the ONLY
+    /// delivery. Re-substituting here would double the content
+    /// (SP-14.3.1-4: bug30875/gh14834 regressions).
+    started_unwellformed: bool,
     /// Set when a probe parse paused at an end-of-input that could continue.
     paused: bool,
     /// Suppress SAX delivery only (diagnostics still delivered). Used by the
@@ -204,6 +209,13 @@ pub(crate) struct XmlParser {
     /// candidate consults it when no tree is being built (PHP expat-compat
     /// SAX2 mode) and falls back to `xmlSearchNs` on the tree otherwise.
     ns_scope: Vec<(Vec<u8>, Vec<u8>)>,
+    /// DTD attribute defaults by element name (upstream `ctxt->attsDefault`, a
+    /// hash of `xmlDefAttrs` per (localname, prefix), filled while the
+    /// internal subset's `ATTLIST` declarations are parsed). `xmlParseStartTag2`
+    /// appends the defaults that are not already present on the tag to the
+    /// SAX2 attribute set and reports their count as `nb_defaulted`
+    /// (SP-14.3.1-4, bug35447: `type (literal|pattern|sub) "literal"`).
+    dtd_attr_defaults: Vec<(Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>)>,
     /// Legacy-format "cur input" tail for the next raised parser error:
     /// upstream `xmlFormatError` prints the current (entity) input's
     /// `Entity: line N: ` info + window after the parent window
@@ -254,6 +266,11 @@ impl XmlParser {
         let initialized = unsafe { (*(*ctxt).sax).initialized };
         let sax1 = initialized != crate::abi::types::XML_SAX2_MAGIC as u32;
 
+        // Whether the consumer disabled well-formed tracking before this
+        // parse (PHP expat-compat sets ctxt->wellFormed = 0 at create): read
+        // BEFORE the per-parse state reset below.
+        let started_unwellformed = unsafe { (*ctxt).wellFormed == 0 };
+
         // Set initial parser state
         unsafe {
             (*ctxt).instate = XML_PARSER_START;
@@ -269,10 +286,12 @@ impl XmlParser {
             options,
             sax1,
             probe,
+            started_unwellformed,
             paused: false,
             sax_suppressed,
             truncated_abort: false,
             ns_scope: Vec::new(),
+            dtd_attr_defaults: Vec::new(),
             cur_error_tail: None,
         }
     }
@@ -968,14 +987,45 @@ impl XmlParser {
                         Self::parse_element_decl(d, args);
                     }
                 } else if kw.eq_ignore_ascii_case(b"ENTITY") {
-                    // A general (non-parameter) internal entity declaration
-                    // must always be registered (upstream expat-compat
-                    // behavior), even when no document tree is being built.
-                    if dtd.is_none() {
-                        dtd = self.ensure_entity_registry_dtd();
+                    // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): WHICH
+                    // declarations are registered into the parser's entity
+                    // table depends on whether a real document is being built.
+                    // Tree consumers receive every declaration through the
+                    // document DTD (registered here into the real intSubset).
+                    // Expat-compat SAX consumers (no real doc — myDoc is NULL
+                    // or the internal SAX_COMPAT_MODE registry) receive them
+                    // through the SAX entityDecl events instead; upstream
+                    // registers into the SAX-compat myDoc only general entities
+                    // with a replacement VALUE (always) and external general
+                    // PARSED entities when substitution was requested
+                    // (ctxt->replaceEntities != 0). Parameter and NDATA-unparsed
+                    // declarations never enter the registry — which is why an
+                    // external parsed entity declared WITHOUT NOENT resolves as
+                    // undeclared on the next reference, exactly like upstream
+                    // (SP-14.3.1-4, bug71592).
+                    let compat_registry = unsafe {
+                        let doc = (*self.ctxt).myDoc;
+                        if doc.is_null() {
+                            true
+                        } else {
+                            // SAX_COMPAT_MODE docs are marked XML_DOC_INTERNAL
+                            // (see ensure_entity_registry_dtd).
+                            (*doc).properties
+                                & (crate::abi::types::xmlDocProperties::XML_DOC_INTERNAL as c_int)
+                                != 0
+                        }
+                    };
+                    let mut register = true;
+                    if compat_registry {
+                        register = self.compat_entity_must_register(args);
                     }
-                    if let Some(d) = dtd {
-                        Self::parse_entity_decl(d, args);
+                    if register {
+                        if dtd.is_none() {
+                            dtd = self.ensure_entity_registry_dtd();
+                        }
+                        if let Some(d) = dtd {
+                            Self::parse_entity_decl(d, args);
+                        }
                     }
                     // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
                     // non-parameter NDATA (unparsed) external entity is
@@ -986,6 +1036,10 @@ impl XmlParser {
                     if let Some(d) = dtd {
                         Self::parse_attlist_decl(d, args);
                     }
+                    // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl):
+                    // defaults land in ctxt->attsDefault regardless of a
+                    // document tree (SP-14.3.1-4, bug35447).
+                    self.collect_attlist_defaults(args);
                 } else if kw.eq_ignore_ascii_case(b"NOTATION") {
                     if let Some(d) = dtd {
                         Self::parse_notation_decl(d, args);
@@ -1410,6 +1464,60 @@ impl XmlParser {
         node
     }
 
+    /// Whether a general `<!ENTITY ...>` declaration must be registered into
+    /// the expat-compat entity registry — upstream `xmlParseEntityDecl`'s SAX-
+    /// mode rule (parser.c): an internal entity with a quoted VALUE registers
+    /// unconditionally; an external SYSTEM/PUBLIC general PARSED entity
+    /// registers only when entity substitution was requested
+    /// (`ctxt->replaceEntities != 0`); parameter entities and NDATA-unparsed
+    /// entities never enter the registry (their SAX `entityDecl`/
+    /// `unparsedEntityDecl` events carry them to the consumer).
+    ///
+    /// # Safety
+    ///
+    /// - `self.ctxt` must be a valid, initialized `_xmlParserCtxt`; `args` is a
+    ///   caller-owned byte slice (the declaration body after `<!ENTITY`), live
+    ///   for the call.
+    fn compat_entity_must_register(&self, args: &[u8]) -> bool {
+        let args = trim_ascii(args);
+        if args.is_empty() {
+            return false;
+        }
+        let mut rest = args;
+        let mut is_param = false;
+        if rest.starts_with(b"%") {
+            is_param = true;
+            rest = trim_ascii(&rest[1..]);
+        }
+        if is_param {
+            // Parameter entities resolve through the SAX `getParameterEntity`
+            // callback, never through the general-entity `getEntity`;
+            // upstream keeps them out of the SAX-compat document.
+            return false;
+        }
+        let name_end = rest
+            .iter()
+            .position(|&b| b.is_ascii_whitespace())
+            .unwrap_or(rest.len());
+        let tail = trim_ascii(&rest[name_end..]);
+        if tail.is_empty() {
+            return false;
+        }
+        if tail.starts_with(b"SYSTEM") || tail.starts_with(b"PUBLIC") {
+            // External general entity. Upstream registers it as
+            // XML_EXTERNAL_GENERAL_PARSED_ENTITY only when substitution was
+            // requested; an NDATA suffix makes it UNPARSED, which never
+            // enters the registry (only the SAX unparsedEntityDecl event
+            // fires).
+            if find_ndata_notation(tail).0 {
+                return false;
+            }
+            return unsafe { (*self.ctxt).replaceEntities } != 0;
+        }
+        // Internal general entity with a quoted value.
+        true
+    }
+
     /// Parse a `<!ENTITY ...>` declaration (general or parameter).
     ///
     /// # Safety
@@ -1532,6 +1640,67 @@ impl XmlParser {
                 }
             }
             crate::abi::allocator::xmlFreeImpl(name_cstr as *mut c_void);
+        }
+    }
+
+    /// Collect the DTD attribute DEFAULTS of one `<!ATTLIST ...>` body into
+    /// the parser-scoped defaults table (upstream `ctxt->attsDefault`, filled
+    /// by xmlParseAttributeListDecl): every `attr type default` whose default
+    /// declaration carries a value (`#FIXED "v"` or a literal `"v"`).
+    /// Mirrors the scan of `parse_attlist_decl` without the DTD writes, and
+    /// mirrors upstream's skip of `xmlns`/`xmlns:*` defaults.
+    fn collect_attlist_defaults(&mut self, args: &[u8]) {
+        let args = trim_ascii(args);
+        if args.is_empty() {
+            return;
+        }
+        let name_end = args
+            .iter()
+            .position(|&b| b.is_ascii_whitespace())
+            .unwrap_or(args.len());
+        let elem_name = args[..name_end].to_vec();
+        if elem_name.is_empty() {
+            return;
+        }
+        let mut rest = trim_ascii(&args[name_end..]);
+        let mut defaults: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        while !rest.is_empty() {
+            let aend = rest
+                .iter()
+                .position(|&b| b.is_ascii_whitespace())
+                .unwrap_or(rest.len());
+            let attr_name = &rest[..aend];
+            rest = trim_ascii(&rest[aend..]);
+            if attr_name.is_empty() {
+                break;
+            }
+            if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
+                // Skip the type + default anyway to keep the scan aligned.
+                let consumed = skip_dtd_attr_type(rest);
+                rest = trim_ascii(&rest[consumed..]);
+                let (_, _, consumed2) = parse_attr_default(rest);
+                rest = trim_ascii(&rest[consumed2..]);
+                continue;
+            }
+            let consumed = skip_dtd_attr_type(rest);
+            rest = trim_ascii(&rest[consumed..]);
+            let (_, default_val, consumed2) = parse_attr_default(rest);
+            rest = trim_ascii(&rest[consumed2..]);
+            if let Some(v) = default_val {
+                defaults.push((attr_name.to_vec(), v.to_vec()));
+            }
+        }
+        if defaults.is_empty() {
+            return;
+        }
+        if let Some(e) = self
+            .dtd_attr_defaults
+            .iter_mut()
+            .find(|(n, _)| n == &elem_name)
+        {
+            e.1.extend(defaults);
+        } else {
+            self.dtd_attr_defaults.push((elem_name, defaults));
         }
     }
 
@@ -2928,6 +3097,24 @@ impl XmlParser {
                 return Ok(());
             }
 
+            // UPSTREAM-PARITY (parser.c xmlParseReference): an entity-resolving
+            // SAX handler may stop the parser while the reference is looked up
+            // (PHP expat-compat get_entity fires the external-entity-ref
+            // callback for an external general parsed entity; a FALSE return
+            // runs xmlStopParser → disableSAX = 2, wellFormed = 0, errNo =
+            // XML_ERROR_EXTERNAL_ENTITY_HANDLING). The reference then expands
+            // to nothing and no further event fires (SP-14.3.1-4, bug71592).
+            //
+            // UPSTREAM-PARITY (expat-compat mode): a context that entered the
+            // parse already not-well-formed (PHP zeroes ctxt->wellFormed at
+            // create) never re-parses resolved entity content upstream — the
+            // expat-compat get_entity side effects are the only delivery, so
+            // substituting here too would duplicate the content
+            // (bug30875/gh14834).
+            if self.started_unwellformed || unsafe { (*self.ctxt).wellFormed } == 0 {
+                return Ok(());
+            }
+
             if (self.options & XML_PARSE_NOENT) != 0 {
                 // UPSTREAM-PARITY (xmlParseReference): the entity content is
                 // parsed into ent->children on first reference regardless of
@@ -3600,6 +3787,59 @@ impl XmlParser {
                 attr_vec.push({ value_cstr.add(value.len()) } as *const xmlChar);
             }
 
+            // UPSTREAM-PARITY (parser.c xmlParseStartTag2 "Default
+            // attributes"): DTD defaults from the internal subset
+            // (ctxt->attsDefault) that are not already present on the tag are
+            // appended to the SAX2 attribute set and counted in nb_defaulted
+            // (SP-14.3.1-4, bug35447). Keyed by the element's local name
+            // first, then the raw QName as written in the ATTLIST.
+            let mut nb_defaulted: c_int = 0;
+            let default_entries: Vec<(Vec<u8>, Vec<u8>)> = self
+                .dtd_attr_defaults
+                .iter()
+                .find(|(n, _)| n == &localname || n == _name)
+                .map(|(_, v)| v.clone())
+                .unwrap_or_default();
+            for (dname, dval) in &default_entries {
+                if dname == b"xmlns" || dname.starts_with(b"xmlns:") {
+                    continue;
+                }
+                let (dprefix, dlocal) = match dname.iter().position(|&b| b == b':') {
+                    Some(c) => (Some(dname[..c].to_vec()), dname[c + 1..].to_vec()),
+                    None => (None, dname.clone()),
+                };
+                // Skip defaults already present on the tag (the attribute's
+                // own binding wins).
+                if attrs.iter().any(|(p, l, _, _)| {
+                    l == &dlocal
+                        && match (p, &dprefix) {
+                            (Some(p), Some(dp)) => p == dp,
+                            (None, None) => true,
+                            _ => false,
+                        }
+                }) {
+                    continue;
+                }
+                let local_cstr = Self::vec_to_cstr_null(&dlocal);
+                let prefix_cstr = dprefix
+                    .as_ref()
+                    .map(|p| Self::vec_to_cstr_null(p))
+                    .unwrap_or(ptr::null());
+                let uri_cstr = match dprefix.as_deref() {
+                    Some(dp) => resolve_uri(Some(dp))
+                        .map(|u| Self::vec_to_cstr_null(&u))
+                        .unwrap_or(ptr::null()),
+                    None => ptr::null(),
+                };
+                let value_cstr = Self::vec_to_cstr_null(dval);
+                attr_vec.push(local_cstr);
+                attr_vec.push(prefix_cstr);
+                attr_vec.push(uri_cstr);
+                attr_vec.push(value_cstr);
+                attr_vec.push({ value_cstr.add(dval.len()) } as *const xmlChar);
+                nb_defaulted += 1;
+            }
+
             let localname_cstr = self.sax_name_cstr(&localname);
             let prefix_cstr = prefix_opt
                 .as_ref()
@@ -3615,7 +3855,7 @@ impl XmlParser {
             } else {
                 ns_vec.as_mut_ptr()
             };
-            let nb_attributes = attrs.len() as c_int;
+            let nb_attributes = (attrs.len() as c_int) + nb_defaulted;
             let attributes_ptr = if attr_vec.is_empty() {
                 ptr::null_mut()
             } else {
@@ -3636,7 +3876,7 @@ impl XmlParser {
                 nb_namespaces,
                 namespaces_ptr,
                 nb_attributes,
-                0, // nb_defaulted
+                nb_defaulted,
                 attributes_ptr,
             );
         }
@@ -4765,6 +5005,53 @@ fn parse_attr_type(s: &[u8]) -> (c_int, *mut crate::abi::structs::_xmlEnumeratio
         return (XML_ATTRIBUTE_ENUMERATION as c_int, tree, consumed);
     }
     (XML_ATTRIBUTE_CDATA as c_int, ptr::null_mut(), kw_len)
+}
+
+/// Consume an attribute TYPE from the start of an ATTLIST body WITHOUT
+/// building the enumeration chain (parse_attr_type minus the allocation);
+/// returns the number of bytes consumed. Mirrors parse_attr_type's scan so
+/// the defaults collector stays aligned with parse_attlist_decl.
+fn skip_dtd_attr_type(s: &[u8]) -> usize {
+    let s = trim_ascii(s);
+    if s.starts_with(b"(") {
+        // Enumeration: (a | b | c)
+        let mut depth = 0usize;
+        for (i, &b) in s.iter().enumerate() {
+            if b == b'(' {
+                depth += 1;
+            } else if b == b')' {
+                depth -= 1;
+                if depth == 0 {
+                    return i + 1;
+                }
+            }
+        }
+        return s.len();
+    }
+    let kw_len = s
+        .iter()
+        .position(|&b| b.is_ascii_whitespace())
+        .unwrap_or(s.len());
+    if s[..kw_len].eq_ignore_ascii_case(b"NOTATION") {
+        let tail = &s[kw_len..];
+        let after = trim_ascii(tail);
+        if after.starts_with(b"(") {
+            let lead = kw_len + (tail.len() - after.len());
+            let mut depth = 0usize;
+            for (i, &b) in after.iter().enumerate() {
+                if b == b'(' {
+                    depth += 1;
+                } else if b == b')' {
+                    depth -= 1;
+                    if depth == 0 {
+                        return lead + i + 1;
+                    }
+                }
+            }
+            return s.len();
+        }
+    }
+    kw_len
 }
 
 /// Parse `( a | b | c )` into an enumeration chain.

@@ -1314,3 +1314,48 @@ pub type xsltNsAliasPtr = *mut _xsltNsAlias;
 pub type xsltAttrSetPtr = *mut _xsltAttrSet;
 pub type xsltDocumentPtr = *mut _xsltDocument;
 pub type xsltSortPtr = *mut _xsltSort;
+
+#[cfg(test)]
+mod parser_ctxt_abi_layout {
+    //! ABI-layout guard for `_xmlParserCtxt` / `_xmlEntity` / `_xmlSAXHandler`
+    //! (SP-14.3.1-4, bug71592). `ctxt->instate`, `wellFormed`, `myDoc`,
+    //! `inSubset` etc. are read by foreign consumers compiled against the real
+    //! libxml2 headers (PHP ext/xml expat-compat `compat.c` reads them while
+    //! resolving entity references), so the Rust struct offsets must equal the
+    //! upstream header's `offsetof` values — measured against the 2.15.3 oracle
+    //! with courts/suites/phase14/consumers/ctxoffset-probe.c (its output is
+    //! reproduced in the assertions below).
+    use super::*;
+    use core::mem::offset_of;
+
+    #[test]
+    fn parser_ctxt_layout_matches_upstream_headers() {
+        assert_eq!(core::mem::size_of::<_xmlParserCtxt>(), 840);
+        assert_eq!(offset_of!(_xmlParserCtxt, sax), 0);
+        assert_eq!(offset_of!(_xmlParserCtxt, userData), 8);
+        assert_eq!(offset_of!(_xmlParserCtxt, myDoc), 16);
+        assert_eq!(offset_of!(_xmlParserCtxt, wellFormed), 24);
+        assert_eq!(offset_of!(_xmlParserCtxt, input), 56);
+        assert_eq!(offset_of!(_xmlParserCtxt, errNo), 136);
+        assert_eq!(offset_of!(_xmlParserCtxt, vctxt), 160);
+        assert_eq!(core::mem::size_of::<_xmlValidCtxt>(), 112);
+        assert_eq!(offset_of!(_xmlParserCtxt, instate), 272);
+        assert_eq!(offset_of!(_xmlParserCtxt, disableSAX), 332);
+        assert_eq!(offset_of!(_xmlParserCtxt, inSubset), 336);
+    }
+
+    #[test]
+    fn entity_and_sax_handler_layout_matches_upstream_headers() {
+        assert_eq!(core::mem::size_of::<_xmlEntity>(), 144);
+        assert_eq!(offset_of!(_xmlEntity, name), 16);
+        assert_eq!(offset_of!(_xmlEntity, content), 80);
+        assert_eq!(offset_of!(_xmlEntity, etype), 92);
+        assert_eq!(offset_of!(_xmlEntity, ExternalID), 96);
+        assert_eq!(offset_of!(_xmlEntity, SystemID), 104);
+        assert_eq!(core::mem::size_of::<_xmlSAXHandler>(), 256);
+        assert_eq!(offset_of!(_xmlSAXHandler, getEntity), 40);
+        assert_eq!(offset_of!(_xmlSAXHandler, startElement), 112);
+        assert_eq!(offset_of!(_xmlSAXHandler, initialized), 216);
+        assert_eq!(offset_of!(_xmlSAXHandler, startElementNs), 232);
+    }
+}

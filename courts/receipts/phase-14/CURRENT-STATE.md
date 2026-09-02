@@ -140,3 +140,55 @@ SP-14.3.1-3 closed (R-14.3-PUSH-DELIVERY + R-14.3-SAX1SAX2 + R-14.3-NS-SCOPE
     new warnings) + fmt clean.
   - receipt/analysis: php-14-3-push-delivery-20260902/ (log sp1-xml7.log
     ext/xml 67 run -> 46 pass / 10 fail / 11 skip).
+
+SP-14.3.1-4 closed (R-14.3-BOM-PUSH + R-14.3-INSTATE-ABI + R-14.3-EXT-ENTITY-REF
+  + R-14.3-EXTERN-ENTITY-REG-GATE + R-14.3-CHUNK-RC FIXED): bug35447 +
+  bug71592 PASS; ext/xml 10 -> 8 failed (zero regressions; also closed
+  bug30875 + gh14834, which the instate fix exposed as double delivery).
+  Five engine/ABI root causes:
+  - R-14.3-BOM-PUSH: InputBuffer::push_bytes re-runs BOM/encoding detection when
+    the first real bytes arrive on an initially-empty push buffer (the buffer
+    was constructed empty, so detection ran on no bytes). Real-BOM push parses
+    now byte-identical to the oracle (bom-probe.c 4-case differential).
+  - R-14.3-INSTATE-ABI: ctxt->instate is an ABI-visible field; PHP
+    expat-compat compat.c compares it against XML_PARSER_CONTENT while
+    resolving entity references. The candidate's private constants AND its
+    installed header AND abi::types::xmlParserInputState each carried a
+    DIFFERENT wrong numbering (engine CONTENT=3, header 4, real 7). All three
+    now derive from/mirror the real 2.15 header verbatim
+    (abi::types::xmlParserInputState + include/libxml/parser.h +
+    state.rs aliases + exports_parserint EOF=-1). bug71592's external-entity
+    handler only fires when the engine writes instate==7 at the reference.
+  - R-14.3-EXT-ENTITY-REF: external general PARSED entities declared in the
+    internal subset must register into the SAX-compat registry ONLY when
+    ctxt->replaceEntities != 0 (upstream xmlParseEntityDecl gate) — parameter
+    and NDATA-unparsed declarations never enter the registry
+    (compat_entity_must_register + parse_internal_subset gating). After a
+    getEntity resolves an entity, parse_reference honors upstream's
+    `if (!ctxt->wellFormed) return;` (stop mid-lookup: no substitution, no
+    events) and the context's STARTING wellFormed is preserved across
+    probe/delivery re-parses (PushState.start_well_formed +
+    started_unwellformed) so expat-compat (wf=0-at-create) parses never
+    double-substitute: compat's get_entity side effects are the only content
+    delivery (bug30875/gh14834 "aentent").
+  - R-14.3-CHUNK-RC: helpers::parse_chunk now mirrors upstream xmlParseChunk —
+    returns ctxt->errNo when wellFormed==0 after the delivery/terminating
+    parse (was always 0 on non-final calls), and a stopped context
+    (disableSAX==2) refuses further chunks with errNo. xml_parse() returns
+    FALSE for bug71592 exactly like the oracle (chunkrc-probe.c).
+  - The candidate-side php had to be rebuilt against the corrected installed
+    headers (its compat.c had compiled XML_PARSER_CONTENT==4 from the old
+    header): php-court-stage.sh candidate contract re-run in phpbuild-c.
+  - guards: tests.rs push BOM+ATTLIST-default (sax2 attr capture), external-
+    entity-ref stop (rc/errNo 21, no events past the stop), wf0-compat
+    single-entity-delivery vs wf1 substitution control; ABI-layout guard
+    pinning _xmlParserCtxt/_xmlEntity/_xmlSAXHandler offsets to the oracle
+    offsetof probe; test_push_error_at_end_still_delivers updated to the
+    oracle-verified rc (76) incl. the terminating call.
+    cargo test --lib 1212 pass; clippy (no new warnings) + fmt clean; ext/xml
+    67 run -> 48 pass / 8 fail / 11 skip; dom/simplexml/xmlreader/xmlwriter/xsl
+    remeasure: no new failures vs the -3 state (4 dom fragment/adoptNode
+    failures pre-existing at -3, verified by stash-rebuild).
+  - probes kept: consumers/{ext71592-probe.c,ext71592-probe.php,
+    ctxoffset-probe.c,bom-probe.c,chunkrc-probe.c,intent-probe2.c} +
+    extget-probe.c (residual).

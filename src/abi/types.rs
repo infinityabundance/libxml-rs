@@ -317,23 +317,37 @@ pub enum xmlParserMode {
 
 // ── Parser input state ──────────────────────────────────────────────────
 
+/// `xmlParserInputState` (include/libxml/parser.h) — the parser's current
+/// input state. `ctxt->instate` is an ABI-visible field: foreign consumers
+/// compiled against the real libxml2 headers (PHP ext/xml's expat-compat
+/// `compat.c` tests `instate == XML_PARSER_CONTENT` while resolving entity
+/// references) compare against THESE exact values, so the numbering must
+/// mirror the 2.15 header verbatim (SP-14.3.1-4, bug71592). Note that
+/// `XML_PARSER_ENTITY_REF` was removed in 2.15 and `XML_PARSER_END_TAG` /
+/// `XML_PARSER_ENTITY_DECL` etc. sit between `CDATA_SECTION` and
+/// `ENTITY_VALUE`.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum xmlParserInputState {
-    XML_PARSER_EOF = -1,
-    XML_PARSER_START = 0,
-    XML_PARSER_MISC = 1,
-    XML_PARSER_DTD = 2,
-    XML_PARSER_PROLOG = 3,
-    XML_PARSER_CONTENT = 4,
-    XML_PARSER_CDATA_SECTION = 5,
-    XML_PARSER_ENTITY_REF = 6,
-    XML_PARSER_ENTITY_VALUE = 7,
-    XML_PARSER_ATTRIBUTE_VALUE = 8,
-    XML_PARSER_SYSTEM_LITERAL = 9,
-    XML_PARSER_EPILOG = 10,
-    XML_PARSER_IGNORE = 11,
-    XML_PARSER_PUBLIC_LITERAL = 12,
+    XML_PARSER_EOF = -1,             /* nothing is to be parsed */
+    XML_PARSER_START = 0,            /* nothing has been parsed */
+    XML_PARSER_MISC = 1,             /* Misc* before int subset */
+    XML_PARSER_PI = 2,               /* Within a processing instruction */
+    XML_PARSER_DTD = 3,              /* within some DTD content */
+    XML_PARSER_PROLOG = 4,           /* Misc* after internal subset */
+    XML_PARSER_COMMENT = 5,          /* within a comment */
+    XML_PARSER_START_TAG = 6,        /* within a start tag */
+    XML_PARSER_CONTENT = 7,          /* within the content */
+    XML_PARSER_CDATA_SECTION = 8,    /* within a CDATA section */
+    XML_PARSER_END_TAG = 9,          /* within a closing tag */
+    XML_PARSER_ENTITY_DECL = 10,     /* within an entity declaration */
+    XML_PARSER_ENTITY_VALUE = 11,    /* within an entity value in a decl */
+    XML_PARSER_ATTRIBUTE_VALUE = 12, /* within an attribute value */
+    XML_PARSER_SYSTEM_LITERAL = 13,  /* within a SYSTEM value */
+    XML_PARSER_EPILOG = 14,          /* the Misc* after the last end tag */
+    XML_PARSER_IGNORE = 15,          /* within an IGNORED section */
+    XML_PARSER_PUBLIC_LITERAL = 16,  /* within a PUBLIC value */
+    XML_PARSER_XML_DECL = 17,        /* before XML decl (but after BOM) */
 }
 
 // ── XPath object types ──────────────────────────────────────────────────
