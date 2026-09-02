@@ -1,6 +1,6 @@
 # Phase 14.3 — Candidate crash-class reproduction (diagnostic)
 
-Status: OPEN — root cause narrowing; no fix landed yet.
+Status: Bug-1 FIXED. Other crash-class members remain OPEN (root cause per member).
 
 ## Discovery
 The Phase-14.3 fail-closed result interpreter (`consumers/php-court-result.py`)
@@ -100,14 +100,36 @@ see which candidate output/save call abandons the emitted bytes.
 - Candidate crashes are first-class parity failures (14.3-O).
 
 ## Next actions (in order)
-1. Attribute the empty-output + double-destroy to the exact candidate output
-   path. Since element-alone saves work and document saves work but a document
-   fragment does not, instrument dom_xml_serializing_a_document_fragment_node:
-   confirm whether each child is written through the same xmlOutputBufferWrite
-   that element-alone uses, and identify which candidate call NULLs/abandons
-   the buffer or drops ownership so the built string is freed twice.
-2. Add Rust regression court that serializes a document fragment to bytes and
-   asserts non-empty + no double free under a tight teardown loop.
-3. Fix libxml-rs generically.
-4. Re-run representative, then the full crash-class list; re-run full suite.
-5. Update atlas + receipts; residualize.
+1. **FIXED (see below)** Attribute the empty-output + double-destroy to the
+   exact candidate output path.
+2. **FIXED** Add Rust regression court that serializes a document fragment to
+   bytes and asserts non-empty.
+3. **FIXED** Fix libxml-rs generically.
+4. Repeat for the remaining 30 crash-class members; each is attributed,
+   courted, full-suite re-verified, and residualized.
+5. Update atlas + receipts per fix.
+
+## RESOLUTION — Bug-1 (DOM fragment serialization) FIXED
+
+Root cause: `node_dump_internal` (`src/xml/tree/mod.rs`) had **no
+XML_DOCUMENT_FRAG_NODE arm**; a fragment node hit the `_ => {}` empty arm and
+dumped zero bytes. Upstream `xmlsave.c` 2.15 trampolines a fragment's children
+(transparent container). The empty output is what made `DomDocument pass`
+legacy `saveXML(fragment)` return empty, and the downstream PHP serializer then
+double-destroyed the returned zend_string (ZEND_DEBUG assertion).
+
+Generic fix: add the `XML_DOCUMENT_FRAG_NODE` arm that iterates `cur->children`
+and dumps each as its own root.
+
+Proof:
+- Rust regression `xml::tree::tests::test_dump_document_fragment_serializes_children`
+  PASSES.
+- C oracle differential `consumers/fragdump_probe.c`: oracle and candidate both
+  print `FRAG=[<foo/>] ELM=[<foo/>]` (byte-identical).
+- PHPT `ext/dom/tests/DOMParentNode_empty_argument.phpt` now PASSES on candidate.
+- Full candidate suite 321 -> 320 failures, zero regressions (only that PHPT
+  left the fail set).
+- No PHP source / no .phpt / no expected-output changes.
+
+Remaining crash-class members (now ~30) are separate roots to be driven to zero
+one per residual.

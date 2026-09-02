@@ -4461,6 +4461,24 @@ unsafe fn node_dump_internal(
             }
             io::buf_ccat(buf, b';');
         }
+        t if t == XML_DOCUMENT_FRAG_NODE as c_int => {
+            // UPSTREAM-PARITY (xmlsave.c 2.15 xmlNodeDumpOutputInternal
+            // `case XML_DOCUMENT_FRAG_NODE:`): a document fragment is a
+            // transparent container. Upstream trampolines from the fragment
+            // into its children (validated against `cur->parent`) and dumps
+            // them as free siblings — the fragment emits no tags, no XML
+            // declaration, and no indentation of its own. Children keep the
+            // caller/level semantics of the enclosing context.
+            let mut child = n.children;
+            while !child.is_null() {
+                // Each child is dumped as its own root so a fragment's first
+                // child gets no leading indent and the caller separates
+                // sibling content (mirrors doc children handling).
+                let mut sublevel = *level;
+                node_dump_internal(buf, child, child, cur, state, &mut sublevel);
+                child = unsafe { (*child).next };
+            }
+        }
         t if t == XML_DOCUMENT_NODE as c_int => {
             doc_content_dump_output(buf, cur, state, level);
         }
@@ -6126,6 +6144,39 @@ mod tests {
             let expected =
                 "<?xml version=\"1.0\"?>\n<root desc=\"a &lt; b &amp; c &quot;quoted&quot;\"/>\n";
             assert!(buf_eq_str(buf, expected));
+
+            io::buf_free(buf);
+            free_doc(doc);
+        }
+    }
+
+    /// Phase 14.3 PHP regression (DOMParentNode_empty_argument): serializing a
+    /// document-fragment node must emit its children (transparent container).
+    /// The missing XML_DOCUMENT_FRAG_NODE arm returned empty output (and a
+    /// downstream PHP double-destroy) where upstream xmlsave.c trampolines the
+    /// fragment's children.
+    ///
+    /// # Safety
+    ///
+    /// - `frag`/`foo` are built under `doc`; `node_dump` walks them; the buffer
+    ///   is freed with `io::buf_free` and the doc with `free_doc`.
+    #[test]
+    fn test_dump_document_fragment_serializes_children() {
+        unsafe {
+            let doc = new_doc(ptr::null());
+            let frag = crate::abi::exports_tree::xmlNewDocFragment(doc);
+            assert!(!frag.is_null());
+            // add an element child `<foo/>` to the fragment
+            let foo = new_child(frag, ptr::null_mut(), c_str("foo"));
+            assert!(!foo.is_null());
+
+            let buf = io::buf_create(-1);
+            assert!(!buf.is_null());
+            // Serialize the fragment itself (xmlNodeDump semantics, same
+            // node_dump_internal path as xmlNodeDumpOutput).
+            let ret = node_dump(buf, doc, frag, 0, 0);
+            assert!(ret >= 0);
+            assert!(buf_eq_str(buf, "<foo/>"));
 
             io::buf_free(buf);
             free_doc(doc);

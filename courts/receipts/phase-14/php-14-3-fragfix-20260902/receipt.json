@@ -1,0 +1,18 @@
+{
+  "schema": "phase14.3/php-rootcause-receipt/1",
+  "phase": "14.3",
+  "residual": "R-14.3-DOM-FRAGMENT-SERIALIZE",
+  "status": "FIXED",
+  "upstream_behavior": "xmlsave.c 2.15 xmlNodeDumpOutputInternal treats XML_DOCUMENT_FRAG_NODE as a transparent container: when the fragment's parent is intact it trampolines into cur->children and dumps them (no tags/declaration/indent of the fragment itself). Pristine PHP legacy DOMDocument::saveXML(DOMDocumentFragment) therefore returns the concatenated children bytes.",
+  "candidate_defect": "node_dump_internal had no XML_DOCUMENT_FRAG_NODE arm; the match fell through to the empty arm, so dumping a fragment emitted zero bytes (and left the downstream PHP serializer returning an empty zend_string whose ownership state later double-destroyed under Zend).",
+  "php_trigger": "ext/libxml/libxml.c php_libxml_default_dump_node_to_str -> xmlNodeDumpOutput(buf,doc,fragment,...) reached by ext/dom dom_document_save_xml(fragment); e.g. ext/dom/tests/DOMParentNode_empty_argument.phpt.",
+  "generic_fix": "src/xml/tree/mod.rs node_dump_internal: add XML_DOCUMENT_FRAG_NODE arm that iterates children and dumps each as its own root (transparent container), matching upstream fragment descent.",
+  "regression_rust_test": "xml::tree::tests::test_dump_document_fragment_serializes_children (passes).",
+  "regression_c_court": "consumers/fragdump_probe.c: oracle and candidate both print FRAG=[<foo/>] ELM=[<foo/>].",
+  "php_verification": {
+    "phpt_DOMParentNode_empty_argument": "PASS on candidate (was SIGSEGV + empty output)",
+    "full_suite_candidate": "320 failed / 40 skipped (down from 321); no regressions (only DOMParentNode_empty_argument.phpt removed from the fail set)"
+  },
+  "provider_provenance": "candidate run resolved libxml2/libxslt/libexslt exclusively under /candidate/lib",
+  "rules_honoured": "no PHP source change, no .phpt change, no expected-output normalisation; candidate crash treated as a first-class parity failure (14.3-O) and root-caused to the missing fragment-dump arm."
+}
