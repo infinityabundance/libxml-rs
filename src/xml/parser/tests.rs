@@ -1520,3 +1520,119 @@ fn test_push_sax1_raw_qname_and_xmlns_attributes() {
         drop(Box::from_raw(sax_ptr));
     }
 }
+
+// ── SP-14.3.1-8 regression guard (incremental-tag EOF / default-markup) ─────
+
+/// GH-20439 feeds a push parser ONE BYTE at a time. Between the bytes the
+/// parser is usually mid-construct, so the accumulated input repeatedly ends
+/// right after `<`, `<!`, `<!--`, inside an attribute literal, etc. Upstream
+/// never treats those tag prefixes as character data: it pauses until the
+/// construct completes (xmlParseTryOrFinish EOF-in-construct states). A
+/// spurious `Characters("<")` / `Characters("<!")` event from the end of one
+/// chunk would corrupt the raw-markup the PHP default handler later seeks back
+/// to (and gh20439's per-byte feed crashed on the stale input pointer). The
+/// parser must deliver only real text and pause on incomplete markup.
+///
+/// # Safety
+///
+/// - As `test_push_single_shot_without_terminate_delivers`; SAX1 events are
+///   captured in module-scoped state.
+#[test]
+fn test_push_incremental_eof_prefixes_not_text() {
+    unsafe {
+        reset_push_capture();
+        // Per-byte feed (gh20439_1's pattern). The only real text is inside
+        // root; every `<`/`<!`/`<!--`/`-->` boundary is crossed byte-by-byte.
+        let doc = b"<!-- note --><root>hi</root>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1; // SAX1 expat-compat (xml_parser_create)
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        h.characters = Some(sax1_chars_log);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        for one in doc.iter() {
+            let bytes = [*one];
+            let rc = crate::abi::exports_xml2::xmlParseChunk(
+                ctxt,
+                bytes.as_ptr() as *const i8,
+                bytes.len() as c_int,
+                0,
+            );
+            assert_eq!(rc, 0);
+        }
+        let rc = crate::abi::exports_xml2::xmlParseChunk(ctxt, ptr::null(), 0, 1);
+        assert_eq!(rc, 0);
+        // One root element, opened and closed exactly once, and the only
+        // character data delivered is the real text "hi" — no spurious "<"/
+        // "<!" runs leaked as text across the chunk boundaries.
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 1);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 1);
+        let all: Vec<u8> = SAX_CHAR_LOG.with(|l| l.borrow().iter().flatten().cloned().collect());
+        assert_eq!(all, b"hi", "only the real text run may be delivered");
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
+// ── KEY-2 regression guard (content-`<!`-markup rule) ───────────────────────
+
+/// A `<!` that is not `<!--`, `<![CDATA[`, or a prolog `<!DOCTYPE>` is an
+/// invalid element start in element CONTENT: upstream xmlParseStartTag fails
+/// the name at the '!' with XML_ERR_NAME_REQUIRED (68) and the document
+/// becomes not well-formed — the construct is never swallowed as text. This is
+/// what makes PHP's XML innerHTML/outerHTML fragment writer reject
+/// `<!ENTITY ...>`/`<!DOCTYPE ...>` bodies ("XML fragment is not well-formed")
+/// and is the engine rule that lets the SP-14.3.1-8 push-EOF edits land
+/// without regressing those dom fragment tests (KEY-2).
+///
+/// # Safety
+///
+/// - As `test_undeclared_entity_fatal_without_extsubset_or_perefs`.
+#[test]
+fn test_content_markup_decl_clears_wellformed() {
+    unsafe {
+        // Illegal `<!` constructs in element content: NAME_REQUIRED, wf = 0.
+        for doc in [
+            &b"<root><!ENTITY foo \"content\"></root>"[..],
+            &b"<root><!DOCTYPE html></root>"[..],
+            &b"<root><!ELEMENT x EMPTY></root>"[..],
+            &b"<root><!junk></root>"[..],
+        ] {
+            let (d, wf, err) = read_memory_ctx(doc, 0);
+            assert!(d.is_null());
+            assert_eq!(
+                wf,
+                0,
+                "{} must be not well-formed",
+                String::from_utf8_lossy(doc)
+            );
+            assert_eq!(
+                err,
+                crate::abi::types::XML_ERR_NAME_REQUIRED,
+                "{} must raise 68",
+                String::from_utf8_lossy(doc)
+            );
+        }
+        // Legal content constructs stay well-formed.
+        for doc in [
+            &b"<root><!-- ok --></root>"[..],
+            &b"<root><![CDATA[ok]]></root>"[..],
+            &b"<root>plain <b>text</b></root>"[..],
+        ] {
+            let (d, wf, err) = read_memory_ctx(doc, 0);
+            assert!(!d.is_null());
+            assert_eq!(wf, 1);
+            assert_eq!(err, 0);
+            tree::free_doc(d);
+        }
+        // A prolog DOCTYPE with an internal subset stays legal.
+        let (d, wf, err) =
+            read_memory_ctx(b"<!DOCTYPE root [ <!ENTITY e \"E\"> ]><root>a</root>", 0);
+        assert!(!d.is_null());
+        assert_eq!(wf, 1);
+        assert_eq!(err, 0);
+        tree::free_doc(d);
+    }
+}

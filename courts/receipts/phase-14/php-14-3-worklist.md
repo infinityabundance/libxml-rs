@@ -1,7 +1,8 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **283 failed** (dom 169 | xsl 52 |
-xmlreader 29 | xmlwriter 19 | simplexml 9 | xml 5) at f190faeb + KEY-1.
+Authoritative current full-suite count: **276 failed** (dom 166 | xsl 52 |
+xmlreader 29 | xmlwriter 19 | simplexml 9 | xml 1) after KEY-1 + KEY-2 +
+SP-14.3.1-8 closures (f190faeb + 4414132 + KEY-2 commit).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
@@ -41,8 +42,13 @@ extension subset to confirm the targeted test(s) flip PASS with no sibling regre
        recursively). A completed context stays at XML_PARSER_EOF: later
        xmlParseChunk calls parse nothing (second into_struct fires no events).
        ext/xml 6 -> 5 failed.
-- [ ] SP-14.3.1-8  crash cluster gh20439_1/gh20439_2/bug27908 (php compat SAX2
-       default-emit deref).
+- [x] SP-14.3.1-8  crash cluster gh20439_1/gh20439_2/bug27908 + bug46699 (php
+       compat SAX2 default-emit deref) -> committed with KEY-2
+       (content-`<!`-markup rule; receipt php-14-3-sp8-content-markup-20260902):
+       sync_input_position repoints the C input at the live buffer; EOF-in-
+       construct '<'/<! prefixes pause in probes (no spurious text); Comment
+       tokens carry unterminated. KEY-2 makes the push edits non-regressing on
+       dom innerHTML/outerHTML fragment writers. ext/xml 5 -> 1 failed.
 - [ ] SP-14.3.1-9  xml_error_string_basic_libxml (error code/string table rows 47,
        64 for PI-not-finished and reserved-name).
 - [ ] SP-14.3.1-10 xml_set_object_multiple_times{,_errors}, xml46699 + residuals.

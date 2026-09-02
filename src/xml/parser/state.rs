@@ -727,13 +727,37 @@ impl XmlParser {
                         (*self.ctxt).instate = XML_PARSER_PROLOG;
                     }
                 }
-                XmlToken::DocType(content) => {
+                XmlToken::DocType {
+                    content,
+                    unterminated,
+                } => {
+                    // A DOCTYPE body cut off by the end of the available
+                    // input (no closing `>` yet) may complete on a later push
+                    // call: an incremental probe or eager-partial delivery
+                    // must not parse the partial body (KEY-2). On a real
+                    // terminating parse the partial body is parsed as-is
+                    // (its errors surface through parse_dtd), matching the
+                    // pre-KEY-2 behavior.
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.parse_dtd(&content)?;
                     unsafe {
                         (*self.ctxt).instate = XML_PARSER_PROLOG;
                     }
                 }
-                XmlToken::Comment(data) => {
+                XmlToken::Comment { data, unterminated } => {
+                    // UPSTREAM-PARITY (SP-14.3.1-8, gh20439_1): a comment cut
+                    // off by the end of the available input (no `-->`) is a
+                    // construct that may continue on a later push call — an
+                    // incremental probe or eager-partial delivery must NOT
+                    // fire the partial comment or deliver its
+                    // "Comment not terminated" error; it pauses (truncated).
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.sax_comment(&data);
                 }
                 XmlToken::ProcessingInstruction { target, data, .. } => {
@@ -2184,7 +2208,14 @@ impl XmlParser {
             self.raise_pending_errors();
             match token {
                 XmlToken::Eof => return Ok(()),
-                XmlToken::Comment(data) => self.sax_comment(&data),
+                XmlToken::Comment { data, unterminated } => {
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        // See parse_prolog's Comment arm (SP-14.3.1-8).
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
+                    self.sax_comment(&data);
+                }
                 XmlToken::ProcessingInstruction { target, data, .. } => {
                     self.sax_pi(&target, &data);
                 }
@@ -2710,7 +2741,13 @@ impl XmlParser {
                             }
                         }
                     }
-                    XmlToken::Comment(data) => {
+                    XmlToken::Comment { data, unterminated } => {
+                        if unterminated && (self.probe || self.partial_delivery) {
+                            // See parse_prolog's Comment arm (SP-14.3.1-8).
+                            self.truncated_abort = true;
+                            self.pop_name();
+                            return Err(());
+                        }
                         self.sax_comment(&data);
                     }
                     XmlToken::ProcessingInstruction { target, data, .. } => {
@@ -2770,6 +2807,37 @@ impl XmlParser {
                                 open_line as c_int,
                             );
                         }
+                        self.pop_name();
+                        return Err(());
+                    }
+                    XmlToken::DocType {
+                        unterminated: dt_unterminated,
+                        ..
+                    } => {
+                        // KEY-2 (content-`<!`-markup rule): a `<!DOCTYPE` in
+                        // element content is an invalid element start —
+                        // upstream xmlParseStartTag fails the name at the
+                        // '!' with XML_ERR_NAME_REQUIRED (68) and the doc
+                        // becomes not well-formed (a DOCTYPE is only legal in
+                        // the prolog). A body still truncated by the end of
+                        // the available input pauses in probes (it may
+                        // complete on a later push call — and would still be
+                        // illegal here).
+                        if dt_unterminated && (self.probe || self.partial_delivery) {
+                            self.truncated_abort = true;
+                            self.pop_name();
+                            return Err(());
+                        }
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_NAME_REQUIRED,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            "StartTag: invalid element name\n".to_string(),
+                            None,
+                            None,
+                            None,
+                            0,
+                        );
                         self.pop_name();
                         return Err(());
                     }
@@ -3577,7 +3645,12 @@ impl XmlParser {
                 XmlToken::Eof => {
                     return Ok(());
                 }
-                XmlToken::Comment(data) => {
+                XmlToken::Comment { data, unterminated } => {
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        // See parse_prolog's Comment arm (SP-14.3.1-8).
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
                     self.sax_comment(&data);
                 }
                 XmlToken::ProcessingInstruction { target, data, .. } => {
@@ -4275,19 +4348,30 @@ impl XmlParser {
     ///   must be NULL or a valid `_xmlParserInput` whose `line` and `col`
     ///   fields are written.
     fn sync_input_position(&mut self) {
-        let (line, col, byte_pos) = self.tokenizer.current_pos();
         unsafe {
             let ctxt = &mut *self.ctxt;
             if !ctxt.input.is_null() {
-                (*ctxt.input).line = line as c_int;
-                (*ctxt.input).col = col as c_int;
-                // UPSTREAM-PARITY (input->cur): keep the C input's `cur` at
-                // the parser's current byte offset so error-context capture
-                // (depth error windows, HOSTILE-FAILURE F1) sees the right
-                // position.
-                if !(*ctxt.input).base.is_null() {
-                    (*ctxt.input).cur = (*ctxt.input).base.add(byte_pos);
-                }
+                // UPSTREAM-PARITY (SP-14.3.1-8, gh20439/bug27908): repoint
+                // the C input at the buffer the tokenizer is CURRENTLY
+                // reading — base/cur/end/line/col — so consumers that
+                // dereference input->base/cur see live source text. PHP
+                // expat-compat's default-handler raw-markup emit seeks back
+                // from input->cur to the tag's opening '<' and passes the
+                // span to the callback. The push context's C input was wired
+                // to the empty constructor buffer and the accumulated buffer
+                // is rebuilt on every xmlParseChunk, so the pointers must be
+                // refreshed at every event (a stale base made the seek
+                // dereference a dangling 0x1 pointer).
+                self.tokenizer
+                    .input()
+                    .current_ref()
+                    .populate_parser_input_without_filename(&mut *ctxt.input);
+                // The candidate never shrinks the C input's buffer, so the
+                // compat byte-index formula `consumed + (cur - base)` must
+                // stay `cur - base`: consumed is reset to 0 (the populate
+                // helper records the buffer's internal pos there, which would
+                // double-count — bug26614 regressed from 96 to 192).
+                (*ctxt.input).consumed = 0;
             }
         }
     }

@@ -70,8 +70,13 @@ pub(crate) enum XmlToken {
         standalone: Option<Vec<u8>>,
     },
 
-    /// DOCTYPE declaration (content between `<!DOCTYPE` and closing `>`).
-    DocType(Vec<u8>),
+    /// DOCTYPE declaration (content between `<!DOCTYPE` and closing `>`);
+    /// `unterminated` marks a body cut off by the end of the available input
+    /// (its `>` may arrive on a later push call).
+    DocType {
+        content: Vec<u8>,
+        unterminated: bool,
+    },
 
     /// Start tag: `<name ...>` or `<name ... />`
     ///
@@ -104,8 +109,9 @@ pub(crate) enum XmlToken {
         unterminated: bool,
     },
 
-    /// Comment: `<!-- ... -->`
-    Comment(Vec<u8>),
+    /// Comment: `<!-- ... -->` (carries whether the comment was cut off by
+    /// the end of the available input).
+    Comment { data: Vec<u8>, unterminated: bool },
 
     /// Processing instruction: `<?target ...?>`, with the byte offset of
     /// the leading `<?` (for document-level "invalid element name" errors).
@@ -457,16 +463,42 @@ impl XmlTokenizer {
         // Consume '<'
         self.input.read_char();
 
-        if self.input.is_eof() {
-            return XmlToken::Characters(b"<".to_vec());
-        }
-
+        // UPSTREAM-PARITY: '<' at the end of the available input is NOT text
+        // — it starts a tag whose name parse fails (or, on a non-final push
+        // call, waits for more data). Routing it through scan_start_tag
+        // records XML_ERR_NAME_REQUIRED "StartTag: invalid element name" and
+        // marks the tag unterminated, so incremental probes pause instead of
+        // delivering a bogus '<' character event (SP-14.3.1-8, gh20439_1's
+        // per-character feed; the oracle: push non-final "<" waits, final
+        // and pull "<" raise 68).
         match self.input.peek_char() {
             Some('/') => self.scan_end_tag(start_pos),
             Some('?') => self.scan_pi_or_xml_decl(start_pos),
-            Some('!') => self.scan_markup_decl(start_pos),
-            Some(_) => self.scan_start_tag(),
-            None => XmlToken::Characters(b"<".to_vec()),
+            Some('!') => {
+                // KEY-2 (content-`<!`-markup rule): a `<!` is only a markup
+                // construct when it is `<!--` (comment), `<![CDATA[`, or
+                // `<!DOCTYPE` in its legal position. Everything else
+                // (`<!ENTITY`, `<!ELEMENT`, `<!ATTLIST`, `<!NOTATION`, any
+                // unknown `<!...`) is what upstream's xmlParseStartTag sees:
+                // the byte after '<' is not a name character, so the element
+                // name parse fails with XML_ERR_NAME_REQUIRED (68)
+                // "StartTag: invalid element name" — upstream never swallows
+                // such a construct as text in element content. Routing it
+                // through scan_start_tag (empty name -> 68 at the '!')
+                // reproduces the oracle, incl. clearing wellFormed.
+                let nb = self.peek_bytes(10);
+                let comment = nb.len() >= 3 && nb[1] == b'-' && nb[2] == b'-';
+                let cdata = nb.len() >= 8 && nb[1] == b'[' && &nb[2..8] == b"CDATA[";
+                let doctype = nb.len() >= 8 && nb[1..8].eq_ignore_ascii_case(b"DOCTYPE");
+                if comment || cdata || doctype {
+                    self.scan_markup_decl(start_pos)
+                } else {
+                    self.scan_start_tag()
+                }
+            }
+            // Some(_) | None: an empty or invalid element name (EOF or a
+            // non-name byte right after '<') fails the start-tag parse.
+            _ => self.scan_start_tag(),
         }
     }
 
@@ -1116,7 +1148,11 @@ impl XmlTokenizer {
         self.input.read_char();
 
         if self.input.is_eof() {
-            return XmlToken::Characters(b"<!".to_vec());
+            // `<!` cut off by the end of the available input: the construct
+            // may continue on a later push call — return Eof so incremental
+            // probes pause instead of treating the prefix as text
+            // (SP-14.3.1-8, gh20439_1 per-char feed).
+            return XmlToken::Eof;
         }
 
         // Peek ahead to determine the type
@@ -1156,14 +1192,33 @@ impl XmlTokenizer {
             }
         }
 
+        // The available input ended while the markup-decl type was still
+        // undecided (`<!-`, `<!D`, `<![C` ...): wait for more data on a later
+        // push call instead of treating the prefix as markup text
+        // (SP-14.3.1-8).
+        if self.input.is_eof() {
+            return XmlToken::Eof;
+        }
+
         // Unknown markup declaration — consume until '>'
         let mut content = vec![b'!'];
+        let mut closed = false;
         loop {
             match self.input.read_char() {
-                Some('>') => break,
+                Some('>') => {
+                    closed = true;
+                    break;
+                }
                 Some(c) => Self::push_char(&mut content, c),
                 None => break,
             }
+        }
+
+        // An unknown markup declaration cut off at the end of the input: the
+        // '>' may arrive on a later push call — pause rather than emitting
+        // the partial text (SP-14.3.1-8).
+        if !closed {
+            return XmlToken::Eof;
         }
 
         XmlToken::Characters(content)
@@ -1242,7 +1297,10 @@ impl XmlTokenizer {
             );
         }
 
-        XmlToken::Comment(content)
+        XmlToken::Comment {
+            data: content,
+            unterminated,
+        }
     }
 
     /// Scan a CDATA section body (after `<![CDATA[`).
@@ -1308,6 +1366,7 @@ impl XmlTokenizer {
     fn scan_doctype_body(&mut self) -> XmlToken {
         let mut content = Vec::new();
         let mut depth: usize = 0;
+        let mut closed = false;
 
         loop {
             if self.input.is_eof() {
@@ -1317,6 +1376,7 @@ impl XmlTokenizer {
             match self.input.peek_char() {
                 Some('>') if depth == 0 => {
                     self.input.read_char();
+                    closed = true;
                     break;
                 }
                 Some('[') => {
@@ -1337,7 +1397,10 @@ impl XmlTokenizer {
             }
         }
 
-        XmlToken::DocType(content)
+        XmlToken::DocType {
+            content,
+            unterminated: !closed,
+        }
     }
 
     // ── Reference scanning ──────────────────────────────────────────────────

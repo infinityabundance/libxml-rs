@@ -279,3 +279,38 @@ KEY-1 closed (declared-encoding-on-BOM-less transcoded to UTF-8): full suite
     cargo test --lib 1220 pass; clippy no new warnings (4 pre-existing);
     fmt clean. Oracle-pinned: load + saveXML byte-identical on both sides.
   - receipt dir: php-14-3-key1-declared-encoding-20260902/
+
+KEY-2 + SP-14.3.1-8 closed (R-14.3-CONTENT-MARKUP-DECL + the SP-8 push/EOF
+  default-markup cluster): full suite 283 -> 276 (dom 169 -> 166, xml 5 -> 1;
+  zero regressions: simplexml 9 / xmlreader 29 / xmlwriter 19 / xsl 52
+  unchanged).
+  - root causes: (a) SP-14.3.1-8 — the push/SAX per-character crash cluster:
+    default-handler raw markup is produced by PHP expat-compat seeking back from
+    input->cur to the tag's '<', but the push context's C input pointed at the
+    empty constructor buffer (stale base -> dangling deref) and EOF-in-construct
+    prefixes ('<', '<!') were delivered as spurious text. sync_input_position()
+    now repoints base/cur/end/line/col from the tokenizer's live buffer at every
+    event (consumed=0 keeps bug26614 at 96); a trailing '<'/<! or an unterminated
+    comment pauses in probes instead of firing partial events; Comment tokens
+    carry unterminated.
+    (b) KEY-2 — the content-`<!`-markup rule: a '<!' that is not '<!--',
+    '<![CDATA[', or a prolog '<!DOCTYPE' is an invalid element start in element
+    content (upstream xmlParseStartTag fails the name at '!' with
+    XML_ERR_NAME_REQUIRED 68 + wellFormed=0); the tokenizer pre-screened such
+    constructs into scan_start_tag and DocType-in-content raises 68 (was
+    silently swallowed as text / internal-error-1-with-wf=1). Without this rule
+    the SP-8 push edits regressed the two dom innerHTML/outerHTML *_writing_
+    _errors_ tests (they accept '<!ENTITY ...>' content); with it they stay green.
+  - measured: ext/xml 5 -> 1 (bug27908 + bug46699 + gh20439_1 + gh20439_2 PASS;
+    xml_error_string_basic_libxml = SP-14.3.1-9 remains); dom 169 -> 166
+    (innerHTML_cache_invalidation + Element_innerHTML_prefixed_writing +
+    Element_outerHTML_writing PASS; no new failures; the remaining dom F1
+    members Element_innerHTML_writing / innerOuterHTML_reading /
+    insertAdjacentHTML are serializer-blocked ("Could not save document") =
+    dom S1-family, pre-existing). Push probe now byte-identical to oracle for
+    ENTITY/DOCTYPE/ELEMENT-in-content (wf=0 errNo=68) and comment/cdata/text
+    (wf=1 errNo=0).
+  - guards: tests.rs test_push_incremental_eof_prefixes_not_text (fails at
+    HEAD), test_content_markup_decl_clears_wellformed.
+    cargo test --lib 1222 pass; clippy no new warnings; fmt clean.
+  - receipt dir: php-14-3-sp8-content-markup-20260902/

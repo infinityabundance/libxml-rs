@@ -1,6 +1,13 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **KEY-2 + SP-14.3.1-8 closed (2026-09-02):** content-`<!`-markup rule
+  (ENTITY/DOCTYPE/ELEMENT-in-content → NAME_REQUIRED 68 + wf=0) + the
+  push/default-markup closure (sync_input_position live-buffer repoint,
+  EOF-in-construct pause). Full suite **283 → 276** (dom 169 → 166, xml 5 → 1:
+  bug27908 + bug46699 + gh20439_1 + gh20439_2 PASS; xml_error_string =
+  SP-14.3.1-9 remains), zero regressions. Receipt:
+  php-14-3-sp8-content-markup-20260902/.
 - **KEY-1 closed (2026-09-02):** BOM-less declared encoding (ISO-8859-1)
   transcoded to UTF-8. Full suite **289 → 283** (ext/xsl 58 → 52, −6: xslt001 +
   xsltprocessor_{get,remove}Parameter{[,-invalidparam]} + setparameter-nostring),
@@ -13,11 +20,11 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 283 after KEY-1):
+Split at 289 (now 276 after KEY-1/KEY-2/SP-14.3.1-8):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 | | ext/xml | 5 |
+| ext/dom | 169 -> 166 | | ext/xml | 5 -> 1 |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 |
 
