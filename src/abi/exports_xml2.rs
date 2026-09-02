@@ -5154,7 +5154,16 @@ pub extern "C" fn xmlFindCharEncodingHandler(name: *const c_char) -> *mut c_void
     if name.is_null() {
         return ptr::null_mut();
     }
-    crate::xml::encoding::find_encoding_handler(name as *const xmlChar) as *mut c_void
+    // Upstream hands the caller an OWNED handler it must release with
+    // xmlCharEncCloseFunc (PHP's dom_document_encoding_write closes it after
+    // every $dom->encoding= write) — except UTF-8, where the handler is static
+    // and close is a no-op. Returning the persistent registry pointer directly
+    // would let a non-UTF-8 caller's close free a still-registered handler (the
+    // use-after-free behind DOMDocument::$encoding='UTF-16' crashing the next
+    // registry lookup). See xmlFindCharEncodingHandler_owned.
+    crate::xml::encoding::xmlFindCharEncodingHandler_owned(
+        name as *const crate::abi::types::xmlChar,
+    ) as *mut c_void
 }
 
 /// Close an encoding handler.
@@ -5169,11 +5178,26 @@ pub extern "C" fn xmlCharEncCloseFunc(handler: *mut c_void) -> c_int {
     if handler.is_null() {
         return -1;
     }
-    // Free the encoding handler
+    // Upstream xmlCharEncCloseFunc (encoding.c): a handler flagged
+    // XML_HANDLER_STATIC (UTF-8's default handler, or any static table
+    // handler) is not owned by the caller and must not be released.
     unsafe {
         let h = handler as *mut crate::abi::structs::_xmlCharEncodingHandler;
+        if (*h).flags & crate::xml::encoding::XML_HANDLER_STATIC != 0 {
+            return 0;
+        }
         if !(*h).name.is_null() {
             crate::abi::allocator::xmlFreeImpl((*h).name as *mut c_void);
+        }
+        // Run any conversion-context destructor before freeing the struct,
+        // matching upstream's ordering (name, then ctxtDtor, then struct).
+        if let Some(dtor) = (*h).ctxtDtor {
+            if !(*h).inputCtxt.is_null() {
+                dtor((*h).inputCtxt);
+            }
+            if !(*h).outputCtxt.is_null() {
+                dtor((*h).outputCtxt);
+            }
         }
         crate::abi::allocator::xmlFreeImpl(handler);
     }

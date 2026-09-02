@@ -779,6 +779,11 @@ pub(crate) fn cleanup_encodings() {
         }
     }
     handlers.clear();
+    // Re-allow registration on the next init_encodings()/cleanup round-trip so
+    // a caller that cleans up and then (re)initializes in another thread does
+    // not observe a stale "already initialized" registry that stays empty.
+    // (ENCODING_INITIALIZED/ENCODING_INIT_MUTEX are separate statics.)
+    drop(handlers);
     ENCODING_INITIALIZED.store(false, Ordering::SeqCst);
 }
 
@@ -829,6 +834,121 @@ pub(crate) fn find_encoding_handler(name: *const xmlChar) -> *mut _xmlCharEncodi
     }
 
     ptr::null_mut()
+}
+
+/// Build an owned, caller-freed copy of a registered encoding handler.
+///
+/// Upstream's `xmlFindCharEncodingHandler` hands the caller a handler it owns
+/// and is expected to release with `xmlCharEncCloseFunc` after use (Phase 14
+/// PHP court: `dom_document_encoding_write` finds a handler then closes it for
+/// every write). Returning the persistent registry pointer directly would let
+/// the exported close free the registry entry out from under later lookups
+/// (a use-after-free seen as `DOMDocument::$encoding = 'UTF-16'` corrupting the
+/// handler registry and crashing the next `find_encoding_handler`).
+///
+/// The copy duplicates the name with `xmlMemStrdupImpl` so the caller may free
+/// it; the conversion unions and context pointers are shared with the original
+/// registry entry. All built-in registry handlers the find path serves are
+/// stateless (`ctxtDtor` is None, contexts NULL), so `xmlCharEncCloseFunc` on
+/// the copy only releases the duplicated name and the struct.
+///
+/// Returns the new handler or `ptr::null_mut()` when `src` is NULL/alloc fails.
+pub(crate) fn clone_encoding_handler_for_find(
+    src: *mut _xmlCharEncodingHandler,
+) -> *mut _xmlCharEncodingHandler {
+    if src.is_null() {
+        return ptr::null_mut();
+    }
+    let name_raw = unsafe {
+        let nm = (*src).name;
+        if nm.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(nm)
+        }
+    };
+    let handler = unsafe { xmlMallocImpl(size_of::<_xmlCharEncodingHandler>()) }
+        as *mut _xmlCharEncodingHandler;
+    if handler.is_null() {
+        if !name_raw.is_null() {
+            unsafe { crate::abi::allocator::xmlFreeImpl(name_raw) };
+        }
+        return ptr::null_mut();
+    }
+    unsafe {
+        ptr::write(
+            handler,
+            _xmlCharEncodingHandler {
+                name: name_raw as *mut c_char,
+                input: ptr::read(&(*src).input),
+                output: ptr::read(&(*src).output),
+                inputCtxt: (*src).inputCtxt,
+                outputCtxt: (*src).outputCtxt,
+                ctxtDtor: (*src).ctxtDtor,
+                flags: (*src).flags,
+            },
+        );
+    }
+    handler
+}
+
+/// Upstream handler `flags` marker: the handler lives for the process lifetime
+/// (upstream `encoding.c` `{"UTF-8", ... , XML_HANDLER_STATIC}`) and
+/// `xmlCharEncCloseFunc` must therefore not release it.
+pub(crate) const XML_HANDLER_STATIC: c_int = 0x01;
+
+/// ABI `xmlFindCharEncodingHandler` mirror (upstream libxml2 2.15 encoding.c
+/// `xmlFindCharEncodingHandler`).
+///
+/// Upstream returns an OWNED handler the caller releases with
+/// `xmlCharEncCloseFunc`, except for UTF-8/UTF8 where it returns the static
+/// `defaultHandlers[XML_CHAR_ENCODING_UTF8]` (has `XML_HANDLER_STATIC`, so
+/// `xmlCharEncCloseFunc` is a no-op). Phase 14 PHP court:
+/// `dom_document_encoding_write` finds a handler for every `$dom->encoding=
+/// write and closes it — so returning the persistent registry pointer for a
+/// non-UTF-8 encoding let the caller's close free the registry entry (the
+/// use-after-free behind `DOMDocument::$encoding = 'UTF-16'` crashing the next
+/// `find_encoding_handler`).
+///
+/// Returns an owned heap copy for non-UTF-8 encodings, the flagged-static
+/// registry UTF-8 handler for UTF-8, or `ptr::null_mut()` when `name` is NULL
+/// or no handler is registered.
+pub(crate) fn xmlFindCharEncodingHandler_owned(
+    name: *const xmlChar,
+) -> *mut _xmlCharEncodingHandler {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+    let name_bytes = unsafe {
+        let len = libc::strlen(name as *const c_char);
+        core::slice::from_raw_parts(name as *const u8, len)
+    };
+
+    // UTF-8 / UTF8 special case (upstream returns the static handler).
+    if encoding_from_name(name_bytes) == xmlCharEncoding::XML_CHAR_ENCODING_UTF8 {
+        let utf8 = find_encoding_handler(c"UTF-8".as_ptr() as *const xmlChar);
+        if utf8.is_null() {
+            return ptr::null_mut();
+        }
+        // Flag it static so xmlCharEncCloseFunc does not free the registry entry.
+        unsafe {
+            (*utf8).flags |= XML_HANDLER_STATIC;
+        }
+        return utf8;
+    }
+
+    // Non-UTF-8: resolve the registry entry, preferring a canonical lookup when
+    // the raw spelling is not itself a registered key (mirrors the canonical
+    // re-lookup upstream performs in xmlCreateCharEncodingHandler).
+    let mut entry = find_encoding_handler(name as *const xmlChar);
+    if entry.is_null() {
+        if let Some(canon) = encoding_name(encoding_from_name(name_bytes)) {
+            entry = find_encoding_handler(canon.as_ptr() as *const xmlChar);
+        }
+    }
+    // Return an OWNED copy of the registry entry (never the entry itself), so
+    // the caller's xmlCharEncCloseFunc releases only the copy.
+    clone_encoding_handler_for_find(entry)
 }
 
 /// Add an encoding handler to the registry.
@@ -2536,6 +2656,84 @@ mod tests {
         // Case insensitive
         let lower_name: *const xmlChar = c"utf-8".as_ptr() as *const xmlChar;
         assert!(!find_encoding_handler(lower_name).is_null());
+    }
+
+    /// Phase 14 PHP court regression: the ABI `xmlFindCharEncodingHandler`
+    /// hands the caller an OWNED handler that it may release with
+    /// `xmlCharEncCloseFunc` — except UTF-8, where upstream returns a static
+    /// handler that close must not release (so the registry is never freed
+    /// out from under subsequent lookups). Closing a returned non-UTF-8
+    /// handler must not free the persistent registry entry.
+    ///
+    /// # Safety
+    ///
+    /// - The handler returned by `xmlFindCharEncodingHandler_owned` is owned by
+    ///   the caller and released here with the allocator, mirroring the export
+    ///   `xmlCharEncCloseFunc` (which, for these stateless built-in handlers,
+    ///   frees `name` and the struct without invoking any context destructor).
+    #[test]
+    fn test_find_owned_close_keeps_registry_intact() {
+        init_encodings();
+        let name: *const xmlChar = c"ISO-8859-1".as_ptr() as *const xmlChar;
+
+        // The registry entry is a long-lived borrow.
+        let registry = find_encoding_handler(name);
+        assert!(!registry.is_null());
+        // First retrieval returns an OWNED copy, distinct from the registry entry.
+        let h1 = xmlFindCharEncodingHandler_owned(name);
+        assert!(!h1.is_null());
+        assert_ne!(h1 as *const c_void, registry as *const c_void);
+
+        // Closing h1 (simulate xmlCharEncCloseFunc on a non-static handler):
+        // frees its name + struct but NOT the registry entry.
+        unsafe {
+            if !(*h1).name.is_null() {
+                crate::abi::allocator::xmlFreeImpl((*h1).name as *mut c_void);
+            }
+            xmlFreeImpl(h1 as *mut c_void);
+        }
+
+        // The registry entry must survive the close of a previous result with
+        // its name intact (the PHP `$dom->encoding='UTF-16'` crash was the
+        // registry entry itself being freed by this very close, so the next
+        // lookup returned freed memory).
+        let registry2 = find_encoding_handler(name);
+        assert_eq!(registry2 as *const c_void, registry as *const c_void);
+        assert!(!unsafe { (*registry2).name }.is_null());
+        let reg_name = unsafe { CStr::from_ptr((*registry2).name as *const c_char) };
+        assert_eq!(reg_name.to_bytes(), b"ISO-8859-1");
+
+        // A second owned retrieval still works and is usable.
+        let h2 = xmlFindCharEncodingHandler_owned(name);
+        assert!(!h2.is_null());
+        assert_ne!(h2 as *const c_void, registry as *const c_void);
+        unsafe {
+            if !(*h2).name.is_null() {
+                crate::abi::allocator::xmlFreeImpl((*h2).name as *mut c_void);
+            }
+            xmlFreeImpl(h2 as *mut c_void);
+        }
+    }
+
+    /// Phase 14 PHP court regression (UTF-8 subset): retrieval for UTF-8/UTF8
+    /// returns the persistent static handler, and referencing it from a second
+    /// caller must yield the same live pointer (the registry entry is never
+    /// freed by a close — `xmlCharEncCloseFunc` on XML_HANDLER_STATIC is a
+    /// no-op).
+    #[test]
+    fn test_find_owned_utf8_static_and_persistent() {
+        init_encodings();
+        let name: *const xmlChar = c"UTF-8".as_ptr() as *const xmlChar;
+        let u1 = xmlFindCharEncodingHandler_owned(name);
+        assert!(!u1.is_null());
+        // Static: close must not release it, so a second find returns the same
+        // live registry handler.
+        let u2 = xmlFindCharEncodingHandler_owned(c"utf8".as_ptr() as *const xmlChar);
+        assert_eq!(u1, u2);
+        assert_eq!(
+            unsafe { (*u1).flags } & XML_HANDLER_STATIC,
+            XML_HANDLER_STATIC
+        );
     }
 
     #[test]
