@@ -34,8 +34,10 @@ extension subset to confirm the targeted test(s) flip PASS with no sibling regre
 - [x] SP-14.3.1-6  XML_OPTION_PARSE_HUGE depth/name limit semantics
        (`xml_parse` + `xml_parse_into_struct` must fail without HUGE).
        ext/xml 7 -> 6 failed.
-- [ ] SP-14.3.1-7  gh12254 recursion-on-callback guard (Parser must not be called
-       recursively).
+- [x] SP-14.3.1-7  gh12254 recursion-on-callback guard (Parser must not be called
+       recursively). A completed context stays at XML_PARSER_EOF: later
+       xmlParseChunk calls parse nothing (second into_struct fires no events).
+       ext/xml 6 -> 5 failed.
 - [ ] SP-14.3.1-8  crash cluster gh20439_1/gh20439_2/bug27908 (php compat SAX2
        default-emit deref).
 - [ ] SP-14.3.1-9  xml_error_string_basic_libxml (error code/string table rows 47,

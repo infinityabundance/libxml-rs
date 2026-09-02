@@ -1402,6 +1402,58 @@ fn test_push_name_length_limit_without_huge() {
     }
 }
 
+// ── SP-14.3.1-7 regression guard (completed context refuses re-parse) ──────
+
+/// A parser context that finished a complete document stays at XML_PARSER_EOF:
+/// a second xmlParseChunk (gh12254's second xml_parse_into_struct on the same
+/// parser) must parse NOTHING — no events fire again (upstream
+/// xmlParseTryOrFinish `case XML_PARSER_EOF: goto done`).
+///
+/// # Safety
+///
+/// - As `test_push_utf8_bom_and_dtd_attr_defaults`.
+#[test]
+fn test_push_completed_context_refuses_reparse() {
+    unsafe {
+        reset_push_capture();
+        let doc = b"<container/>";
+        let mut h = crate::abi::structs::_xmlSAXHandler {
+            ..std::mem::zeroed()
+        };
+        h.initialized = 1;
+        h.startElement = Some(sax1_start);
+        h.endElement = Some(sax1_end);
+        let (ctxt, sax_ptr) = push_ctxt_boxed(h);
+        // First parse: complete document (single-shot final, like
+        // xml_parse_into_struct).
+        let rc1 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc1, 0);
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 1);
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 1);
+        assert_eq!(
+            unsafe { (*ctxt).instate },
+            crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
+        );
+        // Second parse of the same document on the same context: no events.
+        let rc2 = crate::abi::exports_xml2::xmlParseChunk(
+            ctxt,
+            doc.as_ptr() as *const i8,
+            doc.len() as c_int,
+            1,
+        );
+        assert_eq!(rc2, 0);
+        assert_eq!(SAX1_STARTS.with(|c| c.get()), 1, "no second open");
+        assert_eq!(SAX1_ENDS.with(|c| c.get()), 1, "no second close");
+        crate::abi::exports_xml2::xmlFreeParserCtxt(ctxt);
+        drop(Box::from_raw(sax_ptr));
+    }
+}
+
 /// SAX1 dispatch (PHP expat-compat non-namespace parser) delivers the RAW
 /// QName and every attribute including xmlns declarations, with no namespace
 /// processing (upstream xmlParseStartTag; bug50576/bug72714).

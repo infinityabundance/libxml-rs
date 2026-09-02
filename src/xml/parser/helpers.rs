@@ -618,6 +618,21 @@ pub(crate) unsafe fn parse_chunk(
         return unsafe { (*ctxt).errNo };
     }
 
+    // UPSTREAM-PARITY (parser.c xmlParseTryOrFinish `case XML_PARSER_EOF`):
+    // a context that finished a complete document stays at XML_PARSER_EOF,
+    // so every later xmlParseChunk parses nothing and reports the previous
+    // outcome (0 when well-formed). gh12254 calls xml_parse_into_struct twice
+    // on the same parser; the second call must not fire the element events
+    // again (SP-14.3.1-7). Incomplete parses never set instate = EOF, so the
+    // multi-call incremental flows are unaffected.
+    if unsafe { (*ctxt).instate } == crate::abi::types::xmlParserInputState::XML_PARSER_EOF as c_int
+    {
+        if unsafe { (*ctxt).wellFormed } == 0 {
+            return unsafe { (*ctxt).errNo };
+        }
+        return 0;
+    }
+
     // Take ownership of the stashed InputBuffer (the base accumulated so
     // far — the constructor's initial chunk is stashed by
     // setup_parser_input), or start empty.

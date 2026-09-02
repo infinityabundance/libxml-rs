@@ -238,3 +238,21 @@ SP-14.3.1-6 closed (R-14.3-PARSE-HUGE-LIMITS + R-14.3-MULTICALL-EAGER-DELIVERY
     67 run -> 50 pass / 6 fail / 11 skip; five-extension remeasure unchanged
     (dom 169 / simplexml 9 / xmlreader 29 / xmlwriter 19 / xsl 58).
   - receipt dir: php-14-3-parse-huge-20260902/
+
+SP-14.3.1-7 closed (R-14.3-COMPLETED-CTXT-REFUSES-REPARSE FIXED): gh12254 PASS;
+  ext/xml 6 -> 5 failed (zero regressions).
+  - root cause: a parser context that finished a complete document stayed
+    usable on the candidate: parse_chunk reset instate=START at every call and
+    re-parsed, so gh12254's SECOND xml_parse_into_struct on the same parser
+    fired the element events again. Upstream xmlParseTryOrFinish keeps the
+    completed context at XML_PARSER_EOF and every later xmlParseChunk parses
+    nothing (`case XML_PARSER_EOF: goto done`). parse_chunk now mirrors that:
+    instate==XML_PARSER_EOF at entry returns the recorded outcome without
+    parsing. Incomplete parses never set instate=EOF, so the multi-call
+    incremental flows are unaffected.
+  - guards: tests.rs test_push_completed_context_refuses_reparse (second
+    single-shot final parse fires no events; instate stays EOF).
+    cargo test --lib 1216 pass; clippy no new warnings; fmt clean; phase-13
+    HOSTILE verdicts PASS; ext/xml 67 run -> 51 pass / 5 fail / 11 skip;
+    five-extension remeasure unchanged.
+  - receipt dir: php-14-3-reparse-guard-20260902/
