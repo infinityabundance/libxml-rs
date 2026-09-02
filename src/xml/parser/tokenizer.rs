@@ -1452,9 +1452,26 @@ impl XmlTokenizer {
     /// error (81) for invalid UTF-8 bytes (the byte is skipped).
     fn scan_characters(&mut self) -> XmlToken {
         let mut content = Vec::new();
+        // UPSTREAM-PARITY (SAX2 entity boundary): when character data comes out
+        // of a substituted general entity (an input pushed by xmlParseReference)
+        // the parser emits a discrete SAX `characters` run for the entity
+        // content and a SEPARATE run for any following outer literal text — the
+        // oracle never merges text across an entity-content input boundary
+        // (e.g. NOENT `ab&e;cd`, e="ENT", yields CD[ab] CD[ENT] CD[cd], not
+        // CD[ab] CD[ENTcd]). The input stack auto-pops an exhausted pushed
+        // input, so a monotonic text scan would otherwise swallow the outer
+        // tail into the same token; break the run when the scan crosses back
+        // below its starting depth.
+        let start_depth = self.input.depth();
 
         loop {
             if self.input.is_eof() {
+                break;
+            }
+            // An exhausted entity-content input was auto-popped: end the run at
+            // the entity boundary (the following char belongs to the outer
+            // scope and must start a fresh token).
+            if self.input.depth() < start_depth {
                 break;
             }
             // Invalid UTF-8 byte: upstream xmlCurrentChar encoding error.
