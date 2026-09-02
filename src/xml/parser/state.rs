@@ -1155,7 +1155,8 @@ impl XmlParser {
         };
         unsafe {
             let name_cstr = Self::vec_to_cstr_null(name);
-            // External: SYSTEM "uri" / PUBLIC "pub" "uri".
+            // External: SYSTEM "uri" / PUBLIC "pub" "uri", optionally with an
+            // NDATA <notation> suffix (making it an UNPARSED entity).
             if tail.starts_with(b"SYSTEM") || tail.starts_with(b"PUBLIC") {
                 let after_kw = trim_ascii(&tail[6..]);
                 // UPSTREAM-PARITY (xmlParseEntityDecl): for a SYSTEM-only
@@ -1166,34 +1167,64 @@ impl XmlParser {
                 } else {
                     (None, read_quoted(after_kw))
                 };
-                let external_type = if is_param {
+                // ndata (only meaningful for general, non-parameter entities):
+                // an unparsed entity typed by a notation declaration. The
+                // mere presence of NDATA classifies it as unparsed even if no
+                // notation name follows (DOMEntity_fields tolerates the empty
+                // form and reports an empty notation).
+                let (has_ndata, notation) = if !is_param {
+                    find_ndata_notation(tail)
+                } else {
+                    (false, None)
+                };
+                // UPSTREAM-PARITY (xmlParseEntityDecl / xmlSAX2EntityDecl): a
+                // general non-NDATA external entity is PARSED; an NDATA entity
+                // is UNPARSED and its notation name is carried on the entity's
+                // content so DOMEntity::$notationName resolves it (the SYSTEM
+                // id / public id go to SystemID / ExternalID).
+                let base_type = if is_param {
                     XML_EXTERNAL_PARAMETER_ENTITY as c_int
                 } else {
                     XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int
                 };
+                let external_type = if has_ndata && !is_param {
+                    crate::abi::types::xmlEntityType::XML_EXTERNAL_GENERAL_UNPARSED_ENTITY as c_int
+                } else {
+                    base_type
+                };
                 let pub_c = pub_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
                 let sys_c = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+                // Only an NDATA (unparsed) entity carries a notation name on its
+                // content (present but nameless NDATA keeps an empty string); a
+                // parsed external entity has no content of its own.
+                let notation_c = if has_ndata && !is_param {
+                    Some(
+                        notation
+                            .as_deref()
+                            .map(Self::vec_to_cstr_null)
+                            .unwrap_or_else(|| Self::vec_to_cstr_null(b"")),
+                    )
+                } else {
+                    None
+                };
                 crate::xml::entities::add_entity(
                     dtd,
                     name_cstr,
                     external_type,
                     pub_c,
                     sys_c,
-                    ptr::null(),
-                );
-                crate::xml::entities::add_entity(
-                    dtd,
-                    name_cstr,
-                    external_type,
-                    pub_c,
-                    sys_c,
-                    ptr::null(),
+                    notation_c.unwrap_or(ptr::null()),
                 );
                 if !pub_c.is_null() {
                     crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
                 }
                 if !sys_c.is_null() {
                     crate::abi::allocator::xmlFreeImpl(sys_c as *mut c_void);
+                }
+                if let Some(n) = notation_c {
+                    if !n.is_null() {
+                        crate::abi::allocator::xmlFreeImpl(n as *mut c_void);
+                    }
                 }
             } else {
                 // Internal: quoted value.
@@ -3975,6 +4006,62 @@ fn read_quoted(s: &[u8]) -> Option<&[u8]> {
     }
     let end = s[1..].iter().position(|&b| b == q)?;
     Some(&s[1..1 + end])
+}
+
+/// Find the notation introduced by `NDATA` in an external entity declaration.
+///
+/// Returns `(has_ndata, notation)`. `has_ndata` is true whenever a standalone
+/// `NDATA` keyword is present (even with no following name — DOMEntity_fields
+/// tolerates the empty form as an empty notation); the notation name, when
+/// present, is returned in the second element. Tokens inside quoted literals
+/// (public/system ids) are skipped so an occurrence of the substring `NDATA`
+/// inside a URI is not misread.
+fn find_ndata_notation(s: &[u8]) -> (bool, Option<&[u8]>) {
+    let mut i = 0usize;
+    let n = s.len();
+    while i < n {
+        while i < n && (s[i] as char).is_ascii_whitespace() {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
+        if s[i] == b'\'' || s[i] == b'"' {
+            // Skip the whole quoted literal (ids may contain spaces/NDATA).
+            let q = s[i];
+            i += 1;
+            while i < n && s[i] != q {
+                i += 1;
+            }
+            i = (i + 1).min(n);
+            continue;
+        }
+        let start = i;
+        while i < n && !(s[i] as char).is_ascii_whitespace() && s[i] != b'\'' && s[i] != b'"' {
+            i += 1;
+        }
+        if i == start {
+            i += 1;
+            continue;
+        }
+        let tok = &s[start..i];
+        if tok.eq_ignore_ascii_case(b"NDATA") {
+            // The next token (if any) is the notation name.
+            let mut j = i;
+            while j < n && (s[j] as char).is_ascii_whitespace() {
+                j += 1;
+            }
+            if j >= n || s[j] == b'\'' || s[j] == b'"' {
+                return (true, None);
+            }
+            let ns = j;
+            while j < n && !(s[j] as char).is_ascii_whitespace() && s[j] != b'\'' && s[j] != b'"' {
+                j += 1;
+            }
+            return (true, Some(&s[ns..j]));
+        }
+    }
+    (false, None)
 }
 
 /// Split `PUBLIC "pub" "sys"` or `SYSTEM "sys"` into the two quoted parts.
