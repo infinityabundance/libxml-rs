@@ -28,6 +28,26 @@ Fix 4 committed (R-14.3-EMPTY-STRING-DANGLING-PTR FIXED): 310 -> 308.
   - closed ext/simplexml 027 + 028; zero regressions.
   - receipt dir: courts/receipts/phase-14/php-14-3-empty-string-ptr-20260902/
 
+Fix 5 committed (0972f2c4, R-14.3-SAX-NOENT-ENTITY-REGISTRY FIXED): engine-level.
+  - root cause: push/expat-compat SAX parse (xml_parser/ext_xml) has NO ctxt->myDoc,
+    so parse_internal_subset dropped the internal subset and never registered
+    `<!ENTITY e "ENT">`; NOENT content+attr references failed ("Entity 'e' not
+    defined", rc=-1). Fix keeps a lazy SAX_COMPAT_MODE + XML_DOC_INTERNAL
+    registry doc/fake intSubset on ctxt->myDoc when an internal general entity is
+    declared (mirrors upstream parser.c xmlParseEntityDecl) and registers entities;
+    free_parser_ctxt reclaims XML_DOC_INTERNAL docs (no leak); SAX2 attr
+    value_end always published so external attrs decode.
+  - C regress entprobe.c candidate==oracle (attr + content entity substitution
+    byte-identical; parse rc 0; xmlGetDocEntity resolves e). attrrefs-probe.php
+    byte-identical. cargo test --lib 1199 pass; clippy/fmt clean.
+  - measured ext/xml + ext/simplexml combined: 1291-subset 225 run -> 183 passed /
+    30 failed / 12 skipped.
+  - receipt/analysis: courts/receipts/phase-14/php-14-3-sax-entity-registry-rootcause.md
+  - known residual within this family (recorded, next): NOENT-substituted CONTENT
+    is coalesced into one characters() event (CD[ENTy]) vs the oracle's separate
+    runs (CD[ENT] CD[y]); attribute-value whitespace normalization; per-extension
+    trace via consumers/*probe.php. Not yet pushed to origin/main.
+
 Open residuals remaining to closure (in phase order, one root cause each):
 - ~19 remaining crash-class members across dom, simplexml, xml, xsl.
 - ~290 output-mismatch failures grouped by root cause.
