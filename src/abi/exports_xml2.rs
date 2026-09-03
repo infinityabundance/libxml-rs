@@ -6484,6 +6484,12 @@ pub unsafe extern "C" fn xmlXPathEvalExpression(
     internal.context_position = (*ctxt).proximityPosition;
     internal.context_size = (*ctxt).contextSize;
     internal.proximity_position = (*ctxt).proximityPosition;
+    // Mirror the C context's namespace array (upstream xmlXPathNsLookup
+    // consults ctxt->namespaces/nsNr first). PHP's DOMXPath fills the array
+    // with the CONTEXT NODE's in-scope namespaces before evaluating
+    // (ext/dom xpath.c php_dom_get_in_scope_ns*), so prefixed tests resolve
+    // without an explicit registerNamespace when the document declares them.
+    crate::abi::exports_xml2::sync_xpath_context_namespaces(ctxt, internal);
     // Clear any stale error so a fresh evaluation either succeeds or records
     // its own failure message (the XSLT layer surfaces it verbatim).
     internal.clear_error();
@@ -6519,6 +6525,51 @@ pub(crate) unsafe fn raise_internal_xpath_error(
         }
     };
     unsafe { raise_xpath_error(ctxt, xpath_code, message, expr) }
+}
+
+/// Mirror the C-visible context's `namespaces[0..nsNr]` array into the
+/// internal XPath context's prefix map (upstream xmlXPathNsLookup consults
+/// the array before nsHash). PHP's DOMXPath fills the array with the context
+/// node's in-scope namespaces (ext/dom xpath.c), which is how prefixed
+/// location steps resolve against the document's declarations.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `_xmlXPathContext`; `internal` its internal
+///   Rust context (may be shared).
+pub(crate) unsafe fn sync_xpath_context_namespaces(
+    ctxt: *mut _xmlXPathContext,
+    internal: &mut crate::xml::xpath::context::XPathContext,
+) {
+    if ctxt.is_null() {
+        return;
+    }
+    unsafe {
+        let tab = (*ctxt).namespaces;
+        if tab.is_null() {
+            return;
+        }
+        let count = (*ctxt).nsNr;
+        if count <= 0 {
+            return;
+        }
+        let mut i = 0;
+        while i < count {
+            let ns = *tab.add(i as usize);
+            if !ns.is_null() && !(*ns).prefix.is_null() && !(*ns).href.is_null() {
+                let prefix_len = libc::strlen((*ns).prefix as *const libc::c_char) as usize;
+                let href_len = libc::strlen((*ns).href as *const libc::c_char) as usize;
+                let prefix =
+                    String::from_utf8_lossy(core::slice::from_raw_parts((*ns).prefix, prefix_len))
+                        .into_owned();
+                let href =
+                    String::from_utf8_lossy(core::slice::from_raw_parts((*ns).href, href_len))
+                        .into_owned();
+                internal.register_namespace(&prefix, &href);
+            }
+            i += 1;
+        }
+    }
 }
 
 /// UPSTREAM-PARITY (xpath.c `xmlXPathErrFmt` -> error.c `xmlVRaiseError`):

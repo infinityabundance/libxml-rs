@@ -354,7 +354,13 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
     // Apply the strip-space rules to the source document.
     crate::xslt::whitespace::xsltApplyStripSpaces(style, doc);
 
-    // Build the result document.
+    // Build the result document. UPSTREAM-PARITY (transform.c
+    // xsltApplyStylesheetInternal -> xmlNewDoc): the result document is a
+    // fresh xmlNewDoc, whose defaults are standalone=-1 (undeclared),
+    // compression=-1, charset=UTF-8 and properties=XML_DOC_USERBUILT. The
+    // pre-fix calloc only zeroed the struct, so the serializer emitted an
+    // unwanted `standalone="no"` in the XML declaration (xslt006 +
+    // xsltprocessor_transformToXML diff) and the wrong charset defaults.
     let result = libc::calloc(1, core::mem::size_of::<_xmlDoc>()) as *mut _xmlDoc;
     if result.is_null() {
         if own_ctxt {
@@ -363,6 +369,10 @@ pub unsafe extern "C" fn xsltApplyStylesheetUser(
         return ptr::null_mut();
     }
     (*result).type_ = XML_DOCUMENT_NODE as c_int;
+    (*result).standalone = -1;
+    (*result).compression = -1;
+    (*result).charset = crate::abi::types::xmlCharEncoding::XML_CHAR_ENCODING_UTF8 as c_int;
+    (*result).properties = crate::abi::types::xmlDocProperties::XML_DOC_USERBUILT as c_int;
     (*result).version = crate::xml::string::xml_strdup(c"1.0".as_ptr() as *const xmlChar);
     (*result).doc = result;
     // Copy output settings from the stylesheet. These are heap-copied so

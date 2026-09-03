@@ -65,6 +65,12 @@ struct DateTime {
     hour: u32,   // 0-23
     minute: u32, // 0-59
     second: u32, // 0-59
+    // True when the source value carried a time-of-day component (EXSLT
+    // returns '' / NaN for time fields of date-only values).
+    has_time: bool,
+    // True when the source value carried a timezone designator (a missing
+    // timezone is NOT serialized as Z).
+    tz_present: bool,
     // Timezone offset in minutes east of UTC; None = unknown (treated as 0).
     tz_minutes: i32,
 }
@@ -78,6 +84,8 @@ impl DateTime {
             hour: 0,
             minute: 0,
             second: 0,
+            has_time: false,
+            tz_present: false,
             tz_minutes: 0,
         }
     }
@@ -137,23 +145,35 @@ const fn day_of_week(y: i64, m: u32, d: u32) -> u32 {
     wd as u32
 }
 
-/// EXSLT week number: ISO 8601 week (Monday-based, week 1 = first week with
-/// >= 4 days in the year).
+/// EXSLT week number: ISO 8601 week (Monday-based, week 1 = the week
+/// containing the first Thursday). Standard formula
+/// `week = (doy − iso_wd + 10) / 7` with clamping into the neighbour year.
 fn iso_week_number(y: i64, m: u32, d: u32) -> u32 {
     let wd = day_of_week(y, m, d); // 0=Sun..6=Sat
-                                   // Convert to ISO: 1=Mon..7=Sun
-    let _iso_wd = if wd == 0 { 7 } else { wd as i64 };
-    let jan1_wd = day_of_week(y, 1, 1);
-    let jan1_iso = if jan1_wd == 0 { 7 } else { jan1_wd as i64 };
+    let iso_wd = if wd == 0 { 7 } else { wd as i64 }; // 1=Mon..7=Sun
     let doy = days_from_civil(y, m as i64, d as i64) - days_from_civil(y, 1, 1) + 1;
-    let week = (doy + 7 - jan1_iso) / 7 + 1;
-    if week == 0 {
+    let week = (doy - iso_wd + 10) / 7;
+    if week < 1 {
         // Belongs to the last week of the previous year.
         return iso_week_number(y - 1, 12, 31);
     }
-    // Check if it overflows into next year's week 1.
-    let days_in_yr = if is_leap_year(y) { 366 } else { 365 };
-    if doy + 7 - jan1_iso > days_in_yr {
+    // A year has 53 ISO weeks only when Jan 1 is a Thursday, or a leap year
+    // whose Jan 1 is a Wednesday; otherwise week 53+ is week 1 of the next
+    // year.
+    let jan1_iso = {
+        let j = day_of_week(y, 1, 1);
+        if j == 0 {
+            7
+        } else {
+            j as i64
+        }
+    };
+    let weeks_in_year: i64 = if jan1_iso == 4 || (is_leap_year(y) && jan1_iso == 3) {
+        53
+    } else {
+        52
+    };
+    if week > weeks_in_year {
         return 1;
     }
     week as u32
@@ -168,18 +188,24 @@ fn parse_date_time(s: &str) -> Option<DateTime> {
     let (date_part, time_part, tz_part) = split_date_time(s);
     let mut dt = DateTime::new();
 
-    // Date: YYYY-MM-DD or YYYYMMDD
-    let date_digits: Vec<&str> = date_part.split('-').collect();
+    // Date: YYYY-MM-DD or YYYYMMDD (optionally a negative year: "-0004-02-29"
+    // or a year wider than four digits: "9990001-12-31").
+    let (sign, body) = if let Some(body) = date_part.strip_prefix('-') {
+        (-1i64, body)
+    } else {
+        (1i64, date_part)
+    };
+    let date_digits: Vec<&str> = body.split('-').collect();
     match date_digits.len() {
         3 => {
-            dt.year = date_digits[0].parse().ok()?;
+            dt.year = sign * date_digits[0].parse::<i64>().ok()?;
             dt.month = date_digits[1].parse().ok()?;
             dt.day = date_digits[2].parse().ok()?;
         }
         1 => {
             let d = date_digits[0];
             if d.len() == 8 {
-                dt.year = d[0..4].parse().ok()?;
+                dt.year = sign * d[0..4].parse::<i64>().ok()?;
                 dt.month = d[4..6].parse().ok()?;
                 dt.day = d[6..8].parse().ok()?;
             } else {
@@ -188,7 +214,7 @@ fn parse_date_time(s: &str) -> Option<DateTime> {
         }
         _ => return None,
     }
-    if dt.year == 0 || dt.month < 1 || dt.month > 12 || dt.day < 1 {
+    if dt.year <= 0 || dt.month < 1 || dt.month > 12 || dt.day < 1 {
         return None;
     }
     if dt.day > days_in_month(dt.year, dt.month) {
@@ -196,6 +222,7 @@ fn parse_date_time(s: &str) -> Option<DateTime> {
     }
 
     if let Some(tp) = time_part {
+        dt.has_time = true;
         // Time: HH:MM:SS or HHMMSS
         let parts: Vec<&str> = tp.split(':').collect();
         match parts.len() {
@@ -224,6 +251,7 @@ fn parse_date_time(s: &str) -> Option<DateTime> {
 
     // Timezone: Z, +HH:MM, -HH:MM, +HHMM, -HHMM
     if let Some(tz) = tz_part {
+        dt.tz_present = true;
         if tz == "Z" || tz == "z" {
             dt.tz_minutes = 0;
         } else {
@@ -262,7 +290,15 @@ fn split_date_time(s: &str) -> (&str, Option<&str>, Option<&str>) {
             Some(i) => (date_part, Some(&r[..i]), Some(&r[i..])),
             None => (date_part, Some(r), None),
         },
-        None => (date_part, None, None),
+        None => {
+            // A DATE-only value may still carry a trailing timezone
+            // ("0001-12-31Z", "9990001-12-31Z" — EXSLT date:date keeps it).
+            if s.ends_with('Z') || s.ends_with('z') {
+                (&s[..s.len() - 1], None, Some(&s[s.len() - 1..]))
+            } else {
+                (date_part, None, None)
+            }
+        }
     }
 }
 
@@ -312,6 +348,8 @@ fn now() -> DateTime {
         hour: tm.tm_hour as u32,
         minute: tm.tm_min as u32,
         second: tm.tm_sec as u32,
+        has_time: true,
+        tz_present: true,
         tz_minutes: tz_minutes as i32,
     }
 }
@@ -343,6 +381,8 @@ const fn to_utc(dt: &DateTime) -> DateTime {
         hour: (minutes / 60) as u32,
         minute: (minutes % 60) as u32,
         second: dt.second,
+        has_time: dt.has_time,
+        tz_present: false,
         tz_minutes: 0,
     }
 }
@@ -360,12 +400,14 @@ fn date_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, S
     match date_arg(args) {
         Some(dt) => {
             let mut s = format!("{:04}-{:02}-{:02}", dt.year, dt.month, dt.day);
-            if dt.tz_minutes == 0 {
-                s.push('Z');
-            } else {
-                let abs = dt.tz_minutes.abs();
-                let sign = if dt.tz_minutes < 0 { '-' } else { '+' };
-                s.push_str(&format!("{}{:02}:{:02}", sign, abs / 60, abs % 60));
+            if dt.tz_present {
+                if dt.tz_minutes == 0 {
+                    s.push('Z');
+                } else {
+                    let abs = dt.tz_minutes.abs();
+                    let sign = if dt.tz_minutes < 0 { '-' } else { '+' };
+                    s.push_str(&format!("{}{:02}:{:02}", sign, abs / 60, abs % 60));
+                }
             }
             Ok(XPathValue::String(s))
         }
@@ -373,21 +415,24 @@ fn date_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, S
     }
 }
 
-/// date:time(date-time) — the time part (HH:MM:SS with timezone).
+/// date:time(date-time) — the time part (HH:MM:SS with timezone). A
+/// date-only value has no time: EXSLT returns '' (libexslt dates.c).
 fn time_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     match date_arg(args) {
-        Some(dt) => {
+        Some(dt) if dt.has_time => {
             let mut s = format!("{:02}:{:02}:{:02}", dt.hour, dt.minute, dt.second);
-            if dt.tz_minutes == 0 {
-                s.push('Z');
-            } else {
-                let abs = dt.tz_minutes.abs();
-                let sign = if dt.tz_minutes < 0 { '-' } else { '+' };
-                s.push_str(&format!("{}{:02}:{:02}", sign, abs / 60, abs % 60));
+            if dt.tz_present {
+                if dt.tz_minutes == 0 {
+                    s.push('Z');
+                } else {
+                    let abs = dt.tz_minutes.abs();
+                    let sign = if dt.tz_minutes < 0 { '-' } else { '+' };
+                    s.push_str(&format!("{}{:02}:{:02}", sign, abs / 60, abs % 60));
+                }
             }
             Ok(XPathValue::String(s))
         }
-        None => Ok(XPathValue::String(String::new())),
+        _ => Ok(XPathValue::String(String::new())),
     }
 }
 
@@ -419,9 +464,9 @@ fn day_of_week_in_month_fn(
 ) -> Result<XPathValue, String> {
     match date_arg(args) {
         Some(dt) => {
-            let wd = day_of_week(dt.year, dt.month, dt.day); // 0=Sun
-                                                             // EXSLT numbers Monday=1..Sunday=7.
-            let n = if wd == 0 { 7 } else { wd as i64 };
+            // EXSLT: the ordinal occurrence of the weekday within the month
+            // (e.g. the 3rd Wednesday); 2007-12-31 is the 5th Monday.
+            let n = (dt.day as i64 - 1) / 7 + 1;
             Ok(XPathValue::Number(n as f64))
         }
         None => Ok(XPathValue::Number(f64::NAN)),
@@ -518,31 +563,44 @@ fn month_abbreviation_fn(
     }
 }
 
+/// date:day-in-week(date-time) — the weekday number. UPSTREAM-PARITY
+/// (libexslt dates.c dateDayInWeek): numbered 1 for Sunday through 7 for
+/// Saturday (NOT ISO-8601), matching the oracle's `tm_wday + 1`.
+fn day_in_week_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
+    match date_arg(args) {
+        Some(dt) => {
+            let wd = day_of_week(dt.year, dt.month, dt.day); // 0=Sun..6=Sat
+            Ok(XPathValue::Number((wd + 1) as f64))
+        }
+        None => Ok(XPathValue::Number(f64::NAN)),
+    }
+}
+
 fn hour_in_day_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     match date_arg(args) {
-        Some(dt) => Ok(XPathValue::Number(dt.hour as f64)),
-        None => Ok(XPathValue::Number(f64::NAN)),
+        Some(dt) if dt.has_time => Ok(XPathValue::Number(dt.hour as f64)),
+        _ => Ok(XPathValue::Number(f64::NAN)),
     }
 }
 
 fn minute_in_hour_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     match date_arg(args) {
-        Some(dt) => Ok(XPathValue::Number(dt.minute as f64)),
-        None => Ok(XPathValue::Number(f64::NAN)),
+        Some(dt) if dt.has_time => Ok(XPathValue::Number(dt.minute as f64)),
+        _ => Ok(XPathValue::Number(f64::NAN)),
     }
 }
 
 fn second_in_minute_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     match date_arg(args) {
-        Some(dt) => Ok(XPathValue::Number(dt.second as f64)),
-        None => Ok(XPathValue::Number(f64::NAN)),
+        Some(dt) if dt.has_time => Ok(XPathValue::Number(dt.second as f64)),
+        _ => Ok(XPathValue::Number(f64::NAN)),
     }
 }
 
 fn leap_year_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     match date_arg(args) {
         Some(dt) => Ok(XPathValue::Boolean(is_leap_year(dt.year))),
-        None => Ok(XPathValue::Boolean(false)),
+        None => Ok(XPathValue::Number(f64::NAN)),
     }
 }
 
@@ -673,6 +731,8 @@ fn add_fn(_ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, St
                 hour: (secs / 3600) as u32,
                 minute: ((secs % 3600) / 60) as u32,
                 second: (secs % 60) as u32,
+                has_time: dt.has_time,
+                tz_present: dt.tz_present,
                 tz_minutes: dt.tz_minutes,
             }
         };
@@ -932,6 +992,7 @@ pub fn register_all() {
         day_of_week_in_month_fn as ExsltFunction,
     );
     register("date:day-in-year", day_in_year_fn as ExsltFunction);
+    register("date:day-in-week", day_in_week_fn as ExsltFunction);
     register("date:week-in-year", week_in_year_fn as ExsltFunction);
     register("date:day-name", day_name_fn as ExsltFunction);
     register(

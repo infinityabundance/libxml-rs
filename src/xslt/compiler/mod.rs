@@ -719,13 +719,17 @@ unsafe fn preprocess_stylesheet_tree(root: *mut _xmlNode, is_stylesheet: bool) {
                     }
                 }
                 t if t == XML_COMMENT_NODE as c_int || t == XML_PI_NODE as c_int => {
-                    delete.push(cur);
-                    let end_of_run = unsafe { (*cur).next }.is_null()
-                        || unsafe { (*(*cur).next).type_ } == XML_ELEMENT_NODE as c_int;
-                    if end_of_run {
+                    // A comment/PI terminates the pending text run: the
+                    // whitespace-only run BEFORE it must be stripped on its
+                    // own (upstream xslt.c preprocessing treats the deleted
+                    // node as a run boundary), otherwise it merges with the
+                    // text after the comment and leaks blank lines into the
+                    // template output (xslt010_gt10129 blank-row diff).
+                    if !text_node.is_null() {
                         check_strip(text_node, st, &mut delete);
                         text_node = ptr::null_mut();
                     }
+                    delete.push(cur);
                 }
                 _ => {}
             }

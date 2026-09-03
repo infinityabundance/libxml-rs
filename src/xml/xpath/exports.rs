@@ -4685,6 +4685,7 @@ pub unsafe extern "C" fn xmlXPathCompiledEval(
     internal.context_position = (*ctx).proximityPosition;
     internal.context_size = (*ctx).contextSize;
     internal.proximity_position = (*ctx).proximityPosition;
+    crate::abi::exports_xml2::sync_xpath_context_namespaces(ctx, internal);
     internal.clear_error();
     let registry = crate::abi::exports_xml2::xpath_compiled_registry();
     let map = registry.lock();

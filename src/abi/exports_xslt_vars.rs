@@ -88,6 +88,9 @@ use crate::abi::types::*;
 /// `XSLT_VAR_PARAM` (variables.c): PARAM flag on a stack element.
 const XSLT_VAR_PARAM: c_int = 1 << 1;
 
+/// `XSLT_VAR_INTERNAL` (variables.c): internal-flag on a stack element.
+const XSLT_VAR_INTERNAL: c_int = 1 << 2;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Variable stack (variables.c, transform.c)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -211,15 +214,11 @@ pub unsafe extern "C" fn xsltEvalOneUserParam(
     if (*ctxt).style.is_null() {
         return -1;
     }
-    let elem = crate::xslt::parameters::xsltParseStylesheetParam(
-        (*ctxt).style,
-        name as *const c_char,
-        value as *const c_char,
-    );
-    if elem.is_null() {
-        -1
-    } else {
-        0
+    let name_bytes = CStr::from_ptr(name as *const c_char).to_bytes();
+    let value_bytes = CStr::from_ptr(value as *const c_char).to_bytes();
+    match install_user_param((*ctxt).style, name_bytes, value_bytes, false) {
+        Ok(_) => 0,
+        Err(()) => -1,
     }
 }
 
@@ -245,16 +244,8 @@ pub unsafe extern "C" fn xsltQuoteUserParams(
         if let Some(eq) = pair.iter().position(|&b| b == b'=') {
             let name = &pair[..eq];
             let value = &pair[eq + 1..];
-            let mut n = name.to_vec();
-            n.push(0);
-            let mut v = xml_escape(value);
-            v.push(0);
-            let elem = crate::xslt::parameters::xsltParseStylesheetParam(
-                (*ctxt).style,
-                n.as_ptr() as *const c_char,
-                v.as_ptr() as *const c_char,
-            );
-            if elem.is_null() {
+            let escaped = xml_escape(value);
+            if install_user_param((*ctxt).style, name, &escaped, true).is_err() {
                 return -1;
             }
         }
@@ -263,7 +254,8 @@ pub unsafe extern "C" fn xsltQuoteUserParams(
     0
 }
 
-/// `xsltQuoteOneUserParam` (variables.c): quote-and-evaluate one parameter.
+/// `xsltQuoteOneUserParam` (variables.c): register one parameter whose value
+/// is treated LITERALLY (no XPath evaluation).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -271,6 +263,15 @@ pub unsafe extern "C" fn xsltQuoteUserParams(
 /// int xsltQuoteOneUserParam(xsltTransformContextPtr ctxt,
 ///                           const xmlChar *name, const xmlChar *value);
 /// ```
+///
+/// Upstream (variables.c xsltProcessUserParamInternal, eval=0) splits the
+/// QName, skips when a stylesheet TOP-LEVEL `xsl:variable` owns the name
+/// (only `xsl:param` defaults may be overridden), then stores a COMPUTED
+/// literal-string stack element in the context's global parameter table.
+/// The candidate keeps caller params on the stylesheet's `variables` list
+/// (xsltInitGlobalVariables registers them first and skips stylesheet
+/// defaults for bound names), so this installs a PARAM|INTERNAL element with
+/// the literal string value set and deduplicated per (name, URI).
 #[no_mangle]
 pub unsafe extern "C" fn xsltQuoteOneUserParam(
     ctxt: *mut _xsltTransformContext,
@@ -280,18 +281,15 @@ pub unsafe extern "C" fn xsltQuoteOneUserParam(
     if ctxt.is_null() || name.is_null() || value.is_null() {
         return -1;
     }
-    let v = xml_escape(CStr::from_ptr(value as *const c_char).to_bytes());
-    let mut vn = v;
-    vn.push(0);
-    let elem = crate::xslt::parameters::xsltParseStylesheetParam(
-        (*ctxt).style,
-        name as *const c_char,
-        vn.as_ptr() as *const c_char,
-    );
-    if elem.is_null() {
-        -1
-    } else {
-        0
+    let style = (*ctxt).style;
+    if style.is_null() {
+        return -1;
+    }
+    let name_bytes = CStr::from_ptr(name as *const c_char).to_bytes();
+    let value_bytes = CStr::from_ptr(value as *const c_char).to_bytes();
+    match install_user_param(style, name_bytes, value_bytes, true) {
+        Ok(_) => 0,
+        Err(()) => -1,
     }
 }
 
@@ -309,6 +307,196 @@ fn xml_escape(bytes: &[u8]) -> Vec<u8> {
         }
     }
     out
+}
+
+/// NUL-terminated xmlChar copy of `bytes`.
+unsafe fn xmlChar_of(bytes: &[u8]) -> *mut xmlChar {
+    let p = libc::malloc(bytes.len() + 1) as *mut xmlChar;
+    if p.is_null() {
+        return ptr::null_mut();
+    }
+    libc::memcpy(
+        p as *mut libc::c_void,
+        bytes.as_ptr() as *const libc::c_void,
+        bytes.len(),
+    );
+    *p.add(bytes.len()) = 0;
+    p
+}
+
+/// Install one caller parameter on the stylesheet's global `variables` list.
+///
+/// Returns `Ok(true)` when installed, `Ok(false)` when skipped (the name is
+/// owned by a stylesheet top-level `xsl:variable`, which caller parameters
+/// never override — upstream variables.c xsltProcessUserParamInternal), and
+/// `Err(())` on parse failure.
+///
+/// # Safety
+///
+/// - `style` must be a valid compiled stylesheet; `name` the raw QName or
+///   `{uri}local` parameter name.
+unsafe fn install_user_param(
+    style: *mut _xsltStylesheet,
+    name: &[u8],
+    value: &[u8],
+    literal: bool,
+) -> Result<bool, ()> {
+    unsafe {
+        // Normalize `prefix:local` into `{uri}local` against the stylesheet's
+        // in-scope namespace declarations (upstream resolves the prefix
+        // through xmlSearchNs on the stylesheet root).
+        let mut normalized: Vec<u8> = Vec::new();
+        if !name.starts_with(b"{") {
+            if let Some(colon) = name.iter().position(|b| *b == b':') {
+                let prefix = &name[..colon];
+                let pfx_c = xmlChar_of(prefix);
+                if pfx_c.is_null() {
+                    return Err(());
+                }
+                let style_doc = (*style).doc;
+                let root = if style_doc.is_null() {
+                    ptr::null_mut()
+                } else {
+                    (*style_doc).children
+                };
+                let ns = crate::xml::tree::search_ns(style_doc, root, pfx_c);
+                libc::free(pfx_c as *mut libc::c_void);
+                if !ns.is_null() && !(*ns).href.is_null() {
+                    let href = CStr::from_ptr((*ns).href as *const c_char)
+                        .to_bytes()
+                        .to_vec();
+                    normalized.push(b'{');
+                    normalized.extend_from_slice(&href);
+                    normalized.push(b'}');
+                    normalized.extend_from_slice(&name[colon + 1..]);
+                } else {
+                    normalized.extend_from_slice(name);
+                }
+            } else {
+                normalized.extend_from_slice(name);
+            }
+        } else {
+            normalized.extend_from_slice(name);
+        }
+
+        let name_c = xmlChar_of(&normalized);
+        if name_c.is_null() {
+            return Err(());
+        }
+        let (local, uri): (Vec<u8>, Option<Vec<u8>>) = if normalized.starts_with(b"{") {
+            if let Some(close) = normalized.iter().position(|b| *b == b'}') {
+                if close > 0 && close < normalized.len() - 1 {
+                    (
+                        normalized[close + 1..].to_vec(),
+                        Some(normalized[1..close].to_vec()),
+                    )
+                } else {
+                    (normalized.clone(), None)
+                }
+            } else {
+                (normalized.clone(), None)
+            }
+        } else {
+            (normalized.clone(), None)
+        };
+        libc::free(name_c as *mut libc::c_void);
+
+        // Names equal except for the URI part.
+        let same_name = |e: *mut _xsltStackElem| -> bool {
+            if (*e).name.is_null()
+                || libc::strcmp((*e).name as *const c_char, local.as_ptr() as *const c_char) != 0
+            {
+                return false;
+            }
+            match uri {
+                None => (*e).nameURI.is_null(),
+                Some(ref u) => {
+                    !(*e).nameURI.is_null()
+                        && libc::strcmp((*e).nameURI as *const c_char, u.as_ptr() as *const c_char)
+                            == 0
+                }
+            }
+        };
+
+        // UPSTREAM-PARITY: a stylesheet top-level `xsl:variable` (no PARAM
+        // flag) with the same name wins — caller parameters are skipped.
+        let mut cur = (*style).variables;
+        while !cur.is_null() {
+            if (*cur).flags & XSLT_VAR_PARAM == 0 && same_name(cur) {
+                return Ok(false);
+            }
+            cur = (*cur).next;
+        }
+
+        let nm = xmlChar_of(&local);
+        if nm.is_null() {
+            return Err(());
+        }
+        let elem = libc::calloc(1, core::mem::size_of::<_xsltStackElem>()) as *mut _xsltStackElem;
+        if elem.is_null() {
+            libc::free(nm as *mut libc::c_void);
+            return Err(());
+        }
+        (*elem).name = nm;
+        (*elem).nameURI = match uri {
+            Some(ref u) => xmlChar_of(u),
+            None => ptr::null_mut(),
+        };
+        (*elem).flags = XSLT_VAR_PARAM | XSLT_VAR_INTERNAL;
+        if literal {
+            // Literal semantics (xsltQuoteOneUserParam): store the value as a
+            // pre-computed string object.
+            let vc = xmlChar_of(value);
+            if vc.is_null() {
+                crate::xslt::variables::xsltFreeStackElem(elem);
+                return Err(());
+            }
+            let obj = crate::xml::xpath::exports::xmlXPathNewString(vc);
+            libc::free(vc as *mut libc::c_void);
+            if obj.is_null() {
+                crate::xslt::variables::xsltFreeStackElem(elem);
+                return Err(());
+            }
+            (*elem).value = obj;
+            (*elem).computed = 1;
+        } else {
+            // Evaluation semantics (xsltEvalOneUserParam): the value is an
+            // XPath expression held in `select` and evaluated when the
+            // globals are bound (register_global_value).
+            let vc = xmlChar_of(value);
+            if vc.is_null() {
+                crate::xslt::variables::xsltFreeStackElem(elem);
+                return Err(());
+            }
+            (*elem).select = vc;
+        }
+
+        // Deduplicate any earlier caller parameter with the same name/URI
+        // (a stylesheet runs many transforms; the newest registration wins).
+        let mut prev: *mut _xsltStackElem = ptr::null_mut();
+        let mut cur = (*style).variables;
+        while !cur.is_null() {
+            let next = (*cur).next;
+            let is_caller = (*cur).flags & (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL)
+                == (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL);
+            if is_caller && same_name(cur) {
+                if prev.is_null() {
+                    (*style).variables = next;
+                } else {
+                    (*prev).next = next;
+                }
+                crate::xslt::variables::xsltFreeStackElem(cur);
+            } else {
+                prev = cur;
+            }
+            cur = next;
+        }
+        // Prepend (upstream prepends caller params; xsltInitGlobalVariables
+        // registers the head first).
+        (*elem).next = (*style).variables;
+        (*style).variables = elem;
+        Ok(true)
+    }
 }
 
 /// `xsltParseStylesheetCallerParam` (variables.c): compile an `xsl:param`
