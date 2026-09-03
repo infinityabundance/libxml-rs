@@ -1952,18 +1952,48 @@ pub unsafe fn new_ns(
         (*ns).prefix = dup_xml_str(prefix);
         (*ns).context = node as *mut _xmlDoc;
 
-        // Add to node's nsDef list
+        // UPSTREAM-PARITY (tree.c xmlNewNs): a node may not declare the
+        // same prefix twice — when an existing declaration on the node's
+        // OWN nsDef chain shares the prefix and has a non-NULL href the new
+        // declaration is rejected (freed, NULL returned). PHP's
+        // setAttributeNS/createAttributeNS conflict resolution relies on
+        // this NULL to allocate a FRESH prefix instead (dom_get_ns_unchecked
+        // -> dom_get_ns_resolve_prefix_conflict: xmlns:default,
+        // xmlns:default1, ...) — createAttributeNS_prefix_conflicts /
+        // Element_setAttributeNS.
         if !node.is_null() {
             let n = &mut *node;
+            let same_prefix = |a: *mut _xmlNs| {
+                let other = &*a;
+                // xmlStrEqual semantics: NULL == NULL (two default
+                // declarations conflict), otherwise byte equality.
+                match ((*ns).prefix, other.prefix) {
+                    (x, y) if x == y => true,
+                    (x, y) if x.is_null() || y.is_null() => false,
+                    (x, y) => crate::abi::exports_xml2::xmlStrEqual(x, y) != 0,
+                }
+            };
+            let conflict = |a: *mut _xmlNs| -> bool {
+                let other = &*a;
+                same_prefix(a) && !other.href.is_null()
+            };
             if n.nsDef.is_null() {
                 n.nsDef = ns;
             } else {
-                // Append to end
-                let mut last = n.nsDef;
-                while !(*last).next.is_null() {
-                    last = (*last).next;
+                // Mirror upstream's first-element check then the walk.
+                let mut prev = n.nsDef;
+                if conflict(prev) {
+                    free_ns(ns);
+                    return ptr::null_mut();
                 }
-                (*last).next = ns;
+                while !(*prev).next.is_null() {
+                    prev = (*prev).next;
+                    if conflict(prev) {
+                        free_ns(ns);
+                        return ptr::null_mut();
+                    }
+                }
+                (*prev).next = ns;
             }
         }
     }
@@ -2590,9 +2620,12 @@ pub unsafe fn has_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlAt
     let mut cur = unsafe { (*node).properties };
     while !cur.is_null() {
         let attr = unsafe { &*cur };
+        // UPSTREAM-PARITY (tree.c xmlHasProp): the search matches the LOCAL
+        // name only — namespaced attributes are found too (php's
+        // setAttributeNode replacement lookup relies on this). The NULL-
+        // namespace restriction belongs to xmlHasNsProp.
         if !attr.name.is_null()
             && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
-            && attr.ns.is_null()
         {
             return cur;
         }

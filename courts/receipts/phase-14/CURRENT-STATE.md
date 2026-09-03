@@ -798,3 +798,21 @@ php-14-3-xmlsave-attrent-20260903/.
     serializer corners (token_list/attlist), delayed_freeing x4,
     css_selectors/entities, xsl 52, xmlreader 15.
     cargo test --lib 1239 pass; clippy no new warnings; fmt clean.
+
+KEY-5 namespace prefix-conflict resolution (2026-09-03): full suite 158 -> 148,
+ZERO regressions (name-level diff: 0 new). Log: phpbuild-c:/out/xpe-six12.log.
+Receipt: php-14-3-ns-prefix-conflict-20260903/. dom 89 -> 79.
+  - xmlNewNs now rejects a duplicate prefix on the SAME node's nsDef chain
+    (upstream tree.c returns NULL) — php's conflict path allocates fresh
+    xmlns:default/default1 prefixes (createAttributeNS_prefix_conflicts x6,
+    importNode_attribute_prefix_conflict, setAttributeNS_prefix_conflict,
+    DOMElement_prefix_empty flip).
+  - xmlHasProp matches the local name only (the NULL-ns restriction belongs
+    to xmlHasNsProp) — php's setAttributeNode replacement lookup now finds
+    namespaced attributes (stale-attr duplication gone); crash-guard
+    delayed_freeing/namespace_definition_crash_in_attribute flips.
+  - probe kept: nsprop-replace-probe.c. Residuals: clone_attribute_
+    namespace_01/02 (reconcile decl on insert), modern Element_setAttributeNS
+    (prefix retention), attribute_renaming_conflict (DTD #FIXED dump),
+    validation family (~13), xsl 52, xmlreader 15.
+    cargo test --lib 1239 pass; clippy no new warnings; fmt clean.

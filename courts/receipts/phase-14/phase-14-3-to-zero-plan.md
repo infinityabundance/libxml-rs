@@ -1,6 +1,15 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **KEY-5 namespace prefix-conflict resolution (2026-09-03):** xmlNewNs now
+  rejects a duplicate prefix on the same node (upstream tree.c — php's
+  conflict path allocates fresh xmlns:default prefixes) and xmlHasProp
+  matches the local name only (the NULL-ns restriction belongs to
+  xmlHasNsProp — php's setAttributeNode replacement lookup). Full suite
+  **158 → 148** (dom 89 → 79: createAttributeNS_prefix_conflicts x6,
+  importNode/setAttributeNS prefix conflicts, DOMElement_prefix_empty, a
+  delayed_freeing crash-guard), zero regressions. Receipt:
+  php-14-3-ns-prefix-conflict-20260903/.
 - **xmlsave 0-length write + attribute entity-ref children (2026-09-03):**
   `xmlOutputBufferWrite(out, 0, p)` aborted saves (php 8.5's W3C
   DOM-Parsing serializer issues zero-length chunk writes when a text/attr
@@ -143,11 +152,11 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 158 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html/E1-recover/xr-NRNX/xmlsave-attrent):
+Split at 289 (now 148 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html/E1-recover/xr-NRNX/xmlsave-attrent/KEY-5):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 89 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 79 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 1 |
 | ext/xmlreader | 30 -> 15 | | ext/xmlwriter | 19 -> **1** |
 
