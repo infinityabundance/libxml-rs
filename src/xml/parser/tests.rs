@@ -1767,3 +1767,52 @@ fn test_no_xxe_blocks_external_entity_and_doctype_serializes_once_in_order() {
         tree::free_doc(doc);
     }
 }
+
+/// PI data keeps EVERY character up to the `?>` terminator — including
+/// trailing whitespace — and ALL blanks after the target are skipped
+/// (upstream xmlParsePI: SKIP_BLANKS then copy until `?>`, no trailing
+/// trim). The pre-fix tokenizer skipped ONE blank and trimmed the trailing
+/// whitespace, so the SimpleXML string of `<?foo pi contents ?>` lost the
+/// last space (GH-12167: "pi contents" instead of "pi contents ").
+///
+/// # Safety
+///
+/// - The static buffers are valid for the parse; `read_memory_ctx` returns an
+///   owned doc (freed via `tree::free_doc`); the walked nodes stay valid for
+///   the whole check.
+#[test]
+fn test_pi_data_keeps_trailing_space_skips_all_leading_blanks() {
+    unsafe {
+        let (doc, wf, err) =
+            read_memory_ctx(b"<container>\n  <?foo pi contents ?>\n</container>", 0);
+        assert!(!doc.is_null());
+        assert_eq!(wf, 1);
+        assert_eq!(err, 0);
+        let root = crate::xml::tree::doc_get_root_element(doc);
+        assert!(!root.is_null());
+        let mut ch = (*root).children;
+        let mut pi: *mut _xmlNode = ptr::null_mut();
+        while !ch.is_null() {
+            if (*ch).type_ == crate::abi::types::xmlElementType::XML_PI_NODE as c_int {
+                pi = ch;
+                break;
+            }
+            ch = (*ch).next;
+        }
+        assert!(!pi.is_null());
+        let data = crate::xml::string::xmlstr_to_bytes((*pi).content);
+        assert_eq!(data, b"pi contents ");
+
+        // Multiple blanks after the target are all consumed.
+        let (doc2, _wf2, _err2) = read_memory_ctx(b"<r><?a   b  ?></r>", 0);
+        assert!(!doc2.is_null());
+        let root2 = crate::xml::tree::doc_get_root_element(doc2);
+        let child2 = (*root2).children;
+        assert_eq!(
+            crate::xml::string::xmlstr_to_bytes((*child2).content),
+            b"b  "
+        );
+        tree::free_doc(doc2);
+        tree::free_doc(doc);
+    }
+}

@@ -501,3 +501,18 @@ simplexml S5/S6 content discipline closed (2026-09-03): full suite 241 -> 239;
     Probes kept: consumers/addchild-probe.php (php pin: oracle-equal on all
     four content shapes). cargo test --lib 1230 pass; clippy no new warnings;
     fmt clean.
+
+simplexml S4 PI data boundary closed (2026-09-03): full suite 239 -> 238;
+  zero regressions (simplexml 5 -> 4 — gh12167 PASS; dom 152 / xml 0 /
+  xmlreader 29 / xmlwriter 1 / xsl 52 unchanged). Receipt:
+  php-14-3-simplexml-pi-data-20260903/.
+  - root cause: the tokenizer's PI scan skipped only ONE blank after the
+    target and TRIM-med the trailing whitespace of the data. Upstream
+    xmlParsePI SKIP_BLANKS consumes ALL blanks between the target and the
+    data and copies every character up to the '?' of the terminator — the
+    SAX data of `<?foo pi contents ?>` is "pi contents " (trailing space
+    kept). SimpleXML's string() of the PI lost the last character
+    (gh12167: length 11 instead of 12).
+  - guard: parser/tests.rs test_pi_data_keeps_trailing_space_skips_all_
+    leading_blanks ("pi contents " + `<?a   b  ?>` -> "b  ").
+    cargo test --lib 1231 pass; clippy no new warnings; fmt clean.

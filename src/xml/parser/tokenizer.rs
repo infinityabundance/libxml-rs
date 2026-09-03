@@ -1057,8 +1057,9 @@ impl XmlTokenizer {
             }
         }
 
-        // Skip whitespace before data
-        if self
+        // Skip whitespace before data — upstream xmlParsePI SKIP_BLANKS
+        // consumes ALL blanks between the target and the data.
+        while self
             .input
             .peek_char()
             .is_some_and(|c| c.is_ascii_whitespace())
@@ -1066,7 +1067,10 @@ impl XmlTokenizer {
             self.input.read_char();
         }
 
-        // Read data until "?>"
+        // Read data until "?>". Upstream copies every character up to the
+        // '?' of the terminator — including any whitespace immediately
+        // before it (the SAX data of `<?foo pi contents ?>` is
+        // "pi contents ", GH-12167); there is NO trailing trim.
         let mut data = Vec::new();
         let mut terminated = false;
         loop {
@@ -1112,15 +1116,6 @@ impl XmlTokenizer {
                 0,
                 None,
             );
-        }
-
-        // Trim trailing whitespace from data (libxml2 behavior)
-        while data.last() == Some(&b' ')
-            || data.last() == Some(&b'\t')
-            || data.last() == Some(&b'\n')
-            || data.last() == Some(&b'\r')
-        {
-            data.pop();
         }
 
         XmlToken::ProcessingInstruction {

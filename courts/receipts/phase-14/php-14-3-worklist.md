@@ -1,10 +1,10 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **239 failed** (dom 152 | xsl 52 |
+Authoritative current full-suite count: **238 failed** (dom 152 | xsl 52 |
 xmlreader 29 | xmlwriter **1** (W5 shift_jis encoder residual → W9/R-000157) |
-simplexml 5 | xml **0**) after KEY-1 + KEY-2 + SP-14.3.1-8 + KEY-3 + EXT-6
+simplexml 4 | xml **0**) after KEY-1 + KEY-2 + SP-14.3.1-8 + KEY-3 + EXT-6
 (xmlwriter) + dom O1 closures + KEY-4 part 1 + simplexml S5/S6 content
-discipline (all 2026-09-03).
+discipline + simplexml S4 PI data (all 2026-09-03).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
