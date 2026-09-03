@@ -341,3 +341,47 @@ KEY-3 closed (PI-vs-XML-decl routing + reserved-name/not-finished codes):
   - guards: tests.rs test_pi_vs_xml_decl_routing_error_codes.
     cargo test --lib 1223 pass; clippy no new warnings; fmt clean.
   - receipt dir: php-14-3-pi-decl-routing-20260902/
+
+EXT-6 xmlwriter closed 19 -> 1 (2026-09-03): full suite 275 -> 255; zero
+  regressions (dom 166 -> 164 via the same file-open routing:
+  namespace_sxe_interaction + XMLDocument_fromString_02 PASS; simplexml 9 /
+  xml 0 / xmlreader 29 / xsl 52 unchanged). Two root causes (receipt
+  php-14-3-xmlwriter-20260903/):
+  - RC-1 (writer engine, mirrors xmlwriter.c): W1 — End* emit the FULL stack
+    QName `prefix:name` (StartElementNS pushes the QName; 006/007/011/012 +
+    OO_* + bug41287/bug41326/write_attribute_ns prefix loss); W2 — empty-
+    content elements close `></name>` on ONE line from the NAME state
+    (FullEndElement clears doindent), END-tag indentation is `depth-1`
+    (upstream `nodes-1`), empty WriteString in Element closes the tag
+    (bug41287), attribute-ns queued `xmlns[:prefix]` decls deduped per element
+    via queue_attr_ns_decl (write_attribute_ns_basic_001); W3 — bare prolog
+    DTD children (`<!ENTITY/<!ELEMENT/<!ATTLIST` without `<!DOCTYPE`) via
+    dtd_child_begin + dtd_bare flag, XMLDecl state removed
+    (008/OO_008); W4 — StartPI/StartCDATA after a NAME parent emit `>` with NO
+    newline (009 leaf); xmlTextWriterFlush does NOT close an open start tag
+    (toMemory_flush_combinations).
+  - RC-2 (W6 lifecycle, mirrors xmlIO.c/xmlwriter.c): the writer/save/html
+    filename opens (`xmlNewTextWriterFilename`, exported
+    `xmlOutputBufferCreateFilename`, `xmlSaveToFilename`, `htmlSaveFileFormat`)
+    now honor the per-thread default installed by
+    `xmlOutputBufferCreateFilenameDefault` (PHP installs
+    php_libxml_output_buffer_create_filename at RINIT) — upstream
+    `xmlOutputBufferCreateFilename` delegates to
+    `xmlOutputBufferCreateFilenameValue` when set. Fixes bug71536
+    (openUri "php://memory") + bug79029 (fclose of a writer/reader-owned
+    NO_FCLOSE php stream warns instead of TypeError). The routing exposed a
+    latent defect: `xmlURIUnescapeString` treated `len == 0` as a literal
+    0-byte decode; upstream uri.c uses `if (len <= 0) len = strlen(str)`, and
+    php's stream wrapper calls `xmlURIUnescapeString(path, 0, NULL)` — the
+    empty path made php_stream_open_wrapper_ex throw ValueError "Path must not
+    be empty" on every file open.
+  - guards: io test_output_buffer_create_filename_routed_honors_default
+    (registered default consulted; export funnels; builtin fallback); uri
+    test_xml_unescape_string_len_zero_means_whole (len 0 -> whole string,
+    %-decoding intact). cargo test --lib 1225 pass; clippy no new warnings;
+    fmt clean. Probe kept: consumers/uri-probe.c (oracle-pinned unescape/
+    escape/parse rows), openuri-mem.php; W5 byte evidence in the receipt
+    (sjis-phpt-body.php vs oracle).
+  - xmlwriter residual 1: xmlwriter_toStream_encoding_shiftjis = W5 — the
+    comment content must be transcoded to real SHIFT_JIS bytes (oracle emits
+    0x82 0x41 x3; candidate emits UTF-8) — encoder workstream W9/R-000157.

@@ -1083,7 +1083,10 @@ pub(crate) unsafe fn xmlURIEscapeStr(str: *const xmlChar, list: *const xmlChar) 
 ///
 /// Unescape a percent-encoded URI string.
 ///
-/// If `len` is negative, the string is assumed to be null-terminated.
+/// If `len` is negative or zero, the string is assumed to be null-terminated
+/// and its whole length is used (upstream uri.c: `if (len <= 0) len =
+/// strlen(str)`) — PHP's stream wrapper calls it as
+/// `xmlURIUnescapeString(filename, 0, NULL)`.
 /// If `target` is not null, the result is written there (and returned).
 /// Otherwise, a new buffer is allocated with `xmlMalloc`.
 ///
@@ -1091,7 +1094,7 @@ pub(crate) unsafe fn xmlURIEscapeStr(str: *const xmlChar, list: *const xmlChar) 
 ///
 /// # Safety
 ///
-/// `str` must be a valid C string (null-terminated if `len` < 0).
+/// `str` must be a valid C string (null-terminated if `len` <= 0).
 /// `target` must be large enough to hold the result if not null.
 pub(crate) unsafe fn xmlURIUnescapeString(
     str: *const c_char,
@@ -1101,7 +1104,7 @@ pub(crate) unsafe fn xmlURIUnescapeString(
     if str.is_null() {
         return ptr::null_mut();
     }
-    let slice = if len < 0 {
+    let slice = if len <= 0 {
         let cstr_len = unsafe { libc::strlen(str) };
         unsafe { core::slice::from_raw_parts(str as *const u8, cstr_len) }
     } else {
@@ -1714,6 +1717,35 @@ mod tests {
             let result_str = std::ffi::CStr::from_ptr(result);
             assert_eq!(result_str.to_bytes(), b"hello world");
             allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
+        }
+    }
+
+    /// A `len` of 0 means "whole NUL-terminated string" (upstream uri.c
+    /// `if (len <= 0) len = strlen(str)`) — PHP's stream wrapper calls
+    /// `xmlURIUnescapeString(filename, 0, NULL)` on plain file paths, so a
+    /// literal 0-length decode would hand it an empty path (SP-14.3.6 W6:
+    /// the xmlwriter openUri regression this guards).
+    ///
+    /// # Safety
+    ///
+    /// - `cstr` must be a valid NUL-terminated static string; the returned
+    ///   buffer is allocator-owned and freed with `xmlFreeImpl`.
+    #[test]
+    fn test_xml_unescape_string_len_zero_means_whole() {
+        unsafe {
+            let cstr = c"004.xml".as_ptr() as *const c_char;
+            let result = xmlURIUnescapeString(cstr, 0, ptr::null_mut());
+            assert!(!result.is_null());
+            let result_str = std::ffi::CStr::from_ptr(result);
+            assert_eq!(result_str.to_bytes(), b"004.xml");
+            allocator::xmlFreeImpl(result as *mut core::ffi::c_void);
+
+            let cstr2 = c"a%20b.xml".as_ptr() as *const c_char;
+            let result2 = xmlURIUnescapeString(cstr2, 0, ptr::null_mut());
+            assert!(!result2.is_null());
+            let result_str2 = std::ffi::CStr::from_ptr(result2);
+            assert_eq!(result_str2.to_bytes(), b"a b.xml");
+            allocator::xmlFreeImpl(result2 as *mut core::ffi::c_void);
         }
     }
 

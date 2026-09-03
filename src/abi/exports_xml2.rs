@@ -3809,14 +3809,18 @@ pub unsafe extern "C" fn xmlOutputBufferCreateFilename(
     encoder: *mut c_void,
     compression: c_int,
 ) -> *mut _xmlOutputBuffer {
-    let _ = compression;
     if URI.is_null() {
         return ptr::null_mut();
     }
-    crate::xml::io::output_buffer_create_filename(
+    // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferCreateFilename): a default
+    // create-filename callback registered via xmlOutputBufferCreateFilenameDefault
+    // is consulted first (PHP installs php_libxml_output_buffer_create_filename at
+    // request init, so every filename open routes through the PHP streams layer);
+    // otherwise the builtin file open runs.
+    crate::xml::io::output_buffer_create_filename_routed(
         URI,
         encoder as *mut crate::abi::structs::_xmlCharEncodingHandler,
-        0,
+        compression,
     )
 }
 
@@ -4030,22 +4034,18 @@ pub unsafe extern "C" fn xmlOutputBufferWriteEscape(
     crate::xml::io::output_buffer_write_escape(out, str, escaping)
 }
 
-/// Global default `xmlOutputBufferCreateFilename` callback
-/// (upstream xmlOutputBufferCreateFilenameDefault).
-static mut OUTPUT_CREATE_FILENAME_DEFAULT: Option<
-    unsafe extern "C" fn(
-        *const c_char,
-        *mut crate::abi::structs::_xmlCharEncodingHandler,
-        c_int,
-    ) -> *mut _xmlOutputBuffer,
-> = None;
-
 /// Set/query the default output-buffer filename callback
 /// (upstream xmlOutputBufferCreateFilenameDefault).
+///
+/// Stored per-thread in the same cell the I/O layer consults
+/// (`xml::globals::OUTPUT_CREATE_FILENAME`, upstream's
+/// `xmlOutputBufferCreateFilenameValue`); the deprecated plain-global
+/// accessor `__xmlOutputBufferCreateFilename` returns a pointer to it.
 ///
 /// # SAFETY
 ///
 /// - `func` must be a valid function pointer or NULL.
+/// - The previous value (NULL when none was registered) is returned.
 #[no_mangle]
 pub unsafe extern "C" fn xmlOutputBufferCreateFilenameDefault(
     func: Option<
@@ -4062,9 +4062,12 @@ pub unsafe extern "C" fn xmlOutputBufferCreateFilenameDefault(
         c_int,
     ) -> *mut _xmlOutputBuffer,
 > {
-    let old = unsafe { OUTPUT_CREATE_FILENAME_DEFAULT };
+    // UPSTREAM-PARITY (xmlIO.c): set only when func is non-NULL, return the
+    // previously registered value (NULL when none). Same per-thread slot the
+    // thrDef variant and the I/O routing consult.
+    let old = crate::xml::globals::get_output_buffer_create_filename_value();
     if func.is_some() {
-        unsafe { OUTPUT_CREATE_FILENAME_DEFAULT = func };
+        crate::xml::globals::set_output_buffer_create_filename_value(func);
     }
     old
 }
@@ -4079,7 +4082,7 @@ pub unsafe extern "C" fn __xmlOutputBufferCreateFilename() -> *mut Option<
         c_int,
     ) -> *mut _xmlOutputBuffer,
 > {
-    core::ptr::addr_of_mut!(OUTPUT_CREATE_FILENAME_DEFAULT)
+    crate::xml::globals::output_create_filename_ptr()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

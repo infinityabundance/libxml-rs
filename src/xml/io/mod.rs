@@ -1522,6 +1522,52 @@ fn allocate_output_buffer() -> *mut _xmlOutputBuffer {
     buf
 }
 
+/// Create an output buffer for a filename, honoring a registered default
+/// create-filename callback (upstream `xmlOutputBufferCreateFilename`).
+///
+/// # UPSTREAM-PARITY
+///
+/// xmlIO.c 2.15:
+///
+/// ```c
+/// xmlOutputBufferPtr
+/// xmlOutputBufferCreateFilename(const char *URI,
+///                               xmlCharEncodingHandler *encoder,
+///                               int compression) {
+///     if ((xmlOutputBufferCreateFilenameValue)) {
+///         return xmlOutputBufferCreateFilenameValue(URI, encoder, compression);
+///     }
+///     return __xmlOutputBufferCreateFilename(URI, encoder, compression);
+/// }
+/// ```
+///
+/// The callback installed by `xmlOutputBufferCreateFilenameDefault` (per
+/// thread) is consulted first and its result returned verbatim — no fallback
+/// when it fails. PHP installs `php_libxml_output_buffer_create_filename` at
+/// request init, so EVERY filename open (writer `openUri`, dom save-to-file,
+/// `htmlSaveFileFormat`, …) is routed through the PHP streams layer, which
+/// opens a `PHP_STREAM_FLAG_NO_FCLOSE` php stream (SP-14.3.6 W6: bug71536's
+/// `php://memory` and bug79029's manual-`fclose` warnings both hinge on this).
+///
+/// # Safety
+///
+/// - `URI` must be NULL or a valid null-terminated C string; `encoder` may
+///   be NULL or a valid handler that outlives the buffer. A registered
+///   callback receives the same three arguments upstream would pass it.
+pub(crate) fn output_buffer_create_filename_routed(
+    URI: *const c_char,
+    encoder: *mut _xmlCharEncodingHandler,
+    compression: c_int,
+) -> *mut _xmlOutputBuffer {
+    if let Some(func) = crate::xml::globals::get_output_buffer_create_filename_value() {
+        // SAFETY: URI/encoder carry the same validity contract as the export
+        // `xmlOutputBufferCreateFilename`; the callback is the consumer's own
+        // registered function (upstream calls it with these exact arguments).
+        return unsafe { func(URI, encoder, compression) };
+    }
+    output_buffer_create_filename(URI, encoder, compression)
+}
+
 /// Create an output buffer for a filename.
 ///
 /// Opens the file for writing and sets up write/close callbacks.
@@ -3279,6 +3325,63 @@ mod tests {
     fn test_output_buffer_close_null() {
         let ret = output_buffer_close(ptr::null_mut());
         assert_eq!(ret, -1);
+    }
+
+    /// A default create-filename callback registered per-thread (upstream
+    /// `xmlOutputBufferCreateFilenameValue`) must be honored by
+    /// `output_buffer_create_filename_routed` and the public export — its
+    /// result is returned verbatim and the builtin file open is NOT attempted
+    /// (SP-14.3.6 W6: PHP installs php_libxml_output_buffer_create_filename at
+    /// request init, which is what makes xmlwriter openUri("php://memory")
+    /// succeed and gives bug79029 its NO_FCLOSE php-stream semantics).
+    ///
+    /// # Safety
+    ///
+    /// - `phony_default` is a valid extern "C" fn pointer with the callback
+    ///   contract; the registered slot is restored to its previous value in
+    ///   all paths (this test runs on its own thread, so the TLS slot is
+    ///   private to it).
+    #[test]
+    fn test_output_buffer_create_filename_routed_honors_default() {
+        unsafe extern "C" fn phony_default(
+            _uri: *const c_char,
+            _encoder: *mut _xmlCharEncodingHandler,
+            _compression: c_int,
+        ) -> *mut _xmlOutputBuffer {
+            // The callback decides the outcome alone: NULL here even though
+            // the URI names a creatable file (the builtin open would succeed).
+            ptr::null_mut()
+        }
+
+        let old = crate::xml::globals::get_output_buffer_create_filename_value();
+        crate::xml::globals::set_output_buffer_create_filename_value(Some(phony_default));
+
+        let path = c("/tmp/__routed_default_guard_xyz__.tmp");
+        let out = output_buffer_create_filename_routed(path.as_ptr(), ptr::null_mut(), 0);
+        assert!(
+            out.is_null(),
+            "registered default must be consulted (builtin would have created the file)"
+        );
+
+        // The public export funnels identically (PHP's dom save-to-file calls
+        // xmlOutputBufferCreateFilename directly).
+        let out = unsafe {
+            crate::abi::exports_xml2::xmlOutputBufferCreateFilename(
+                path.as_ptr(),
+                ptr::null_mut(),
+                0,
+            )
+        };
+        assert!(out.is_null());
+
+        // With no default registered, the builtin file open still runs.
+        crate::xml::globals::set_output_buffer_create_filename_value(None);
+        let out = output_buffer_create_filename_routed(path.as_ptr(), ptr::null_mut(), 0);
+        assert!(!out.is_null());
+        output_buffer_close(out);
+        let _ = std::fs::remove_file("/tmp/__routed_default_guard_xyz__.tmp");
+
+        crate::xml::globals::set_output_buffer_create_filename_value(old);
     }
 
     #[test]

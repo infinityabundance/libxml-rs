@@ -4090,14 +4090,15 @@ pub unsafe extern "C" fn htmlSaveFileFormat(
     }
     // UPSTREAM-PARITY (HTMLtree.c htmlSaveFileFormat): the caller's encoding
     // string is passed through to htmlNodeDumpInternal, which inserts a
-    // <meta charset> when it is non-NULL.
+    // <meta charset> when it is non-NULL. The file open funnels through the
+    // registered default create-filename callback when present (php streams).
     let enc: Option<&[u8]> = if encoding.is_null() {
         None
     } else {
         let s = std::ffi::CStr::from_ptr(encoding);
         Some(s.to_bytes())
     };
-    let obuf = io::output_buffer_create_filename(filename, ptr::null_mut(), 0);
+    let obuf = io::output_buffer_create_filename_routed(filename, ptr::null_mut(), 0);
     if obuf.is_null() {
         // UPSTREAM-PARITY: a failed output buffer yields 0, not -1.
         return 0;

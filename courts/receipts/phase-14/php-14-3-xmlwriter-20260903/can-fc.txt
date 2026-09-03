@@ -1,0 +1,5 @@
+string(0) ""
+string(5) "<foo>"
+string(11) "<foo></foo>"
+string(11) "<foo></foo>"
+string(0) ""

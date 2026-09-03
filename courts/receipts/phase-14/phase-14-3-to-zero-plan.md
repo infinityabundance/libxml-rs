@@ -1,6 +1,19 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **EXT-6 xmlwriter 19 → 1 closed (2026-09-03):** writer engine W1–W4
+  (element-stack QName end-tags, empty-content END path + indentation, leaf
+  PI/CDATA atomicity, DTD-bare children, attribute-ns decl queue, flush-does-
+  not-close) AND the W6 filename-open routing (registered
+  `xmlOutputBufferCreateFilenameDefault` is honored by the writer/save/html
+  filename opens — PHP streams) + the exposed `xmlURIUnescapeString` len<=0
+  defect. Full suite **275 → 255** (xmlwriter 19 → 1; dom 166 → 164:
+  `namespace_sxe_interaction` + `XMLDocument_fromString_02` PASS via the
+  php-stream file-open routing), **zero regressions**. The single residual is
+  `xmlwriter_toStream_encoding_shiftjis` = W5 — genuine UTF-8 → SHIFT_JIS
+  output conversion → belongs to Workstream 9 (R-000157 encoder; oracle-pinned
+  byte evidence in the receipt). Receipt:
+  php-14-3-xmlwriter-20260903/.
 - **KEY-3 closed (2026-09-02):** PI-vs-XML-decl routing + reserved-name /
   not-finished codes. ext/xml 1 → **0** — SP-14.3.1 fully closed. Full suite
   **276 → 275**, zero regressions. Receipt: php-14-3-pi-decl-routing-20260902/.
@@ -23,13 +36,16 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 275 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3):
+Split at 289 (now 255 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 166 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 164 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
-| ext/xmlreader | 29 | | ext/xmlwriter | 19 |
+| ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
+
+xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —
+encoder-scope (R-000157/W9); EXT-6 gate reaches 0 when W9 lands.
 
 ## Sequencing principle (do NOT follow extension boundary)
 
@@ -69,7 +85,8 @@ time, commit, full remeasure at the end of KEYS before Extension Work.
 ### KEY-0 · Crash-ownership foundation — severities/aborts that mask everything
 Dom O1 (18, `DOMNode_isEqualNode`, `adoptNode`, `replaceChildren`,
 `insertAdjacentElement`, `saveXML_XML_SAVE_NO_DECL`, xpath-fn lifetimes,
-`gh22570` …), xmlwriter W6 (bug71536/bug79029), xmlreader latent EX
+`gh22570` …), xmlwriter W6 (bug71536/bug79029 — **closed 2026-09-03 with the
+filename-open default-callback routing**, see EXT-6), xmlreader latent EX
 (`expand`, `gh16292`, `gh19098`), xsl H0 (`bug71571_b` segv,
 `bug26384` char-panic), and the `php_libxml_node_free`/delayed-freeing family.
 Many dom serialize/ns tests only *reach* their assertion once the underlying node
@@ -198,10 +215,15 @@ XLOAD encoding preamble is KEY-1 → H0 crash guards (bug71571, bug26384, prev.
 KEY-0) → M1/E1/I1/XD engine edges + the `xslt001-007,012` table/apply divergence.
 **Gate: ext/xsl = 0.**
 
-### EXT-6 ext/xmlwriter — 19
-Follow the family order (stream/ownership → element-stack prefix + empty/indent
-→ DTD → leaf atomicity → shift_jis output). Internal to the writer; independent
-of serializer except W5. **Gate: ext/xmlwriter = 0.**
+### EXT-6 ext/xmlwriter — 19 (was) → 1 (W5 encoder residual)
+Closed by commit … (2026-09-03, receipt php-14-3-xmlwriter-20260903/) — the
+W1–W4 family order (element-stack prefix latch → empty/indent → DTD markers →
+leaf atomicity) landed together with W6 (object/stream lifecycle) whose two
+members (bug71536 `php://memory`, bug79029 php-stream ownership) share ONE root
+cause: filename opens must honor the registered
+`xmlOutputBufferCreateFilenameDefault` (php's stream-layer callback), and
+`xmlURIUnescapeString` must treat `len <= 0` as NUL-terminated. **Gate:
+xmlwriter = 0** awaits only the W5 shift_jis encoder (Workstream 9).
 
 ---
 
@@ -209,6 +231,10 @@ of serializer except W5. **Gate: ext/xmlwriter = 0.**
 - **W9 · R-000157 iconv/ICU backend** (the real cross-cutting encoding gap;
   also the `$dom->encoding`/shift_jis/xmlwriter W5/xmlreader/dom override_encoding
   tails). Independent implementable in parallel; required for the final stretch.
+  xmlwriter's LAST failing member is W5
+  (`xmlwriter_toStream_encoding_shiftjis`): the phpt expects the comment content
+  transcoded to real SHIFT_JIS bytes (`0x82 0x41` ×3 for `ぁ`) — oracle-pinned
+  byte evidence in receipt php-14-3-xmlwriter-20260903/.
 - **W10 · closure sweep + binary-sub / ZTS / full-gate** after 0 (the existing
   SP-14.3.8 / 14.3-Q / 14.3-S / 14.3-T exits).
 

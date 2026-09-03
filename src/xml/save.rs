@@ -211,7 +211,10 @@ pub unsafe extern "C" fn xmlSaveToFilename(
     options: c_int,
 ) -> *mut _xmlSaveCtxt {
     let enc = unsafe { encoding_handler(encoding) };
-    let out = io::output_buffer_create_filename(filename, enc, 0);
+    // UPSTREAM-PARITY (xmlsave.c xmlSaveToFilename): the file open funnels
+    // through xmlOutputBufferCreateFilename, honoring a registered default
+    // create-filename callback (php streams under PHP).
+    let out = io::output_buffer_create_filename_routed(filename, enc, 0);
     unsafe { save_ctxt_new(out, options, encoding) }
 }
 

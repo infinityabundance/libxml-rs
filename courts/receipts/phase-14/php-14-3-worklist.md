@@ -1,8 +1,9 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **275 failed** (dom 166 | xsl 52 |
-xmlreader 29 | xmlwriter 19 | simplexml 9 | xml **0**) after KEY-1 + KEY-2 +
-SP-14.3.1-8 + KEY-3 closures. ext/xml is fully green (SP-14.3.1 closed).
+Authoritative current full-suite count: **255 failed** (dom 164 | xsl 52 |
+xmlreader 29 | xmlwriter **1** (W5 shift_jis encoder residual → W9/R-000157) |
+simplexml 9 | xml **0**) after KEY-1 + KEY-2 + SP-14.3.1-8 + KEY-3 + EXT-6
+(xmlwriter engine + filename-open routing, 2026-09-03).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
@@ -63,7 +64,27 @@ All atoms below closed by commit 52f4168 (SP-14.3.1-8 + KEY-2) and KEY-3
 
 ## SP-14.3.5  ext/xmlreader (29)
 
-## SP-14.3.6  ext/xmlwriter (19)
+## SP-14.3.6  ext/xmlwriter (19)  ->  CLOSED 19 -> 1 (2026-09-03)
+Committed with receipt php-14-3-xmlwriter-20260903/ (see CURRENT-STATE.md
+EXT-6 for the full RC-1/RC-2 split; logs /out/wr7.log … /out/wr10.log,
+/out/wr10-six.log = 255).
+- [x] W1  StartElementNS pushes the full `prefix:name` QName on the element
+       stack so End*/FullEnd* emit `</prefix:name>` (006/007/011/012 +
+       OO_006/007/010/011 + bug41287/bug41326/write_attribute_ns prefix loss).
+- [x] W2  empty-content element close + END-path indentation (depth-1 =
+       upstream nodes-1) + empty WriteString closes the tag (bug41287);
+       queue_attr_ns_decl dedupes the attribute-ns `xmlns[:prefix]` decl per
+       element (write_attribute_ns_basic_001).
+- [x] W3  bare prolog DTD children (dtd_child_begin + dtd_bare; XMLDecl
+       state removed): 008/OO_008.
+- [x] W4  leaf atomicity: StartPI/StartCDATA after a NAME parent close with
+       `>` and NO newline: 009/OO_009.
+- [x] W6  lifecycle/ownership: bug71536 + bug79029 — filename opens honor
+       xmlOutputBufferCreateFilenameDefault (php streams) + the exposed
+       xmlURIUnescapeString len<=0 defect.
+- [~] W5  xmlwriter_toStream_encoding_shiftjis — encoder-scope
+       (UTF-8 → SHIFT_JIS output conversion). **Residual → Workstream 9
+       (R-000157).** Oracle byte evidence in the receipt.
 
 ## SP-14.3.7  ext/xsl (58)
 
