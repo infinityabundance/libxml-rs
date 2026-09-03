@@ -65,4 +65,4 @@ html-serializer entity-representation rule (the oracle tree keeps html
 entities as entity-ref nodes); no engine change made here regresses it.
 
 ## Commit
-`<filled at commit time>`
+`(see git log HEAD)`
