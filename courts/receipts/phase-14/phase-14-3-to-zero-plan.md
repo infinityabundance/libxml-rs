@@ -1,6 +1,13 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **simplexml S3 XPath error channel closed (2026-09-03):** compile/eval
+  failures with no structured handler now reach the generic channel VERBATIM
+  (xpath.c xmlXPathErrFmt sets `channel = xmlGenericError`, which is not one
+  of the parser channels that trigger xmlFormatError's "XPath error : "
+  fragment stream — PHP's generic handler gets the message text alone). Full
+  suite **238 → 236** (simplexml 4 → 3: ext/simplexml 008 PASS; dom 152 →
+  151), zero regressions. Receipt: php-14-3-simplexml-xpath-error-20260903/.
 - **simplexml S4 PI-data boundary closed (2026-09-03):** the tokenizer now
   skips ALL blanks after the PI target and keeps the data's trailing
   whitespace (upstream xmlParsePI: no trim). Full suite **239 → 238**
@@ -67,12 +74,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 238 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4):
+Split at 289 (now 236 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 152 | | ext/xml | 5 -> **0** |
-| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 4 |
+| ext/dom | 169 -> 151 | | ext/xml | 5 -> **0** |
+| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 3 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —

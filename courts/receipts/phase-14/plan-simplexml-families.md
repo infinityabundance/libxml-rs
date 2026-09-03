@@ -39,7 +39,7 @@ options. **Warning parity / option-semantics** (implies possible side-channel if
 the file DID exist — XXE relevant). **FLAG overlap** with ext/xml + ext/xmlreader
 + dom L1 ("NO_XXE external-entity still attempted") — shared options.rs/entity.
 
-## S3 XPath invalid-expression error message prefixed "XPath error : " (double) — count 1 | message-only
+## S3 XPath invalid-expression error message prefixed "XPath error : " (double) — count 1 | message-only  [CLOSED 2026-09-03]
 Member: `008.phpt`. `simplexml$xpath("**")` → oracle `XPath expression must return
 a node set…`/`Invalid expression`; candidate emits
 `XPath error : Invalid expression` (raw engine code string re-prefixed).
@@ -50,6 +50,15 @@ prefix rust.
 prefix (and a full path), so the binding's own "Invalid expression" add-on
 becomes doubled/misworded. Message-text parity at the XPath error-string
 boundary. Kind **E/message-only**; independent of tree. 
+**Closed:** xpath.c xmlXPathErrFmt channel selection — with no structured
+handler the message goes VERBATIM to the generic channel (xmlGenericError is
+NOT one of the parser channels that trigger xmlFormatError's fragment
+stream), so raise_xpath_error now delivers
+`GenericDelivery::Custom(generic func, ctx)` when php installed one (Stream
+fallback preserves the console fragment stream). Receipt:
+php-14-3-simplexml-xpath-error-20260903/; guard:
+test_xpath_compile_error_verbatim_to_generic_channel; probe:
+consumers/xpeval-probe.c.
 
 ## S4 PI content trailing space trimmed (string() of processing-instruction) — count 1 | string-only
 Member: `gh12167.phpt`. `<?foo pi contents ?>` → expected `pi contents ` (keeps
@@ -142,6 +151,8 @@ simplexml-internal root.
 4. S5 empty-text-child + S6 addChild-escape (serializer/set-content discipline;
    S5 overlaps empty-form used by S7 too).
 5. S3 XPath error text, S4 PI trailing space — pure message/string polish (cheap).
+   → both CLOSED 2026-09-03 (receipts php-14-3-simplexml-xpath-error-20260903/
+   + php-14-3-simplexml-pi-data-20260903/).
 6. S9 xsl result — move to SP-14.3.7 xsl sequencing (not sim-first).
 
 ## Overlap ledger

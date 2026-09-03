@@ -6376,6 +6376,20 @@ pub(crate) unsafe fn raise_xpath_error(
         };
         ptr::write(&mut (*ctxt).lastError, pre);
 
+        // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt channel selection): with no
+        // structured handler the message goes VERBATIM to the generic channel
+        // — `channel = xmlGenericError; data = xmlGenericErrorContext`, and
+        // error.c xmlVRaiseError calls `channel(data, "%s", to->message)`
+        // because xmlGenericError is NOT one of the parser channels that
+        // trigger xmlFormatError's fragment stream (which prefixes
+        // "XPath error : "). PHP's generic handler must receive the message
+        // text alone (ext/simplexml 008: "Invalid expression", not
+        // "XPath error : Invalid expression").
+        let delivery = match globals::get_generic_error_func() {
+            Some(f) => GenericDelivery::Custom(f, globals::get_generic_error_ctx()),
+            None => GenericDelivery::Stream,
+        };
+
         raise_error_streamed(
             ctxt as *mut c_void,
             XML_FROM_XPATH,
@@ -6391,7 +6405,7 @@ pub(crate) unsafe fn raise_xpath_error(
             msg_c.as_ptr(),
             None,
             None,
-            GenericDelivery::Stream,
+            delivery,
             None,
         );
     }
@@ -8915,6 +8929,74 @@ mod tests {
             assert_eq!(b, b"Joe");
             crate::abi::allocator::xmlFreeImpl(s2 as *mut core::ffi::c_void);
 
+            crate::xml::tree::free_doc(doc);
+        }
+    }
+
+    /// Phase 14.3 (simplexml S3 / ext/simplexml 008): with no structured
+    /// handler, a failed XPath compile delivers the message VERBATIM to the
+    /// generic channel — upstream xpath.c xmlXPathErrFmt sets
+    /// `channel = xmlGenericError; data = xmlGenericErrorContext`, and
+    /// xmlVRaiseError calls `channel(data, "%s", to->message)` because the
+    /// generic channel is NOT one of the parser channels that trigger
+    /// xmlFormatError's fragment stream (which would prefix "XPath error :").
+    /// PHP installs a generic handler at request start (php_libxml_issue_
+    /// warning), so the raw text "Invalid expression\n" must arrive alone;
+    /// a pre-fix `GenericDelivery::Stream` reached PHP's handler with the
+    /// fragment prefix and ext/simplexml 008 warned "XPath error : Invalid
+    /// expression".
+    ///
+    /// # Safety
+    ///
+    /// - doc/ctxt are created and freed exactly once; `captured` lives on
+    ///   the stack for the duration of the call; the generic handler slot is
+    ///   restored to the default printer before the test ends.
+    #[test]
+    fn test_xpath_compile_error_verbatim_to_generic_channel() {
+        use crate::abi::callbacks::xmlGenericErrorFunc;
+        use core::ffi::{c_char, c_void};
+
+        // Serialized against the handler-slot tests in xml::globals (11.1-X)
+        // and xml::errors: the generic handler slot is shared global state.
+        let _guard = crate::xml::globals::ERROR_HANDLER_TEST_LOCK.lock();
+        unsafe {
+            let mut captured: Vec<u8> = Vec::new();
+            let captured_ptr = &mut captured as *mut Vec<u8> as *mut c_void;
+
+            unsafe extern "C" fn record(ctx: *mut c_void, msg: *const c_char) {
+                if msg.is_null() {
+                    return;
+                }
+                let out = &mut *(ctx as *mut Vec<u8>);
+                let bytes = std::ffi::CStr::from_ptr(msg).to_bytes();
+                out.extend_from_slice(bytes);
+            }
+
+            super::xmlSetGenericErrorFunc(captured_ptr, Some(record as xmlGenericErrorFunc));
+
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let ctxt = super::xmlXPathNewContext(doc);
+            assert!(!ctxt.is_null());
+            // No structured handler on the context (ctxt->error stays NULL)
+            // so the generic channel is the delivery target.
+            (*ctxt).error = None;
+
+            let comp = crate::xml::xpath::exports::xmlXPathCtxtCompile(
+                ctxt,
+                c"**".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(comp.is_null(), "`**` must fail to compile");
+
+            assert_eq!(
+                captured, b"Invalid expression\n",
+                "generic channel must receive the raw message, no \"XPath error : \" prefix"
+            );
+
+            // Restore the generic handler slot to the default printer.
+            super::xmlSetGenericErrorFunc(core::ptr::null_mut(), None);
+            super::xmlXPathFreeContext(ctxt);
             crate::xml::tree::free_doc(doc);
         }
     }

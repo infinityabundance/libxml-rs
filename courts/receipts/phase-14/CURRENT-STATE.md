@@ -516,3 +516,32 @@ simplexml S4 PI data boundary closed (2026-09-03): full suite 239 -> 238;
   - guard: parser/tests.rs test_pi_data_keeps_trailing_space_skips_all_
     leading_blanks ("pi contents " + `<?a   b  ?>` -> "b  ").
     cargo test --lib 1231 pass; clippy no new warnings; fmt clean.
+
+simplexml S3 XPath error channel closed (2026-09-03): full suite 238 -> 236;
+  zero regressions (simplexml 4 -> 3 — ext/simplexml 008 PASS; dom 152 -> 151 /
+  xml 0 / xmlreader 29 / xmlwriter 1 / xsl 52 unchanged). Receipt:
+  php-14-3-simplexml-xpath-error-20260903/.
+  - root cause: raise_xpath_error (xpath.c xmlXPathErrFmt channel selection)
+    delivered compile/eval failures with GenericDelivery::Stream, which
+    routes through xmlFormatError's fragment stream and PREFIXES "XPath
+    error : ". Upstream with no structured handler sets `channel =
+    xmlGenericError` — NOT one of the parser channels, so xmlVRaiseError
+    calls `channel(data, "%s", to->message)` with the message text ALONE.
+    PHP installs a generic handler at request start
+    (php_libxml_issue_warning), so the handler must receive "Invalid
+    expression\n" — ext/simplexml 008 warned "XPath error : Invalid
+    expression" and the warning text leaked the prefix into SimpleXML's
+    xpath() error message. The delivery is now
+    GenericDelivery::Custom(generic func, ctx) when a generic handler is
+    installed (Stream fallback otherwise, preserving the xmllint/xsltproc
+    console fragment stream). Structured handlers (ctxt->error / the global
+    xmlStructuredErrorFunc) are unaffected.
+  - guard: exports_xml2
+    test_xpath_compile_error_verbatim_to_generic_channel — a recording
+    generic handler receives exactly b"Invalid expression\n" for a
+    failed xmlXPathCtxtCompile with no structured handler on the context.
+  - probe kept: consumers/xpeval-probe.c (structured code=1207,
+    msg=[Invalid expression] on both engines).
+    cargo test --lib 1232 pass; clippy no new warnings (4 pre-existing:
+    unnecessary-cast x2 + needless-option-as-deref + tree/mod.rs
+    iter().any() — untouched); fmt clean.
