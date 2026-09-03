@@ -815,6 +815,20 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
                 }
             }
         }
+        t if t == XML_NAMESPACE_DECL as c_int => {
+            // XPath namespace node (an independent `_xmlNs` copy cast to
+            // `_xmlNode`, xmlXPathNodeSetDupNs semantics): its string-value is
+            // the namespace URI. The copy has NO tree links — the fields that
+            // _xmlNode accessors read (children at the `prefix` offset, etc.)
+            // are ns data, so this must not fall into the element arm.
+            // php's DOMXPath php:functionString relies on this conversion
+            // (xmlXPathCastToString of a namespace node-set).
+            let ns = node as *mut crate::abi::structs::_xmlNs;
+            if !(*ns).href.is_null() {
+                let len = crate::abi::exports_xml2::xmlStrlen((*ns).href);
+                result.extend_from_slice(core::slice::from_raw_parts((*ns).href, len as usize));
+            }
+        }
         _ => {
             // Element and everything else: concatenate descendant text
             // content (XPath 1.0 string-value semantics — §4.2 / tree.c

@@ -69,7 +69,9 @@
 //! document independently of the XPath object.
 
 use crate::abi::structs::_xmlNode;
+use crate::abi::types::xmlElementType;
 use std::cmp::Ordering;
+use std::ffi::c_int;
 use std::ptr;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -687,6 +689,22 @@ pub unsafe fn compare_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> Orde
         return Ordering::Greater;
     }
     if a == b {
+        return Ordering::Equal;
+    }
+
+    // UPSTREAM-PARITY (xpath.c xmlXPathCmpNodes): a namespace node in a
+    // node-set is an independent `_xmlNs` copy — its fields are NOT tree
+    // links (the xmlXPathNodeSetDupNs copy has no parent/children), so any
+    // tree walk on it is invalid. Upstream returns 1 for every comparison
+    // involving a namespace node; reporting Equal keeps a stable sort in the
+    // axis emission order (the php-visible contract for `//namespace::*`,
+    // which lists each element's namespace nodes xml-first then reverse
+    // declaration order) and never dereferences the copy's non-node fields.
+    let ta = unsafe { (*a).type_ };
+    let tb = unsafe { (*b).type_ };
+    if ta == xmlElementType::XML_NAMESPACE_DECL as c_int
+        || tb == xmlElementType::XML_NAMESPACE_DECL as c_int
+    {
         return Ordering::Equal;
     }
 

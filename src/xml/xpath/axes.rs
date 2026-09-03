@@ -335,16 +335,31 @@ unsafe fn attribute_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
 }
 
 /// namespace axis: namespaces of context node.
+///
+/// UPSTREAM-PARITY (xpath.c xmlXPathNextNamespace + xmlXPathNodeSetAddNs):
+/// - the axis is empty unless the context node is an ELEMENT;
+/// - the implicit xml namespace is ALWAYS first (xmlXPathNextNamespace
+///   returns the static xmlXPathXMLNamespace before the in-scope list);
+/// - the remaining nodes are the in-scope declarations (own decls first,
+///   then ancestors, nearest declaration wins) emitted in REVERSE list
+///   order (tmpNsList[--tmpNsNr]);
+/// - every emitted node is an independent `_xmlNs` copy whose `next` is the
+///   owning element (xmlXPathNodeSetDupNs) and whose `_private` carries the
+///   owner too (php's DOMXPath reads `_private` to build DOMNameSpaceNode
+///   proxies).
 unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut NodeSet) {
     if node.is_null() {
         return;
     }
-    // Collect in-scope namespaces: the context node's own declarations plus
-    // those inherited from its ancestors, deduplicated by prefix (the nearest
-    // declaration wins), plus the implicit xml namespace. libxml represents
-    // namespace-axis nodes as the actual `_xmlNs` from the tree's nsDef
-    // chains cast to `xmlNodePtr` (type XML_NAMESPACE_DECL), which nokogiri
-    // wraps via noko_xml_namespace_wrap_xpath_copy in node-sets.
+    if (*node).type_ != xmlElementType::XML_ELEMENT_NODE as c_int {
+        return;
+    }
+
+    // Collect in-scope declarations: the context node's own declarations
+    // first, then those inherited from its ancestors, deduplicated by prefix
+    // (the nearest declaration wins — it is collected first and later
+    // duplicates are skipped). The implicit xml namespace is NOT part of the
+    // tree declarations (upstream xmlGetNsList does not return it).
     let mut in_scope: Vec<*mut _xmlNs> = Vec::new();
     let mut cur = node;
     while !cur.is_null() {
@@ -367,43 +382,21 @@ unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
         cur = (*cur).parent;
     }
 
-    // The xml namespace is always in scope.
-    let xml_prefix = c"xml".as_ptr() as *const crate::abi::types::xmlChar;
+    // Emission order: the xml namespace first, then the in-scope list in
+    // reverse (upstream xmlXPathNextNamespace serves tmpNsList[--tmpNsNr]).
     let xml_present = in_scope.iter().any(|&e| {
         !(*e).prefix.is_null()
-            && crate::abi::exports_xml2::xmlStrEqual((*e).prefix, xml_prefix) != 0
+            && crate::abi::exports_xml2::xmlStrEqual(
+                (*e).prefix,
+                c"xml".as_ptr() as *const crate::abi::types::xmlChar,
+            ) != 0
     });
-    if !xml_present {
-        // The xml namespace declaration lives in the document's oldNs chain
-        // (created by ensure_doc_xml_ns on parse); find it, else synthesize
-        // nothing (upstream hardcodes the xml ns availability).
-        let doc = (*node).doc;
-        if !doc.is_null() {
-            let mut ns = (*doc).oldNs;
-            while !ns.is_null() {
-                if !(*ns).prefix.is_null()
-                    && crate::abi::exports_xml2::xmlStrEqual((*ns).prefix, xml_prefix) != 0
-                {
-                    in_scope.push(ns);
-                    break;
-                }
-                ns = (*ns).next;
-            }
-        }
-    }
-
-    // UPSTREAM-PARITY (xpath.c namespace axis): namespace nodes placed in a
-    // node-set are independent COPIES of the in-scope tree declarations — the
-    // node-set owns them and consumers (nokogiri xml_namespace.c) free them on
-    // GC. Reusing the live tree `_xmlNs` would let nokogiri's dealloc free a
-    // declaration that doc teardown also walks (double free).
     let doc = (*node).doc;
-    let mut pushed = 0usize;
-    for &ns in &in_scope {
+    let mut push_copy = |ns: *mut _xmlNs, owner: *mut _xmlNode| -> bool {
         let copy =
             crate::abi::allocator::xmlMallocZero(core::mem::size_of::<_xmlNs>()) as *mut _xmlNs;
         if copy.is_null() {
-            continue;
+            return false;
         }
         unsafe {
             (*copy).type_ = crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int;
@@ -418,23 +411,53 @@ unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
                 crate::abi::exports_xml2::xmlStrdup((*ns).prefix)
             };
             (*copy).context = doc;
+            // UPSTREAM-PARITY (xmlXPathNodeSetDupNs + php dom_xpath.c): the
+            // copy records its owning element in both `next` and `_private`.
+            (*copy).next = owner as *mut _xmlNs;
+            (*copy)._private = owner as *mut c_void;
         }
         let ns_node = copy as *mut _xmlNode;
         if matches_namespace_node(ns_node, node_test) {
             result.push(ns_node);
-            pushed += 1;
+            true
         } else {
             // Failed the node test: free the copy we just allocated.
             free_namespace_copy(copy);
+            false
+        }
+    };
+
+    if !xml_present {
+        // The implicit xml namespace (upstream's xmlXPathXMLNamespace struct):
+        // always present on the axis. A throwaway source struct feeds the
+        // copy (the href/prefix literals are static; only the struct itself is
+        // freed afterwards).
+        let src =
+            crate::abi::allocator::xmlMallocZero(core::mem::size_of::<_xmlNs>()) as *mut _xmlNs;
+        if !src.is_null() {
+            unsafe {
+                (*src).type_ = crate::abi::types::xmlElementType::XML_NAMESPACE_DECL as c_int;
+                (*src).href = c"http://www.w3.org/XML/1998/namespace".as_ptr()
+                    as *const crate::abi::types::xmlChar;
+                (*src).prefix = c"xml".as_ptr() as *const crate::abi::types::xmlChar;
+            }
+            push_copy(src, node);
+            crate::abi::allocator::xmlFreeImpl(src as *mut c_void);
         }
     }
+    for &ns in in_scope.iter().rev() {
+        if ns.is_null() {
+            continue;
+        }
+        push_copy(ns, node);
+    }
+
     if std::env::var("LIBXML_RS_TRACE_NSASIS").is_ok() {
         eprintln!(
-            "[nsaxis] node={:p} test={:?} in_scope={} pushed={}",
+            "[nsaxis] node={:p} test={:?} in_scope={}",
             node,
             node_test,
-            in_scope.len(),
-            pushed
+            in_scope.len()
         );
     }
 }
