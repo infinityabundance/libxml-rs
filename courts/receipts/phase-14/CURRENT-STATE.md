@@ -816,3 +816,43 @@ Receipt: php-14-3-ns-prefix-conflict-20260903/. dom 89 -> 79.
     (prefix retention), attribute_renaming_conflict (DTD #FIXED dump),
     validation family (~13), xsl 52, xmlreader 15.
     cargo test --lib 1239 pass; clippy no new warnings; fmt clean.
+
+---
+
+# Phase 14.4/14.5 — tracked state (2026-09-03)
+
+Post-2fe61f82 (123 -> 110, xsl params/output/dates + xpath ns scope; logs
+phpbuild-c:/out/xpe-six13.log / xpe-six14.log): dom 77 | xsl 16 | xmlreader 15
+| simplexml 1 | xmlwriter 1.
+
+Phase 14.5 — validation error-delivery + parser-context parity (uncommitted
+batch; receipt php-14-5-validation-parse-ctx-20260903/): full suite 110 -> 102,
+ZERO regressions. Logs: phpbuild-c:/out/xpe-six15.log (107: the four
+validity-dispatch closures green) and phpbuild-c:/out/xpe-six16.log (102: +
+five parse-side closures). dom 73 | xsl 16 | xmlreader 16 | simplexml 1 |
+xmlwriter 1.
+  - validity diagnostics now end with '\n' (php's handler only raises
+    newline-terminated messages): schema/relaxNG validity + schema-parser
+    dispatchers (dispatch_valid_errors, dispatch_relaxng_valid_errors,
+    dispatch_parser_error); xsd_validate_doc adds the missing-global
+    declaration diagnostic. Flipped: schemaValidate_error2 +
+    schemaValidateSource_error2, relaxNGValidate_error1 +
+    relaxNGValidateSource_error1.
+  - schema/relaxNG parser contexts now mirror upstream's parse-stage flow:
+    xmlSchemaNewParserCtxt opens through xmlParseFile (real I/O warning +
+    real resource name on diagnostics; the failure stage Resource|Document is
+    reported by xmlSchemaParse: "Failed to locate the main schema resource
+    at '%s'." / "Failed to parse the XML resource '%s'." then NULL);
+    xmlSchemaNewMemParserCtxt parses with no resource name ("Entity: line N"
+    diagnostics); xmlRelaxNGParse reports "xmlRelaxNGParse: could not load %s"
+    and aborts NULL on fatal grammar errors; <element> without content is a
+    fatal parse error ("xmlRelaxNGParseElement: element has no content").
+    Flipped: schemaValidate_error1/error5, schemaValidateSource_error1,
+    relaxNGValidate_error2, relaxNGValidateSource_error2.
+  - guards: new unit test test_xml_schema_validate_root_without_global_decl;
+    cargo test --lib 1240 pass; clippy at the 4 pre-existing; fmt clean.
+  - residuals next: validation leftovers (schemaValidate/relaxNGValidate
+    addAttrs default-attr creation; reader 007/008/013 + validate
+    external-DTD family), XPath namespace-axis/DOMNameSpaceNode family (incl
+    xpath_domnamespacenode_advanced segfault), xmlreader cursor/props family,
+    xsl 16.

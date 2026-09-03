@@ -104,7 +104,7 @@ use std::os::raw::{c_char, c_int};
 
 use crate::abi::callbacks::xmlStructuredErrorFunc;
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode};
-use crate::abi::types::{xmlChar, xmlErrorLevel::*, XML_FROM_RELAXNGV};
+use crate::abi::types::{xmlChar, xmlErrorLevel::*, XML_FROM_RELAXNGP, XML_FROM_RELAXNGV};
 use crate::xml::relaxng::{
     rng_parse_schema_doc, RelaxNgGrammar, RelaxNgNameClass, RelaxNgPattern, RelaxNgPatternType,
     RelaxNgSchema, RelaxNgValidCtxt,
@@ -497,7 +497,10 @@ pub unsafe extern "C" fn xmlRelaxNGNewDocParserCtxt(doc: *mut _xmlDoc) -> *mut c
     // out a separate schema object (Phase 14: the context and the schema
     // have independent lifetimes — lxml frees the context right after
     // xmlRelaxNGParse and the schema at dealloc).
-    Box::into_raw(Box::new(crate::xml::relaxng::RelaxNgParserCtxt { schema })) as *mut c_void
+    Box::into_raw(Box::new(crate::xml::relaxng::RelaxNgParserCtxt {
+        schema,
+        url: None,
+    })) as *mut c_void
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -836,8 +839,16 @@ pub(crate) unsafe fn dispatch_relaxng_valid_errors(
     let state = VALID_CTXT_STATE.lock().get(&ctxt_addr).copied();
     if let Some(st) = state {
         for m in msgs {
+            // UPSTREAM-PARITY: upstream relaxng validity messages end with a
+            // newline; PHP's libxml error handler only RAISES messages with a
+            // trailing newline (php_libxml_internal_error_handler_ex).
+            let text = if m.ends_with('\n') {
+                m.clone()
+            } else {
+                format!("{}\n", m)
+            };
             // The message must be NUL-terminated for the C callback.
-            let Ok(cstr) = CString::new(m.as_str()) else {
+            let Ok(cstr) = CString::new(text.as_str()) else {
                 continue;
             };
             if let Some(cb) = st.err {
@@ -860,6 +871,62 @@ pub(crate) unsafe fn dispatch_relaxng_valid_errors(
                     int2: 0,
                     ctxt: ctxt_addr as *mut c_void,
                     node,
+                };
+                // SAFETY: err_rec is valid for the duration of the call (the
+                // upstream contract for structured error callbacks).
+                unsafe { cb(st.serror_ctx.0, &err_rec as *const _xmlError) };
+            }
+        }
+    }
+}
+
+/// Deliver accumulated schema-parse diagnostics to the parser context's
+/// registered callbacks (xmlRelaxNGSetParserErrors /
+/// xmlRelaxNGSetParserStructuredErrors). Upstream reports parse errors while
+/// compiling in xmlRelaxNGParse; the internal engine parses eagerly at
+/// context construction (before the callbacks are registered), so the
+/// messages are queued on the parsed schema and flushed here.
+///
+/// # SAFETY
+///
+/// - `ctxt_addr` must be the address of a `RelaxNgParserCtxt` that a caller
+///   registered state for; otherwise this is a no-op.
+pub(crate) unsafe fn dispatch_relaxng_parser_errors(ctxt_addr: usize, msgs: &[String]) {
+    let state = PARSER_CTXT_STATE.lock().get(&ctxt_addr).copied();
+    if let Some(st) = state {
+        for m in msgs {
+            // UPSTREAM-PARITY: upstream relaxng parse messages end with a
+            // newline; PHP's libxml error handler only RAISES messages with a
+            // trailing newline (php_libxml_internal_error_handler_ex).
+            let text = if m.ends_with('\n') {
+                m.clone()
+            } else {
+                format!("{}\n", m)
+            };
+            // The message must be NUL-terminated for the C callback.
+            let Ok(cstr) = CString::new(text.as_str()) else {
+                continue;
+            };
+            if let Some(cb) = st.err {
+                // SAFETY: cb is a C callback registered by the caller; the
+                // message pointer is valid for the duration of the call.
+                unsafe { cb(st.ctx.0, cstr.as_ptr()) };
+            }
+            if let Some(cb) = st.serror {
+                let err_rec = _xmlError {
+                    domain: XML_FROM_RELAXNGP,
+                    code: 0,
+                    message: cstr.as_ptr() as *mut c_char,
+                    level: XML_ERR_ERROR as c_int,
+                    file: ptr::null_mut(),
+                    line: 0,
+                    str1: ptr::null_mut(),
+                    str2: ptr::null_mut(),
+                    str3: ptr::null_mut(),
+                    int1: 0,
+                    int2: 0,
+                    ctxt: ctxt_addr as *mut c_void,
+                    node: ptr::null_mut(),
                 };
                 // SAFETY: err_rec is valid for the duration of the call (the
                 // upstream contract for structured error callbacks).

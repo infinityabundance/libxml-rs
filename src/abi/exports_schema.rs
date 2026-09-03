@@ -113,7 +113,9 @@ use std::os::raw::{c_char, c_int, c_ulong};
 use crate::abi::allocator::{xmlFreeImpl, xmlMemStrdupImpl};
 use crate::abi::callbacks::{xmlStructuredErrorFunc, xmlValidityErrorFunc, xmlValidityWarningFunc};
 use crate::abi::structs::{_xmlDoc, _xmlError, _xmlNode, _xmlParserInputBuffer, _xmlSAXHandler};
-use crate::abi::types::{xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASV};
+use crate::abi::types::{
+    xmlChar, xmlCharEncoding, xmlErrorLevel, XML_FROM_SCHEMASP, XML_FROM_SCHEMASV,
+};
 use crate::xml::schemas::{
     xsd_parse, xsd_validate, xsd_validate_datatype, xsd_validate_facet, XsdDatatypeKind, XsdSchema,
     XsdValidCtxt,
@@ -723,7 +725,17 @@ pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) 
         return;
     }
     for msg in errors {
-        let Ok(cmsg) = CString::new(msg.as_str()) else {
+        // UPSTREAM-PARITY: upstream schema validity messages end with a
+        // newline (xmlSchemaErr -> xmlSchemaVErr with "\n") — PHP's libxml
+        // error handler only RAISES messages that carry a trailing newline
+        // (php_libxml_internal_error_handler_ex sets output only when it
+        // strips one), so a newline-less message would be swallowed.
+        let text = if msg.ends_with('\n') {
+            msg.clone()
+        } else {
+            format!("{}\n", msg)
+        };
+        let Ok(cmsg) = CString::new(text.as_str()) else {
             continue;
         };
         if let Some(err) = state.err {
@@ -747,11 +759,17 @@ pub(crate) unsafe fn dispatch_valid_errors(ctxt_addr: usize, errors: &[String]) 
 
 /// Dispatch a single error message through a parser context's callbacks.
 ///
+/// The message is NUL-terminated for the C callback. UPSTREAM-PARITY: schema
+/// parser diagnostics end with a newline; PHP's libxml error handler only
+/// RAISES messages that carry a trailing newline
+/// (php_libxml_internal_error_handler_ex), so a newline is appended when
+/// missing.
+///
 /// # SAFETY
 ///
 /// - `ctxt_addr` must be the address of a parser context that a caller
 ///   registered state for; otherwise this is a no-op.
-unsafe fn dispatch_parser_error(ctxt_addr: usize, msg: &str) {
+pub(crate) unsafe fn dispatch_parser_error(ctxt_addr: usize, msg: &str) {
     let state = {
         let guard = PARSER_STATES.lock();
         guard.get(&ctxt_addr).copied()
@@ -760,7 +778,12 @@ unsafe fn dispatch_parser_error(ctxt_addr: usize, msg: &str) {
     if state.err.is_none() && state.serror.is_none() {
         return;
     }
-    let Ok(cmsg) = CString::new(msg) else { return };
+    let text = if msg.ends_with('\n') {
+        msg.to_string()
+    } else {
+        format!("{}\n", msg)
+    };
+    let Ok(cmsg) = CString::new(text) else { return };
     if let Some(err) = state.err {
         // SAFETY: Caller-supplied callback from xmlSchemaSetParserErrors.
         unsafe { err(state.ctx as *mut c_void, cmsg.as_ptr()) };
@@ -768,7 +791,7 @@ unsafe fn dispatch_parser_error(ctxt_addr: usize, msg: &str) {
     if let Some(serror) = state.serror {
         // SAFETY: Caller-supplied callback from xmlSchemaSetParserStructuredErrors.
         let mut e: _xmlError = unsafe { std::mem::zeroed() };
-        e.domain = XML_FROM_SCHEMASV;
+        e.domain = XML_FROM_SCHEMASP;
         e.code = 0;
         e.message = cmsg.as_ptr() as *mut c_char;
         e.level = xmlErrorLevel::XML_ERR_ERROR as c_int;
@@ -2261,7 +2284,12 @@ pub unsafe extern "C" fn xmlSchemaNewDocParserCtxt(doc: *mut _xmlDoc) -> *mut xm
         return ptr::null_mut();
     };
     let schema = xsd_parse(&xml).ok();
-    let ctxt = crate::xml::schemas::XsdParserCtxt { schema };
+    let ctxt = crate::xml::schemas::XsdParserCtxt {
+        schema,
+        fail: None,
+        url: None,
+        mem: false,
+    };
     Box::into_raw(Box::new(ctxt)) as *mut xmlSchemaParserCtxt
 }
 

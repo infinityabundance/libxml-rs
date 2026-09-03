@@ -310,6 +310,12 @@ pub struct RelaxNgSchema {
     pub grammar: RelaxNgGrammar,
     /// Errors encountered during parsing.
     pub errors: Vec<String>,
+    /// Whether parsing hit an unrecoverable grammar error. Upstream
+    /// `xmlRelaxNGParse` aborts (returns NULL after reporting the recorded
+    /// diagnostics through the parser error callbacks) when a pattern is
+    /// structurally invalid — e.g. `xmlRelaxNGParseElement` on an `<element>`
+    /// with no content — while plain warnings keep the schema usable.
+    pub fatal: bool,
 }
 
 impl RelaxNgSchema {
@@ -317,6 +323,7 @@ impl RelaxNgSchema {
         Self {
             grammar: RelaxNgGrammar::new(),
             errors: Vec::new(),
+            fatal: false,
         }
     }
 }
@@ -854,6 +861,7 @@ unsafe fn rng_parse_element_pattern(
 
         // Parse children for name class and content pattern
         let mut child = (*node).children;
+        let mut has_content = false;
 
         while !child.is_null() {
             if (*child).type_ == XML_ELEMENT_NODE as c_int {
@@ -886,10 +894,22 @@ unsafe fn rng_parse_element_pattern(
                         // in `<element name="root">a<optional>b</optional>`
                         // which then surfaced as a spurious extra element).
                         pattern.children.push(rng_parse_pattern(child, schema));
+                        has_content = true;
                     }
                 }
             }
             child = (*child).next;
+        }
+
+        // UPSTREAM-PARITY (relaxng.c xmlRelaxNGParseElement): an <element>
+        // pattern must carry a content pattern; without one parsing aborts
+        // with this exact diagnostic (DOMDocument_relaxNGValidateSource_error2
+        // pins "xmlRelaxNGParseElement: element has no content").
+        if !has_content {
+            schema
+                .errors
+                .push("xmlRelaxNGParseElement: element has no content".to_string());
+            schema.fatal = true;
         }
 
         pattern
@@ -2304,6 +2324,11 @@ pub unsafe fn rng_validate_doc_schema(
 pub(crate) struct RelaxNgParserCtxt {
     /// The parsed schema, if parsing succeeded.
     pub(crate) schema: Option<RelaxNgSchema>,
+    /// The schema resource name for file-based parser contexts. Kept so
+    /// `xmlRelaxNGParse` can report upstream's "could not load %s" diagnostic
+    /// when the resource was not readable (the I/O warning itself is emitted
+    /// by the document open, mirroring upstream xmlRelaxNGParseFile).
+    pub(crate) url: Option<String>,
 }
 
 /// Create a new RELAX NG parser context from a URL.
@@ -2320,7 +2345,10 @@ pub(crate) struct RelaxNgParserCtxt {
 #[no_mangle]
 pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_void {
     if url.is_null() {
-        return Box::into_raw(Box::new(RelaxNgParserCtxt { schema: None })) as *mut c_void;
+        return Box::into_raw(Box::new(RelaxNgParserCtxt {
+            schema: None,
+            url: None,
+        })) as *mut c_void;
     }
 
     let url_str = unsafe {
@@ -2332,11 +2360,14 @@ pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_v
         String::from_utf8_lossy(slice).to_string()
     };
 
-    // Parse the schema from the URL eagerly and keep it in the context.
+    // Parse the schema from the URL eagerly and keep it in the context. The
+    // document is opened through the standard input machinery
+    // (xmlParseFile), so an unreadable resource raises the upstream I/O
+    // warning exactly like xmlRelaxNGParseFile.
     let schema = if url_str.is_empty() {
         None
     } else {
-        let url_c = std::ffi::CString::new(url_str).ok();
+        let url_c = std::ffi::CString::new(url_str.clone()).ok();
         if let Some(c) = url_c {
             let doc = crate::abi::exports_xml2::xmlParseFile(c.as_ptr());
             if !doc.is_null() {
@@ -2350,7 +2381,10 @@ pub unsafe extern "C" fn xmlRelaxNGNewParserCtxt(url: *const c_char) -> *mut c_v
             None
         }
     };
-    Box::into_raw(Box::new(RelaxNgParserCtxt { schema })) as *mut c_void
+    Box::into_raw(Box::new(RelaxNgParserCtxt {
+        schema,
+        url: Some(url_str),
+    })) as *mut c_void
 }
 
 /// Create a new RELAX NG parser context from a memory buffer.
@@ -2381,7 +2415,7 @@ pub unsafe extern "C" fn xmlRelaxNGNewMemParserCtxt(
     let xml_str = String::from_utf8_lossy(buf_slice).to_string();
 
     let schema = rng_parse(&xml_str).ok();
-    Box::into_raw(Box::new(RelaxNgParserCtxt { schema })) as *mut c_void
+    Box::into_raw(Box::new(RelaxNgParserCtxt { schema, url: None })) as *mut c_void
 }
 
 /// Parse a RELAX NG schema.
@@ -2409,8 +2443,37 @@ pub unsafe extern "C" fn xmlRelaxNGParse(ctxt: *mut c_void) -> *mut c_void {
     // the consumer.
     let pctxt = unsafe { &*ctxt.cast::<RelaxNgParserCtxt>() };
     match &pctxt.schema {
-        Some(schema) => Box::into_raw(Box::new(schema.clone())) as *mut c_void,
-        None => ptr::null_mut(),
+        Some(schema) => {
+            // A fatal grammar error (e.g. an <element> pattern without a
+            // content model) aborts the parse upstream: the recorded
+            // diagnostics go to the registered parser handlers and no schema
+            // is returned (php then reports "Invalid RelaxNG" —
+            // DOMDocument_relaxNGValidateSource_error2).
+            if schema.fatal {
+                crate::abi::exports_relaxng::dispatch_relaxng_parser_errors(
+                    ctxt as usize,
+                    &schema.errors,
+                );
+                return ptr::null_mut();
+            }
+            Box::into_raw(Box::new(schema.clone())) as *mut c_void
+        }
+        None => {
+            // The main schema resource could not be loaded (xmlParseFile
+            // already emitted the I/O warning). Report upstream's
+            // "could not load" diagnostic through the parser handlers
+            // (DOMDocument_relaxNGValidate_error2) before returning NULL.
+            if let Some(ref url) = pctxt.url {
+                if !url.is_empty() {
+                    let msg = format!("xmlRelaxNGParse: could not load {}\n", url);
+                    crate::abi::exports_relaxng::dispatch_relaxng_parser_errors(
+                        ctxt as usize,
+                        std::slice::from_ref(&msg),
+                    );
+                }
+            }
+            ptr::null_mut()
+        }
     }
 }
 

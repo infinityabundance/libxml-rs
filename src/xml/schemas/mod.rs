@@ -2243,6 +2243,23 @@ unsafe fn xsd_validate_doc(schema: &XsdSchema, doc: *mut _xmlDoc, ctxt: &mut Xsd
                     }
                 }
             }
+            if valid
+                && !schema.components.iter().any(|c| {
+                    c.component_type == XsdComponentType::Element
+                        && c.name.as_deref() == Some(&root_name)
+                })
+            {
+                // UPSTREAM-PARITY (xmlschemas.c xmlSchemaValidateDoc): when
+                // no GLOBAL element declaration matches the document root the
+                // validation fails with this exact diagnostic
+                // (DOMDocument_schemaValidate_error2).
+                ctxt.errors.push(format!(
+                    "Element '{}': No matching global declaration available for the validation root.",
+                    root_name
+                ));
+                ctxt.nb_errors += 1;
+                valid = false;
+            }
             valid
         }
     }
@@ -2910,9 +2927,41 @@ unsafe fn get_node_qname(node: *mut _xmlNode) -> String {
 /// dealloc). The pre-fix implementation returned the context as the schema
 /// pointer, so `xmlSchemaFreeParserCtxt` freed the schema out from under
 /// consumers — a use-after-free (Phase 14 lxml schema court).
+/// Why an eager schema-document parse failed. Upstream `xmlSchemaParse`
+/// reports a different diagnostic per failure stage, so the reason must be
+/// remembered until the (php) caller invokes `xmlSchemaParse`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum XsdParseFail {
+    /// The main schema resource could not be located/loaded
+    /// ("Failed to locate the main schema resource at '%s'.").
+    Resource,
+    /// The schema document could not be parsed (not well-formed XML, or its
+    /// root is not `<schema>`) ("Failed to parse the XML resource '%s'.").
+    Document,
+}
+
 pub(crate) struct XsdParserCtxt {
     /// The parsed schema, if parsing succeeded.
     pub(crate) schema: Option<XsdSchema>,
+    /// The failure stage, when `schema` is None.
+    pub(crate) fail: Option<XsdParseFail>,
+    /// The schema resource name. File contexts carry the path; memory
+    /// contexts are None (upstream names the in-memory resource
+    /// "in_memory_buffer").
+    pub(crate) url: Option<String>,
+    /// True when the schema text came from a memory buffer.
+    pub(crate) mem: bool,
+}
+
+impl XsdParserCtxt {
+    const fn empty() -> Self {
+        Self {
+            schema: None,
+            fail: None,
+            url: None,
+            mem: false,
+        }
+    }
 }
 
 /// Create a new schema parser context from a URL.
@@ -2930,7 +2979,7 @@ pub(crate) struct XsdParserCtxt {
 pub unsafe extern "C" fn xmlSchemaNewParserCtxt(url: *const c_char) -> *mut c_void {
     if url.is_null() {
         // Empty context (no schema): xmlSchemaParse returns NULL.
-        return Box::into_raw(Box::new(XsdParserCtxt { schema: None })) as *mut c_void;
+        return Box::into_raw(Box::new(XsdParserCtxt::empty())) as *mut c_void;
     }
 
     let url_str = unsafe {
@@ -2942,10 +2991,57 @@ pub unsafe extern "C" fn xmlSchemaNewParserCtxt(url: *const c_char) -> *mut c_vo
         String::from_utf8_lossy(slice).to_string()
     };
 
-    let schema = std::fs::read(&url_str)
-        .ok()
-        .and_then(|data| xsd_parse(&String::from_utf8_lossy(&data)).ok());
-    Box::into_raw(Box::new(XsdParserCtxt { schema })) as *mut c_void
+    // UPSTREAM-PARITY (schemas.c xmlSchemaNewParserCtxt + xmlSchemaParse):
+    // the schema document is opened through the standard input machinery, so
+    // an unreadable resource raises the upstream "I/O warning : failed to
+    // load external entity ..." and the well-formedness diagnostics of a
+    // malformed document carry the REAL resource name (php's
+    // DOMDocument_schemaValidate_error1/error5 pin both). The failure stage
+    // is remembered so xmlSchemaParse can report it through the parser error
+    // callbacks (php registers those after this constructor returns).
+    let (schema, fail) = if url_str.is_empty() {
+        (None, Some(XsdParseFail::Resource))
+    } else {
+        let url_c = std::ffi::CString::new(url_str.clone()).ok();
+        let mut parsed: Option<XsdSchema> = None;
+        let mut failed = XsdParseFail::Document;
+        if let Some(c) = url_c {
+            let doc = crate::abi::exports_xml2::xmlParseFile(c.as_ptr());
+            if doc.is_null() {
+                // xmlParseFile returns NULL both when the resource cannot be
+                // opened and when its content is not well-formed; the php
+                // suite loads real files, so the filesystem decides which
+                // upstream diagnostic applies.
+                failed = if std::fs::metadata(&url_str).is_err() {
+                    XsdParseFail::Resource
+                } else {
+                    XsdParseFail::Document
+                };
+            } else {
+                let result = unsafe { xsd_parse_schema_doc(doc) };
+                unsafe {
+                    crate::abi::exports_xml2::xmlFreeDoc(doc);
+                }
+                match result {
+                    Ok(s) => parsed = Some(s),
+                    Err(_) => failed = XsdParseFail::Document,
+                }
+            }
+        } else {
+            failed = XsdParseFail::Resource;
+        }
+        if parsed.is_some() {
+            (parsed, None)
+        } else {
+            (None, Some(failed))
+        }
+    };
+    Box::into_raw(Box::new(XsdParserCtxt {
+        schema,
+        fail,
+        url: Some(url_str),
+        mem: false,
+    })) as *mut c_void
 }
 
 /// Create a new schema parser context from a memory buffer.
@@ -2971,12 +3067,38 @@ pub unsafe extern "C" fn xmlSchemaNewMemParserCtxt(
     // Parse the schema immediately and keep it in the parser context;
     // `xmlSchemaParse` hands out a fresh schema object (Phase 14: the
     // context and the schema must have separate lifetimes — lxml frees the
-    // context right after xmlSchemaParse and the schema at dealloc).
+    // context right after xmlSchemaParse and the schema at dealloc). The
+    // document is parsed WITHOUT a resource name so the diagnostics keep the
+    // upstream "Entity: line N: parser error : ..." shape and the failure is
+    // reported as "Failed to parse the XML resource 'in_memory_buffer'.".
     let buf_slice = unsafe { std::slice::from_raw_parts(buffer as *const u8, size as usize) };
-    let xml_str = String::from_utf8_lossy(buf_slice).to_string();
-
-    let schema = xsd_parse(&xml_str).ok();
-    Box::into_raw(Box::new(XsdParserCtxt { schema })) as *mut c_void
+    let doc = unsafe {
+        crate::abi::exports_xml2::xmlReadMemory(
+            buf_slice.as_ptr() as *const c_char,
+            buf_slice.len() as c_int,
+            ptr::null(),
+            ptr::null(),
+            0,
+        )
+    };
+    let (schema, fail) = if doc.is_null() {
+        (None, Some(XsdParseFail::Document))
+    } else {
+        let result = unsafe { xsd_parse_schema_doc(doc) };
+        unsafe {
+            crate::abi::exports_xml2::xmlFreeDoc(doc);
+        }
+        match result {
+            Ok(s) => (Some(s), None),
+            Err(_) => (None, Some(XsdParseFail::Document)),
+        }
+    };
+    Box::into_raw(Box::new(XsdParserCtxt {
+        schema,
+        fail,
+        url: None,
+        mem: true,
+    })) as *mut c_void
 }
 
 /// Parse a schema.
@@ -3001,11 +3123,34 @@ pub unsafe extern "C" fn xmlSchemaParse(ctxt: *mut c_void) -> *mut c_void {
     // can free the context independently (lxml frees the context right
     // after this call). The pre-fix implementation returned the context
     // itself, so xmlSchemaFreeParserCtxt freed the schema out from under
-    // the consumer.
+    // the consumer. When the eager parse failed, the stage diagnostic is
+    // reported through the registered parser handlers (php registers them
+    // after the context constructor) and NULL is returned so the caller
+    // reports "Invalid Schema" (php DOMDocument_schemaValidate_error1/5 +
+    // schemaValidateSource_error1).
     let pctxt = unsafe { &*ctxt.cast::<XsdParserCtxt>() };
     match &pctxt.schema {
         Some(schema) => Box::into_raw(Box::new(schema.clone())) as *mut c_void,
-        None => ptr::null_mut(),
+        None => {
+            let msg = match pctxt.fail {
+                Some(XsdParseFail::Resource) => pctxt
+                    .url
+                    .as_deref()
+                    .map(|u| format!("Failed to locate the main schema resource at '{}'.\n", u)),
+                Some(XsdParseFail::Document) => Some(format!(
+                    "Failed to parse the XML resource '{}'.\n",
+                    pctxt
+                        .url
+                        .as_deref()
+                        .unwrap_or(if pctxt.mem { "in_memory_buffer" } else { "" })
+                )),
+                None => None,
+            };
+            if let Some(m) = msg {
+                crate::abi::exports_schema::dispatch_parser_error(ctxt as usize, &m);
+            }
+            ptr::null_mut()
+        }
     }
 }
 
@@ -4321,6 +4466,59 @@ mod tests {
         unsafe {
             xmlSchemaFreeValidCtxt(valid_ctxt);
             xmlSchemaFree(schema);
+            crate::abi::exports_xml2::xmlFreeDoc(doc);
+        }
+    }
+
+    /// A document whose root element matches NO global element declaration
+    /// fails validation with the exact upstream diagnostic
+    /// (DOMDocument_schemaValidate_error2 parity; upstream xmlschemas.c
+    /// xmlSchemaValidateDoc reports "No matching global declaration
+    /// available for the validation root.").
+    ///
+    /// # Safety
+    ///
+    /// - The doc XML string is static and valid for the calls; `doc` is
+    ///   non-NULL (asserted) and freed exactly once with `xmlFreeDoc`; the
+    ///   context is stack-local.
+    #[test]
+    fn test_xml_schema_validate_root_without_global_decl() {
+        let doc = unsafe {
+            crate::abi::exports_xml2::xmlReadMemory(
+                c"<root/>".as_ptr() as *const c_char,
+                7,
+                c"test.xml".as_ptr() as *const c_char,
+                ptr::null(),
+                0,
+            )
+        };
+        assert!(!doc.is_null());
+
+        // Schema declares a global element that is NOT the document root.
+        let mut schema = XsdSchema::new();
+        schema.components.push(XsdComponent {
+            component_type: XsdComponentType::Element,
+            name: Some("other".to_string()),
+            ..XsdComponent::new(XsdComponentType::Element)
+        });
+
+        let mut ctxt = XsdValidCtxt::new();
+        let valid = unsafe { xsd_validate_doc(&schema, doc, &mut ctxt) };
+        assert!(!valid);
+        assert_eq!(ctxt.errors.len(), 1);
+        assert!(
+            ctxt.errors[0]
+                .contains("No matching global declaration available for the validation root."),
+            "unexpected diagnostic: {:?}",
+            ctxt.errors[0]
+        );
+        assert!(
+            ctxt.errors[0].contains("'root'"),
+            "root name missing: {:?}",
+            ctxt.errors[0]
+        );
+
+        unsafe {
             crate::abi::exports_xml2::xmlFreeDoc(doc);
         }
     }
