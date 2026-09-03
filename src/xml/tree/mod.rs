@@ -4084,13 +4084,17 @@ unsafe fn dump_element_content(buf: *mut _xmlBuffer, content: *mut _xmlElementCo
             }
             dump_element_occur(buf, ccur.ocur);
 
-            if ccur.type_ == XML_ELEMENT_CONTENT_SEQ as c_int {
-                io::buf_add(buf, b" , " as *const u8, 3);
-            } else if ccur.type_ == XML_ELEMENT_CONTENT_OR as c_int {
-                io::buf_add(buf, b" | " as *const u8, 3);
-            }
-
             if cur == p.c1 {
+                // UPSTREAM-PARITY (xmlsave.c xmlBufDumpElementContent): the
+                // " , "/" | " separator belongs to the PARENT combinator and
+                // is written when ascending from the c1 subtree to c2 — a
+                // plain-element c1 must still separate (a sequence like
+                // (title, author) previously lost its separators entirely).
+                if p.type_ == XML_ELEMENT_CONTENT_SEQ as c_int {
+                    io::buf_add(buf, b" , " as *const u8, 3);
+                } else if p.type_ == XML_ELEMENT_CONTENT_OR as c_int {
+                    io::buf_add(buf, b" | " as *const u8, 3);
+                }
                 cur = p.c2;
                 break;
             }

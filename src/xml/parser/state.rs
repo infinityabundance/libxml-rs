@@ -999,10 +999,16 @@ impl XmlParser {
             self.parse_internal_subset(content)?;
         }
 
-        // If there's an external ID (PUBLIC or SYSTEM) and DTDLOAD/DTDATTR is
-        // set, parse the external subset (upstream xmlParserLoadSubset). A
-        // SYSTEM-only DOCTYPE (no PUBLIC id) still references an external DTD.
-        if (ext_id.is_some() || sys_id.is_some()) && (self.options & XML_PARSE_DTDLOAD) != 0 {
+        // If there's an external ID (PUBLIC or SYSTEM) and the parser is in a
+        // state that requires the external subset, parse it (upstream
+        // xmlSAX2ExternalSubset: `ctxt->validate || (loadsubset & ~XML_SKIP_IDS)`
+        // — DTDVALID, DTDLOAD and DTDATTR all trigger the load). A SYSTEM-only
+        // DOCTYPE (no PUBLIC id) still references an external DTD.
+        let want_ext = unsafe {
+            let c = &*self.ctxt;
+            c.validate != 0 || (c.loadsubset & !crate::abi::constants::XML_SKIP_IDS) != 0
+        };
+        if (ext_id.is_some() || sys_id.is_some()) && want_ext {
             self.parse_external_subset(&root_name, ext_id.as_deref(), sys_id.as_deref())?;
         }
 
@@ -1054,16 +1060,43 @@ impl XmlParser {
         // SAX_COMPAT_MODE document + "fake" intSubset and register the entity
         // via xmlSAX2EntityDecl).
         let mut dtd = Self::current_int_subset_opt(unsafe { (*self.ctxt).myDoc });
+        self.process_dtd_fragment(&mut dtd, subset, 0, false);
 
+        unsafe {
+            (*self.ctxt).inSubset = 0;
+        }
+
+        Ok(())
+    }
+
+    /// Process one DTD declaration fragment (internal-subset body, external
+    /// subset file, or a parameter-entity replacement text) into `dtd`.
+    /// Handles the markup declarations (ELEMENT/ENTITY/ATTLIST/NOTATION),
+    /// comments, PIs and parameter-entity references. PE references BETWEEN
+    /// declarations expand in place (external PEs load their file); PE
+    /// references inside a declaration's argument list (e.g.
+    /// `<!ATTLIST th %attrs; >`) are expanded before the declaration is
+    /// parsed, skipping quoted literals (an entity VALUE keeps its %refs
+    /// raw — they expand at use time). `ext` selects external-subset
+    /// semantics (entity declarations always register; no SAX-compat
+    /// registry gating). `depth` bounds PE nesting (upstream's recursion
+    /// guard for parameter entities).
+    fn process_dtd_fragment(
+        &mut self,
+        dtd: &mut Option<*mut _xmlDtd>,
+        data: &[u8],
+        depth: usize,
+        ext: bool,
+    ) {
         let mut i = 0usize;
-        while i < subset.len() {
-            while i < subset.len() && subset[i].is_ascii_whitespace() {
+        while i < data.len() {
+            while i < data.len() && data[i].is_ascii_whitespace() {
                 i += 1;
             }
-            if i >= subset.len() {
+            if i >= data.len() {
                 break;
             }
-            if subset[i] != b'<' {
+            if data[i] != b'<' {
                 // Stray text outside a markup declaration: a well-formed
                 // parameter-entity reference (%Name;) is the only construct
                 // with parser-visible meaning here.
@@ -1076,12 +1109,23 @@ impl XmlParser {
                 // external subset) relax [WFC: Entity Declared] to a
                 // non-fatal report, because a non-validating processor is not
                 // obligated to load them.
-                if subset[i] == b'%' {
-                    let rest = &subset[i + 1..];
+                if data[i] == b'%' {
+                    let rest = &data[i + 1..];
                     let name_len = rest.iter().take_while(|&&b| dtd_name_char(b)).count();
                     if name_len > 0 && rest.get(name_len) == Some(&b';') {
+                        let pe_name = &rest[..name_len];
                         unsafe {
                             (*self.ctxt).hasPErefs = 1;
+                        }
+                        // UPSTREAM-PARITY (parser.c xmlParsePEReference): the
+                        // reference is expanded in place when the parameter
+                        // entity resolves (an external PE's file is fetched;
+                        // an internal PE's replacement text is re-scanned for
+                        // nested references). DOMDocument_validate_external_dtd
+                        // (dom.xml `%incent;` -> dom.ent) needs the external
+                        // PE's declarations to land in the internal subset.
+                        if depth < 10 && !dtd.is_none() {
+                            self.expand_pe_reference(dtd, pe_name, depth);
                         }
                         i += 1 + name_len + 1;
                         continue;
@@ -1090,53 +1134,90 @@ impl XmlParser {
                 i += 1;
                 continue;
             }
-            if subset[i..].starts_with(b"<!--") {
-                match find_subseq(&subset[i..], b"-->") {
+            if data[i..].starts_with(b"<!--") {
+                match find_subseq(&data[i..], b"-->") {
                     Some(p) => i += p + 3,
                     None => break,
                 }
                 continue;
             }
-            if subset[i..].starts_with(b"<?") {
-                match find_subseq(&subset[i..], b"?>") {
+            if data[i..].starts_with(b"<?") {
+                match find_subseq(&data[i..], b"?>") {
                     Some(p) => i += p + 2,
                     None => break,
                 }
                 continue;
             }
-            if subset[i..].starts_with(b"<!") {
-                let rest = &subset[i + 2..];
-                let Some(gt) = find_decl_end(rest) else {
-                    break;
-                };
-                let decl = &rest[..gt];
-                let kw_end = decl
-                    .iter()
-                    .position(|&b| b.is_ascii_whitespace())
-                    .unwrap_or(decl.len());
-                let kw = &decl[..kw_end];
-                let args = &decl[kw_end..];
-                if kw.eq_ignore_ascii_case(b"ELEMENT") {
-                    if let Some(d) = dtd {
-                        Self::parse_element_decl(d, args);
+            if data[i..].starts_with(b"<!DOCTYPE") {
+                // A nested <!DOCTYPE> in an external subset / PE is an error
+                // upstream; skip past the declaration end defensively.
+                let rest = &data[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => i += 2 + gt + 1,
+                    None => break,
+                }
+                continue;
+            }
+            if data[i..].starts_with(b"<!")
+                && !data[i..].starts_with(b"<!ELEMENT")
+                && !data[i..].starts_with(b"<!ATTLIST")
+                && !data[i..].starts_with(b"<!ENTITY")
+                && !data[i..].starts_with(b"<!NOTATION")
+            {
+                // Unknown markup declaration; skip past the declaration end.
+                let rest = &data[i + 2..];
+                match find_decl_end(rest) {
+                    Some(gt) => {
+                        i += 2 + gt + 1;
+                        continue;
                     }
-                } else if kw.eq_ignore_ascii_case(b"ENTITY") {
-                    // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): WHICH
-                    // declarations are registered into the parser's entity
-                    // table depends on whether a real document is being built.
-                    // Tree consumers receive every declaration through the
-                    // document DTD (registered here into the real intSubset).
-                    // Expat-compat SAX consumers (no real doc — myDoc is NULL
-                    // or the internal SAX_COMPAT_MODE registry) receive them
-                    // through the SAX entityDecl events instead; upstream
-                    // registers into the SAX-compat myDoc only general entities
-                    // with a replacement VALUE (always) and external general
-                    // PARSED entities when substitution was requested
-                    // (ctxt->replaceEntities != 0). Parameter and NDATA-unparsed
-                    // declarations never enter the registry — which is why an
-                    // external parsed entity declared WITHOUT NOENT resolves as
-                    // undeclared on the next reference, exactly like upstream
-                    // (SP-14.3.1-4, bug71592).
+                    None => break,
+                }
+            }
+            let rest = &data[i + 2..];
+            let Some(gt) = find_decl_end(rest) else {
+                break;
+            };
+            let decl = &rest[..gt];
+            let kw_end = decl
+                .iter()
+                .position(|&b| b.is_ascii_whitespace())
+                .unwrap_or(decl.len());
+            let kw = &decl[..kw_end];
+            let raw_args = &decl[kw_end..];
+            // Inline parameter-entity expansion (outside quoted literals).
+            let expanded = if raw_args.contains(&b'%') {
+                self.expand_args_pes(raw_args, depth)
+            } else {
+                None
+            };
+            let args: &[u8] = match &expanded {
+                Some(v) => v.as_slice(),
+                None => raw_args,
+            };
+            if kw.eq_ignore_ascii_case(b"ELEMENT") {
+                if let Some(d) = *dtd {
+                    Self::parse_element_decl(d, args);
+                }
+            } else if kw.eq_ignore_ascii_case(b"ENTITY") {
+                // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): WHICH
+                // declarations are registered into the parser's entity
+                // table depends on whether a real document is being built.
+                // Tree consumers receive every declaration through the
+                // document DTD (registered here into the real intSubset).
+                // Expat-compat SAX consumers (no real doc — myDoc is NULL
+                // or the internal SAX_COMPAT_MODE registry) receive them
+                // through the SAX entityDecl events instead; upstream
+                // registers into the SAX-compat myDoc only general entities
+                // with a replacement VALUE (always) and external general
+                // PARSED entities when substitution was requested
+                // (ctxt->replaceEntities != 0). Parameter and NDATA-unparsed
+                // declarations never enter the registry — which is why an
+                // external parsed entity declared WITHOUT NOENT resolves as
+                // undeclared on the next reference, exactly like upstream
+                // (SP-14.3.1-4, bug71592).
+                let mut register = true;
+                if !ext {
                     let compat_registry = unsafe {
                         let doc = (*self.ctxt).myDoc;
                         if doc.is_null() {
@@ -1149,50 +1230,174 @@ impl XmlParser {
                                 != 0
                         }
                     };
-                    let mut register = true;
                     if compat_registry {
                         register = self.compat_entity_must_register(args);
                     }
-                    if register {
-                        if dtd.is_none() {
-                            dtd = self.ensure_entity_registry_dtd();
-                        }
-                        if let Some(d) = dtd {
-                            Self::parse_entity_decl(d, args);
-                        }
-                    }
-                    // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
-                    // non-parameter NDATA (unparsed) external entity is
-                    // declared the SAX unparsedEntityDecl event fires (php
-                    // expat/notation handler).
-                    self.fire_sax_unparsed_entity_decl(args);
-                } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
-                    if let Some(d) = dtd {
-                        Self::parse_attlist_decl(d, args);
-                    }
-                    // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl):
-                    // defaults land in ctxt->attsDefault regardless of a
-                    // document tree (SP-14.3.1-4, bug35447).
-                    self.collect_attlist_defaults(args);
-                } else if kw.eq_ignore_ascii_case(b"NOTATION") {
-                    if let Some(d) = dtd {
-                        Self::parse_notation_decl(d, args);
-                    }
-                    // UPSTREAM-PARITY (parser.c xmlParseNotationDecl): the
-                    // SAX notationDecl event fires for a DTD notation.
-                    self.fire_sax_notation_decl(args);
                 }
-                i += 2 + gt + 1;
-                continue;
+                if register {
+                    if dtd.is_none() {
+                        *dtd = self.ensure_entity_registry_dtd();
+                    }
+                    if let Some(d) = *dtd {
+                        Self::parse_entity_decl(d, args);
+                    }
+                }
+                // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
+                // non-parameter NDATA (unparsed) external entity is
+                // declared the SAX unparsedEntityDecl event fires (php
+                // expat/notation handler).
+                self.fire_sax_unparsed_entity_decl(args);
+            } else if kw.eq_ignore_ascii_case(b"ATTLIST") {
+                if let Some(d) = *dtd {
+                    Self::parse_attlist_decl(d, args);
+                }
+                // UPSTREAM-PARITY (parser.c xmlParseAttributeListDecl):
+                // defaults land in ctxt->attsDefault regardless of a
+                // document tree (SP-14.3.1-4, bug35447).
+                self.collect_attlist_defaults(args);
+            } else if kw.eq_ignore_ascii_case(b"NOTATION") {
+                if let Some(d) = *dtd {
+                    Self::parse_notation_decl(d, args);
+                }
+                // UPSTREAM-PARITY (parser.c xmlParseNotationDecl): the
+                // SAX notationDecl event fires for a DTD notation.
+                self.fire_sax_notation_decl(args);
             }
-            i += 1;
+            i += 2 + gt + 1;
         }
+    }
 
+    /// Expand a decl-level `%name;` reference: fetch the parameter entity
+    /// (internal replacement text or external file) and process its content
+    /// as a declaration fragment into `dtd`.
+    fn expand_pe_reference(&mut self, dtd: &mut Option<*mut _xmlDtd>, name: &[u8], depth: usize) {
+        let doc = unsafe { (*self.ctxt).myDoc };
+        if doc.is_null() {
+            return;
+        }
+        let name_cstr = Self::vec_to_cstr_null(name);
+        let ent = unsafe { crate::xml::entities::get_parameter_entity(doc, name_cstr) };
+        if ent.is_null() {
+            return;
+        }
         unsafe {
-            (*self.ctxt).inSubset = 0;
+            use crate::abi::types::xmlEntityType::*;
+            match (*ent).etype {
+                t if t == XML_INTERNAL_PARAMETER_ENTITY as c_int => {
+                    let c = (*ent).content;
+                    if !c.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen(c);
+                        let text = core::slice::from_raw_parts(c, len as usize);
+                        self.process_dtd_fragment(dtd, text, depth + 1, false);
+                    }
+                }
+                t if t == XML_EXTERNAL_PARAMETER_ENTITY as c_int => {
+                    let sys = (*ent).SystemID;
+                    if !sys.is_null() {
+                        let sys_str = crate::xml::string::xmlstr_to_string(sys as *const xmlChar);
+                        if let Some(p) = self.resolve_dtd_path(sys_str.as_bytes()) {
+                            if let Ok(content) = std::fs::read(&p) {
+                                self.process_dtd_fragment(dtd, &content, depth + 1, true);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
         }
+    }
 
-        Ok(())
+    /// Expand parameter-entity references in a declaration's argument list,
+    /// skipping quoted literals (an entity value stores its %refs raw).
+    /// Returns None when nothing was expanded.
+    fn expand_args_pes(&self, args: &[u8], depth: usize) -> Option<Vec<u8>> {
+        if depth >= 10 {
+            return None;
+        }
+        let doc = unsafe { (*self.ctxt).myDoc };
+        if doc.is_null() {
+            return None;
+        }
+        let mut out: Vec<u8> = Vec::with_capacity(args.len());
+        let mut changed = false;
+        let mut i = 0usize;
+        while i < args.len() {
+            match args[i] {
+                b'\'' | b'"' => {
+                    let q = args[i];
+                    out.push(q);
+                    i += 1;
+                    while i < args.len() && args[i] != q {
+                        out.push(args[i]);
+                        i += 1;
+                    }
+                    if i < args.len() {
+                        out.push(args[i]);
+                        i += 1;
+                    }
+                }
+                b'%' => {
+                    let rest = &args[i + 1..];
+                    let name_len = rest.iter().take_while(|&&b| dtd_name_char(b)).count();
+                    if name_len > 0 && rest.get(name_len) == Some(&b';') {
+                        let pe_name = &rest[..name_len];
+                        let name_cstr = Self::vec_to_cstr_null(pe_name);
+                        let ent =
+                            unsafe { crate::xml::entities::get_parameter_entity(doc, name_cstr) };
+                        let expanded: Option<Vec<u8>> = if !ent.is_null() {
+                            let e = unsafe { &*ent };
+                            use crate::abi::types::xmlEntityType::*;
+                            match e.etype {
+                                t if t == XML_INTERNAL_PARAMETER_ENTITY as c_int => {
+                                    if e.content.is_null() {
+                                        None
+                                    } else {
+                                        let len = unsafe {
+                                            crate::abi::exports_xml2::xmlStrlen(e.content)
+                                        };
+                                        let text: &[u8] = unsafe {
+                                            core::slice::from_raw_parts(e.content, len as usize)
+                                        };
+                                        // Nested refs expand recursively; the
+                                        // whole replacement text is spliced in
+                                        // place of the reference.
+                                        Some(
+                                            self.expand_args_pes(text, depth + 1)
+                                                .unwrap_or_else(|| text.to_vec()),
+                                        )
+                                    }
+                                }
+                                _ => None,
+                            }
+                        } else {
+                            None
+                        };
+                        match expanded {
+                            Some(v) => {
+                                out.extend_from_slice(&v);
+                                changed = true;
+                            }
+                            None => {
+                                out.extend_from_slice(&args[i..i + 1 + name_len + 1]);
+                            }
+                        }
+                        i += 1 + name_len + 1;
+                        continue;
+                    }
+                    out.push(args[i]);
+                    i += 1;
+                }
+                _ => {
+                    out.push(args[i]);
+                    i += 1;
+                }
+            }
+        }
+        if changed {
+            Some(out)
+        } else {
+            None
+        }
     }
 
     /// Return the document's current `intSubset`, or None when absent.
@@ -2012,7 +2217,7 @@ impl XmlParser {
 
     /// Resolve a DTD system ID relative to the document URL's directory,
     /// read the file, and parse its declarations into `dtd`.
-    fn load_external_dtd_file(&self, dtd: *mut _xmlDtd, sys_id: &[u8]) {
+    fn load_external_dtd_file(&mut self, dtd: *mut _xmlDtd, sys_id: &[u8]) {
         let path = self.resolve_dtd_path(sys_id);
         let content = match path {
             Some(p) => std::fs::read(&p).ok(),
@@ -2023,96 +2228,12 @@ impl XmlParser {
             return;
         }
         // Parse declarations from the external file (same grammar as the
-        // internal subset, but the file root has no <!DOCTYPE> wrapper).
-        let mut i = 0usize;
-        while i < content.len() {
-            while i < content.len() && content[i].is_ascii_whitespace() {
-                i += 1;
-            }
-            if i >= content.len() {
-                break;
-            }
-            if content[i] != b'<' {
-                i += 1;
-                continue;
-            }
-            if content[i..].starts_with(b"<!--") {
-                match find_subseq(&content[i..], b"-->") {
-                    Some(p) => i += p + 3,
-                    None => break,
-                }
-                continue;
-            }
-            if content[i..].starts_with(b"<?") {
-                match find_subseq(&content[i..], b"?>") {
-                    Some(p) => i += p + 2,
-                    None => break,
-                }
-                continue;
-            }
-            if content[i..].starts_with(b"<!")
-                && !content[i..].starts_with(b"<!ELEMENT")
-                && !content[i..].starts_with(b"<!ATTLIST")
-                && !content[i..].starts_with(b"<!ENTITY")
-                && !content[i..].starts_with(b"<!NOTATION")
-            {
-                // A nested <!DOCTYPE> or comments already handled; skip past
-                // the declaration end.
-                let rest = &content[i + 2..];
-                match find_decl_end(rest) {
-                    Some(gt) => {
-                        i += 2 + gt + 1;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
-            if content[i..].starts_with(b"<!ELEMENT") {
-                let rest = &content[i + 2..];
-                match find_decl_end(rest) {
-                    Some(gt) => {
-                        Self::parse_element_decl(dtd, &rest[..gt]);
-                        i += 2 + gt + 1;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
-            if content[i..].starts_with(b"<!ATTLIST") {
-                let rest = &content[i + 2..];
-                match find_decl_end(rest) {
-                    Some(gt) => {
-                        Self::parse_attlist_decl(dtd, &rest[..gt]);
-                        i += 2 + gt + 1;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
-            if content[i..].starts_with(b"<!ENTITY") {
-                let rest = &content[i + 2..];
-                match find_decl_end(rest) {
-                    Some(gt) => {
-                        Self::parse_entity_decl(dtd, &rest[..gt]);
-                        i += 2 + gt + 1;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
-            if content[i..].starts_with(b"<!NOTATION") {
-                let rest = &content[i + 2..];
-                match find_decl_end(rest) {
-                    Some(gt) => {
-                        Self::parse_notation_decl(dtd, &rest[..gt]);
-                        i += 2 + gt + 1;
-                        continue;
-                    }
-                    None => break,
-                }
-            }
-            i += 1;
-        }
+        // internal subset, but the file root has no <!DOCTYPE> wrapper). The
+        // shared fragment processor handles markup declarations, comments,
+        // PIs, inline parameter-entity references and decl-level PE refs
+        // (nested external PEs included).
+        let mut dtd_opt = Some(dtd);
+        self.process_dtd_fragment(&mut dtd_opt, &content, 0, true);
     }
 
     /// Resolve a DTD system id to a filesystem path, honoring a relative
@@ -2124,22 +2245,33 @@ impl XmlParser {
             return None;
         }
         let doc_url = unsafe { (*self.ctxt).myDoc };
-        let dir = if !doc_url.is_null() {
+        let mut dir: Option<std::path::PathBuf> = None;
+        if !doc_url.is_null() {
             let url = unsafe { (*doc_url).URL };
-            if url.is_null() {
-                None
-            } else {
+            if !url.is_null() {
                 let url_str = unsafe { std::ffi::CStr::from_ptr(url as *const c_char) }
                     .to_str()
                     .ok();
-                url_str.and_then(|u| {
+                dir = url_str.and_then(|u| {
                     let p = std::path::Path::new(u);
                     p.parent().map(|d| d.to_path_buf())
-                })
+                });
             }
-        } else {
-            None
-        };
+        }
+        // UPSTREAM-PARITY: memory loads resolve relative ids against the
+        // parser's base directory (`ctxt->directory`, set by php for
+        // DOMDocument::loadXML from the CWD) — the document URL is only
+        // assigned after the parse, so it cannot serve as a base here.
+        if dir.is_none() {
+            let d = unsafe { (*self.ctxt).directory };
+            if !d.is_null() {
+                let ds = unsafe { std::ffi::CStr::from_ptr(d as *const c_char) }
+                    .to_str()
+                    .ok()
+                    .map(|s| s.to_string());
+                dir = ds.map(std::path::PathBuf::from);
+            }
+        }
         let sys_path = std::path::Path::new(sys);
         if sys_path.is_absolute() {
             Some(sys_path.to_path_buf())
@@ -4287,47 +4419,12 @@ impl XmlParser {
         }
         // UPSTREAM-PARITY (SAX2.c xmlSAX2EndElementNs): a validating parse
         // checks the just-closed element against the DTD before the node is
-        // popped. An undeclared element raises XML_DTD_UNKNOWN_ELEM at the
-        // end-tag position (ERROR level — the parse continues, but
-        // ctxt->valid is cleared). This is what XML_PARSE_DTDVALID consumers
-        // (lxml `dtd_validation=True`) observe as the first error.
-        unsafe {
-            let ctxt = self.ctxt;
-            if (*ctxt).validate != 0 && (*ctxt).wellFormed != 0 && !(*ctxt).node.is_null() {
-                let my_doc = (*ctxt).myDoc;
-                if !my_doc.is_null() {
-                    let dtd = (*my_doc).intSubset;
-                    if !dtd.is_null() {
-                        let elem_decl = if !(*dtd).elements.is_null() {
-                            crate::xml::hash::hash_lookup(
-                                (*dtd).elements as *mut crate::xml::hash::HashTable,
-                                (*(*ctxt).node).name,
-                            )
-                        } else {
-                            ptr::null_mut()
-                        };
-                        if elem_decl.is_null() {
-                            (*ctxt).valid = 0;
-                            let node_name = (*(*ctxt).node).name;
-                            let name_str = crate::xml::string::xmlstr_to_string(node_name);
-                            self.sync_input_position();
-                            let byte_pos = self.tokenizer.current_pos().2;
-                            self.raise_error_at(
-                                crate::abi::types::XML_FROM_VALID,
-                                crate::abi::types::XML_DTD_UNKNOWN_ELEM,
-                                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
-                                format!("No declaration for element {}\n", name_str),
-                                None,
-                                None,
-                                None,
-                                0,
-                                byte_pos,
-                            );
-                        }
-                    }
-                }
-            }
-        }
+        // popped. The full per-element check (declaration lookup across both
+        // subsets + etype-specific content checks) runs with the upstream
+        // diagnostics attributed to the end-tag position; ctxt->valid is
+        // cleared on every violation (XML_PARSE_DTDVALID consumers observe
+        // the element errors, e.g. lxml `dtd_validation=True`).
+        self.validate_end_element();
         unsafe {
             let sax = &*(*self.ctxt).sax;
             let ctx = (*self.ctxt).userData;
@@ -4385,6 +4482,238 @@ impl XmlParser {
             };
             SaxDispatcher::end_element(sax, ctx, name_cstr, prefix_cstr, uri_cstr);
         }
+    }
+
+    /// UPSTREAM-PARITY (SAX2.c xmlSAX2EndElementNs): per-element DTD
+    /// validation of the just-closed element, run before the node is popped
+    /// (children are complete). Mirrors the tree path of upstream
+    /// `xmlValidateOneElement` (valid.c): declaration lookup across the
+    /// INTERNAL and EXTERNAL subsets (xmlValidGetElemDecl), then the
+    /// etype-specific content checks (UNDEFINED / EMPTY / ANY / MIXED /
+    /// ELEMENT) with the upstream diagnostics. Errors are attributed to the
+    /// end-tag position (input already past the closing '>'), so libxml
+    /// consumers (php) report the end-tag line, exactly like upstream's
+    /// parser-located validity errors. Attribute declarations are NOT
+    /// rechecked here (upstream validates attributes at start tags).
+    fn validate_end_element(&mut self) {
+        unsafe {
+            let ctxt = self.ctxt;
+            if (*ctxt).validate == 0 || (*ctxt).wellFormed == 0 || (*ctxt).node.is_null() {
+                return;
+            }
+            let my_doc = (*ctxt).myDoc;
+            if my_doc.is_null() {
+                return;
+            }
+            let int_dtd = (*my_doc).intSubset;
+            let ext_dtd = (*my_doc).extSubset;
+            if int_dtd.is_null() && ext_dtd.is_null() {
+                return;
+            }
+            let node = (*ctxt).node;
+            if (*node).type_ != crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int
+                || (*node).name.is_null()
+            {
+                return;
+            }
+            let node_name = (*node).name;
+            let prefix = if !(*node).ns.is_null() {
+                (*(*node).ns).prefix
+            } else {
+                ptr::null()
+            };
+
+            // Declaration lookup (xmlValidGetElemDecl): prefixed lookup on
+            // both subsets first, then the plain-name fallback, internal
+            // subset winning over the external subset.
+            let mut decl =
+                crate::xml::validation::get_dtd_qelement_desc(int_dtd, node_name, prefix);
+            if decl.is_null() && !ext_dtd.is_null() {
+                decl = crate::xml::validation::get_dtd_qelement_desc(ext_dtd, node_name, prefix);
+            }
+            if decl.is_null() {
+                decl =
+                    crate::xml::validation::get_dtd_qelement_desc(int_dtd, node_name, ptr::null());
+            }
+            if decl.is_null() && !ext_dtd.is_null() {
+                decl =
+                    crate::xml::validation::get_dtd_qelement_desc(ext_dtd, node_name, ptr::null());
+            }
+            if decl.is_null() {
+                (*ctxt).valid = 0;
+                self.raise_end_element_valid_error(
+                    crate::abi::types::XML_DTD_UNKNOWN_ELEM,
+                    format!(
+                        "No declaration for element {}\n",
+                        crate::xml::string::xmlstr_to_string(node_name)
+                    ),
+                );
+                return;
+            }
+
+            use crate::abi::types::xmlElementContentType::*;
+            use crate::abi::types::xmlElementTypeVal::*;
+            let mut ret = 1;
+            match (*decl).etype {
+                t if t == XML_ELEMENT_TYPE_UNDEFINED as c_int => {
+                    (*ctxt).valid = 0;
+                    self.raise_end_element_valid_error(
+                        crate::abi::types::XML_DTD_UNKNOWN_ELEM,
+                        format!(
+                            "No declaration for element {}\n",
+                            crate::xml::string::xmlstr_to_string(node_name)
+                        ),
+                    );
+                    return;
+                }
+                t if t == XML_ELEMENT_TYPE_EMPTY as c_int => {
+                    if !(*node).children.is_null() {
+                        ret = 0;
+                        self.raise_end_element_valid_error(
+                            528, // XML_DTD_NOT_EMPTY
+                            format!(
+                                "Element {} was declared EMPTY this one has content\n",
+                                crate::xml::string::xmlstr_to_string(node_name)
+                            ),
+                        );
+                    }
+                }
+                t if t == XML_ELEMENT_TYPE_ANY as c_int => {}
+                t if t == XML_ELEMENT_TYPE_MIXED as c_int => {
+                    let content = (*decl).content;
+                    if !content.is_null() && (*content).type_ == XML_ELEMENT_CONTENT_PCDATA as c_int
+                    {
+                        // Declared #PCDATA: any element child is an error.
+                        let mut child = (*node).children;
+                        while !child.is_null() {
+                            if (*child).type_
+                                == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int
+                            {
+                                ret = 0;
+                                self.raise_end_element_valid_error(
+                                    529, // XML_DTD_NOT_PCDATA
+                                    format!(
+                                        "Element {} was declared #PCDATA but contains non text nodes\n",
+                                        crate::xml::string::xmlstr_to_string(node_name)
+                                    ),
+                                );
+                                break;
+                            }
+                            child = (*child).next;
+                        }
+                    } else {
+                        // Mixed list: every element child must be listed.
+                        let mut child = (*node).children;
+                        while !child.is_null() {
+                            if (*child).type_
+                                == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int
+                            {
+                                let mut fullname = (*child).name;
+                                let mut owned: *mut xmlChar = ptr::null_mut();
+                                if !(*child).ns.is_null() && !(*(*child).ns).prefix.is_null() {
+                                    fullname = crate::xml::string::build_qname(
+                                        (*child).name,
+                                        (*(*child).ns).prefix,
+                                        ptr::null_mut(),
+                                        0,
+                                    );
+                                    owned = fullname as *mut xmlChar;
+                                }
+                                let ok = crate::xml::validation::validate_check_mixed(
+                                    ptr::null_mut(),
+                                    content,
+                                    fullname,
+                                );
+                                if ok != 1 {
+                                    ret = 0;
+                                    self.raise_end_element_valid_error(
+                                        515, // XML_DTD_INVALID_CHILD
+                                        format!(
+                                            "Element {} is not declared in {} list of possible children\n",
+                                            crate::xml::string::xmlstr_to_string(fullname),
+                                            crate::xml::string::xmlstr_to_string(node_name)
+                                        ),
+                                    );
+                                }
+                                if !owned.is_null() {
+                                    crate::abi::allocator::xmlFreeImpl(owned as *mut c_void);
+                                }
+                            }
+                            child = (*child).next;
+                        }
+                    }
+                }
+                t if t == XML_ELEMENT_TYPE_ELEMENT as c_int => {
+                    // Element-only content: collect child element qnames and
+                    // check against the content model.
+                    let mut names: Vec<*const xmlChar> = Vec::new();
+                    let mut owned: Vec<*mut xmlChar> = Vec::new();
+                    let mut child = (*node).children;
+                    while !child.is_null() {
+                        if (*child).type_
+                            == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int
+                        {
+                            let mut fullname = (*child).name;
+                            if !(*child).ns.is_null() && !(*(*child).ns).prefix.is_null() {
+                                let fnp = crate::xml::string::build_qname(
+                                    (*child).name,
+                                    (*(*child).ns).prefix,
+                                    ptr::null_mut(),
+                                    0,
+                                );
+                                if !fnp.is_null() {
+                                    fullname = fnp;
+                                    owned.push(fnp);
+                                }
+                            }
+                            names.push(fullname);
+                        }
+                        child = (*child).next;
+                    }
+                    let result = crate::xml::dtd::valid_content_model((*decl).content, &names);
+                    for n in owned {
+                        crate::abi::allocator::xmlFreeImpl(n as *mut c_void);
+                    }
+                    if result != crate::xml::dtd::ContentModelResult::Valid {
+                        ret = 0;
+                        // expecting/got formatting (valid.c
+                        // xmlValidateElementContent warn branch).
+                        let elem_str = crate::xml::string::xmlstr_to_string(node_name);
+                        let expr = snprintf_element_content((*decl).content, true);
+                        let got = snprintf_children_list((*node).children);
+                        self.raise_end_element_valid_error(
+                            504, // XML_DTD_CONTENT_MODEL
+                            format!(
+                                "Element {} content does not follow the DTD, expecting {}, got {}\n",
+                                elem_str, expr, got
+                            ),
+                        );
+                    }
+                }
+                _ => {}
+            }
+            (*ctxt).valid &= ret;
+        }
+    }
+
+    /// Raise one parse-time DTD validity error at the end-tag position.
+    fn raise_end_element_valid_error(&mut self, code: c_int, msg: String) {
+        unsafe {
+            (*self.ctxt).valid = 0;
+        }
+        self.sync_input_position();
+        let byte_pos = self.tokenizer.current_pos().2;
+        self.raise_error_at(
+            crate::abi::types::XML_FROM_VALID,
+            code,
+            crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+            msg,
+            None,
+            None,
+            None,
+            0,
+            byte_pos,
+        );
     }
 
     /// Fire `characters` SAX event.
@@ -5479,9 +5808,13 @@ fn parse_attr_default(s: &[u8]) -> (c_int, Option<&[u8]>, usize) {
             None => (XML_ATTRIBUTE_FIXED as c_int, None, kw_len),
         }
     } else {
+        // Bare quoted default value (no #keyword): upstream xmlParseDefaultDecl
+        // returns XML_ATTRIBUTE_NONE with the value — NOT #IMPLIED (which is
+        // only produced by the explicit keyword). The DTD dumper prints
+        // ` CDATA "default title"`, never ` #IMPLIED "default title"`.
         match read_quoted(rest) {
-            Some(v) => (XML_ATTRIBUTE_IMPLIED as c_int, Some(v), rest.len()),
-            None => (XML_ATTRIBUTE_IMPLIED as c_int, None, kw_len),
+            Some(v) => (XML_ATTRIBUTE_NONE as c_int, Some(v), rest.len()),
+            None => (XML_ATTRIBUTE_NONE as c_int, None, kw_len),
         }
     }
 }
@@ -5492,4 +5825,135 @@ fn vec_to_cstr_null_helper(s: &[u8]) -> *mut c_char {
     v.push(0);
     let boxed = v.into_boxed_slice();
     Box::into_raw(boxed) as *mut c_char
+}
+
+/// Snprintf a content-model expression (upstream valid.c
+/// `xmlSnprintfElementContent`): `(title , author)`, `(#PCDATA | a | b)*`, etc.
+///
+/// # SAFETY
+///
+/// - `content` must be NULL or a valid `_xmlElementContent` tree whose
+///   `type_`/`ocur`/`name`/`prefix`/`c1`/`c2` fields are valid for a walk.
+unsafe fn snprintf_element_content(
+    content: *mut crate::abi::structs::_xmlElementContent,
+    englob: bool,
+) -> String {
+    use crate::abi::types::xmlElementContentOccur::*;
+    use crate::abi::types::xmlElementContentType::*;
+    let mut out = String::new();
+    unsafe fn walk(
+        out: &mut String,
+        content: *mut crate::abi::structs::_xmlElementContent,
+        englob: bool,
+    ) {
+        if content.is_null() {
+            return;
+        }
+        let c = unsafe { &*content };
+        if englob {
+            out.push('(');
+        }
+        match c.type_ {
+            t if t == XML_ELEMENT_CONTENT_PCDATA as c_int => {
+                out.push_str("#PCDATA");
+            }
+            t if t == XML_ELEMENT_CONTENT_ELEMENT as c_int => {
+                if !c.prefix.is_null() {
+                    out.push_str(&crate::xml::string::xmlstr_to_string(c.prefix));
+                    out.push(':');
+                }
+                if !c.name.is_null() {
+                    out.push_str(&crate::xml::string::xmlstr_to_string(c.name));
+                }
+            }
+            t if t == XML_ELEMENT_CONTENT_SEQ as c_int || t == XML_ELEMENT_CONTENT_OR as c_int => {
+                let c1_is_group = !c.c1.is_null()
+                    && ((*(c.c1)).type_ == XML_ELEMENT_CONTENT_SEQ as c_int
+                        || (*(c.c1)).type_ == XML_ELEMENT_CONTENT_OR as c_int);
+                walk(out, c.c1, c1_is_group);
+                out.push_str(if c.type_ == XML_ELEMENT_CONTENT_SEQ as c_int {
+                    " , "
+                } else {
+                    " | "
+                });
+                let c2_is_group = !c.c2.is_null()
+                    && (((*(c.c2)).type_ == XML_ELEMENT_CONTENT_OR as c_int
+                        || (*(c.c2)).type_ == XML_ELEMENT_CONTENT_SEQ as c_int)
+                        || ((*(c.c2)).ocur != XML_ELEMENT_CONTENT_ONCE as c_int
+                            && (*(c.c2)).type_ != XML_ELEMENT_CONTENT_ELEMENT as c_int));
+                walk(out, c.c2, c2_is_group);
+            }
+            _ => {}
+        }
+        if englob {
+            out.push(')');
+        }
+        match c.ocur {
+            t if t == XML_ELEMENT_CONTENT_OPT as c_int => out.push('?'),
+            t if t == XML_ELEMENT_CONTENT_MULT as c_int => out.push('*'),
+            t if t == XML_ELEMENT_CONTENT_PLUS as c_int => out.push('+'),
+            _ => {}
+        }
+    }
+    walk(&mut out, content, englob);
+    out
+}
+
+/// Snprintf the "got" children list of an element (upstream valid.c
+/// `xmlSnprintfElements`): blank text is skipped, elements print (qualified)
+/// names, non-blank text/CDATA/entity references print `CDATA`, and every
+/// printed token is followed by a space when a sibling follows.
+///
+/// # SAFETY
+///
+/// - `first` must be NULL or the first child of a valid node list whose
+///   `next` links are valid; `name`/`ns`/`content` of the visited nodes must
+///   be valid per node type.
+unsafe fn snprintf_children_list(first: *mut crate::abi::structs::_xmlNode) -> String {
+    let mut out = String::new();
+    out.push('(');
+    let mut cur = first;
+    while !cur.is_null() {
+        let c = unsafe { &*cur };
+        match c.type_ {
+            t if t == crate::abi::types::xmlElementType::XML_ELEMENT_NODE as c_int => {
+                if !c.ns.is_null() && !(*(c.ns)).prefix.is_null() {
+                    out.push_str(&crate::xml::string::xmlstr_to_string((*(c.ns)).prefix));
+                    out.push(':');
+                }
+                if !c.name.is_null() {
+                    out.push_str(&crate::xml::string::xmlstr_to_string(c.name));
+                }
+                if !c.next.is_null() {
+                    out.push(' ');
+                }
+            }
+            t if t == crate::abi::types::xmlElementType::XML_TEXT_NODE as c_int => {
+                let blank = if c.content.is_null() {
+                    true
+                } else {
+                    let s = crate::xml::string::xmlstr_to_string(c.content);
+                    s.trim().is_empty()
+                };
+                if !blank {
+                    out.push_str("CDATA");
+                    if !c.next.is_null() {
+                        out.push(' ');
+                    }
+                }
+            }
+            t if t == crate::abi::types::xmlElementType::XML_CDATA_SECTION_NODE as c_int
+                || t == crate::abi::types::xmlElementType::XML_ENTITY_REF_NODE as c_int =>
+            {
+                out.push_str("CDATA");
+                if !c.next.is_null() {
+                    out.push(' ');
+                }
+            }
+            _ => {}
+        }
+        cur = c.next;
+    }
+    out.push(')');
+    out
 }

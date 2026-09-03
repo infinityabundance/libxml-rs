@@ -793,6 +793,9 @@ pub unsafe fn add_element_decl(
     }
 
     unsafe {
+        // Placeholder upgrade (add_element_decl carries the attribute chain
+        // of a removed UNDEFINED placeholder to the real declaration).
+        let mut elem_attrs: *mut _xmlAttribute = ptr::null_mut();
         // UPSTREAM-PARITY (valid.c xmlAddElementDecl): the table is created
         // lazily on first use.
         if (*dtd).elements.is_null() {
@@ -803,7 +806,23 @@ pub unsafe fn add_element_decl(
         // Check if element already exists
         let existing = hash::hash_lookup(d.elements as *mut hash::HashTable, name);
         if !existing.is_null() {
-            return existing as *mut _xmlElement;
+            let ex = existing as *mut _xmlElement;
+            if (*ex).etype != XML_ELEMENT_TYPE_UNDEFINED as c_int {
+                return ex;
+            }
+            // UPSTREAM-PARITY (valid.c xmlAddElementDecl): an UNDEFINED
+            // placeholder (created when an ATTLIST named an as-yet
+            // undeclared element) is REMOVED and freed; its attribute
+            // declarations are carried over to the real declaration that
+            // follows ("lookup old attributes inserted on an undefined
+            // element in the internal subset"). The placeholder was never
+            // linked into the DTD child list (get_element_decl_created), so
+            // only the hash entry is removed.
+            let old_attributes = (*ex).attributes;
+            (*ex).attributes = ptr::null_mut();
+            hash::hash_remove_entry(d.elements as *mut hash::HashTable, name, None);
+            free_element(ex);
+            elem_attrs = old_attributes;
         }
 
         // SAFETY: Allocate zero-initialized memory for the element.
@@ -820,7 +839,7 @@ pub unsafe fn add_element_decl(
         (*elem).type_ = XML_ELEMENT_DECL as c_int;
         (*elem).etype = type_; // xmlElementTypeVal mirrors xmlElementType here
         (*elem).content = content; // Takes ownership of the content model
-        (*elem).attributes = ptr::null_mut();
+        (*elem).attributes = elem_attrs;
         (*elem).prefix = ptr::null_mut();
         (*elem).children = ptr::null_mut();
         (*elem).last = ptr::null_mut();

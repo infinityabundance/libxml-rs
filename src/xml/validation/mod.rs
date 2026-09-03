@@ -3930,7 +3930,7 @@ unsafe fn valid_get_elem_decl(
 ///   strings); `qname` must be a valid null-terminated string (NULL is
 ///   tolerated via `split_qname3` and `xml_strcmp`); `ctxt` must be a valid
 ///   context or NULL (`vctxt_error` tolerates NULL).
-unsafe fn validate_check_mixed(
+pub(crate) unsafe fn validate_check_mixed(
     ctxt: *mut _xmlValidCtxt,
     cont: *mut _xmlElementContent,
     qname: *const xmlChar,
