@@ -2798,11 +2798,29 @@ pub unsafe extern "C" fn xmlReadFile(
     if ctxt.is_null() {
         return ptr::null_mut();
     }
-    let input = match crate::xml::parser::helpers::input_from_file(URL) {
-        Ok(input) => input,
-        Err(_) => {
+    // UPSTREAM-PARITY (parser.c xmlReadFile -> xmlCtxtReadFile ->
+    // xmlNewInputFromFile): the registered
+    // xmlParserInputBufferCreateFilenameDefault (php streams loader) is
+    // consulted first; a NULL loader result raises xmlCtxtErrIO — "I/O
+    // warning : failed to load \"%s\": %s\n" — and the load fails.
+    let input = match crate::abi::exports_parser::open_filename_routed(URL) {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(i) => i,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                crate::abi::exports_parser::io_load_failure_message(URL),
+            );
             crate::xml::parser::helpers::free_parser_ctxt(ctxt);
             return ptr::null_mut();
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match crate::xml::parser::helpers::input_from_file(URL) {
+                Ok(input) => input,
+                Err(_) => {
+                    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            }
         }
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
@@ -3207,11 +3225,24 @@ pub unsafe extern "C" fn xmlSAXParseFileWithData(
         (*ctxt).recovery = 1;
         (*ctxt).options |= 1; // XML_PARSE_RECOVER
     }
-    let input = match crate::xml::parser::helpers::input_from_file(filename) {
-        Ok(input) => input,
-        Err(_) => {
+    let input = match crate::abi::exports_parser::open_filename_routed(filename) {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                crate::abi::exports_parser::io_load_failure_message(filename),
+            );
             crate::xml::parser::helpers::free_parser_ctxt(ctxt);
             return ptr::null_mut();
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match crate::xml::parser::helpers::input_from_file(filename) {
+                Ok(input) => input,
+                Err(_) => {
+                    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            }
         }
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
@@ -3291,11 +3322,24 @@ pub unsafe extern "C" fn xmlSAXParseFile(
         (*ctxt).recovery = 1;
         (*ctxt).options |= 1;
     }
-    let input = match crate::xml::parser::helpers::input_from_file(filename) {
-        Ok(input) => input,
-        Err(_) => {
+    let input = match crate::abi::exports_parser::open_filename_routed(filename) {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                crate::abi::exports_parser::io_load_failure_message(filename),
+            );
             crate::xml::parser::helpers::free_parser_ctxt(ctxt);
             return ptr::null_mut();
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match crate::xml::parser::helpers::input_from_file(filename) {
+                Ok(input) => input,
+                Err(_) => {
+                    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            }
         }
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
@@ -3389,11 +3433,24 @@ pub unsafe extern "C" fn xmlSAXUserParseFile(
     } else {
         ctxt as *mut c_void
     };
-    let input = match crate::xml::parser::helpers::input_from_file(filename) {
-        Ok(input) => input,
-        Err(_) => {
+    let input = match crate::abi::exports_parser::open_filename_routed(filename) {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                crate::abi::exports_parser::io_load_failure_message(filename),
+            );
             crate::xml::parser::helpers::free_parser_ctxt(ctxt);
             return -1;
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match crate::xml::parser::helpers::input_from_file(filename) {
+                Ok(input) => input,
+                Err(_) => {
+                    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+                    return -1;
+                }
+            }
         }
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);
@@ -3547,11 +3604,27 @@ pub unsafe extern "C" fn xmlCreateFileParserCtxt(filename: *const c_char) -> *mu
     if ctxt.is_null() {
         return ptr::null_mut();
     }
-    let input = match crate::xml::parser::helpers::input_from_file(filename) {
-        Ok(input) => input,
-        Err(_) => {
+    let input = match crate::abi::exports_parser::open_filename_routed(filename) {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
+            // UPSTREAM-PARITY (parser.c xmlCreateFileParserCtxt ->
+            // xmlNewInputFromFile): a failed open raises the xmlCtxtErrIO
+            // warning through the context channel.
+            crate::abi::exports_parser::emit_io_warning(
+                ctxt,
+                crate::abi::exports_parser::io_load_failure_message(filename),
+            );
             crate::xml::parser::helpers::free_parser_ctxt(ctxt);
             return ptr::null_mut();
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match crate::xml::parser::helpers::input_from_file(filename) {
+                Ok(input) => input,
+                Err(_) => {
+                    crate::xml::parser::helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            }
         }
     };
     crate::xml::parser::helpers::setup_parser_input(ctxt, input);

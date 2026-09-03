@@ -545,3 +545,42 @@ simplexml S3 XPath error channel closed (2026-09-03): full suite 238 -> 236;
     cargo test --lib 1232 pass; clippy no new warnings (4 pre-existing:
     unnecessary-cast x2 + needless-option-as-deref + tree/mod.rs
     iter().any() — untouched); fmt clean.
+
+simplexml S8 + dom L2/loader net closed (2026-09-03): full suite 236 -> 233;
+  zero regressions (fixed: ext/simplexml bug79971_1 — percent-NUL file://
+  loads; a further variant of an already-failing phpt also healed). Receipt:
+  php-14-3-input-loader-routing-20260903/.
+  - root cause: the engine's filename-input creation never consulted the
+    registered `xmlParserInputBufferCreateFilenameDefault` (PHP installs its
+    php-streams loader at request init). xmlReadFile / xmlCtxtReadFile /
+    xmlCreateFileParserCtxt / xmlSAXParse*/xmlParse*/reader open all read
+    the LITERAL path internally: `file://` URIs could not load at all,
+    PHP's percent-encoded-NUL guard (%00) never fired, missing-file loads
+    were silent (upstream raises the xmlCtxtErrIO "I/O warning : failed to
+    load \"%s\": %s\n" report), and php stream contexts were bypassed.
+    Upstream (parserInternals.c xmlNewInputFromUrl / xmlNewInputFromFile)
+    consults the registered default FIRST and reports XML_IO_ENOENT with NO
+    built-in fallback when it returns NULL.
+  - fix: `open_filename_routed`/`call_loader_materialize` (exports_parser.rs)
+    invoke the registered loader through the C ABI, materialize the
+    produced buffer's bytes through its read callback (the close callback
+    runs exactly once), and the 11 filename-open sites route through it:
+    xmlCtxtReadFile/xmlReadFile, xmlCreateFileParserCtxt (dom),
+    xmlCreateURLParserCtxt, xmlSAXParseFile/WithData/UserParseFile/Entity,
+    xmlParseDTD/xmlParseEntity/xmlParseCtxtExternalEntity,
+    xmlReaderForFile, and the default external-entity loader (entities now
+    load SYSTEM/XXE content through php streams; NO_XXE/NONET gating
+    unchanged). A NULL loader result raises the xmlCtxtErrIO ENOENT report
+    on the context channel (except the xmlreader path, which upstream
+    builds via xmlParserInputBufferCreateFilename and stays SILENT — php's
+    "Unable to open source data" only). Engine-only contexts without a
+    registered loader keep the built-in file open untouched.
+  - guards: exports_parser test_main_doc_open_consults_registered_input_loader
+    (a php-shaped loader serving bytes via xmlParserInputBufferCreateIO is
+    consulted for the main-document open over a bogus file:// URI, stream
+    closed exactly once; a NULL loader result fails the open and the
+    structured channel receives the "failed to load" report). Probes kept:
+    consumers/nul-uri-probe.php + missing-file-probe.php (candidate ==
+    oracle byte-for-byte on file:// loads, %00 warnings, missing-file
+    warnings and asXML %00 output).
+    cargo test --lib 1233 pass; clippy no new warnings; fmt clean.

@@ -2119,13 +2119,28 @@ pub unsafe extern "C" fn xmlReaderForFile(
         return ptr::null_mut();
     }
 
-    // SAFETY: input_from_file reads the file; filename is a valid C string.
-    let input = match unsafe { input_from_file(filename) } {
-        Ok(input) => input,
-        Err(_) => {
+    // SAFETY: the open routes through the registered loader (php streams)
+    // first, else the built-in file read; filename is a valid C string.
+    // UPSTREAM-PARITY (reader.c xmlNewTextReaderFilename): the reader builds
+    // its input via xmlParserInputBufferCreateFilename, which does NOT raise
+    // xmlCtxtErrIO on XML_IO_ENOENT — a failed open returns NULL silently and
+    // the php binding reports "Unable to open source data".
+    let input = match unsafe { crate::abi::exports_parser::open_filename_routed(filename) } {
+        crate::abi::exports_parser::RoutedFileOpen::Loaded(input) => input,
+        crate::abi::exports_parser::RoutedFileOpen::Failed => {
             // SAFETY: ctxt is valid.
             unsafe { free_parser_ctxt(ctxt) };
             return ptr::null_mut();
+        }
+        crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+            match unsafe { input_from_file(filename) } {
+                Ok(input) => input,
+                Err(_) => {
+                    // SAFETY: ctxt is valid.
+                    unsafe { free_parser_ctxt(ctxt) };
+                    return ptr::null_mut();
+                }
+            }
         }
     };
 

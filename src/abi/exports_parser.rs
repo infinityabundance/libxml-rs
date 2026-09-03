@@ -1485,12 +1485,23 @@ pub unsafe extern "C" fn xmlCreateURLParserCtxt(
             return ptr::null_mut();
         }
         apply_options(ctxt, options);
-        let input = match helpers::input_from_file(filename) {
-            Ok(i) => i,
-            Err(_) => {
+        let input = match open_filename_routed(filename) {
+            RoutedFileOpen::Loaded(i) => i,
+            RoutedFileOpen::Failed => {
+                // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile via
+                // the registered loader): NULL loader result is XML_IO_ENOENT
+                // — raise xmlCtxtErrIO, no built-in fallback.
+                emit_io_warning(ctxt, io_load_failure_message(filename));
                 helpers::free_parser_ctxt(ctxt);
                 return ptr::null_mut();
             }
+            RoutedFileOpen::Builtin => match helpers::input_from_file(filename) {
+                Ok(i) => i,
+                Err(_) => {
+                    helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            },
         };
         helpers::setup_parser_input(ctxt, input);
         ctxt
@@ -1634,9 +1645,21 @@ pub unsafe extern "C" fn xmlCtxtReadFile(
         return ptr::null_mut();
     }
     unsafe {
-        match helpers::input_from_file(filename) {
-            Ok(input) => ctxt_read_doc(ctxt, input, filename, options),
-            Err(_) => ptr::null_mut(),
+        // UPSTREAM-PARITY (parser.c xmlCtxtReadFile -> xmlNewInputFromFile):
+        // the registered xmlParserInputBufferCreateFilenameDefault (php
+        // streams loader) is consulted first; a NULL loader result raises
+        // xmlCtxtErrIO(XML_IO_ENOENT, filename) — "I/O warning : failed to
+        // load \"%s\": %s\n\" — and parsing fails.
+        match open_filename_routed(filename) {
+            RoutedFileOpen::Loaded(input) => ctxt_read_doc(ctxt, input, filename, options),
+            RoutedFileOpen::Failed => {
+                emit_io_warning(ctxt, io_load_failure_message(filename));
+                ptr::null_mut()
+            }
+            RoutedFileOpen::Builtin => match helpers::input_from_file(filename) {
+                Ok(input) => ctxt_read_doc(ctxt, input, filename, options),
+                Err(_) => ptr::null_mut(),
+            },
         }
     }
 }
@@ -3261,6 +3284,35 @@ unsafe extern "C" fn default_external_entity_loader(
                 return ptr::null_mut();
             }
         }
+        // UPSTREAM-PARITY (parserInternals.c xmlDefaultExternalEntityLoader
+        // -> xmlNewInputFromFile -> xmlNewInputFromUrl): the registered
+        // xmlParserInputBufferCreateFilenameDefault (php streams loader) is
+        // consulted BEFORE the input-callback table and the built-in open. A
+        // NULL loader result is XML_IO_ENOENT — xmlCtxtErrIO is raised and
+        // there is no fallback.
+        if globals::get_parser_input_buffer_create_filename_value().is_some() {
+            // SAFETY: url is a valid NUL-terminated C string for the call.
+            return match call_loader_materialize(url) {
+                Err(()) => {
+                    emit_io_warning(ctxt, io_load_failure_message(url));
+                    ptr::null_mut()
+                }
+                Ok(data) => {
+                    // Build a MEMORY-backed C input: the entity machinery
+                    // consumes the loader result through base/end (upstream
+                    // buffers the external entity content the same way).
+                    let mem = io::input_buffer_create_mem(
+                        data.as_ptr() as *const c_char,
+                        data.len() as c_int,
+                        xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+                    );
+                    if mem.is_null() {
+                        return ptr::null_mut();
+                    }
+                    parser_input_from_buf(mem)
+                }
+            };
+        }
         // Try the registered input callbacks first.
         let table = INPUT_CALLBACKS.lock();
         for entry in table.iter() {
@@ -3338,6 +3390,161 @@ pub(crate) unsafe fn emit_io_warning(ctxt: *mut _xmlParserCtxt, message: String)
             None,
         );
     }
+}
+
+/// Result of routing a filename open through the registered
+/// `xmlParserInputBufferCreateFilenameDefault` loader (upstream
+/// parserInternals.c `xmlNewInputFromUrl`).
+#[allow(dead_code)]
+pub(crate) enum RoutedFileOpen {
+    /// No custom loader is registered — the caller falls back to the built-in
+    /// file open (`helpers::input_from_file`).
+    Builtin,
+    /// The registered loader returned NULL: upstream reports `XML_IO_ENOENT`
+    /// with NO built-in fallback (php streams loader: missing file, percent-
+    /// encoded-NUL guard, disabled entity loader).
+    Failed,
+    /// The loader produced an input buffer whose bytes were materialized
+    /// (filename = the original URI).
+    Loaded(InputBuffer),
+}
+
+/// UPSTREAM-PARITY (parserInternals.c `xmlNewInputFromUrl`): when a custom
+/// `xmlParserInputBufferCreateFilenameDefault` is registered (PHP installs
+/// its streams loader at request init), filename opens consult it FIRST —
+/// php streams unescape `file://` URIs, enforce the percent-encoded-NUL
+/// guard, honor stream contexts and emit their own failure warnings. A NULL
+/// loader result is `XML_IO_ENOENT`; upstream does NOT fall back to the
+/// built-in open in that case. Without a registered loader the caller keeps
+/// the built-in path.
+///
+/// Invoke the registered loader and materialize the produced buffer's bytes
+/// through its read callback, releasing the C buffer/stream exactly once
+/// (the close callback runs when the buffer is freed). Returns `Err(())` on
+/// a NULL loader result or a read-callback error.
+///
+/// # Safety
+///
+/// - `uri` must be a valid NUL-terminated C string live for the call; the
+///   registered loader callback (if any) must uphold the
+///   `xmlParserInputBufferCreateFilenameFunc` contract.
+pub(crate) unsafe fn call_loader_materialize(uri: *const c_char) -> Result<Vec<u8>, ()> {
+    // SAFETY: reads the per-thread loader slot (upstream reads the same).
+    let Some(func) = globals::get_parser_input_buffer_create_filename_value() else {
+        return Err(());
+    };
+    // SAFETY: `func` is the consumer-registered C loader and must uphold the
+    // xmlParserInputBufferCreateFilenameFunc contract (uri + enc in, buffer
+    // out, or NULL on failure).
+    let buf = unsafe { func(uri, xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int) };
+    if buf.is_null() {
+        return Err(());
+    }
+    let (read, ctx) = unsafe {
+        let b = &*buf;
+        (b.readcallback, b.context)
+    };
+    let mut data: Vec<u8> = Vec::new();
+    let mut result = Err(());
+    if let Some(read) = read {
+        let mut tmp = [0u8; 4096];
+        loop {
+            // SAFETY: the loader's buffer carries the consumer's read
+            // callback + context (xmlParserInputBufferCreateIO contract).
+            let n = unsafe { read(ctx, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int) };
+            if n < 0 {
+                break;
+            }
+            if n == 0 {
+                result = Ok(());
+                break;
+            }
+            data.extend_from_slice(&tmp[..n as usize]);
+        }
+    } else {
+        // A memory-backed loader buffer (no read callback): copy its content.
+        unsafe {
+            let b = &*buf;
+            if !b.buffer.is_null() {
+                let xbuf = &*(b.buffer as *mut _xmlBuffer);
+                if !xbuf.content.is_null() && xbuf.use_ > 0 {
+                    data.extend_from_slice(std::slice::from_raw_parts(
+                        xbuf.content as *const u8,
+                        xbuf.use_ as usize,
+                    ));
+                }
+            }
+        }
+        result = Ok(());
+    }
+    // Release the loader's C buffer: the close callback (php streams IO
+    // close) runs exactly once now that the bytes are owned here.
+    io::input_buffer_free(buf);
+    result.map(|()| data)
+}
+
+/// Route a filename open through the registered
+/// `xmlParserInputBufferCreateFilenameDefault` loader, materializing the
+/// result into an owned [`InputBuffer`] (filename = the original URI). See
+/// [`call_loader_materialize`] for the loader contract.
+///
+/// # Safety
+///
+/// - `uri` must be a valid NUL-terminated C string live for the call.
+pub(crate) unsafe fn open_filename_routed(uri: *const c_char) -> RoutedFileOpen {
+    // No registered loader: the caller keeps the built-in open.
+    if globals::get_parser_input_buffer_create_filename_value().is_none() {
+        return RoutedFileOpen::Builtin;
+    }
+    // SAFETY: uri is a valid NUL-terminated C string for the call.
+    let loaded = unsafe { call_loader_materialize(uri) };
+    match loaded {
+        Err(()) => RoutedFileOpen::Failed,
+        Ok(bytes) => {
+            let named = if uri.is_null() {
+                None
+            } else {
+                // SAFETY: uri is a valid NUL-terminated C string.
+                Some(
+                    unsafe { CStr::from_ptr(uri) }
+                        .to_string_lossy()
+                        .into_owned(),
+                )
+            };
+            RoutedFileOpen::Loaded(InputBuffer::from_memory(&bytes, named.as_deref()))
+        }
+    }
+}
+
+/// Compose the upstream `xmlCtxtErrIO(XML_IO_ENOENT, uri)` message text:
+/// `failed to load "<uri>": <errno text>\n`. When errno is stale (the
+/// registered php streams loader returned NULL without touching errno, e.g.
+/// the percent-NUL guard) the `XML_IO_ENOENT` table text is used.
+///
+/// # Safety
+///
+/// - `uri` must be NULL or a valid NUL-terminated C string live for the call.
+pub(crate) fn io_load_failure_message(uri: *const c_char) -> String {
+    // SAFETY: reads errno only.
+    let errno = unsafe { *libc::__errno_location() };
+    let errstr = if errno == 0 {
+        // xmlErrString(XML_IO_ENOENT) table text (error.c 2.15).
+        "No such file or directory".to_string()
+    } else {
+        // SAFETY: strerror(errno) returns a static message for the value.
+        unsafe { std::ffi::CStr::from_ptr(libc::strerror(errno)) }
+            .to_string_lossy()
+            .into_owned()
+    };
+    let url_str = if uri.is_null() {
+        String::new()
+    } else {
+        // SAFETY: uri is a valid NUL-terminated C string.
+        unsafe { std::ffi::CStr::from_ptr(uri) }
+            .to_string_lossy()
+            .into_owned()
+    };
+    format!("failed to load \"{url_str}\": {errstr}\n")
 }
 
 /// Set the application-wide external entity loader.
@@ -4874,12 +5081,20 @@ pub unsafe extern "C" fn xmlSAXParseEntity(
         if ctxt.is_null() {
             return ptr::null_mut();
         }
-        let input = match helpers::input_from_file(filename) {
-            Ok(i) => i,
-            Err(_) => {
+        let input = match open_filename_routed(filename) {
+            RoutedFileOpen::Loaded(i) => i,
+            RoutedFileOpen::Failed => {
+                emit_io_warning(ctxt, io_load_failure_message(filename));
                 helpers::free_parser_ctxt(ctxt);
                 return ptr::null_mut();
             }
+            RoutedFileOpen::Builtin => match helpers::input_from_file(filename) {
+                Ok(i) => i,
+                Err(_) => {
+                    helpers::free_parser_ctxt(ctxt);
+                    return ptr::null_mut();
+                }
+            },
         };
         helpers::setup_parser_input(ctxt, input);
         let rc = helpers::parse_document(ctxt);
@@ -4964,6 +5179,198 @@ pub unsafe extern "C" fn xmlC14NDocSave(
             -1
         } else {
             ret
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A read-callback state pair mirroring PHP's streams IO loader: the
+    /// registered `xmlParserInputBufferCreateFilenameDefault` serves bytes
+    /// through an `xmlParserInputBufferCreateIO` buffer (php builds exactly
+    /// this shape with php_libxml_streams_IO_read/close over a php_stream).
+    /// The loader reaches the state through a thread-local pointer (the
+    /// loader slot itself is per-thread TLS, so there is no cross-thread
+    /// aliasing).
+    struct ServeState {
+        data: &'static [u8],
+        pos: usize,
+        closed: bool,
+    }
+
+    thread_local! {
+        static SERVE_STATE: std::cell::Cell<*mut ServeState> =
+            std::cell::Cell::new(std::ptr::null_mut());
+    }
+
+    unsafe extern "C" fn serve_read(ctx: *mut c_void, buffer: *mut c_char, len: c_int) -> c_int {
+        // SAFETY: ctx is the ServeState set up by the test; buffer is a
+        // writable len-byte region per the xmlInputReadCallback contract.
+        let st = unsafe { &mut *(ctx as *mut ServeState) };
+        if st.pos >= st.data.len() {
+            return 0;
+        }
+        let n = (len as usize).min(st.data.len() - st.pos);
+        unsafe {
+            core::ptr::copy_nonoverlapping(st.data.as_ptr().add(st.pos), buffer as *mut u8, n);
+        }
+        st.pos += n;
+        n as c_int
+    }
+
+    unsafe extern "C" fn serve_close(ctx: *mut c_void) -> c_int {
+        // SAFETY: ctx is the ServeState set up by the test.
+        let st = unsafe { &mut *(ctx as *mut ServeState) };
+        st.closed = true;
+        0
+    }
+
+    /// The php-shaped loader: build an IO buffer over the thread-local serve
+    /// state. `uri` is deliberately ignored — php's loader opens whatever the
+    /// php streams layer resolves, so a "file://" URI or a non-existent path
+    /// both reach the stream; this guard proves the ENGINE consults the
+    /// loader instead of the built-in path (which would fail on the bogus
+    /// URI used here).
+    unsafe extern "C" fn serving_loader(
+        _uri: *const c_char,
+        _enc: c_int,
+    ) -> *mut _xmlParserInputBuffer {
+        SERVE_STATE.with(|cell| {
+            let st = cell.get();
+            if st.is_null() {
+                return ptr::null_mut();
+            }
+            crate::abi::exports_xml2::xmlParserInputBufferCreateIO(
+                Some(serve_read as xmlInputReadCallback),
+                Some(serve_close as xmlInputCloseCallback),
+                st as *mut c_void,
+                xmlCharEncoding::XML_CHAR_ENCODING_NONE as c_int,
+            )
+        })
+    }
+
+    unsafe extern "C" fn record_message(ctx: *mut c_void, err: *const _xmlError) {
+        if err.is_null() {
+            return;
+        }
+        // SAFETY: ctx is the recording Vec set up by the test; the error is
+        // live for the call and its message is NUL-terminated.
+        let out = unsafe { &mut *(ctx as *mut Vec<u8>) };
+        let msg = unsafe { (*err).message };
+        if !msg.is_null() {
+            // SAFETY: message is a NUL-terminated C string for the call.
+            let bytes = unsafe { std::ffi::CStr::from_ptr(msg) }.to_bytes();
+            out.extend_from_slice(bytes);
+        }
+    }
+
+    /// SP-14.3.2 S8 / dom-L2 (bug79971_1): a registered
+    /// `xmlParserInputBufferCreateFilenameDefault` (PHP's streams loader) is
+    /// consulted by the main-document file open (`xmlReadFile`/
+    /// `xmlCtxtReadFile` -> xmlNewInputFromFile -> xmlNewInputFromUrl): its
+    /// bytes are parsed even when the URI is not a real file, and a NULL
+    /// loader result reports the xmlCtxtErrIO "failed to load" warning with
+    /// NO built-in fallback.
+    ///
+    /// # Safety
+    ///
+    /// - the callbacks and stack state are valid for the duration of each
+    ///   call; the loader/generic-handler TLS slots are restored before the
+    ///   test ends (serialized via the error-handler test lock).
+    #[test]
+    fn test_main_doc_open_consults_registered_input_loader() {
+        use crate::xml::globals::ERROR_HANDLER_TEST_LOCK;
+
+        // Serialize against the handler-slot tests (the generic func slot is
+        // shared global state); the loader slot is this thread's TLS but it
+        // is restored so later engine state stays pristine.
+        let _guard = ERROR_HANDLER_TEST_LOCK.lock();
+        let old_loader = globals::get_parser_input_buffer_create_filename_value();
+        let old_struct = globals::get_structured_error_func();
+        let old_struct_ctx = globals::get_structured_error_ctx();
+
+        let mut captured: Vec<u8> = Vec::new();
+        let captured_ptr = &mut captured as *mut Vec<u8> as *mut c_void;
+        // SAFETY: set/restore of the handler slots is serialized under
+        // ERROR_HANDLER_TEST_LOCK for the test's duration.
+        unsafe {
+            globals::set_structured_error_func(
+                captured_ptr,
+                Some(record_message as xmlStructuredErrorFunc),
+            );
+        }
+
+        unsafe {
+            let mut serve = ServeState {
+                data: b"<root><a>1</a></root>",
+                pos: 0,
+                closed: false,
+            };
+            SERVE_STATE.with(|cell| cell.set(&mut serve as *mut ServeState));
+            globals::set_parser_input_buffer_create_filename_value(Some(serving_loader));
+
+            // The URI names no real file — only the loader can satisfy it.
+            let ctxt = helpers::create_parser_ctxt();
+            assert!(!ctxt.is_null());
+            let doc = xmlCtxtReadFile(
+                ctxt,
+                c"file:///definitely-not-a-file.xml".as_ptr(),
+                ptr::null(),
+                0,
+            );
+            assert!(
+                !doc.is_null(),
+                "registered loader must be consulted for the main document open"
+            );
+            let root = (*doc).children;
+            assert!(
+                !root.is_null() && !(*root).name.is_null(),
+                "served document must produce a root element"
+            );
+            assert_eq!(
+                crate::xml::string::xmlstr_to_bytes((*root).name as *const u8),
+                b"root",
+                "document served by the loader must be parsed"
+            );
+            assert!(serve.closed, "loader stream must be closed exactly once");
+            tree::free_doc(doc);
+            helpers::free_parser_ctxt(ctxt);
+
+            // A loader result of NULL is XML_IO_ENOENT: the built-in open is
+            // NOT attempted and the xmlCtxtErrIO ENOENT report ("failed to
+            // load") reaches the structured handler.
+            globals::set_parser_input_buffer_create_filename_value(None);
+            SERVE_STATE.with(|cell| cell.set(ptr::null_mut()));
+            unsafe extern "C" fn null_loader(
+                _uri: *const c_char,
+                _enc: c_int,
+            ) -> *mut _xmlParserInputBuffer {
+                ptr::null_mut()
+            }
+            globals::set_parser_input_buffer_create_filename_value(Some(null_loader));
+            let ctxt2 = helpers::create_parser_ctxt();
+            assert!(!ctxt2.is_null());
+            let doc2 = xmlCtxtReadFile(
+                ctxt2,
+                c"file:///definitely-not-a-file.xml".as_ptr(),
+                ptr::null(),
+                0,
+            );
+            assert!(doc2.is_null(), "NULL loader result must fail the open");
+            let got = String::from_utf8_lossy(&captured);
+            assert!(
+                got.contains("failed to load"),
+                "xmlCtxtErrIO report must reach the error channel: {got:?}"
+            );
+            helpers::free_parser_ctxt(ctxt2);
+        }
+
+        // Restore both slots.
+        unsafe {
+            globals::set_parser_input_buffer_create_filename_value(old_loader);
+            globals::set_structured_error_func(old_struct_ctx, old_struct);
         }
     }
 }

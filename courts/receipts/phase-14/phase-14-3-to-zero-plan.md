@@ -1,6 +1,15 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **simplexml S8 + dom-L2 loader net closed (2026-09-03):** the engine's
+  filename-input creation now consults the registered
+  `xmlParserInputBufferCreateFilenameDefault` (php streams loader) at all 11
+  file-open sites — `file://` URIs load, PHP's percent-NUL guard and stream
+  contexts engage, and failed opens raise the xmlCtxtErrIO "I/O warning :
+  failed to load" report (xmlreader path stays silent, matching upstream's
+  xmlParserInputBufferCreateFilename build). Full suite **236 → 233**
+  (simplexml 3 → 2: bug79971_1 PASS), zero regressions. Receipt:
+  php-14-3-input-loader-routing-20260903/.
 - **simplexml S3 XPath error channel closed (2026-09-03):** compile/eval
   failures with no structured handler now reach the generic channel VERBATIM
   (xpath.c xmlXPathErrFmt sets `channel = xmlGenericError`, which is not one
@@ -74,12 +83,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 236 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr):
+Split at 289 (now 233 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
 | ext/dom | 169 -> 151 | | ext/xml | 5 -> **0** |
-| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 3 |
+| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 2 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —

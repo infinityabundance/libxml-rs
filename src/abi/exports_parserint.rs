@@ -4829,9 +4829,17 @@ pub unsafe extern "C" fn xmlParseCtxtExternalEntity(
             pi_fatal_err(ctxt, XML_ERR_INTERNAL_ERROR);
             return (*ctxt).errNo;
         }
-        // Load the entity content from the URL (treated as a file path).
+        // Load the entity content from the URL (treated as a file path),
+        // consulting the registered xmlParserInputBufferCreateFilenameDefault
+        // (php streams loader) first — upstream xmlParseCtxtExternalEntity
+        // reads through xmlNewInputFromFile.
         let url_cstr = url as *const c_char;
-        let input_buf = match input_from_file(url_cstr) {
+        let input_buf = match crate::abi::exports_parser::open_filename_routed(url_cstr) {
+            crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => Ok(b),
+            crate::abi::exports_parser::RoutedFileOpen::Failed => Err(()),
+            crate::abi::exports_parser::RoutedFileOpen::Builtin => input_from_file(url_cstr),
+        };
+        let input_buf = match input_buf {
             Ok(b) => b,
             Err(_) => {
                 pi_fatal_err(ctxt, XML_ERR_INTERNAL_ERROR);
@@ -5163,28 +5171,26 @@ pub unsafe extern "C" fn xmlParseDTD(
         (*ctxt).hasExternalSubset = 1;
 
         let mut ret: *mut _xmlDtd = ptr::null_mut();
-        let input_buf = input_from_file(system_id as *const c_char);
-        if let Err(()) = input_buf {
+        let input_buf =
+            match crate::abi::exports_parser::open_filename_routed(system_id as *const c_char) {
+                crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => Ok(b),
+                crate::abi::exports_parser::RoutedFileOpen::Failed => Err(()),
+                crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+                    input_from_file(system_id as *const c_char)
+                }
+            };
+        if input_buf.is_err() {
             // UPSTREAM-PARITY (parserInternals.c xmlNewInputFromFile via the
             // default entity loader): a failed load raises
             // xmlCtxtErrIO(ctxt, XML_IO_ENOENT, url) — "I/O warning :
             // failed to load \"%s\": %s\n" (HOSTILE-FAILURE F7).
-            let errno = *libc::__errno_location();
-            let errstr = if errno == 0 {
-                String::new()
-            } else {
-                std::ffi::CStr::from_ptr(libc::strerror(errno))
-                    .to_string_lossy()
-                    .into_owned()
-            };
-            let url_str = std::ffi::CStr::from_ptr(system_id as *const c_char).to_string_lossy();
             crate::abi::exports_parser::emit_io_warning(
                 ctxt,
-                format!("failed to load \"{url_str}\": {errstr}\n"),
+                crate::abi::exports_parser::io_load_failure_message(system_id as *const c_char),
             );
         }
-        if let Ok(buf) = input_buf {
-            let boxed = Box::into_raw(Box::new(buf));
+        if let Ok(input_buf) = input_buf {
+            let boxed = Box::into_raw(Box::new(input_buf));
             crate::xml::parser::helpers::stash_input_buffer(ctxt, boxed);
             let input = xmlMallocZero(size_of::<_xmlParserInput>()) as *mut _xmlParserInput;
             if !input.is_null() {
@@ -5246,11 +5252,24 @@ pub unsafe extern "C" fn xmlParseEntity(filename: *const c_char) -> *mut _xmlDoc
         if ctxt.is_null() {
             return ptr::null_mut();
         }
-        let input_buf = match input_from_file(filename) {
-            Ok(b) => b,
-            Err(_) => {
+        let input_buf = match crate::abi::exports_parser::open_filename_routed(filename) {
+            crate::abi::exports_parser::RoutedFileOpen::Loaded(b) => b,
+            crate::abi::exports_parser::RoutedFileOpen::Failed => {
+                crate::abi::exports_parser::emit_io_warning(
+                    ctxt,
+                    crate::abi::exports_parser::io_load_failure_message(filename),
+                );
                 free_parser_ctxt(ctxt);
                 return ptr::null_mut();
+            }
+            crate::abi::exports_parser::RoutedFileOpen::Builtin => {
+                match input_from_file(filename) {
+                    Ok(b) => b,
+                    Err(_) => {
+                        free_parser_ctxt(ctxt);
+                        return ptr::null_mut();
+                    }
+                }
             }
         };
         setup_parser_input(ctxt, input_buf);

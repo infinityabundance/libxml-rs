@@ -113,7 +113,7 @@ copy/append) — fix the copy-owner/root-detach engine once, re-run both.
 Kind output; potential double-free risk if both docs free the shared child →
 ownership (validate HOSTILE-ABI/FREEPROP like Fix 3/4).
 
-## S8 percent-encoded NUL in URI: loader warnings/return path degraded — count 1 | output+warning (test-secondary crash)
+## S8 percent-encoded NUL in URI: loader warnings/return path degraded — count 1 | output+warning (test-secondary crash)  [CLOSED 2026-09-03]
 Member: `bug79971_1.phpt`. `simplexml_load_file("file://…/%00foo")` must emit the
 two `URI must not contain percent-encoded NUL bytes` / `I/O warning : failed to
 load %s` warnings and return false; candidate suppresses the NUL/IO warnings and
@@ -126,6 +126,14 @@ and emits the two warnings is bypassed (returned false through a branch that
 suppresses diagnostics). Surface: URI filename loader error routing
 (`xmlReadMemory`/`xmlParserInputBufferCreateFilename`/file-open error text). 
 **FLAG overlap** with dom L2 NUL-filename / empty-file and shared xmlIO loader rows.
+**Closed:** engine filename-input creation now consults the registered
+`xmlParserInputBufferCreateFilenameDefault` (php streams loader) at all 11
+file-open sites (upstream xmlNewInputFromUrl semantics); `file://` URIs
+load, the php percent-NUL guard + "I/O warning : failed to load" report
+fire, and asXML's %00 output side was already routed by EXT-6. Receipt:
+php-14-3-input-loader-routing-20260903/; guard:
+test_main_doc_open_consults_registered_input_loader; probes:
+consumers/nul-uri-probe.php + missing-file-probe.php (candidate == oracle).
 
 ## S9 XSLT transformToDoc→SimpleXML result empty on autovivification — count 1 | output (xsl/dom interplay)
 Member: `gh17153.phpt`. `transformToDoc($sxe, SimpleXMLElement::class)` then
