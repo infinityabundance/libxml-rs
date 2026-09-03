@@ -453,8 +453,14 @@ unsafe fn node_parse_att_value(
                         cur = cur.add(1);
                         remaining -= 1;
                     }
+                    // UPSTREAM-PARITY (tree.c xmlNodeParseAttValue): a bare
+                    // '&' whose name never reaches a ';' does NOT fail the
+                    // parse — the '&' is consumed and the REST of the value
+                    // continues as plain text (the q..cur flush in the tail).
+                    // Hard-failing here made xmlNewDocNode/xmlNewChild reject
+                    // contents like "x & y" that the oracle accepts as
+                    // "x  y".
                     if remaining == 0 || *cur == 0 {
-                        failed = true;
                         break;
                     }
                     if cur != q {

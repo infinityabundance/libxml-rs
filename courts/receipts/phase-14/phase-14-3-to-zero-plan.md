@@ -1,6 +1,12 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **simplexml S5/S6 content discipline closed (2026-09-03):** xmlNewChild now
+  parses content as an attribute value (upstream xmlNewElem): empty content
+  adds no text child, `&#38;` decodes, declared entities become entity-ref
+  children; a bare `&` continues as text. Full suite **241 → 239** (simplexml
+  7 → 5: bug44478 + bug76712 PASS), zero regressions. Receipt:
+  php-14-3-simplexml-addchild-20260903/.
 - **KEY-4 part 1 closed (2026-09-03):** RECOVER premature-EOF raises error 77
   before the recovery close (was a silent close) + NO_XXE blocks external
   general-entity load/substitution + DTD serializer now dumps the DTD node's
@@ -56,12 +62,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 241 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1):
+Split at 289 (now 239 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
 | ext/dom | 169 -> 152 | | ext/xml | 5 -> **0** |
-| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 7 |
+| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 5 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —

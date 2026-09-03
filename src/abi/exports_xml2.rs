@@ -1508,20 +1508,46 @@ pub unsafe extern "C" fn xmlNewChild(
     name: *const xmlChar,
     content: *const xmlChar,
 ) -> *mut _xmlNode {
-    // UPSTREAM-PARITY (tree.c 2.15 xmlNewChild -> xmlNewDocNode): a non-NULL
-    // content becomes a text child of the new element
-    // (xmlNewDocText + xmlAddChild).
+    // UPSTREAM-PARITY (tree.c 2.15 xmlNewChild -> xmlNewDocNode -> xmlNewElem):
+    // the content is parsed as an ATTRIBUTE VALUE (xmlNodeParseAttValue) —
+    // character references are decoded (`a &#38; b` becomes `a & b`),
+    // declared general entities become entity-ref children, and an EMPTY
+    // content adds NO text child (SimpleXML addChild: bug44478 decode,
+    // bug76712 `<bar/>` for addChild('bar','')). The old raw `new_text`
+    // storage kept the reference text verbatim and appended an empty text
+    // node for "".
     if parent.is_null() || name.is_null() {
         return ptr::null_mut();
     }
-    let node = crate::xml::tree::new_child(parent, ns, name);
+    let ptype = unsafe { (*parent).type_ };
+    use crate::abi::types::xmlElementType::*;
+    if ptype != XML_DOCUMENT_NODE as c_int
+        && ptype != XML_HTML_DOCUMENT_NODE as c_int
+        && ptype != XML_DOCUMENT_FRAG_NODE as c_int
+        && ptype != XML_ELEMENT_NODE as c_int
+    {
+        return ptr::null_mut();
+    }
+    let mut ns = ns;
+    if ptype == XML_ELEMENT_NODE as c_int && ns.is_null() {
+        ns = unsafe { (*parent).ns };
+    }
+    let node = crate::abi::exports_tree::xmlNewDocNode(unsafe { (*parent).doc }, ns, name, content);
     if node.is_null() {
         return ptr::null_mut();
     }
-    if !content.is_null() {
-        let text = crate::xml::tree::new_text(content);
-        if !text.is_null() {
-            crate::xml::tree::add_child(node, text);
+    // Add the new element at the end of the parent's children (upstream
+    // xmlNewChild links it directly after xmlNewDocNode).
+    unsafe {
+        (*node).parent = parent;
+        if (*parent).children.is_null() {
+            (*parent).children = node;
+            (*parent).last = node;
+        } else {
+            let prev = (*parent).last;
+            (*prev).next = node;
+            (*node).prev = prev;
+            (*parent).last = node;
         }
     }
     node
@@ -8706,6 +8732,74 @@ mod tests {
             );
             assert!(!empty.is_null());
             assert!((*empty).children.is_null());
+
+            crate::xml::tree::free_doc(doc);
+        }
+    }
+
+    /// xmlNewChild content is parsed as an ATTRIBUTE VALUE (upstream tree.c
+    /// xmlNewChild -> xmlNewDocNode -> xmlNewElem -> xmlNodeParseAttValue):
+    /// an EMPTY content adds NO text child (`<bar/>`, SimpleXML bug76712),
+    /// character references are decoded (`a &#38; b` -> `a & b`, SimpleXML
+    /// bug44478) and a declared general entity becomes an entity-ref child.
+    /// The old raw text storage appended an empty text node for "" and kept
+    /// the reference text verbatim.
+    ///
+    /// # Safety
+    ///
+    /// - doc/root/child are created and freed exactly once; the text child
+    ///   content string is read while live.
+    #[test]
+    fn test_xml_new_child_parses_content_as_att_value() {
+        unsafe {
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let root = crate::xml::tree::new_node(
+                core::ptr::null_mut(),
+                c"root".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!root.is_null());
+            crate::xml::tree::doc_set_root_element(doc, root);
+
+            // Empty content -> NO text child (upstream value[0] == 0 early
+            // out); serializes as `<empty/>`.
+            let e = super::xmlNewChild(
+                root,
+                core::ptr::null_mut(),
+                c"empty".as_ptr() as *const crate::abi::types::xmlChar,
+                c"".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!e.is_null());
+            assert!(
+                (*e).children.is_null(),
+                "empty content must not add a text child"
+            );
+
+            // Character reference content is DECODED into the text child.
+            let r = super::xmlNewChild(
+                root,
+                core::ptr::null_mut(),
+                c"ref".as_ptr() as *const crate::abi::types::xmlChar,
+                c"a &#38; b".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!r.is_null());
+            assert!(!(*r).children.is_null());
+            let txt = crate::xml::string::xmlstr_to_bytes((*(*r).children).content);
+            assert_eq!(txt, b"a & b");
+
+            // A bare '&' (no terminating ';') consumes the '&' and keeps the
+            // rest as text (upstream xmlNodeParseAttValue, "x & y" -> "x  y").
+            let b = super::xmlNewChild(
+                root,
+                core::ptr::null_mut(),
+                c"bare".as_ptr() as *const crate::abi::types::xmlChar,
+                c"x & y".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!b.is_null());
+            assert!(!(*b).children.is_null());
+            let txt = crate::xml::string::xmlstr_to_bytes((*(*b).children).content);
+            assert_eq!(txt, b"x  y");
 
             crate::xml::tree::free_doc(doc);
         }

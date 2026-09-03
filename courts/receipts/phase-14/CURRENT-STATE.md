@@ -477,3 +477,27 @@ KEY-4 part 1 (RECOVER diagnostics + NO_XXE gating) closed (2026-09-03): full
     nothing). Probes kept: recover-probe.c / savedtd-probe.c / dtd-children.c
     (engine pins), recover-sxe.php (php pin). cargo test --lib 1229 pass;
     clippy no new warnings; fmt clean.
+
+simplexml S5/S6 content discipline closed (2026-09-03): full suite 241 -> 239;
+  zero regressions (simplexml 7 -> 5 — bug44478 + bug76712 PASS; dom 152 /
+  xml 0 / xmlreader 29 / xmlwriter 1 / xsl 52 unchanged). Receipt:
+  php-14-3-simplexml-addchild-20260903/.
+  - root cause: the exported xmlNewChild treated content as RAW text
+    (new_text storage) — upstream xmlNewChild -> xmlNewDocNode -> xmlNewElem
+    parses the content as an ATTRIBUTE VALUE (xmlNodeParseAttValue): empty
+    content adds NO text child, `&#38;`-style character references are
+    decoded, declared general entities become entity-ref children, and a bare
+    '&' without ';' consumes the '&' and keeps the rest as text. The
+    crate's own xmlNewDocNode already routed through the faithful
+    node_parse_att_value; xmlNewChild now mirrors upstream (build via
+    xmlNewDocNode + direct link at the parent's tail).
+  - additionally exports_tree.rs node_parse_att_value hard-failed on a bare
+    '&' (no ';'), diverging from its exports_string.rs twin and upstream
+    (tree.c: `if ((remaining <= 0) || (*cur == 0)) break;`) — xmlNewDocNode
+    rejected contents like "x & y" that the oracle accepts as "x  y". Fixed
+    to break-and-continue-as-text.
+  - guards: exports_xml2 test_xml_new_child_parses_content_as_att_value
+    ("" -> no child; "a &#38; b" -> text "a & b"; "x & y" -> "x  y").
+    Probes kept: consumers/addchild-probe.php (php pin: oracle-equal on all
+    four content shapes). cargo test --lib 1230 pass; clippy no new warnings;
+    fmt clean.
