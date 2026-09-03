@@ -1,6 +1,13 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **simplexml S7 clone-detach closed (2026-09-03):** node/document copies no
+  longer carry the source `_private` (upstream xmlStaticCopyNode zeroes the
+  new node; php keys wrapper registrations on `_private`, so inherited
+  registrations bound the clone to the ORIGINAL document — SimpleXML
+  root-element clone resolved XPath/mutations into the original's tree).
+  Full suite **233 → 232** (simplexml 2 → 1: bug63575 PASS), zero
+  regressions. Receipt: php-14-3-copy-private-20260903/.
 - **simplexml S8 + dom-L2 loader net closed (2026-09-03):** the engine's
   filename-input creation now consults the registered
   `xmlParserInputBufferCreateFilenameDefault` (php streams loader) at all 11
@@ -83,12 +90,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 233 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader):
+Split at 289 (now 232 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
 | ext/dom | 169 -> 151 | | ext/xml | 5 -> **0** |
-| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 2 |
+| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 1 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —

@@ -584,3 +584,29 @@ simplexml S8 + dom L2/loader net closed (2026-09-03): full suite 236 -> 233;
     oracle byte-for-byte on file:// loads, %00 warnings, missing-file
     warnings and asXML %00 output).
     cargo test --lib 1233 pass; clippy no new warnings; fmt clean.
+
+simplexml S7 clone-detach closed (2026-09-03): full suite 233 -> 232;
+  zero regressions (simplexml 2 -> 1 — bug63575 PASS; dom 151 / xml 0 /
+  xmlreader 25 / xmlwriter 1 / xsl 40 unchanged). Receipt:
+  php-14-3-copy-private-20260903/.
+  - root cause: SimpleXML's root-element clone deep-copies the DOCUMENT
+    (php sxe_object_clone: `docp = xmlCopyDoc(ptr, 1); nodep =
+    xmlDocGetRootElement(docp)`) and PHP keys its wrapper registrations on
+    the C nodes' `_private` (php_libxml_node_ptr). The candidate's copy
+    path (tree/mod.rs copy_node / copy_ns_list) COPIED `_private` onto the
+    copy, so the cloned document's nodes still pointed at the ORIGINAL
+    document's php wrappers: php's increment_node_ptr reused the original
+    registrations and the clone's XPath/mutations resolved into the
+    ORIGINAL tree (addChild('c') landed on $o1, not $o2). Upstream
+    xmlStaticCopyNode memset-zeroes the new node and xmlCopyNamespaceList
+    never copies `_private` — a copied subtree must look UNREGISTERED.
+  - fix: copy_node and copy_ns_list no longer propagate `_private` (node
+    and ns-declaration copies stay NULL, upstream-faithful for every
+    caller: xmlCopyDoc / xmlDocCopyNode / xinclude / xslt variables /
+    xpointer / xpath node copies).
+  - guards: exports_xml2 test_copies_do_not_carry_private — after
+    xmlCopyDoc / xmlDocCopyNode the copies' `_private` is NULL while the
+    source marker is untouched. Probe kept:
+    consumers/clone-xpath-probe.php (candidate == oracle: mutation through
+    the clone's XPath result lands on the clone doc, original untouched).
+    cargo test --lib 1234 pass; clippy no new warnings; fmt clean.

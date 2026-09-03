@@ -9074,6 +9074,66 @@ mod tests {
         }
     }
 
+    /// Phase 14.3 (simplexml S7 / bug63575): node/document copies must NOT
+    /// carry the source `_private` — upstream xmlStaticCopyNode zeroes the
+    /// new node and xmlCopyNamespaceList never copies _private. PHP keys its
+    /// wrapper registrations on `_private` (php_libxml_node_ptr), so a
+    /// copied subtree that inherits the original's registrations binds the
+    /// clone to the ORIGINAL document: SimpleXML root-element clone
+    /// (xmlCopyDoc) then resolved XPath and mutations into the original's
+    /// tree. The copy must look UNREGISTERED.
+    ///
+    /// # Safety
+    ///
+    /// - doc/root/marker are created and freed exactly once within the test;
+    ///   pointers are asserted non-NULL before dereference.
+    #[test]
+    fn test_copies_do_not_carry_private() {
+        unsafe {
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let root = crate::xml::tree::new_node(
+                core::ptr::null_mut(),
+                c"a".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            assert!(!root.is_null());
+            crate::xml::tree::doc_set_root_element(doc, root);
+
+            // PHP-style registration marker on the SOURCE node.
+            let marker: usize = 0x5A5A;
+            (*root)._private = marker as *mut core::ffi::c_void;
+
+            // xmlCopyDoc: the new root must be unregistered.
+            let cdoc = super::xmlCopyDoc(doc, 1);
+            assert!(!cdoc.is_null());
+            let croot = (*cdoc).children;
+            assert!(!croot.is_null());
+            assert!(
+                (*croot)._private.is_null(),
+                "xmlCopyDoc must not carry the source node _private"
+            );
+            assert_eq!(
+                (*root)._private as usize,
+                marker,
+                "source _private is untouched"
+            );
+            crate::xml::tree::free_doc(cdoc);
+
+            // xmlDocCopyNode into the same doc: the copy must be unregistered.
+            let copy = crate::abi::exports_treedump::xmlDocCopyNode(root, doc, 1);
+            assert!(!copy.is_null());
+            assert!(
+                (*copy)._private.is_null(),
+                "xmlDocCopyNode must not carry the source node's _private"
+            );
+            // The detached copy owns a duplicated name string: free it
+            // directly, then the document.
+            super::xmlFreeNode(copy);
+            crate::xml::tree::free_doc(doc);
+        }
+    }
+
     /// The C-extension-function bridge must expose the invoked function's
     /// LOCAL name and namespace URI on `ctxt->context->function` /
     /// `functionURI` for the duration of the call, and restore the previous

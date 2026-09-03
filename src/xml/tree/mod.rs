@@ -1150,7 +1150,13 @@ pub unsafe fn copy_node(node: *const _xmlNode, recursive: c_int) -> *mut _xmlNod
         }
         (*new_node).extra = n.extra;
         (*new_node).psvi = n.psvi;
-        (*new_node)._private = n._private;
+        // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): _private is NOT copied
+        // — the copy is a fresh zeroed node (memset 0). Consumers (PHP's
+        // php_libxml_* wrappers) key their registrations on node->_private:
+        // a copied node must look UNREGISTERED so the clone gets its own
+        // wrapper and document binding (ext/simplexml bug63575 — the cloned
+        // document's nodes inherited the original's php wrappers, so XPath
+        // and mutations resolved into the ORIGINAL document).
 
         // Copy namespace pointer (NOT the ns declaration — just the reference)
         (*new_node).ns = n.ns;
@@ -1276,7 +1282,9 @@ unsafe fn copy_ns_list(ns: *const _xmlNs) -> *mut _xmlNs {
         (*new_ns).type_ = n.type_;
         (*new_ns).href = dup_xml_str(n.href);
         (*new_ns).prefix = dup_xml_str(n.prefix);
-        (*new_ns)._private = n._private;
+        // UPSTREAM-PARITY (tree.c xmlCopyNamespaceList): _private is NOT
+        // copied (PHP tags some namespace declarations through ns->_private;
+        // a copied declaration must not alias the original's registration).
     }
 
     let mut prev = new_ns;
@@ -1292,7 +1300,6 @@ unsafe fn copy_ns_list(ns: *const _xmlNs) -> *mut _xmlNs {
             (*new_cur).type_ = c.type_;
             (*new_cur).href = dup_xml_str(c.href);
             (*new_cur).prefix = dup_xml_str(c.prefix);
-            (*new_cur)._private = c._private;
             (*prev).next = new_cur;
         }
         prev = new_cur;

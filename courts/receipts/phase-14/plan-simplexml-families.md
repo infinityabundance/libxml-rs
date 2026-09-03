@@ -97,7 +97,7 @@ escaping. Output/escaping. **FLAG overlap** with dom entity/escaping rows
 (`xmlBufAttrSerializeTxtContent` / entities) and xmlwriter attr escaping. Rather
 leaf; independent.
 
-## S7 clone of SimpleXMLElement not detached → mutation lands on the original doc — count 1 | output (ownership-adjacent)
+## S7 clone of SimpleXMLElement not detached → mutation lands on the original doc — count 1 | output (ownership-adjacent)  [CLOSED 2026-09-03]
 Member: `bug63575.phpt`. `clone $o1`; `current($o1-clone->xpath('/a'))->addChild('c',…)`
 must leave `$o1` = `<a><b/></a>` and mutate only `$o2` → `<a><b/><c/></a>`. Candidate
 mutates the ORIGINAL `$o1` (prints `<a><b/><c></c></a>`) and leaves `$o2` without
@@ -112,6 +112,13 @@ empty `<c/>` form also picks the S5 serializer issue.
 copy/append) — fix the copy-owner/root-detach engine once, re-run both.
 Kind output; potential double-free risk if both docs free the shared child →
 ownership (validate HOSTILE-ABI/FREEPROP like Fix 3/4).
+**Closed:** copies no longer carry `_private` (upstream xmlStaticCopyNode /
+xmlCopyNamespaceList; php keys wrapper registrations on `_private`). Root-
+element clones (xmlCopyDoc) now bind to their own document: XPath and
+mutations resolve into the clone (bug63575 PASS). Receipt:
+php-14-3-copy-private-20260903/; guard:
+test_copies_do_not_carry_private; probe:
+consumers/clone-xpath-probe.php (candidate == oracle).
 
 ## S8 percent-encoded NUL in URI: loader warnings/return path degraded — count 1 | output+warning (test-secondary crash)  [CLOSED 2026-09-03]
 Member: `bug79971_1.phpt`. `simplexml_load_file("file://…/%00foo")` must emit the
