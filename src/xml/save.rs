@@ -662,6 +662,45 @@ mod tests {
         }
     }
 
+    /// Phase 14.3 (dom S1): an HTML-parsed document saved with
+    /// XML_SAVE_AS_XML (PHP DOMDocument::saveXML) is dumped by the XML
+    /// serializer with the XML declaration and doc->standalone — upstream
+    /// xmlSaveDocInternal only takes the HTML branch when an HTML/XHTML save
+    /// was requested. The pre-fix html-document arm always used the HTML
+    /// serializer, so the saveXML of a loadHTML()'d document dropped the
+    /// declaration entirely (ext/dom dom005 / gh15670 / gh16535 / gh19612).
+    ///
+    /// # Safety
+    ///
+    /// - the parsed html doc and buffer are freed exactly once; content is
+    ///   valid while the byte slice is read.
+    #[test]
+    fn test_save_html_doc_as_xml_includes_declaration() {
+        unsafe {
+            let doc = crate::xml::html::parse_memory(c"<html><body>x</body></html>".as_ptr(), 23);
+            assert!(!doc.is_null());
+            assert_eq!((*doc).standalone, 1);
+            let buf = io::buf_create(-1);
+            // PHP DOMDocument::saveXML passes XML_SAVE_AS_XML (1 << 5) —
+            // upstream xmlsave.h; the candidate save layer only exposes the
+            // AS_HTML bit, so pass the raw upstream option value.
+            let ctxt = xmlSaveToBuffer(buf, ptr::null(), 1 << 5);
+            assert!(!ctxt.is_null());
+            xmlSaveDoc(ctxt, doc);
+            xmlSaveFinish(ctxt);
+            let content = io::buf_content(buf);
+            let len = io::buf_length(buf);
+            let s = core::slice::from_raw_parts(content, len as usize);
+            let text = String::from_utf8_lossy(s);
+            assert!(
+                text.starts_with("<?xml version=\"1.0\" standalone=\"yes\"?>"),
+                "AS_XML save of an html doc must emit the declaration: {text:?}"
+            );
+            crate::xml::tree::free_doc(doc);
+            io::buf_free(buf);
+        }
+    }
+
     /// Set an indent string and verify it appears in the serialized output.
     ///
     /// # Safety

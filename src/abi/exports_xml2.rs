@@ -7513,18 +7513,6 @@ pub const unsafe extern "C" fn htmlParseDoc(
 /// # UPSTREAM-PARITY
 ///
 /// ```c
-/// htmlParserCtxtPtr htmlCreateFileParserCtxt(const char *filename,
-///                                            const char *encoding);
-/// ```
-#[no_mangle]
-pub const unsafe extern "C" fn htmlCreateFileParserCtxt(
-    _filename: *const c_char,
-    _encoding: *const c_char,
-) -> *mut c_void {
-    // Phase 1: STUB
-    ptr::null_mut()
-}
-
 /// Free an HTML parser context.
 ///
 /// # UPSTREAM-PARITY

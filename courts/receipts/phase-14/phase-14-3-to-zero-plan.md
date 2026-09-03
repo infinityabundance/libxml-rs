@@ -1,6 +1,14 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **dom S1 / html-load family part 1 closed (2026-09-03):** html-parsed docs
+  now carry XML_DOC_HTML (upstream xmlSAX2StartDocument), the xml-save of an
+  HTML document under XML_SAVE_AS_XML goes through the XML serializer with
+  the standalone declaration (upstream xmlSaveDocInternal), and
+  `htmlCreateFileParserCtxt` is implemented (was a NULL stub —
+  DOMDocument::loadHTMLFile never parsed). Full suite **232 → 208**
+  (loadHTMLfile/variation2, bug79451, gh15670, gh16535, gh17397 PASS), zero
+  regressions. Receipt: php-14-3-html-load-20260903/.
 - **simplexml S7 clone-detach closed (2026-09-03):** node/document copies no
   longer carry the source `_private` (upstream xmlStaticCopyNode zeroes the
   new node; php keys wrapper registrations on `_private`, so inherited
@@ -90,7 +98,7 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 232 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone):
+Split at 289 (now 208 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|

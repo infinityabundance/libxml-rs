@@ -2718,6 +2718,67 @@ pub unsafe extern "C" fn htmlCreatePushParserCtxt(
     host
 }
 
+/// Create a parser context for an HTML file. The file is read through the
+/// registered `xmlParserInputBufferCreateFilenameDefault` (php streams
+/// loader) when one is installed, else via the built-in file read.
+///
+/// # UPSTREAM-PARITY
+///
+/// ```c
+/// htmlParserCtxt *htmlCreateFileParserCtxt(const char *filename,
+///                                          const char *encoding);
+/// ```
+///
+/// # Safety
+///
+/// - `filename`/`encoding` must be NULL or valid NUL-terminated C strings
+///   live for the call.
+#[no_mangle]
+pub unsafe extern "C" fn htmlCreateFileParserCtxt(
+    filename: *const c_char,
+    encoding: *const c_char,
+) -> *mut c_void {
+    unsafe {
+        if filename.is_null() {
+            return ptr::null_mut();
+        }
+        // Read the file bytes exactly like the main-document opens: the
+        // registered php streams loader is consulted first (file:// URIs,
+        // php stream contexts, percent-NUL guard); without one the built-in
+        // file read runs.
+        let loaded =
+            if crate::xml::globals::get_parser_input_buffer_create_filename_value().is_some() {
+                crate::abi::exports_parser::call_loader_materialize(filename).ok()
+            } else {
+                let name = std::ffi::CStr::from_ptr(filename)
+                    .to_string_lossy()
+                    .into_owned();
+                std::fs::read(name).ok()
+            };
+        let Some(bytes) = loaded else {
+            return ptr::null_mut();
+        };
+        if bytes.is_empty() {
+            return ptr::null_mut();
+        }
+        let host = html_ctxt_alloc();
+        if host.is_null() {
+            return ptr::null_mut();
+        }
+        if !encoding.is_null() {
+            let st = html_state(host);
+            (*st).encoding = c_strdup(encoding);
+        }
+        html_ctxt_set_input(host, bytes.as_ptr() as *const c_char, bytes.len() as c_int);
+        let st = html_state(host);
+        if (*st).input.is_null() {
+            crate::xml::html::free_parser_ctxt(host);
+            return ptr::null_mut();
+        }
+        host
+    }
+}
+
 /// Reset a parser context.
 ///
 /// # UPSTREAM-PARITY

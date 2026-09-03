@@ -610,3 +610,36 @@ simplexml S7 clone-detach closed (2026-09-03): full suite 233 -> 232;
     consumers/clone-xpath-probe.php (candidate == oracle: mutation through
     the clone's XPath result lands on the clone doc, original untouched).
     cargo test --lib 1234 pass; clippy no new warnings; fmt clean.
+
+dom S1/html-parser loadHTML net closed part 1 (2026-09-03): full suite 232 -> 208;
+  zero regressions (dom 71 phpt head; flipped: DOMDocument_loadHTMLfile +
+  _variation2, bug79451, gh15670, gh16535, gh17397 PASS). Receipt:
+  php-14-3-html-load-20260903/.
+  - root causes (three engine gaps in the loadHTML family):
+    (a) html-parsed documents carried properties = XML_DOC_WELLFORMED only —
+        upstream xmlSAX2StartDocument (HTML parsers) sets XML_DOC_HTML —
+        so php's spec/save logic treated loadHTML'd docs as plain XML
+        (html/mod.rs html_parse_buffer now sets XML_DOC_HTML).
+    (b) the engine's xml-save dispatch always serialized HTML_DOCUMENT_NODE
+        with the HTML serializer regardless of the save options; upstream
+        xmlSaveDocInternal only takes the HTML branch for an HTML/XHTML
+        save request — under XML_SAVE_AS_XML (php DOMDocument::saveXML) the
+        document is dumped by the XML serializer with the XML declaration
+        and doc->standalone (tree/mod.rs node_dump_internal HTML-doc arm
+        now keys on DumpState.as_html).
+    (c) htmlCreateFileParserCtxt was a NULL stub — DOMDocument::loadHTMLFile
+        (and Dom\HTMLDocument file loads) failed before parsing anything.
+        Implemented in exports_html.rs: file bytes via the registered php
+        streams loader (else built-in read) + html_ctxt host + input, then
+        htmlParseDocument runs the normal parse.
+  - guards: save.rs test_save_html_doc_as_xml_includes_declaration (AS_XML
+    save of an html doc emits `<?xml version="1.0" standalone="yes"?>`);
+    html/mod.rs test_parsed_html_doc_flags (XML_DOC_HTML + standalone=1).
+    Probes kept: consumers/htmlflags-probe.c + htmlsave-probe.c +
+    nbsp-save-probe.c (candidate == oracle for properties/standalone/status/
+    decl under AS_XML).
+  - residuals in this family (tracked): html-parser head-region whitespace
+    policy + html-origin char escaping (`&#xA0;` xml / `&nbsp;` html) keep
+    dom005/gh19612 red (dom005 now differs only in head whitespace + the
+    nbsp escape; gh19612 is the declared-entity attr `&foo;` retention
+    family). cargo test --lib 1236 pass; clippy no new warnings; fmt clean.

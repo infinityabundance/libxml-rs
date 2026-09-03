@@ -1975,7 +1975,13 @@ unsafe fn html_parse_buffer(
             crate::abi::allocator::xmlFreeImpl((*doc).version as *mut c_void);
         }
         (*doc).version = ptr::null_mut();
-        (*doc).properties = XML_DOC_WELLFORMED as c_int;
+        // UPSTREAM-PARITY (SAX2.c xmlSAX2StartDocument for HTML parsers): an
+        // html-parsed document carries properties = XML_DOC_HTML. The
+        // pre-fix XML_DOC_WELLFORMED-only value made PHP's spec serializer
+        // treat html-parsed documents as XML and drop the standalone/HTML
+        // declaration handling (ext/dom dom005 / gh15670 / gh17397 — the
+        // saveXML of a loadHTML'd document lost "standalone=yes").
+        (*doc).properties = crate::abi::types::xmlDocProperties::XML_DOC_HTML as c_int;
         // UPSTREAM-PARITY: HTML documents default to standalone="yes"
         // (visible when serialized with the XML serializer, e.g. --xmlout).
         (*doc).standalone = 1;
@@ -3783,6 +3789,37 @@ mod tests {
             let s = html_doc_to_string(doc);
             assert_eq!(s, "\n");
 
+            tree::free_doc(doc);
+        }
+    }
+
+    /// Phase 14.3 (dom S1 / loadHTML family): an html-parsed document
+    /// carries properties = XML_DOC_HTML and standalone = 1 — upstream
+    /// xmlSAX2StartDocument for HTML parsers sets XML_DOC_HTML and
+    /// htmlNewDocNoDtD defaults standalone=1. The pre-fix XML_DOC_WELLFORMED-
+    /// only value made PHP's spec serializer and the engine AS_XML save treat
+    /// loadHTML'd documents as plain XML (declaration/standalone loss;
+    /// ext/dom dom005/gh15670/gh16535/gh17397/gh19612 + loadHTMLfile*).
+    ///
+    /// # Safety
+    ///
+    /// - the parsed html doc is freed exactly once; the pointer is asserted
+    ///   non-NULL before its fields are read.
+    #[test]
+    fn test_parsed_html_doc_flags() {
+        unsafe {
+            let doc = parse_memory(c"<html><body>x</body></html>".as_ptr(), 23);
+            assert!(!doc.is_null());
+            assert_eq!(
+                (*doc).properties & (crate::abi::types::xmlDocProperties::XML_DOC_HTML as c_int),
+                crate::abi::types::xmlDocProperties::XML_DOC_HTML as c_int,
+                "html-parsed docs must carry XML_DOC_HTML"
+            );
+            assert_eq!(
+                (*doc).standalone,
+                1,
+                "html-parsed docs default standalone=yes"
+            );
             tree::free_doc(doc);
         }
     }

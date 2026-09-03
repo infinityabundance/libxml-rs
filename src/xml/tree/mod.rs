@@ -4492,8 +4492,19 @@ unsafe fn node_dump_internal(
             doc_content_dump_output(buf, cur, state, level);
         }
         t if t == XML_HTML_DOCUMENT_NODE as c_int => {
-            // HTML documents are serialized by the HTML serializer.
-            crate::xml::html::serialize_node(cur, buf, state.format, *level);
+            // UPSTREAM-PARITY (xmlsave.c xmlSaveDocInternal): an HTML
+            // document is serialized by the HTML serializer only when an
+            // HTML/XHTML save was requested. Saved as XML (PHP
+            // DOMDocument::saveXML passes XML_SAVE_AS_XML), the document is
+            // dumped by the XML serializer — XML declaration (with
+            // doc->standalone), XML escaping — which is what makes a
+            // loadHTML()'d document saveXml() print `<?xml version="1.0"
+            // standalone="yes"?>` (ext/dom dom005/gh15670/gh16535/...).
+            if state.as_html {
+                crate::xml::html::serialize_node(cur, buf, state.format, *level);
+            } else {
+                doc_content_dump_output(buf, cur, state, level);
+            }
         }
         t if t == XML_DTD_NODE as c_int => {
             dtd_dump_output(buf, cur, state, level);
