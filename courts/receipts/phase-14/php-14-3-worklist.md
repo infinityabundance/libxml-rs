@@ -1,9 +1,9 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **255 failed** (dom 164 | xsl 52 |
+Authoritative current full-suite count: **251 failed** (dom 160 | xsl 52 |
 xmlreader 29 | xmlwriter **1** (W5 shift_jis encoder residual → W9/R-000157) |
 simplexml 9 | xml **0**) after KEY-1 + KEY-2 + SP-14.3.1-8 + KEY-3 + EXT-6
-(xmlwriter engine + filename-open routing, 2026-09-03).
+(xmlwriter, 2026-09-03) + dom O1 xpath-php-function bridge (2026-09-03).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level

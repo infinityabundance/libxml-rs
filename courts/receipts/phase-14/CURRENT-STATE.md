@@ -385,3 +385,39 @@ EXT-6 xmlwriter closed 19 -> 1 (2026-09-03): full suite 275 -> 255; zero
   - xmlwriter residual 1: xmlwriter_toStream_encoding_shiftjis = W5 — the
     comment content must be transcoded to real SHIFT_JIS bytes (oracle emits
     0x82 0x41 x3; candidate emits UTF-8) — encoder workstream W9/R-000157.
+
+dom O1 xpath-php-function-callback bridge closed (2026-09-03): full suite 255
+  -> 251; zero regressions (dom 164 -> 160 — return_dom_node_from_xpath +
+  registerPhpFunctionNS + DOMXPath_constructor_registered_functions +
+  gh22077 PASS; simplexml 9 / xml 0 / xmlreader 29 / xmlwriter 1 / xsl 52
+  unchanged). Receipt: php-14-3-dom-o1-xpathfn-20260903/.
+  - root cause: the C-extension-function bridge (`call_c_xpath_function`)
+    invoked a registered `xmlXPathFunction` WITHOUT setting
+    `ctxt->context->function` / `functionURI` to the invoked function's LOCAL
+    name and namespace URI. Upstream xpath.c xmlXPathCompOpEval
+    (XPATH_OP_FUNCTION) sets both before the call and restores them after;
+    PHP registers ONE trampoline for every custom-namespace XPath function
+    (dom `xmlXPathRegisterFuncNS`; xsl `xsltRegisterExtFunction`) and
+    dispatches to the PHP closure by reading those two fields back
+    (`dom_xpath_ext_fetch_intern` -> `php_dom_xpath_callbacks_call_custom_ns`
+    looks the ns up in `ctxt->context->functionURI`, the name in
+    `ctxt->context->function`) — garbage fields -> segv inside libc.
+  - fix: the bridge now parses the registration key (`{uri}name` Clark
+    notation from xmlXPathRegisterFuncNS, bare name otherwise) into local
+    name + optional URI, NUL-terminates both, sets
+    `function`/`functionURI` around the callback with save/restore of the
+    previous values (nested calls), mirroring upstream exactly. The xslt
+    extension-function closure (register_xslt_functions) now passes the
+    local name + resolved href it already had at lookup time.
+  - guards: exports_xml2 test_c_xpath_function_bridge_exposes_function_and_uri
+    (end-to-end: register ns t->urn:t + C fn via xmlXPathRegisterFuncNS, eval
+    "t:capture()", the callback reports "capture@urn:t" — fails at HEAD with
+    a garbage deref). Probes kept: consumers/xpath-retnode.php (php pin).
+    cargo test --lib 1226 pass; clippy no new warnings; fmt clean.
+  - remaining O1 residuals in this family: DOMDocument_adoptNode / bug79968
+    (docless-node adopt + saveXML teardown double-destroy — the pure-engine
+    xmlDOMWrapAdoptNode + xmlSaveTree probe is byte-identical to the oracle,
+    so the defect sits in the php-serializer/adopt interplay; repro probes
+    consumers/adopt-reduce.php + bug79968-repro.php + savetree-probe.c) and
+    DOMNode_isEqualNode / DOMElement_replaceChildren / gh22570 /
+    xpath_domnamespacenode_advanced.

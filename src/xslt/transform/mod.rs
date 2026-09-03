@@ -3058,6 +3058,8 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         let f: Option<unsafe extern "C" fn(*mut c_void, c_int)> =
             unsafe { std::mem::transmute(fnptr) };
         let tctxt_addr = tctxt as usize;
+        let local_owned = local.to_string();
+        let href_owned = href_str.clone();
         Some(Box::new(
             move |_ctx: &mut XPathContext, args: &[XPathValue]| {
                 let t = tctxt_addr as *mut _xsltTransformContext;
@@ -3065,7 +3067,15 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
                 if xpath_ctxt.is_null() {
                     return Err("XSLT: null XPath context".to_string());
                 }
-                unsafe { crate::abi::exports_xml2::call_c_xpath_function(f, xpath_ctxt, args) }
+                unsafe {
+                    crate::abi::exports_xml2::call_c_xpath_function(
+                        f,
+                        xpath_ctxt,
+                        &local_owned,
+                        Some(&href_owned),
+                        args,
+                    )
+                }
             },
         ))
     }));

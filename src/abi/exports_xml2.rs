@@ -5991,10 +5991,36 @@ pub(crate) fn xpath_cfunc_cleanup(extra: *mut c_void) {
 /// `BoxedXPathFunction` so the closure is coerced with the higher-ranked
 /// signature the evaluator requires.
 fn c_func_bridge_closure(c_ctxt: SendSyncPtr, qualified: String) -> BoxedXPathFunction {
+    let (local_name, ns_uri) = split_qualified(&qualified);
     Box::new(move |_ctx: &mut XPathContext, args: &[XPathValue]| {
         let cc = c_ctxt;
-        unsafe { c_func_call_bridge(cc.0 as *mut _xmlXPathContext, &qualified, args) }
+        unsafe {
+            c_func_call_bridge(
+                cc.0 as *mut _xmlXPathContext,
+                &qualified,
+                &local_name,
+                ns_uri.as_deref(),
+                args,
+            )
+        }
     })
+}
+
+/// Split a registered function key (`{uri}name` — the Clark notation used by
+/// `xmlXPathRegisterFuncNS` — or a bare `name`) into the LOCAL function name
+/// and the optional namespace URI. Upstream sets exactly these two on
+/// `ctxt->context->function` / `functionURI` before invoking a registered C
+/// function (xpath.c xmlXPathCompOpEval), and PHP's dom/xsl trampolines read
+/// them back to dispatch to the registered PHP closure.
+fn split_qualified(qualified: &str) -> (String, Option<String>) {
+    if let Some(rest) = qualified.strip_prefix('{') {
+        if let Some(end) = rest.find('}') {
+            let uri = rest[..end].to_string();
+            let local = rest[end + 1..].to_string();
+            return (local, Some(uri));
+        }
+    }
+    (qualified.to_string(), None)
 }
 
 /// Call a C-ABI `xmlXPathFunction` through a synthesized
@@ -6002,13 +6028,38 @@ fn c_func_bridge_closure(c_ctxt: SendSyncPtr, qualified: String) -> BoxedXPathFu
 /// invoke the function, pop and convert the result — the upstream
 /// `xmlXPathCompOpEval` function-call sequence (xpath.c).
 ///
+/// # UPSTREAM-PARITY
+///
+/// xpath.c xmlXPathCompOpEval (XPATH_OP_FUNCTION) sets the in-context
+/// function identity before the call and restores it after:
+///
+/// ```c
+/// oldFunc = ctxt->context->function;
+/// oldFuncURI = ctxt->context->functionURI;
+/// ctxt->context->function = op->value4;       /* local name */
+/// ctxt->context->functionURI = op->cacheURI;  /* resolved ns URI or NULL */
+/// func(ctxt, op->value);
+/// ctxt->context->function = oldFunc;
+/// ctxt->context->functionURI = oldFuncURI;
+/// ```
+///
+/// PHP registers ONE trampoline for every custom-namespace XPath function
+/// and dispatches to the PHP closure by reading `ctxt->context->function` /
+/// `functionURI`, so without these fields it dereferences garbage
+/// (SP-14.3.6-dom O1: return_dom_node_from_xpath / registerPhpFunctionNS
+/// segv).
+///
 /// # SAFETY
 ///
 /// - `fnptr` must be a valid C callback (or None).
 /// - `c_ctxt` must be the live C XPath context the callback belongs to.
+/// - `name`/`ns_uri` must be the function's local name / namespace being
+///   invoked, valid for the duration of the call.
 pub(crate) unsafe fn call_c_xpath_function(
     fnptr: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
     c_ctxt: *mut _xmlXPathContext,
+    name: &str,
+    ns_uri: Option<&str>,
     args: &[XPathValue],
 ) -> Result<XPathValue, String> {
     let func = match fnptr {
@@ -6028,9 +6079,27 @@ pub(crate) unsafe fn call_c_xpath_function(
         }
     }
     let result = if push_ok {
+        // NUL-terminated buffers naming the invoked function, live for the
+        // callback duration (upstream op->value4 / op->cacheURI).
+        let mut name_nul: Vec<xmlChar> = name.as_bytes().to_vec();
+        name_nul.push(0);
+        let uri_nul: Option<Vec<xmlChar>> = ns_uri.map(|u| {
+            let mut v = u.as_bytes().to_vec();
+            v.push(0);
+            v
+        });
+        let saved_function = (*c_ctxt).function;
+        let saved_function_uri = (*c_ctxt).functionURI;
+        (*c_ctxt).function = name_nul.as_ptr() as *const xmlChar;
+        (*c_ctxt).functionURI = uri_nul
+            .as_ref()
+            .map_or(ptr::null(), |v| v.as_ptr() as *const xmlChar);
         // SAFETY: `func` is a valid C callback; the arguments are on the
-        // parser-context value stack exactly as upstream would leave them.
+        // parser-context value stack exactly as upstream would leave them
+        // and the context names the invoked function.
         unsafe { func(pc as *mut c_void, args.len() as c_int) };
+        (*c_ctxt).function = saved_function;
+        (*c_ctxt).functionURI = saved_function_uri;
         let ret = crate::xml::xpath::parser_context::value_pop(pc);
         if ret.is_null() {
             Err("XPath: C function returned no value".to_string())
@@ -6066,6 +6135,8 @@ pub(crate) unsafe fn call_c_xpath_function(
 unsafe fn c_func_call_bridge(
     c_ctxt: *mut _xmlXPathContext,
     qualified: &str,
+    name: &str,
+    ns_uri: Option<&str>,
     args: &[XPathValue],
 ) -> Result<XPathValue, String> {
     if c_ctxt.is_null() {
@@ -6075,7 +6146,7 @@ unsafe fn c_func_call_bridge(
     if func.is_none() {
         return Err(format!("XPath: unknown C function '{}'", qualified));
     }
-    unsafe { call_c_xpath_function(func, c_ctxt, args) }
+    unsafe { call_c_xpath_function(func, c_ctxt, name, ns_uri, args) }
 }
 
 // ── Public API ─────────────────────────────────────────────────────────
@@ -8750,6 +8821,86 @@ mod tests {
             assert_eq!(b, b"Joe");
             crate::abi::allocator::xmlFreeImpl(s2 as *mut core::ffi::c_void);
 
+            crate::xml::tree::free_doc(doc);
+        }
+    }
+
+    /// The C-extension-function bridge must expose the invoked function's
+    /// LOCAL name and namespace URI on `ctxt->context->function` /
+    /// `functionURI` for the duration of the call, and restore the previous
+    /// values afterwards (upstream xpath.c xmlXPathCompOpEval, XPATH_OP_
+    /// FUNCTION). PHP registers ONE trampoline for every custom-namespace
+    /// XPath function and dispatches to the PHP closure from those two
+    /// fields — without them the dom/xsl php:function callbacks dereference
+    /// garbage (SP-14.3.6-dom O1: return_dom_node_from_xpath /
+    /// registerPhpFunctionNS / gh22077 segv).
+    ///
+    /// # Safety
+    ///
+    /// - doc/ctxt/result are created and freed exactly once; the callback
+    ///   reads only the two fields the bridge must set.
+    #[test]
+    fn test_c_xpath_function_bridge_exposes_function_and_uri() {
+        unsafe {
+            use crate::xml::xpath::exports::{xmlXPathNewString, xmlXPathValuePush};
+            use crate::xml::xpath::parser_context::XmlXPathParserContext;
+            use std::os::raw::{c_char, c_int};
+
+            /// Mirrors PHP's dom_xpath_ext_fetch_intern: read the function
+            /// identity the invoker set on the context.
+            unsafe extern "C" fn capture_identity(ctxt: *mut core::ffi::c_void, _nargs: c_int) {
+                let pc = ctxt as *mut XmlXPathParserContext;
+                let ctx = (*pc).context;
+                assert!(!ctx.is_null());
+                let name = (*ctx).function;
+                let uri = (*ctx).functionURI;
+                assert!(!name.is_null());
+                let name_s = std::ffi::CStr::from_ptr(name as *const c_char)
+                    .to_string_lossy()
+                    .into_owned();
+                let uri_s = if uri.is_null() {
+                    "(null)".to_string()
+                } else {
+                    std::ffi::CStr::from_ptr(uri as *const c_char)
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                let out = std::ffi::CString::new(format!("{}@{}", name_s, uri_s)).unwrap();
+                let obj = xmlXPathNewString(out.as_ptr() as *const crate::abi::types::xmlChar);
+                assert!(!obj.is_null());
+                assert_eq!(xmlXPathValuePush(ctxt, obj), 0);
+            }
+
+            let doc =
+                crate::xml::tree::new_doc(c"1.0".as_ptr() as *const crate::abi::types::xmlChar);
+            assert!(!doc.is_null());
+            let ctxt = super::xmlXPathNewContext(doc);
+            assert!(!ctxt.is_null());
+
+            super::xmlXPathRegisterNs(
+                ctxt,
+                c"t".as_ptr() as *const crate::abi::types::xmlChar,
+                c"urn:t".as_ptr() as *const crate::abi::types::xmlChar,
+            );
+            super::xmlXPathRegisterFuncNS(
+                ctxt,
+                c"capture".as_ptr() as *const crate::abi::types::xmlChar,
+                c"urn:t".as_ptr() as *const crate::abi::types::xmlChar,
+                Some(capture_identity),
+            );
+
+            let res = super::xmlXPathEvalExpression(
+                c"t:capture()".as_ptr() as *const crate::abi::types::xmlChar,
+                ctxt,
+            );
+            assert!(!res.is_null());
+            let s = crate::xml::string::xmlstr_to_bytes((*res).stringval);
+            assert_eq!(
+                s, b"capture@urn:t",
+                "bridge must set context->function (local name) and ->functionURI (ns)"
+            );
+            super::xmlXPathFreeObject(res);
+            super::xmlXPathFreeContext(ctxt);
             crate::xml::tree::free_doc(doc);
         }
     }

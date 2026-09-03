@@ -1,6 +1,13 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **dom O1 xpath-php-function bridge closed (2026-09-03):** C-registered XPath
+  functions are invoked with `ctxt->context->function`/`functionURI` set to
+  the LOCAL name + namespace (upstream xmlXPathCompOpEval), which PHP's
+  dom/xsl trampolines read to dispatch to the PHP closure. Full suite
+  **255 → 251** (dom 164 → 160: return_dom_node_from_xpath +
+  registerPhpFunctionNS + DOMXPath_constructor_registered_functions + gh22077
+  PASS), zero regressions. Receipt: php-14-3-dom-o1-xpathfn-20260903/.
 - **EXT-6 xmlwriter 19 → 1 closed (2026-09-03):** writer engine W1–W4
   (element-stack QName end-tags, empty-content END path + indentation, leaf
   PI/CDATA atomicity, DTD-bare children, attribute-ns decl queue, flush-does-
@@ -36,11 +43,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 255 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6):
+Split at 289 (now 251 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-
+xpathfn):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 164 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 160 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
