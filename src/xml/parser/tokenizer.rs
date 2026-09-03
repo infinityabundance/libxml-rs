@@ -182,6 +182,11 @@ pub(crate) struct XmlTokenizer {
     /// (50 000) or XML_MAX_TEXT_LENGTH (10 000 000) with XML_PARSE_HUGE
     /// (parserInternals.h; SP-14.3.1-6).
     max_name_length: usize,
+    /// Upstream XML_PARSE_OLD10: any XML-declaration version other than
+    /// "1.0" is a FATAL XML_ERR_UNKNOWN_VERSION instead of the usual
+    /// classification (warning for "1.x", fatal otherwise). Configured by
+    /// the parser from `ctxt->options` (xmlParseXMLDecl).
+    old10: bool,
 }
 
 impl XmlTokenizer {
@@ -204,6 +209,7 @@ impl XmlTokenizer {
             errors: Vec::new(),
             split_chars_at: None,
             max_name_length: 50_000,
+            old10: false,
         }
     }
 
@@ -216,6 +222,101 @@ impl XmlTokenizer {
     /// Set the maximum accepted name length (see `max_name_length`).
     pub const fn set_max_name_length(&mut self, limit: usize) {
         self.max_name_length = limit;
+    }
+
+    /// Set whether XML_PARSE_OLD10 is in force (see `old10`).
+    pub const fn set_old10(&mut self, on: bool) {
+        self.old10 = on;
+    }
+
+    /// Diagnose the XML-declaration `version` literal exactly as upstream's
+    /// xmlParseVersionInfo + xmlParseVersionNum + xmlParseXMLDecl do
+    /// (parser.c), recording the errors in upstream's raise order. The
+    /// records land BEFORE the scan's own "Blank needed here" (65) and
+    /// "'?>' expected" (57) records, so delivery order and the final errNo
+    /// match the oracle (`<?xml version="dummy">` ends on
+    /// XML_ERR_XMLDECL_NOT_FINISHED = 57 — the KEY-3 xml_error_string rows).
+    ///
+    /// VersionNum is `<digit> '.' <digit>*` with exactly ONE leading digit
+    /// (so "10.5" is not a version number). When the scan stops inside the
+    /// literal the closing quote was never reached:
+    /// XML_ERR_STRING_NOT_CLOSED (34). A NULL version then raises
+    /// XML_ERR_VERSION_MISSING (96, "Malformed declaration expecting
+    /// version"). A parsed prefix other than "1.0" is fatal under
+    /// XML_PARSE_OLD10, a warning (XML_WAR_UNKNOWN_VERSION, 97) for "1.x",
+    /// and fatal otherwise (XML_ERR_UNKNOWN_VERSION, 108) — the message
+    /// shows the PARSED prefix ("1.x" reports '1.', and "3.1" fails the
+    /// load: DOMDocument_loadXML_error4).
+    fn record_xml_decl_version_diagnostic(&mut self, literal: &[u8]) {
+        // Where xmlParseVersionNum would stop in the literal.
+        let stop = if literal.is_empty() || !literal[0].is_ascii_digit() {
+            0
+        } else if literal.len() < 2 || literal[1] != b'.' {
+            1
+        } else {
+            let mut i = 2;
+            while i < literal.len() && literal[i].is_ascii_digit() {
+                i += 1;
+            }
+            i
+        };
+        // Stopping inside the literal: RAW was not the closing quote.
+        if stop < literal.len() {
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_STRING_NOT_CLOSED,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "String not closed expecting \" or '\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+        }
+        if stop < 2 {
+            // version == NULL: xmlParseVersionNum never consumed digit '.'.
+            self.record_error(
+                crate::abi::types::XML_FROM_PARSER,
+                crate::abi::types::XML_ERR_VERSION_MISSING,
+                crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int,
+                "Malformed declaration expecting version\n".to_string(),
+                None,
+                None,
+                None,
+                0,
+                None,
+            );
+            return;
+        }
+        let prefix = &literal[..stop];
+        if prefix == b"1.0" {
+            return;
+        }
+        let is_1x = prefix[0] == b'1' && prefix[1] == b'.';
+        let fatal = self.old10 || !is_1x;
+        // XML_WAR_UNKNOWN_VERSION = 97 / XML_ERR_UNKNOWN_VERSION = 108
+        // (include/libxml/xmlerror.h 2.15).
+        let code = if fatal { 108 } else { 97 };
+        let level = if fatal {
+            crate::abi::types::xmlErrorLevel::XML_ERR_FATAL as c_int
+        } else {
+            crate::abi::types::xmlErrorLevel::XML_ERR_WARNING as c_int
+        };
+        self.record_error(
+            crate::abi::types::XML_FROM_PARSER,
+            code,
+            level,
+            format!(
+                "Unsupported version '{}'\n",
+                String::from_utf8_lossy(prefix)
+            ),
+            Some(prefix.to_vec()),
+            None,
+            None,
+            0,
+            None,
+        );
     }
 
     /// Get a mutable reference to the input stack.
@@ -1131,6 +1232,7 @@ impl XmlTokenizer {
     /// and "parsing XML declaration: '?>' expected\n" (57)).
     fn scan_xml_decl_rest(&mut self) -> XmlToken {
         let mut version = Vec::new();
+        let mut version_seen = false;
         let mut encoding: Option<Vec<u8>> = None;
         let mut standalone: Option<Vec<u8>> = None;
         let mut terminated = false;
@@ -1169,6 +1271,10 @@ impl XmlTokenizer {
                 let lower = attr_name.to_ascii_lowercase();
                 if lower == b"version" {
                     version = value;
+                    if !version_seen {
+                        self.record_xml_decl_version_diagnostic(&version);
+                    }
+                    version_seen = true;
                 } else if lower == b"encoding" {
                     encoding = Some(value);
                 } else if lower == b"standalone" {

@@ -2633,7 +2633,7 @@ pub unsafe extern "C" fn xmlDocDumpFormatMemory(
     size: *mut c_int,
     format: c_int,
 ) {
-    if doc.is_null() || mem.is_null() || size.is_null() {
+    if doc.is_null() || mem.is_null() {
         return;
     }
     crate::xml::tree::xmlDocDumpFormatMemory(doc, mem, size, format)
@@ -2652,7 +2652,7 @@ pub unsafe extern "C" fn xmlDocDumpMemory(
     mem: *mut *mut xmlChar,
     size: *mut c_int,
 ) {
-    if doc.is_null() || mem.is_null() || size.is_null() {
+    if doc.is_null() || mem.is_null() {
         return;
     }
     crate::xml::tree::xmlDocDumpMemory(doc, mem, size)

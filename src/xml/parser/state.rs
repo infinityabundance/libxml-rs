@@ -303,6 +303,10 @@ impl XmlParser {
         } else {
             50_000
         });
+        // UPSTREAM-PARITY (parser.c xmlParseXMLDecl): XML_PARSE_OLD10 makes
+        // any non-"1.0" declaration version fatal (the tokenizer records the
+        // version diagnostic in scan order, so it needs the flag up front).
+        tokenizer.set_old10((options & crate::abi::types::XML_PARSE_OLD10) != 0);
 
         XmlParser {
             tokenizer,
@@ -590,11 +594,23 @@ impl XmlParser {
             return -1;
         }
 
-        // Parse epilog (misc after root)
-        unsafe {
-            (*self.ctxt).instate = XML_PARSER_EPILOG;
-        }
-        if self.parse_epilog().is_err() && !self.is_recovery() {
+        // Parse epilog (misc after root). When the root parse already failed
+        // (errNo set) it ends EARLY — upstream xmlParseDocument leaves the
+        // trailing bytes unparsed and finishes the document, so no further
+        // diagnostics may fire from the leftovers (R-000166 plus the
+        // mismatch/start-tag continuation family: load_error2_gte2_12 must
+        // not gain a spurious epilog warning for the content after the
+        // stray </book> closed the root). Only an input fully consumed by
+        // the root parse can have a meaningful epilog left.
+        let epilog_failed = if self.tokenizer.input().current_ref().remaining().is_empty() {
+            unsafe {
+                (*self.ctxt).instate = XML_PARSER_EPILOG;
+            }
+            self.parse_epilog().is_err()
+        } else {
+            false
+        };
+        if epilog_failed && !self.is_recovery() {
             self.sax_end_document();
             return -1;
         }
@@ -2688,12 +2704,33 @@ impl XmlParser {
                             self.truncated_abort = true;
                             return Err(());
                         }
-                        // Check for matching end tag
+                        // Check for matching end tag. When the end tag names
+                        // a DIFFERENT element, upstream xmlParseElementEnd /
+                        // xmlParseEndTag2 (2.15) does not stop the parse: it
+                        // reports XML_ERR_TAG_NAME_MISMATCH (76, FATAL) and
+                        // closes the CURRENT open element as if its own end
+                        // tag had appeared (the stray name only feeds the
+                        // message), then keeps scanning — subsequent
+                        // structural errors are reported too
+                        // (DOMDocument_loadXML_error1_gte2_12 reports a
+                        // second mismatch later in the document). Closing the
+                        // current element is recovery-independent: the error
+                        // clears wellFormed, which decides whether the doc is
+                        // kept, not whether scanning continues.
                         if end_name != name {
-                            // UPSTREAM-PARITY (xmlParseElementEnd):
+                            // UPSTREAM-PARITY (xmlParseEndTag2):
                             // XML_ERR_TAG_NAME_MISMATCH (76), FATAL,
                             // str1 = open name, str2 = close name,
-                            // int1 = open line.
+                            // int1 = open line. Upstream consumes the end
+                            // tag's `>` (NEXT1) BEFORE this raise, so
+                            // ctxt->input sits on the end tag's own line
+                            // when the generic error handler fires — PHP
+                            // prints ctxt->input->line, so the mirror must
+                            // be refreshed first (a broken start tag can
+                            // leave the tokenizer scanning silently across
+                            // many lines with no SAX event in between,
+                            // DOMDocument_loadXML_error2_gte2_12's line 7).
+                            self.sync_input_position();
                             self.raise_error_now(
                                 XML_FROM_PARSER,
                                 XML_ERR_TAG_NAME_MISMATCH,
@@ -2709,13 +2746,11 @@ impl XmlParser {
                                 None,
                                 open_line as c_int,
                             );
-                            if !self.is_recovery() {
-                                self.pop_name();
-                                return Err(());
-                            }
-                            // In recovery mode, treat this as a stray end tag
-                            self.sax_end_element(&end_name);
-                            continue;
+                            // The stray end tag closes the current element:
+                            // fall through to the normal end-element path
+                            // (SAX end event + pop) and let the parent's
+                            // content loop continue after this end tag.
+                            break;
                         }
                         break;
                     }
@@ -2729,16 +2764,28 @@ impl XmlParser {
                         unterminated,
                     } => {
                         if unterminated {
-                            // Errors were already raised; the child element
-                            // failed to parse (upstream xmlParseElementStart
-                            // returned -1). The construct may continue on a
-                            // later push call: probes and eager-partial
-                            // deliveries must not deliver.
+                            // Errors (incl. "Couldn't find end of Start Tag")
+                            // were already raised; the child element FAILED
+                            // to start (upstream xmlParseElementStart
+                            // returned -1 — an unquoted/duplicate/invalid
+                            // attribute construct, an over-long name, or a
+                            // tag truncated by EOF). The construct may
+                            // continue on a later push call: probes and
+                            // eager-partial deliveries must not deliver.
                             if self.probe || self.partial_delivery {
                                 self.truncated_abort = true;
+                                return Err(());
                             }
-                            self.pop_name();
-                            return Err(());
+                            // UPSTREAM-PARITY (2.15 xmlParseContentInternal):
+                            // a failed child start tag never opens an
+                            // element — the parse simply continues scanning
+                            // in the CURRENT element's content, so later
+                            // structural errors (e.g. the stray end tag that
+                            // closes this element) are still reported
+                            // (DOMDocument_load_error2_gte2_12's fourth
+                            // warning). No name was pushed for the child, so
+                            // nothing is popped.
+                            continue;
                         }
                         self.parse_element(
                             child_name,

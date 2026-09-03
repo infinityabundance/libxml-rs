@@ -2394,10 +2394,8 @@ unsafe fn drop_blank_text_nodes(cur: *mut _xmlNode) {
                 tree::unlink_node(n);
                 tree::free_node(n);
             }
-        } else if t == XML_ELEMENT_NODE as c_int {
-            if !unsafe { (*n).children }.is_null() {
-                drop_blank_text_nodes(unsafe { (*n).children });
-            }
+        } else if t == XML_ELEMENT_NODE as c_int && !unsafe { (*n).children }.is_null() {
+            drop_blank_text_nodes(unsafe { (*n).children });
         }
         n = next;
     }

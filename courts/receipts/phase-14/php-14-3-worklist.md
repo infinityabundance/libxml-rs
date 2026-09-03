@@ -1,13 +1,15 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **207 failed** (dom 70 phpt / 150
-variants | xsl 52 | xmlreader 29 | xmlwriter **1** (W5 shift_jis encoder
-residual → W9/R-000157) | simplexml 1 | xml **0**) after KEY-1 + KEY-2 +
+Authoritative current full-suite count: **201 failed** (dom 118 | xsl 52 |
+xmlreader 30 | xmlwriter **1** (W5 shift_jis encoder residual →
+W9/R-000157) | simplexml 1 | xml **0**) after KEY-1 + KEY-2 +
 SP-14.3.1-8 + KEY-3 + EXT-6 (xmlwriter) + dom O1 closures + KEY-4 part 1 +
 simplexml S5/S6 content discipline + simplexml S4 PI data + simplexml S3
 XPath error channel + simplexml S8/dom-L2 input-loader routing + simplexml
 S7 clone-detach (copy-_private) + dom S1/html-load family part 1 + dom S1
-html-save pseudo-HTML encoding parity (dom005 PASS; all 2026-09-03).
+html-save pseudo-HTML encoding parity (dom005 PASS) + dom E1 parser
+recovery-continuation / xml-decl version / dump NULL-size closure (all
+2026-09-03).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
@@ -63,6 +65,12 @@ All atoms below closed by commit 52f4168 (SP-14.3.1-8 + KEY-2) and KEY-3
 ## SP-14.3.2  ext/simplexml (9)
 
 ## SP-14.3.3  ext/dom engine (subset of the 170; rest to SP-14.3.4)
+- [x] dom E1 recovery-continuation family closed (2026-09-03):
+      DOMDocument_load{error,loadXML_error}{1,2}_gte2_12 + _error4/_error4
+      PASS (207 -> 201, zero regressions). Full root causes in
+      CURRENT-STATE.md / receipt php-14-3-parser-recover-continuation-20260903/.
+      Probes kept: recover-cont-probe.c, broken-start-tag-probe.c,
+      input-line-at-raise-probe.c.
 
 ## SP-14.3.4  ext/dom validation
 

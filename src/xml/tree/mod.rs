@@ -5116,15 +5116,18 @@ pub(crate) unsafe fn xmlDocDump(fp: *mut c_void, doc: *mut _xmlDoc) -> c_int {
 /// # SAFETY
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
-/// - `mem` must be a valid pointer to an xmlChar* that will receive the allocated memory.
-/// - `size` must be a valid pointer to an int that will receive the size.
+/// - `mem` must be a valid pointer to an xmlChar* that will receive the
+///   allocated memory.
+/// - `size` may be NULL (upstream tree.c xmlDocDumpFormatMemoryEnc only
+///   writes the length when the pointer is given; `mem` is still produced —
+///   the recover-cont-probe passes NULL for the length).
 pub(crate) unsafe fn xmlDocDumpFormatMemory(
     doc: *mut _xmlDoc,
     mem: *mut *mut xmlChar,
     size: *mut c_int,
     format: c_int,
 ) {
-    if doc.is_null() || mem.is_null() || size.is_null() {
+    if doc.is_null() || mem.is_null() {
         return;
     }
 
@@ -5132,7 +5135,9 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
     if buf.is_null() {
         unsafe {
             *mem = ptr::null_mut();
-            *size = 0;
+            if !size.is_null() {
+                *size = 0;
+            }
         }
         return;
     }
@@ -5150,18 +5155,24 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
             *result.add(len as usize) = 0;
             unsafe {
                 *mem = result;
-                *size = len;
+                if !size.is_null() {
+                    *size = len;
+                }
             }
         } else {
             unsafe {
                 *mem = ptr::null_mut();
-                *size = 0;
+                if !size.is_null() {
+                    *size = 0;
+                }
             }
         }
     } else {
         unsafe {
             *mem = ptr::null_mut();
-            *size = 0;
+            if !size.is_null() {
+                *size = 0;
+            }
         }
     }
 
@@ -5180,7 +5191,7 @@ pub(crate) unsafe fn xmlDocDumpFormatMemory(
 ///
 /// - `doc` must be a valid pointer to an `_xmlDoc`, or NULL.
 /// - `mem` must be a valid pointer to an xmlChar* that will receive the allocated memory.
-/// - `size` must be a valid pointer to an int that will receive the size.
+/// - `size` may be NULL (upstream tree.c xmlDocDumpFormatMemoryEnc).
 pub(crate) unsafe fn xmlDocDumpMemory(doc: *mut _xmlDoc, mem: *mut *mut xmlChar, size: *mut c_int) {
     xmlDocDumpFormatMemory(doc, mem, size, 0)
 }

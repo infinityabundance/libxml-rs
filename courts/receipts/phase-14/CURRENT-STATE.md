@@ -706,3 +706,39 @@ dom S1/html-save pseudo-HTML encoding parity (2026-09-03): full suite 208 -> 207
     the declared-entity attr `&foo;` retention (xmlsave attr entity-ref
     children) — dom E1/KEY-6 scope.
     cargo test --lib 1239 pass; clippy no new warnings; fmt clean.
+
+dom E1 parser recovery-continuation + xml-decl version + dump NULL-size
+(2026-09-03): full suite 207 -> 201, ZERO regressions (name-level diff vs the
+207 baseline log: 0 new). Log: phpbuild-c:/out/xpe-six9.log. Receipt:
+php-14-3-parser-recover-continuation-20260903/.
+  - closed DOMDocument_load{error,loadXML_error}{1,2}_gte2_12 (the
+    not-well-formed recovery family: error1's two mismatch reports in one
+    pass, error2's broken-start-tag + stray-end-tag four-warning flow) and
+    DOMDocument_load{error,loadXML_error}4 (xml decl version 3.1).
+  - FATAL-error scanning continuation (state.rs): a mismatched end tag
+    closes the CURRENT open element and scanning continues (upstream
+    xmlParseEndTag2; the fatal clears wellFormed, not scanning — the old
+    recovery-mode path popped the wrong name); a failed child start tag
+    never opens an element (upstream xmlParseContentInternal — the old
+    pop+Err aborted the whole content pass); parse_epilog only runs when
+    the tokenizer fully consumed the input (no spurious leftover
+    diagnostics after a failed root).
+  - php's "line: N" suffix prints ctxt->input->line at handler time, not
+    xmlError.line: the code-76 raise now syncs the C input to the end tag
+    first (upstream NEXT1-before-raise), fixing loadXML_error2's stale
+    line 4 vs oracle 7 (input-line-at-raise-probe.c now oracle-identical).
+  - xml-decl version ladder in the tokenizer (record order == upstream
+    raise order): xmlParseVersionNum grammar ([0-9]".[0-9]* — "10.5" is
+    not a version), STRING_NOT_CLOSED 34 / VERSION_MISSING 96 / 97-warning
+    for 1.x / 108-fatal otherwise + XML_PARSE_OLD10 (tokenizer old10 flag
+    from ctxt->options). C version-ladder probe oracle-identical.
+  - xmlDocDumpFormatMemory/xmlDocDumpMemory no longer require a non-NULL
+    length pointer (upstream writes *mem regardless).
+  - guards: 1239 unit tests pass (KEY-3 dummy-decl errNo 57 order guard
+    intact). Probes kept: recover-cont-probe.c, broken-start-tag-probe.c,
+    input-line-at-raise-probe.c.
+  - residuals tracked: ctxt->input->col staleness at raises without a
+    preceding SAX event (php prints only line; no phpt pins col);
+    `version="dummy"?>`-style junk-literal trailing diagnostics;
+    xmlreader 003/015-get-errors remain red (pre-existing).
+    cargo test --lib 1239 pass; clippy no new warnings; fmt clean.

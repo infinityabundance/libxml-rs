@@ -1,6 +1,18 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **dom E1 parser recovery-continuation + xml-decl version + dump NULL-size
+  (2026-09-03):** FATAL structural errors no longer stop the scan — a
+  mismatched end tag closes the CURRENT open element and continues, a failed
+  child start tag never opens an element, and a failed root skips the epilog
+  (upstream xmlParseEndTag2/xmlParseContentInternal); the code-76 raise now
+  syncs ctxt->input first (php prints input->line, fixing loadXML_error2's
+  stale line 4 vs oracle 7); the XML-declaration version ladder is recorded
+  in tokenizer scan order (xmlParseVersionNum grammar, 34/96/97/108 +
+  XML_PARSE_OLD10); xmlDocDump(Memory/FormatMemory) tolerate a NULL length
+  pointer. Full suite **207 → 201** (the not-well-formed error1/error2 pairs
+  + error4 load/loadXML PASS), zero regressions. Receipt:
+  php-14-3-parser-recover-continuation-20260903/.
 - **dom S1 / html-save pseudo-"HTML" encoding parity (2026-09-03):** the
   convenience html dumps (`htmlDocDumpMemoryFormat`, `htmlSaveFileFormat`)
   now apply the pseudo "HTML" output encoding when no encoding is in force
@@ -113,13 +125,13 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 207 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html):
+Split at 289 (now 201 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html/E1-recover):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 150 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 118 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 1 |
-| ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
+| ext/xmlreader | 30 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —
 encoder-scope (R-000157/W9); EXT-6 gate reaches 0 when W9 lands.
