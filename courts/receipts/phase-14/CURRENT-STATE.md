@@ -856,3 +856,18 @@ xmlwriter 1.
     external-DTD family), XPath namespace-axis/DOMNameSpaceNode family (incl
     xpath_domnamespacenode_advanced segfault), xmlreader cursor/props family,
     xsl 16.
+
+Phase 14.5b — XSD default/fixed attribute creation (LIBXML_SCHEMA_CREATE;
+receipt php-14-5b-addattrs-20260903/): full suite 102 -> 100, ZERO
+regressions. Log: phpbuild-c:/out/xpe-six17.log. dom 66 | xsl 16 | xmlreader
+16 | simplexml 1 | xmlwriter 1.
+  - XsdComponent carries default_value/fixed_value (element + attribute
+    declarations); xmlSchemaValidateDoc reads the registered valid-ctxt
+    options and sets XsdValidCtxt.create_defaults; xsd_validate_complex_type
+    injects missing unqualified default/fixed attributes on the instance
+    (xmlSetProp) before value validation.
+  - flipped: DOMDocument_schemaValidate_addAttrs + schemaValidateSource_addAttrs
+    (book is-hardback="false" from book.xsd).
+  - guard: test_xml_schema_validate_creates_default_attrs (option off:
+    untouched; option on: default injected). cargo test --lib 1241 pass;
+    clippy baseline; fmt clean.

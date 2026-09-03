@@ -227,6 +227,15 @@ static SCHEMATRON_VALID_STATES: Lazy<Mutex<HashMap<usize, SchematronValidState>>
     Lazy::new(|| Mutex::new(HashMap::new()));
 static TYPE_REGISTRY: Lazy<Mutex<HashMap<c_int, usize>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
+/// Read the validation options (xmlSchemaSetValidOptions) registered for a
+/// validation context in the side registry. The schema engine consults them
+/// when deciding whether to create default/fixed attributes on the instance
+/// (XML_SCHEMA_VAL_VC_I_CREATE).
+pub(crate) fn valid_ctxt_options(ctxt_addr: usize) -> c_int {
+    let guard = VALID_STATES.lock();
+    guard.get(&ctxt_addr).map(|s| s.options).unwrap_or(0)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Constants (upstream values)
 // ═══════════════════════════════════════════════════════════════════════════════

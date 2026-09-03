@@ -331,6 +331,14 @@ pub struct XsdComponent {
     /// The `form` attribute (`qualified`/`unqualified`) for this component,
     /// overriding the schema's `elementFormDefault`/`attributeFormDefault`.
     pub form: Option<String>,
+    /// The `default` value of an element/attribute declaration. Elements with
+    /// a simple type default their text content; attributes that are absent
+    /// from an instance get this value injected under
+    /// `XML_SCHEMA_VAL_VC_I_CREATE` (LIBXML_SCHEMA_CREATE).
+    pub default_value: Option<String>,
+    /// The `fixed` value of an element/attribute declaration (absent
+    /// attributes are created with it; present values must equal it).
+    pub fixed_value: Option<String>,
 }
 
 impl XsdComponent {
@@ -356,6 +364,8 @@ impl XsdComponent {
             block: Vec::new(),
             mixed: false,
             form: None,
+            default_value: None,
+            fixed_value: None,
         }
     }
 }
@@ -416,6 +426,10 @@ pub struct XsdValidCtxt {
     pub errors: Vec<String>,
     /// The total number of validation errors recorded.
     pub nb_errors: i32,
+    /// Whether missing attributes with a schema `default`/`fixed` value are
+    /// injected into the instance (xmlSchemaSetValidOptions with
+    /// XML_SCHEMA_VAL_VC_I_CREATE, php's LIBXML_SCHEMA_CREATE).
+    pub create_defaults: bool,
 }
 
 impl XsdValidCtxt {
@@ -425,6 +439,7 @@ impl XsdValidCtxt {
             schema: None,
             errors: Vec::new(),
             nb_errors: 0,
+            create_defaults: false,
         }
     }
 }
@@ -919,8 +934,8 @@ unsafe fn xsd_parse_element(node: *mut _xmlNode, schema: &XsdSchema) -> XsdCompo
         }
 
         // Check for default/fixed value
-        let _default = get_attr(node, "default");
-        let _fixed = get_attr(node, "fixed");
+        comp.default_value = get_attr(node, "default");
+        comp.fixed_value = get_attr(node, "fixed");
 
         // Parse child components (inline type definitions)
         let mut child = (*node).children;
@@ -986,8 +1001,8 @@ unsafe fn xsd_parse_attribute_node(node: *mut _xmlNode, schema: &XsdSchema) -> X
             comp.min_occurs = 0; // optional by default
         }
 
-        let _default = get_attr(node, "default");
-        let _fixed = get_attr(node, "fixed");
+        comp.default_value = get_attr(node, "default");
+        comp.fixed_value = get_attr(node, "fixed");
 
         // Parse child components (inline simpleType)
         let mut child = (*node).children;
@@ -2395,6 +2410,14 @@ fn xsd_validate_complex_type(
         for attr in &component.attributes {
             match attr.component_type {
                 XsdComponentType::Attribute => {
+                    // UPSTREAM-PARITY (xmlschemas.c xmlSchemaValidateAttributes
+                    // under XML_SCHEMA_VAL_VC_I_CREATE): a missing attribute
+                    // carrying a schema default/fixed value is created on the
+                    // instance BEFORE its value is validated
+                    // (DOMDocument_schemaValidateSource_addAttrs / _addAttrs).
+                    if ctxt.create_defaults {
+                        unsafe { inject_default_attribute(attr, node) };
+                    }
                     valid &= xsd_validate_attribute(attr, node, schema, ctxt);
                 }
                 XsdComponentType::AnyAttribute => {
@@ -2422,6 +2445,48 @@ fn xsd_validate_complex_type(
         }
 
         valid
+    }
+}
+
+/// Create a missing attribute on an instance element from its declaration's
+/// default/fixed value. Only UNQUALIFIED attribute declarations are injected
+/// (the php addAttrs tests exercise plain attributes; qualified defaults need
+/// an in-scope namespace declaration resolution first).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an XML element node.
+unsafe fn inject_default_attribute(component: &XsdComponent, node: *mut _xmlNode) {
+    unsafe {
+        let Some(ref name) = component.name else {
+            return;
+        };
+        if name.is_empty() || component.ref_name.is_some() {
+            return;
+        }
+        let value = match (&component.fixed_value, &component.default_value) {
+            (Some(f), _) => f.clone(),
+            (None, Some(d)) => d.clone(),
+            (None, None) => return,
+        };
+        // Skip declarations that would need a namespace (qualified form).
+        if component.form.as_deref() == Some("qualified") {
+            return;
+        }
+        if get_attr(node, name).is_some() {
+            return;
+        }
+        let (Ok(n), Ok(v)) = (
+            std::ffi::CString::new(name.as_str()),
+            std::ffi::CString::new(value.as_str()),
+        ) else {
+            return;
+        };
+        crate::abi::exports_xml2::xmlSetProp(
+            node,
+            n.as_ptr() as *const crate::abi::types::xmlChar,
+            v.as_ptr() as *const crate::abi::types::xmlChar,
+        );
     }
 }
 
@@ -3205,6 +3270,12 @@ pub unsafe extern "C" fn xmlSchemaValidateDoc(ctxt: *mut c_void, doc: *mut _xmlD
 
         let mut temp_ctxt = XsdValidCtxt::new();
         temp_ctxt.schema = Some(schema.clone());
+        // LIBXML_SCHEMA_CREATE (xmlSchemaSetValidOptions with
+        // XML_SCHEMA_VAL_VC_I_CREATE) makes the validator inject missing
+        // default/fixed attributes into the instance (upstream
+        // xmlSchemaValidateDoc honours the context option).
+        temp_ctxt.create_defaults =
+            crate::abi::exports_schema::valid_ctxt_options(ctxt as usize) & (1 << 0) != 0;
 
         let valid = xsd_validate_doc(schema, doc, &mut temp_ctxt);
 
@@ -4520,6 +4591,118 @@ mod tests {
 
         unsafe {
             crate::abi::exports_xml2::xmlFreeDoc(doc);
+        }
+    }
+
+    /// Validating with XML_SCHEMA_VAL_VC_I_CREATE (php LIBXML_SCHEMA_CREATE)
+    /// injects a missing attribute's schema default into the instance
+    /// (DOMDocument_schemaValidateSource_addAttrs parity: the book without an
+    /// is-hardback attribute gets default "false"). Without the option the
+    /// instance stays untouched.
+    ///
+    /// # Safety
+    ///
+    /// - The schema/doc XML strings are static and valid for the calls; the
+    ///   contexts, schema and document are non-NULL (asserted) and each freed
+    ///   exactly once with its matching free function; the documents stay
+    ///   alive until the final `xmlFreeDoc`.
+    #[test]
+    fn test_xml_schema_validate_creates_default_attrs() {
+        let schema_xml = r#"<?xml version="1.0"?>
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="books">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="book" minOccurs="1" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="is-hardback" type="xs:boolean" default="false"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:schema>"#;
+        let doc_xml = r#"<?xml version="1.0"?>
+            <books><book><title>a</title></book></books>"#;
+
+        // Validating with XML_SCHEMA_VAL_VC_I_CREATE (php LIBXML_SCHEMA_CREATE)
+        // injects a missing attribute's schema default into the instance
+        // (DOMDocument_schemaValidateSource_addAttrs parity). Without the
+        // option the instance stays untouched.
+
+        let ctxt = unsafe {
+            xmlSchemaNewMemParserCtxt(
+                schema_xml.as_ptr() as *const c_char,
+                schema_xml.len() as c_int,
+            )
+        };
+        let schema = unsafe { xmlSchemaParse(ctxt) };
+        assert!(!schema.is_null());
+        let valid_ctxt = unsafe { xmlSchemaNewValidCtxt(schema) };
+        assert!(!valid_ctxt.is_null());
+
+        let make_doc = || unsafe {
+            crate::abi::exports_xml2::xmlReadMemory(
+                doc_xml.as_ptr() as *const c_char,
+                doc_xml.len() as c_int,
+                c"test.xml".as_ptr() as *const c_char,
+                ptr::null(),
+                0,
+            )
+        };
+        let book_of = |doc: *mut _xmlDoc| -> *mut _xmlNode {
+            unsafe {
+                // doc -> books element -> its first child (the single book)
+                let books = (*doc).children;
+                assert!(!books.is_null());
+                let book = (*books).children;
+                assert!(!book.is_null());
+                book
+            }
+        };
+
+        // Without the create option the attribute is NOT injected.
+        let doc = make_doc();
+        assert_eq!(unsafe { xmlSchemaValidateDoc(valid_ctxt, doc) }, 0);
+        let missing = unsafe {
+            crate::abi::exports_xml2::xmlGetProp(
+                book_of(doc),
+                c"is-hardback".as_ptr() as *const crate::abi::types::xmlChar,
+            )
+        };
+        assert!(
+            missing.is_null(),
+            "attr must NOT be created without the option"
+        );
+        unsafe {
+            crate::abi::exports_xml2::xmlFreeDoc(doc);
+        }
+
+        // With the option the default is injected and the doc validates.
+        let r = unsafe {
+            crate::abi::exports_schema::xmlSchemaSetValidOptions(
+                valid_ctxt as *mut crate::abi::exports_schema::xmlSchemaValidCtxt,
+                1,
+            )
+        };
+        assert_eq!(r, 0);
+        let doc = make_doc();
+        assert_eq!(unsafe { xmlSchemaValidateDoc(valid_ctxt, doc) }, 0);
+        let got = unsafe {
+            crate::abi::exports_xml2::xmlGetProp(
+                book_of(doc),
+                c"is-hardback".as_ptr() as *const crate::abi::types::xmlChar,
+            )
+        };
+        assert!(!got.is_null(), "default attribute must be created");
+        let val = unsafe { crate::xml::string::xmlstr_to_string(got) };
+        assert_eq!(val, "false");
+
+        unsafe {
+            crate::abi::exports_xml2::xmlFreeDoc(doc);
+            xmlSchemaFreeValidCtxt(valid_ctxt);
+            xmlSchemaFree(schema);
+            xmlSchemaFreeParserCtxt(ctxt);
         }
     }
 
