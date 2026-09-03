@@ -675,3 +675,34 @@ dom S1/html-parser options + xmlsave escaping parity (2026-09-03): full suite
     entity (&nbsp; / &eacute;) — dom005's saveHTML section; separate
     html-serializer entity-representation work.
     cargo test --lib 1237 pass; clippy no new warnings; fmt clean.
+
+dom S1/html-save pseudo-HTML encoding parity (2026-09-03): full suite 208 -> 207
+  (dom005 PASS, ZERO regressions; name-level diff vs the 208 baseline: 0 new).
+  Log: phpbuild-c:/out/xpe-six8.log. Receipt: php-14-3-html-save-entities-20260903/.
+  - root cause: the convenience html dumps create their output buffer with
+    the encoding resolved by upstream htmlFindOutputEncoder (HTMLtree.c) — a
+    NULL name (doc->encoding for htmlDocDumpMemoryFormat; the caller's
+    encoding string for htmlSaveFileFormat, which php saveHTMLFile feeds from
+    htmlGetMetaEncoding) falls back to the pseudo "HTML" output encoding,
+    whose converter (htmlUTF8ToHtml, HTMLparser.c) re-emits every non-ASCII
+    char as an HTML 4 named entity (&nbsp;, &eacute;) or a decimal
+    reference (&#9731;). The candidate serialized raw UTF-8 bytes.
+    htmlDocDumpMemoryFormat/htmlSaveFileFormat (exports_html.rs) now run a
+    whole-buffer ASCII + HTML-entity transcode when the pseudo encoding is in
+    force (html_buf_apply_pseudo_encoding / html_buf_append_html_ascii —
+    htmlUTF8ToHtml byte semantics: ASCII runs copied, value-table lookup,
+    decimal refs, truncated-tail drop). Modern Dom\HTMLDocument is untouched
+    (php always sets doc->encoding="UTF-8" there and serializes via lexbor),
+    so the gate stays exactly "no declared encoding".
+  - guards: exports_html tests test_pseudo_html_transcode_semantics +
+    test_html_doc_dump_memory_pseudo_encoding (NULL doc->encoding -> named
+    refs; declared UTF-8 -> raw bytes). dom005 saveHTML section now matches
+    the oracle byte-for-byte.
+  - residual in this family (tracked separately): the html parser's
+    parse-side entity table (html/mod.rs HTML_ENTITIES) omits the Latin-1
+    accented run (eacute & co.) — `&eacute;` stays literal text instead of
+    resolving to U+00E9 like the oracle html tokenizer — that is an
+    html-tokenizer entity-resolution rule of its own. gh19612's residual is
+    the declared-entity attr `&foo;` retention (xmlsave attr entity-ref
+    children) — dom E1/KEY-6 scope.
+    cargo test --lib 1239 pass; clippy no new warnings; fmt clean.

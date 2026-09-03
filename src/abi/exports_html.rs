@@ -3889,6 +3889,129 @@ unsafe fn html_serialize_to_buffer(node: *mut _xmlNode, format: c_int) -> *mut _
     buf
 }
 
+/// Whether an HTML save must serialize through the pseudo "HTML" output
+/// encoding — upstream `htmlFindOutputEncoder` (HTMLtree.c) resolves the
+/// encoding name for the convenience dumps, and a NULL name falls back to
+/// "HTML". When "HTML" is in force the dumped UTF-8 is converted to ASCII
+/// with HTML 4 named/numeric character references (`htmlUTF8ToHtml`,
+/// HTMLparser.c). A declared non-NULL encoding gets a real output converter
+/// upstream; the candidate has no output converters yet (Workstream 9 /
+/// R-000157), so those names keep the raw UTF-8 pass-through.
+///
+/// # Safety
+///
+/// - `encoding` must be NULL or a valid NUL-terminated C string.
+const unsafe fn html_pseudo_encoding_in_force(encoding: *const c_char) -> bool {
+    if encoding.is_null() {
+        return true;
+    }
+    let b = unsafe { std::ffi::CStr::from_ptr(encoding) }.to_bytes();
+    b.eq_ignore_ascii_case(b"HTML")
+}
+
+/// Append the ASCII + HTML-entity form of a UTF-8 dump to `out` — upstream
+/// `htmlUTF8ToHtml` byte semantics: ASCII passes through unchanged; a
+/// multi-byte sequence is looked up in the HTML 4.0 value table and written
+/// as `&name;`, or as a decimal reference `&#N;` when it has no name. An
+/// incomplete sequence at the very end of the dump is dropped, exactly like
+/// the upstream stream converter when it never receives another chunk.
+///
+/// # Safety
+///
+/// - `out` must be a valid writable `_xmlBuffer`; `content` must be readable
+///   for `len` bytes.
+unsafe fn html_buf_append_html_ascii(out: *mut _xmlBuffer, content: *const xmlChar, len: usize) {
+    let mut i = 0usize;
+    while i < len {
+        let d = unsafe { *content.add(i) };
+        if d < 0x80 {
+            // Copy the whole ASCII run in one write.
+            let start = i;
+            i += 1;
+            while i < len && unsafe { *content.add(i) } < 0x80 {
+                i += 1;
+            }
+            io::buf_add(out, content.add(start), (i - start) as c_int);
+            continue;
+        }
+        let (mut c, seqlen) = if d < 0xE0 {
+            ((d & 0x1F) as c_uint, 2usize)
+        } else if d < 0xF0 {
+            ((d & 0x0F) as c_uint, 3usize)
+        } else {
+            ((d & 0x07) as c_uint, 4usize)
+        };
+        if len - i < seqlen {
+            // Truncated trailing sequence: dropped, matching the stream
+            // converter (no further chunk ever arrives).
+            break;
+        }
+        for k in 1..seqlen {
+            let dd = unsafe { *content.add(i + k) };
+            c = (c << 6) | ((dd & 0x3F) as c_uint);
+        }
+        i += seqlen;
+        let ent = unsafe { html_entity_value_lookup_static(c) };
+        if ent.is_null() {
+            // Decimal reference: htmlUTF8ToHtml's snprintf(nbuf, "#%u", c).
+            io::buf_ccat(out, b'&');
+            io::buf_ccat(out, b'#');
+            let mut digits = [0u8; 10];
+            let mut n = 0usize;
+            let mut v = c;
+            if v == 0 {
+                digits[0] = b'0';
+                n = 1;
+            }
+            while v > 0 {
+                digits[n] = b'0' + (v % 10) as u8;
+                n += 1;
+                v /= 10;
+            }
+            while n > 0 {
+                n -= 1;
+                io::buf_ccat(out, digits[n]);
+            }
+            io::buf_ccat(out, b';');
+        } else {
+            io::buf_ccat(out, b'&');
+            io::buf_cat(out, (*ent).name as *const xmlChar);
+            io::buf_ccat(out, b';');
+        }
+    }
+}
+
+/// Return a buffer holding the final bytes of an HTML dump: when the pseudo
+/// "HTML" output encoding is in force for `encoding`, a fresh buffer with the
+/// ASCII + HTML-entity form of `buf`'s content (the original is freed);
+/// otherwise `buf` itself. The caller frees the returned buffer in both
+/// cases.
+///
+/// # Safety
+///
+/// - `buf` must be NULL or a valid `_xmlBuffer`; `encoding` must be NULL or a
+///   valid NUL-terminated C string.
+unsafe fn html_buf_apply_pseudo_encoding(
+    buf: *mut _xmlBuffer,
+    encoding: *const c_char,
+) -> *mut _xmlBuffer {
+    if buf.is_null() || !unsafe { html_pseudo_encoding_in_force(encoding) } {
+        return buf;
+    }
+    let len = io::buf_length(buf);
+    if len <= 0 {
+        return buf;
+    }
+    let content = io::buf_content(buf);
+    let conv = io::buf_create(0);
+    if conv.is_null() {
+        return buf;
+    }
+    unsafe { html_buf_append_html_ascii(conv, content, len as usize) };
+    io::buf_free(buf);
+    conv
+}
+
 /// Serialize `node` into an `_xmlOutputBuffer` (writes the serialized bytes
 /// through the output buffer's I/O channel).
 unsafe fn html_serialize_to_obuf(obuf: *mut _xmlOutputBuffer, node: *mut _xmlNode, format: c_int) {
@@ -4093,6 +4216,17 @@ pub unsafe extern "C" fn htmlDocDumpMemoryFormat(
     if buf.is_null() {
         return;
     }
+    // UPSTREAM-PARITY (HTMLtree.c htmlDocDumpMemoryFormat): the output
+    // buffer is created with the encoding resolved from the document — a
+    // NULL doc->encoding falls back to the pseudo "HTML" handler whose
+    // converter (htmlUTF8ToHtml) re-emits every non-ASCII character as an
+    // HTML 4 named entity (&nbsp;, &eacute;) or a decimal reference. This is
+    // the step that re-prints `&nbsp;` in DOMDocument::saveHTML() for docs
+    // loaded without a declared encoding (ext/dom dom005).
+    let buf = unsafe { html_buf_apply_pseudo_encoding(buf, (*cur).encoding as *const c_char) };
+    if buf.is_null() {
+        return;
+    }
     let len = io::buf_length(buf);
     if len > 0 {
         let content = io::buf_content(buf);
@@ -4175,7 +4309,34 @@ pub unsafe extern "C" fn htmlSaveFileFormat(
         // UPSTREAM-PARITY: a failed output buffer yields 0, not -1.
         return 0;
     }
-    unsafe { html_serialize_to_obuf_enc(obuf, cur as *mut _xmlNode, format, enc) };
+    // UPSTREAM-PARITY (HTMLtree.c htmlSaveFileFormat): the output buffer is
+    // created with htmlFindOutputEncoder(caller-encoding) — NULL (php
+    // saveHTMLFile passes htmlGetMetaEncoding, NULL for meta-less docs)
+    // falls back to the pseudo "HTML" encoder (ASCII + HTML entities).
+    let buf = if enc.is_some() {
+        let b = io::buf_create(0);
+        if b.is_null() {
+            io::output_buffer_close(obuf);
+            return 0;
+        }
+        unsafe { html::serialize_node_enc(cur as *mut _xmlNode, b, format, 0, enc) };
+        b
+    } else {
+        unsafe { html_serialize_to_buffer(cur as *mut _xmlNode, format) }
+    };
+    let buf = unsafe { html_buf_apply_pseudo_encoding(buf, encoding) };
+    if buf.is_null() {
+        io::output_buffer_close(obuf);
+        return 0;
+    }
+    let len = io::buf_length(buf);
+    if len > 0 {
+        let content = io::buf_content(buf);
+        unsafe {
+            io::output_buffer_write(obuf, len, content as *const c_char);
+        }
+    }
+    io::buf_free(buf);
     io::output_buffer_close(obuf)
 }
 
@@ -4322,5 +4483,98 @@ pub unsafe extern "C" fn htmlUTF8ToHtml(
         *outlen = out_pos as c_int;
         *inlen = in_pos as c_int;
         ret
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::xml::string::{xml_strdup, xml_strlen};
+
+    /// Helper: run the pseudo-HTML transcode over `input` bytes and return
+    /// the resulting ASCII string.
+    unsafe fn transcode(input: &[u8]) -> String {
+        let buf = io::buf_create(0);
+        assert!(!buf.is_null());
+        unsafe { html_buf_append_html_ascii(buf, input.as_ptr(), input.len()) };
+        let content = io::buf_content(buf);
+        let len = xml_strlen(content);
+        let s = String::from_utf8_lossy(core::slice::from_raw_parts(content, len)).to_string();
+        io::buf_free(buf);
+        s
+    }
+
+    /// Phase 14.3 (dom S1 / html-save): the html convenience memory dump must
+    /// serialize through the pseudo "HTML" output encoding when the document
+    /// has no declared encoding — every non-ASCII character is re-emitted as
+    /// an HTML 4 named entity (`&nbsp;`, `&eacute;`) or a decimal reference
+    /// (upstream htmlFindOutputEncoder's "HTML" fallback + htmlUTF8ToHtml).
+    #[test]
+    fn test_pseudo_html_transcode_semantics() {
+        unsafe {
+            // ASCII passes through untouched (the serializer's own
+            // &lt;/&amp;/&gt; escapes must never be double-escaped).
+            assert_eq!(transcode(b"a&lt;b&amp;c&gt;d"), "a&lt;b&amp;c&gt;d");
+            // nbsp (U+00A0) and eacute (U+00E9) map to named entities.
+            assert_eq!(transcode("a\u{a0}b\u{e9}c".as_bytes()), "a&nbsp;b&eacute;c");
+            // U+2603 (snowman) has no HTML 4 name: decimal reference.
+            assert_eq!(transcode("\u{2603}".as_bytes()), "&#9731;");
+            // A truncated trailing sequence is dropped (stream semantics).
+            assert_eq!(transcode(b"x\xc2"), "x");
+        }
+    }
+
+    /// End-to-end: htmlDocDumpMemoryFormat on a meta-less html document (its
+    /// `encoding` is NULL) re-emits parsed non-ASCII text as HTML 4 named
+    /// references (`&nbsp;`, `&eacute;`); the same document with a declared
+    /// UTF-8 encoding keeps raw UTF-8. The source carries raw UTF-8 bytes for
+    /// the non-ASCII text (the parse-side resolution of `&eacute;`-style
+    /// references is a separate engine rule; this guard owns the save layer).
+    #[test]
+    fn test_html_doc_dump_memory_pseudo_encoding() {
+        unsafe {
+            let html = b"<html><body><p>a&nbsp;b&#160;c\xc3\xa9d</p></body></html>\0";
+            // NOTE: the \xc3\xa9 bytes above are the UTF-8 form of `é`.
+            let doc = html::parse_memory(html.as_ptr() as *const c_char, (html.len() - 1) as c_int);
+            assert!(!doc.is_null());
+            assert!(
+                (*doc).encoding.is_null(),
+                "a meta-less html parse must leave doc->encoding NULL"
+            );
+
+            let mut mem: *mut xmlChar = ptr::null_mut();
+            let mut size: c_int = 0;
+            htmlDocDumpMemoryFormat(doc, &mut mem, &mut size, 0);
+            assert!(!mem.is_null());
+            assert!(size > 0);
+            let s = String::from_utf8_lossy(core::slice::from_raw_parts(
+                mem as *const u8,
+                size as usize,
+            ))
+            .to_string();
+            assert!(s.contains("a&nbsp;b&nbsp;c&eacute;d"), "got: {s}");
+            assert!(
+                !s.contains('\u{a0}'),
+                "no raw U+00A0 may survive the pseudo-HTML dump: got: {s}"
+            );
+            xmlFreeImpl(mem as *mut c_void);
+
+            // Declared UTF-8 encoding: no converter upstream, raw bytes out.
+            (*doc).encoding = xml_strdup(b"UTF-8\0" as *const u8 as *const xmlChar);
+            let mut mem2: *mut xmlChar = ptr::null_mut();
+            let mut size2: c_int = 0;
+            htmlDocDumpMemoryFormat(doc, &mut mem2, &mut size2, 0);
+            assert!(!mem2.is_null());
+            let s2 = String::from_utf8_lossy(core::slice::from_raw_parts(
+                mem2 as *const u8,
+                size2 as usize,
+            ))
+            .to_string();
+            assert!(s2.contains("a\u{a0}b\u{a0}c\u{e9}d"), "got: {s2}");
+            assert!(!s2.contains("&nbsp;"), "got: {s2}");
+            xmlFreeImpl(mem2 as *mut c_void);
+
+            tree::free_doc(doc);
+        }
     }
 }
