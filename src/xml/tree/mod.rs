@@ -4070,15 +4070,19 @@ unsafe fn dtd_dump_output(
         return;
     }
     io::buf_add(buf, b" [\n" as *const u8, 3);
-    // UPSTREAM-PARITY: declarations are dumped in the upstream order
-    // (notations, elements, attributes, entities, parameter entities). Our
-    // decls live in hash tables; iteration order is hash-bucket order, so
-    // multi-declaration files may differ from upstream's insertion order
-    // (tracked as RESIDUAL R-DTD-DUMP-ORDER).
+    // UPSTREAM-PARITY (xmlsave.c xmlDtdDumpOutput): the internal-subset
+    // declarations are dumped from the DTD NODE's children list — the
+    // declaration nodes are linked there in declaration order — NOT from the
+    // hash tables (which upstream also keeps, but only for lookups; notations
+    // are hash-only because they never join the child list). The old
+    // hash-scan emitted declarations in hash-bucket order, which reversed
+    // multi-declaration files (RESIDUAL R-DTD-DUMP-ORDER; ext/dom +
+    // ext/simplexml xml_parsing_LIBXML_NO_XXE show `xxe` before `foo`).
     let format = state.format;
     let lvl = *level;
     state.format = 0;
     *level = -1;
+    // Notations first: upstream xmlBufDumpNotationTable (hash-only table).
     if !d.notations.is_null() {
         crate::xml::hash::hash_scan(
             d.notations as *mut crate::xml::hash::HashTable,
@@ -4086,40 +4090,31 @@ unsafe fn dtd_dump_output(
             buf as *mut c_void,
         );
     }
-    if !d.elements.is_null() {
-        crate::xml::hash::hash_scan(
-            d.elements as *mut crate::xml::hash::HashTable,
-            Some(dump_element_decl_cb),
-            buf as *mut c_void,
-        );
-    }
-    if !d.attributes.is_null() {
-        crate::xml::hash::hash_scan(
-            d.attributes as *mut crate::xml::hash::HashTable,
-            Some(dump_attribute_decl_cb),
-            buf as *mut c_void,
-        );
-    }
-    if !d.entities.is_null() {
-        crate::xml::hash::hash_scan(
-            d.entities as *mut crate::xml::hash::HashTable,
-            Some(dump_entity_decl_cb),
-            buf as *mut c_void,
-        );
-    }
-    if !d.pentities.is_null() {
-        crate::xml::hash::hash_scan(
-            d.pentities as *mut crate::xml::hash::HashTable,
-            Some(dump_entity_decl_cb),
-            buf as *mut c_void,
-        );
+    // Declarations in child-list (declaration) order: element, attribute,
+    // entity and parameter-entity declaration nodes.
+    let mut decl = d.children;
+    while !decl.is_null() {
+        let dt = unsafe { (*decl).type_ };
+        match dt {
+            t if t == XML_ELEMENT_DECL as c_int => {
+                dump_element_decl(buf, decl as *mut _xmlElement);
+            }
+            t if t == XML_ATTRIBUTE_DECL as c_int => {
+                dump_attribute_decl(buf, decl as *mut _xmlAttribute);
+            }
+            t if t == XML_ENTITY_DECL as c_int => {
+                dump_entity_decl(buf, decl as *mut _xmlEntity);
+            }
+            _ => {}
+        }
+        decl = unsafe { (*decl).next };
     }
     state.format = format;
     *level = lvl;
     io::buf_add(buf, b"]>" as *const u8, 2);
 }
 
-/// Hash-scan callbacks that route each DTD declaration to its dumper.
+/// Hash-scan callback for notation declarations.
 unsafe extern "C" fn dump_notation_decl_cb(
     payload: *mut c_void,
     data: *mut c_void,
@@ -4127,39 +4122,6 @@ unsafe extern "C" fn dump_notation_decl_cb(
 ) {
     if !payload.is_null() && !data.is_null() {
         dump_notation_decl(data as *mut _xmlBuffer, payload as *mut _xmlNotation);
-    }
-}
-
-/// Hash-scan callback for element declarations.
-unsafe extern "C" fn dump_element_decl_cb(
-    payload: *mut c_void,
-    data: *mut c_void,
-    _name: *const crate::abi::types::xmlChar,
-) {
-    if !payload.is_null() && !data.is_null() {
-        dump_element_decl(data as *mut _xmlBuffer, payload as *mut _xmlElement);
-    }
-}
-
-/// Hash-scan callback for attribute declarations.
-unsafe extern "C" fn dump_attribute_decl_cb(
-    payload: *mut c_void,
-    data: *mut c_void,
-    _name: *const crate::abi::types::xmlChar,
-) {
-    if !payload.is_null() && !data.is_null() {
-        dump_attribute_decl(data as *mut _xmlBuffer, payload as *mut _xmlAttribute);
-    }
-}
-
-/// Hash-scan callback for entity declarations.
-unsafe extern "C" fn dump_entity_decl_cb(
-    payload: *mut c_void,
-    data: *mut c_void,
-    _name: *const crate::abi::types::xmlChar,
-) {
-    if !payload.is_null() && !data.is_null() {
-        dump_entity_decl(data as *mut _xmlBuffer, payload as *mut _xmlEntity);
     }
 }
 
@@ -4221,8 +4183,13 @@ unsafe fn doc_content_dump_output(
     // before the first element), and the children loop below dumps it once.
     // Construction paths that keep the DTD only on doc->intSubset
     // (xmlCopyDoc, lazily-created subsets) need the explicit dump. Never
-    // dump both — that double-prints <!DOCTYPE>.
-    if !d.intSubset.is_null() {
+    // dump both — that double-prints <!DOCTYPE>. When doc->children is
+    // EMPTY the DTD must NOT be dumped either: php's modern serializer
+    // temporarily NULLs doc->children around xmlSaveDoc (to get a
+    // declaration-only pass) and re-dumps the children itself — dumping the
+    // intSubset there produced a duplicated <!DOCTYPE> (ext/dom +
+    // ext/simplexml xml_parsing_LIBXML_NO_XXE).
+    if !d.children.is_null() && !d.intSubset.is_null() {
         let mut in_chain = false;
         let mut c = d.children;
         while !c.is_null() {

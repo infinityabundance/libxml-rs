@@ -438,3 +438,42 @@ dom O1 deep-tree free recursion closed (2026-09-03): full suite 251 -> 250;
   - guards: tree/mod.rs test_free_deeply_nested_chain_is_iterative (500k-deep
     chain freed through free_doc; a recursion regression dies in the test
     thread). cargo test --lib 1227 pass; clippy no new warnings; fmt clean.
+
+KEY-4 part 1 (RECOVER diagnostics + NO_XXE gating) closed (2026-09-03): full
+  suite 250 -> 241; zero regressions (dom 159 -> 152; simplexml 9 -> 7; xml 0
+  / xmlreader 29 / xmlwriter 1 / xsl 52 unchanged). Receipt:
+  php-14-3-key4-parse-options-20260903/. Three engine root causes:
+  - recovery silent close: the parse_element EOF-in-content arm closed the
+    element silently under XML_PARSE_RECOVER — upstream raises
+    XML_ERR_TAG_NOT_FINISHED (77) BEFORE the recovery close (recovery only
+    decides whether parsing continues). Now the raise fires in both modes;
+    ext/simplexml + ext/dom xml_parsing_LIBXML_RECOVER show the full warning
+    block like the non-recover case.
+  - NO_XXE external-entity gate: xmlParseReference's first-parse/substitution
+    phase ran for EXTERNAL general parsed entities even under NO_XXE
+    (loader invoked -> spurious "I/O warning : failed to load" for
+    file:///etc/passwd). Upstream gates on
+    `(ent->etype == XML_INTERNAL_GENERAL_ENTITY) || (!NO_XXE &&
+    (replaceEntities || validate))`; the candidate now skips the load and the
+    reference expands to nothing (ext/simplexml + ext/dom
+    xml_parsing_LIBXML_NO_XXE).
+  - DTD serializer model (exposed by the NO_XXE member, mirrors xmlsave.c
+    xmlDtdDumpOutput): the internal-subset decls were dumped from the HASH
+    tables (hash-bucket order -> reversed multi-declaration output, RESIDUAL
+    R-DTD-DUMP-ORDER); upstream dumps the DTD node's CHILDREN list
+    (declaration order; notations stay hash-only). dtd_dump_output now walks
+    dtd->children dispatching by decl node type. ALSO the intSubset-explicit
+    dump in doc_content_dump_output fired when doc->children was EMPTY —
+    php's modern serializer temporarily NULLs doc->children around xmlSaveDoc
+    for a declaration-only pass, so the extra dump produced a duplicated
+    <!DOCTYPE>; the explicit dump now requires a non-empty children chain.
+    These two closed dom modern/spec/{Document_implementation_createDocument,
+    _createDocumentType, clone_document, pre_insertion_validation} +
+    modern/common/gh21077 (doctype-on-clone/creation serialization) as well.
+  - guards (parser/tests.rs): test_recover_raises_premature_eof_tag_not_finished
+    (errNo 77 both modes; tree returned under RECOVER);
+    test_no_xxe_blocks_external_entity_and_doctype_serializes_once_in_order
+    (serialized bytes: single doctype, foo before xxe, &xxe; expands to
+    nothing). Probes kept: recover-probe.c / savedtd-probe.c / dtd-children.c
+    (engine pins), recover-sxe.php (php pin). cargo test --lib 1229 pass;
+    clippy no new warnings; fmt clean.

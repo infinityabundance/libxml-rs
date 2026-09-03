@@ -1690,3 +1690,80 @@ fn test_content_markup_decl_clears_wellformed() {
         tree::free_doc(d);
     }
 }
+
+// ── KEY-4 guards: RECOVER premature-EOF diagnostics + NO_XXE external gating
+// ────────────────────────────────────────────────────────────────────────────
+
+/// A RECOVER parse of an unterminated root raises XML_ERR_TAG_NOT_FINISHED
+/// (77) AND still returns the recovered tree — recovery decides whether
+/// parsing continues, not whether the diagnostic fires. The pre-fix recovery
+/// branch closed the element silently (no error record, no php warning);
+/// ext/simplexml + ext/dom xml_parsing_LIBXML_RECOVER show the warning block
+/// exactly like the non-recover case.
+///
+/// # Safety
+///
+/// - The static buffer is valid for the parse; `read_memory_ctx` frees the
+///   context and returns an owned doc (freed below).
+#[test]
+fn test_recover_raises_premature_eof_tag_not_finished() {
+    unsafe {
+        // Non-recover: fatal, no doc.
+        let (doc, wf, err) = read_memory_ctx(b"<root><child/>", 0);
+        assert!(doc.is_null());
+        assert_eq!(wf, 0);
+        assert_eq!(err, crate::abi::types::XML_ERR_TAG_NOT_FINISHED);
+
+        // Recover: same diagnostic (77), but the tree is returned.
+        let (doc, wf, err) =
+            read_memory_ctx(b"<root><child/>", crate::abi::types::XML_PARSE_RECOVER);
+        assert!(!doc.is_null(), "RECOVER must return the recovered tree");
+        assert_eq!(wf, 0, "the fatal error still clears wellFormed");
+        assert_eq!(err, crate::abi::types::XML_ERR_TAG_NOT_FINISHED);
+        tree::free_doc(doc);
+    }
+}
+
+/// LIBXML_NO_XXE blocks the load AND substitution of an EXTERNAL general
+/// parsed entity while internal entities still substitute — the reference
+/// expands to nothing, no loader is invoked (no "failed to load" I/O warning)
+/// and the saved document carries a SINGLE <!DOCTYPE> whose declarations are
+/// in declaration order (ext/simplexml + ext/dom xml_parsing_LIBXML_NO_XXE;
+/// the doctype duplication + reversed entity order were a serializer defect —
+/// upstream xmlDtdDumpOutput walks the DTD node's children list).
+///
+/// # Safety
+///
+/// - The static buffer is valid for the parse; the owned doc is freed via
+///   `tree::free_doc` after the serialized-bytes check.
+#[test]
+fn test_no_xxe_blocks_external_entity_and_doctype_serializes_once_in_order() {
+    unsafe {
+        let xml = b"<?xml version='1.0' encoding='utf-8'?>\n<!DOCTYPE set [\n    <!ENTITY foo '<foo>bar</foo>'>\n    <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n]>\n<set>&foo;&xxe;</set>\n";
+        let (doc, wf, err) = read_memory_ctx(
+            xml,
+            crate::abi::types::XML_PARSE_NOENT | crate::abi::types::XML_PARSE_NO_XXE,
+        );
+        assert!(!doc.is_null(), "NO_XXE doc must parse");
+        assert_eq!(wf, 1);
+        assert_eq!(err, 0);
+        // The saved doc: single doctype, foo before xxe, external ref gone.
+        let buf = crate::xml::io::buf_create(-1);
+        assert!(!buf.is_null());
+        tree::serialize_node(doc as *mut _xmlNode, buf, 0, 0);
+        let content = crate::xml::io::buf_content(buf);
+        let bytes = crate::xml::string::xmlstr_to_bytes(content);
+        let text = String::from_utf8_lossy(&bytes).into_owned();
+        crate::xml::io::buf_free(buf);
+        assert_eq!(
+            text,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
+             <!DOCTYPE set [\n\
+             <!ENTITY foo \"<foo>bar</foo>\">\n\
+             <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n\
+             ]>\n\
+             <set><foo>bar</foo></set>\n"
+        );
+        tree::free_doc(doc);
+    }
+}

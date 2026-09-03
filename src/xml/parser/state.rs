@@ -2813,19 +2813,20 @@ impl XmlParser {
                         // UPSTREAM-PARITY (xmlParseElement /
                         // xmlParseContentInternal): EOF inside an open
                         // element raises "Premature end of data in tag %s
-                        // line %d" (77) — but only while wellFormed (a prior
-                        // fatal error already reported the real cause). In
-                        // recovery mode the element is closed silently. In an
-                        // incremental probe (or eager-partial delivery) the
-                        // end of the currently available input inside an open
-                        // element pauses the parse (more data may complete it
-                        // later; SP-14.3.1-6).
+                        // line %d" (77) BEFORE recovery closes the element —
+                        // recovery only decides whether parsing continues,
+                        // not whether the diagnostic fires (ext/simplexml +
+                        // ext/dom xml_parsing_LIBXML_RECOVER expect the same
+                        // warning block as the non-recover case). The raise
+                        // is skipped only when a prior fatal already reported
+                        // the real cause (wellFormed == 0). In an incremental
+                        // probe (or eager-partial delivery) the end of the
+                        // currently available input inside an open element
+                        // pauses the parse (more data may complete it later;
+                        // SP-14.3.1-6).
                         if self.probe || self.partial_delivery {
                             self.paused = true;
                             return Err(());
-                        }
-                        if self.is_recovery() {
-                            break;
                         }
                         if unsafe { (*self.ctxt).wellFormed } != 0 {
                             self.raise_error_now(
@@ -2842,6 +2843,9 @@ impl XmlParser {
                                 None,
                                 open_line as c_int,
                             );
+                        }
+                        if self.is_recovery() {
+                            break;
                         }
                         self.pop_name();
                         return Err(());
@@ -3304,58 +3308,71 @@ impl XmlParser {
             }
 
             if (self.options & XML_PARSE_NOENT) != 0 {
-                // UPSTREAM-PARITY (xmlParseReference): the entity content is
-                // parsed into ent->children on first reference regardless of
-                // the substitution mode.
-                self.parse_entity_content(entity, None)?;
-                // UPSTREAM-PARITY (xmlParseReference): "We also check for
-                // amplification if entities aren't substituted. They might be
-                // expanded later." — unconditional, no XML_PARSE_HUGE bypass.
-                // consumed = the document position after the reference.
-                let (_, _, dpos) = self.tokenizer.current_pos();
-                if self.parser_entity_check(
-                    unsafe { (*entity).expandedSize },
-                    ptr::null_mut(),
-                    dpos as c_ulong,
-                ) {
-                    return Err(());
-                }
-                if !unsafe { (*entity).content }.is_null() {
-                    // Re-parse the entity content from a pushed input.
-                    let content = unsafe { (*entity).content };
-                    let len = unsafe { libc::strlen(content as *const c_char) };
-                    let bytes = unsafe { core::slice::from_raw_parts(content, len) };
-                    let buf = InputBuffer::from_memory(bytes, None);
-                    self.tokenizer.push_input(buf);
-                } else {
-                    // External entity with no in-memory content: load it
-                    // through the registered loader and re-parse.
-                    let loaded = unsafe {
-                        let sys = (*entity).SystemID as *const c_char;
-                        let ext = (*entity).ExternalID as *const c_char;
-                        crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
-                    };
-                    if loaded.is_null() {
-                        // UPSTREAM-PARITY (xmlCtxtParseEntity): an external
-                        // entity that cannot be loaded (e.g. XML_PARSE_NONET
-                        // refusing an http URL) fails silently — the reference
-                        // simply expands to nothing.
-                        return Ok(());
+                // UPSTREAM-PARITY (parser.c xmlParseReference): the first-
+                // parse phase runs only for internal general entities or,
+                // for EXTERNAL general parsed entities, when the load is
+                // allowed — `(ent->etype == XML_INTERNAL_GENERAL_ENTITY) ||
+                // (!(ctxt->options & XML_PARSE_NO_XXE) &&
+                //  (ctxt->replaceEntities || ctxt->validate))`. Under
+                // LIBXML_NO_XXE an external entity is neither loaded nor
+                // substituted and its reference expands to NOTHING — no
+                // entity-loader call, no "failed to load" I/O warning
+                // (ext/simplexml + ext/dom xml_parsing_LIBXML_NO_XXE).
+                let is_external =
+                    unsafe { (*entity).etype } == XML_EXTERNAL_GENERAL_PARSED_ENTITY as c_int;
+                let may_load_external = (self.options & XML_PARSE_NO_XXE) == 0;
+                if !is_external || may_load_external {
+                    self.parse_entity_content(entity, None)?;
+                    // UPSTREAM-PARITY (xmlParseReference): "We also check for
+                    // amplification if entities aren't substituted. They might
+                    // be expanded later." — unconditional, no XML_PARSE_HUGE
+                    // bypass.
+                    // consumed = the document position after the reference.
+                    let (_, _, dpos) = self.tokenizer.current_pos();
+                    if self.parser_entity_check(
+                        unsafe { (*entity).expandedSize },
+                        ptr::null_mut(),
+                        dpos as c_ulong,
+                    ) {
+                        return Err(());
                     }
-                    unsafe {
-                        let base = (*loaded).base;
-                        let end = (*loaded).end;
-                        let len = end.offset_from(base).max(0) as usize;
-                        let bytes = if base.is_null() || len == 0 {
-                            &[][..]
-                        } else {
-                            core::slice::from_raw_parts(base, len)
-                        };
+                    if !unsafe { (*entity).content }.is_null() {
+                        // Re-parse the entity content from a pushed input.
+                        let content = unsafe { (*entity).content };
+                        let len = unsafe { libc::strlen(content as *const c_char) };
+                        let bytes = unsafe { core::slice::from_raw_parts(content, len) };
                         let buf = InputBuffer::from_memory(bytes, None);
                         self.tokenizer.push_input(buf);
-                        // free_parser_input (xmlFreeInputStream) frees the
-                        // owned buffer; no separate buffer free here.
-                        crate::abi::exports_xml2::xmlFreeInputStream(loaded);
+                    } else {
+                        // External entity with no in-memory content: load it
+                        // through the registered loader and re-parse.
+                        let loaded = unsafe {
+                            let sys = (*entity).SystemID as *const c_char;
+                            let ext = (*entity).ExternalID as *const c_char;
+                            crate::abi::exports_parser::xmlLoadExternalEntity(sys, ext, self.ctxt)
+                        };
+                        if loaded.is_null() {
+                            // UPSTREAM-PARITY (xmlCtxtParseEntity): an external
+                            // entity that cannot be loaded (e.g. XML_PARSE_NONET
+                            // refusing an http URL) fails silently — the reference
+                            // simply expands to nothing.
+                            return Ok(());
+                        }
+                        unsafe {
+                            let base = (*loaded).base;
+                            let end = (*loaded).end;
+                            let len = end.offset_from(base).max(0) as usize;
+                            let bytes = if base.is_null() || len == 0 {
+                                &[][..]
+                            } else {
+                                core::slice::from_raw_parts(base, len)
+                            };
+                            let buf = InputBuffer::from_memory(bytes, None);
+                            self.tokenizer.push_input(buf);
+                            // free_parser_input (xmlFreeInputStream) frees the
+                            // owned buffer; no separate buffer free here.
+                            crate::abi::exports_xml2::xmlFreeInputStream(loaded);
+                        }
                     }
                 }
             } else {

@@ -1,6 +1,14 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **KEY-4 part 1 closed (2026-09-03):** RECOVER premature-EOF raises error 77
+  before the recovery close (was a silent close) + NO_XXE blocks external
+  general-entity load/substitution + DTD serializer now dumps the DTD node's
+  children list (declaration order; was hash-bucket order) with no doctype
+  duplication on the php empty-children saveDoc pass. Full suite
+  **250 → 241** (dom 159 → 152: + clone_document/createDocument(Type)/
+  pre_insertion_validation/gh21077; simplexml 9 → 7: RECOVER+NO_XXE), zero
+  regressions. Receipt: php-14-3-key4-parse-options-20260903/.
 - **dom O1 deep-tree free recursion closed (2026-09-03):** xmlFreeNodeList is
   iterative upstream (tree.c 2.15); the candidate's recursive free overflowed
   the stack tearing down GH-22570's 100k-deep document at php shutdown. Full
@@ -48,12 +56,12 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 250 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2):
+Split at 289 (now 241 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 159 | | ext/xml | 5 -> **0** |
-| ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
+| ext/dom | 169 -> 152 | | ext/xml | 5 -> **0** |
+| ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 7 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —
