@@ -75,6 +75,36 @@ use crate::xml::xpath::types::XPathValue;
 use std::collections::HashMap;
 use std::os::raw::c_void;
 
+/// First 8 bytes of every internal `XPathContext` allocation. C-interop
+/// helpers that receive a `_xmlXPathContext` whose `extra` slot may hold
+/// either the internal Rust context (engine rule) or a transform context
+/// (upstream libxslt stores the `xsltTransformContext` there — php reads
+/// `ctxt->context->extra` directly) inspect this to tell the two apart.
+///
+/// NOTE: `XPathContext` is `repr(Rust)` so field order is NOT declaration
+/// order — always test with [`has_signature`], which reads the field at its
+/// compiler-chosen offset via `offset_of!`.
+pub const XPATH_CONTEXT_SIGNATURE: u64 = 0x5850_4354_5854_5844;
+
+/// True when `ptr` points at an internal `XPathContext` allocation (the
+/// engine stores one in `_xmlXPathContext.extra`). False when it points at
+/// an upstream-layout `xsltTransformContext` in the same slot (the XSLT
+/// extension-function mirror bridge) or at anything else.
+pub const fn has_signature(ptr: *const c_void) -> bool {
+    if ptr.is_null() {
+        return false;
+    }
+    let field = unsafe {
+        (ptr as *const u8)
+            .add(core::mem::offset_of!(XPathContext, signature))
+            .cast::<u64>()
+    };
+    // The Box allocation is aligned to the struct's alignment and the field
+    // offset is a multiple of u64's alignment, so a plain read is safe.
+    let value = unsafe { *field };
+    value == XPATH_CONTEXT_SIGNATURE
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Type Aliases
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -152,6 +182,12 @@ pub type FuncLookupFunc =
 /// caller's responsibility to ensure those pointers remain valid for the
 /// duration of evaluation. The context does **not** own the document tree.
 pub struct XPathContext {
+    /// Signature marker: always `XPATH_CONTEXT_SIGNATURE`. Lets C-interop
+    /// helpers distinguish an internal Rust context (stored in
+    /// `_xmlXPathContext.extra`) from an upstream-style transform context in
+    /// the same slot (see `transform_context_from_parser`).
+    pub signature: u64,
+
     /// The current XML document.
     pub document: *mut _xmlDoc,
 
@@ -265,6 +301,7 @@ impl XPathContext {
     /// * Callback data pointers set to null.
     pub fn new(doc: *mut _xmlDoc) -> Self {
         Self {
+            signature: XPATH_CONTEXT_SIGNATURE,
             document: doc,
             context_node: std::ptr::null_mut(),
             context_position: 1,

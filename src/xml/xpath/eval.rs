@@ -396,6 +396,29 @@ fn eval_function_call(
     // the `{URI}local` qualified key. The raw name (e.g. `exsl:node-set`) is
     // tried first so the XSLT function_lookup closure (which splits on ':') and
     // prefix-string-registered functions resolve; the qualified key falls back.
+    //
+    // UPSTREAM-PARITY (functions.c xsltXPathFunctionLookup): for a PREFIXED
+    // call whose prefix is declared, the per-context extension registry is
+    // consulted BEFORE the builtin/native tables — xslt gives "priority to
+    // context-level functions" (xmlHashLookup2 on the funcHash, which
+    // xsltRegisterExtFunction fills) over the module registry and the XSLT
+    // builtins. PHP exploits this to OVERRIDE EXSLT builtins
+    // (registerPHPFunctionNS on the EXSLT namespace); native Rust registrations
+    // (e.g. the candidate's EXSLT library) must therefore yield to a
+    // per-context C registration for the same prefix:local name.
+    let namespaced_c_first: Option<crate::xml::xpath::context::BoxedXPathFunction> = {
+        let prefixed = name
+            .split_once(':')
+            .is_some_and(|(p, _)| !p.is_empty() && ctx.namespaces.contains_key(p));
+        if prefixed {
+            ctx.function_lookup.as_ref().and_then(|lk| lk(ctx, name))
+        } else {
+            None
+        }
+    };
+    if let Some(f) = namespaced_c_first {
+        return f(ctx, &evaluated_args);
+    }
     let mut func_ptr: Option<*const crate::xml::xpath::context::BoxedXPathFunction> = None;
     if let Some(f) = ctx.lookup_function(name) {
         func_ptr = Some(f as *const _);
@@ -467,15 +490,36 @@ fn invoke_c_extension_function(
         return None;
     }
 
-    let mut name_nul: Vec<crate::abi::types::xmlChar> = name.as_bytes().to_vec();
-    name_nul.push(0);
+    // UPSTREAM-PARITY (xpath.c xmlXPathCompFunction): the lookup callback
+    // receives the LOCAL name and the prefix's RESOLVED namespace URI, not
+    // the raw `prefix:local` token — xslt's xsltXPathFunctionLookup and
+    // php's php:function registration (module table keyed by
+    // {http://php.net/xsl}function) match on that. When the prefix is not
+    // declared the raw name + NULL URI are passed (consumers that key on
+    // the raw token, e.g. nokogiri's per-context lookup, keep working).
+    let (lookup_name, lookup_uri): (Vec<u8>, Option<Vec<u8>>) = match name.split_once(':') {
+        Some((prefix, local)) => match ctx.namespaces.get(prefix) {
+            Some(uri) => (local.as_bytes().to_vec(), Some(uri.as_bytes().to_vec())),
+            None => (name.as_bytes().to_vec(), None),
+        },
+        None => (name.as_bytes().to_vec(), None),
+    };
+    let mut lookup_name_nul: Vec<crate::abi::types::xmlChar> = lookup_name.clone();
+    lookup_name_nul.push(0);
+    let lookup_uri_nul: Option<Vec<crate::abi::types::xmlChar>> = lookup_uri.as_ref().map(|u| {
+        let mut v = u.clone();
+        v.push(0);
+        v
+    });
     // SAFETY: the callback contract returns an xmlXPathFunction (fn pointer)
     // stored as void*, or NULL when the handler does not provide the name.
     let fp = unsafe {
         lookup(
             ctx.func_lookup_data,
-            name_nul.as_ptr() as *const crate::abi::types::xmlChar,
-            std::ptr::null(),
+            lookup_name_nul.as_ptr() as *const crate::abi::types::xmlChar,
+            lookup_uri_nul.as_ref().map_or(std::ptr::null(), |v| {
+                v.as_ptr() as *const crate::abi::types::xmlChar
+            }),
         )
     };
     if fp.is_null() {
@@ -485,7 +529,7 @@ fn invoke_c_extension_function(
 
     unsafe {
         let saved_function = (*c_ctxt).function;
-        (*c_ctxt).function = name_nul.as_ptr() as *const crate::abi::types::xmlChar;
+        (*c_ctxt).function = lookup_name_nul.as_ptr() as *const crate::abi::types::xmlChar;
         let pc = new_parser_context(std::ptr::null(), c_ctxt);
         if pc.is_null() {
             (*c_ctxt).function = saved_function;

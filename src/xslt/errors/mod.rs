@@ -342,18 +342,38 @@ pub fn xsltTransformError(
         errtype = "compilation error";
     }
 
-    let errctx = if ctxt.is_null() {
-        ptr::null_mut()
-    } else {
-        // SAFETY: ctxt must be a valid _xsltTransformContext.
-        unsafe { (*ctxt).errctx }
-    };
-    let handler = if ctxt.is_null() {
+    let per_ctxt_handler = if ctxt.is_null() {
         None
     } else {
         // SAFETY: ctxt must be a valid _xsltTransformContext.
         unsafe { (*ctxt).error }
     };
+
+    // UPSTREAM-PARITY (xsltutils.c xsltTransformError 1.1.45): with no
+    // per-context handler the message is emitted through the GLOBAL
+    // xsltGenericError channel (xsltSetGenericErrorFunc), falling back to
+    // plain stderr only when even that is unset. PHP's ext/xsl registers
+    // xsl_libxslt_error_handler there at MINIT; the three-DSO facade layout
+    // keeps this static shared with the xsl module, so the php handler
+    // receives transform errors (framed, suppressible) instead of raw
+    // stderr bytes.
+    let (eff_handler, eff_ctx) = match per_ctxt_handler {
+        Some(h) => {
+            let ctx = if ctxt.is_null() {
+                ptr::null_mut()
+            } else {
+                // SAFETY: ctxt must be a valid _xsltTransformContext.
+                unsafe { (*ctxt).errctx }
+            };
+            (Some(h), ctx)
+        }
+        None => (
+            unsafe { crate::abi::data_globals::xsltGenericError },
+            unsafe { crate::abi::data_globals::xsltGenericErrorContext },
+        ),
+    };
+    let handler = eff_handler;
+    let errctx = eff_ctx;
 
     // UPSTREAM-PARITY (xsltutils.c xsltTransformError): the error context
     // line (xsltPrintErrorContext) and the message are emitted as TWO

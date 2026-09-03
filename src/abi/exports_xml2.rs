@@ -542,7 +542,7 @@ pub const unsafe extern "C" fn xmlUnlockLibrary() {
 #[no_mangle]
 pub unsafe extern "C" fn xmlSetGenericErrorFunc(
     ctx: *mut c_void,
-    handler: Option<xmlGenericErrorFunc>,
+    handler: Option<crate::abi::callbacks::xmlGenericErrorFunc>,
 ) {
     // SAFETY: Delegates to xml::errors with same safety contract.
     unsafe { crate::xml::errors::set_generic_error_func(ctx, handler) };
@@ -6240,6 +6240,115 @@ pub(crate) unsafe fn call_c_xpath_function(
     result
 }
 
+/// Invoke an XSLT extension / module function through the upstream
+/// parser-context protocol, with an upstream-layout context.
+///
+/// Upstream libxslt stores the transform context in `xmlXPathContext.extra`
+/// (XSLT_REGISTER_VARIABLE_LOOKUP, variables.h), and PHP's xsl callbacks
+/// read `parser_ctxt->context->extra` DIRECTLY as the
+/// `xsltTransformContextPtr` (xsltprocessor.c xsl_proxy_factory). The
+/// candidate reserves `extra` for the internal Rust `XPathContext`, so this
+/// bridge synthesises a shallow MIRROR of the C context (same doc/node/…,
+/// `extra` = transform context) that lives only for the callback duration.
+/// The real transform XPath context is left untouched; the function name
+/// is set on the mirror (php's call_custom_ns reads `context->function` /
+/// `functionURI`), and arguments are pushed in evaluation order (last arg
+/// on top) exactly as upstream `xmlXPathCompOpEval` leaves them.
+///
+/// Returns `Err` when the callback produced no value.
+///
+/// # Safety
+///
+/// - `fnptr` must be a C `xmlXPathFunction`-compatible callback.
+/// - `tctxt` / `xpath_ctxt` must be the live transform context pair.
+/// - `xpath_ctxt` must be the transform context's own `xpathCtxt`.
+pub(crate) unsafe fn call_xslt_ext_function(
+    fnptr: Option<unsafe extern "C" fn(*mut c_void, c_int)>,
+    tctxt: *mut crate::abi::structs::_xsltTransformContext,
+    xpath_ctxt: *mut _xmlXPathContext,
+    name: &str,
+    ns_uri: Option<&str>,
+    args: &[XPathValue],
+) -> Result<XPathValue, String> {
+    let func = match fnptr {
+        Some(f) => f,
+        None => return Err("XPath: missing C function pointer".to_string()),
+    };
+    if tctxt.is_null() || xpath_ctxt.is_null() {
+        return Err("XPath: null XSLT context in extension-function bridge".to_string());
+    }
+    // Mirror: shallow copy of the C-visible context with `extra` = tctxt
+    // (upstream layout that php's proxy code dereferences).
+    let mirror = libc::calloc(1, core::mem::size_of::<_xmlXPathContext>()) as *mut _xmlXPathContext;
+    if mirror.is_null() {
+        return Err("XPath: mirror-context allocation failure".to_string());
+    }
+    unsafe {
+        libc::memcpy(
+            mirror as *mut libc::c_void,
+            xpath_ctxt as *const libc::c_void,
+            core::mem::size_of::<_xmlXPathContext>(),
+        );
+        (*mirror).extra = tctxt as *mut c_void;
+        let pc = crate::xml::xpath::parser_context::new_parser_context(ptr::null(), mirror);
+        if pc.is_null() {
+            libc::free(mirror as *mut libc::c_void);
+            return Err("XPath: parser-context allocation failure".to_string());
+        }
+        let mut push_ok = true;
+        for v in args {
+            let obj = xpath_to_object(v.clone());
+            if obj.is_null() || crate::xml::xpath::parser_context::value_push(pc, obj).is_null() {
+                push_ok = false;
+                break;
+            }
+        }
+        let result = if push_ok {
+            // NUL-terminated buffers naming the invoked function, live for
+            // the callback duration (upstream op->value4 / op->cacheURI on
+            // the eval context).
+            let mut name_nul: Vec<xmlChar> = name.as_bytes().to_vec();
+            name_nul.push(0);
+            let uri_nul: Option<Vec<xmlChar>> = ns_uri.map(|u| {
+                let mut v = u.as_bytes().to_vec();
+                v.push(0);
+                v
+            });
+            (*mirror).function = name_nul.as_ptr() as *const xmlChar;
+            (*mirror).functionURI = uri_nul
+                .as_ref()
+                .map_or(ptr::null(), |v| v.as_ptr() as *const xmlChar);
+            // SAFETY: `func` is a valid C callback; the arguments are on the
+            // parser-context value stack exactly as upstream would leave them
+            // and the context names the invoked function.
+            func(pc as *mut c_void, args.len() as c_int);
+            let ret = crate::xml::xpath::parser_context::value_pop(pc);
+            if ret.is_null() {
+                Err("XPath: C function returned no value".to_string())
+            } else {
+                let v = object_to_xpathvalue(ret);
+                // The popped object is heap-allocated; free it after converting.
+                xmlXPathFreeObject(ret);
+                Ok(v)
+            }
+        } else {
+            Err("XPath: failed to push arguments to C function".to_string())
+        };
+        // Free any objects the C function left on the stack, then the
+        // parser context and the mirror.
+        loop {
+            let leftover = crate::xml::xpath::parser_context::value_pop(pc);
+            if leftover.is_null() {
+                break;
+            }
+            xmlXPathFreeObject(leftover);
+        }
+        crate::xml::xpath::parser_context::free_parser_context(pc);
+        libc::free(mirror as *mut libc::c_void);
+        result
+    }
+}
+
 /// Rust-side wrapper registered in the internal XPathContext when a C
 /// extension function is registered (`xmlXPathRegisterFunc[NS]`). This is the
 /// parser-context bridge: it synthesises the upstream `xmlXPathParserContext`
@@ -6463,6 +6572,48 @@ pub(crate) unsafe fn raise_xpath_error(
             node: (*ctxt).debugNode as *mut c_void,
         };
         ptr::write(&mut (*ctxt).lastError, pre);
+
+        // Cross-DSO channel routing: the whole-archive facade layout embeds a
+        // per-DSO copy of libxml2's TLS error slots, so PHP's
+        // xmlSetGenericErrorFunc (registered in the core) is invisible to the
+        // XSLT engine running inside the libxslt facade. Upstream consumers
+        // register on the xsltGenericError channel for transform-time
+        // messages (php's ext/xsl MINIT), and that static IS shared with the
+        // engine — when a real (non-default) handler is installed there,
+        // deliver the XPath diagnostic through it exactly like the XSLT error
+        // channel does (xsltproc leaves the default installed and is
+        // unaffected).
+        let xslt_bound = {
+            let extra = (*ctxt).extra;
+            if extra.is_null() || !crate::xml::xpath::context::has_signature(extra) {
+                false
+            } else {
+                let internal: *mut crate::xml::xpath::context::XPathContext =
+                    extra as *mut crate::xml::xpath::context::XPathContext;
+                !(*internal).func_lookup_data.is_null()
+            }
+        };
+        let xslt_global = crate::abi::data_globals::xsltGenericError;
+        let xslt_default = crate::abi::data_globals::xslt_default_generic_error_func()
+            .map_or(ptr::null(), |d| d as *const ());
+        if xslt_bound {
+            if let Some(g) = xslt_global {
+                if g as *const () != xslt_default {
+                    // SAFETY: the channel is a variadic C callback
+                    // (upstream xmlGenericErrorFunc ABI); the xslt handler
+                    // special-cases the "%s" format (php xsl_libxslt_error
+                    // _handler).
+                    let hv: unsafe extern "C" fn(*mut c_void, *const c_char, ...) =
+                        core::mem::transmute(g);
+                    hv(
+                        crate::abi::data_globals::xsltGenericErrorContext,
+                        c"%s".as_ptr() as *const c_char,
+                        msg_c.as_ptr() as *const c_char,
+                    );
+                    return;
+                }
+            }
+        }
 
         // UPSTREAM-PARITY (xpath.c xmlXPathErrFmt channel selection): with no
         // structured handler the message goes VERBATIM to the generic channel

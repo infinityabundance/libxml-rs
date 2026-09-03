@@ -155,15 +155,29 @@ unsafe fn internal_xpath_ctxt(xpath_ctxt: *mut _xmlXPathContext) -> *mut XPathCo
     if xpath_ctxt.is_null() {
         return ptr::null_mut();
     }
-    unsafe { (*xpath_ctxt).extra as *mut XPathContext }
+    let extra = unsafe { (*xpath_ctxt).extra };
+    if extra.is_null() {
+        return ptr::null_mut();
+    }
+    // Upstream-layout mirror contexts (see call_xslt_ext_function) carry
+    // the xsltTransformContext in `extra`, not an internal XPathContext;
+    // the signature word discriminates.
+    if crate::xml::xpath::context::has_signature(extra) {
+        extra as *mut XPathContext
+    } else {
+        ptr::null_mut()
+    }
 }
 
 /// Resolve the transform context from an XPath parser context.
 ///
 /// UPSTREAM-PARITY: upstream returns `ctxt->context->extra` (extensions.c
-/// `xsltXPathGetTransformContext`); the candidate keeps the internal Rust
-/// `XPathContext` in `extra` and the transform context in
-/// `internal->func_lookup_data` (see module docs).
+/// `xsltXPathGetTransformContext`) because XSLT_REGISTER_VARIABLE_LOOKUP
+/// stores the transform context there. The candidate keeps the internal
+/// Rust `XPathContext` in `extra` (engine rule) and the transform context
+/// in `internal->func_lookup_data`; php-triggered callbacks additionally
+/// run against a mirror context whose `extra` IS the transform context
+/// (php reads it directly). Both layouts are resolved here.
 unsafe fn transform_context_from_parser(ctxt: *mut c_void) -> *mut _xsltTransformContext {
     if ctxt.is_null() {
         return ptr::null_mut();
@@ -173,11 +187,18 @@ unsafe fn transform_context_from_parser(ctxt: *mut c_void) -> *mut _xsltTransfor
     if xpath_ctxt.is_null() {
         return ptr::null_mut();
     }
-    let internal = unsafe { internal_xpath_ctxt(xpath_ctxt) };
-    if internal.is_null() {
+    let extra = unsafe { (*xpath_ctxt).extra };
+    if extra.is_null() {
         return ptr::null_mut();
     }
-    unsafe { (*internal).func_lookup_data as *mut _xsltTransformContext }
+    // Internal Rust XPathContext (its signature word is present): the
+    // transform context hangs off func_lookup_data (xsltNewTransformContext).
+    if crate::xml::xpath::context::has_signature(extra) {
+        let internal = extra as *mut XPathContext;
+        return (*internal).func_lookup_data as *mut _xsltTransformContext;
+    }
+    // Upstream-layout mirror context: extra IS the transform context.
+    extra as *mut _xsltTransformContext
 }
 
 /// Compare two NUL-terminated xmlChar strings for equality.
@@ -2915,11 +2936,19 @@ pub unsafe extern "C" fn xsltXPathFunctionLookup(
     if let Some(f) = crate::abi::exports_xml2::xpath_cfunc_lookup((*xpath_ctxt).extra, &qualified) {
         return Some(f);
     }
-    // Module registry fallback (upstream xsltExtModuleFunctionLookup).
-    // UPSTREAM-PARITY (simplified): the candidate's module-level registry
-    // (crate::exslt) holds Rust closures with the internal XPathFunction
-    // signature, which cannot be exposed through the C `xmlXPathFunction`
-    // pointer type; nothing else registers module functions.
+    // Module registry fallback — UPSTREAM-PARITY (functions.c
+    // xsltXPathFunctionLookup): when the per-context function hash misses,
+    // consult the process-wide extension-module registry
+    // (extensions.c xsltExtModuleFunctionLookup), where php registers its
+    // php:function / php:functionString dispatchers at MINIT.
+    if let Some(modfn) = crate::abi::exports_xslt_ext::xsltExtModuleFunctionLookup(name, ns_uri) {
+        // SAFETY: xmlXPathFunction and the opaque callback share the C ABI
+        // (parser context + argc); the registered handler expects exactly
+        // the synthesized parser-context protocol.
+        let f: Option<unsafe extern "C" fn(*mut c_void, c_int)> =
+            unsafe { core::mem::transmute(modfn) };
+        return f;
+    }
     None
 }
 

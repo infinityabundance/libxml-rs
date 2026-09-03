@@ -486,6 +486,20 @@ pub fn default_generic_error_func() -> Option<xmlGenericErrorFunc> {
     }
 }
 
+/// The built-in default XSLT generic error handler (upstream
+/// `xsltGenericErrorDefaultFunc`), mirroring the initial value of the
+/// exported `xsltGenericError` static.
+pub fn xslt_default_generic_error_func() -> Option<xmlGenericErrorFunc> {
+    #[cfg(target_arch = "x86_64")]
+    {
+        Some(XSLT_GENERIC_ERROR_DEFAULT)
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        None
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Static strings (upstream xmlstring.h / tree.c)
 // ═══════════════════════════════════════════════════════════════════════════════

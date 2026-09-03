@@ -316,6 +316,102 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
     }
 }
 
+/// Rebind the `ns` pointer of one element (and each of its attributes) to a
+/// namespace declaration owned by `new_doc`'s tree, declaring it on `top`
+/// when nothing in scope matches the prefix (upstream tree.c
+/// `xmlStaticCopyNode`: `xmlSearchNsSafe(ret, node->ns->prefix, &ns)` then
+/// "search it in the original tree and add it at the top of the new tree").
+///
+/// # Safety
+///
+/// - `new_doc`/`el`/`top` must be valid tree pointers in the same document.
+unsafe fn rebind_copied_ns(new_doc: *mut _xmlDoc, top: *mut _xmlNode, el: *mut _xmlNode) {
+    unsafe {
+        let bind = |n: *mut _xmlNode| {
+            let ns = (*n).ns;
+            if ns.is_null() {
+                return;
+            }
+            let prefix = (*ns).prefix;
+            let mut found = search_ns(new_doc, el, prefix);
+            if found.is_null() {
+                found = new_ns(top, (*ns).href, prefix);
+            }
+            if !found.is_null() {
+                (*n).ns = found;
+            }
+        };
+        if (*el).type_ == XML_ELEMENT_NODE as c_int {
+            bind(el);
+            let mut a = (*el).properties;
+            while !a.is_null() {
+                if !(*a).ns.is_null() && a as *mut _xmlNode != el {
+                    // Attributes resolve their prefix against the element's
+                    // in-scope declarations.
+                    let prefix = (*(*a).ns).prefix;
+                    let mut found = search_ns(new_doc, el, prefix);
+                    if found.is_null() {
+                        found = new_ns(top, (*(*a).ns).href, prefix);
+                    }
+                    if !found.is_null() {
+                        (*a).ns = found;
+                    }
+                }
+                a = (*a).next;
+            }
+        }
+    }
+}
+
+/// Rebind every element/attribute namespace in a freshly deep-copied
+/// document to declarations owned by the copy (upstream xmlStaticCopyNode
+/// semantics for `xmlCopyDoc`). The generic copy keeps the source pointers
+/// verbatim; without this pass the copied tree's namespace pointers dangle
+/// as soon as the source document is freed.
+///
+/// # Safety
+///
+/// - `new_doc` must be the fresh copy; its tree must be fully built.
+pub(crate) unsafe fn reconcile_copied_tree_ns(new_doc: *mut _xmlDoc) {
+    if new_doc.is_null() {
+        return;
+    }
+    unsafe {
+        // The top element is where new declarations are attached (upstream
+        // adds missing namespaces "at the top of the new tree").
+        let mut top: *mut _xmlNode = ptr::null_mut();
+        let mut c = (*new_doc).children;
+        while !c.is_null() {
+            if (*c).type_ == XML_ELEMENT_NODE as c_int {
+                top = c;
+                break;
+            }
+            c = (*c).next;
+        }
+        if top.is_null() {
+            return;
+        }
+        // Pre-order walk: parents are processed before children, so a
+        // declaration attached to the top element is found by descendants.
+        let mut stack: Vec<*mut _xmlNode> = vec![top];
+        while let Some(el) = stack.pop() {
+            rebind_copied_ns(new_doc, top, el);
+            // Push children in reverse so they pop in document order.
+            let mut kids: Vec<*mut _xmlNode> = Vec::new();
+            let mut ch = (*el).children;
+            while !ch.is_null() {
+                if (*ch).type_ == XML_ELEMENT_NODE as c_int {
+                    kids.push(ch);
+                }
+                ch = (*ch).next;
+            }
+            for k in kids.into_iter().rev() {
+                stack.push(k);
+            }
+        }
+    }
+}
+
 /// Unlink a node from its parent's child list without freeing it
 /// (upstream xmlUnlinkNodeInternal semantics; doc is used for ID/ref
 /// bookkeeping which the candidate does not maintain on unlink).
@@ -409,6 +505,16 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
                     child = (*child).next;
                 }
                 propagate_doc((*new_doc).children, new_doc);
+                // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): after a
+                // CROSS-document deep copy every element/attribute namespace
+                // pointer must reference namespace declarations owned by the
+                // COPY (the generic copy keeps the original pointers
+                // verbatim, which dangle once the source document is freed).
+                // Resolve each against the copied tree and declare missing
+                // namespaces on the top element — xmlCopyNode (same-doc)
+                // keeps verbatim pointers, only xmlCopyDoc/xmlDocCopyNode
+                // reconcile.
+                reconcile_copied_tree_ns(new_doc);
             }
         }
     }

@@ -3043,7 +3043,20 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
         };
         let local_c = crate::xml::string::bytes_to_xmlstr(local.as_bytes());
         let href_c = crate::xml::string::bytes_to_xmlstr(href_str.as_bytes());
-        let fnptr = unsafe { crate::xslt::extensions::xsltFindExtFunction(tctxt, local_c, href_c) };
+        let mut fnptr =
+            unsafe { crate::xslt::extensions::xsltFindExtFunction(tctxt, local_c, href_c) };
+        if fnptr.is_null() {
+            // UPSTREAM-PARITY (functions.c xsltXPathFunctionLookup): when the
+            // per-context registry misses, fall back to the process-wide
+            // extension-module registry (extensions.c xsltExtModuleFunction
+            // Lookup). php registers its php:function / php:functionString
+            // dispatchers there at MINIT via xsltRegisterExtModuleFunction.
+            if let Some(modfn) = unsafe {
+                crate::abi::exports_xslt_ext::xsltExtModuleFunctionLookup(local_c, href_c)
+            } {
+                fnptr = modfn as usize as *mut c_void;
+            }
+        }
         if !local_c.is_null() {
             crate::abi::allocator::xmlFreeImpl(local_c as *mut c_void);
         }
@@ -3068,8 +3081,13 @@ pub(crate) unsafe fn register_xslt_functions(ctxt: *mut _xsltTransformContext) {
                     return Err("XSLT: null XPath context".to_string());
                 }
                 unsafe {
-                    crate::abi::exports_xml2::call_c_xpath_function(
+                    // The mirror bridge exposes an upstream-layout context
+                    // (extra = transform context) to the C callback, which
+                    // php's xsl handlers require (xsl_proxy_factory reads
+                    // ctxt->context->extra directly).
+                    crate::abi::exports_xml2::call_xslt_ext_function(
                         f,
+                        t,
                         xpath_ctxt,
                         &local_owned,
                         Some(&href_owned),
