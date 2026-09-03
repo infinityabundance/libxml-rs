@@ -901,3 +901,33 @@ regressions. Log: phpbuild-c:/out/xpe-six21.log. dom 62 | xsl 16 | xmlreader
     loadXML_variation4, validate_on_parse_variation, validate_external_dtd),
     xmlreader setSchema/setRelaxNGSchema + attach family, dom serializer
     families, xsl 16.
+
+Phase 14.7 — DTD subset load + parse-time validation + decl-dump parity
+(2026-09-04; commit 0e09d5e3; receipt php-14-7-dtd-20260904/): full suite
+95 -> 86, ZERO regressions. Log: phpbuild-c:/out/xpe-six22.log. dom 52 | xsl
+16 | xmlreader 16 | simplexml 1 | xmlwriter 1.
+  - external-subset load trigger = upstream xmlSAX2ExternalSubset
+    (validate || loadsubset): DTDVALID/DTDATTR now load the external DTD, not
+    just DTDLOAD.
+  - external decl parse no longer passes the keyword into parse_*_decl
+    (entities were registered literally as "ENTITY"); ATTLIST defaults feed
+    the start-tag defaulting table.
+  - parse-time per-element DTD validation at sax_end_element (upstream
+    xmlValidateOneElement across both subsets: UNDEFINED/EMPTY/MIXED/ELEMENT
+    + "expecting %s, got %s" content-model diagnostics at end-tag position).
+  - add_element_decl upgrades ATTLIST-created UNDEFINED placeholders
+    (upstream valid.c; attributes carried over) — fixes dumps and validation
+    for ATTLIST-before-ELEMENT docs.
+  - parameter-entity expansion in DTD fragments (decl-level external PE file
+    fetch + in-args expansion outside quotes, depth-capped); dom.xml
+    %incent; -> dom.ent works.
+  - dumps: element content models gain " , "/" | " separators;
+    parse_attr_default returns XML_ATTRIBUTE_NONE for bare quoted defaults
+    (no more spurious #IMPLIED in ATTLIST dumps).
+  - flipped 9: load_variation1/2/4, loadXML_variation2/4,
+    validate_on_parse_variation, validate_external_dtd,
+    delayed_freeing/element_declaration, modern/token_list/attlist.
+  - guards: cargo test --lib 1241 pass/1 ignored; fmt clean.
+  - residuals next: dom adoption/DOMNode + serializer families (~52), the
+    xmlreader 16 (007/008/013 now have ext-subset decls to work with), xsl
+    16, simplexml 1, xmlwriter 1.
