@@ -68,4 +68,4 @@ diff vs the 232 baseline: 0 new; 6 phpt flipped). Log:
   `&amp;foo;`).
 
 ## Commit
-`<filled at commit time>`
+`0b8917e7 (pushed to origin/main)`
