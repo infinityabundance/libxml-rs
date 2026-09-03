@@ -71,4 +71,4 @@ kept probe proves candidate == oracle on that channel.
 - Six-extension php suite re-measured at 236 (this log), zero regressions.
 
 ## Commit
-`<filled at commit time>`
+0f44a95d (pushed to origin/main)
