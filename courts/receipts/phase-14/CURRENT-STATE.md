@@ -871,3 +871,33 @@ regressions. Log: phpbuild-c:/out/xpe-six17.log. dom 66 | xsl 16 | xmlreader
   - guard: test_xml_schema_validate_creates_default_attrs (option off:
     untouched; option on: default injected). cargo test --lib 1241 pass;
     clippy baseline; fmt clean.
+
+Phase 14.6 — XPath namespace axis + namespace-node string-value (2026-09-04;
+commit ddaa4405; receipt php-14-6-nsaxis-20260904/): full suite 96 -> 95, ZERO
+regressions. Log: phpbuild-c:/out/xpe-six21.log. dom 62 | xsl 16 | xmlreader
+16 | simplexml 1 | xmlwriter 1.
+  - namespace_axis rewritten to upstream xmlXPathNextNamespace semantics:
+    element context only; implicit xml namespace FIRST always; in-scope decls
+    in REVERSE (own then ancestors, nearest wins, dedup by prefix); each
+    emitted node an independent _xmlNs copy with next + _private = owning
+    element (php dom_xpath.c contract for DOMNameSpaceNode proxies).
+  - compare_document_order short-circuits Equal for XML_NAMESPACE_DECL
+    operands (copies have no tree links; stable sort keeps axis emission
+    order; no more ns-fields-as-node-pointers walks).
+  - node_get_content gains XML_NAMESPACE_DECL arm returning ns->href
+    (XPath namespace-node string-value); was falling into the element arm
+    and misreading _xmlNs fields as children (misaligned-deref abort in
+    DOMXPath::evaluate php:functionString of //namespace::*).
+  - flipped: DOMXPath_evaluate_node_set_to_string (the only remaining
+    ns-family fail; xpath_domnamespacenode[+_advanced] and
+    DOMXPath_evaluate_namespace_node_set already green).
+  - guards: cargo test --lib 1241 pass/1 ignored; fmt clean.
+  - INFRA NOTE: only plain `cargo build` refreshes target/debug/
+    liblibxml_rs.so (the DSO php dlopens via /candidate/lib chain);
+    cargo test --lib / --bin builds leave the top-level cdylib stale
+    (artifacts land in deps/). xpe-six20 was a stale-DSO run (no movement);
+    xpe-six21 after `cargo build` confirms the flip.
+  - residuals next: dom DTD/validate family (load_variation1/2/4,
+    loadXML_variation4, validate_on_parse_variation, validate_external_dtd),
+    xmlreader setSchema/setRelaxNGSchema + attach family, dom serializer
+    families, xsl 16.
