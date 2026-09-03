@@ -701,6 +701,51 @@ mod tests {
         }
     }
 
+    /// Phase 14.3 (dom S1 / xmlsave parity): with NO output encoder on the
+    /// save context (ctxt->encoding == NULL), upstream xmlSaveWriteText sets
+    /// XML_ESCAPE_NON_ASCII and xmlSerializeText writes every non-ASCII
+    /// character as a hex reference (xmlSerializeHexCharRef) — `café` →
+    /// `caf&#xE9;`, U+00A0 → `&#xA0;` — in text AND attribute content. The
+    /// pre-fix serializer passed raw UTF-8 bytes through (ext/dom dom005's
+    /// xml save of html-origin text, xslt/xmlreader non-ASCII saves).
+    ///
+    /// # Safety
+    ///
+    /// - doc/buf are freed exactly once; the byte slice is valid while read.
+    #[test]
+    fn test_save_no_encoding_escapes_non_ascii() {
+        unsafe {
+            // src: <r a="caf\xc3\xa9 \xc2\xa0">caf\xc3\xa9 \xc2\xa0 x</r>
+            let doc = crate::abi::exports_xml2::xmlReadMemory(
+                b"<r a=\"caf\xc3\xa9\">caf\xc3\xa9 \xc2\xa0 x</r>\0".as_ptr() as *const c_char,
+                27,
+                ptr::null(),
+                ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null());
+            let buf = io::buf_create(-1);
+            let ctxt = xmlSaveToBuffer(buf, ptr::null(), 0);
+            assert!(!ctxt.is_null());
+            xmlSaveDoc(ctxt, doc);
+            xmlSaveFinish(ctxt);
+            let content = io::buf_content(buf);
+            let len = io::buf_length(buf);
+            let s = core::slice::from_raw_parts(content, len as usize);
+            let text = String::from_utf8_lossy(s);
+            assert!(
+                text.contains("a=\"caf&#xE9;\""),
+                "attr content must be hex-escaped: {text:?}"
+            );
+            assert!(
+                text.contains(">caf&#xE9; &#xA0; x</r>"),
+                "text content must be hex-escaped: {text:?}"
+            );
+            crate::xml::tree::free_doc(doc);
+            io::buf_free(buf);
+        }
+    }
+
     /// Set an indent string and verify it appears in the serialized output.
     ///
     /// # Safety

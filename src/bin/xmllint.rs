@@ -461,7 +461,7 @@ unsafe fn parse_document(cli: &Cli, filename: &str) -> *mut _xmlDoc {
                 buf.len() as c_int - 1,
             )
         } else {
-            libxml_rs::xml::html::parse_file(cname as *const c_char, ptr::null())
+            libxml_rs::xml::html::parse_file(cname as *const c_char, ptr::null(), 0)
         };
         free_cstr(cname);
         return doc;

@@ -3253,37 +3253,110 @@ const MAX_INDENT: c_int = 60;
 
 /// Serialize text content with XML escaping.
 ///
+/// Decode one UTF-8 sequence whose first byte is at `bytes[i]` and write the
+/// upstream `xmlSerializeHexCharRef` form (`&#x%X;`, uppercase hex, no
+/// padding). Returns the number of input bytes consumed (1 on invalid
+/// sequences — the upstream U+FFFD fallback advances one byte).
+///
+/// # Safety
+///
+/// - `bytes` must be readable for `len` bytes with `i < len`.
+unsafe fn write_utf8_hex_char_ref(buf: *mut _xmlBuffer, bytes: &[u8], i: usize) -> usize {
+    // SAFETY: caller guarantees i < len.
+    let first = bytes[i];
+    let (n, mut val): (usize, u32) = if first < 0x80 {
+        (1, first as u32)
+    } else if first < 0xE0 {
+        if i + 1 < bytes.len() {
+            (
+                2,
+                ((first & 0x1F) as u32) << 6 | (bytes[i + 1] & 0x3F) as u32,
+            )
+        } else {
+            (1, 0xFFFD)
+        }
+    } else if first < 0xF0 {
+        if i + 2 < bytes.len() {
+            (
+                3,
+                ((first & 0x0F) as u32) << 12
+                    | ((bytes[i + 1] & 0x3F) as u32) << 6
+                    | (bytes[i + 2] & 0x3F) as u32,
+            )
+        } else {
+            (1, 0xFFFD)
+        }
+    } else if first < 0xF8 {
+        if i + 3 < bytes.len() {
+            (
+                4,
+                ((first & 0x07) as u32) << 18
+                    | ((bytes[i + 1] & 0x3F) as u32) << 12
+                    | ((bytes[i + 2] & 0x3F) as u32) << 6
+                    | (bytes[i + 3] & 0x3F) as u32,
+            )
+        } else {
+            (1, 0xFFFD)
+        }
+    } else {
+        (1, 0xFFFD)
+    };
+    if val == 0xFFFE || val == 0xFFFF || val > 0x10FFFF {
+        val = 0xFFFD;
+    }
+    // SAFETY: writes the formatted reference (xmlSerializeHexCharRef).
+    let hex = format!("&#x{:X};", val);
+    io::buf_add(buf, hex.as_ptr(), hex.len() as c_int);
+    n
+}
+
+/// Serialize text content with XML escaping.
+///
 /// # UPSTREAM-PARITY
 ///
-/// Mirrors libxml2 2.15 `xmlSerializeText` with default flags (no
-/// `XML_ESCAPE_NON_ASCII`, i.e. the encoding is non-NULL as in the libxslt
-/// save path): `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;`, `\r` → `&#13;`,
-/// other control characters → hexadecimal character references, while `\n`
-/// and `\t` are emitted literally and non-ASCII bytes are passed through.
+/// Mirrors libxml2 2.15 `xmlSerializeText`. When `escape_non_ascii` is set
+/// (upstream `XML_ESCAPE_NON_ASCII` — chosen by xmlsave.c `xmlSaveWriteText`
+/// when the save context has NO output encoder, `ctxt->encoding == NULL`),
+/// every non-ASCII byte is decoded as UTF-8 and written as a hexadecimal
+/// character reference — `café` → `caf&#xE9;`, U+00A0 → `&#xA0;` (ext/dom
+/// dom005's xml save of html-origin text, xmlsave oracle parity). Without the
+/// flag (a non-NULL save encoding, as in the libxslt save path): `<` →
+/// `&lt;`, `>` → `&gt;`, `&` → `&amp;`, `\r` → `&#13;`, other control
+/// characters → hexadecimal character references, while `\n` and `\t` are
+/// emitted literally and non-ASCII bytes are passed through.
 ///
 /// # SAFETY
 ///
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
 /// - `content` must be a valid pointer to `len` bytes of xmlChar data, or NULL.
-pub(crate) unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlChar, len: c_int) {
+pub(crate) unsafe fn serialize_text_flags(
+    buf: *mut _xmlBuffer,
+    content: *const xmlChar,
+    len: c_int,
+    escape_non_ascii: bool,
+) {
     if buf.is_null() || content.is_null() || len <= 0 {
         return;
     }
 
-    let mut i: c_int = 0;
-    while i < len {
-        let ch = unsafe { *content.add(i as usize) };
+    let bytes = core::slice::from_raw_parts(content, len as usize);
+    let mut i: usize = 0;
+    while i < bytes.len() {
+        let ch = bytes[i];
 
         // Check for `]]>` sequence
-        if ch == b']'
-            && i + 2 < len
-            && unsafe { *content.add(i as usize + 1) == b']' }
-            && unsafe { *content.add(i as usize + 2) == b'>' }
-        {
+        if ch == b']' && i + 2 < bytes.len() && bytes[i + 1] == b']' && bytes[i + 2] == b'>' {
             // Write `]]&gt;` — escape the `>` that ends `]]>`
-            io::buf_add(buf, &ch as *const u8, 2); // write `]]`
+            io::buf_add(buf, b"]]" as *const u8, 2);
             io::buf_add(buf, ENTITY_GT.as_ptr(), ENTITY_GT.len() as c_int);
             i += 3;
+            continue;
+        }
+
+        if ch >= 0x80 && escape_non_ascii {
+            // SAFETY: i < bytes.len() holds; the helper decodes the UTF-8
+            // sequence and advances past it.
+            i += unsafe { write_utf8_hex_char_ref(buf, bytes, i) };
             continue;
         }
 
@@ -3330,14 +3403,39 @@ pub(crate) unsafe fn serialize_text(buf: *mut _xmlBuffer, content: *const xmlCha
 /// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
 /// - `value` must be a valid null-terminated xmlChar string, or NULL.
 pub(crate) unsafe fn serialize_attr_value(buf: *mut _xmlBuffer, value: *const xmlChar) {
+    unsafe { serialize_attr_value_flags(buf, value, false) };
+}
+
+/// Like [`serialize_attr_value`] plus the upstream `XML_ESCAPE_NON_ASCII`
+/// flag (xmlsave.c `xmlSaveWriteText` / `xmlBufAttrSerializeTxtContent`):
+/// non-ASCII bytes become hexadecimal character references when the save
+/// context has no output encoder.
+///
+/// # SAFETY
+///
+/// - `buf` must be a valid pointer to a mutable `_xmlBuffer`.
+/// - `value` must be a valid null-terminated xmlChar string, or NULL.
+pub(crate) unsafe fn serialize_attr_value_flags(
+    buf: *mut _xmlBuffer,
+    value: *const xmlChar,
+    escape_non_ascii: bool,
+) {
     if buf.is_null() || value.is_null() {
         return;
     }
 
     let len = xml_strlen(value);
-    let mut i: c_int = 0;
-    while i < len {
-        let ch = unsafe { *value.add(i as usize) };
+    let bytes = core::slice::from_raw_parts(value, len as usize);
+    let mut i: usize = 0;
+    while i < bytes.len() {
+        let ch = bytes[i];
+
+        if ch >= 0x80 && escape_non_ascii {
+            // SAFETY: i < bytes.len() holds; the helper decodes the UTF-8
+            // sequence and advances past it.
+            i += unsafe { write_utf8_hex_char_ref(buf, bytes, i) };
+            continue;
+        }
 
         match ch {
             b'\n' => {
@@ -3397,6 +3495,33 @@ unsafe fn write_indent(
     for _ in 0..lvl {
         io::buf_add(buf, indent, indent_len);
     }
+}
+
+/// Whether the save context should escape non-ASCII as hex references:
+/// upstream xmlSaveWriteText sets XML_ESCAPE_NON_ASCII only when
+/// `ctxt->encoding == NULL` after xmlSaveDocInternal fell back to the
+/// document's own encoding and tried to switch an output encoder — a real
+/// (non-native) document encoding gets a converter (no escape; the converter
+/// produces the target bytes), while a NULL/UTF-8/US-ASCII encoding leaves
+/// no encoder (escape). The candidate has no converters, so a declared
+/// non-native encoding keeps the pre-existing pass-through.
+///
+/// # Safety
+///
+/// - `doc` may be NULL or a valid `_xmlDoc`.
+pub(crate) fn save_escapes_non_ascii(save_encoding: *const xmlChar, doc: *mut _xmlDoc) -> bool {
+    if !save_encoding.is_null() {
+        return false;
+    }
+    if doc.is_null() || unsafe { (*doc).encoding }.is_null() {
+        return true;
+    }
+    let enc = unsafe { (*doc).encoding };
+    let name = unsafe { std::ffi::CStr::from_ptr(enc as *const c_char) }
+        .to_string_lossy()
+        .into_owned();
+    let lower = name.to_ascii_lowercase();
+    !(lower == "utf-8" || lower == "utf8" || lower == "us-ascii" || lower == "ascii")
 }
 
 /// True if the text node is marked as unescaped (`disable-output-escaping`).
@@ -3464,6 +3589,12 @@ struct DumpState {
     /// NULL means "use the document's own encoding" (upstream
     /// `if (encoding == NULL) encoding = cur->encoding;`).
     encoding: *const xmlChar,
+    /// True when this dump entered through the full save path
+    /// (serialize_node_opts_enc_full — xmlSaveDoc / xmlNodeDumpOutput-style
+    /// saves): only those honor the upstream XML_ESCAPE_NON_ASCII decision.
+    /// Bare node dumps (xslt per-child output, debug helpers) keep the raw
+    /// pass-through.
+    explicit_save: bool,
     /// XHTML mode (upstream `xhtmlNodeDumpOutput`): the document's DTD is an
     /// XHTML DTD, so a bare `html` element gets
     /// `xmlns="http://www.w3.org/1999/xhtml"` and non-HTML-empty elements
@@ -3491,6 +3622,7 @@ impl DumpState {
             xhtml: false,
             as_html: false,
             no_empty: false,
+            explicit_save: false,
         }
     }
 
@@ -3541,9 +3673,10 @@ impl DumpState {
             indent_len: len,
             no_decl,
             encoding,
-            xhtml: false,
             as_html: false,
             no_empty: false,
+            xhtml: false,
+            explicit_save: false,
         }
     }
 }
@@ -3659,10 +3792,14 @@ unsafe fn ns_dump_output(buf: *mut _xmlBuffer, cur: *mut _xmlNs) {
 
 /// Dump an attribute node (upstream `xmlAttrDumpOutput`).
 ///
+/// `escape_non_ascii` mirrors xmlsave.c `xmlSaveWriteText`'s
+/// `XML_ESCAPE_NON_ASCII` flag: attribute CONTENT is escaped as hex char
+/// references when the save context has no output encoder.
+///
 /// # SAFETY
 ///
 /// - `buf` must be valid; `cur` must be a valid `_xmlAttr`.
-unsafe fn attr_dump_output(buf: *mut _xmlBuffer, cur: *mut _xmlAttr) {
+unsafe fn attr_dump_output(buf: *mut _xmlBuffer, cur: *mut _xmlAttr, escape_non_ascii: bool) {
     if cur.is_null() || buf.is_null() {
         return;
     }
@@ -3685,7 +3822,7 @@ unsafe fn attr_dump_output(buf: *mut _xmlBuffer, cur: *mut _xmlAttr) {
     while !child.is_null() {
         let ct = unsafe { (*child).type_ };
         if ct == XML_TEXT_NODE as c_int && !unsafe { (*child).content }.is_null() {
-            serialize_attr_value(buf, unsafe { (*child).content });
+            serialize_attr_value_flags(buf, unsafe { (*child).content }, escape_non_ascii);
         } else if ct == XML_ENTITY_REF_NODE as c_int && !unsafe { (*child).name }.is_null() {
             io::buf_ccat(buf, b'&');
             io::buf_cat(buf, unsafe { (*child).name });
@@ -4300,7 +4437,13 @@ unsafe fn node_dump_internal(
             }
             let mut attr = n.properties;
             while !attr.is_null() {
-                attr_dump_output(buf, attr);
+                attr_dump_output(
+                    buf,
+                    attr,
+                    state.explicit_save
+                        && !state.as_html
+                        && save_escapes_non_ascii(state.encoding, unsafe { (*attr).doc }),
+                );
                 attr = unsafe { (*attr).next };
             }
             if n.children.is_null() {
@@ -4389,11 +4532,18 @@ unsafe fn node_dump_internal(
             }
         }
         t if t == XML_TEXT_NODE as c_int => {
+            // UPSTREAM-PARITY (xmlsave.c xmlSaveWriteText): with no output
+            // encoder on the save context, non-ASCII text is written as hex
+            // character references. HTML-method output (XSLT method=html /
+            // AS_HTML) writes raw like upstream's HTML serializer.
+            let esc = state.explicit_save
+                && !state.as_html
+                && save_escapes_non_ascii(state.encoding, n.doc);
             if !n.content.is_null() {
                 if is_noenc_text(cur) {
                     io::buf_cat(buf, n.content);
                 } else {
-                    serialize_text(buf, n.content, xml_strlen(n.content));
+                    serialize_text_flags(buf, n.content, xml_strlen(n.content), esc);
                 }
             } else if !n.children.is_null() {
                 // Non-compact text node (entity merge): content lives in a
@@ -4403,7 +4553,7 @@ unsafe fn node_dump_internal(
                     if is_noenc_text(cur) {
                         io::buf_cat(buf, c);
                     } else {
-                        serialize_text(buf, c, xml_strlen(c));
+                        serialize_text_flags(buf, c, xml_strlen(c), esc);
                     }
                     allocator::xmlFreeImpl(c as *mut c_void);
                 }
@@ -4510,7 +4660,11 @@ unsafe fn node_dump_internal(
             dtd_dump_output(buf, cur, state, level);
         }
         t if t == XML_ATTRIBUTE_NODE as c_int => {
-            attr_dump_output(buf, cur as *mut _xmlAttr);
+            attr_dump_output(
+                buf,
+                cur as *mut _xmlAttr,
+                save_escapes_non_ascii(state.encoding, unsafe { (*cur).doc }),
+            );
         }
         t if t == XML_NAMESPACE_DECL as c_int => {
             ns_dump_output(buf, cur as *mut _xmlNs);
@@ -4636,6 +4790,7 @@ pub(crate) unsafe fn serialize_node_opts_enc_full(
         let mut state = DumpState::with_indent_enc(format, indent, no_decl, encoding);
         state.no_empty = no_empty != 0;
         state.as_html = as_html != 0;
+        state.explicit_save = true;
         let mut lvl = level;
         node_dump_internal(buf, node, node, parent, &mut state, &mut lvl);
     }

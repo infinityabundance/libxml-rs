@@ -2863,6 +2863,7 @@ pub unsafe extern "C" fn htmlParseDocument(ctxt: *mut c_void) -> c_int {
             (*st).input as *const c_char,
             (*st).input_len as c_int,
             (*st).encoding,
+            (*st).options,
         )
     };
     let c = ctxt as *mut _xmlParserCtxt;
@@ -2924,6 +2925,7 @@ pub unsafe extern "C" fn htmlParseChunk(
                 (*st).input as *const c_char,
                 (*st).input_len as c_int,
                 (*st).encoding,
+                (*st).options,
             )
         };
         let c = ctxt as *mut _xmlParserCtxt;
@@ -2967,7 +2969,8 @@ pub unsafe extern "C" fn htmlCtxtParseDocument(
         return ptr::null_mut();
     }
     let st = unsafe { html_state(ctxt) };
-    let doc = unsafe { html::parse_memory_enc(cur as *const c_char, len, (*st).encoding) };
+    let doc =
+        unsafe { html::parse_memory_enc(cur as *const c_char, len, (*st).encoding, (*st).options) };
     let c = ctxt as *mut _xmlParserCtxt;
     unsafe {
         (*st).doc = doc;
@@ -3030,7 +3033,8 @@ pub unsafe extern "C" fn htmlCtxtReadMemory(
     }
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
-    let doc = unsafe { html::parse_memory_enc(buffer, size, encoding) };
+    let st = unsafe { html_state(ctxt) };
+    let doc = unsafe { html::parse_memory_enc(buffer, size, encoding, (*st).options) };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3055,7 +3059,8 @@ pub unsafe extern "C" fn htmlCtxtReadDoc(
     }
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
-    let doc = unsafe { html::parse_doc(str, encoding) };
+    let st = unsafe { html_state(ctxt) };
+    let doc = unsafe { html::parse_doc(str, encoding, (*st).options) };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
 }
 
@@ -3080,7 +3085,8 @@ pub unsafe extern "C" fn htmlCtxtReadFile(
     }
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
-    let doc = unsafe { html::parse_file(filename, encoding) };
+    let st = unsafe { html_state(ctxt) };
+    let doc = unsafe { html::parse_file(filename, encoding, (*st).options) };
     unsafe { html_ctxt_finish_read(ctxt, doc, filename) }
 }
 
@@ -3136,11 +3142,13 @@ pub unsafe extern "C" fn htmlCtxtReadFd(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let data = unsafe { html_read_fd(fd) };
+    let st = unsafe { html_state(ctxt) };
     let doc = unsafe {
         html::parse_memory_enc(
             data.as_ptr() as *const c_char,
             data.len() as c_int,
             encoding,
+            (*st).options,
         )
     };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
@@ -3171,11 +3179,13 @@ pub unsafe extern "C" fn htmlCtxtReadIO(
     unsafe { htmlCtxtReset(ctxt) };
     unsafe { htmlCtxtUseOptions(ctxt, options) };
     let data = unsafe { html_read_io(ioread, ioctx) };
+    let st = unsafe { html_state(ctxt) };
     let doc = unsafe {
         html::parse_memory_enc(
             data.as_ptr() as *const c_char,
             data.len() as c_int,
             encoding,
+            (*st).options,
         )
     };
     unsafe { html_ctxt_finish_read(ctxt, doc, URL) }
@@ -3386,6 +3396,7 @@ pub unsafe extern "C" fn htmlParseElement(ctxt: *mut c_void) {
             (*st).input as *const c_char,
             (*st).input_len as c_int,
             (*st).encoding,
+            (*st).options,
         )
     };
     unsafe {

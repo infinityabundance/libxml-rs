@@ -947,7 +947,7 @@ pub unsafe extern "C" fn xmlShellLoad(
     let doc: *mut _xmlDoc = if html != 0 {
         // Upstream htmlParseFile (the exports_xml2 htmlParseFile is a Phase-1
         // stub; the HTML module provides the real parser).
-        unsafe { crate::xml::html::parse_file(filename, ptr::null()) }
+        unsafe { crate::xml::html::parse_file(filename, ptr::null(), 0) }
     } else {
         unsafe { xmlReadFile(filename, ptr::null(), 0) }
     };

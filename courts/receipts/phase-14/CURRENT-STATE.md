@@ -643,3 +643,35 @@ dom S1/html-parser loadHTML net closed part 1 (2026-09-03): full suite 232 -> 20
     dom005/gh19612 red (dom005 now differs only in head whitespace + the
     nbsp escape; gh19612 is the declared-entity attr `&foo;` retention
     family). cargo test --lib 1236 pass; clippy no new warnings; fmt clean.
+
+dom S1/html-parser options + xmlsave escaping parity (2026-09-03): full suite
+  stays 208 with ZERO regressions (dom005/gh19612 each one sub-issue from
+  green; xslt001 protected from the escaping change). Receipt:
+  php-14-3-html-save-parity-20260903/.
+  - XML_PARSE_NOBLANKS was ignored by the html parser: whitespace-only text
+    nodes were always built, so loadHTMLFile(…, LIBXML_NOBLANKS) kept the
+    <head>-region newline text nodes the oracle drops (dom005's xml save
+    formatting). Options are now threaded from the host htmlParserCtxt
+    (htmlParseDocument/htmlCtxtRead*/ParseChunk/…) into the internal parse
+    (HtmlParserCtxt.options), and html_parse_buffer drops whitespace-only
+    text nodes under NOBLANKS (drop_blank_text_nodes) — the built tree now
+    matches the oracle byte-for-byte (html-tree-probe).
+  - xmlsave escaping: with no output encoder (ctxt->encoding == NULL),
+    upstream xmlSaveWriteText sets XML_ESCAPE_NON_ASCII and xmlSerializeText
+    writes every non-ASCII character as an uppercase-hex reference
+    (&#xA0;, &#xE9;). The candidate's serializer passed raw UTF-8 through.
+    serialize_text_flags/serialize_attr_value_flags now decode UTF-8 and
+    write `&#x%X;` (xmlSerializeHexCharRef semantics incl the U+FFFD
+    fallback); the explicit-save path (serialize_node_opts_enc_full, gated
+    on DumpState.explicit_save, non-HTML method and no real doc encoding)
+    applies it to text and attribute content. Bare node dumps (xslt
+    per-child output) keep pass-through — xslt001's iso-8859-1 output is
+    protected. C probes esc-probe/nbsp-save-probe now byte-identical.
+  - guards: save.rs test_save_no_encoding_escapes_non_ascii; html/mod.rs
+    test_parsed_html_doc_flags. Probes kept: esc-probe.c, html-tree-probe.c,
+    htmlsave2-probe.c, htmldump-probe.c, nbsp-save-probe.c.
+  - residual: html-save (saveHTML / htmlDocDumpMemoryFormat path) prints
+    html-origin non-ASCII chars RAW where the oracle re-emits the named
+    entity (&nbsp; / &eacute;) — dom005's saveHTML section; separate
+    html-serializer entity-representation work.
+    cargo test --lib 1237 pass; clippy no new warnings; fmt clean.

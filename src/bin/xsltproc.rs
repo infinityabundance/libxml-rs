@@ -342,7 +342,7 @@ unsafe fn xslt_read_file(filename: &str, cli: &Cli) -> *mut _xmlDoc {
             );
         }
         let cname = cstr_alloc(filename);
-        let doc = libxml_rs::xml::html::parse_file(cname as *const c_char, ptr::null());
+        let doc = libxml_rs::xml::html::parse_file(cname as *const c_char, ptr::null(), 0);
         free_cstr(cname);
         doc
     } else if filename == "-" {

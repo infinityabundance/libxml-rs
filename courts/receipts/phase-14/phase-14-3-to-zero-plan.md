@@ -1,6 +1,13 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **dom S1 / html-parser options + xmlsave escaping parity (2026-09-03):**
+  the html parser now honors XML_PARSE_NOBLANKS (options threaded from the
+  host htmlParserCtxt; whitespace-only text nodes dropped) and the xmlsave
+  no-encoder path escapes non-ASCII as `&#x..;` (xmlSaveWriteText /
+  XML_ESCAPE_NON_ASCII parity). Full suite stays **208** with zero
+  regressions; dom005/gh19612 are each one sub-issue from green. Receipt:
+  php-14-3-html-save-parity-20260903/.
 - **dom S1 / html-load family part 1 closed (2026-09-03):** html-parsed docs
   now carry XML_DOC_HTML (upstream xmlSAX2StartDocument), the xml-save of an
   HTML document under XML_SAVE_AS_XML goes through the XML serializer with

@@ -783,6 +783,9 @@ struct HtmlParserCtxt {
     filename: *mut c_char,
     /// Encoding
     encoding: *mut c_char,
+    /// Parse options (XML_PARSE_NOBLANKS etc., forwarded from the host
+    /// htmlParserCtxt by the exports).
+    options: c_int,
 }
 
 impl HtmlParserCtxt {
@@ -806,6 +809,7 @@ impl HtmlParserCtxt {
             err: false,
             filename: ptr::null_mut(),
             encoding: ptr::null_mut(),
+            options: 0,
         }
     }
 
@@ -2345,7 +2349,58 @@ unsafe fn html_parse_buffer(
         ensure_html(ctxt);
     }
 
+    // UPSTREAM-PARITY (xmlSAX2Characters with XML_PARSE_NOBLANKS):
+    // whitespace-only text runs are reported as ignorableWhitespace and never
+    // become text nodes. The candidate builds them eagerly, so drop them here
+    // (ext/dom dom005's loadHTMLFile(…, LIBXML_NOBLANKS) serialization kept
+    // the <head>-region newline text nodes the oracle drops).
+    if ctxt.options & (crate::abi::types::XML_PARSE_NOBLANKS as c_int) != 0 && !doc.is_null() {
+        unsafe {
+            drop_blank_text_nodes((*doc).children);
+        }
+    }
+
     doc
+}
+
+/// Unlink and free every whitespace-only text node in the sibling chain and
+/// their element descendants (upstream html parse + XML_PARSE_NOBLANKS).
+///
+/// # Safety
+///
+/// - `cur` must be NULL or a valid live `_xmlNode` chain (element/text/…)
+///   inside the document being cleaned.
+unsafe fn drop_blank_text_nodes(cur: *mut _xmlNode) {
+    let mut n = cur;
+    while !n.is_null() {
+        let next = unsafe { (*n).next };
+        let t = unsafe { (*n).type_ };
+        if t == XML_TEXT_NODE as c_int {
+            let content = unsafe { (*n).content };
+            let blank = if content.is_null() {
+                true
+            } else {
+                let mut p = content;
+                while unsafe { *p } != 0 {
+                    match unsafe { *p } {
+                        b' ' | b'\t' | b'\r' | b'\n' => {}
+                        _ => break,
+                    }
+                    p = unsafe { p.add(1) };
+                }
+                (unsafe { *p }) == 0
+            };
+            if blank {
+                tree::unlink_node(n);
+                tree::free_node(n);
+            }
+        } else if t == XML_ELEMENT_NODE as c_int {
+            if !unsafe { (*n).children }.is_null() {
+                drop_blank_text_nodes(unsafe { (*n).children });
+            }
+        }
+        n = next;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2362,7 +2417,11 @@ unsafe fn html_parse_buffer(
 ///
 /// - `filename` must be a valid null-terminated C string or NULL.
 /// - `encoding` must be a valid null-terminated C string or NULL.
-pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *mut _xmlDoc {
+pub unsafe fn parse_file(
+    filename: *const c_char,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut _xmlDoc {
     if filename.is_null() {
         return ptr::null_mut();
     }
@@ -2376,6 +2435,7 @@ pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *m
     };
 
     let mut ctxt = HtmlParserCtxt::new();
+    ctxt.options = options;
     if !encoding.is_null() {
         let _enc_cstr = unsafe { std::ffi::CStr::from_ptr(encoding) };
         ctxt.encoding = unsafe { c_strdup(encoding) };
@@ -2409,7 +2469,7 @@ pub unsafe fn parse_file(filename: *const c_char, encoding: *const c_char) -> *m
 /// - `buffer` must point to valid memory of at least `size` bytes.
 /// - `size` must be non-negative.
 pub unsafe fn parse_memory(buffer: *const c_char, size: c_int) -> *mut _xmlDoc {
-    unsafe { parse_memory_enc(buffer, size, ptr::null()) }
+    unsafe { parse_memory_enc(buffer, size, ptr::null(), 0) }
 }
 
 /// Parse HTML from a memory buffer with an explicit input encoding.
@@ -2428,12 +2488,14 @@ pub(crate) unsafe fn parse_memory_enc(
     buffer: *const c_char,
     size: c_int,
     encoding: *const c_char,
+    options: c_int,
 ) -> *mut _xmlDoc {
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
 
     let mut ctxt = HtmlParserCtxt::new();
+    ctxt.options = options;
     if !encoding.is_null() {
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
@@ -2450,13 +2512,18 @@ pub(crate) unsafe fn parse_memory_enc(
 ///
 /// - `cur` must be a valid null-terminated xmlChar string or NULL.
 /// - `encoding` must be a valid null-terminated C string or NULL.
-pub(crate) unsafe fn parse_doc(cur: *const xmlChar, encoding: *const c_char) -> *mut _xmlDoc {
+pub(crate) unsafe fn parse_doc(
+    cur: *const xmlChar,
+    encoding: *const c_char,
+    options: c_int,
+) -> *mut _xmlDoc {
     if cur.is_null() {
         return ptr::null_mut();
     }
 
     let len = unsafe { xml_strlen(cur) };
     let mut ctxt = HtmlParserCtxt::new();
+    ctxt.options = options;
     if !encoding.is_null() {
         ctxt.encoding = unsafe { c_strdup(encoding) };
     }
@@ -3947,7 +4014,7 @@ mod tests {
     fn test_parse_doc() {
         unsafe {
             let html = b"<p>Hello from parse_doc</p>\0";
-            let doc = parse_doc(html.as_ptr() as *const xmlChar, ptr::null());
+            let doc = parse_doc(html.as_ptr() as *const xmlChar, ptr::null(), 0);
             assert!(!doc.is_null());
 
             let s = html_doc_to_string(doc);
