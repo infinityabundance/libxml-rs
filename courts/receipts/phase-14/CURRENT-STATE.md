@@ -742,3 +742,33 @@ php-14-3-parser-recover-continuation-20260903/.
     `version="dummy"?>`-style junk-literal trailing diagnostics;
     xmlreader 003/015-get-errors remain red (pre-existing).
     cargo test --lib 1239 pass; clippy no new warnings; fmt clean.
+
+xmlreader NR/NX/AT/EV reader-event closure (2026-09-03): full suite 201 -> 186,
+ZERO regressions (name-level diff: 0 new). Log: phpbuild-c:/out/xpe-six10.log.
+Receipt: php-14-3-xmlreader-nr-20260903/. xmlreader 30 -> 15; dom 118 -> 117
+(bug47530 flipped via the empty-attribute fix).
+  - NR: xmlParserInputBufferCreateMem discarded the source bytes and
+    xmlTextReaderSetup(NULL input) freed the context xmlNewTextReader had
+    built (php XML()/fromString() = CreateMem + NewTextReader + Setup) —
+    memory/IO readers emitted ZERO events (~13 members). Bytes now stashed
+    (helpers.rs input-buffer content table), consumed when no read callback;
+    NULL-input Setup keeps the context (resets gracefully post-parse);
+    xmlReaderForIO tolerates a NULL close callback. reader-nr-probe.c:
+    all four constructor shapes oracle-identical.
+  - NX: walk_tree suppressed END_ELEMENT for every childless element, but
+    the oracle ends <a></a> and not <a/>. Reader parses set
+    ctxt->parseMode = XML_PARSE_READER; parse_element records self-closed
+    nodes (helpers.rs, keyed by doc — parallel-test safe); walk_tree
+    consumes the markers.
+  - AT: GetAttribute/GetAttributeNo/GetAttributeNs return NULL while the
+    attribute cursor is active (upstream curnode != NULL gate; candidate
+    cur_attribute >= 0).
+  - EV: <foo bar=""/> lost the attribute — empty SAX2 value pointers were
+    NULL (now a real "") and parser_set_prop rejected value_len 0; reader
+    value emission returns "" for childless attributes.
+  - residuals: 003/015-get-errors (ValueError args), 010/next_basic
+    (next() cursor), 007/008/013 (reader schema/DTD attach — VA/VD, shared
+    with dom schemaValidate*), bug42139 (DOC_TYPE name), bug64230 (error
+    suppression), fromString/fromStream (baseURI "" vs php CWD), gh19098
+    (expand lifetime).
+    cargo test --lib 1239 pass; clippy no new warnings; fmt clean.

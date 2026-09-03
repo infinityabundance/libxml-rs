@@ -2679,6 +2679,24 @@ impl XmlParser {
             self.sax1_start_element(&name, &attributes, end_pos);
         }
 
+        // UPSTREAM-PARITY (xmlreader.c): the XML reader is streaming, so it
+        // distinguishes a self-closed `<a/>` start (NO END_ELEMENT event)
+        // from an explicitly closed `<a></a>` (END_ELEMENT fires). The
+        // whole-tree reader rebuilds events from the parsed tree, which
+        // cannot tell the two forms apart — during a reader parse
+        // (ctxt->parseMode == XML_PARSE_READER, set by reader/mod.rs) the
+        // just-created element node is recorded so the reader's event
+        // builder can suppress the END event for self-closed elements.
+        if empty
+            && unsafe { (*self.ctxt).parseMode }
+                == crate::abi::types::xmlParserMode::XML_PARSE_READER as c_int
+        {
+            let node = unsafe { (*self.ctxt).node };
+            if !node.is_null() {
+                crate::xml::parser::helpers::mark_self_closed(unsafe { (*self.ctxt).myDoc }, node);
+            }
+        }
+
         // If not an empty element, parse content until matching end tag
         if !empty {
             loop {
@@ -4054,7 +4072,16 @@ impl XmlParser {
                         .unwrap_or(ptr::null()),
                     _ => ptr::null(),
                 };
-                let value_cstr = Self::vec_to_cstr_null(value);
+                // UPSTREAM-PARITY: the SAX2 atts array value pointer is
+                // never NULL — an EMPTY value (`bar=""`) points at the
+                // empty string with valueEnd == valueStart (xmlParseStartTag2
+                // hands SAX2 the raw in-place value). A NULL start would make
+                // the tree builder drop the attribute entirely.
+                let value_cstr = if value.is_empty() {
+                    c"".as_ptr() as *const xmlChar
+                } else {
+                    Self::vec_to_cstr_null(value)
+                };
                 attr_vec.push(local_cstr);
                 attr_vec.push(prefix_cstr);
                 attr_vec.push(uri_cstr);
@@ -4118,7 +4145,13 @@ impl XmlParser {
                         .unwrap_or(ptr::null()),
                     None => ptr::null(),
                 };
-                let value_cstr = Self::vec_to_cstr_null(dval);
+                // Same empty-value rule as the tag's own attributes (a
+                // NULL start would drop the defaulted attribute).
+                let value_cstr = if dval.is_empty() {
+                    c"".as_ptr() as *const xmlChar
+                } else {
+                    Self::vec_to_cstr_null(dval)
+                };
                 attr_vec.push(local_cstr);
                 attr_vec.push(prefix_cstr);
                 attr_vec.push(uri_cstr);

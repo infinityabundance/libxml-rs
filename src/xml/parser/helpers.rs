@@ -77,7 +77,7 @@
 
 use core::ffi::CStr;
 use core::ptr;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::mem::size_of;
 use std::os::raw::{c_char, c_int, c_void};
 
@@ -426,6 +426,13 @@ pub(crate) unsafe fn input_from_file(filename: *const c_char) -> Result<InputBuf
     InputBuffer::from_file(path_str).map_err(|_| ())
 }
 
+/// No-op input close callback: upstream `xmlReaderForIO` accepts a NULL
+/// close callback (xmlIO.c xmlNewIOInputStream), so `input_from_io` cannot
+/// require one.
+unsafe extern "C" fn noop_input_close(_ctx: *mut c_void) -> c_int {
+    0
+}
+
 /// Create an `InputBuffer` from I/O callbacks.
 ///
 /// The callbacks are used to read all available data from the source.
@@ -442,10 +449,12 @@ pub(crate) unsafe fn input_from_io(
     ioclose: Option<xmlInputCloseCallback>,
     ioctx: *mut c_void,
 ) -> InputBuffer {
-    // Both callbacks must be provided for I/O to work.
-    let (read, close) = match (ioread, ioclose) {
-        (Some(r), Some(c)) => (r, c),
-        _ => return InputBuffer::from_memory(&[], None),
+    let (read, close) = match ioread {
+        Some(r) => (
+            r,
+            ioclose.unwrap_or(noop_input_close as xmlInputCloseCallback),
+        ),
+        None => return InputBuffer::from_memory(&[], None),
     };
 
     // SAFETY: The callbacks are used immediately to read all data. The caller
@@ -876,6 +885,103 @@ pub(crate) unsafe fn alloc_parser_input_buffer() -> *mut _xmlParserInputBuffer {
     unsafe { xmlMallocZero(size_of::<_xmlParserInputBuffer>()) as *mut _xmlParserInputBuffer }
 }
 
+/// Owned content of `_xmlParserInputBuffer`s built by
+/// `xmlParserInputBufferCreateMem`. Upstream (xmlIO.c) copies the memory
+/// into the buffer's internal `buffer` xmlBuf and leaves `readcallback`
+/// NULL — the parser pulls bytes from the xmlBuf. The candidate's
+/// `_xmlParserInputBuffer` is a field shim (no live xmlBuf object), so the
+/// bytes live here, keyed by the buffer address, and are consumed by the
+/// text-reader setup (`reader_from_input`) when no read callback is set.
+static PARSER_INPUT_BUF_CONTENT_STASH: once_cell::sync::Lazy<
+    parking_lot::Mutex<HashMap<usize, Vec<u8>>>,
+> = once_cell::sync::Lazy::new(Default::default);
+
+/// Self-closed (`<a/>`) element nodes of the CURRENT reader parse, keyed by
+/// document. The whole-tree XML reader rebuilds traversal events from the
+/// parsed tree, but the tree cannot tell `<a/>` from `<a></a>` — upstream's
+/// streaming reader knows from the SAX stream (an explicitly closed element
+/// fires END_ELEMENT, a self-closed one does not). While
+/// `ctxt->parseMode == XML_PARSE_READER`, the parser records every
+/// self-closed element node here under its document; the reader's event
+/// builder consumes the entries as it walks (reader/mod.rs build_events) and
+/// drops a document's whole entry set when its parse fails, so stale markers
+/// cannot linger across parses (keyed by doc — parses run on many threads).
+static SELF_CLOSED_NODES: once_cell::sync::Lazy<
+    parking_lot::Mutex<HashMap<usize, HashSet<usize>>>,
+> = once_cell::sync::Lazy::new(Default::default);
+
+/// Record `node` (in `doc`) as parsed from a self-closed `<a/>` start tag.
+pub(crate) fn mark_self_closed(
+    doc: *mut crate::abi::structs::_xmlDoc,
+    node: *mut crate::abi::structs::_xmlNode,
+) {
+    if doc.is_null() || node.is_null() {
+        return;
+    }
+    SELF_CLOSED_NODES
+        .lock()
+        .entry(doc as usize)
+        .or_default()
+        .insert(node as usize);
+}
+
+/// Whether `node` (in `doc`) was parsed from a self-closed `<a/>` start tag
+/// (consumes the marker — the reader's event walk visits each element once).
+pub(crate) fn take_self_closed(
+    doc: *mut crate::abi::structs::_xmlDoc,
+    node: *mut crate::abi::structs::_xmlNode,
+) -> bool {
+    if doc.is_null() || node.is_null() {
+        return false;
+    }
+    SELF_CLOSED_NODES
+        .lock()
+        .get_mut(&(doc as usize))
+        .is_some_and(|set| set.remove(&(node as usize)))
+}
+
+/// Drop every self-closed marker recorded for `doc` (failed reader parse).
+pub(crate) fn drop_self_closed(doc: *mut crate::abi::structs::_xmlDoc) {
+    if doc.is_null() {
+        return;
+    }
+    SELF_CLOSED_NODES.lock().remove(&(doc as usize));
+}
+
+/// Stash the owned byte content of a memory parser input buffer.
+pub(crate) fn stash_input_buf_content(buf: *mut _xmlParserInputBuffer, data: Vec<u8>) {
+    PARSER_INPUT_BUF_CONTENT_STASH
+        .lock()
+        .insert(buf as usize, data);
+}
+
+/// Take (remove) the stashed byte content of a memory parser input buffer.
+pub(crate) fn take_input_buf_content(buf: *mut _xmlParserInputBuffer) -> Option<Vec<u8>> {
+    PARSER_INPUT_BUF_CONTENT_STASH
+        .lock()
+        .remove(&(buf as usize))
+}
+
+/// Allocate a memory parser input buffer holding a COPY of `buffer[..size]`
+/// (upstream xmlIO.c xmlParserInputBufferCreateMem: content in the internal
+/// buffer, `readcallback` NULL).
+///
+/// # Safety
+///
+/// - `buffer` must be valid for reads of at least `size` bytes.
+pub(crate) unsafe fn alloc_parser_input_buffer_with_mem(
+    buffer: *const c_char,
+    size: c_int,
+) -> *mut _xmlParserInputBuffer {
+    // SAFETY: caller guarantees the slice is readable.
+    let bytes = unsafe { core::slice::from_raw_parts(buffer as *const u8, size as usize) }.to_vec();
+    let buf = unsafe { alloc_parser_input_buffer() };
+    if !buf.is_null() {
+        stash_input_buf_content(buf, bytes);
+    }
+    buf
+}
+
 /// Free a C ABI `_xmlParserInput`.
 ///
 /// Mirrors upstream `xmlFreeInputStream` (parserInternals.c): the
@@ -932,6 +1038,8 @@ pub(crate) unsafe fn free_parser_input_buffer(buf: *mut _xmlParserInputBuffer) {
     if buf.is_null() {
         return;
     }
+    // Drop any stashed memory content (xmlParserInputBufferCreateMem).
+    take_input_buf_content(buf);
     // SAFETY: The pointer was allocated via xmlMalloc (or xmlMallocZero).
     unsafe { xmlFreeImpl(buf as *mut c_void) };
 }

@@ -379,6 +379,16 @@ impl XmlTextReader {
             crate::abi::exports_parser::apply_options(self.ctxt, self.options);
         }
 
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderSetup): the reader marks
+        // its parse XML_PARSE_READER. The parser records self-closed
+        // (`<a/>`) element nodes only for reader parses (state.rs
+        // parse_element), and the validation layer routes through the
+        // streaming branch when the consumer is a reader (validation/mod.rs
+        // add_ref).
+        unsafe {
+            (*self.ctxt).parseMode = crate::abi::types::xmlParserMode::XML_PARSE_READER as c_int;
+        }
+
         // Parse the document.
         let result = unsafe { parse_document(self.ctxt) };
 
@@ -393,6 +403,9 @@ impl XmlTextReader {
         self.ctxt = ptr::null_mut();
 
         if result != 0 || doc.is_null() {
+            // Drop the self-closed markers of the failed parse (keyed by
+            // doc — the successful path consumes them during build_events).
+            crate::xml::parser::helpers::drop_self_closed(doc);
             self.state = ReadState::ERROR;
             self.errors.push("Failed to parse document".to_string());
             return -1;
@@ -525,7 +538,11 @@ impl XmlTextReader {
 
         // For elements, generate an enter event and then recursively visit children,
         // then generate an exit (END_ELEMENT) event — unless the element is
-        // empty (upstream: empty elements produce only the start event).
+        // self-closed (`<a/>`; upstream xmlreader: only an explicitly closed
+        // element fires END_ELEMENT). Elements with children always end;
+        // childless elements end iff they were NOT parsed from `<a/>`
+        // (R-000144 note: the tree alone cannot tell `<a/>` from `<a></a>`,
+        // so the parser records self-closed nodes during reader parses).
         if node_type == XML_ELEMENT_NODE as c_int {
             self.events.push(TraversalEvent {
                 node,
@@ -543,9 +560,10 @@ impl XmlTextReader {
                 child = unsafe { (*child).next };
             }
 
-            // Generate END_ELEMENT for non-empty elements only (upstream
-            // xmlreader.c: empty elements have no end event — R-000144).
-            if !unsafe { (*node).children }.is_null() {
+            // Generate END_ELEMENT for explicitly closed elements only.
+            let self_closed =
+                unsafe { crate::xml::parser::helpers::take_self_closed(self.doc, node) };
+            if !self_closed {
                 self.events.push(TraversalEvent {
                     node,
                     is_end: true,
@@ -1252,14 +1270,21 @@ impl XmlTextReader {
                     }
                 }
 
-                // Value — the attribute's text content is in its child text node.
+                // Value — the attribute's text content is in its child text
+                // node. An EXISTING attribute with an empty value (`bar=""`)
+                // has no children and reports "" (upstream xmlGetProp /
+                // xmlNodeGetAttrValue), never NULL.
                 if !attr.children.is_null() {
                     // SAFETY: attr.children is a text node.
                     let val = unsafe { (*attr.children).content };
                     if !val.is_null() {
                         // SAFETY: val is null-terminated.
                         self.value = unsafe { xml_strdup(val as *const xmlChar) };
+                    } else {
+                        self.value = unsafe { xml_strdup(c"".as_ptr() as *const xmlChar) };
                     }
+                } else {
+                    self.value = unsafe { xml_strdup(c"".as_ptr() as *const xmlChar) };
                 }
             }
             AttrTarget::None => {}
@@ -1580,7 +1605,12 @@ impl XmlTextReader {
     /// Pointers returned by this method are valid only until the next
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn GetAttribute(&self, name: *const xmlChar) -> *mut xmlChar {
-        if self.cur_node.is_null() {
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderGetAttribute): while the
+        // attribute cursor is active (upstream curnode != NULL — a
+        // moveToAttribute/moveToNextAttribute is in effect) the attribute
+        // value accessors return NULL; they read from the ELEMENT position
+        // only. The candidate tracks that cursor with `cur_attribute`.
+        if self.cur_attribute >= 0 || self.cur_node.is_null() {
             return ptr::null_mut();
         }
 
@@ -1605,7 +1635,9 @@ impl XmlTextReader {
                 }
             }
             AttrTarget::Prop(prop) => {
-                // Get the attribute value from its child text node.
+                // Get the attribute value from its child text node; an
+                // existing attribute with an empty value has no children
+                // and reports "" (upstream xmlGetProp).
                 let val = unsafe { (*prop).children };
                 if !val.is_null() {
                     let content = unsafe { (*val).content };
@@ -1613,7 +1645,7 @@ impl XmlTextReader {
                         return unsafe { xml_strdup(content as *const xmlChar) };
                     }
                 }
-                ptr::null_mut()
+                unsafe { xml_strdup(c"".as_ptr() as *const xmlChar) }
             }
             AttrTarget::None => ptr::null_mut(),
         }
@@ -1632,7 +1664,10 @@ impl XmlTextReader {
     /// Pointers returned by this method are valid only until the next
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn GetAttributeNo(&self, index: c_int) -> *mut xmlChar {
-        if self.cur_node.is_null() || index < 0 {
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderGetAttributeNo): the
+        // accessor reads from the ELEMENT position only — an active
+        // attribute cursor returns NULL.
+        if self.cur_attribute >= 0 || self.cur_node.is_null() || index < 0 {
             return ptr::null_mut();
         }
 
@@ -1660,7 +1695,7 @@ impl XmlTextReader {
                         return unsafe { xml_strdup(content as *const xmlChar) };
                     }
                 }
-                ptr::null_mut()
+                unsafe { xml_strdup(c"".as_ptr() as *const xmlChar) }
             }
             AttrTarget::None => ptr::null_mut(),
         }
@@ -1683,7 +1718,10 @@ impl XmlTextReader {
         localName: *const xmlChar,
         namespaceURI: *const xmlChar,
     ) -> *mut xmlChar {
-        if self.cur_node.is_null() {
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderGetAttributeNs): the
+        // accessor reads from the ELEMENT position only — an active
+        // attribute cursor returns NULL.
+        if self.cur_attribute >= 0 || self.cur_node.is_null() {
             return ptr::null_mut();
         }
 
@@ -1729,7 +1767,9 @@ impl XmlTextReader {
                 };
 
                 if ns_match {
-                    // SAFETY: prop is valid.
+                    // SAFETY: prop is valid. An existing attribute with an
+                    // empty value has no children and reports "" (upstream
+                    // xmlGetProp).
                     let val = unsafe { (*prop).children };
                     if !val.is_null() {
                         // SAFETY: val's content is null-terminated.
@@ -1739,7 +1779,7 @@ impl XmlTextReader {
                             return unsafe { xml_strdup(content as *const xmlChar) };
                         }
                     }
-                    return ptr::null_mut();
+                    return unsafe { xml_strdup(c"".as_ptr() as *const xmlChar) };
                 }
             }
 
@@ -1997,7 +2037,11 @@ unsafe fn reader_from_input(
         return ptr::null_mut();
     }
 
-    // Read all data from the input buffer using the read callback.
+    // Read all data from the input buffer using the read callback. A
+    // memory buffer (xmlParserInputBufferCreateMem) has NO read callback —
+    // upstream serves the parser from the buffer's own content, which the
+    // candidate keeps in the input-buffer content stash (helpers.rs); an
+    // I/O buffer's callback slurps the stream (XMLReader::fromStream).
     let mut data = Vec::new();
     let mut tmp = [0u8; 4096];
 
@@ -2014,6 +2058,8 @@ unsafe fn reader_from_input(
             }
             data.extend_from_slice(&tmp[..n as usize]);
         }
+    } else {
+        data = crate::xml::parser::helpers::take_input_buf_content(input).unwrap_or_default();
     }
 
     // Close the input if there's a close callback.
@@ -3137,20 +3183,6 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
     r.clear_cached_name();
     r.clear_cached_value();
 
-    // Free the old document.
-    if !r.doc.is_null() {
-        // SAFETY: doc was allocated by the parser.
-        unsafe { tree::free_doc(r.doc) };
-        r.doc = ptr::null_mut();
-    }
-
-    // Free old parser context.
-    if !r.ctxt.is_null() {
-        // SAFETY: ctxt was created by create_parser_ctxt.
-        unsafe { free_parser_ctxt(r.ctxt) };
-        r.ctxt = ptr::null_mut();
-    }
-
     r.events.clear();
     r.event_index = 0;
     r.state = ReadState::INITIALIZED;
@@ -3189,50 +3221,92 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
         r.encoding = unsafe { bytes_to_xmlstr(enc_str.to_bytes()) };
     }
 
-    // Create new parser context and set up input.
-    if !input.is_null() {
-        // SAFETY: create_parser_ctxt returns a valid context or NULL.
-        let ctxt = unsafe { create_parser_ctxt() };
-        if ctxt.is_null() {
-            return -1;
-        }
-
-        // Read all data from the input buffer.
-        let mut data = Vec::new();
-        let mut tmp = [0u8; 4096];
-
-        // SAFETY: input is valid.
-        let read_cb = unsafe { (*input).readcallback };
-        let ioctx = unsafe { (*input).context };
-
-        if let Some(read) = read_cb {
-            loop {
-                // SAFETY: callbacks are valid.
-                let n = unsafe { read(ioctx, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int) };
-                if n <= 0 {
-                    break;
-                }
-                data.extend_from_slice(&tmp[..n as usize]);
+    // UPSTREAM-PARITY (xmlreader.c xmlTextReaderSetup): a NULL input means
+    // "use the input the reader was created with" — PHP's XMLReader::XML() /
+    // fromString() call xmlNewTextReader(inputbfr, uri) and then
+    // xmlTextReaderSetup(reader, NULL, uri, encoding, options). The
+    // candidate consumed that buffer in reader_from_input (the context is
+    // already wired), so a NULL input keeps the existing context; a NEW
+    // input replaces it (C consumers re-arming the reader).
+    if input.is_null() {
+        // UPSTREAM-PARITY: a NULL input promotes the source the reader was
+        // created with (php XMLReader::XML()/fromString(): xmlNewTextReader
+        // then xmlTextReaderSetup(reader, NULL, ...)). The candidate
+        // consumed that source in reader_from_input, so the context built
+        // there is kept. A reader that ALREADY parsed (its context was
+        // consumed by parse_and_build_events) discards the old document and
+        // resets — upstream xmlTextReaderSetup tears the previous parse
+        // state down.
+        if r.ctxt.is_null() {
+            if !r.doc.is_null() {
+                // SAFETY: doc was allocated by the parser.
+                unsafe { tree::free_doc(r.doc) };
+                r.doc = ptr::null_mut();
             }
         }
-
-        // Close the input.
-        let close_cb = unsafe { (*input).closecallback };
-        if let Some(close) = close_cb {
-            // SAFETY: close callback is valid.
-            unsafe { close(ioctx) };
-        }
-
-        let input_buf = InputBuffer::from_memory(&data, None);
-
-        // SAFETY: ctxt and input_buf are valid.
-        unsafe { setup_parser_input(ctxt, input_buf) };
-        unsafe {
-            (*ctxt).options = options;
-        }
-
-        r.ctxt = ctxt;
+        return 0;
     }
+
+    // Free the old document.
+    if !r.doc.is_null() {
+        // SAFETY: doc was allocated by the parser.
+        unsafe { tree::free_doc(r.doc) };
+        r.doc = ptr::null_mut();
+    }
+
+    // Free old parser context.
+    if !r.ctxt.is_null() {
+        // SAFETY: ctxt was created by create_parser_ctxt.
+        unsafe { free_parser_ctxt(r.ctxt) };
+        r.ctxt = ptr::null_mut();
+    }
+
+    // Create new parser context and set up input.
+    // SAFETY: create_parser_ctxt returns a valid context or NULL.
+    let ctxt = unsafe { create_parser_ctxt() };
+    if ctxt.is_null() {
+        return -1;
+    }
+
+    // Read all data from the input buffer. A memory buffer
+    // (xmlParserInputBufferCreateMem) has no read callback — its content
+    // lives in the input-buffer content stash (helpers.rs).
+    let mut data = Vec::new();
+    let mut tmp = [0u8; 4096];
+
+    // SAFETY: input is valid.
+    let read_cb = unsafe { (*input).readcallback };
+    let ioctx = unsafe { (*input).context };
+
+    if let Some(read) = read_cb {
+        loop {
+            // SAFETY: callbacks are valid.
+            let n = unsafe { read(ioctx, tmp.as_mut_ptr() as *mut c_char, tmp.len() as c_int) };
+            if n <= 0 {
+                break;
+            }
+            data.extend_from_slice(&tmp[..n as usize]);
+        }
+    } else {
+        data = crate::xml::parser::helpers::take_input_buf_content(input).unwrap_or_default();
+    }
+
+    // Close the input.
+    let close_cb = unsafe { (*input).closecallback };
+    if let Some(close) = close_cb {
+        // SAFETY: close callback is valid.
+        unsafe { close(ioctx) };
+    }
+
+    let input_buf = InputBuffer::from_memory(&data, None);
+
+    // SAFETY: ctxt and input_buf are valid.
+    unsafe { setup_parser_input(ctxt, input_buf) };
+    unsafe {
+        (*ctxt).options = options;
+    }
+
+    r.ctxt = ctxt;
 
     0
 }

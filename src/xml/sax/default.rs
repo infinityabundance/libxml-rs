@@ -270,7 +270,11 @@ pub(crate) mod default_sax_handler {
         value_len: isize,
         had_ref: bool,
     ) -> *mut _xmlAttr {
-        if node.is_null() || name.is_null() || value.is_null() || value_len <= 0 {
+        // A negative length is invalid; an EMPTY value (len 0) is a real
+        // attribute (`bar=""`) and must be created (upstream
+        // xmlSAX2AttributeNs) — xmlGetProp reports childless attributes as
+        // "".
+        if node.is_null() || name.is_null() || value.is_null() || value_len < 0 {
             return ptr::null_mut();
         }
         unsafe {
@@ -686,78 +690,78 @@ pub(crate) mod default_sax_handler {
                         } else {
                             attr_value_end.offset_from(attr_value_start)
                         };
-                        if value_len > 0 {
-                            // UPSTREAM-PARITY: xmlSAX2AttributeNs builds the
-                            // attribute value text with xmlSAX2TextNode, so
-                            // short values are compact under XML_PARSE_COMPACT.
-                            //
-                            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs):
-                            // an attribute whose prefix is not bound (URI ==
-                            // NULL) keeps the raw QName as its name with a
-                            // NULL namespace (xmlBuildQName), so `<a p:x="1"/>`
-                            // serializes as `p:x` rather than losing the
-                            // prefix.
-                            let qname_owned: Vec<u8>;
-                            let (attr_name_eff, attr_prefix_eff) =
-                                if !attr_prefix.is_null() && attr_uri.is_null() {
-                                    let mut q: Vec<u8> = Vec::new();
-                                    q.extend_from_slice({
-                                        core::slice::from_raw_parts(
-                                            attr_prefix,
-                                            crate::xml::tree::xml_strlen(attr_prefix) as usize,
-                                        )
-                                    });
-                                    q.push(b':');
-                                    q.extend_from_slice({
-                                        core::slice::from_raw_parts(
-                                            attr_name,
-                                            crate::xml::tree::xml_strlen(attr_name) as usize,
-                                        )
-                                    });
-                                    q.push(0);
-                                    qname_owned = q;
-                                    (qname_owned.as_ptr() as *const xmlChar, ptr::null())
-                                } else {
-                                    (attr_name, attr_prefix)
-                                };
-                            let attr = parser_set_prop(
-                                ctxt,
-                                node,
-                                attr_name_eff,
-                                attr_prefix_eff,
-                                attr_value_start,
-                                value_len,
-                                had_ref,
-                            );
-                            // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs tail):
-                            // ID/IDREF attributes are registered against the
-                            // DTD attribute declarations.
-                            if !attr.is_null() {
-                                let av = (*attr).children;
-                                let v = if av.is_null() || (*av).content.is_null() {
-                                    ptr::null()
-                                } else {
-                                    (*av).content
-                                };
-                                if !v.is_null() {
-                                    let res = crate::xml::validation::is_id(c.myDoc, node, attr);
-                                    if res > 0 {
-                                        crate::xml::validation::add_id(
-                                            ptr::null_mut(),
-                                            c.myDoc,
-                                            v,
-                                            attr,
-                                        );
-                                    } else if crate::xml::validation::is_ref(c.myDoc, node, attr)
-                                        > 0
-                                    {
-                                        crate::xml::validation::add_ref(
-                                            ptr::null_mut(),
-                                            c.myDoc,
-                                            v,
-                                            attr,
-                                        );
-                                    }
+                        // UPSTREAM-PARITY: xmlSAX2AttributeNs builds the
+                        // attribute value text with xmlSAX2TextNode, so
+                        // short values are compact under XML_PARSE_COMPACT.
+                        //
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs):
+                        // an attribute whose prefix is not bound (URI ==
+                        // NULL) keeps the raw QName as its name with a
+                        // NULL namespace (xmlBuildQName), so `<a p:x="1"/>`
+                        // serializes as `p:x` rather than losing the
+                        // prefix.
+                        let qname_owned: Vec<u8>;
+                        let (attr_name_eff, attr_prefix_eff) =
+                            if !attr_prefix.is_null() && attr_uri.is_null() {
+                                let mut q: Vec<u8> = Vec::new();
+                                q.extend_from_slice({
+                                    core::slice::from_raw_parts(
+                                        attr_prefix,
+                                        crate::xml::tree::xml_strlen(attr_prefix) as usize,
+                                    )
+                                });
+                                q.push(b':');
+                                q.extend_from_slice({
+                                    core::slice::from_raw_parts(
+                                        attr_name,
+                                        crate::xml::tree::xml_strlen(attr_name) as usize,
+                                    )
+                                });
+                                q.push(0);
+                                qname_owned = q;
+                                (qname_owned.as_ptr() as *const xmlChar, ptr::null())
+                            } else {
+                                (attr_name, attr_prefix)
+                            };
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs): the
+                        // attribute is created even for an EMPTY value
+                        // (`bar=""` — value_len 0 yields an attribute with
+                        // no text child, which xmlGetProp reports as "").
+                        let attr = parser_set_prop(
+                            ctxt,
+                            node,
+                            attr_name_eff,
+                            attr_prefix_eff,
+                            attr_value_start,
+                            value_len,
+                            had_ref,
+                        );
+                        // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeNs tail):
+                        // ID/IDREF attributes are registered against the
+                        // DTD attribute declarations.
+                        if !attr.is_null() {
+                            let av = (*attr).children;
+                            let v = if av.is_null() || (*av).content.is_null() {
+                                ptr::null()
+                            } else {
+                                (*av).content
+                            };
+                            if !v.is_null() {
+                                let res = crate::xml::validation::is_id(c.myDoc, node, attr);
+                                if res > 0 {
+                                    crate::xml::validation::add_id(
+                                        ptr::null_mut(),
+                                        c.myDoc,
+                                        v,
+                                        attr,
+                                    );
+                                } else if crate::xml::validation::is_ref(c.myDoc, node, attr) > 0 {
+                                    crate::xml::validation::add_ref(
+                                        ptr::null_mut(),
+                                        c.myDoc,
+                                        v,
+                                        attr,
+                                    );
                                 }
                             }
                         }

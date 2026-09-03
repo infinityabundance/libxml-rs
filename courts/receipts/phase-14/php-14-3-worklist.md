@@ -1,15 +1,15 @@
 # Phase 14.3 — atomized execution worklist (status tracked here)
 
-Authoritative current full-suite count: **201 failed** (dom 118 | xsl 52 |
-xmlreader 30 | xmlwriter **1** (W5 shift_jis encoder residual →
+Authoritative current full-suite count: **186 failed** (dom 117 | xsl 52 |
+xmlreader 15 | xmlwriter **1** (W5 shift_jis encoder residual →
 W9/R-000157) | simplexml 1 | xml **0**) after KEY-1 + KEY-2 +
 SP-14.3.1-8 + KEY-3 + EXT-6 (xmlwriter) + dom O1 closures + KEY-4 part 1 +
 simplexml S5/S6 content discipline + simplexml S4 PI data + simplexml S3
 XPath error channel + simplexml S8/dom-L2 input-loader routing + simplexml
 S7 clone-detach (copy-_private) + dom S1/html-load family part 1 + dom S1
 html-save pseudo-HTML encoding parity (dom005 PASS) + dom E1 parser
-recovery-continuation / xml-decl version / dump NULL-size closure (all
-2026-09-03).
+recovery-continuation / xml-decl version / dump NULL-size closure + xmlreader
+NR/NX/AT/EV reader-event closure (all 2026-09-03).
 Oracle skips 40 (all extensions agree). Oracle baseline all-extension = 0 fails.
 Cross-cutting engine keystones (see phase-14-3-to-zero-plan.md) are tracked in
 CURRENT-STATE.md; the per-extension atoms below remain the extension-level
@@ -74,7 +74,22 @@ All atoms below closed by commit 52f4168 (SP-14.3.1-8 + KEY-2) and KEY-3
 
 ## SP-14.3.4  ext/dom validation
 
-## SP-14.3.5  ext/xmlreader (29)
+## SP-14.3.5  ext/xmlreader (30) -> 15 (2026-09-03)
+- [x] NR/NX/AT/EV reader-event closure: memory/IO readers emitted ZERO
+      events (xmlParserInputBufferCreateMem dropped the bytes;
+      xmlTextReaderSetup(NULL input) freed the NewTextReader context) —
+      fixed + END_ELEMENT for explicitly-closed empty elements (self-closed
+      markers keyed by doc under XML_PARSE_READER) + GetAttribute* NULL
+      under the attribute cursor + empty `bar=""` attributes retained.
+      15 flipped (001/002/003/003-mb/006/009/011, cache_slot, expand,
+      gh16292, readString_basic, static, var_dump, fromUri_custom_
+      constructor) + dom bug47530. 201 -> 186 zero regressions. Receipt:
+      php-14-3-xmlreader-nr-20260903/. Probe kept: reader-nr-probe.c.
+- [ ] Residuals: 003-get-errors/003-move-errors/015-get-errors (ValueError
+      arg surface), 010/next_basic (next() cursor), 007/008/013 (schema/
+      DTD attach — VA/VD), bug42139 (DOC_TYPE name), bug64230 (error
+      suppression), fromStream_*/fromString_custom_constructor (baseURI),
+      gh19098 (expand lifetime).
 
 ## SP-14.3.6  ext/xmlwriter (19)  ->  CLOSED 19 -> 1 (2026-09-03)
 Committed with receipt php-14-3-xmlwriter-20260903/ (see CURRENT-STATE.md

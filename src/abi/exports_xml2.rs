@@ -3789,7 +3789,13 @@ pub unsafe extern "C" fn xmlParserInputBufferCreateMem(
     if buffer.is_null() || size <= 0 {
         return ptr::null_mut();
     }
-    crate::xml::parser::helpers::alloc_parser_input_buffer()
+    // UPSTREAM-PARITY (xmlIO.c xmlParserInputBufferCreateMem): the content
+    // is copied into the buffer (readcallback stays NULL — PHP's
+    // XMLReader::XML()/fromString() parse from the buffer's own bytes).
+    // The enc argument selects an input converter upstream; the candidate
+    // parser handles declared encodings itself, so it is not stored.
+    let _ = enc;
+    crate::xml::parser::helpers::alloc_parser_input_buffer_with_mem(buffer, size)
 }
 
 /// Create a file parser input buffer.

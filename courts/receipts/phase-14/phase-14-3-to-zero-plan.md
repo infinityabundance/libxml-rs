@@ -1,6 +1,15 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **xmlreader NR/NX/AT/EV reader-event closure (2026-09-03):** memory/IO
+  reader constructors emitted ZERO events — xmlParserInputBufferCreateMem
+  discarded the source bytes and xmlTextReaderSetup(NULL input) freed the
+  context xmlNewTextReader had built (php XML()/fromString() path); plus
+  END_ELEMENT for explicitly-closed empty elements (self-closed markers
+  keyed by doc under XML_PARSE_READER), GetAttribute* NULL under the
+  attribute cursor, and empty `bar=""` attributes retained. Full suite
+  **201 → 186** (xmlreader 30 → 15; dom bug47530), zero regressions.
+  Receipt: php-14-3-xmlreader-nr-20260903/.
 - **dom E1 parser recovery-continuation + xml-decl version + dump NULL-size
   (2026-09-03):** FATAL structural errors no longer stop the scan — a
   mismatched end tag closes the CURRENT open element and continues, a failed
@@ -125,13 +134,13 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 201 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html/E1-recover):
+Split at 289 (now 186 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2/KEY-4-p1/sxe-S5S6/S4/S3-xerr/S8-loader/S7-clone/domS1-html/E1-recover/xr-NRNX):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 118 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 117 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 -> 1 |
-| ext/xmlreader | 30 | | ext/xmlwriter | 19 -> **1** |
+| ext/xmlreader | 30 -> 15 | | ext/xmlwriter | 19 -> **1** |
 
 xmlwriter's last member (`xmlwriter_toStream_encoding_shiftjis`) is W5 —
 encoder-scope (R-000157/W9); EXT-6 gate reaches 0 when W9 lands.
