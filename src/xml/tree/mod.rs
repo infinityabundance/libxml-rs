@@ -967,7 +967,11 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 
 /// Free a linked list of nodes.
 ///
-/// Frees all nodes in the list and their children recursively.
+/// Frees all nodes in the list and their children (depth-first, children
+/// before parents) WITHOUT C recursion — upstream xmlFreeNodeList walks the
+/// tree with an explicit depth counter (tree.c 2.15), and a 100k-deep
+/// document must tear down without overflowing the stack (GH-22570: the
+/// recursive version segv'd at php shutdown on the deep Dom\XMLDocument).
 ///
 /// # UPSTREAM-PARITY
 ///
@@ -983,29 +987,45 @@ pub unsafe fn free_node(node: *mut _xmlNode) {
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
-pub unsafe fn free_node_list(node: *mut _xmlNode) {
-    let mut cur = node;
-    while !cur.is_null() {
-        let next = unsafe { (*cur).next };
-        let t = unsafe { (*cur).type_ };
+pub unsafe fn free_node_list(mut cur: *mut _xmlNode) {
+    // Explicit resume frames replace the old recursion: each frame is a node
+    // whose children-subtree free is in progress, plus the node's next
+    // sibling read before the descent (the struct is freed on resume, so the
+    // `next` pointer must not be read afterwards).
+    let mut frames: Vec<(*mut _xmlNode, *mut _xmlNode)> = Vec::new();
+    loop {
+        // Process the current sibling list; descend into the first node that
+        // carries a freeable children subtree (post-order: children first).
+        while !cur.is_null() {
+            let next = unsafe { (*cur).next };
+            let t = unsafe { (*cur).type_ };
 
-        if t == XML_DTD_NODE as c_int {
-            // UPSTREAM-PARITY: DTD nodes are unlinked but not freed here.
-            unsafe {
-                (*cur).prev = ptr::null_mut();
-                (*cur).next = ptr::null_mut();
+            if t == XML_DTD_NODE as c_int {
+                // UPSTREAM-PARITY: DTD nodes are unlinked but not freed here.
+                unsafe {
+                    (*cur).prev = ptr::null_mut();
+                    (*cur).next = ptr::null_mut();
+                }
+                cur = next;
+                continue;
             }
+
+            // Free children first (entity-ref children are shared with the
+            // entity declaration and are owned by the DTD).
+            if t != XML_ENTITY_REF_NODE as c_int && !unsafe { (*cur).children }.is_null() {
+                frames.push((cur, next));
+                cur = unsafe { (*cur).children };
+                continue;
+            }
+
+            free_node(cur);
             cur = next;
-            continue;
         }
-
-        // Free children recursively (entity-ref children are shared with the
-        // entity declaration and are owned by the DTD).
-        if t != XML_ENTITY_REF_NODE as c_int && !unsafe { (*cur).children }.is_null() {
-            free_node_list(unsafe { (*cur).children });
-        }
-
-        free_node(cur);
+        // Sibling list exhausted: resume the innermost descended parent.
+        let Some((parent, next)) = frames.pop() else {
+            break;
+        };
+        free_node(parent);
         cur = next;
     }
 }
@@ -5695,6 +5715,37 @@ mod tests {
             assert!(!cdata.is_null());
             assert_eq!((*cdata).type_, XML_CDATA_SECTION_NODE as c_int);
             free_node(cdata);
+            free_doc(doc);
+        }
+    }
+
+    /// A half-million-deep element chain must free WITHOUT C recursion —
+    /// upstream xmlFreeNodeList walks iteratively (tree.c 2.15) and the
+    /// recursive version overflowed the stack at php shutdown on the deep
+    /// Dom\XMLDocument (GH-22570: segv after saveXml's "Maximum call stack
+    /// size" Error, which this test's process would hit too on a regression
+    /// because the test thread stack is far below 500k frames).
+    ///
+    /// # Safety
+    ///
+    /// - doc/root/chain are built with the tree API and freed exactly once
+    ///   through `free_doc` (children before parents, post-order).
+    #[test]
+    fn test_free_deeply_nested_chain_is_iterative() {
+        unsafe {
+            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
+            assert!(!doc.is_null());
+            const DEPTH: usize = 500_000;
+            let root = new_node(ptr::null_mut(), c_str("a"));
+            assert!(!root.is_null());
+            doc_set_root_element(doc, root);
+            let mut child = root;
+            for _ in 0..DEPTH {
+                let next = new_node(ptr::null_mut(), c_str("a"));
+                assert!(!next.is_null());
+                assert!(!add_child(child, next).is_null());
+                child = next;
+            }
             free_doc(doc);
         }
     }

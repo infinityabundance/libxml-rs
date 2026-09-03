@@ -1,6 +1,11 @@
 # Phase 14.3 — plan to ZERO failures (289 → 0)
 
 ## Progress
+- **dom O1 deep-tree free recursion closed (2026-09-03):** xmlFreeNodeList is
+  iterative upstream (tree.c 2.15); the candidate's recursive free overflowed
+  the stack tearing down GH-22570's 100k-deep document at php shutdown. Full
+  suite **251 → 250** (dom 160 → 159: gh22570 PASS), zero regressions.
+  Receipt: php-14-3-dom-o1-deep-free-20260903/.
 - **dom O1 xpath-php-function bridge closed (2026-09-03):** C-registered XPath
   functions are invoked with `ctxt->context->function`/`functionURI` set to
   the LOCAL name + namespace (upstream xmlXPathCompOpEval), which PHP's
@@ -43,12 +48,11 @@ Authoritative baseline captured at **f190faeb (SP-14.3.1-7)**, full six-extensio
 **1291 tests / 289 failed / 40 skipped**. Oracle baseline = 0 failed (libxml2
 2.15.3 + libxslt 1.1.45 on the pinned PHP 8.5.10).
 
-Split at 289 (now 251 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-
-xpathfn):
+Split at 289 (now 250 after KEY-1/KEY-2/SP-14.3.1-8/KEY-3/EXT-6/dom-O1-x2):
 
 | ext | head | | ext | head |
 |---|---|---|---|---|
-| ext/dom | 169 -> 160 | | ext/xml | 5 -> **0** |
+| ext/dom | 169 -> 159 | | ext/xml | 5 -> **0** |
 | ext/xsl | 58 -> 52 | | ext/simplexml | 9 |
 | ext/xmlreader | 29 | | ext/xmlwriter | 19 -> **1** |
 

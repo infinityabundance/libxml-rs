@@ -421,3 +421,20 @@ dom O1 xpath-php-function-callback bridge closed (2026-09-03): full suite 255
     consumers/adopt-reduce.php + bug79968-repro.php + savetree-probe.c) and
     DOMNode_isEqualNode / DOMElement_replaceChildren / gh22570 /
     xpath_domnamespacenode_advanced.
+
+dom O1 deep-tree free recursion closed (2026-09-03): full suite 251 -> 250;
+  zero regressions (dom 160 -> 159 — modern/xml/gh22570 PASS; simplexml 9 /
+  xml 0 / xmlreader 29 / xmlwriter 1 / xsl 52 unchanged). Receipt:
+  php-14-3-dom-o1-deep-free-20260903/.
+  - root cause: free_node_list recursed per tree level; the 100k-deep
+    Dom\XMLDocument (gh22570) overflowed the C stack at php shutdown AFTER
+    saveXml's "Maximum call stack size reached" Error had already fired
+    (segv during teardown, not during serialize). Upstream xmlFreeNodeList
+    walks the tree ITERATIVELY with an explicit depth counter (tree.c 2.15).
+  - fix: free_node_list rewritten as an iterative post-order walk with an
+    explicit resume stack (node + its pre-descent next sibling, since the
+    struct is freed on resume); DTD-skip and entity-ref no-descend semantics
+    unchanged; free order (children before parents) unchanged.
+  - guards: tree/mod.rs test_free_deeply_nested_chain_is_iterative (500k-deep
+    chain freed through free_doc; a recursion regression dies in the test
+    thread). cargo test --lib 1227 pass; clippy no new warnings; fmt clean.
