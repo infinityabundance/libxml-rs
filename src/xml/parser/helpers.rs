@@ -429,7 +429,7 @@ pub(crate) unsafe fn input_from_file(filename: *const c_char) -> Result<InputBuf
 /// No-op input close callback: upstream `xmlReaderForIO` accepts a NULL
 /// close callback (xmlIO.c xmlNewIOInputStream), so `input_from_io` cannot
 /// require one.
-unsafe extern "C" fn noop_input_close(_ctx: *mut c_void) -> c_int {
+const unsafe extern "C" fn noop_input_close(_ctx: *mut c_void) -> c_int {
     0
 }
 

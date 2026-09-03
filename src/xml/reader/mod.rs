@@ -561,8 +561,7 @@ impl XmlTextReader {
             }
 
             // Generate END_ELEMENT for explicitly closed elements only.
-            let self_closed =
-                unsafe { crate::xml::parser::helpers::take_self_closed(self.doc, node) };
+            let self_closed = crate::xml::parser::helpers::take_self_closed(self.doc, node);
             if !self_closed {
                 self.events.push(TraversalEvent {
                     node,
@@ -3237,12 +3236,10 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
         // consumed by parse_and_build_events) discards the old document and
         // resets — upstream xmlTextReaderSetup tears the previous parse
         // state down.
-        if r.ctxt.is_null() {
-            if !r.doc.is_null() {
-                // SAFETY: doc was allocated by the parser.
-                unsafe { tree::free_doc(r.doc) };
-                r.doc = ptr::null_mut();
-            }
+        if r.ctxt.is_null() && !r.doc.is_null() {
+            // SAFETY: doc was allocated by the parser.
+            unsafe { tree::free_doc(r.doc) };
+            r.doc = ptr::null_mut();
         }
         return 0;
     }

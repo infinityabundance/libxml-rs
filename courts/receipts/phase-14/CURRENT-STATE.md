@@ -772,3 +772,29 @@ Receipt: php-14-3-xmlreader-nr-20260903/. xmlreader 30 -> 15; dom 118 -> 117
     suppression), fromString/fromStream (baseURI "" vs php CWD), gh19098
     (expand lifetime).
     cargo test --lib 1239 pass; clippy no new warnings; fmt clean.
+
+xmlsave 0-length write + attribute entity-ref children (2026-09-03): full suite
+186 -> 158, ZERO regressions (name-level diff: 0 new). Log:
+phpbuild-c:/out/xpe-six11.log. dom 117 -> 89. Receipt:
+php-14-3-xmlsave-attrent-20260903/.
+  - xmlOutputBufferWrite/io output_buffer_write rejected len 0 with -1;
+    php 8.5's W3C DOM-Parsing serializer (xml_serializer.c) issues
+    zero-length chunk writes when a text/attr run starts with an escape
+    char, so the whole save aborted with "Could not save document" across
+    the modern Dom\ family (~20 tests: css_selectors, title setter,
+    noscript, insertAdjacentHTML, serialize_* …). len 0 is now a 0-return
+    no-op (upstream xmlIO.c); only len < 0 errors.
+  - declared-entity references in ATTRIBUTE values are now ENTITY_REF
+    children (default.rs parser_build_attr_children — upstream
+    xmlNodeParseAttValue; the serializers already emitted &name;) instead
+    of one escaped flat text node: gh19612 + serialize_entity_reference_
+    in_attribute + Element_innerHTML/insertAdjacentHTML + dom001 + more.
+  - probes kept: save-iso.php, attr-entityref-probe.c (both
+    oracle-identical). Tracked corner: double-encoded x="&amp;foo;"
+    becomes ENTREF (oracle TEXT) — no test pins it.
+  - residuals next: dom 89 = KEY-5 namespace-prefix allocation
+    (createAttributeNS_prefix_conflicts x5, Element_setAttributeNS, …),
+    schemaValidate/relaxNGValidate/validate (SP-14.3.4 ~14), DTD
+    serializer corners (token_list/attlist), delayed_freeing x4,
+    css_selectors/entities, xsl 52, xmlreader 15.
+    cargo test --lib 1239 pass; clippy no new warnings; fmt clean.

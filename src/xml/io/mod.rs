@@ -2017,15 +2017,21 @@ pub(crate) fn output_buffer_close(out: *mut _xmlOutputBuffer) -> c_int {
 /// # Safety
 ///
 /// - `out` must be NULL or a valid `_xmlOutputBuffer`; `data` must be NULL
-///   or point to at least `len` readable bytes; `len` must be positive. The
-///   data is copied into the internal buffer before any flush.
+///   or point to at least `len` readable bytes; `len` must be non-negative
+///   (0 is a legal no-op returning 0 — xmlIO.c xmlOutputBufferWrite;
+///   php's W3C DOM-Parsing serializer sends len-0 chunk writes when a run
+///   starts with a character needing escaping). The data is copied into the
+///   internal buffer before any flush.
 pub(crate) fn output_buffer_write(
     out: *mut _xmlOutputBuffer,
     len: c_int,
     data: *const c_char,
 ) -> c_int {
-    if out.is_null() || data.is_null() || len <= 0 {
+    if out.is_null() || data.is_null() || len < 0 {
         return -1;
+    }
+    if len == 0 {
+        return 0;
     }
 
     let ob = unsafe { &mut *out };

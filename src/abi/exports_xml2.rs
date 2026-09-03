@@ -4018,8 +4018,17 @@ pub unsafe extern "C" fn xmlOutputBufferWrite(
     len: c_int,
     data: *const c_char,
 ) -> c_int {
-    if out.is_null() || data.is_null() || len <= 0 {
+    // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferWrite): a zero-length write
+    // is a legal no-op returning 0 — PHP's W3C DOM-Parsing serializer
+    // (ext/dom xml_serializer.c dom_xml_common_text_serialization) issues
+    // xmlOutputBufferWrite(out, 0, p) when a text/attribute run starts with
+    // a character that needs escaping; -1 there aborts the whole save with
+    // "Could not save document".
+    if out.is_null() || data.is_null() || len < 0 {
         return -1;
+    }
+    if len == 0 {
+        return 0;
     }
     crate::xml::io::output_buffer_write(out, len, data)
 }

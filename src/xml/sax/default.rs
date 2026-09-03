@@ -238,6 +238,153 @@ pub(crate) mod default_sax_handler {
         }
     }
 
+    /// Build the attribute's value children from a (reference-substituted)
+    /// value string, mirroring upstream tree.c `xmlNodeParseAttValue` at the
+    /// tree layer. The tokenizer already resolved character references,
+    /// predefined entities and (under XML_PARSE_NOENT) declared entities, so
+    /// the value can only contain plain text and UNSUBSTITUTED general
+    /// entity references `&name;` — those become XML_ENTITY_REF_NODE
+    /// children (with the entity attached), text runs become text nodes, and
+    /// any other stray `&` (resolved-text from `&amp;`, or a `&#...`-looking
+    /// run) stays text. Upstream keeps declared-entity references in
+    /// attribute values as entity-ref children and every serializer
+    /// re-emits them as `&name;` (gh19612 / the modern serialize_entity_reference
+    /// family); with NOENT the refs are already gone and a single text node
+    /// results.
+    ///
+    /// `attr->children`/`last` must already be NULL.
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt`/`attr` must be valid; `value` must be readable for `len`
+    ///   bytes (NUL-termination not required).
+    unsafe fn parser_build_attr_children(
+        ctxt: *mut _xmlParserCtxt,
+        attr: *mut _xmlAttr,
+        value: *const xmlChar,
+        len: c_int,
+        had_ref: bool,
+    ) {
+        if attr.is_null() || value.is_null() || len <= 0 {
+            return;
+        }
+        let bytes = unsafe { core::slice::from_raw_parts(value, len as usize) };
+        let mut head: *mut _xmlNode = ptr::null_mut();
+        let mut last: *mut _xmlNode = ptr::null_mut();
+        let mut i = 0usize;
+        let mut run_start = 0usize;
+        let mut any_ref = false;
+        let doc = unsafe { (*ctxt).myDoc };
+
+        macro_rules! flush_text_run {
+            ($end:expr) => {{
+                let run_len = $end - run_start;
+                if run_len > 0 {
+                    let text = unsafe {
+                        parser_new_text_node(
+                            ctxt,
+                            value.add(run_start),
+                            run_len as c_int,
+                            // had-ref values never compact (R-000120); the
+                            // multi-node builder only runs for them.
+                            true,
+                        )
+                    };
+                    if !text.is_null() {
+                        unsafe {
+                            (*text).parent = attr as *mut _xmlNode;
+                            (*text).doc = doc;
+                            if last.is_null() {
+                                head = text;
+                            } else {
+                                (*last).next = text;
+                                (*text).prev = last;
+                            }
+                            last = text;
+                        }
+                    }
+                }
+            }};
+        }
+
+        while i < bytes.len() {
+            if bytes[i] == b'&' {
+                // Scan for the terminating ';' of a possible reference.
+                let mut j = i + 1;
+                while j < bytes.len() && bytes[j] != b';' {
+                    j += 1;
+                }
+                let name_is_ref =
+                    j < bytes.len() && j > i + 1 && bytes[i + 1] != b'#' && bytes[i + 1] != b'&';
+                if name_is_ref {
+                    any_ref = true;
+                    flush_text_run!(i);
+                    // Create the ENTITY_REF node (upstream xmlNodeParseAttValue
+                    // general-entity branch; the node borrows the entity's
+                    // content and links it as its only child).
+                    let name = &bytes[i + 1..j];
+                    let mut name_c = name.to_vec();
+                    name_c.push(0);
+                    let ent = unsafe {
+                        crate::xml::entities::get_entity(doc, name_c.as_ptr() as *const xmlChar)
+                    };
+                    let node = unsafe {
+                        crate::abi::allocator::xmlMallocZero(core::mem::size_of::<_xmlNode>())
+                            as *mut _xmlNode
+                    };
+                    if !node.is_null() {
+                        unsafe {
+                            (*node).type_ = XML_ENTITY_REF_NODE as c_int;
+                            (*node).name = crate::xml::string::xml_strndup(
+                                name_c.as_ptr() as *const xmlChar,
+                                name.len(),
+                            );
+                            (*node).doc = doc;
+                            (*node).parent = attr as *mut _xmlNode;
+                            if !ent.is_null() {
+                                (*node).content = (*ent).content;
+                                (*node).children = ent as *mut _xmlNode;
+                                (*node).last = ent as *mut _xmlNode;
+                            }
+                            if last.is_null() {
+                                head = node;
+                            } else {
+                                (*last).next = node;
+                                (*node).prev = last;
+                            }
+                            last = node;
+                            crate::abi::data_globals::register_node_hook(node);
+                        }
+                    }
+                    i = j + 1;
+                    run_start = i;
+                    continue;
+                }
+            }
+            i += 1;
+        }
+        flush_text_run!(bytes.len());
+
+        if any_ref && !head.is_null() {
+            unsafe {
+                (*attr).children = head;
+                (*attr).last = last;
+            }
+        } else {
+            // No general reference survived substitution (e.g. `&amp;` only):
+            // a single text node, non-compact because the raw value had a
+            // reference (upstream's dup'd-value text node, R-000120).
+            let text = unsafe { parser_new_text_node(ctxt, value, len, had_ref) };
+            if !text.is_null() {
+                unsafe {
+                    (*text).parent = attr as *mut _xmlNode;
+                    (*text).doc = doc;
+                    (*attr).children = text;
+                    (*attr).last = text;
+                }
+            }
+        }
+    }
     /// Set an attribute on `node` with `len` bytes of value, mirroring
     /// `tree::set_prop` but building the value text node with
     /// `parser_new_text_node` so short attribute values are compact under
@@ -249,7 +396,8 @@ pub(crate) mod default_sax_handler {
     /// `xmlSAX2AttributeNs` builds the value through `xmlNodeParseAttValue`,
     /// which never produces compact text. The candidate's tokenizer decodes
     /// references before this layer, so the signal is carried explicitly and
-    /// forces the non-compact path (R-000120).
+    /// forces the non-compact path (R-000120); surviving general references
+    /// become entity-ref children (`parser_build_attr_children`).
     ///
     /// Returns the attribute, or NULL on failure.
     ///
@@ -344,13 +492,20 @@ pub(crate) mod default_sax_handler {
                         (*attr_mut).children = ptr::null_mut();
                         (*attr_mut).last = ptr::null_mut();
                     }
-                    let text = parser_new_text_node(ctxt, value, value_len as c_int, had_ref);
-                    if !text.is_null() {
+                    // Reference-bearing values build entity-ref children
+                    // (upstream xmlNodeParseAttValue).
+                    if had_ref {
                         let attr_mut = existing;
-                        (*attr_mut).children = text;
-                        (*attr_mut).last = text;
-                        (*text).parent = existing as *mut _xmlNode;
-                        (*text).doc = (*ctxt).myDoc;
+                        parser_build_attr_children(ctxt, attr_mut, value, value_len as c_int, true);
+                    } else {
+                        let text = parser_new_text_node(ctxt, value, value_len as c_int, false);
+                        if !text.is_null() {
+                            let attr_mut = existing;
+                            (*attr_mut).children = text;
+                            (*attr_mut).last = text;
+                            (*text).parent = existing as *mut _xmlNode;
+                            (*text).doc = (*ctxt).myDoc;
+                        }
                     }
                     return existing;
                 }
@@ -382,12 +537,19 @@ pub(crate) mod default_sax_handler {
             // zero-initialised value (0) for instance attributes; the
             // XML_ATTRIBUTE_* values are used by DTD attribute declarations.
 
-            let text = parser_new_text_node(ctxt, value, value_len as c_int, had_ref);
-            if !text.is_null() {
-                (*attr).children = text;
-                (*attr).last = text;
-                (*text).parent = attr as *mut _xmlNode;
-                (*text).doc = (*ctxt).myDoc;
+            // Reference-bearing values build entity-ref children (upstream
+            // xmlSAX2AttributeNs -> xmlNodeParseAttValue, gh19612); a plain
+            // value is a single (possibly compact) text node.
+            if had_ref {
+                parser_build_attr_children(ctxt, attr, value, value_len as c_int, true);
+            } else {
+                let text = parser_new_text_node(ctxt, value, value_len as c_int, false);
+                if !text.is_null() {
+                    (*attr).children = text;
+                    (*attr).last = text;
+                    (*text).parent = attr as *mut _xmlNode;
+                    (*text).doc = (*ctxt).myDoc;
+                }
             }
 
             // Add to the node's property list.
