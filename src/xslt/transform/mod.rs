@@ -127,9 +127,9 @@ pub const XSLT_STATE_ERROR: c_int = 1;
 pub const XSLT_STATE_STOPPED: c_int = 2;
 
 /// Maximum template recursion depth (upstream `xsltMaxDepth`, transform.c).
-/// Default 30000 (upstream xslt.c).
+/// Default 3000 (upstream transform.c `int xsltMaxDepth = 3000`).
 #[no_mangle]
-pub static mut xsltMaxDepth: c_int = 30000;
+pub static mut xsltMaxDepth: c_int = 3000;
 
 /// Maximum number of variables/params (upstream `xsltMaxVars`, transform.c).
 #[no_mangle]
@@ -3511,8 +3511,9 @@ mod tests {
     fn test_end_to_end_simplified_stylesheet() {
         unsafe {
             // A simplified stylesheet: a literal <html> element with an
-            // implicit template matching "/".
-            let xsl = b"<?xml version=\"1.0\"?><html xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"><body><p>Hello</p></body></html>\0";
+            // implicit template matching "/" (and the required
+            // xsl:version attribute).
+            let xsl = b"<?xml version=\"1.0\"?><html xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xsl:version=\"1.0\"><body><p>Hello</p></body></html>\0";
             let style = crate::xslt::stylesheet::xsltParseStylesheetMemory(
                 xsl.as_ptr() as *const c_char,
                 (xsl.len() - 1) as c_int,

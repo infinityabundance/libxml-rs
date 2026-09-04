@@ -149,6 +149,25 @@ pub unsafe fn compile(style: *mut _xsltStylesheet, doc: *mut _xmlDoc) -> c_int {
             // literal_result = 1, which disables the preproc parent-context
             // checks).
             (*style).literal_result = 1;
+            // UPSTREAM-PARITY (xslt.c xsltParseStylesheetProcess 1.1.42): a
+            // simplified stylesheet root must carry an `xsl:version`
+            // attribute; without it the document is not a stylesheet.
+            let xslt_ns = b"http://www.w3.org/1999/XSL/Transform\0";
+            let version_attr = crate::xml::tree::has_ns_prop(
+                root,
+                c"version".as_ptr() as *const xmlChar,
+                xslt_ns.as_ptr() as *const xmlChar,
+            );
+            if version_attr.is_null() {
+                crate::xslt::errors::xsltTransformError(
+                    ptr::null_mut(),
+                    style,
+                    root,
+                    c"xsltParseStylesheetProcess : document is not a stylesheet\n".as_ptr()
+                        as *const c_char,
+                );
+                return -1;
+            }
             compile_simplified(style, root);
         }
     }
@@ -323,6 +342,31 @@ unsafe fn doc_URL(doc: *mut _xmlDoc) -> *const xmlChar {
     (*doc).URL
 }
 
+/// Resolve an `xsl:include`/`xsl:import` href against the stylesheet
+/// document's base URI (upstream imports.c xsltParseStylesheetImport /
+/// xsltParseStylesheetInclude: `xmlNodeGetBase(style->doc, cur)` then
+/// `xmlBuildURI(uriRef, base)`). Returns owned bytes of the href when no
+/// base resolves it.
+///
+/// # SAFETY
+///
+/// - `style` and `href` must be valid pointers.
+unsafe fn resolve_style_href(style: *mut _xsltStylesheet, href: *const xmlChar) -> Vec<u8> {
+    let href_bytes =
+        core::slice::from_raw_parts(href, libc::strlen(href as *const libc::c_char) as usize)
+            .to_vec();
+    let base = if !(*style).doc.is_null() && !(*(*style).doc).URL.is_null() {
+        let len = libc::strlen((*(*style).doc).URL as *const libc::c_char) as usize;
+        Some(core::slice::from_raw_parts((*(*style).doc).URL, len).to_vec())
+    } else {
+        None
+    };
+    match base {
+        Some(b) => crate::xml::uri::resolve_uri(&b, &href_bytes).unwrap_or(href_bytes),
+        None => href_bytes,
+    }
+}
+
 /// Compile the top-level elements of a stylesheet.
 ///
 /// # SAFETY
@@ -340,7 +384,13 @@ pub(crate) unsafe fn compile_top_level(
         if is_xslt_element(child, "import") {
             let href = get_prop(child, c"href".as_ptr() as *const xmlChar);
             if !href.is_null() {
-                let imported = crate::xslt::stylesheet::xsltParseStylesheetFile(href);
+                // UPSTREAM-PARITY (imports.c): resolve against the
+                // stylesheet base URI, not the process CWD.
+                let resolved = resolve_style_href(style, href);
+                let mut c = resolved;
+                c.push(0);
+                let imported =
+                    crate::xslt::stylesheet::xsltParseStylesheetFile(c.as_ptr() as *const xmlChar);
                 if !imported.is_null() {
                     (*imported).parent = style;
                     (*imported).next = (*style).imports;
@@ -372,7 +422,14 @@ pub(crate) unsafe fn compile_top_level(
             Some("include") => {
                 let href = get_prop(child, c"href".as_ptr() as *const xmlChar);
                 if !href.is_null() {
-                    let included = crate::xslt::stylesheet::xsltParseStylesheetFile(href);
+                    // UPSTREAM-PARITY (imports.c): resolve against the
+                    // stylesheet base URI, not the process CWD.
+                    let resolved = resolve_style_href(style, href);
+                    let mut c = resolved;
+                    c.push(0);
+                    let included = crate::xslt::stylesheet::xsltParseStylesheetFile(
+                        c.as_ptr() as *const xmlChar
+                    );
                     if !included.is_null() {
                         // Compile the included stylesheet's top-level
                         // elements at the same depth.
@@ -1495,10 +1552,20 @@ mod tests {
     #[test]
     fn test_compile_simplified_stylesheet() {
         unsafe {
-            // A simplified stylesheet: literal result element <html>.
-            let doc = new_doc(c"1.0".as_ptr() as *const xmlChar);
-            let root = new_node(ptr::null_mut(), c"html".as_ptr() as *const xmlChar);
-            doc_set_root_element(doc, root);
+            // A simplified stylesheet: literal result element <html> with the
+            // required xsl:version attribute (upstream xslt.c
+            // xsltParseStylesheetProcess rejects simplified roots without it).
+            let xsl = b"<?xml version=\"1.0\"?><html xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xsl:version=\"1.0\"><body></body></html>\0";
+            let doc = crate::abi::exports_xml2::xmlReadMemory(
+                xsl.as_ptr() as *const c_char,
+                (xsl.len() - 1) as c_int,
+                ptr::null(),
+                ptr::null(),
+                0,
+            );
+            assert!(!doc.is_null());
+            let root = doc_get_root_element(doc);
+            assert!(!root.is_null());
             let style =
                 libc::calloc(1, core::mem::size_of::<_xsltStylesheet>()) as *mut _xsltStylesheet;
             let ret = compile(style, doc);

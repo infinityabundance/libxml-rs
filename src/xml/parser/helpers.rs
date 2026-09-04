@@ -423,6 +423,19 @@ pub(crate) unsafe fn input_from_file(filename: *const c_char) -> Result<InputBuf
     // SAFETY: Caller guarantees `filename` is a valid null-terminated C string.
     let path = unsafe { CStr::from_ptr(filename) };
     let path_str = path.to_str().map_err(|_| ())?;
+    // UPSTREAM-PARITY (xmlIO.c xmlFileOpen / xmlParserInputBufferCreateFilename):
+    // a file:// URI opens through the plain-file path; strip the scheme and
+    // any authority component so the OS open sees a local path.
+    let path_str = if let Some(rest) = path_str.strip_prefix("file://") {
+        match rest.find('/') {
+            Some(idx) => &rest[idx..],
+            None => "/",
+        }
+    } else if let Some(rest) = path_str.strip_prefix("file:") {
+        rest
+    } else {
+        path_str
+    };
     InputBuffer::from_file(path_str).map_err(|_| ())
 }
 

@@ -290,6 +290,11 @@ pub unsafe extern "C" fn xsltParseStylesheetDoc(doc: *mut _xmlDoc) -> *mut _xslt
     // Compile the stylesheet (the compiler stores doc in style->doc).
     let ret = crate::xslt::compiler::compile(style, doc);
     if ret != 0 {
+        // UPSTREAM-PARITY (xslt.c xsltParseStylesheetDoc): on failure the
+        // stylesheet is freed but the DOCUMENT IS NOT — the caller (e.g.
+        // PHP's XSLTProcessor::importStylesheet) keeps ownership of the
+        // clone and releases it itself.
+        (*style).doc = ptr::null_mut();
         xsltFreeStylesheet(style);
         return ptr::null_mut();
     }
@@ -329,8 +334,10 @@ pub unsafe extern "C" fn xsltParseStylesheetFile(filename: *const xmlChar) -> *m
     }
     let style = xsltParseStylesheetDoc(doc);
     if style.is_null() {
-        // xsltParseStylesheetDoc consumes the doc even on failure; but if
-        // it returned null it freed the doc. Do not double-free.
+        // The document was parsed here, so this path owns it: on failure
+        // xsltParseStylesheetDoc leaves the doc untouched (the caller
+        // releases it), so free it here.
+        free_doc(doc);
         return ptr::null_mut();
     }
     style
@@ -507,6 +514,9 @@ pub unsafe extern "C" fn xsltParseStylesheetMemory(
     }
     let style = xsltParseStylesheetDoc(doc);
     if style.is_null() {
+        // The document was parsed here, so this path owns it; on failure
+        // xsltParseStylesheetDoc leaves the doc untouched.
+        free_doc(doc);
         return ptr::null_mut();
     }
     style

@@ -371,10 +371,26 @@ impl Parser {
             Token::At => true,
             Token::Star => true,
             // Name that could be a step (not followed by '(' which means function call)
-            Token::Name(_) => {
+            Token::Name(ref n) => {
                 // Check if this is followed by :: (axis), /, //, [, or is a simple step
                 let next = self.peek();
-                !matches!(next, Token::LParen)
+                if matches!(next, Token::LParen) {
+                    // UPSTREAM-PARITY (xpath.c xmlXPathCompPathExpr): a name
+                    // followed by '(' is only a function call for
+                    // non-node-type names; node/text/comment/
+                    // processing-instruction are node-type tests that BEGIN a
+                    // location path (an expression-initial `node()` was
+                    // previously misparsed as a function call, making
+                    // apply-templates select="node()|@*" fail with
+                    // "Unregistered function: node").
+                    !n.contains(':')
+                        && matches!(
+                            n.as_str(),
+                            "node" | "text" | "comment" | "processing-instruction"
+                        )
+                } else {
+                    true
+                }
             }
             // Axis keywords
             Token::Child
