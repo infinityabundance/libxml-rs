@@ -994,3 +994,36 @@ xmlreader 8 | xsl 16 | simplexml 1 | xmlwriter 1.
     HTML textContent/doctype serialization, entity/notation delayed_freeing,
     modern/html + token entities), xmlreader 8, xsl 16, simplexml 1,
     xmlwriter 1.
+
+Phase 14.10 — html id registration + nameless doctype + NOIMPLIED/NODEFDTD
+(2026-09-04; commit 225a7cd4; receipt php-14-10-htmlid-doctype-20260904/):
+full suite 64 -> 57, ZERO regressions (name-level diff vs the 64 baseline:
+NEW_ONLY=0, FIXED=7). Log: phpbuild-c:/out/xpe-six25.log. dom 38 -> 31 |
+xmlreader 8 | xsl 16 | simplexml 1 | xmlwriter 1.
+  - html tree builder attached attributes BEFORE the node gained its doc
+    pointer, so per-attribute ID registration never ran (and the doc->ids
+    table stayed empty): add tree-order register_html_ids post-pass
+    (is_id/add_id) — getElementById on loadHTML'd docs works
+    (node_textcontent, bug77686, DOMElement_toggleAttribute).
+  - explicit <html>/<head>/<body> SOURCE tags dropped their attributes
+    (skeleton branches returned before attaching): attach_attrs wired into
+    the create branches (bug77686 needed <body id="x">).
+  - nameless `<!DOCTYPE>` produced the DEFAULT HTML4 DTD (doctype->name
+    "html"); upstream htmlParseDocTypeDecl fires internalSubset with a NULL
+    name. parse_html_doctype_decl returns the empty-name case and
+    create_int_subset receives NULL (bug78025, gh17500 — saveHTML
+    "<!DOCTYPE >" oracle-identical).
+  - HTML_PARSE_NOIMPLIED + HTML_PARSE_NODEFDTD were ignored (bug76285):
+    implied html/head/body skeletons and the default HTML4 DTD are now
+    suppressed; top-level content attaches to the document; source head/body
+    without an html parent become document children.
+  - flipped: bug76285, bug77686, bug78025, gh17500, node_textcontent,
+    DOMElement_toggleAttribute, bug78221 (+ HTMLCollection_named_reads in
+    isolated run only — order-dependent in the full suite, tracked).
+  - guards: cargo test --lib 1241/1 ignored; fmt clean; targeted phpt runs
+    incl. dom005, gh15670, gh17397, gh19612 all green.
+  - residuals next: dom 31 (memory-abort family: adoptNode,
+    insertAdjacentElement, replaceChildren, saveXML_XML_SAVE_NO_DECL,
+    bug79968, liveness_xinclude, gh14702; C14N pair; entity/notation
+    family; html textContent/serialize ns family), xmlreader 8, xsl 16,
+    simplexml 1, xmlwriter 1.
