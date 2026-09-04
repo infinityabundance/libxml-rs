@@ -2569,18 +2569,55 @@ impl XmlParser {
         }
     }
 
-    /// Parse one element: its start tag, content, and end — the recursive
-    /// descent of the engine. This wrapper is deliberately SLIM
-    /// (SP-14.3.1-7 / bug65236 stack-safety): the heavy start-tag
-    /// processing lives in `parse_element_start` (whose large locals die
-    /// before any recursion) and the element-content loop lives in
-    /// `parse_element_content`, so a deeply nested document recurses through
-    /// only (wrapper + content-loop) frames per level instead of through the
-    /// giant monolithic frame the start-tag locals used to keep alive across
-    /// the whole subtree parse. Upstream xmlParseChunk drives the same work
-    /// through the iterative xmlParseTryOrFinish state machine; the
-    /// candidate's recursive descent must therefore keep its per-level
-    /// stack bounded.
+    /// Run the element-close sequence for `open`: the end-element SAX event
+    /// (the default SAX handler pops nodeTab/nodeNr internally), the pop of
+    /// the element's own namespace declarations from the parser-scoped stack,
+    /// and the pop of the element name (upstream xmlParseElementEnd).
+    fn close_open_element(&mut self, open: &OpenElement) {
+        self.sax_end_element(&open.name);
+        self.ns_scope.truncate(open.ns_scope_mark);
+        self.pop_name();
+    }
+
+    /// Close the CURRENT element and resume its parent's content loop.
+    /// Returns `true` when the element that closed was the ROOT of this
+    /// parse_element call (the subtree parse is complete and the caller
+    /// should return Ok); `false` when a parent frame was resumed.
+    fn close_element_and_resume(
+        &mut self,
+        cur: &mut OpenElement,
+        stack: &mut Vec<OpenElement>,
+    ) -> bool {
+        self.close_open_element(cur);
+        match stack.pop() {
+            Some(parent) => {
+                *cur = parent;
+                false
+            }
+            None => true,
+        }
+    }
+
+    /// Parse one element: its start tag, content, and end.
+    ///
+    /// # Iterative element driver (R-000199)
+    ///
+    /// This is the engine's element-content descent. Upstream xmlParseChunk
+    /// drives the identical work through the ITERATIVE xmlParseTryOrFinish
+    /// state machine (no per-element C recursion), so the oracle parses
+    /// depth-20000 documents on a 1MB stack. The candidate used to recurse
+    /// `parse_element -> parse_element_content -> parse_element` per nesting
+    /// level (~3.3KB/level at the -O0 dev profile: depth 4000 SEGFAULTed on
+    /// the 8MB php stack where the oracle parses 20000+).
+    ///
+    /// The content loop below therefore processes ONE element at a time with
+    /// an EXPLICIT heap stack of open-element frames: a nested start tag
+    /// pushes the current element and switches to the child (no C-stack
+    /// growth), and an end tag closes the current element and resumes the
+    /// parent's loop. Every branch is a verbatim continuation of the old
+    /// `parse_element_content` body — the SAX/name/namespace push/pop order
+    /// (and each error path's pop behavior) is unchanged, so observable
+    /// behavior is identical at every depth.
     fn parse_element(
         &mut self,
         name: Vec<u8>,
@@ -2592,19 +2629,307 @@ impl XmlParser {
     ) -> Result<(), ()> {
         let open =
             self.parse_element_start(name, attributes, attr_end, attr_start, end_pos, empty)?;
-        if !open.empty {
-            self.parse_element_content(&open.name, open.open_line)?;
+        if open.empty {
+            self.close_open_element(&open);
+            return Ok(());
         }
 
-        // Fire endElement SAX event (the default SAX handler pops
-        // nodeTab/nodeNr internally), pop the element's own namespace
-        // declarations from the parser-scoped stack, and pop the element
-        // name — the close sequence the monolithic body ran after its
-        // content loop (SP-14.3.1-7).
-        self.sax_end_element(&open.name);
-        self.ns_scope.truncate(open.ns_scope_mark);
-        self.pop_name();
-        Ok(())
+        // Explicit open-element frames (the former C-stack recursion levels).
+        // Each frame is an OpenElement whose `empty` is false (only non-empty
+        // elements are pushed).
+        let mut stack: Vec<OpenElement> = Vec::new();
+        let mut cur = open;
+        loop {
+            // UPSTREAM-PARITY: catastrophic errors (RESOURCE_LIMIT /
+            // ENTITY_LOOP) set disableSAX = 2, which really stops the
+            // parser. Each open level breaks its own content loop in turn
+            // (the recursive version did the same at its loop top), closing
+            // its element, until the stack empties.
+            if unsafe { (*self.ctxt).disableSAX } == 2 {
+                if self.close_element_and_resume(&mut cur, &mut stack) {
+                    return Ok(());
+                }
+                continue;
+            }
+            let next = self.tokenizer.next_token_raw();
+            self.raise_pending_errors();
+            match next {
+                XmlToken::EndTag {
+                    name: end_name,
+                    unterminated,
+                    ..
+                } => {
+                    // An end tag cut off by the end of the currently
+                    // available input (chunk boundary): in an incremental
+                    // probe this pauses — the tag may complete on a
+                    // later push call — and never delivers (SP-14.3.1-3).
+                    if unterminated && self.probe {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
+                    // Check for matching end tag. When the end tag names
+                    // a DIFFERENT element, upstream xmlParseElementEnd /
+                    // xmlParseEndTag2 (2.15) does not stop the parse: it
+                    // reports XML_ERR_TAG_NAME_MISMATCH (76, FATAL) and
+                    // closes the CURRENT open element as if its own end
+                    // tag had appeared (the stray name only feeds the
+                    // message), then keeps scanning — subsequent
+                    // structural errors are reported too
+                    // (DOMDocument_loadXML_error1_gte2_12 reports a
+                    // second mismatch later in the document). Closing the
+                    // current element is recovery-independent: the error
+                    // clears wellFormed, which decides whether the doc is
+                    // kept, not whether scanning continues.
+                    if end_name.as_slice() != cur.name.as_slice() {
+                        // UPSTREAM-PARITY (xmlParseEndTag2):
+                        // XML_ERR_TAG_NAME_MISMATCH (76), FATAL,
+                        // str1 = open name, str2 = close name,
+                        // int1 = open line. Upstream consumes the end
+                        // tag's `>` (NEXT1) BEFORE this raise, so
+                        // ctxt->input sits on the end tag's own line
+                        // when the generic error handler fires — PHP
+                        // prints ctxt->input->line, so the mirror must
+                        // be refreshed first (a broken start tag can
+                        // leave the tokenizer scanning silently across
+                        // many lines with no SAX event in between,
+                        // DOMDocument_loadXML_error2_gte2_12's line 7).
+                        self.sync_input_position();
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_TAG_NAME_MISMATCH,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            format!(
+                                "Opening and ending tag mismatch: {} line {} and {}\n",
+                                String::from_utf8_lossy(&cur.name),
+                                cur.open_line,
+                                String::from_utf8_lossy(&end_name)
+                            ),
+                            Some(cur.name.clone()),
+                            Some(end_name.clone()),
+                            None,
+                            cur.open_line as c_int,
+                        );
+                        // The stray end tag closes the current element:
+                        // fall through to the normal end-element path
+                        // (SAX end event + pop) and let the parent's
+                        // content loop continue after this end tag.
+                    }
+                    // Matched or stray end tag: the current element
+                    // closed — close it and resume the parent's content
+                    // loop (or finish when it was the root).
+                    if self.close_element_and_resume(&mut cur, &mut stack) {
+                        return Ok(());
+                    }
+                }
+                XmlToken::StartTag {
+                    name: child_name,
+                    attributes: child_attrs,
+                    attr_end: child_attr_end,
+                    attr_start: child_attr_start,
+                    end_pos: child_end_pos,
+                    empty: child_empty,
+                    unterminated,
+                } => {
+                    if unterminated {
+                        // Errors (incl. "Couldn't find end of Start Tag")
+                        // were already raised; the child element FAILED
+                        // to start (upstream xmlParseElementStart
+                        // returned -1 — an unquoted/duplicate/invalid
+                        // attribute construct, an over-long name, or a
+                        // tag truncated by EOF). The construct may
+                        // continue on a later push call: probes and
+                        // eager-partial deliveries must not deliver.
+                        if self.probe || self.partial_delivery {
+                            self.truncated_abort = true;
+                            return Err(());
+                        }
+                        // UPSTREAM-PARITY (2.15 xmlParseContentInternal):
+                        // a failed child start tag never opens an
+                        // element — the parse simply continues scanning
+                        // in the CURRENT element's content, so later
+                        // structural errors (e.g. the stray end tag that
+                        // closes this element) are still reported
+                        // (DOMDocument_load_error2_gte2_12's fourth
+                        // warning). No name was pushed for the child, so
+                        // nothing is popped.
+                        continue;
+                    }
+                    // Open the child element: heavy start-tag processing
+                    // (SAX start event, name push, ns-scope mark).
+                    let child = self.parse_element_start(
+                        child_name,
+                        child_attrs,
+                        child_attr_end,
+                        child_attr_start,
+                        child_end_pos,
+                        child_empty,
+                    )?;
+                    if child.empty {
+                        // Self-closed `<a/>`: the close sequence runs
+                        // immediately (the recursive version did the
+                        // same inside the child's parse_element), and
+                        // the CURRENT element's content loop continues.
+                        self.close_open_element(&child);
+                        continue;
+                    }
+                    // Non-empty child: descend one level — push the
+                    // current element and parse the child as the new
+                    // current element (no C-stack growth: the explicit
+                    // stack holds the open frames).
+                    stack.push(cur);
+                    cur = child;
+                }
+                XmlToken::Characters(data) => {
+                    if !data.is_empty() {
+                        // UPSTREAM-PARITY (parser.c xmlCharacters): with
+                        // XML_PARSE_NOBLANKS (keepBlanks == 0) a
+                        // whitespace-only run is dropped before the SAX
+                        // characters event fires.
+                        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
+                        if keep_blanks
+                            || !data
+                                .iter()
+                                .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
+                        {
+                            self.sax_characters(&data);
+                        }
+                    }
+                }
+                XmlToken::Comment { data, unterminated } => {
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        // See parse_prolog's Comment arm (SP-14.3.1-8).
+                        self.truncated_abort = true;
+                        self.pop_name();
+                        return Err(());
+                    }
+                    self.sax_comment(&data);
+                }
+                XmlToken::ProcessingInstruction {
+                    target,
+                    data,
+                    unterminated,
+                    ..
+                } => {
+                    // See parse_prolog's PI arm (KEY-3): an unterminated
+                    // PI (no `?>`) pauses in probes; the element itself
+                    // stays open (only the PI is incomplete).
+                    if unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        return Err(());
+                    }
+                    self.sax_pi(&target, &data);
+                }
+                XmlToken::Cdata {
+                    data, unterminated, ..
+                } => {
+                    if unterminated {
+                        // "Premature end of data in CDATA section" was
+                        // already recorded; the CDATA content is dropped.
+                        // The section may continue on a later push call:
+                        // probes and eager-partial deliveries must not
+                        // deliver.
+                        if self.probe || self.partial_delivery {
+                            self.truncated_abort = true;
+                        }
+                        self.pop_name();
+                        return Err(());
+                    }
+                    self.sax_cdata(&data);
+                }
+                XmlToken::Reference(data) => {
+                    self.parse_reference(&data)?;
+                }
+                XmlToken::Eof => {
+                    // UPSTREAM-PARITY (xmlParseElement /
+                    // xmlParseContentInternal): EOF inside an open
+                    // element raises "Premature end of data in tag %s
+                    // line %d" (77) BEFORE recovery closes the element —
+                    // recovery only decides whether parsing continues,
+                    // not whether the diagnostic fires (ext/simplexml +
+                    // ext/dom xml_parsing_LIBXML_RECOVER expect the same
+                    // warning block as the non-recover case). The raise
+                    // is skipped only when a prior fatal already reported
+                    // the real cause (wellFormed == 0). In an incremental
+                    // probe (or eager-partial delivery) the end of the
+                    // currently available input inside an open element
+                    // pauses the parse (more data may complete it later;
+                    // SP-14.3.1-6).
+                    if self.probe || self.partial_delivery {
+                        self.paused = true;
+                        return Err(());
+                    }
+                    if unsafe { (*self.ctxt).wellFormed } != 0 {
+                        self.raise_error_now(
+                            XML_FROM_PARSER,
+                            XML_ERR_TAG_NOT_FINISHED,
+                            xmlErrorLevel::XML_ERR_FATAL as c_int,
+                            format!(
+                                "Premature end of data in tag {} line {}\n",
+                                String::from_utf8_lossy(&cur.name),
+                                cur.open_line
+                            ),
+                            Some(cur.name.clone()),
+                            None,
+                            None,
+                            cur.open_line as c_int,
+                        );
+                    }
+                    if self.is_recovery() {
+                        // Recovery closes the open element (each open
+                        // level in turn reports/recovers the same way on
+                        // its own Eof).
+                        if self.close_element_and_resume(&mut cur, &mut stack) {
+                            return Ok(());
+                        }
+                        continue;
+                    }
+                    self.pop_name();
+                    return Err(());
+                }
+                XmlToken::DocType {
+                    unterminated: dt_unterminated,
+                    ..
+                } => {
+                    // KEY-2 (content-`<!`-markup rule): a `<!DOCTYPE` in
+                    // element content is an invalid element start —
+                    // upstream xmlParseStartTag fails the name at the
+                    // '!' with XML_ERR_NAME_REQUIRED (68) and the doc
+                    // becomes not well-formed (a DOCTYPE is only legal in
+                    // the prolog). A body still truncated by the end of
+                    // the available input pauses in probes (it may
+                    // complete on a later push call — and would still be
+                    // illegal here).
+                    if dt_unterminated && (self.probe || self.partial_delivery) {
+                        self.truncated_abort = true;
+                        self.pop_name();
+                        return Err(());
+                    }
+                    self.raise_error_now(
+                        XML_FROM_PARSER,
+                        XML_ERR_NAME_REQUIRED,
+                        xmlErrorLevel::XML_ERR_FATAL as c_int,
+                        "StartTag: invalid element name\n".to_string(),
+                        None,
+                        None,
+                        None,
+                        0,
+                    );
+                    self.pop_name();
+                    return Err(());
+                }
+                _ => {
+                    // Ignore unexpected tokens in recovery mode
+                    if !self.is_recovery() {
+                        self.set_error(
+                            XML_ERR_INTERNAL_ERROR,
+                            "Unexpected token in element content",
+                        );
+                        self.pop_name();
+                        return Err(());
+                    }
+                }
+            }
+        }
     }
 
     /// Process one element's START TAG: attribute substitution and namespace
@@ -3060,284 +3385,6 @@ impl XmlParser {
             ns_scope_mark,
             empty,
         })
-    }
-
-    /// Drive one element's CONTENT until its matching end tag (or a fatal
-    /// error): the token loop that used to live inline in the monolithic
-    /// `parse_element`. Keeping it separate from the heavy start-tag
-    /// processing bounds the per-nesting-level recursion stack — the loop
-    /// holds only the current element's name/line while a nested element is
-    /// parsed by the slim `parse_element` wrapper (SP-14.3.1-7, bug65236).
-    ///
-    /// Returns `Ok(())` when the element closed; the close sequence (SAX
-    /// end event, namespace-scope pop, name pop) runs in the caller.
-    /// Returns `Err(())` on a fatal error, after the same pops the
-    /// monolithic body performed before propagating.
-    fn parse_element_content(&mut self, name: &[u8], open_line: usize) -> Result<(), ()> {
-        loop {
-            // UPSTREAM-PARITY: catastrophic errors (RESOURCE_LIMIT /
-            // ENTITY_LOOP) set disableSAX = 2, which really stops the
-            // parser.
-            if unsafe { (*self.ctxt).disableSAX } == 2 {
-                break;
-            }
-            let next = self.tokenizer.next_token_raw();
-            self.raise_pending_errors();
-            match next {
-                XmlToken::EndTag {
-                    name: end_name,
-                    unterminated,
-                    ..
-                } => {
-                    // An end tag cut off by the end of the currently
-                    // available input (chunk boundary): in an incremental
-                    // probe this pauses — the tag may complete on a
-                    // later push call — and never delivers (SP-14.3.1-3).
-                    if unterminated && self.probe {
-                        self.truncated_abort = true;
-                        return Err(());
-                    }
-                    // Check for matching end tag. When the end tag names
-                    // a DIFFERENT element, upstream xmlParseElementEnd /
-                    // xmlParseEndTag2 (2.15) does not stop the parse: it
-                    // reports XML_ERR_TAG_NAME_MISMATCH (76, FATAL) and
-                    // closes the CURRENT open element as if its own end
-                    // tag had appeared (the stray name only feeds the
-                    // message), then keeps scanning — subsequent
-                    // structural errors are reported too
-                    // (DOMDocument_loadXML_error1_gte2_12 reports a
-                    // second mismatch later in the document). Closing the
-                    // current element is recovery-independent: the error
-                    // clears wellFormed, which decides whether the doc is
-                    // kept, not whether scanning continues.
-                    if end_name.as_slice() != name {
-                        // UPSTREAM-PARITY (xmlParseEndTag2):
-                        // XML_ERR_TAG_NAME_MISMATCH (76), FATAL,
-                        // str1 = open name, str2 = close name,
-                        // int1 = open line. Upstream consumes the end
-                        // tag's `>` (NEXT1) BEFORE this raise, so
-                        // ctxt->input sits on the end tag's own line
-                        // when the generic error handler fires — PHP
-                        // prints ctxt->input->line, so the mirror must
-                        // be refreshed first (a broken start tag can
-                        // leave the tokenizer scanning silently across
-                        // many lines with no SAX event in between,
-                        // DOMDocument_loadXML_error2_gte2_12's line 7).
-                        self.sync_input_position();
-                        self.raise_error_now(
-                            XML_FROM_PARSER,
-                            XML_ERR_TAG_NAME_MISMATCH,
-                            xmlErrorLevel::XML_ERR_FATAL as c_int,
-                            format!(
-                                "Opening and ending tag mismatch: {} line {} and {}\n",
-                                String::from_utf8_lossy(name),
-                                open_line,
-                                String::from_utf8_lossy(&end_name)
-                            ),
-                            Some(name.to_vec()),
-                            Some(end_name.clone()),
-                            None,
-                            open_line as c_int,
-                        );
-                        // The stray end tag closes the current element:
-                        // fall through to the normal end-element path
-                        // (SAX end event + pop) and let the parent's
-                        // content loop continue after this end tag.
-                        break;
-                    }
-                    break;
-                }
-                XmlToken::StartTag {
-                    name: child_name,
-                    attributes: child_attrs,
-                    attr_end: child_attr_end,
-                    attr_start: child_attr_start,
-                    end_pos: child_end_pos,
-                    empty: child_empty,
-                    unterminated,
-                } => {
-                    if unterminated {
-                        // Errors (incl. "Couldn't find end of Start Tag")
-                        // were already raised; the child element FAILED
-                        // to start (upstream xmlParseElementStart
-                        // returned -1 — an unquoted/duplicate/invalid
-                        // attribute construct, an over-long name, or a
-                        // tag truncated by EOF). The construct may
-                        // continue on a later push call: probes and
-                        // eager-partial deliveries must not deliver.
-                        if self.probe || self.partial_delivery {
-                            self.truncated_abort = true;
-                            return Err(());
-                        }
-                        // UPSTREAM-PARITY (2.15 xmlParseContentInternal):
-                        // a failed child start tag never opens an
-                        // element — the parse simply continues scanning
-                        // in the CURRENT element's content, so later
-                        // structural errors (e.g. the stray end tag that
-                        // closes this element) are still reported
-                        // (DOMDocument_load_error2_gte2_12's fourth
-                        // warning). No name was pushed for the child, so
-                        // nothing is popped.
-                        continue;
-                    }
-                    self.parse_element(
-                        child_name,
-                        child_attrs,
-                        child_attr_end,
-                        child_attr_start,
-                        child_end_pos,
-                        child_empty,
-                    )?;
-                }
-                XmlToken::Characters(data) => {
-                    if !data.is_empty() {
-                        // UPSTREAM-PARITY (parser.c xmlCharacters): with
-                        // XML_PARSE_NOBLANKS (keepBlanks == 0) a
-                        // whitespace-only run is dropped before the SAX
-                        // characters event fires.
-                        let keep_blanks = unsafe { (*self.ctxt).keepBlanks } != 0;
-                        if keep_blanks
-                            || !data
-                                .iter()
-                                .all(|&b| b == b' ' || b == b'\t' || b == b'\n' || b == b'\r')
-                        {
-                            self.sax_characters(&data);
-                        }
-                    }
-                }
-                XmlToken::Comment { data, unterminated } => {
-                    if unterminated && (self.probe || self.partial_delivery) {
-                        // See parse_prolog's Comment arm (SP-14.3.1-8).
-                        self.truncated_abort = true;
-                        self.pop_name();
-                        return Err(());
-                    }
-                    self.sax_comment(&data);
-                }
-                XmlToken::ProcessingInstruction {
-                    target,
-                    data,
-                    unterminated,
-                    ..
-                } => {
-                    // See parse_prolog's PI arm (KEY-3): an unterminated
-                    // PI (no `?>`) pauses in probes; the element itself
-                    // stays open (only the PI is incomplete).
-                    if unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
-                        return Err(());
-                    }
-                    self.sax_pi(&target, &data);
-                }
-                XmlToken::Cdata {
-                    data, unterminated, ..
-                } => {
-                    if unterminated {
-                        // "Premature end of data in CDATA section" was
-                        // already recorded; the CDATA content is dropped.
-                        // The section may continue on a later push call:
-                        // probes and eager-partial deliveries must not
-                        // deliver.
-                        if self.probe || self.partial_delivery {
-                            self.truncated_abort = true;
-                        }
-                        self.pop_name();
-                        return Err(());
-                    }
-                    self.sax_cdata(&data);
-                }
-                XmlToken::Reference(data) => {
-                    self.parse_reference(&data)?;
-                }
-                XmlToken::Eof => {
-                    // UPSTREAM-PARITY (xmlParseElement /
-                    // xmlParseContentInternal): EOF inside an open
-                    // element raises "Premature end of data in tag %s
-                    // line %d" (77) BEFORE recovery closes the element —
-                    // recovery only decides whether parsing continues,
-                    // not whether the diagnostic fires (ext/simplexml +
-                    // ext/dom xml_parsing_LIBXML_RECOVER expect the same
-                    // warning block as the non-recover case). The raise
-                    // is skipped only when a prior fatal already reported
-                    // the real cause (wellFormed == 0). In an incremental
-                    // probe (or eager-partial delivery) the end of the
-                    // currently available input inside an open element
-                    // pauses the parse (more data may complete it later;
-                    // SP-14.3.1-6).
-                    if self.probe || self.partial_delivery {
-                        self.paused = true;
-                        return Err(());
-                    }
-                    if unsafe { (*self.ctxt).wellFormed } != 0 {
-                        self.raise_error_now(
-                            XML_FROM_PARSER,
-                            XML_ERR_TAG_NOT_FINISHED,
-                            xmlErrorLevel::XML_ERR_FATAL as c_int,
-                            format!(
-                                "Premature end of data in tag {} line {}\n",
-                                String::from_utf8_lossy(name),
-                                open_line
-                            ),
-                            Some(name.to_vec()),
-                            None,
-                            None,
-                            open_line as c_int,
-                        );
-                    }
-                    if self.is_recovery() {
-                        break;
-                    }
-                    self.pop_name();
-                    return Err(());
-                }
-                XmlToken::DocType {
-                    unterminated: dt_unterminated,
-                    ..
-                } => {
-                    // KEY-2 (content-`<!`-markup rule): a `<!DOCTYPE` in
-                    // element content is an invalid element start —
-                    // upstream xmlParseStartTag fails the name at the
-                    // '!' with XML_ERR_NAME_REQUIRED (68) and the doc
-                    // becomes not well-formed (a DOCTYPE is only legal in
-                    // the prolog). A body still truncated by the end of
-                    // the available input pauses in probes (it may
-                    // complete on a later push call — and would still be
-                    // illegal here).
-                    if dt_unterminated && (self.probe || self.partial_delivery) {
-                        self.truncated_abort = true;
-                        self.pop_name();
-                        return Err(());
-                    }
-                    self.raise_error_now(
-                        XML_FROM_PARSER,
-                        XML_ERR_NAME_REQUIRED,
-                        xmlErrorLevel::XML_ERR_FATAL as c_int,
-                        "StartTag: invalid element name\n".to_string(),
-                        None,
-                        None,
-                        None,
-                        0,
-                    );
-                    self.pop_name();
-                    return Err(());
-                }
-                _ => {
-                    // Ignore unexpected tokens in recovery mode
-                    if !self.is_recovery() {
-                        self.set_error(
-                            XML_ERR_INTERNAL_ERROR,
-                            "Unexpected token in element content",
-                        );
-                        self.pop_name();
-                        return Err(());
-                    }
-                }
-            }
-        }
-        // The element closed (its matching end tag, a stray end tag that
-        // closed it, or a catastrophic stop): the caller runs the close
-        // sequence (SAX end event, namespace pop, name pop).
-        Ok(())
     }
 
     /// Substitute entity and character references in an attribute value.

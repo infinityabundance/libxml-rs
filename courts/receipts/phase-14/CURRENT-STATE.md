@@ -60,15 +60,20 @@ receipt trail.
   Shift_JIS/EUC-JP handlers close the R-000157 slice; the byte-parity probe
   is byte-identical to the oracle incl. the unmappable → &#NNNN; path
   (receipt php-14-27-writer-encoder-sjis-20260905).
+- 14.28 (iterative element driver): R-000199 FIXED — the recursive
+  parse_element → parse_element_content → parse_element descent became a
+  flat token loop over an explicit heap stack of open-element frames; ext/xml
+  xml_parse now parses depth-100000 crash-free where depth-4000 SEGFAULTed
+  (oracle: 20000); SAX event sequences + DOM serialize + the 2048 tree cap
+  are oracle-identical (receipt php-14-28-iterative-parser-20260905).
 
 ## Register of residuals opened/closed by the court
 
 - R-000198 (FIXED, Phase 14.27): writer output-encoder install — see the
   14.27 receipt; the pristine php phpt stays excluded (its .exp demands an
   empty comment, unsatisfiable by any correct libxml2).
-- R-000199 (OPEN, Phase 14): recursive-descent stack envelope ~3–4k nesting
-  levels at the -O0 dev profile vs upstream's unbounded iterative
-  xmlParseTryOrFinish.
+- R-000199 (FIXED, Phase 14.28): iterative element driver — see the 14.28
+  receipt.
 - R-000177 (OPEN): cross-DSO state partitioning — Phase 14.26 added the
   same-thread cross-DSO loader-slot bridge (dlsym of the core's exported
   `__xml{Parser,Output}BufferCreateFilenameValue` accessor) restoring
@@ -78,12 +83,13 @@ receipt trail.
   (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP) after the native
   windows-1252 (14.20) + Shift_JIS/EUC-JP (14.27) closures.
 - Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000157, R-000168,
-  R-000177, R-000179, R-000199 (5 open).
+  R-000177, R-000179 (4 open).
 
 ## Next
 
-R-000199 (iterative parser driver for unbounded nesting depth) and the
-R-000157 remainder (stateful ISO-2022-JP + the remaining single-byte/UTF-16
-families, or an iconv backend) are the open engine items; Debian
-reverse-dependency court (Phase-14 consumer 4/4) is the next custodian gate.
-See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".
+R-000157 remainder (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16 native
+converters; ISO-2022-JP stateful) is the next engine item; R-000177
+cross-DSO observable-state coherence (the 14.26 bridge extended to the
+remaining per-thread globals) and R-000179 (versioned-distro symbol graph)
+follow; Debian reverse-dependency court (Phase-14 consumer 4/4) is the next
+custodian gate. See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".

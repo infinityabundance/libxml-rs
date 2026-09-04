@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**5 open residuals:** R-000157, R-000168, R-000177, R-000179, R-000199
+**4 open residuals:** R-000157, R-000168, R-000177, R-000179
 
 ## Phase 0 Residuals
 
@@ -1263,18 +1263,20 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 - **Classification:** CANDIDATE_BUG
 - **History:** OPEN 2026-09-04 (Discovered in Phase 14.25 while disposing of the shiftjis .exp case: the candidate writer emitted raw UTF-8 for the Shift_JIS comment while the oracle emitted 0x82 0x9F per U+3041 — a genuine candidate-vs-oracle output divergence hidden by the unsatisfiable .exp. Phase 14.26 (ZTS gate) re-confirmed: the ZTS oracle passes the doctored phpt with real SJIS bytes; the candidate still emits UTF-8.); FIXED 2026-09-05 (Phase 14.27 closure: xmlTextWriterStartDocument now mirrors upstream xmlwriter.c — the declared encoding's handler is resolved via xmlFindCharEncodingHandler and INSTALLED on the output buffer (out->encoder + a 4000-byte conv buffer) before the declaration is written, so comment/text/attribute content is transcoded at output-buffer flush (io::output_buffer_flush converts when ob.encoder is set). An encoding the registry cannot serve returns -1 and writes nothing (upstream unsupported-encoding behavior; php XMLWriter::startDocument -> FALSE). Byte-parity probe (courts/receipts/phase-14/php-14-27-writer-encoder-sjis-20260905/sjis-euc-byte-parity-probe.php) is byte-identical to the oracle for SHIFT_JIS and EUC-JP comment/attr/text output and for the unmappable-character decimal-charref path; the writer encoder path is clean under valgrind. The php .phpt exclusion stays (its .exp demands an empty comment, unsatisfiable by any correct libxml2).)
 
-### R-000199: Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded (OPEN)
+### R-000199: Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded (FIXED)
 
-- **Status:** OPEN
+- **Status:** FIXED (2026-09-05, Phase 14)
 - **Component:** src/xml/parser/state.rs
 - **Surface:** xmlParseChunk / xmlParseDocument nested-element descent (parser.c xmlParseContentInternal vs state.rs parse_element recursion)
 - **Oracle versions:** libxml2 2.15.3 (system)
 - **Root cause:** The candidate parses by recursive descent (parse_element wrapper -> parse_element_content loop -> parse_element for each nested child). Phase 14.25 split the ~8KB monolithic parse_element frame into a slim wrapper + content loop (~3.3KB per level total at the -O0 dev profile), fixing the php-suite depth-1000 crash (bug65236) with 3x margin, but the envelope still caps at ~3-4k nesting levels on an 8MB stack. Upstream xmlParseChunk drives the identical work through the ITERATIVE xmlParseTryOrFinish + ctxt->instate state machine (no per-element recursion): the oracle parses depth-20000 documents on a 1MB stack without issue.
 - **Observable residual:** A consumer parsing an XML document nested deeper than ~3-4k elements segfaults (stack overflow) on the candidate where the oracle succeeds.
+- **Fix:** src/xml/parser/state.rs: parse_element is now an ITERATIVE element driver (R-000199 closure, Phase 14.28): the recursive parse_element -> parse_element_content -> parse_element descent was converted to a flat token loop over an explicit heap stack of open-element frames (each a name/open_line/ns_scope_mark OpenElement). A nested start tag pushes the current frame and switches to the child; an end tag closes the current element (SAX end event + ns-scope truncate + name pop) and resumes the parent's loop. Every branch is a verbatim continuation of the old content loop, so SAX/name/namespace push-pop order and each error path's pop behavior are unchanged. No C-stack growth with nesting depth: ext/xml xml_parse now parses depth-100000 crash-free at the -O0 dev profile where depth-4000 SEGFAULTed before; the oracle (iterative xmlParseTryOrFinish) handles 20000.
 - **Phase 11 triangulation:** Measured in Phase 14.25: candidate depth 3000 passes 8/8, depth 4000 crashes 8/8 (8MB stack); oracle depth 20000 passes on a 1MB stack. Closing requires converting the element-content descent to an explicit/iterative driver (upstream xmlParseTryOrFinish model) - a future implementation work item, not a suite blocker (php max ~1000).
 - **Regression courts:** PARSER.
 - **Evidence:** ['courts/receipts/phase-14/php-14-25-stack-parity-green-20260904/README.md']
 - **Classification:** UNRESOLVED
+- **History:** OPEN 2026-09-04 (Recorded at the 14.25 closure after the parse_element split: the stack envelope is measured, bounded and documented; closure is an explicit iterative-parser conversion work item.); FIXED 2026-09-05 (Phase 14.28 closure evidence: (a) ext/xml xml_parse depth sweep — candidate depth 4000 SEGFAULTed before, now 4000/20000/100000 all parse (rc=0); (b) deep-doc parity probe (courts/receipts/phase-14/php-14-28-iterative-parser-20260905/deep-doc-parity-probe.php) is IDENTICAL to the oracle for depth-5000 SAX event sequence (events=10002, max=5001) and for DOM tree depth-2000 serialize (14027 bytes) and the DOM tree-depth cap at 2048/2049 (ok=false on both — the upstream nodePush cap at 256/2048 [HUGE] is mirrored in sax/default.rs and unchanged); (c) full six-extension php gates NTS + ZTS 0 failed each; (d) cargo test --lib 1247 pass; (e) valgrind 0 errors on a depth-20000 parse.)
 
 ## Classification Legend
 

@@ -3413,7 +3413,7 @@
   },
   {
    "id": "R-000199",
-   "status": "OPEN",
+   "status": "FIXED",
    "phase": "14",
    "title": "Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded",
    "surface": "xmlParseChunk / xmlParseDocument nested-element descent (parser.c xmlParseContentInternal vs state.rs parse_element recursion)",
@@ -3437,8 +3437,15 @@
      "status": "OPEN",
      "date": "2026-09-04",
      "note": "Recorded at the 14.25 closure after the parse_element split: the stack envelope is measured, bounded and documented; closure is an explicit iterative-parser conversion work item."
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-05",
+     "note": "Phase 14.28 closure evidence: (a) ext/xml xml_parse depth sweep \u2014 candidate depth 4000 SEGFAULTed before, now 4000/20000/100000 all parse (rc=0); (b) deep-doc parity probe (courts/receipts/phase-14/php-14-28-iterative-parser-20260905/deep-doc-parity-probe.php) is IDENTICAL to the oracle for depth-5000 SAX event sequence (events=10002, max=5001) and for DOM tree depth-2000 serialize (14027 bytes) and the DOM tree-depth cap at 2048/2049 (ok=false on both \u2014 the upstream nodePush cap at 256/2048 [HUGE] is mirrored in sax/default.rs and unchanged); (c) full six-extension php gates NTS + ZTS 0 failed each; (d) cargo test --lib 1247 pass; (e) valgrind 0 errors on a depth-20000 parse."
     }
-   ]
+   ],
+   "fixed_date": "2026-09-05",
+   "fix": "src/xml/parser/state.rs: parse_element is now an ITERATIVE element driver (R-000199 closure, Phase 14.28): the recursive parse_element -> parse_element_content -> parse_element descent was converted to a flat token loop over an explicit heap stack of open-element frames (each a name/open_line/ns_scope_mark OpenElement). A nested start tag pushes the current frame and switches to the child; an end tag closes the current element (SAX end event + ns-scope truncate + name pop) and resumes the parent's loop. Every branch is a verbatim continuation of the old content loop, so SAX/name/namespace push-pop order and each error path's pop behavior are unchanged. No C-stack growth with nesting depth: ext/xml xml_parse now parses depth-100000 crash-free at the -O0 dev profile where depth-4000 SEGFAULTed before; the oracle (iterative xmlParseTryOrFinish) handles 20000."
   }
  ]
 }
