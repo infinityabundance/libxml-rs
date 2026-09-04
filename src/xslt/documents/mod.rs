@@ -221,6 +221,25 @@ pub unsafe fn xsltLoadDocument(
     cstr.push(0);
     let doc = load_via_loader(ctxt, cstr.as_ptr() as *mut xmlChar);
     if !doc.is_null() {
+        // UPSTREAM-PARITY (documents.c xsltLoadDocument): when
+        // XInclude processing is enabled on the context
+        // (php XSLTProcessor::$doXInclude sets ctxt->xinclude directly), the
+        // loaded document is XInclude-processed with the context's parser
+        // options BEFORE it is cached and returned to the document()
+        // function (xinclude/xinclude: document('data.xml') must substitute
+        // the xi:include from data.xml).
+        if unsafe { (*ctxt).xinclude != 0 } {
+            let options = unsafe { (*ctxt).parserOptions };
+            let xr = crate::abi::exports_xml2::xmlXIncludeProcessFlags(doc, options);
+            if xr < 0 {
+                crate::xslt::errors::xsltTransformError(
+                    ctxt,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    c"xsltLoadDocument: XInclude processing failed\n".as_ptr() as *const c_char,
+                );
+            }
+        }
         cache_store(ctxt, URI, doc);
     }
     doc

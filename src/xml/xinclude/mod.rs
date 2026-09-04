@@ -480,11 +480,17 @@ unsafe fn process_single_include(
     }
 
     // Get the `parse` attribute (default is "xml").
-    let parse_attr = unsafe { tree::get_prop(include_node, ATTR_PARSE.as_ptr() as *const xmlChar) };
+    let mut parse_attr =
+        unsafe { tree::get_prop(include_node, ATTR_PARSE.as_ptr() as *const xmlChar) };
     let is_text_mode = if !parse_attr.is_null() {
         let parse_str = unsafe { xmlstr_to_bytes(parse_attr) };
         let result = parse_str == b"text";
+        // parse_attr is CONSUMED here (freed); the tail cleanup below must
+        // not free it again (the double free corrupted the heap whenever an
+        // xi:include carried a parse attribute — xinclude/xinclude crashed in
+        // xsltLoadDocument's XInclude step under malloc checks).
         allocator::xmlFreeImpl(parse_attr as *mut c_void);
+        parse_attr = ptr::null_mut();
         result
     } else {
         false
