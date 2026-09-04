@@ -1057,3 +1057,42 @@ phpbuild-c:/out/xpe-six26.log. dom 31 | xmlreader 8 | xsl 12 | simplexml 1
     bug79968, liveness_xinclude, gh14702, HTMLDocument_serialize_ns_
     imported_05; entity/notation family; C14N pair; html textContent/
     serialize family), xmlreader 8, xsl 12, simplexml 1, xmlwriter 1.
+
+Phase 14.12 — dom memory/entity/attr-value clusters (2026-09-04; commit
+Phase 14.12 on main; receipt php-14-12-dom-batch-20260904/): full suite
+54 -> 40, ZERO regressions (NEW_ONLY=0, FIXED=14). Log:
+phpbuild-c:/out/xpe-six28.log. dom 31 -> 17 | xsl 13 | xmlreader 8 |
+simplexml 1 | xmlwriter 1.
+  - cross-doc node moves never re-interned dict strings (php >= 2.13
+    relies on the fix living in xmlNodeSetDoc): node_set_doc_impl now
+    mirrors upstream 2.15 xmlNodeSetDoc (name -> new-dict lookup /
+    heap-dup, text/cdata content dup, ID removal from old table, entity
+    ref re-resolve) and engine propagate_doc delegates to it under a
+    doc-change guard. adoptNode / insertAdjacentElement /
+    serialize_ns_imported_05 / gh17145 / HTMLCollection_named_reads fixed.
+  - output_buffer_flush now invokes the write callback even when empty
+    (upstream always does; php smart_str needs the len-0 call so dump
+    helpers return heap "" instead of interned zend_empty_string that
+    RETURN_NEW_STR frees). saveXML_NO_DECL empty doc, saveXML(empty
+    node), replaceChildren, bug79968 fixed.
+  - entity refs: get_entity falls back to predefined for NULL doc;
+    predefined statics made writable (static mut; RELRO had read-only'd
+    them and php's _private store faulted); node_get_content ENTITY_REF
+    = xmlBufGetEntityRefContent (predefined content vs decl child tree,
+    EXPANDING guard); attr reads walk all children.
+    DOMEntityReference_predefined_free, DOMEntity_fields,
+    delayed_freeing pair fixed.
+  - PUBLIC ""/SYSTEM literals keep an allocated empty id
+    (vec_to_cstr_keep_empty); notation decls honor the SYSTEM/PUBLIC
+    keyword (publicId/systemId swap).
+  - attr values referencing internal general entities materialize the
+    decl child tree once (parser_build_attr_children ~ xmlNodeParseAtt-
+    Value; flag convention PARSED=1<<0/EXPANDING=1<<3; children freed at
+    decl teardown). css_selectors/entities + token_list/entities fixed,
+    dom001 stays green.
+  - guards: cargo test --lib 1241/1 ignored; fmt clean; oracle
+    byte-parity probes for attr expansion/round-trip + ref textContent.
+  - residuals next (40): dom 17 (xinclude engine trio, C14N pair,
+    textContent edge pair, html save leftovers, DTDNamedNodeMap,
+    isEqualNode, override_encoding pair, gh21544), xmlreader 8, xsl 13,
+    simplexml 1, xmlwriter 1.
