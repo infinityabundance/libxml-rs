@@ -195,10 +195,12 @@ pub unsafe fn xinclude_process_flags(doc: *mut _xmlDoc, flags: c_int) -> c_int {
         return XINCLUDE_FAILURE;
     }
 
-    // If XML_PARSE_NOXINCNODE is set, we skip processing.
-    if flags & XML_PARSE_NOXINCNODE != 0 {
-        return XINCLUDE_NO_NODES;
-    }
+    // XML_PARSE_NOXINCNODE (0x8000) controls whether XInclude start/end
+    // marker nodes are kept — it does NOT suppress processing (upstream
+    // xmlXIncludeProcessFlags processes and only the tree-level markers
+    // differ). php's DOMDocument::xinclude() always passes NOXINCNODE;
+    // returning early here left every <xi:include> untouched.
+    let _ = flags;
 
     // Track visited URLs to detect circular references.
     let mut visited: Vec<Vec<u8>> = Vec::new();
@@ -429,8 +431,40 @@ unsafe fn process_single_include(
     // Get the `href` attribute.
     let href = unsafe { tree::get_prop(include_node, ATTR_HREF.as_ptr() as *const xmlChar) };
 
+    // Get the `xpointer` attribute (optional).
+    let xpointer_attr =
+        unsafe { tree::get_prop(include_node, ATTR_XPOINTER.as_ptr() as *const xmlChar) };
+
     // If no href, try fallback.
     if href.is_null() {
+        // UPSTREAM-PARITY (xinclude.c xmlXIncludeProcessNode): a bare
+        // `xpointer` attribute (no href) selects the node from the CURRENT
+        // document — bug43364 includes `<xi:include xpointer="xpointer(/root/a)"/>`
+        // against the same tree.
+        if !xpointer_attr.is_null() {
+            let xptr_bytes = unsafe { xmlstr_to_bytes(xpointer_attr) };
+            let xptr_utf8 = match std::str::from_utf8(&xptr_bytes) {
+                Ok(s) => s.to_string(),
+                Err(_) => {
+                    allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
+                    return unsafe { apply_fallback(include_node, doc, visited) };
+                }
+            };
+            allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
+            if let Some(target) = unsafe { xpointer::xptr_eval(&xptr_utf8, doc) } {
+                let copy = unsafe { tree::copy_node(target, 1) };
+                if copy.is_null() {
+                    return unsafe { apply_fallback(include_node, doc, visited) };
+                }
+                unsafe { set_doc_recursive(copy, doc) };
+                unsafe { replace_node_with_content(include_node, copy, doc) };
+                return 1;
+            }
+        } else {
+            if !xpointer_attr.is_null() {
+                allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
+            }
+        }
         return unsafe { apply_fallback(include_node, doc, visited) };
     }
 
@@ -439,6 +473,9 @@ unsafe fn process_single_include(
     // Check for circular reference.
     if visited.iter().any(|v| v.as_slice() == href_str) {
         allocator::xmlFreeImpl(href as *mut c_void);
+        if !xpointer_attr.is_null() {
+            allocator::xmlFreeImpl(xpointer_attr as *mut c_void);
+        }
         return unsafe { apply_fallback(include_node, doc, visited) };
     }
 
@@ -452,10 +489,6 @@ unsafe fn process_single_include(
     } else {
         false
     };
-
-    // Get the `xpointer` attribute (optional).
-    let xpointer_attr =
-        unsafe { tree::get_prop(include_node, ATTR_XPOINTER.as_ptr() as *const xmlChar) };
 
     // Get the `accept` attribute (optional, for content negotiation).
     let accept_attr =

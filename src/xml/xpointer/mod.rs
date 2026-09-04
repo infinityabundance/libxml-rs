@@ -218,9 +218,32 @@ unsafe fn try_eval_scheme(expr: &str, doc: *mut _xmlDoc) -> Option<Option<*mut _
         return Some(unsafe { eval_element_scheme(inner, doc) });
     }
 
+    // `xpointer(...)` scheme: the inner text is an XPath expression
+    // evaluated against the document (bug43364 uses
+    // `xpointer="xpointer(/root/a)"` includes).
+    if let Some(inner) = strip_scheme(expr, "xpointer") {
+        return Some(unsafe { eval_xpointer_scheme(inner, doc) });
+    }
+
     // No known scheme matched; return None to let the caller fall back to
     // shorthand pointer.
     None
+}
+
+/// Evaluate an `xpointer(...)` scheme: run the inner XPath expression against
+/// the document and return the first selected node.
+///
+/// # Safety
+///
+/// - `doc` must be NULL or a valid `_xmlDoc`; the returned node is owned by
+///   the document (borrowed).
+unsafe fn eval_xpointer_scheme(inner: &str, doc: *mut _xmlDoc) -> Option<*mut _xmlNode> {
+    let mut ctx = crate::xml::xpath::context::XPathContext::new(doc);
+    ctx.set_context_node(doc as *mut crate::abi::structs::_xmlNode);
+    match crate::xml::xpath::evaluate_str(inner, &mut ctx) {
+        Some(crate::xml::xpath::types::XPathValue::NodeSet(ns)) => ns.first(),
+        _ => None,
+    }
 }
 
 /// Strip a scheme name and parentheses from the front of `expr`.
