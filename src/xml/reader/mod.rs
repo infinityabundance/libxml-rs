@@ -287,6 +287,19 @@ pub struct XmlTextReader {
     schema: *mut c_void,
     /// RELAX NG schema set via xmlTextReaderRelaxNGSetSchema.
     rng: *mut c_void,
+    /// Whether the reader owns `schema` (file-path xmlTextReaderSchemaValidate
+    /// compiles it; xmlTextReaderSetSchema hands in a caller-owned schema).
+    schema_owned: bool,
+    /// Whether the reader owns `rng` (xmlTextReaderRelaxNGValidate compiles
+    /// it; xmlTextReaderRelaxNGSetSchema hands in a caller-owned schema that
+    /// php_xmlreader keeps and frees itself).
+    rng_owned: bool,
+    /// Last deferred XML Schema validation outcome (1 valid, 0 invalid, -1
+    /// no XSD validation attached). Upstream reader->xsdValidCtxt->valid.
+    xsd_result: c_int,
+    /// Last deferred RELAX NG validation outcome (1 valid, 0 invalid, -1 no
+    /// RELAX NG validation attached). Upstream reader->rngValidCtxt->valid.
+    rng_result: c_int,
     /// Whether the reader owns `doc` (parse paths: yes; walker: no).
     owns_doc: bool,
     /// Upstream `reader->preserve`: xmlTextReaderCurrentDoc sets it, so the
@@ -355,6 +368,10 @@ impl XmlTextReader {
             max_amplification: 0,
             schema: ptr::null_mut(),
             rng: ptr::null_mut(),
+            schema_owned: false,
+            rng_owned: false,
+            xsd_result: -1,
+            rng_result: -1,
             owns_doc: true,
             preserve: false,
             cur_attr_is_ns: false,
@@ -424,6 +441,17 @@ impl XmlTextReader {
             return -1;
         }
 
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderSchemaValidateInternal /
+        // xmlTextReaderRelaxNGValidateInternal): schemas attached before the
+        // first Read() are validated against the document as it streams — the
+        // whole-tree reader runs the equivalent validation right after the
+        // parse, inside this first Read() call, so validity diagnostics are
+        // raised through the global libxml error channel at read time and the
+        // outcome is recorded for xmlTextReaderIsValid.
+        unsafe {
+            self.run_deferred_validation();
+        }
+
         // UPSTREAM-PARITY (xmlreader.c xmlTextReaderRead NODE_IS_PRESERVED
         // pruning): registered preserve-patterns are applied to the parsed
         // tree before events are built — matched nodes and their element
@@ -449,6 +477,78 @@ impl XmlTextReader {
 
         self.parsed = true;
         0
+    }
+
+    /// Run the deferred XML Schema / RELAX NG validation attached through
+    /// xmlTextReaderSchemaValidate / xmlTextReaderRelaxNGValidate /
+    /// xmlTextReaderSetSchema / xmlTextReaderRelaxNGSetSchema before the
+    /// first Read(). Diagnostics are raised through the global libxml error
+    /// channel (exactly the channel upstream's streaming validation uses once
+    /// the reader hits the offending node) and the outcome is recorded for
+    /// xmlTextReaderIsValid.
+    ///
+    /// # SAFETY
+    ///
+    /// - `self.doc` must be a valid parsed document; `self.schema`/`self.rng`
+    ///   must be valid compiled schemas (or NULL).
+    unsafe fn run_deferred_validation(&mut self) {
+        // XML Schema first (upstream checks the RELAX NG plug, then the XSD
+        // plug, in xmlTextReaderIsValid; a reader only carries one of them in
+        // practice).
+        if !self.schema.is_null() {
+            let (valid, errors) = unsafe {
+                crate::xml::schemas::xsd_validate_doc_compiled(self.schema, self.doc, false)
+            };
+            self.xsd_result = if valid { 1 } else { 0 };
+            for msg in errors {
+                self.raise_validation_error(msg, crate::abi::types::XML_FROM_SCHEMASV);
+            }
+        }
+        if !self.rng.is_null() {
+            let (valid, errors) =
+                unsafe { crate::xml::relaxng::rng_validate_doc_compiled(self.rng, self.doc) };
+            self.rng_result = if valid { 1 } else { 0 };
+            for msg in errors {
+                self.raise_validation_error(msg, crate::abi::types::XML_FROM_RELAXNGV);
+            }
+        }
+    }
+
+    /// Raise one validation diagnostic through the global libxml error
+    /// channel. UPSTREAM-PARITY: validity messages end with a newline — PHP's
+    /// libxml error handler only raises messages that carry a trailing
+    /// newline (php_libxml_internal_error_handler_ex), and the message text
+    /// is passed through unmodified (no domain prefix).
+    fn raise_validation_error(&self, msg: String, domain: c_int) {
+        let text = if msg.ends_with('\n') {
+            msg
+        } else {
+            format!("{}\n", msg)
+        };
+        let Ok(cmsg) = std::ffi::CString::new(text) else {
+            return;
+        };
+        // SAFETY: cmsg outlives the call; all other pointers are NULL.
+        unsafe {
+            crate::xml::errors::raise_error(
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                domain,
+                0,
+                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                ptr::null(),
+                0,
+                ptr::null(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                0,
+                cmsg.as_ptr(),
+            );
+        }
     }
 
     /// Apply registered preserve-patterns to the parsed tree (upstream
@@ -1014,9 +1114,19 @@ impl XmlTextReader {
     /// Pointers returned by this method are valid only until the next
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Next(&mut self) -> c_int {
-        if self.state != ReadState::READING || self.cur_node.is_null() {
-            // UPSTREAM-PARITY (xmlTextReaderNext): once the traversal reached
-            // its end (state END), further Next calls return 0 without moving.
+        if self.state == ReadState::ERROR || self.state == ReadState::CLOSED {
+            return -1;
+        }
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderNext): with no current
+        // node (fresh reader — first call — or after the traversal ended) a
+        // Next degrades to a plain xmlTextReaderRead: on a fresh reader this
+        // STARTS the traversal (php gh19098 calls next("sparql") before any
+        // read). The subtree-skip below applies only when the reader sits on
+        // an element start.
+        if self.cur_node.is_null() {
+            return self.Read();
+        }
+        if self.state == ReadState::EOF {
             return 0;
         }
 
@@ -1492,9 +1602,14 @@ impl XmlTextReader {
     }
 
     /// Check if the current element is an empty element (no children).
+    ///
+    /// UPSTREAM-PARITY (xmlreader.c xmlTextReaderIsEmptyElement): with no
+    /// current node (pre-first-Read or after EOF) this returns -1 (error),
+    /// which the PHP consumer turns into its "no XML data has been read yet"
+    /// property error.
     pub fn IsEmptyElement(&self) -> c_int {
         if self.cur_node.is_null() {
-            return 0;
+            return -1;
         }
         // SAFETY: cur_node is valid.
         let etype = unsafe { (*self.cur_node).type_ };
@@ -1524,7 +1639,11 @@ impl XmlTextReader {
     /// Pointers returned by this method are valid only until the next
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn BaseUri(&self) -> *mut xmlChar {
-        // The base URI is typically the document URL.
+        // The base URI is typically the document URL. UPSTREAM-PARITY
+        // (xmlreader.c xmlTextReaderBaseUri): NULL unless a node is current.
+        if self.cur_node.is_null() {
+            return ptr::null_mut();
+        }
         if self.doc.is_null() {
             return ptr::null_mut();
         }
@@ -1641,8 +1760,19 @@ impl XmlTextReader {
     }
 
     /// Get the attribute count of the current element.
+    ///
+    /// UPSTREAM-PARITY (xmlreader.c xmlTextReaderAttributeCount): with no
+    /// current node (pre-first-Read or after EOF) the count is 0, never -1;
+    /// -1 is reserved for a NULL reader. At END_ELEMENT events (and other
+    /// non-element positions) the count is 0 as well.
     pub const fn AttributeCount(&self) -> c_int {
-        self.attribute_count
+        if self.cur_node.is_null() {
+            0
+        } else if self.attribute_count < 0 {
+            0
+        } else {
+            self.attribute_count
+        }
     }
 
     /// Get the read state.
@@ -2066,6 +2196,24 @@ impl Drop for XmlTextReader {
             // SAFETY: ctxt was created by create_parser_ctxt.
             unsafe { free_parser_ctxt(self.ctxt) };
             self.ctxt = ptr::null_mut();
+        }
+
+        // Free compiled schemas the reader owns (xmlTextReaderSchemaValidate /
+        // xmlTextReaderRelaxNGValidate compile them from a file path).
+        // Caller-owned schemas (xmlTextReaderSetSchema /
+        // xmlTextReaderRelaxNGSetSchema) are released by their owner — php
+        // keeps them in intern->schema and frees them on re-set/close.
+        if self.schema_owned && !self.schema.is_null() {
+            // SAFETY: schema was compiled by xmlSchemaParse (Box<XsdSchema>).
+            unsafe { crate::xml::schemas::xmlSchemaFree(self.schema) };
+            self.schema = ptr::null_mut();
+            self.schema_owned = false;
+        }
+        if self.rng_owned && !self.rng.is_null() {
+            // SAFETY: rng was compiled by xmlRelaxNGParse (Box<RelaxNgSchema>).
+            unsafe { crate::xml::relaxng::xmlRelaxNGFree(self.rng) };
+            self.rng = ptr::null_mut();
+            self.rng_owned = false;
         }
     }
 }
@@ -3545,11 +3693,10 @@ pub const unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Upstream `xmlTextReaderIsValid`: returns 1 when a validating parse
-/// finished with ctxt->valid == 1, 0 when no DTD validation was performed
-/// or it failed, and -1 for a NULL reader. (RelaxNG/XSD validation modes
-/// report their own error counts upstream; the candidate covers the DTD
-/// path.)
+/// Upstream `xmlTextReaderIsValid` (xmlreader.c): with a RELAX NG
+/// validation context attached the RELAX NG outcome wins, then the XSD
+/// outcome, then the DTD-parse validity (`ctxt->valid`); 0 when no
+/// validation was performed or it failed, -1 for a NULL reader.
 ///
 /// ```c
 /// int xmlTextReaderIsValid(xmlTextReaderPtr reader);
@@ -3564,8 +3711,23 @@ pub unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_i
         return -1;
     }
     unsafe {
-        if (*reader).did_validate == 1 {
-            (*reader).was_valid
+        let r = &*reader;
+        if !r.rng.is_null() {
+            if r.rng_result >= 0 {
+                r.rng_result
+            } else {
+                // Validation not run yet (schema attached, first Read not
+                // done): upstream's rngValidCtxt->valid starts at 0.
+                0
+            }
+        } else if !r.schema.is_null() {
+            if r.xsd_result >= 0 {
+                r.xsd_result
+            } else {
+                0
+            }
+        } else if r.did_validate == 1 {
+            r.was_valid
         } else {
             0
         }
@@ -5531,7 +5693,15 @@ pub unsafe extern "C" fn xmlTextReaderConstBaseUri(reader: *mut XmlTextReader) -
     if reader.is_null() {
         return ptr::null();
     }
-    unsafe { (*reader).URL }
+    // UPSTREAM-PARITY (xmlreader.c xmlTextReaderConstBaseUri): the base URI
+    // is exposed only once a node is current (upstream `reader->node == NULL`
+    // returns NULL). Pre-first-Read and after EOF the PHP property must read
+    // as the empty string, not the reader's setup URL.
+    let r = unsafe { &*reader };
+    if r.cur_node.is_null() {
+        return ptr::null();
+    }
+    r.URL
 }
 
 /// `const xmlChar *xmlTextReaderConstEncoding(xmlTextReaderPtr reader)`.
@@ -6408,7 +6578,14 @@ pub unsafe extern "C" fn xmlTextReaderSetMaxAmplification(
 }
 
 /// `int xmlTextReaderSchemaValidate(xmlTextReaderPtr reader, const char *xsd)` —
-/// parse `xsd` and validate the reader's document.
+/// parse `xsd` and validate the reader's document as it is processed.
+///
+/// UPSTREAM-PARITY (xmlreader.c xmlTextReaderSchemaValidateInternal):
+/// activation is only possible before the first Read(); the schema is
+/// compiled NOW (a compile failure returns -1, which php reports as
+/// "Schema contains errors") and the document is validated at read time —
+/// validity diagnostics surface on the reader's error channel while
+/// Read() streams, not as this call's return value.
 ///
 /// # SAFETY
 ///
@@ -6418,33 +6595,46 @@ pub unsafe extern "C" fn xmlTextReaderSchemaValidate(
     reader: *mut XmlTextReader,
     xsd: *const c_char,
 ) -> c_int {
-    if reader.is_null() || xsd.is_null() {
+    if reader.is_null() {
         return -1;
     }
-    // Ensure the document is parsed.
-    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
-        unsafe { (*reader).Read() };
-    }
-    let ctxt = crate::xml::schemas::xmlSchemaNewParserCtxt(xsd);
-    if ctxt.is_null() {
+    let r = unsafe { &mut *reader };
+    if r.parsed {
+        // Upstream: only XML_TEXTREADER_MODE_INITIAL readers can activate.
         return -1;
     }
-    let schema = crate::xml::schemas::xmlSchemaParse(ctxt);
+    if xsd.is_null() {
+        // Deactivate validation.
+        if r.schema_owned && !r.schema.is_null() {
+            // SAFETY: schema was compiled by xmlSchemaParse.
+            unsafe { crate::xml::schemas::xmlSchemaFree(r.schema) };
+        }
+        r.schema = ptr::null_mut();
+        r.schema_owned = false;
+        r.xsd_result = -1;
+        return 0;
+    }
+    // Compile the schema now. I/O and well-formedness diagnostics of the
+    // schema document are raised by the parser machinery inside this call
+    // (php prefixes them with XMLReader::setSchema()).
+    let pctxt = crate::xml::schemas::xmlSchemaNewParserCtxt(xsd);
+    if pctxt.is_null() {
+        return -1;
+    }
+    let schema = crate::xml::schemas::xmlSchemaParse(pctxt);
+    crate::xml::schemas::xmlSchemaFreeParserCtxt(pctxt);
     if schema.is_null() {
-        crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
         return -1;
     }
-    let vctxt = crate::xml::schemas::xmlSchemaNewValidCtxt(schema);
-    if vctxt.is_null() {
-        crate::xml::schemas::xmlSchemaFree(schema);
-        crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
-        return -1;
+    // Drop a previously attached reader-owned schema.
+    if r.schema_owned && !r.schema.is_null() {
+        // SAFETY: schema was compiled by xmlSchemaParse.
+        unsafe { crate::xml::schemas::xmlSchemaFree(r.schema) };
     }
-    let ret = crate::xml::schemas::xmlSchemaValidateDoc(vctxt, unsafe { (*reader).doc });
-    crate::xml::schemas::xmlSchemaFreeValidCtxt(vctxt);
-    crate::xml::schemas::xmlSchemaFree(schema);
-    crate::xml::schemas::xmlSchemaFreeParserCtxt(ctxt);
-    ret
+    r.schema = schema;
+    r.schema_owned = true;
+    r.xsd_result = -1;
+    0
 }
 
 /// `int xmlTextReaderSchemaValidateCtxt(xmlTextReaderPtr reader, xmlSchemaValidCtxtPtr ctxt, int options)`.
@@ -6503,7 +6693,16 @@ pub unsafe extern "C" fn xmlTextReaderSetSchema(
         return -1;
     }
     unsafe {
-        (*reader).schema = schema;
+        let r = &mut *reader;
+        // Drop a previously attached reader-owned schema (a caller-owned one
+        // is released by its owner; upstream never frees the passed-in
+        // schema).
+        if r.schema_owned && !r.schema.is_null() && r.schema != schema {
+            crate::xml::schemas::xmlSchemaFree(r.schema);
+        }
+        r.schema = schema;
+        r.schema_owned = false;
+        r.xsd_result = -1;
     }
     0
 }
@@ -6533,32 +6732,44 @@ pub unsafe extern "C" fn xmlTextReaderRelaxNGValidate(
     reader: *mut XmlTextReader,
     rng: *const c_char,
 ) -> c_int {
-    if reader.is_null() || rng.is_null() {
+    if reader.is_null() {
         return -1;
     }
-    if unsafe { (*reader).doc }.is_null() && !unsafe { (*reader).parsed } {
-        unsafe { (*reader).Read() };
-    }
-    let ctxt = crate::xml::relaxng::xmlRelaxNGNewParserCtxt(rng);
-    if ctxt.is_null() {
+    let r = unsafe { &mut *reader };
+    if r.parsed {
+        // Upstream: only XML_TEXTREADER_MODE_INITIAL readers can activate.
         return -1;
     }
-    let schema = crate::xml::relaxng::xmlRelaxNGParse(ctxt);
+    if rng.is_null() {
+        // Deactivate validation.
+        if r.rng_owned && !r.rng.is_null() {
+            // SAFETY: rng was compiled by xmlRelaxNGParse.
+            unsafe { crate::xml::relaxng::xmlRelaxNGFree(r.rng) };
+        }
+        r.rng = ptr::null_mut();
+        r.rng_owned = false;
+        r.rng_result = -1;
+        return 0;
+    }
+    // Compile the schema now (I/O diagnostics of the schema resource are
+    // raised inside this call); validation itself is deferred to read time.
+    let pctxt = crate::xml::relaxng::xmlRelaxNGNewParserCtxt(rng);
+    if pctxt.is_null() {
+        return -1;
+    }
+    let schema = crate::xml::relaxng::xmlRelaxNGParse(pctxt);
+    crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(pctxt);
     if schema.is_null() {
-        crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
         return -1;
     }
-    let vctxt = crate::xml::relaxng::xmlRelaxNGNewValidCtxt(schema);
-    if vctxt.is_null() {
-        crate::xml::relaxng::xmlRelaxNGFree(schema);
-        crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
-        return -1;
+    if r.rng_owned && !r.rng.is_null() {
+        // SAFETY: rng was compiled by xmlRelaxNGParse.
+        unsafe { crate::xml::relaxng::xmlRelaxNGFree(r.rng) };
     }
-    let ret = crate::xml::relaxng::xmlRelaxNGValidateDoc(vctxt, unsafe { (*reader).doc });
-    crate::xml::relaxng::xmlRelaxNGFreeValidCtxt(vctxt);
-    crate::xml::relaxng::xmlRelaxNGFree(schema);
-    crate::xml::relaxng::xmlRelaxNGFreeParserCtxt(ctxt);
-    ret
+    r.rng = schema;
+    r.rng_owned = true;
+    r.rng_result = -1;
+    0
 }
 
 /// `int xmlTextReaderRelaxNGValidateCtxt(xmlTextReaderPtr reader, xmlRelaxNGValidCtxtPtr ctxt, int options)`.
@@ -6617,7 +6828,15 @@ pub unsafe extern "C" fn xmlTextReaderRelaxNGSetSchema(
         return -1;
     }
     unsafe {
-        (*reader).rng = schema;
+        let r = &mut *reader;
+        // Drop a previously attached reader-owned schema (a caller-owned one
+        // — php keeps it in intern->schema — is released by its owner).
+        if r.rng_owned && !r.rng.is_null() && r.rng != schema {
+            crate::xml::relaxng::xmlRelaxNGFree(r.rng);
+        }
+        r.rng = schema;
+        r.rng_owned = false;
+        r.rng_result = -1;
     }
     0
 }

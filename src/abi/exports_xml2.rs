@@ -597,7 +597,7 @@ pub extern "C" fn xmlGetLastError() -> *mut _xmlError {
 ///
 /// - `from` and `to` must be valid pointers to `_xmlError` structs, or NULL.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError) -> c_int {
+pub unsafe extern "C" fn xmlCopyError(from: *const _xmlError, to: *mut _xmlError) -> c_int {
     // SAFETY: Delegates to xml::errors with same safety contract.
     unsafe { crate::xml::errors::copy_error(from, to) }
 }

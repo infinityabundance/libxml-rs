@@ -157,13 +157,70 @@ pub fn get_last_error() -> *mut _xmlError {
 /// # SAFETY
 ///
 /// - `from` and `to` must be valid pointers to `_xmlError` structs, or NULL.
-pub const unsafe fn copy_error(from: *const _xmlError, to: *mut _xmlError) -> c_int {
+pub unsafe fn copy_error(from: *const _xmlError, to: *mut _xmlError) -> c_int {
     if from.is_null() || to.is_null() {
         return -1;
     }
-    // SAFETY: Caller guarantees both pointers are valid.
+    // UPSTREAM-PARITY (error.c xmlCopyError): every string field is
+    // deep-copied with xmlStrdup — the destination owns its strings
+    // independently of the source. PHP's libxml error list (php_list_set_
+    // error_structure -> xmlCopyError) stores these copies at raise time and
+    // reads them later; a shallow copy would leave list entries pointing at
+    // the parser context's lastError strings, which the NEXT raise frees
+    // (free_error_strings) — the recorded message then reads as garbage
+    // (php bug64230: "Internal: uY\uFFFD\uFFFDU").
     unsafe {
-        ptr::copy_nonoverlapping(from, to, 1);
+        let dup = |p: *const c_char| -> *mut c_char {
+            if p.is_null() {
+                ptr::null_mut()
+            } else {
+                crate::abi::allocator::xmlMemStrdupImpl(p) as *mut c_char
+            }
+        };
+        let src = &*from;
+        let message = if src.message.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(src.message as *const c_char) as *mut c_char
+        };
+        let file = if src.file.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(src.file) as *mut c_char
+        };
+        let str1 = if src.str1.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(src.str1) as *mut c_char
+        };
+        let str2 = if src.str2.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(src.str2) as *mut c_char
+        };
+        let str3 = if src.str3.is_null() {
+            ptr::null_mut()
+        } else {
+            crate::abi::allocator::xmlMemStrdupImpl(src.str3) as *mut c_char
+        };
+        ptr::write(
+            to,
+            _xmlError {
+                domain: src.domain,
+                code: src.code,
+                message,
+                level: src.level,
+                file,
+                line: src.line,
+                str1,
+                str2,
+                str3,
+                int1: src.int1,
+                int2: src.int2,
+                ctxt: src.ctxt,
+                node: src.node,
+            },
+        );
     }
     0
 }

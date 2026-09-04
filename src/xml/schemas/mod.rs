@@ -831,6 +831,22 @@ unsafe fn xsd_parse_schema_node(node: *mut _xmlNode) -> XsdSchema {
             child = (*child).next;
         }
 
+        // UPSTREAM-PARITY (xmlschemas.c xmlSchemaParse — global components
+        // live in the schema's target namespace): stamp the schema
+        // targetNamespace onto every top-level component so global element
+        // declarations can be matched against instance elements by
+        // EXPANDED name (namespace + local) instead of the prefixed QName
+        // string. Nested (local) declarations keep target_namespace = None:
+        // with the default elementForm="unqualified" they match
+        // no-namespace instance children only.
+        if schema.target_namespace.is_some() {
+            for comp in &mut schema.components {
+                if comp.target_namespace.is_none() {
+                    comp.target_namespace = schema.target_namespace.clone();
+                }
+            }
+        }
+
         schema
     }
 }
@@ -2235,48 +2251,86 @@ unsafe fn xsd_validate_doc(schema: &XsdSchema, doc: *mut _xmlDoc, ctxt: &mut Xsd
             return false;
         }
 
-        // Get the root element name
+        // Get the root element's local name and namespace
         let root_name = get_node_qname(root_elem);
+        let root_local = get_node_local_name(root_elem);
+        let root_ns = get_node_ns_href(root_elem);
+        let root_ns_deref = root_ns.as_deref();
 
-        // Find matching global element declaration
+        // UPSTREAM-PARITY (xmlschemas.c xmlSchemaValidateDoc): find the
+        // matching GLOBAL element declaration by EXPANDED name — local name
+        // plus namespace. A root element whose namespace does not equal the
+        // declaration's target namespace (including a no-namespace element
+        // against a targetNamespace schema, and a prefixed element whose
+        // prefix resolves to the right URI) must NOT match a declaration it
+        // merely shares a local name with.
         let global_elem = schema.components.iter().find(|c| {
-            c.component_type == XsdComponentType::Element && c.name.as_deref() == Some(&root_name)
+            c.component_type == XsdComponentType::Element
+                && c.name.as_deref() == Some(root_local.as_str())
+                && c.target_namespace.as_deref() == root_ns_deref
         });
 
         if let Some(global) = global_elem {
             xsd_validate_element(global, root_elem, schema, ctxt)
         } else {
-            // Try finding by any matching component
-            let mut valid = true;
-            for component in &schema.components {
-                if component.component_type == XsdComponentType::Element {
-                    if let Some(ref name) = component.name {
-                        if *name == root_name {
-                            valid = xsd_validate_element(component, root_elem, schema, ctxt);
-                            break;
-                        }
-                    }
-                }
-            }
-            if valid
-                && !schema.components.iter().any(|c| {
-                    c.component_type == XsdComponentType::Element
-                        && c.name.as_deref() == Some(&root_name)
-                })
-            {
-                // UPSTREAM-PARITY (xmlschemas.c xmlSchemaValidateDoc): when
-                // no GLOBAL element declaration matches the document root the
-                // validation fails with this exact diagnostic
-                // (DOMDocument_schemaValidate_error2).
-                ctxt.errors.push(format!(
-                    "Element '{}': No matching global declaration available for the validation root.",
-                    root_name
-                ));
-                ctxt.nb_errors += 1;
-                valid = false;
-            }
-            valid
+            // No matching global element declaration for the validation
+            // root: fail with the exact upstream diagnostic
+            // (DOMDocument_schemaValidate_error2 / reader schema errors).
+            ctxt.errors.push(format!(
+                "Element '{}': No matching global declaration available for the validation root.",
+                root_name
+            ));
+            ctxt.nb_errors += 1;
+            false
         }
+    }
+}
+
+/// Run XSD validation of a document against an already-compiled schema
+/// (xmlSchemaPtr from xmlSchemaParse), collecting the diagnostics WITHOUT
+/// dispatching them to any registered handler. Used by the xmlTextReader
+/// (which validates deferred, at first Read, and raises the diagnostics
+/// through the global libxml error channel itself — mirroring upstream's
+/// streaming SAX-plug validation where errors surface at read time).
+///
+/// # SAFETY
+///
+/// - `schema` must be a valid compiled-schema pointer from xmlSchemaParse;
+/// - `doc` must be a valid parsed document.
+pub(crate) unsafe fn xsd_validate_doc_compiled(
+    schema: *mut c_void,
+    doc: *mut _xmlDoc,
+    create_defaults: bool,
+) -> (bool, Vec<String>) {
+    unsafe {
+        if schema.is_null() || doc.is_null() {
+            return (false, Vec::new());
+        }
+        let schema_ref = &*(schema as *const XsdSchema);
+        let mut ctxt = XsdValidCtxt::new();
+        ctxt.create_defaults = create_defaults;
+        let valid = xsd_validate_doc(schema_ref, doc, &mut ctxt);
+        (valid, ctxt.errors)
+    }
+}
+
+/// UPSTREAM-PARITY (xmlschemas.c xmlSchemaGetComponentTargetNs / element
+/// form handling): the namespace an element declaration matches against.
+/// Top-level declarations live in the schema target namespace (stamped on
+/// the component by xsd_parse_schema_node). A LOCAL declaration matches
+/// no-namespace instance elements by default (elementFormDefault
+/// "unqualified"), and elements in the target namespace when the
+/// declaration itself or the schema is `elementFormDefault="qualified"`.
+fn element_decl_ns(comp: &XsdComponent, schema: &XsdSchema) -> Option<String> {
+    if let Some(ref ns) = comp.target_namespace {
+        return Some(ns.clone());
+    }
+    let qualified = comp.form.as_deref() == Some("qualified")
+        || (comp.form.is_none() && schema.element_form_default.as_deref() == Some("qualified"));
+    if qualified {
+        schema.target_namespace.clone()
+    } else {
+        None
     }
 }
 
@@ -2296,10 +2350,21 @@ fn xsd_validate_element(
 
         // Get the element's local name
         let node_name = get_node_qname(node);
+        let node_local = get_node_local_name(node);
+        let node_ns = get_node_ns_href(node);
+        let decl_ns = element_decl_ns(component, schema);
 
-        // Check element name
+        // UPSTREAM-PARITY (xmlschemas.c xmlSchemaValidateElem): the element
+        // is checked against the declaration by EXPANDED name — the local
+        // name plus the namespace the declaration is in (see element_decl_ns:
+        // top-level = target namespace; local = no namespace unless
+        // elementFormDefault/`form` says qualified). A prefixed element whose
+        // prefix resolves to the declaration's namespace (e.g.
+        // <x:books xmlns:x="urn:t"> against a global "books" in urn:t)
+        // matches; a default-namespace child in urn:t matches a LOCAL
+        // declaration only when the schema uses qualified element form.
         if let Some(ref comp_name) = component.name {
-            if comp_name != &node_name {
+            if comp_name != &node_local || node_ns.as_deref() != decl_ns.as_deref() {
                 ctxt.errors.push(format!(
                     "Element '{}' does not match expected '{}'",
                     node_name, comp_name
@@ -2347,9 +2412,14 @@ fn xsd_validate_element(
                 valid = false;
             }
         } else if let Some(ref base_name) = component.base {
-            // A named type reference (type="USAddress") with no inline type:
-            // resolve the top-level complexType/simpleType declaration and
-            // validate the element's content against it. The pre-fix code
+            // A named type reference (type="USAddress" / "bks:BookForm")
+            // with no inline type: resolve the top-level complexType/
+            // simpleType declaration and validate the element's content
+            // against it. A prefixed reference (type="bks:BookForm") is
+            // compared by its local part — the component model records the
+            // target namespace on the top-level type (xsd_parse_schema_node
+            // stamps schema.target_namespace) but declarations are resolved
+            // by local name within this schema document. The pre-fix code
             // fell through to xsd_validate_content on THIS component, whose
             // children are empty (the sequence lives on the named type), so
             // child-content errors (e.g. a required <state> child) were never
@@ -2357,7 +2427,7 @@ fn xsd_validate_element(
             if let Some(named) = schema.components.iter().find(|c| {
                 let ct = c.component_type;
                 (ct == XsdComponentType::ComplexType || ct == XsdComponentType::SimpleType)
-                    && c.name.as_deref() == Some(base_name.as_str())
+                    && c.name.as_deref() == Some(xsd_qname_local(base_name))
             }) {
                 match named.component_type {
                     XsdComponentType::ComplexType => {
@@ -2900,7 +2970,7 @@ fn xsd_validate_element_inline(
                             let ct = c.component_type;
                             (ct == XsdComponentType::ComplexType
                                 || ct == XsdComponentType::SimpleType)
-                                && c.name.as_deref() == Some(base_name.as_str())
+                                && c.name.as_deref() == Some(xsd_qname_local(base_name))
                         }) {
                             match named.component_type {
                                 XsdComponentType::ComplexType => {
@@ -2932,7 +3002,82 @@ fn xsd_validate_element_inline(
     }
 }
 
-/// Get the qualified name of a node (with namespace prefix if available).
+/// Get the local name of a node (the tree stores the local part in
+/// `node->name`; the namespace, if any, lives in `node->ns`).
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an _xmlNode or NULL.
+unsafe fn get_node_local_name(node: *mut _xmlNode) -> String {
+    if node.is_null() {
+        return String::new();
+    }
+    unsafe {
+        let name = (*node).name;
+        if name.is_null() {
+            return String::new();
+        }
+        let mut len = 0;
+        while *name.add(len) != 0 {
+            len += 1;
+        }
+        let slice = std::slice::from_raw_parts(name, len);
+        String::from_utf8_lossy(slice).to_string()
+    }
+}
+
+/// Get the namespace URI (href) an element is in, as a string, or None when
+/// the element carries no namespace.
+///
+/// # SAFETY
+///
+/// - `node` must be a valid pointer to an _xmlNode or NULL.
+unsafe fn get_node_ns_href(node: *mut _xmlNode) -> Option<String> {
+    if node.is_null() {
+        return None;
+    }
+    unsafe {
+        let ns = (*node).ns;
+        if ns.is_null() {
+            return None;
+        }
+        let href = (*ns).href;
+        if href.is_null() {
+            return None;
+        }
+        let mut len = 0;
+        while *href.add(len) != 0 {
+            len += 1;
+        }
+        let slice = std::slice::from_raw_parts(href, len);
+        Some(String::from_utf8_lossy(slice).to_string())
+    }
+}
+
+/// UPSTREAM-PARITY (xmlschemas.c global element/type lookup): an element
+/// declaration matches an instance element when the local names agree AND
+/// the declaration's namespace equals the element's namespace. A declaration
+/// with `target_namespace == None` (schema without targetNamespace, or a
+/// local declaration under elementForm="unqualified") matches only
+/// no-namespace elements.
+fn xsd_element_decl_matches(comp: &XsdComponent, node_local: &str, node_ns: Option<&str>) -> bool {
+    comp.component_type == XsdComponentType::Element
+        && comp.name.as_deref() == Some(node_local)
+        && comp.target_namespace.as_deref() == node_ns
+}
+
+/// Get the local name of the node (same as `get_node_local_name`, but for
+/// the schema's own element names the attribute value may carry a prefix
+/// such as `bks:BookForm`; strip it for component-name comparisons).
+fn xsd_qname_local(name: &str) -> &str {
+    match name.rsplit_once(':') {
+        Some((_, local)) => local,
+        None => name,
+    }
+}
+
+/// Get the node's QName, but normalized like the name of a declaration
+/// (local part only when the prefix is present). Used to build diagnostics.
 ///
 /// # SAFETY
 ///

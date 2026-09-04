@@ -635,7 +635,72 @@ pub fn rng_parse(xml_doc: &str) -> Result<RelaxNgSchema, String> {
     result
 }
 
-/// Parse a RELAX NG schema from a parsed XML document.
+/// Get the URL of a parsed document (its `URL` field), as a string.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an _xmlDoc or NULL.
+unsafe fn doc_url(doc: *mut _xmlDoc) -> Option<String> {
+    if doc.is_null() {
+        return None;
+    }
+    unsafe {
+        let url = (*doc).URL;
+        if url.is_null() {
+            return None;
+        }
+        let mut len = 0;
+        while *url.add(len) != 0 {
+            len += 1;
+        }
+        let slice = std::slice::from_raw_parts(url, len);
+        Some(String::from_utf8_lossy(slice).to_string())
+    }
+}
+
+/// Resolve a (possibly relative) RELAX NG `href` against the base URL of the
+/// grammar that references it. Mirrors upstream relaxng.c (include /
+/// externalRef handling): `base = xmlNodeGetBase(cur->doc, cur);
+/// URL = xmlBuildURI(href, base);` — a bare relative name resolves against
+/// the including schema's own location, not the process CWD.
+///
+/// # SAFETY
+///
+/// - `doc` must be a valid pointer to an _xmlDoc or NULL.
+unsafe fn resolve_rng_href(doc: *mut _xmlDoc, href: &str) -> String {
+    let Some(base) = (unsafe { doc_url(doc) }) else {
+        // Memory-parse (or URL-less): keep the raw href (relative names then
+        // resolve against the CWD, matching upstream's NULL base).
+        return href.to_string();
+    };
+    if base.is_empty() {
+        return href.to_string();
+    }
+    let Ok(base_c) = std::ffi::CString::new(base.as_str()) else {
+        return href.to_string();
+    };
+    let Ok(href_c) = std::ffi::CString::new(href) else {
+        return href.to_string();
+    };
+    let resolved = crate::abi::exports_uri::xmlBuildURI(href_c.as_ptr(), base_c.as_ptr());
+    if resolved.is_null() {
+        href.to_string()
+    } else {
+        // xmlBuildURI returns an xmlChar* string (not a doc); convert bytes.
+        unsafe {
+            let mut len = 0;
+            while *resolved.add(len) != 0 {
+                len += 1;
+            }
+            let slice = std::slice::from_raw_parts(resolved, len);
+            let s = String::from_utf8_lossy(slice).to_string();
+            crate::abi::allocator::xmlFreeImpl(resolved as *mut core::ffi::c_void);
+            s
+        }
+    }
+}
+
+/// Parse a RELAX NG schema from a document.
 ///
 /// # SAFETY
 ///
@@ -657,13 +722,14 @@ unsafe fn rng_parse_doc(doc: *mut _xmlDoc) -> Result<RelaxNgSchema, String> {
             return Err("RELAX NG document has no root element".to_string());
         }
 
+        let base = unsafe { doc_url(doc) };
         let local_name = get_local_name(root_elem);
         let mut schema = RelaxNgSchema::new();
 
         match local_name.as_str() {
             "grammar" => {
                 // Top-level grammar
-                schema.grammar = rng_parse_grammar_node(root_elem, &mut schema);
+                schema.grammar = rng_parse_grammar_node(root_elem, &mut schema, base.as_deref());
                 Ok(schema)
             }
             "element" | "attribute" | "text" | "choice" | "sequence" | "interleave"
@@ -681,12 +747,16 @@ unsafe fn rng_parse_doc(doc: *mut _xmlDoc) -> Result<RelaxNgSchema, String> {
 
 /// Parse a `<grammar>` element.
 ///
+/// `base` is the URL of the document this grammar node lives in; it anchors
+/// relative `<include href>` resolution (recursively for nested includes).
+///
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to a `<grammar>` element node.
 unsafe fn rng_parse_grammar_node(
     node: *mut _xmlNode,
     schema: &mut RelaxNgSchema,
+    base: Option<&str>,
 ) -> RelaxNgGrammar {
     unsafe {
         let mut grammar = RelaxNgGrammar::new();
@@ -704,13 +774,19 @@ unsafe fn rng_parse_grammar_node(
                         grammar.start = Some(rng_parse_pattern(child, schema));
                     }
                     "include" => {
-                        if let Some(inc) = rng_parse_include(child, schema) {
+                        if let Some(inc) = rng_parse_include(child, schema, base) {
+                            // UPSTREAM-PARITY (relaxng.c combined grammar): a
+                            // grammar with no <start> of its own inherits the
+                            // start pattern of an included grammar.
+                            if grammar.start.is_none() {
+                                grammar.start = inc.start.clone();
+                            }
                             grammar.includes.push(inc);
                         }
                     }
                     "div" => {
                         // <div> is a grouping element; recurse into it
-                        let sub_grammar = rng_parse_grammar_node(child, schema);
+                        let sub_grammar = rng_parse_grammar_node(child, schema, base);
                         grammar.defines.extend(sub_grammar.defines);
                         if sub_grammar.start.is_some() {
                             grammar.start = sub_grammar.start;
@@ -747,19 +823,51 @@ unsafe fn rng_parse_define(node: *mut _xmlNode, schema: &mut RelaxNgSchema) -> R
 
 /// Parse an `<include>` element.
 ///
+/// `base` anchors the relative `href` (the URL of the including grammar's
+/// document). Nested includes inside the loaded grammar resolve against the
+/// loaded document's own URL.
+///
+/// UPSTREAM-PARITY (relaxng.c xmlRelaxNGParseInclude): the returned grammar
+/// is the INCLUDED document's grammar with the `<include>` element's own
+/// children applied — a `<define>` child redefines the same-named definition
+/// of the included grammar (or adds a new one), and a `<start>` child
+/// replaces the included start pattern.
+///
 /// # SAFETY
 ///
 /// - `node` must be a valid pointer to an `<include>` element node.
 unsafe fn rng_parse_include(
     node: *mut _xmlNode,
-    _schema: &mut RelaxNgSchema,
+    schema: &mut RelaxNgSchema,
+    base: Option<&str>,
 ) -> Option<RelaxNgGrammar> {
     unsafe {
         let href = get_attr(node, "href");
-        if let Some(url) = href {
-            // Try to load and parse the external grammar
-            // For basic support, we attempt to read the file
-            let url_c = std::ffi::CString::new(url.clone()).ok()?;
+        let mut grammar = if let Some(ref url) = href {
+            // UPSTREAM-PARITY (relaxng.c): resolve the href against the
+            // including document's base (xmlBuildURI) so relative includes
+            // resolve next to the schema file, not the process CWD.
+            let resolved = match base {
+                Some(base) => {
+                    let base_c = std::ffi::CString::new(base).ok()?;
+                    let href_c = std::ffi::CString::new(url.clone()).ok()?;
+                    let r = crate::abi::exports_uri::xmlBuildURI(href_c.as_ptr(), base_c.as_ptr());
+                    if r.is_null() {
+                        url.clone()
+                    } else {
+                        let mut len = 0;
+                        while *r.add(len) != 0 {
+                            len += 1;
+                        }
+                        let slice = std::slice::from_raw_parts(r, len);
+                        let s = String::from_utf8_lossy(slice).to_string();
+                        crate::abi::allocator::xmlFreeImpl(r as *mut core::ffi::c_void);
+                        s
+                    }
+                }
+                None => url.clone(),
+            };
+            let url_c = std::ffi::CString::new(resolved.clone()).ok()?;
             let doc = crate::abi::exports_xml2::xmlParseFile(url_c.as_ptr());
             if doc.is_null() {
                 return None;
@@ -774,15 +882,37 @@ unsafe fn rng_parse_include(
                     root
                 },
                 &mut inc_schema,
+                doc_url(doc).as_deref(),
             );
             crate::abi::exports_xml2::xmlFreeDoc(doc);
-            Some(grammar)
+            grammar
         } else {
             // Inline grammar in include
             let mut inc_schema = RelaxNgSchema::new();
-            let grammar = rng_parse_grammar_node(node, &mut inc_schema);
-            Some(grammar)
+            rng_parse_grammar_node(node, &mut inc_schema, base)
+        };
+
+        // Apply the <include> element's own children (redefinitions) to the
+        // included grammar. For an href include, `node` is the <include>
+        // element itself; for an inline include, the grammar was parsed FROM
+        // it already, so re-parsing would double it — only the href case
+        // carries both an external grammar and inline redefinitions.
+        if href.is_some() {
+            let mut ovr_schema = RelaxNgSchema::new();
+            let ovr = rng_parse_grammar_node(node, &mut ovr_schema, base);
+            for def in ovr.defines {
+                if let Some(existing) = grammar.defines.iter_mut().find(|d| d.name == def.name) {
+                    *existing = def;
+                } else {
+                    grammar.defines.push(def);
+                }
+            }
+            if ovr.start.is_some() {
+                grammar.start = ovr.start;
+            }
+            grammar.includes.extend(ovr.includes);
         }
+        Some(grammar)
     }
 }
 
@@ -1273,6 +1403,31 @@ pub unsafe fn rng_validate_doc(
 
         // Check for remaining unmatched errors
         valid
+    }
+}
+
+/// Run RELAX NG validation of a document against an already-compiled schema
+/// (xmlRelaxNGPtr from xmlRelaxNGParse), collecting the diagnostics WITHOUT
+/// dispatching them to any registered handler. Used by the xmlTextReader
+/// (which validates deferred, at first Read, and raises the diagnostics
+/// through the global libxml error channel itself).
+///
+/// # SAFETY
+///
+/// - `schema` must be a valid compiled-schema pointer from xmlRelaxNGParse;
+/// - `doc` must be a valid parsed document.
+pub(crate) unsafe fn rng_validate_doc_compiled(
+    schema: *mut c_void,
+    doc: *mut _xmlDoc,
+) -> (bool, Vec<String>) {
+    unsafe {
+        if schema.is_null() || doc.is_null() {
+            return (false, Vec::new());
+        }
+        let schema_ref = &*(schema as *const RelaxNgSchema);
+        let mut ctxt = RelaxNgValidCtxt::new();
+        let valid = rng_validate_doc(schema_ref, doc, &mut ctxt);
+        (valid, ctxt.errors)
     }
 }
 
