@@ -931,3 +931,30 @@ Phase 14.7 — DTD subset load + parse-time validation + decl-dump parity
   - residuals next: dom adoption/DOMNode + serializer families (~52), the
     xmlreader 16 (007/008/013 now have ext-subset decls to work with), xsl
     16, simplexml 1, xmlwriter 1.
+
+Phase 14.8 — xmlreader cursor/attribute + DTD-validate paths (2026-09-04;
+commit bd62a97; receipt php-14-8-xmlreader-20260904/): full suite 86 -> 77,
+ZERO regressions. Log: phpbuild-c:/out/xpe-six23.log. dom 51 | xmlreader 8 |
+xsl 16 | simplexml 1 | xmlwriter 1.
+  - xmlTextReaderNext = upstream xmlreader.c: non-element -> plain Read step
+    (may land on parent END_ELEMENT, 010); element START -> subtree skip to
+    next sibling; exhaustion -> cursor CLEARS to EOF (returns 0).
+  - MoveToNextAttribute on an element moves to the FIRST attribute.
+  - MoveToAttributeNo resets to the element on entry (failure leaves the
+    reader on the element).
+  - reader name cache reports XML_DTD_NODE names (bug42139 doctype name).
+  - xmlTextReaderIsValid returns the parse's ctxt->valid (snapshotted
+    before the reader frees its parser context) when validation ran —
+    008's file/string DTD both ok.
+  - resolve_dtd_path resolves file:// ids (percent-decoded) — the string
+    pass of 008 loads dtdexample.dtd.
+  - parse_attr_default consumed the whole rest for quoted defaults (and
+    worse for #FIXED): multi-attr <!ATTLIST> entries after the first quoted
+    default were dropped (012 baz). Exact quoted-literal lengths now.
+  - flipped: xmlreader 003-get/move-errors, 008, 010, 012, 015-get-errors,
+    bug42139, next_basic + dom modern/extensions/attribute_renaming_conflict.
+  - guards: oracle-vs-candidate reader probe byte-identical; cargo test
+    --lib 1241/1 ignored; fmt clean.
+  - residuals next: xmlreader 8 (007/013 schema-attach, bug64230/bug73053,
+    gh19098, fromStream*/fromString_custom_constructor,
+    fromStream_broken_stream), dom 51, xsl 16, simplexml 1, xmlwriter 1.
