@@ -924,6 +924,39 @@ pub unsafe extern "C" fn xsltRegisterAllExtras() {
         None,
         None,
     );
+    // UPSTREAM-PARITY (extra.c xsltRegisterAllExtras): the classic XSLT-1.1
+    // document elements — saxon:output, xalan:write, xt:document — all run
+    // through xsltDocumentElem (transform.c). Registering them makes
+    // extension-element-prefixes'd instances dispatch at transform time
+    // (php bug54446: saxon:output must be blocked by the security
+    // preferences, never copied as a literal result element).
+    xsltRegisterExtModuleElement(
+        c"output".as_ptr() as *const xmlChar,
+        c"http://icl.com/saxon".as_ptr() as *const xmlChar,
+        None,
+        Some(
+            crate::abi::exports_xslt_exec::xsltDocumentElem
+                as crate::abi::exports_xslt_compile::xsltTransformFunction,
+        ),
+    );
+    xsltRegisterExtModuleElement(
+        c"write".as_ptr() as *const xmlChar,
+        c"http://xml.apache.org/xalan".as_ptr() as *const xmlChar,
+        None,
+        Some(
+            crate::abi::exports_xslt_exec::xsltDocumentElem
+                as crate::abi::exports_xslt_compile::xsltTransformFunction,
+        ),
+    );
+    xsltRegisterExtModuleElement(
+        c"document".as_ptr() as *const xmlChar,
+        c"http://www.jclark.com/xt".as_ptr() as *const xmlChar,
+        None,
+        Some(
+            crate::abi::exports_xslt_exec::xsltDocumentElem
+                as crate::abi::exports_xslt_compile::xsltTransformFunction,
+        ),
+    );
 }
 
 /// `xsltRegisterExtras` (extra.c): register the EXSLT functions into the

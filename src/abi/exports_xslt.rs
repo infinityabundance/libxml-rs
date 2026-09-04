@@ -115,6 +115,12 @@ use crate::abi::structs::*;
 #[no_mangle]
 pub extern "C" fn xsltInit() {
     crate::abi::versioning::set_initialized();
+    // UPSTREAM-PARITY (xslt.c xsltInit): registers the built-in extras
+    // (saxon:output / xalan:write / xt:document extension elements and the
+    // exslt module URI) exactly once.
+    unsafe {
+        crate::abi::exports_xslt_ext::xsltRegisterAllExtras();
+    }
 }
 
 /// Clean up the XSLT library.

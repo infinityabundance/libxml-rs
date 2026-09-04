@@ -39,7 +39,7 @@ use crate::abi::allocator::xmlFreeImpl;
 use crate::abi::exports_xml2::{xmlXPathFreeObject, xmlXPathObjectCopy};
 use crate::abi::structs::*;
 use crate::abi::types::*;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 use std::ptr;
 
 /// Stack element flags
@@ -274,6 +274,17 @@ pub unsafe fn xsltFreeGlobalVariables(ctxt: *mut _xsltTransformContext) {
         return;
     }
     let ctx = &mut *ctxt;
+    // Free the caller-parameter list (ctxt->globalVars holds the params
+    // installed per transform by xsltQuoteOneUserParam / xsltEvalOneUserParam;
+    // upstream variables.c frees its globalVars hash with
+    // xsltFreeStackElemEntry at xsltFreeTransformContext).
+    let mut g = ctx.globalVars as *mut _xsltStackElem;
+    while !g.is_null() {
+        let next = (*g).next;
+        xsltFreeStackElem(g);
+        g = next;
+    }
+    ctx.globalVars = ptr::null_mut();
     let mut i = 0;
     while i < ctx.varsNr {
         let var = *(ctx.varsTab.offset(i as isize));
@@ -295,15 +306,20 @@ pub unsafe fn xsltFreeGlobalVariables(ctxt: *mut _xsltTransformContext) {
 ///
 /// Evaluates all global `<xsl:variable>` elements and registers their
 /// values in the XPath context's variable hash so `$name` references
-/// resolve during template execution. Global parameters set by the
-/// caller (via the params array) take precedence over stylesheet
-/// defaults.
+/// resolve during template execution. Caller-provided global parameters
+/// (ctxt->globalVars — installed per transform by xsltQuoteOneUserParam /
+/// xsltEvalOneUserParam — plus any XSLT_VAR_INTERNAL leftovers on the
+/// stylesheet list from the params-array CLI path) take precedence over
+/// stylesheet defaults.
 ///
 /// # UPSTREAM-PARITY
 ///
 /// Upstream libxslt (variables.c `xsltInitializeCtxt`) evaluates global
-/// variables lazily on first use. We evaluate them eagerly here, which
-/// is behaviorally equivalent for well-formed stylesheets.
+/// variables lazily on first use; caller parameters are stored per
+/// transform context in ctxt->globalVars (variables.c
+/// xsltProcessUserParamInternal) so a fresh context starts with a clean
+/// parameter set. We evaluate them eagerly here, which is behaviorally
+/// equivalent for well-formed stylesheets.
 ///
 /// # SAFETY
 ///
@@ -317,13 +333,17 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
     if style.is_null() {
         return;
     }
-    // First, register caller-provided parameters. UPSTREAM-PARITY: global
-    // params and variables both live in the stylesheet's `variables` list.
-    // Caller params carry XSLT_VAR_PARAM|XSLT_VAR_INTERNAL (set by
-    // xsltParseStylesheetParam); the stylesheet's OWN global xsl:param
-    // defaults carry only XSLT_VAR_PARAM (compile_variable) and must NOT be
+    // First, register caller-provided parameters (this transform's
+    // ctxt->globalVars list, then any XSLT_VAR_INTERNAL items still on the
+    // stylesheet list from the params-array apply path). Stylesheet-declared
+    // global xsl:param defaults carry only XSLT_VAR_PARAM and must NOT be
     // treated as caller params — otherwise they would overwrite the caller's
     // values (CLI-XSLTPROC-0012).
+    let mut g = ctx.globalVars as *mut _xsltStackElem;
+    while !g.is_null() {
+        register_global_value(ctxt, g, false);
+        g = (*g).next;
+    }
     let mut param = (*style).variables;
     while !param.is_null() {
         if (*param).flags & (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL)
@@ -338,8 +358,91 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
     // consults ctxt->globalVars).
     let mut var = (*style).variables;
     while !var.is_null() {
-        register_global_value(ctxt, var, true);
+        if (*var).flags & XSLT_VAR_INTERNAL == 0 {
+            register_global_value(ctxt, var, true);
+        }
         var = (*var).next;
+    }
+}
+
+/// Resolve the EXPANDED name of a stylesheet global's raw `name` string
+/// (the value of a top-level xsl:param/xsl:variable `name` attribute): a
+/// `prefix:local` QName resolves against the stylesheet root's in-scope
+/// namespaces (upstream xsltParseStylesheetVariable resolves the prefix the
+/// same way); a plain name has no namespace.
+///
+/// # SAFETY
+///
+/// - `style` must be a valid compiled stylesheet.
+pub(crate) unsafe fn expanded_global_name(
+    style: *mut _xsltStylesheet,
+    raw: &[u8],
+) -> (Vec<u8>, Option<Vec<u8>>) {
+    if let Some(colon) = raw.iter().position(|&b| b == b':') {
+        if colon == 0 {
+            return (raw.to_vec(), None);
+        }
+        let prefix = &raw[..colon];
+        let mut pfx = prefix.to_vec();
+        pfx.push(0);
+        unsafe {
+            let style_doc = (*style).doc;
+            let root = if style_doc.is_null() {
+                ptr::null_mut()
+            } else {
+                (*style_doc).children
+            };
+            let ns = crate::xml::tree::search_ns(style_doc, root, pfx.as_ptr() as *const xmlChar);
+            if !ns.is_null() && !(*ns).href.is_null() {
+                let href = crate::abi::versioning::c_str_to_bytes((*ns).href as *const c_char)
+                    .unwrap_or_default();
+                return (raw[colon + 1..].to_vec(), Some(href.to_vec()));
+            }
+            // Unresolvable prefix: keep the raw name (it cannot match a
+            // Clark-notation caller parameter).
+            (raw.to_vec(), None)
+        }
+    } else {
+        (raw.to_vec(), None)
+    }
+}
+
+/// For a caller parameter with expanded name (local, uri), find the
+/// STYLESHEET-DECLARED global `xsl:param` (flag XSLT_VAR_PARAM, no
+/// XSLT_VAR_INTERNAL) whose expanded name matches, and return its raw
+/// `name` string. The engine keys the XPath variable map on the flat name
+/// as written in the stylesheet (`foo`, `test:foo`), so the caller value
+/// must be registered under that key for `$foo` / `$test:foo` references to
+/// resolve. Returns None when no declared param matches — the parameter is
+/// inert (upstream stores it in ctxt->globalVars but nothing references
+/// it), and it must NOT clobber a same-local-name param in another
+/// namespace.
+///
+/// # SAFETY
+///
+/// - `style` must be a valid compiled stylesheet.
+unsafe fn stylesheet_param_raw_key(
+    style: *mut _xsltStylesheet,
+    local: &[u8],
+    uri: Option<&[u8]>,
+) -> Option<Vec<u8>> {
+    unsafe {
+        let mut cur = (*style).variables;
+        while !cur.is_null() {
+            let is_style_param = (*cur).flags & XSLT_VAR_INTERNAL == 0
+                && (*cur).flags & XSLT_VAR_PARAM != 0
+                && !(*cur).name.is_null();
+            if is_style_param {
+                let raw = crate::abi::versioning::c_str_to_bytes((*cur).name as *const c_char)
+                    .unwrap_or_default();
+                let (l, u) = expanded_global_name(style, &raw);
+                if l == local && u.as_deref() == uri {
+                    return Some(raw.to_vec());
+                }
+            }
+            cur = (*cur).next;
+        }
+        None
     }
 }
 
@@ -348,6 +451,12 @@ pub unsafe fn xsltInitGlobalVariables(ctxt: *mut _xsltTransformContext) {
 ///
 /// When `skip_if_bound` is set (stylesheet defaults), a variable whose name
 /// is already bound by a caller-provided parameter is not evaluated.
+/// Caller parameters (XSLT_VAR_INTERNAL) are registered under the raw name
+/// of the matching stylesheet-declared xsl:param (expanded-name match —
+/// php req30622 binds `setParameter($ns, "foo")` to a declared
+/// `name="test:foo"`); a caller parameter with no matching declaration is
+/// inert and skipped so it cannot shadow a same-local-name parameter in a
+/// different namespace.
 ///
 /// # SAFETY
 ///
@@ -361,16 +470,35 @@ unsafe fn register_global_value(
     if var.is_null() || (*var).name.is_null() {
         return;
     }
+    let style = (*ctxt).style;
+    if style.is_null() {
+        return;
+    }
     let name = crate::abi::versioning::c_str_to_bytes((*var).name as *const std::os::raw::c_char);
     let name = match name {
         Some(n) => String::from_utf8_lossy(n).into_owned(),
         None => return,
     };
+    // Caller parameters bind under the stylesheet's declared raw name.
+    let is_caller = (*var).flags & XSLT_VAR_INTERNAL != 0;
+    let key: String = if is_caller {
+        let uri = if (*var).nameURI.is_null() {
+            None
+        } else {
+            crate::abi::versioning::c_str_to_bytes((*var).nameURI as *const c_char)
+        };
+        match unsafe { stylesheet_param_raw_key(style, name.as_bytes(), uri.as_deref()) } {
+            Some(raw_key) => String::from_utf8_lossy(&raw_key).into_owned(),
+            None => return, // Inert: no stylesheet xsl:param declares this name.
+        }
+    } else {
+        name.clone()
+    };
     if skip_if_bound {
         let xpath_ctxt = (*ctxt).xpathCtxt;
         if !xpath_ctxt.is_null() {
             let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
-            if !internal.is_null() && (*internal).variables.contains_key(&name) {
+            if !internal.is_null() && (*internal).variables.contains_key(&key) {
                 return;
             }
         }
@@ -495,12 +623,13 @@ unsafe fn register_global_value(
     };
 
     if let Some(v) = value {
-        // Register in the XPath context's variable hash.
+        // Register in the XPath context's variable hash under the binding
+        // key (the stylesheet's raw declared name for caller params).
         let xpath_ctxt = (*ctxt).xpathCtxt;
         if !xpath_ctxt.is_null() {
             let internal = (*xpath_ctxt).extra as *mut crate::xml::xpath::context::XPathContext;
             if !internal.is_null() {
-                (*internal).register_variable(&name, v);
+                (*internal).register_variable(&key, v);
             }
         }
     }

@@ -216,7 +216,7 @@ pub unsafe extern "C" fn xsltEvalOneUserParam(
     }
     let name_bytes = CStr::from_ptr(name as *const c_char).to_bytes();
     let value_bytes = CStr::from_ptr(value as *const c_char).to_bytes();
-    match install_user_param((*ctxt).style, name_bytes, value_bytes, false) {
+    match install_user_param(ctxt, name_bytes, value_bytes, false) {
         Ok(_) => 0,
         Err(()) => -1,
     }
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn xsltQuoteUserParams(
             let name = &pair[..eq];
             let value = &pair[eq + 1..];
             let escaped = xml_escape(value);
-            if install_user_param((*ctxt).style, name, &escaped, true).is_err() {
+            if install_user_param(ctxt, name, &escaped, true).is_err() {
                 return -1;
             }
         }
@@ -287,7 +287,7 @@ pub unsafe extern "C" fn xsltQuoteOneUserParam(
     }
     let name_bytes = CStr::from_ptr(name as *const c_char).to_bytes();
     let value_bytes = CStr::from_ptr(value as *const c_char).to_bytes();
-    match install_user_param(style, name_bytes, value_bytes, true) {
+    match install_user_param(ctxt, name_bytes, value_bytes, true) {
         Ok(_) => 0,
         Err(()) => -1,
     }
@@ -324,24 +324,32 @@ unsafe fn xmlChar_of(bytes: &[u8]) -> *mut xmlChar {
     p
 }
 
-/// Install one caller parameter on the stylesheet's global `variables` list.
+/// Install one caller parameter on the transform context's global parameter
+/// list (`ctxt->globalVars`, upstream variables.c xsltProcessUserParamInternal
+/// storage). The list is per-transform (a fresh context is created for every
+/// xsltApplyStylesheetUser call), so parameters removed between transforms
+/// unbind automatically (php req30622).
 ///
 /// Returns `Ok(true)` when installed, `Ok(false)` when skipped (the name is
 /// owned by a stylesheet top-level `xsl:variable`, which caller parameters
 /// never override — upstream variables.c xsltProcessUserParamInternal), and
 /// `Err(())` on parse failure.
 ///
-/// # Safety
+/// # SAFETY
 ///
-/// - `style` must be a valid compiled stylesheet; `name` the raw QName or
+/// - `ctxt` must be a valid transform context; `name` the raw QName or
 ///   `{uri}local` parameter name.
 unsafe fn install_user_param(
-    style: *mut _xsltStylesheet,
+    ctxt: *mut _xsltTransformContext,
     name: &[u8],
     value: &[u8],
     literal: bool,
 ) -> Result<bool, ()> {
     unsafe {
+        let style = (*ctxt).style;
+        if style.is_null() {
+            return Err(());
+        }
         // Normalize `prefix:local` into `{uri}local` against the stylesheet's
         // in-scope namespace declarations (upstream resolves the prefix
         // through xmlSearchNs on the stylesheet root).
@@ -401,29 +409,20 @@ unsafe fn install_user_param(
         };
         libc::free(name_c as *mut libc::c_void);
 
-        // Names equal except for the URI part.
-        let same_name = |e: *mut _xsltStackElem| -> bool {
-            if (*e).name.is_null()
-                || libc::strcmp((*e).name as *const c_char, local.as_ptr() as *const c_char) != 0
-            {
-                return false;
-            }
-            match uri {
-                None => (*e).nameURI.is_null(),
-                Some(ref u) => {
-                    !(*e).nameURI.is_null()
-                        && libc::strcmp((*e).nameURI as *const c_char, u.as_ptr() as *const c_char)
-                            == 0
-                }
-            }
-        };
-
-        // UPSTREAM-PARITY: a stylesheet top-level `xsl:variable` (no PARAM
-        // flag) with the same name wins — caller parameters are skipped.
+        // A stylesheet top-level `xsl:variable` (no PARAM flag) with the
+        // same EXPANDED name wins — caller parameters are skipped (upstream
+        // variables.c xsltProcessUserParamInternal walks style->variables
+        // comparing elem->name + elem->nameURI).
         let mut cur = (*style).variables;
         while !cur.is_null() {
-            if (*cur).flags & XSLT_VAR_PARAM == 0 && same_name(cur) {
-                return Ok(false);
+            if (*cur).flags & XSLT_VAR_PARAM == 0 && !(*cur).name.is_null() {
+                let raw = CStr::from_ptr((*cur).name as *const c_char)
+                    .to_bytes()
+                    .to_vec();
+                let (l, u) = crate::xslt::variables::expanded_global_name(style, &raw);
+                if l == local && u.as_deref() == uri.as_deref() {
+                    return Ok(false);
+                }
             }
             cur = (*cur).next;
         }
@@ -472,29 +471,43 @@ unsafe fn install_user_param(
         }
 
         // Deduplicate any earlier caller parameter with the same name/URI
-        // (a stylesheet runs many transforms; the newest registration wins).
+        // (the newest registration wins).
+        let mut head = (*ctxt).globalVars as *mut _xsltStackElem;
         let mut prev: *mut _xsltStackElem = ptr::null_mut();
-        let mut cur = (*style).variables;
-        while !cur.is_null() {
-            let next = (*cur).next;
-            let is_caller = (*cur).flags & (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL)
-                == (XSLT_VAR_PARAM | XSLT_VAR_INTERNAL);
-            if is_caller && same_name(cur) {
+        let mut cur2 = head;
+        while !cur2.is_null() {
+            let next = (*cur2).next;
+            let same = !(*cur2).name.is_null()
+                && libc::strcmp(
+                    (*cur2).name as *const c_char,
+                    local.as_ptr() as *const c_char,
+                ) == 0
+                && match uri {
+                    None => (*cur2).nameURI.is_null(),
+                    Some(ref u) => {
+                        !(*cur2).nameURI.is_null()
+                            && libc::strcmp(
+                                (*cur2).nameURI as *const c_char,
+                                u.as_ptr() as *const c_char,
+                            ) == 0
+                    }
+                };
+            if same {
                 if prev.is_null() {
-                    (*style).variables = next;
+                    head = next;
                 } else {
                     (*prev).next = next;
                 }
-                crate::xslt::variables::xsltFreeStackElem(cur);
+                crate::xslt::variables::xsltFreeStackElem(cur2);
             } else {
-                prev = cur;
+                prev = cur2;
             }
-            cur = next;
+            cur2 = next;
         }
         // Prepend (upstream prepends caller params; xsltInitGlobalVariables
         // registers the head first).
-        (*elem).next = (*style).variables;
-        (*style).variables = elem;
+        (*elem).next = head;
+        (*ctxt).globalVars = elem as *mut c_void;
         Ok(true)
     }
 }

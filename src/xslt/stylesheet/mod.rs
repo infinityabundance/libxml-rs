@@ -129,6 +129,13 @@ pub unsafe extern "C" fn xsltStylesheetCreate() -> *mut _xsltStylesheet {
     (*style).omitXmlDeclaration = -1;
     (*style).standalone = -1;
     (*style).indent = -1;
+
+    // UPSTREAM-PARITY (xslt.c): creating a stylesheet initializes the
+    // library — the built-in extras (saxon:output / xalan:write /
+    // xt:document extension elements) must be registered before the
+    // template content is compiled and transformed (php bug54446). The
+    // registration is idempotent.
+    crate::abi::exports_xslt::xsltInit();
     // UPSTREAM-PARITY (xslt.c xsltNewStylesheetInternal): every stylesheet
     // carries the default decimal format at the head of the chain.
     (*style).decimalFormat =

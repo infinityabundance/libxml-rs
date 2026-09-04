@@ -126,6 +126,15 @@ pub const XSLT_STATE_ERROR: c_int = 1;
 /// The transformation was stopped (e.g. xsl:message terminate="yes").
 pub const XSLT_STATE_STOPPED: c_int = 2;
 
+/// Static type cells used as `_xsltStackElem.comp` markers so the debug
+/// dump (upstream extra.c `xsltDebug`, which reads `cur->comp->type`) can
+/// classify pushed variables/params. Values mirror the XSLT_FUNC_* enum
+/// used by exports_xslt_exec.rs (PARAM/VARIABLE get a prefix in the dump;
+/// with-param prints the bare name).
+pub(crate) static XSLT_COMP_TYPE_PARAM: c_int = 19;
+pub(crate) static XSLT_COMP_TYPE_VARIABLE: c_int = 20;
+pub(crate) static XSLT_COMP_TYPE_WITHPARAM: c_int = 24;
+
 /// Maximum template recursion depth (upstream `xsltMaxDepth`, transform.c).
 /// Default 3000 (upstream transform.c `int xsltMaxDepth = 3000`).
 #[no_mangle]
@@ -574,6 +583,102 @@ pub(crate) unsafe fn apply_root_template(
     0
 }
 
+/// Push a template onto the transform context's template stack (upstream
+/// xsltApplyXSLTTemplate pushes the template into `ctxt->templTab` before
+/// instantiating it; extra.c `xsltDebug` dumps the last 15 entries).
+///
+/// # SAFETY
+///
+/// - `ctxt` and `templ` must be valid pointers.
+unsafe fn template_stack_push(ctxt: *mut _xsltTransformContext, templ: *mut _xsltTemplate) {
+    unsafe {
+        let nr = (*ctxt).templNr;
+        if nr >= (*ctxt).templMax {
+            let new_max = if (*ctxt).templMax == 0 {
+                32
+            } else {
+                (*ctxt).templMax * 2
+            };
+            let new_tab = libc::realloc(
+                (*ctxt).templTab as *mut libc::c_void,
+                (new_max as usize) * core::mem::size_of::<*mut _xsltTemplate>(),
+            ) as *mut *mut _xsltTemplate;
+            if new_tab.is_null() {
+                return;
+            }
+            (*ctxt).templTab = new_tab;
+            (*ctxt).templMax = new_max;
+        }
+        *(*ctxt).templTab.add(nr as usize) = templ;
+        (*ctxt).templNr = nr + 1;
+    }
+}
+
+/// Pop a template from the transform context's template stack.
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid pointer.
+unsafe fn template_stack_pop(ctxt: *mut _xsltTransformContext) {
+    unsafe {
+        if (*ctxt).templNr > 0 {
+            (*ctxt).templNr -= 1;
+            *(*ctxt).templTab.add((*ctxt).templNr as usize) = ptr::null_mut();
+        }
+    }
+}
+
+/// Report a template-recursion guard (upstream transform.c
+/// xsltApplySequenceConstructor / xsltApplyXSLTTemplate): the context line
+/// and the two-line diagnostic through xsltTransformError, the
+/// Templates:/Variables: debug dump (extra.c xsltDebug), then
+/// XSLT_STATE_STOPPED — the transformation ends with no further output
+/// (php bug71571_a / bug71571_b).
+///
+/// `depth_guard` selects the message (maxTemplateDepth vs maxTemplateVars);
+/// `node` is the stylesheet node attributed to the error (the current
+/// instruction for the depth guard, the instantiated template's first
+/// content node for the variable guard).
+///
+/// # SAFETY
+///
+/// - `ctxt` and `node` must be valid pointers.
+unsafe fn report_template_recursion(
+    ctxt: *mut _xsltTransformContext,
+    node: *mut _xmlNode,
+    depth_guard: bool,
+) {
+    unsafe {
+        let limit = if depth_guard {
+            (*ctxt).maxTemplateDepth
+        } else {
+            (*ctxt).maxTemplateVars
+        };
+        let text = if depth_guard {
+            format!(
+                "xsltApplySequenceConstructor: A potential infinite template recursion was detected.\nYou can adjust $maxTemplateDepth in order to raise the maximum number of nested template calls and variables/params (currently set to {}).\n",
+                limit
+            )
+        } else {
+            format!(
+                "xsltApplyXSLTTemplate: A potential infinite template recursion was detected.\nYou can adjust $maxTemplateVars in order to raise the maximum number of variables/params (currently set to {}).\n",
+                limit
+            )
+        };
+        let Ok(msg) = std::ffi::CString::new(text) else {
+            return;
+        };
+        crate::xslt::errors::xsltTransformError(ctxt, ptr::null_mut(), node, msg.as_ptr());
+        crate::abi::exports_xslt_exec::xsltDebug(
+            ctxt,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            ptr::null_mut(),
+        );
+        (*ctxt).state = XSLT_STATE_STOPPED;
+    }
+}
+
 /// Apply templates to a single node in the given mode.
 ///
 /// # SAFETY
@@ -614,11 +719,30 @@ pub(crate) unsafe fn apply_templates_to_node(
         }
         return 0;
     }
-    // Check recursion depth.
-    if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
-        return -1;
-    }
+    // UPSTREAM-PARITY (transform.c xsltApplyXSLTTemplate): the template is
+    // pushed onto the template stack (the recursion dump lists it) before
+    // the recursion guards run.
+    template_stack_push(ctxt, templ);
     (*ctxt).depth += 1;
+    // Check recursion depth (php bug71571_a): stop once the maximum of
+    // nested templates is exceeded, report, dump, and stop the transform.
+    if (*ctxt).depth > (*ctxt).maxTemplateDepth {
+        report_template_recursion(ctxt, node, true);
+        (*ctxt).depth -= 1;
+        template_stack_pop(ctxt);
+        return 0;
+    }
+    if (*ctxt).varsNr >= (*ctxt).maxTemplateVars {
+        let err_node = if (*templ).content.is_null() {
+            node
+        } else {
+            (*templ).content
+        };
+        report_template_recursion(ctxt, err_node, false);
+        (*ctxt).depth -= 1;
+        template_stack_pop(ctxt);
+        return 0;
+    }
     (*ctxt).templ = templ;
     (*ctxt).node = node;
     if !(*ctxt).xpathCtxt.is_null() {
@@ -627,6 +751,7 @@ pub(crate) unsafe fn apply_templates_to_node(
     }
     execute_content(ctxt, (*templ).content);
     (*ctxt).depth -= 1;
+    template_stack_pop(ctxt);
     (*ctxt).templ = ptr::null_mut();
     0
 }
@@ -734,6 +859,46 @@ pub unsafe fn xsltProcessInstruction(
             if is_xslt_namespace(inst) {
                 process_xslt_instruction(ctxt, inst);
             } else {
+                // UPSTREAM-PARITY (transform.c xsltProcessOneNode): an
+                // element whose namespace is a REGISTERED extension
+                // namespace is an extension-element instruction, NOT a
+                // literal result element — it dispatches to the module's
+                // transform handler (xsltDocumentElem for the built-in
+                // saxon:output / xalan:write / xt:document extras; php
+                // bug54446). exsl:document is dispatched natively.
+                let ns = get_element_ns(inst);
+                if let Some(ref ns_uri) = ns {
+                    if ns_uri == crate::exslt::EXSLT_NS_COMMON
+                        && get_element_name(inst).as_deref() == Some("document")
+                    {
+                        process_exsl_document(ctxt, inst);
+                        return 0;
+                    }
+                    let ns_c = str_to_cstr(ns_uri);
+                    let ns_ptr = ns_c.as_ptr() as *const xmlChar;
+                    if !(*inst).name.is_null() {
+                        // Per-context extension-element registration
+                        // (xsltRegisterExtElement).
+                        let ctx_h =
+                            crate::xslt::extensions::xsltFindExtElement(ctxt, (*inst).name, ns_ptr);
+                        if !ctx_h.is_null() {
+                            return 0;
+                        }
+                        // Global module-element table
+                        // (xsltRegisterExtModuleElement); the built-in
+                        // extras (saxon:output etc.) land here via
+                        // xsltRegisterAllExtras -> xsltInit.
+                        if let Some(handler) =
+                            crate::abi::exports_xslt_ext::xsltExtModuleElementLookup(
+                                (*inst).name,
+                                ns_ptr,
+                            )
+                        {
+                            handler(ctxt, (*ctxt).node, inst, ptr::null_mut());
+                            return 0;
+                        }
+                    }
+                }
                 // Literal result element: create the element and process
                 // its content.
                 process_literal_element(ctxt, inst);
@@ -1345,6 +1510,9 @@ pub(crate) unsafe fn evaluate_with_param(
     }
     (*param).name = name;
     (*param).flags = 2 | 4; // PARAM | INTERNAL
+                            // comp type marker for the xsltDebug variable dump (extra.c reads
+                            // cur->comp->type): a with-param prints its bare name (not PARAM/VARIABLE).
+    (*param).comp = &XSLT_COMP_TYPE_WITHPARAM as *const c_int as *mut c_void;
     if !select.is_null() {
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {
@@ -1417,10 +1585,18 @@ pub(crate) unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, ins
     if templ.is_null() {
         return;
     }
-    if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
+    // UPSTREAM-PARITY (transform.c xsltApplyXSLTTemplate): push the
+    // template before the recursion guards run so the debug dump lists it.
+    template_stack_push(ctxt, templ);
+    (*ctxt).depth += 1;
+    // Depth guard (php bug71571_a): report + dump + STOPPED instead of the
+    // previous silent early return.
+    if (*ctxt).depth > (*ctxt).maxTemplateDepth {
+        report_template_recursion(ctxt, inst, true);
+        (*ctxt).depth -= 1;
+        template_stack_pop(ctxt);
         return;
     }
-    (*ctxt).depth += 1;
     // UPSTREAM-PARITY (templates.c xsltApplyTemplate): remember the variable
     // stack depth, push the with-params, instantiate the template (whose
     // xsl:param defaults may push MORE variables on top), then pop back to
@@ -1440,6 +1616,23 @@ pub(crate) unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, ins
     for param in to_push {
         crate::xslt::parameters::xsltPushParam(ctxt, param);
     }
+    // Variable-count guard (php bug71571_b): the caller's with-params are on
+    // the stack by now; report against the template's first content node
+    // (its xsl:param) like upstream's xsltApplyXSLTTemplate error.
+    if (*ctxt).varsNr >= (*ctxt).maxTemplateVars {
+        let err_node = if (*templ).content.is_null() {
+            inst
+        } else {
+            (*templ).content
+        };
+        report_template_recursion(ctxt, err_node, false);
+        (*ctxt).depth -= 1;
+        template_stack_pop(ctxt);
+        while (*ctxt).varsNr > old_vars_nr {
+            crate::xslt::parameters::xsltPopParam(ctxt);
+        }
+        return;
+    }
     let saved_templ = (*ctxt).templ;
     (*ctxt).templ = templ;
     execute_content(ctxt, (*templ).content);
@@ -1448,6 +1641,7 @@ pub(crate) unsafe fn process_call_template(ctxt: *mut _xsltTransformContext, ins
         crate::xslt::parameters::xsltPopParam(ctxt);
     }
     (*ctxt).depth -= 1;
+    template_stack_pop(ctxt);
 }
 
 /// Process `xsl:apply-imports`.
@@ -1524,15 +1718,31 @@ pub(crate) unsafe fn process_apply_imports(ctxt: *mut _xsltTransformContext, ins
     }
 
     if !best.is_null() {
-        if (*ctxt).depth >= (*ctxt).maxTemplateDepth {
+        template_stack_push(ctxt, best);
+        (*ctxt).depth += 1;
+        if (*ctxt).depth > (*ctxt).maxTemplateDepth {
+            report_template_recursion(ctxt, inst, true);
+            (*ctxt).depth -= 1;
+            template_stack_pop(ctxt);
             return;
         }
-        (*ctxt).depth += 1;
+        if (*ctxt).varsNr >= (*ctxt).maxTemplateVars {
+            let err_node = if (*best).content.is_null() {
+                inst
+            } else {
+                (*best).content
+            };
+            report_template_recursion(ctxt, err_node, false);
+            (*ctxt).depth -= 1;
+            template_stack_pop(ctxt);
+            return;
+        }
         let saved_templ = (*ctxt).templ;
         (*ctxt).templ = best;
         execute_content(ctxt, (*best).content);
         (*ctxt).templ = saved_templ;
         (*ctxt).depth -= 1;
+        template_stack_pop(ctxt);
     }
 }
 
@@ -2306,6 +2516,9 @@ pub(crate) unsafe fn process_variable(ctxt: *mut _xsltTransformContext, inst: *m
     }
     (*var).name = name;
     (*var).flags = 4; // INTERNAL
+                      // comp type marker for the xsltDebug variable dump: an xsl:variable
+                      // prints "var".
+    (*var).comp = &XSLT_COMP_TYPE_VARIABLE as *const c_int as *mut c_void;
     if !select.is_null() {
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {
@@ -2371,6 +2584,9 @@ pub(crate) unsafe fn process_param(ctxt: *mut _xsltTransformContext, inst: *mut 
     }
     (*var).name = name;
     (*var).flags = 2 | 4; // PARAM | INTERNAL
+                          // comp type marker for the xsltDebug variable dump: an xsl:param prints
+                          // "param".
+    (*var).comp = &XSLT_COMP_TYPE_PARAM as *const c_int as *mut c_void;
     if !select.is_null() {
         let obj = eval_xpath(ctxt, select);
         if !obj.is_null() {

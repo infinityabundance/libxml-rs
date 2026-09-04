@@ -156,9 +156,13 @@ static mut XSLT_SORT_FUNCTION: Option<xsltSortFunc> = None;
 unsafe fn emit_generic_error(msg: &[u8]) {
     let handler = crate::abi::data_globals::xsltGenericError;
     if let Some(f) = handler {
+        // NUL-terminate: several callers pass format!() output without a
+        // terminator (extra.c xsltDebug emits "#%d ", "name %s " pieces).
+        let mut cmsg = msg.to_vec();
+        cmsg.push(0);
         f(
             crate::abi::data_globals::xsltGenericErrorContext,
-            msg.as_ptr() as *const c_char,
+            cmsg.as_ptr() as *const c_char,
         );
     } else {
         let _ = libc::write(2, msg.as_ptr() as *const c_void, msg.len());
@@ -2282,12 +2286,33 @@ pub unsafe extern "C" fn xsltDocumentElem(
         };
         if ret <= 0 {
             if ret == 0 {
-                crate::xslt::errors::xsltTransformError(
-                    ctxt,
-                    ptr::null_mut(),
-                    inst,
-                    c"xsltDocumentElem: write rights denied\n".as_ptr() as *const c_char,
+                // UPSTREAM-PARITY (security.c xsltCheckWritePath + transform.c
+                // xsltDocumentElem; php bug54446): a WRITE_FILE denial emits
+                // "File write for %s refused" and then "xsltDocumentElem:
+                // write rights for %s denied", each with its own context
+                // line.
+                let path = String::from_utf8_lossy(
+                    crate::abi::versioning::c_str_to_bytes(filename as *const c_char)
+                        .unwrap_or_default(),
                 );
+                let fmsg = format!("File write for {} refused\n", path);
+                if let Ok(fc) = std::ffi::CString::new(fmsg) {
+                    crate::xslt::errors::xsltTransformError(
+                        ctxt,
+                        ptr::null_mut(),
+                        inst,
+                        fc.as_ptr(),
+                    );
+                }
+                let dmsg = format!("xsltDocumentElem: write rights for {} denied\n", path);
+                if let Ok(dc) = std::ffi::CString::new(dmsg) {
+                    crate::xslt::errors::xsltTransformError(
+                        ctxt,
+                        ptr::null_mut(),
+                        inst,
+                        dc.as_ptr(),
+                    );
+                }
             }
             xmlFreeImpl(URL as *mut c_void);
             xmlFreeImpl(filename as *mut c_void);
@@ -2832,26 +2857,32 @@ pub unsafe extern "C" fn xsltDebug(
             }
             let msg = format!("#{}\n", i);
             emit_generic_error(msg.as_bytes());
-            let mut p = cur;
-            while !p.is_null() {
-                if (*p).comp.is_null() {
-                    emit_generic_error(b"corrupted !!!\n\0");
-                } else {
-                    let typ = *((*p).comp as *const c_int);
-                    if typ == XSLT_FUNC_PARAM {
-                        emit_generic_error(b"param \0");
-                    } else if typ == XSLT_FUNC_VARIABLE {
-                        emit_generic_error(b"var \0");
-                    }
+            // The candidate pushes one stack element per slot (upstream
+            // xsltAddStackElem pushes each list member into its own slot);
+            // the slot's `.next` chain spans PREVIOUS frames in the
+            // candidate layout, so print only the slot head to reproduce
+            // upstream's per-frame dump for these guard reports.
+            let p = cur;
+            if (*p).comp.is_null() {
+                emit_generic_error(b"corrupted !!!\n\0");
+            } else {
+                let typ = *((*p).comp as *const c_int);
+                if typ == XSLT_FUNC_PARAM {
+                    emit_generic_error(b"param \0");
+                } else if typ == XSLT_FUNC_VARIABLE {
+                    emit_generic_error(b"var \0");
                 }
-                if !(*p).name.is_null() {
-                    let m = format!("{} ", bytes_to_lossy((*p).name));
-                    emit_generic_error(m.as_bytes());
-                } else {
-                    emit_generic_error(b"noname !!!!\n\0");
-                }
-                p = (*p).next;
             }
+            if !(*p).name.is_null() {
+                let m = format!("{} ", bytes_to_lossy((*p).name));
+                emit_generic_error(m.as_bytes());
+            } else {
+                emit_generic_error(b"noname !!!!\n\0");
+            }
+            // Terminate the entry with a newline (php's libxml error
+            // handler only raises newline-terminated messages and buffers
+            // the rest, so each var must end its own warning).
+            emit_generic_error(b"\n\0");
             j -= 1;
             i += 1;
         }
