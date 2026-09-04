@@ -569,14 +569,24 @@ pub unsafe extern "C" fn xsltSaveResultToFile(
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Mirrors `xsltSaveResultToFilename` (xsltutils.c 1.1.45): opens the file
-/// (compression is not supported by the Rust artifacts yet; see
-/// RESIDUAL R-COMPRESSION), serializes via `xsltSaveResultTo`, closes it and
-/// returns the number of bytes written.
+/// Mirrors `xsltSaveResultToFilename` (xsltutils.c 1.1.45): opens the
+/// destination via the libxml2 output-buffer machinery
+/// (`xmlOutputBufferCreateFilename`), serializes via `xsltSaveResultTo`,
+/// closes it and returns the number of bytes written.
+///
+/// The candidate runs inside the `libxslt.so.1` whole-archive facade, whose
+/// private copy of the `xmlOutputBufferCreateFilenameDefault` static is never
+/// populated by PHP (PHP registers its stream loader on the core
+/// `libxml2.so.16` copy; R-000177 partition). To honor PHP stream wrappers
+/// (`php://output`) and `file://` URIs the core DSO's exported
+/// `xmlOutputBufferCreateFilename`/`xmlOutputBufferWrite`/`xmlOutputBufferClose`
+/// are resolved with `dlsym` (RTLD_NOLOAD — the core is always loaded through
+/// the facade's NEEDED chain). In a single-binary build no core DSO is loaded
+/// and the plain-file fallback is used.
 ///
 /// # SAFETY
 ///
-/// - `URL` must be a valid NUL-terminated path.
+/// - `URL` must be a valid NUL-terminated path/URI.
 /// - `result` must be a valid document.
 #[no_mangle]
 pub unsafe extern "C" fn xsltSaveResultToFilename(
@@ -592,13 +602,50 @@ pub unsafe extern "C" fn xsltSaveResultToFilename(
     if result_is_empty(result) {
         return 0;
     }
-    let file = libc::fopen(URL, c"wb".as_ptr() as *const c_char);
-    if file.is_null() {
+    let mut txt: *mut xmlChar = ptr::null_mut();
+    let mut len: c_int = 0;
+    let ret = xsltSaveResultToString(&mut txt, &mut len, result, style);
+    if ret != 0 || txt.is_null() {
         return -1;
     }
-    let ret = xsltSaveResultToFile(file as *mut c_void, result, style);
-    libc::fclose(file);
-    ret
+
+    // Try the core-DSO routed output-buffer machinery first (PHP stream
+    // wrappers); fall back to a plain fopen when the core is not loadable
+    // (staticlib/CLI builds).
+    type CreateFn = unsafe extern "C" fn(*const c_char, *const c_void, c_int) -> *mut c_void;
+    type WriteFn = unsafe extern "C" fn(*mut c_void, c_int, *const c_char) -> c_int;
+    type CloseFn = unsafe extern "C" fn(*mut c_void) -> c_int;
+    let handle = libc::dlopen(
+        c"libxml2.so.16".as_ptr(),
+        libc::RTLD_NOLOAD | libc::RTLD_LAZY,
+    );
+    let mut wrote = -1;
+    if !handle.is_null() {
+        let create = libc::dlsym(handle, c"xmlOutputBufferCreateFilename".as_ptr());
+        let write = libc::dlsym(handle, c"xmlOutputBufferWrite".as_ptr());
+        let close = libc::dlsym(handle, c"xmlOutputBufferClose".as_ptr());
+        if !create.is_null() && !write.is_null() && !close.is_null() {
+            let create_fn: CreateFn = core::mem::transmute(create);
+            let write_fn: WriteFn = core::mem::transmute(write);
+            let close_fn: CloseFn = core::mem::transmute(close);
+            let buf = create_fn(URL, ptr::null_mut(), compression);
+            if !buf.is_null() {
+                write_fn(buf, len, txt as *const c_char);
+                wrote = close_fn(buf);
+            }
+        }
+    }
+    if wrote < 0 {
+        // Fallback: plain file path (staticlib/CLI and non-PHP consumers).
+        let file = libc::fopen(URL, c"wb".as_ptr() as *const c_char);
+        if !file.is_null() {
+            let n = libc::fwrite(txt as *const libc::c_void, 1, len as usize, file);
+            libc::fclose(file);
+            wrote = n as c_int;
+        }
+    }
+    xmlFreeImpl(txt as *mut c_void);
+    wrote
 }
 
 /// Save a result document to a file descriptor.
