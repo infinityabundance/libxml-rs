@@ -958,3 +958,39 @@ xsl 16 | simplexml 1 | xmlwriter 1.
   - residuals next: xmlreader 8 (007/013 schema-attach, bug64230/bug73053,
     gh19098, fromStream*/fromString_custom_constructor,
     fromStream_broken_stream), dom 51, xsl 16, simplexml 1, xmlwriter 1.
+
+Phase 14.9 — ns-scope search + DTD attr decls + ID-table engine parity
+(2026-09-04; commit 5663c421; receipt php-14-9-nsattr-dtd-id-20260904/):
+full suite 77 -> 64, ZERO regressions (name-level diff vs the 77 baseline:
+NEW_ONLY=0, FIXED=13). Log: phpbuild-c:/out/xpe-six24.log. dom 51 -> 38 |
+xmlreader 8 | xsl 16 | simplexml 1 | xmlwriter 1.
+  - xmlSearchNs/xmlSearchNsByHref only walk ELEMENT nodes (upstream
+    xmlSearchNsSafe/xmlSearchNsByHrefSafe). doc->oldNs sits at the same
+    offset as _xmlNode.nsDef: the old walk read php's parked-decl list as
+    in-scope decls, so dom_reconcile_ns_internal stripped needed xmlns decls
+    (gh11500, clone_attribute_namespace_01/02, bug80927). + ancestor
+    element->ns pointers, xmlNsInScope shadow rule, is_attr prefix rule.
+  - has/get-prop DTD default/#FIXED fallback (xmlGetPropNodeInternal
+    useDTD=1): xmlHasNsProp(xml:id) reports the ATTLIST DECL; remove/
+    toggle/setAttributeNode treat DECLs correctly (gh22825, bug38474).
+    ATTLIST decls now keyed (local, prefix, elem) like upstream
+    xmlSAX2AttributeDecl (namespaced p:A lookups).
+  - SAX2 tree builder subtracts nb_defaulted unless XML_COMPLETE_ATTRS
+    (xmlSAX2StartElementNs): DTD defaults are not real attributes.
+  - xmlSetProp = upstream QName wrapper (split prefix -> setNsProp);
+    xmlSetNsProp rebinds attr->ns on update (setAttributeNS prefix rename,
+    Element_setAttributeNS); legacy setAttribute on a parsed xml:id no
+    longer duplicates the attr.
+  - ID table: free/remove unregister (xmlFreeProp/xmlRemoveProp parity);
+    value updates drop old + re-register new; new id-ish attrs register at
+    creation; free_doc frees doc->ids first; duplicate xml:id -> "ID x
+    already defined" at the attr line (bug79701 x4).
+  - xpath name() = prefix:local QName; xmlXPathNameFunction registered
+    (gh12455).
+  - guards: cargo test --lib 1241/1 ignored; fmt clean; probes
+    nsappend-probe.c / dtdqattr-probe.c / idstate-probe.c kept.
+  - residuals next: dom 38 (canonicalization + DOMNode_C14N_references,
+    bug80268_2, the malloc_consolidate/double-free abort family,
+    HTML textContent/doctype serialization, entity/notation delayed_freeing,
+    modern/html + token entities), xmlreader 8, xsl 16, simplexml 1,
+    xmlwriter 1.
