@@ -104,6 +104,11 @@ use crate::xml::tree;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// HTML element flag constants matching libxml2 HTMLparser.h.
+// HTML parser option bits (HTMLparser.h) as stored in `HtmlParserCtxt.options`
+// (the same merged option space as the XML_PARSE_* bits).
+const HTML_PARSE_NODEFDTD: c_int = 1 << 2;
+const HTML_PARSE_NOIMPLIED: c_int = 1 << 13;
+
 const HTML_INLINE: u32 = 0x1;
 const HTML_BLOCK: u32 = 0x2;
 const HTML_EMPTY: u32 = 0x4;
@@ -1165,6 +1170,11 @@ unsafe fn auto_close_element(ctxt: &mut HtmlParserCtxt, tag_name: &str) {
 
 /// Ensure the html element exists, creating it implicitly if needed.
 unsafe fn ensure_html(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
+    // UPSTREAM-PARITY (HTML_PARSE_NOIMPLIED): never auto-create the html
+    // skeleton when the caller suppressed implied elements (bug76285).
+    if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+        return ptr::null_mut();
+    }
     if !ctxt.html.is_null() {
         return ctxt.html;
     }
@@ -1189,6 +1199,9 @@ unsafe fn ensure_html(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
 
 /// Ensure the head element exists, creating it implicitly if needed.
 unsafe fn ensure_head(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
+    if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+        return ptr::null_mut();
+    }
     if !ctxt.head.is_null() {
         return ctxt.head;
     }
@@ -1213,6 +1226,9 @@ unsafe fn ensure_head(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
 
 /// Ensure the body element exists, creating it implicitly if needed.
 unsafe fn ensure_body(ctxt: &mut HtmlParserCtxt) -> *mut _xmlNode {
+    if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+        return ptr::null_mut();
+    }
     if !ctxt.body.is_null() {
         return ctxt.body;
     }
@@ -1546,6 +1562,26 @@ unsafe fn handle_text(ctxt: &mut HtmlParserCtxt, text: &[u8]) {
     tree::add_child(insertion_point, text_node);
 }
 
+/// Attach parsed HTML attributes to a freshly created element node.
+///
+/// # Safety
+///
+/// - `node` must be a valid element node; `attrs` a live slice of parsed
+///   attributes.
+unsafe fn attach_attrs(node: *mut _xmlNode, attrs: &[HtmlAttr]) {
+    for attr in attrs {
+        let name_c = bytes_to_xmlstr(&attr.name);
+        let val_c = bytes_to_xmlstr(&attr.value);
+        if !name_c.is_null() {
+            tree::set_prop(node, name_c, val_c);
+            xmlFreeImpl(name_c as *mut c_void);
+            if !val_c.is_null() {
+                xmlFreeImpl(val_c as *mut c_void);
+            }
+        }
+    }
+}
+
 /// Process a start tag in the tree builder.
 unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[HtmlAttr]) {
     let tag_lower: Vec<u8> = tag_name.iter().map(|b| b.to_ascii_lowercase()).collect();
@@ -1569,6 +1605,7 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         if ctxt.html.is_null() {
             let html_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
             if !html_node.is_null() {
+                attach_attrs(html_node, attrs);
                 ctxt.html = html_node;
                 ctxt.html_created = false; // parsed, not implied
                 tree::add_child(ctxt.doc as *mut _xmlNode, html_node);
@@ -1592,9 +1629,17 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         if ctxt.head.is_null() {
             let head_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
             if !head_node.is_null() {
+                attach_attrs(head_node, attrs);
                 ctxt.head = head_node;
                 ctxt.head_created = false;
-                tree::add_child(ctxt.html, head_node);
+                // UPSTREAM-PARITY: a source <head> without an <html> parent
+                // becomes a top-level element under HTML_PARSE_NOIMPLIED.
+                let parent = if ctxt.html.is_null() {
+                    ctxt.doc as *mut _xmlNode
+                } else {
+                    ctxt.html
+                };
+                tree::add_child(parent, head_node);
                 ctxt.current = head_node;
                 ctxt.in_head = true;
             }
@@ -1616,9 +1661,17 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         if ctxt.body.is_null() {
             let body_node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
             if !body_node.is_null() {
+                attach_attrs(body_node, attrs);
                 ctxt.body = body_node;
                 ctxt.body_created = false;
-                tree::add_child(ctxt.html, body_node);
+                // UPSTREAM-PARITY: a source <body> without an <html> parent
+                // becomes a top-level element under HTML_PARSE_NOIMPLIED.
+                let parent = if ctxt.html.is_null() {
+                    ctxt.doc as *mut _xmlNode
+                } else {
+                    ctxt.html
+                };
+                tree::add_child(parent, body_node);
                 ctxt.current = body_node;
                 ctxt.in_body = true;
                 ctxt.in_head = false;
@@ -1643,36 +1696,28 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
             // Void element in head
             let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
             if !node.is_null() {
-                for attr in attrs {
-                    let name_c = bytes_to_xmlstr(&attr.name);
-                    let val_c = bytes_to_xmlstr(&attr.value);
-                    if !name_c.is_null() {
-                        tree::set_prop(node, name_c, val_c);
-                        xmlFreeImpl(name_c as *mut c_void);
-                        if !val_c.is_null() {
-                            xmlFreeImpl(val_c as *mut c_void);
-                        }
-                    }
-                }
-                tree::add_child(ctxt.current, node);
+                attach_attrs(node, attrs);
+                // UPSTREAM-PARITY (NOIMPLIED): top-level head-only elements
+                // become document children.
+                let ip = if ctxt.current.is_null() {
+                    ctxt.doc as *mut _xmlNode
+                } else {
+                    ctxt.current
+                };
+                tree::add_child(ip, node);
             }
             return;
         }
 
         let node = tree::new_node(ptr::null_mut(), bytes_to_xmlstr(tag_name));
         if !node.is_null() {
-            for attr in attrs {
-                let name_c = bytes_to_xmlstr(&attr.name);
-                let val_c = bytes_to_xmlstr(&attr.value);
-                if !name_c.is_null() {
-                    tree::set_prop(node, name_c, val_c);
-                    xmlFreeImpl(name_c as *mut c_void);
-                    if !val_c.is_null() {
-                        xmlFreeImpl(val_c as *mut c_void);
-                    }
-                }
-            }
-            tree::add_child(ctxt.current, node);
+            attach_attrs(node, attrs);
+            let ip = if ctxt.current.is_null() {
+                ctxt.doc as *mut _xmlNode
+            } else {
+                ctxt.current
+            };
+            tree::add_child(ip, node);
             ctxt.current = node;
         }
         return;
@@ -1683,13 +1728,18 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
         if !ctxt.seen_body_content {
             ctxt.seen_body_content = true;
             ctxt.in_head = false;
-            if ctxt.body.is_null() {
+            // UPSTREAM-PARITY (HTML_PARSE_NOIMPLIED): body content at the top
+            // of a no-implied parse stays at document level (ctxt.current
+            // NULL) instead of materialising the html/body skeleton.
+            if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+                // current stays NULL -> top-level nodes attach to the doc
+            } else if ctxt.body.is_null() {
                 ensure_body(ctxt);
             } else {
                 ctxt.current = ctxt.body;
                 ctxt.in_body = true;
             }
-        } else if ctxt.body.is_null() {
+        } else if ctxt.body.is_null() && ctxt.options & HTML_PARSE_NOIMPLIED == 0 {
             ensure_body(ctxt);
         }
     }
@@ -1715,7 +1765,11 @@ unsafe fn handle_start_tag(ctxt: &mut HtmlParserCtxt, tag_name: &[u8], attrs: &[
                 }
             }
             let insertion_point = if ctxt.current.is_null() {
-                ctxt.body
+                if ctxt.options & HTML_PARSE_NOIMPLIED != 0 {
+                    ctxt.doc as *mut _xmlNode
+                } else {
+                    ctxt.body
+                }
             } else {
                 ctxt.current
             };
@@ -1883,10 +1937,19 @@ fn parse_html_doctype_decl(input: &[u8]) -> Option<(Vec<u8>, Option<Vec<u8>>, Op
     while i < input.len() && !input[i].is_ascii_whitespace() && input[i] != b'>' {
         i += 1;
     }
-    if name_start == i {
-        return None;
+    // A nameless `<!DOCTYPE>` (nothing before the closing '>') is still a
+    // declared DOCTYPE — upstream htmlParseDocTypeDecl fires internalSubset
+    // with a NULL name (gh17500/bug78025: doctype->name is ""), it must NOT
+    // fall through to the default HTML 4.0 DTD.
+    let name = if name_start == i {
+        Vec::new()
+    } else {
+        input[name_start..i].to_vec()
+    };
+    // If the nameless doctype ends right at '>', there are no ids either.
+    if name.is_empty() {
+        return Some((name, None, None));
     }
-    let name = input[name_start..i].to_vec();
     // Skip whitespace, then optional PUBLIC/SYSTEM id.
     let mut ext: Option<Vec<u8>> = None;
     let mut sys: Option<Vec<u8>> = None;
@@ -1998,7 +2061,14 @@ unsafe fn html_parse_buffer(
     // the default HTML 4.0 DTD.
     let raw_input = unsafe { slice::from_raw_parts(buffer as *const u8, size as usize) };
     if let Some((name, ext, sys)) = parse_html_doctype_decl(raw_input) {
-        let name_cstr = crate::xml::string::bytes_to_xmlstr(&name);
+        // UPSTREAM-PARITY (htmlSAX2InternalSubset / xmlCreateIntSubset): a
+        // declared DOCTYPE without a name creates the internal subset with a
+        // NULL name (php doctype->name reads back "").
+        let name_cstr = if name.is_empty() {
+            ptr::null()
+        } else {
+            crate::xml::string::bytes_to_xmlstr(&name)
+        };
         let ext_cstr = ext
             .map(|s| crate::xml::string::bytes_to_xmlstr(&s))
             .unwrap_or(ptr::null_mut());
@@ -2023,16 +2093,17 @@ unsafe fn html_parse_buffer(
             unsafe { crate::abi::allocator::xmlFreeImpl(sys_cstr as *mut c_void) };
         }
     } else {
-        // Source declares no DOCTYPE: use the default HTML 4.0 DTD.
-        // XML_SAVE_NO_DOCTYPE / HTML_PARSE_NODEFDTD suppression is handled by
-        // the caller.
-        unsafe {
-            crate::xml::dtd::create_int_subset(
-                doc,
-                b"html\0" as *const u8 as *const xmlChar,
-                b"-//W3C//DTD HTML 4.0 Transitional//EN\0" as *const u8 as *const xmlChar,
-                b"http://www.w3.org/TR/REC-html40/loose.dtd\0" as *const u8 as *const xmlChar,
-            );
+        // Source declares no DOCTYPE: use the default HTML 4.0 DTD — unless
+        // HTML_PARSE_NODEFDTD suppresses it (php LIBXML_HTML_NODEFDTD).
+        if ctxt.options & HTML_PARSE_NODEFDTD == 0 {
+            unsafe {
+                crate::xml::dtd::create_int_subset(
+                    doc,
+                    b"html\0" as *const u8 as *const xmlChar,
+                    b"-//W3C//DTD HTML 4.0 Transitional//EN\0" as *const u8 as *const xmlChar,
+                    b"http://www.w3.org/TR/REC-html40/loose.dtd\0" as *const u8 as *const xmlChar,
+                );
+            }
         }
     }
     ctxt.doc = doc;
@@ -2344,8 +2415,10 @@ unsafe fn html_parse_buffer(
         }
     }
 
-    // Post-processing: ensure html/head/body are created even for empty documents
-    if ctxt.html.is_null() {
+    // Post-processing: ensure html/head/body are created even for empty
+    // documents (never under HTML_PARSE_NOIMPLIED — the source tree is kept
+    // as-is, bug76285).
+    if ctxt.html.is_null() && ctxt.options & HTML_PARSE_NOIMPLIED == 0 {
         ensure_html(ctxt);
     }
 
@@ -2360,7 +2433,63 @@ unsafe fn html_parse_buffer(
         }
     }
 
+    // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs / xmlSAX2AttributeNs):
+    // ID-bearing attributes (the HTML `id` attribute, `<a name>` and any
+    // DTD-declared ID) are registered in doc->ids as they are parsed. The
+    // html tree builder attaches attributes BEFORE a node gains its document
+    // pointer (add_child propagates doc later), so the per-attribute
+    // registration cannot run at attribute time — do a tree-order pass once
+    // the document is complete (first registration wins, matching the
+    // in-order xmlAddID calls of a SAX2 parse). This is what makes
+    // DOMDocument::loadHTML + getElementById / HTMLCollection named lookups
+    // see `id="…"` attributes.
+    if !doc.is_null() {
+        unsafe {
+            register_html_ids(doc, (*doc).children);
+        }
+    }
+
     doc
+}
+
+/// Register ID/IDREF attributes of every element in the sibling chain and
+/// their element descendants (tree order, first registration wins).
+///
+/// # Safety
+///
+/// - `doc` must be a valid `_xmlDoc` (HTML type) whose tree stays alive for
+///   the call; `cur` must be NULL or a valid live node chain within `doc`.
+unsafe fn register_html_ids(doc: *mut _xmlDoc, cur: *mut _xmlNode) {
+    let mut n = cur;
+    while !n.is_null() {
+        let t = unsafe { (*n).type_ };
+        if t == XML_ELEMENT_NODE as c_int {
+            let el = n;
+            let mut attr = unsafe { (*el).properties };
+            while !attr.is_null() {
+                if unsafe { (*attr).id }.is_null()
+                    && !unsafe { (*attr).children }.is_null()
+                    && unsafe { (*(*attr).children).type_ } == XML_TEXT_NODE as c_int
+                    && unsafe { (*(*attr).children).next }.is_null()
+                {
+                    let v = unsafe { (*(*attr).children).content };
+                    if !v.is_null() {
+                        let id_res = crate::xml::validation::is_id(doc, el, attr);
+                        if id_res > 0 {
+                            crate::xml::validation::add_id(ptr::null_mut(), doc, v, attr);
+                        } else if crate::xml::validation::is_ref(doc, el, attr) > 0 {
+                            crate::xml::validation::add_ref(ptr::null_mut(), doc, v, attr);
+                        }
+                    }
+                }
+                attr = unsafe { (*attr).next };
+            }
+            if !unsafe { (*el).children }.is_null() {
+                register_html_ids(doc, unsafe { (*el).children });
+            }
+        }
+        n = unsafe { (*n).next };
+    }
 }
 
 /// Unlink and free every whitespace-only text node in the sibling chain and
