@@ -42,9 +42,9 @@ use crate::abi::types::xmlElementType::*;
 use crate::abi::types::*;
 use crate::xml::parser::helpers::{
     create_parser_ctxt, free_parser_ctxt, input_from_file, input_from_io, input_from_memory,
-    input_from_memory_named, parse_document, setup_parser_input,
+    input_from_memory_named, parse_document, setup_parser_input, take_stashed_input_buffer,
 };
-use crate::xml::parser::input::InputBuffer;
+use crate::xml::parser::input::{InputBuffer, InputStack};
 use crate::xml::string::{bytes_to_xmlstr, xml_strdup, xmlstr_to_bytes};
 use crate::xml::tree;
 use std::collections::HashSet;
@@ -322,6 +322,23 @@ pub struct XmlTextReader {
     was_valid: c_int,
     /// Whether the parse ran a DTD validation pass (ctxt->validate).
     did_validate: c_int,
+    /// Whether the first parse was pause-tolerant and ended at an INCOMPLETE
+    /// document — the available input ended inside an open construct while
+    /// the document was still well-formed. The events deliver the completed
+    /// prefix (no END_ELEMENT for elements whose end tag never arrived); the
+    /// Read() that runs past the last event runs the deferred EOF finalize,
+    /// which re-parses the accumulated input with full diagnostics so the
+    /// premature-EOF error surfaces exactly on the read that needs more
+    /// input than the source supplies — upstream xmlTextReaderPushData's
+    /// terminating xmlParseChunk (SP-14.3.1-7, fromStream_broken_stream).
+    doc_incomplete: bool,
+    /// Whether the deferred EOF finalize has run (it runs once, when the
+    /// cursor runs past the last event of an incomplete document).
+    finalized: bool,
+    /// Re-parseable copy of the accumulated input, retained while the
+    /// document is incomplete (the first parse consumed the context's
+    /// stashed buffer). Consumed by `run_eof_finalize`.
+    reparse_input: Option<InputBuffer>,
 }
 
 impl XmlTextReader {
@@ -378,12 +395,26 @@ impl XmlTextReader {
             pattern_tab: Vec::new(),
             was_valid: 0,
             did_validate: 0,
+            doc_incomplete: false,
+            finalized: false,
+            reparse_input: None,
         }
     }
 
     /// Parse the document and build the event list.
     ///
-    /// Returns 0 on success, -1 on error.
+    /// The parse is pause-tolerant (SP-14.3.1-7): an end of the available
+    /// input inside an open construct pauses with the completed prefix kept
+    /// (upstream's streaming reader yields events as constructs complete)
+    /// instead of failing the whole document. The document is marked
+    /// incomplete in that case and the Read() that runs past the last
+    /// delivered event runs the deferred EOF finalize, which re-parses the
+    /// accumulated input with full diagnostics — the premature-EOF error
+    /// fires only then, exactly like upstream xmlTextReaderPushData's
+    /// terminating xmlParseChunk.
+    ///
+    /// Returns 0 on success (complete document, or incomplete document whose
+    /// prefix events are ready), -1 on a definitive parse error.
     ///
     /// # Safety
     ///
@@ -414,10 +445,40 @@ impl XmlTextReader {
             (*self.ctxt).parseMode = crate::abi::types::xmlParserMode::XML_PARSE_READER as c_int;
         }
 
-        // Parse the document.
-        let result = unsafe { parse_document(self.ctxt) };
+        // Take the stashed input buffer (the parse consumes it). Keep a
+        // re-parseable copy so an INCOMPLETE document can be re-parsed by the
+        // deferred EOF finalize.
+        let input_buf_ptr = take_stashed_input_buffer(self.ctxt);
+        if input_buf_ptr.is_null() {
+            self.state = ReadState::ERROR;
+            self.errors.push("Failed to parse document".to_string());
+            return -1;
+        }
+        // SAFETY: the pointer was stashed by setup_parser_input via Box::into_raw.
+        let input_buf = unsafe { Box::from_raw(input_buf_ptr) };
+        let spare = input_buf.duplicate_for_reparse();
 
-        // Get the parsed document.
+        // SAFETY: input_buf moves into the stack; its data lives inside it
+        // for the duration of the parse.
+        let input_stack = InputStack::new(*input_buf);
+
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderPushData): the reader
+        // parses whatever input the source currently holds and yields events
+        // as constructs complete; an end of the available input inside an
+        // open construct PAUSES instead of raising "Premature end of data"
+        // (which would wrongly fail a stream whose tail has not arrived yet —
+        // fromStream_broken_stream must deliver ELEMENT root and the comment
+        // before the stream completes). The eager-partial-delivery engine
+        // (SP-14.3.1-6) provides exactly that pause; the reader parse has no
+        // external SAX consumers, so its SAX delivery is just the tree build.
+        let mut parser = unsafe {
+            crate::xml::parser::state::XmlParser::new_with_partial_resume(input_stack, self.ctxt, 0)
+        };
+        let result = parser.parse_document();
+        let paused = parser.is_paused();
+        let truncated = parser.was_truncated_abort();
+
+        // Snapshot context state before the context is freed.
         let doc = unsafe { (*self.ctxt).myDoc };
         self.doc = doc;
 
@@ -425,6 +486,25 @@ impl XmlTextReader {
         // validity state before the parser context is released.
         self.was_valid = unsafe { (*self.ctxt).valid };
         self.did_validate = unsafe { (*self.ctxt).validate };
+        let well_formed = unsafe { (*self.ctxt).wellFormed };
+
+        // Elements still open when the available input ended (their END tags
+        // were not seen): no END_ELEMENT event exists for them yet — upstream
+        // emits END only once the end tag parses or the document completes at
+        // the EOF finalize. nodeTab[0..nodeNr] is the open-element chain.
+        let mut open: HashSet<usize> = HashSet::new();
+        unsafe {
+            let node_tab = (*self.ctxt).nodeTab;
+            let node_nr = (*self.ctxt).nodeNr;
+            if !node_tab.is_null() {
+                for i in 0..node_nr.max(0) as usize {
+                    let n = *node_tab.add(i);
+                    if !n.is_null() {
+                        open.insert(n as usize);
+                    }
+                }
+            }
+        }
 
         // Free the parser context - we no longer need it.
         if !self.ctxt.is_null() {
@@ -432,51 +512,182 @@ impl XmlTextReader {
         }
         self.ctxt = ptr::null_mut();
 
-        if result != 0 || doc.is_null() {
+        // An end of the available input inside an open construct while the
+        // document is still well-formed means "more input may arrive" — the
+        // completed prefix is deliverable and the premature-EOF diagnostic is
+        // deferred (SP-14.3.1-3 keeps the same distinction for the push API).
+        let incomplete = result != 0 && well_formed != 0 && (paused || truncated);
+
+        // Classify the parse outcome:
+        //  - result == 0: a complete, well-formed document.
+        //  - incomplete: the input ended inside an open construct (paused at
+        //    a construct boundary, or truncated mid-construct) while the
+        //    document was still well-formed — deliver the completed prefix
+        //    now and defer the premature-EOF diagnostic to the read that
+        //    runs past the last event.
+        //  - anything else: a definitive failure whose diagnostics the parse
+        //    already raised (the push API keeps the same distinction between
+        //    "more data expected" and "broken", SP-14.3.1-3).
+        if result == 0 && well_formed != 0 && !doc.is_null() {
+            // Complete, well-formed document.
+            self.reparse_input = None;
+            self.doc_incomplete = false;
+            // `spare` is dropped here.
+
+            // UPSTREAM-PARITY (xmlreader.c
+            // xmlTextReaderSchemaValidateInternal /
+            // xmlTextReaderRelaxNGValidateInternal): schemas attached before
+            // the first Read() are validated against the document as it
+            // streams — the whole-tree reader runs the equivalent validation
+            // right after the parse, inside this first Read() call, so
+            // validity diagnostics are raised through the global libxml error
+            // channel at read time and the outcome is recorded for
+            // xmlTextReaderIsValid.
+            unsafe {
+                self.run_deferred_validation();
+            }
+
+            // UPSTREAM-PARITY (xmlreader.c xmlTextReaderRead NODE_IS_PRESERVED
+            // pruning): registered preserve-patterns are applied to the
+            // parsed tree before events are built — matched nodes and their
+            // element ancestors survive, everything else is unlinked and
+            // freed. Upstream prunes while streaming; the whole-tree reader
+            // collapses that to the equivalent post-parse state (Phase-12
+            // EXTERNAL-CONSUMERS court: reader3.c).
+            unsafe {
+                self.apply_pattern_preservation();
+            }
+
+            // Set the encoding from the document if not already set.
+            if self.encoding.is_null() && !doc.is_null() {
+                // SAFETY: doc is valid.
+                let doc_enc = unsafe { (*doc).encoding };
+                if !doc_enc.is_null() {
+                    self.encoding = unsafe { xml_strdup(doc_enc as *const xmlChar) };
+                }
+            }
+
+            // Build traversal events from the tree.
+            self.build_events();
+
+            self.parsed = true;
+            0
+        } else if incomplete {
+            // Incomplete document: keep the prefix tree and the accumulated
+            // input for the deferred EOF finalize. Deferred schema/RNG
+            // validation and preserve-pattern pruning are skipped — both
+            // operate on a complete tree (upstream validates/prunes as the
+            // streaming parse completes nodes; a document that never
+            // completes never reports validity).
+            self.reparse_input = Some(spare);
+            self.doc_incomplete = true;
+            if !doc.is_null() {
+                // Set the encoding from the document if not already set.
+                if self.encoding.is_null() {
+                    // SAFETY: doc is valid.
+                    let doc_enc = unsafe { (*doc).encoding };
+                    if !doc_enc.is_null() {
+                        self.encoding = unsafe { xml_strdup(doc_enc as *const xmlChar) };
+                    }
+                }
+                self.build_events_with(&open);
+            } else {
+                self.events.clear();
+            }
+            self.parsed = true;
+            0
+        } else {
+            // Definitive failure (diagnostics were raised by the parse).
             // Drop the self-closed markers of the failed parse (keyed by
             // doc — the successful path consumes them during build_events).
-            crate::xml::parser::helpers::drop_self_closed(doc);
+            // `spare` is dropped; nothing was delivered, so no finalize can
+            // be needed.
+            if !doc.is_null() {
+                crate::xml::parser::helpers::drop_self_closed(doc);
+            }
+            self.reparse_input = None;
+            self.doc_incomplete = false;
             self.state = ReadState::ERROR;
             self.errors.push("Failed to parse document".to_string());
             return -1;
         }
+    }
 
-        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderSchemaValidateInternal /
-        // xmlTextReaderRelaxNGValidateInternal): schemas attached before the
-        // first Read() are validated against the document as it streams — the
-        // whole-tree reader runs the equivalent validation right after the
-        // parse, inside this first Read() call, so validity diagnostics are
-        // raised through the global libxml error channel at read time and the
-        // outcome is recorded for xmlTextReaderIsValid.
+    /// The EOF finalize parse of an incomplete document: re-parse the
+    /// accumulated input (retained in `reparse_input`) with full diagnostics
+    /// in a fresh context — the terminating parse that raises "Premature end
+    /// of data" / "Document is empty" on the read that needs more input than
+    /// the source supplied. Returns 0 when the accumulated input is a
+    /// complete, well-formed document, -1 otherwise (the parse raised the
+    /// premature-EOF diagnostics).
+    ///
+    /// # Safety
+    ///
+    /// - `self.reparse_input` must hold the accumulated input bytes.
+    unsafe fn run_eof_finalize(&mut self) -> c_int {
+        // The finalize runs once; take (and drop) the retained buffer.
+        let Some(reparse) = self.reparse_input.take() else {
+            return -1;
+        };
+
+        // SAFETY: create_parser_ctxt returns a valid context or NULL.
+        let ctxt = unsafe { create_parser_ctxt() };
+        if ctxt.is_null() {
+            return -1;
+        }
+        // SAFETY: ctxt is valid; the buffer moves into the context stash.
+        unsafe { setup_parser_input(ctxt, reparse) };
+        // SAFETY: ctxt is valid.
         unsafe {
-            self.run_deferred_validation();
+            crate::abi::exports_parser::apply_options(ctxt, self.options);
+            (*ctxt).parseMode = crate::abi::types::xmlParserMode::XML_PARSE_READER as c_int;
         }
-
-        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderRead NODE_IS_PRESERVED
-        // pruning): registered preserve-patterns are applied to the parsed
-        // tree before events are built — matched nodes and their element
-        // ancestors survive, everything else is unlinked and freed. Upstream
-        // prunes while streaming; the whole-tree reader collapses that to
-        // the equivalent post-parse state (Phase-12 EXTERNAL-CONSUMERS
-        // court: reader3.c).
-        unsafe {
-            self.apply_pattern_preservation();
+        // The terminating parse runs with diagnostics enabled (plain engine):
+        // an end of input inside an open construct raises "Premature end of
+        // data in tag ..." — surfaced now, on the read that needs more
+        // input.
+        let rc = unsafe { parse_document(ctxt) };
+        let doc = unsafe { (*ctxt).myDoc };
+        let well_formed = unsafe { (*ctxt).wellFormed };
+        // SAFETY: ctxt is valid.
+        unsafe { free_parser_ctxt(ctxt) };
+        if !doc.is_null() {
+            // The finalize only needed the outcome and diagnostics — release
+            // the tree it rebuilt (the reader keeps its own prefix tree).
+            crate::xml::parser::helpers::drop_self_closed(doc);
+            // SAFETY: doc was allocated by this parse and is owned by it.
+            unsafe { tree::free_doc(doc) };
         }
-
-        // Set the encoding from the document if not already set.
-        if self.encoding.is_null() && !doc.is_null() {
-            // SAFETY: doc is valid.
-            let doc_enc = unsafe { (*doc).encoding };
-            if !doc_enc.is_null() {
-                self.encoding = unsafe { xml_strdup(doc_enc as *const xmlChar) };
-            }
+        if rc != 0 || well_formed == 0 {
+            -1
+        } else {
+            0
         }
+    }
 
-        // Build traversal events from the tree.
-        self.build_events();
-
-        self.parsed = true;
-        0
+    /// Run the deferred EOF finalize when the cursor runs past the last
+    /// delivered event of an INCOMPLETE document. Mirrors upstream
+    /// xmlTextReaderPushData: the premature-EOF failure surfaces only on the
+    /// read that needs more input than the source can supply, and the cursor
+    /// stays on the last delivered event (fromStream_broken_stream keeps
+    /// nodeType/depth after the failing read).
+    ///
+    /// Returns true when the finalize ran AND the accumulated input is not
+    /// well-formed (the caller reports -1 with the cursor untouched); false
+    /// when nothing needed finalizing or the input is a complete,
+    /// well-formed document.
+    unsafe fn try_finalize_incomplete(&mut self) -> bool {
+        if !self.doc_incomplete || self.finalized {
+            return false;
+        }
+        self.finalized = true;
+        let ok = unsafe { self.run_eof_finalize() } == 0;
+        if !ok {
+            self.state = ReadState::ERROR;
+            true
+        } else {
+            false
+        }
     }
 
     /// Run the deferred XML Schema / RELAX NG validation attached through
@@ -613,6 +824,17 @@ impl XmlTextReader {
     /// Generates events for all nodes (ELEMENT, TEXT, COMMENT, PI, etc.)
     /// and END_ELEMENT events for elements.
     fn build_events(&mut self) {
+        // SAFETY: an empty suppression set — every closed element ends.
+        let empty = HashSet::new();
+        self.build_events_with(&empty);
+    }
+
+    /// Build traversal events from the tree, suppressing the END_ELEMENT
+    /// events of the elements in `suppress_ends` (elements whose end tag was
+    /// never parsed — the parse of an incomplete document paused with them
+    /// still open; upstream only emits END once the end tag parses or the
+    /// document completes, SP-14.3.1-7).
+    fn build_events_with(&mut self, suppress_ends: &HashSet<usize>) {
         self.events.clear();
 
         if self.doc.is_null() {
@@ -630,7 +852,7 @@ impl XmlTextReader {
         unsafe {
             let mut n = root;
             while !n.is_null() {
-                self.walk_tree(n, 0);
+                self.walk_tree(n, 0, suppress_ends);
                 n = (*n).next;
             }
         }
@@ -641,7 +863,12 @@ impl XmlTextReader {
     /// # Safety
     ///
     /// `node` must be a valid pointer to a node in the parsed tree.
-    unsafe fn walk_tree(&mut self, node: *mut _xmlNode, depth: i32) {
+    unsafe fn walk_tree(
+        &mut self,
+        node: *mut _xmlNode,
+        depth: i32,
+        suppress_ends: &HashSet<usize>,
+    ) {
         if node.is_null() {
             return;
         }
@@ -655,7 +882,9 @@ impl XmlTextReader {
         // element fires END_ELEMENT). Elements with children always end;
         // childless elements end iff they were NOT parsed from `<a/>`
         // (R-000144 note: the tree alone cannot tell `<a/>` from `<a></a>`,
-        // so the parser records self-closed nodes during reader parses).
+        // so the parser records self-closed nodes during reader parses). An
+        // element the paused parse left OPEN (its end tag never arrived) has
+        // no END event yet either (suppress_ends).
         if node_type == XML_ELEMENT_NODE as c_int {
             self.events.push(TraversalEvent {
                 node,
@@ -668,14 +897,15 @@ impl XmlTextReader {
             let mut child = unsafe { (*node).children };
             while !child.is_null() {
                 let child_depth = depth + 1;
-                self.walk_tree(child, child_depth);
+                self.walk_tree(child, child_depth, suppress_ends);
                 // SAFETY: child's next pointer is valid.
                 child = unsafe { (*child).next };
             }
 
             // Generate END_ELEMENT for explicitly closed elements only.
             let self_closed = crate::xml::parser::helpers::take_self_closed(self.doc, node);
-            if !self_closed {
+            let still_open = suppress_ends.contains(&(node as usize));
+            if !self_closed && !still_open {
                 self.events.push(TraversalEvent {
                     node,
                     is_end: true,
@@ -1066,8 +1296,15 @@ impl XmlTextReader {
         }
 
         // Advance to the next event.
-        // If no events, we're at EOF.
+        // If no events, we're at EOF (an incomplete document with NO completed
+        // prefix events — empty input, or a construct truncated from the very
+        // start — runs the deferred EOF finalize on this same read and
+        // reports the failure, exactly like upstream's INITIAL read whose
+        // push parse found no node before the stream ended).
         if self.events.is_empty() {
+            if unsafe { self.try_finalize_incomplete() } {
+                return -1;
+            }
             self.state = ReadState::EOF;
             return 0;
         }
@@ -1088,6 +1325,16 @@ impl XmlTextReader {
         if next_index < self.events.len() {
             self.position_at(next_index);
             1
+        } else if unsafe { self.try_finalize_incomplete() } {
+            // The cursor ran past the last event of an INCOMPLETE document:
+            // the deferred EOF finalize re-parsed the accumulated input and
+            // the premature-EOF error fired (upstream xmlTextReaderPushData's
+            // terminating xmlParseChunk on the read that needs more input
+            // than the source can supply). Report the error with the cursor
+            // untouched — the reader still exposes the last delivered node
+            // (fromStream_broken_stream reads depth/nodeType after the
+            // failing read).
+            -1
         } else {
             self.state = ReadState::EOF;
             self.cur_node = ptr::null_mut();
@@ -1150,6 +1397,12 @@ impl XmlTextReader {
                 self.position_at(nxt);
                 return 1;
             }
+            // Ran past the last event: an incomplete document runs its
+            // deferred EOF finalize here (upstream Next pushes the parser
+            // like Read and surfaces the premature-EOF error the same way).
+            if unsafe { self.try_finalize_incomplete() } {
+                return -1;
+            }
             self.position_at(self.events.len());
             return 0;
         }
@@ -1168,6 +1421,12 @@ impl XmlTextReader {
                 return 1;
             }
             i += 1;
+        }
+        // Same deferred-EOF-finalize handling as the read path: nothing left
+        // to skip to, and an incomplete document reports its premature-EOF
+        // error on this call.
+        if unsafe { self.try_finalize_incomplete() } {
+            return -1;
         }
         self.position_at(self.events.len());
         0
@@ -3400,6 +3659,9 @@ pub unsafe extern "C" fn xmlTextReaderSetup(
     r.options = options;
     r.parsed = false;
     r.errors.clear();
+    r.doc_incomplete = false;
+    r.finalized = false;
+    r.reparse_input = None;
 
     // Update URL.
     if !r.URL.is_null() {
@@ -4101,6 +4363,56 @@ mod tests {
             );
 
             assert_eq!((*reader).ReadState(), ReadState::EOF);
+            free_reader(reader);
+        }
+    }
+
+    /// SP-14.3.1-7 (fromStream_broken_stream): a document that is NOT
+    /// complete when the input ends (an unterminated root) still delivers the
+    /// completed prefix events — the root element and the comment — and the
+    /// premature-EOF failure surfaces only on the read that runs past the
+    /// last event, leaving the cursor on the last delivered node (upstream
+    /// xmlTextReaderPushData's terminating xmlParseChunk).
+    ///
+    /// # Safety
+    ///
+    /// - The reader is created from a static string literal that stays alive
+    ///   for the reader's lifetime; the `reader` pointer is asserted non-NULL
+    ///   before it is dereferenced and is freed exactly once with
+    ///   `free_reader`.
+    #[test]
+    fn test_read_incomplete_document_defers_eof_error() {
+        unsafe {
+            // Deliberately unterminated: <root><!--my comment--> (no </root>).
+            let reader = create_reader("<root><!--my comment-->");
+            assert!(!reader.is_null());
+
+            // read #1: the root element is delivered even though the document
+            // is not complete.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
+            assert_eq!(xmlstr_to_bytes((*reader).Name()), b"root");
+            assert_eq!((*reader).Depth(), 0);
+
+            // read #2: the comment.
+            assert_eq!(xmlTextReaderRead(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::COMMENT);
+            assert_eq!(xmlstr_to_bytes((*reader).Value()), b"my comment");
+            assert_eq!((*reader).Depth(), 1);
+
+            // read #3: the parse needs more input than the source supplies;
+            // the deferred EOF finalize reports the failure and the cursor
+            // stays on the last delivered event (upstream
+            // fromStream_broken_stream).
+            assert_eq!(xmlTextReaderRead(reader), -1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::COMMENT);
+            assert_eq!((*reader).Depth(), 1);
+
+            // Later reads keep failing with the cursor frozen.
+            assert_eq!(xmlTextReaderRead(reader), -1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::COMMENT);
+            assert_eq!((*reader).Depth(), 1);
+
             free_reader(reader);
         }
     }
