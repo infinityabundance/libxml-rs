@@ -2163,9 +2163,62 @@ pub(crate) unsafe fn process_copy(ctxt: *mut _xsltTransformContext, inst: *mut _
     let typ = (*node).type_;
     let saved_insert = (*ctxt).insert;
     if typ == XML_ELEMENT_NODE as c_int {
-        let new_elem = new_element_node(ctxt, (*node).name, (*node).ns);
+        // UPSTREAM-PARITY (transform.c xsltCopy -> xsltShallowCopyElem,
+        // non-LRE): shallow-copy the element into the result tree, declare
+        // the source element's namespace declarations on the copy, and
+        // re-bind the element namespace with xsltGetSpecialNamespace
+        // (namespace fixup). The pre-fix code only carried the source ns
+        // pointer over without declaring it, so copied elements lost their
+        // in-scope declarations (gh21357_2 / namespaced identity copies).
+        let name = (*node).name;
+        if name.is_null() {
+            return;
+        }
+        // New element with NO namespace yet; append BEFORE the fixups so the
+        // namespace search can see the ancestor chain (upstream order).
+        let new_elem = crate::xml::tree::new_node(ptr::null_mut(), name);
         if new_elem.is_null() {
             return;
+        }
+        append_to_result(ctxt, new_elem);
+        // Declare the copied element's namespace declarations (upstream
+        // xsltCopyNamespaceListInternal — plain copies, no aliasing).
+        let mut nsdef = (*node).nsDef;
+        while !nsdef.is_null() {
+            unsafe {
+                if !(*nsdef).href.is_null() {
+                    crate::xml::tree::new_ns(new_elem, (*nsdef).href, (*nsdef).prefix);
+                }
+            }
+            nsdef = unsafe { (*nsdef).next };
+        }
+        if !(*node).ns.is_null() {
+            let src_ns = &*(*node).ns;
+            if src_ns.href.is_null() || *src_ns.href == 0 {
+                // Source element's namespace is a disabled/empty decl.
+                (*new_elem).ns = ptr::null_mut();
+            } else {
+                let fixed = crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
+                    ctxt,
+                    inst,
+                    src_ns.href,
+                    src_ns.prefix,
+                    new_elem,
+                );
+                (*new_elem).ns = fixed;
+            }
+        } else if !saved_insert.is_null()
+            && (*saved_insert).type_ == XML_ELEMENT_NODE as c_int
+            && !(*saved_insert).ns.is_null()
+        {
+            // "Undeclare" the default namespace (upstream).
+            crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
+                ctxt,
+                inst,
+                ptr::null(),
+                ptr::null(),
+                new_elem,
+            );
         }
         (*ctxt).insert = new_elem;
     } else if typ == XML_TEXT_NODE as c_int || typ == XML_CDATA_SECTION_NODE as c_int {
@@ -2180,12 +2233,63 @@ pub(crate) unsafe fn process_copy(ctxt: *mut _xsltTransformContext, inst: *mut _
         if !(*node).name.is_null() {
             append_pi_node(ctxt, (*node).name, (*node).content);
         }
-    } else if typ == XML_ATTRIBUTE_NODE as c_int && !(*node).children.is_null() {
-        let val = node_get_content((*node).children);
-        if !val.is_null() {
-            append_text_node(ctxt, val);
-            libc::free(val as *mut libc::c_void);
-        }
+    } else if typ == XML_ATTRIBUTE_NODE as c_int {
+        // UPSTREAM-PARITY (transform.c xsltCopy -> xsltShallowCopyAttr): an
+        // xsl:copy of an attribute node creates an ATTRIBUTE copy on the
+        // current result element — namespace fixup through
+        // xsltGetSpecialNamespace + xmlSetNsProp — never a text node.
+        // Modern DOM documents expose xmlns declarations as attributes in
+        // the xmlns namespace (php_dom_ns_compat_mark_attribute_list);
+        // copying such an attribute must reproduce the declaration literally
+        // (gh21357_2: ns_1:xmlns="..."), not splat its value as text.
+        let target = (*ctxt).insert;
+        let copy_ok = if target.is_null() || (*target).type_ != XML_ELEMENT_NODE as c_int {
+            crate::xslt::errors::xsltTransformError(
+                ctxt,
+                ptr::null_mut(),
+                inst,
+                c"Cannot add an attribute node to a non-element node.\n"
+                    .as_ptr()
+                    .cast::<libc::c_char>(),
+            );
+            false
+        } else if !(*target).children.is_null() {
+            crate::xslt::errors::xsltTransformError(
+                ctxt,
+                ptr::null_mut(),
+                inst,
+                c"Attribute nodes must be added before any child nodes to an element.\n"
+                    .as_ptr()
+                    .cast::<libc::c_char>()
+                    .add(0),
+            );
+            false
+        } else {
+            let val = node_get_content((*node).children);
+            let attr = node as *mut _xmlAttr;
+            let attr_ref = &*attr;
+            let ns = if attr_ref.ns.is_null() {
+                ptr::null_mut()
+            } else {
+                crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
+                    ctxt,
+                    inst,
+                    (*attr_ref.ns).href,
+                    (*attr_ref.ns).prefix,
+                    target,
+                )
+            };
+            // xmlSetNsProp(target, ns, attr->name, value): duplicates are
+            // replaced and the namespace is assigned even to a duplicate
+            // (upstream note). NULL value is tolerated (xmlSetNsProp with
+            // NULL content creates an empty attribute).
+            crate::abi::exports_xml2::xmlSetNsProp(target, ns, attr_ref.name, val);
+            if !val.is_null() {
+                libc::free(val as *mut libc::c_void);
+            }
+            true
+        };
+        let _ = copy_ok;
     }
     // Process children (attributes and content).
     execute_content(ctxt, (*inst).children);
@@ -2210,6 +2314,7 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
     }
     // Check for the namespace attribute.
     let ns_attr = get_prop(inst, c"namespace".as_ptr() as *const xmlChar);
+    let had_ns_attr = !ns_attr.is_null();
     let ns_str = if !ns_attr.is_null() {
         let v = eval_avt(ctxt, ns_attr);
         libc::free(ns_attr as *mut libc::c_void);
@@ -2217,23 +2322,56 @@ pub(crate) unsafe fn process_element(ctxt: *mut _xsltTransformContext, inst: *mu
     } else {
         ptr::null_mut()
     };
-    // Create the element.
-    let ns = if !ns_str.is_null() && *ns_str != 0 {
-        let n = new_ns(ptr::null_mut(), ns_str, ptr::null());
-        libc::free(ns_str as *mut libc::c_void);
-        n
-    } else {
+    // Resolve the namespace name (upstream xsltElement): the `namespace`
+    // attribute (AVT, may be empty = no namespace); when ABSENT, the QName
+    // is expanded using the namespace declarations in effect for the
+    // xsl:element element, INCLUDING any default namespace declaration
+    // (`xmlSearchNs(inst->doc, inst, NULL)`). gh21357_2's
+    // `<xsl:element ... xmlns="http://something/new/">` relies on the
+    // default-ns case: the created element is in the instruction's default
+    // namespace.
+    //
+    // Borrowed pointers into the stylesheet when no namespace attribute is
+    // present; `ns_str` (owned) when the attribute supplied a value. The
+    // binding below copies the href/prefix before `ns_str` is freed.
+    let mut borrowed_href: *const xmlChar = ptr::null();
+    let mut borrowed_prefix: *const xmlChar = ptr::null();
+    if !ns_str.is_null() && *ns_str != 0 {
+        borrowed_href = ns_str;
+    } else if ns_str.is_null() && !had_ns_attr {
+        // No namespace attribute: in-scope default namespace of the
+        // instruction (prefix NULL).
+        let def = crate::abi::exports_xml2::xmlSearchNs((*inst).doc, inst, ptr::null());
+        if !def.is_null() && !(*def).href.is_null() && *(*def).href != 0 {
+            borrowed_href = (*def).href;
+            borrowed_prefix = (*def).prefix;
+        }
+    }
+    let elem = crate::xml::tree::new_node(ptr::null_mut(), name_str);
+    libc::free(name_str as *mut libc::c_void);
+    if elem.is_null() {
         if !ns_str.is_null() {
             libc::free(ns_str as *mut libc::c_void);
         }
-        ptr::null_mut()
-    };
-    let elem = new_node(ns, name_str);
-    libc::free(name_str as *mut libc::c_void);
-    if elem.is_null() {
         return;
     }
     append_to_result(ctxt, elem);
+    if !borrowed_href.is_null() && *borrowed_href != 0 {
+        // Bind: find or declare the namespace on the element
+        // (xsltGetSpecialNamespace — declares a default decl when the
+        // prefix is free; mints ns_1.. when the default is taken).
+        let bound = crate::abi::exports_xslt_avt::xsltGetSpecialNamespace(
+            ctxt,
+            inst,
+            borrowed_href,
+            borrowed_prefix,
+            elem,
+        );
+        (*elem).ns = bound;
+    }
+    if !ns_str.is_null() {
+        libc::free(ns_str as *mut libc::c_void);
+    }
     let saved_insert = (*ctxt).insert;
     (*ctxt).insert = elem;
     execute_content(ctxt, (*inst).children);

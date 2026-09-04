@@ -768,6 +768,35 @@ pub unsafe fn compare_document_order(a: *mut _xmlNode, b: *mut _xmlNode) -> Orde
     if n.is_null() {
         return a.cmp(&b);
     }
+    // UPSTREAM-PARITY (xpath.c xmlXPathCmpNodes): in document order an
+    // ELEMENT's attribute nodes precede its child nodes (so a `node()|@*`
+    // union sorts the attributes first — the XSLT identity copy depends on
+    // copying attributes onto a still childless result element). The
+    // children-list walk below cannot order attributes (they are not in the
+    // list), so resolve attribute siblings explicitly first.
+    let attr_a = (*parent_a).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int;
+    let attr_b = (*parent_b).type_ == xmlElementType::XML_ATTRIBUTE_NODE as c_int;
+    if attr_a || attr_b {
+        if attr_a && !attr_b {
+            return Ordering::Less;
+        }
+        if !attr_a && attr_b {
+            return Ordering::Greater;
+        }
+        // Both are attributes of the same element: order by their position in
+        // the properties list.
+        let mut prop = (*n).properties;
+        while !prop.is_null() {
+            if prop as usize == parent_a as usize {
+                return Ordering::Less;
+            }
+            if prop as usize == parent_b as usize {
+                return Ordering::Greater;
+            }
+            prop = (*prop).next;
+        }
+        return a.cmp(&b);
+    }
     let mut child = (*n).children;
     while !child.is_null() {
         if child == parent_a {

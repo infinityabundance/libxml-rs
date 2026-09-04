@@ -154,6 +154,13 @@ unsafe fn child_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut Nod
     if node.is_null() {
         return;
     }
+    // XPath data model: attribute nodes have no children (their value text
+    // lives in the attr->children list in the C tree but is not navigable via
+    // the child axis — the XSLT identity `<xsl:copy>` of an attribute must
+    // not re-emit the value as text).
+    if unsafe { (*node).type_ } == xmlElementType::XML_ATTRIBUTE_NODE as c_int {
+        return;
+    }
     let mut child = (*node).children;
     while !child.is_null() {
         let child_type = unsafe { (*child).type_ };

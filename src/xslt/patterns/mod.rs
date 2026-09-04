@@ -193,7 +193,7 @@ pub struct _xsltPatternStep {
 ///
 /// `pattern` must be a valid null-terminated `xmlChar*` or null.
 /// `doc` must be a valid `_xmlDoc*` or null.
-pub unsafe fn xsltCompilePattern(pattern: *const xmlChar, _doc: *mut _xmlDoc) -> *mut _xsltPattern {
+pub unsafe fn xsltCompilePattern(pattern: *const xmlChar, doc: *mut _xmlDoc) -> *mut _xsltPattern {
     if pattern.is_null() {
         return ptr::null_mut();
     }
@@ -203,10 +203,21 @@ pub unsafe fn xsltCompilePattern(pattern: *const xmlChar, _doc: *mut _xmlDoc) ->
         return ptr::null_mut();
     }
 
-    let compiled = match compile_pattern_string(&pattern_str) {
+    let mut compiled = match compile_pattern_string(&pattern_str) {
         Some(cp) => cp,
         None => return ptr::null_mut(),
     };
+
+    // UPSTREAM-PARITY (pattern.c xsltCompilePattern: patterns resolve their
+    // prefixes against the stylesheet document — the compiled steps carry the
+    // namespace URI, and matching compares URIs, never prefix strings). A
+    // pattern like `old:*` must match any element in the old namespace
+    // regardless of the element's own prefix (a default-namespace element has
+    // a NULL prefix). Without this, `match="old:*"` only ever matched
+    // elements whose prefix happened to be spelled `old` (gh21357_2).
+    if !doc.is_null() {
+        resolve_prefixes_against_doc(doc, &mut compiled);
+    }
 
     // Allocate and store the compiled pattern
     let layout = std::alloc::Layout::new::<CompiledPattern>();
@@ -216,6 +227,76 @@ pub unsafe fn xsltCompilePattern(pattern: *const xmlChar, _doc: *mut _xmlDoc) ->
     }
     ptr::write(ptr, compiled);
     ptr as *mut _xsltPattern
+}
+
+/// Resolve every prefix-bearing name test in a compiled pattern against the
+/// in-scope namespace declarations of the stylesheet document's root element
+/// (upstream xmlGetNsList(doc, node) at pattern-compile time). `NsWildcard`
+/// and `QName` forms become their URI-carrying equivalents so matching is by
+/// URI.
+fn resolve_prefixes_against_doc(doc: *mut _xmlDoc, compiled: &mut CompiledPattern) {
+    unsafe {
+        // Find the root element of the stylesheet document.
+        let mut root: *mut _xmlNode = ptr::null_mut();
+        if !(*doc).children.is_null() {
+            let mut c = (*doc).children;
+            while !c.is_null() {
+                if (*c).type_ == xmlElementType::XML_ELEMENT_NODE as c_int {
+                    root = c;
+                    break;
+                }
+                c = (*c).next;
+            }
+        }
+        if root.is_null() {
+            return;
+        }
+        for sub in compiled.patterns.iter_mut() {
+            for entry in sub.steps.iter_mut() {
+                if let PatternStepEntry::Step(step) = entry {
+                    let new_test = resolve_node_test_prefix(doc, root, step.node_test.clone());
+                    step.node_test = new_test;
+                }
+            }
+        }
+    }
+}
+
+/// Resolve the prefix of a single node test to its URI (upstream binds the
+/// pattern QName's prefix through the stylesheet).
+fn resolve_node_test_prefix(doc: *mut _xmlDoc, root: *mut _xmlNode, test: NodeTest) -> NodeTest {
+    use crate::xml::xpath::ast::NameTest;
+    match test {
+        NodeTest::NsWildcard(prefix) => match lookup_prefix_uri(doc, root, &prefix) {
+            Some(uri) => NodeTest::NsWildcardUri(uri),
+            None => NodeTest::NsWildcard(prefix),
+        },
+        NodeTest::NameTest(NameTest::QName { prefix, local }) => {
+            match lookup_prefix_uri(doc, root, &prefix) {
+                Some(uri) => NodeTest::NameTest(NameTest::QNameUri { uri, local }),
+                None => NodeTest::NameTest(NameTest::QName { prefix, local }),
+            }
+        }
+        other => other,
+    }
+}
+
+/// Resolve a pattern prefix to its stylesheet URI (xmlSearchNs on the root
+/// element), or None when the prefix is unbound/empty.
+fn lookup_prefix_uri(doc: *mut _xmlDoc, root: *mut _xmlNode, prefix: &str) -> Option<String> {
+    if prefix.is_empty() {
+        return None;
+    }
+    let prefix_c = unsafe { crate::xml::string::bytes_to_xmlstr(prefix.as_bytes()) };
+    if prefix_c.is_null() {
+        return None;
+    }
+    let ns = unsafe { crate::abi::exports_xml2::xmlSearchNs(doc, root, prefix_c) };
+    unsafe { crate::abi::allocator::xmlFreeImpl(prefix_c as *mut libc::c_void) };
+    if ns.is_null() || unsafe { (*ns).href.is_null() } {
+        return None;
+    }
+    Some(unsafe { xmlstr_to_string((*ns).href) })
 }
 
 /// Internal: compile a pattern string into a `CompiledPattern`.
@@ -1109,16 +1190,24 @@ fn compute_expr_priority(expr: &Expr) -> f64 {
         Expr::Filter(primary, _) => compute_expr_priority(primary),
 
         // id() and key() functions: priority 0.0
-        Expr::FunctionCall { name, .. } => {
+        Expr::FunctionCall { name, args } => {
             if name == "id" || name == "key" {
                 0.0
             } else {
                 // Bare node tests (node(), text(), comment(),
                 // processing-instruction()) parse as function calls at the
-                // top level; translate them to their step priorities.
+                // top level; translate them to their step priorities
+                // (upstream pattern.c: NODE/TEXT/ALL/COMMENT and nameless PI
+                // are -0.5; processing-instruction('literal') is 0).
                 match name.as_str() {
-                    "node" => -0.25,
-                    "text" | "comment" | "processing-instruction" => 0.0,
+                    "node" | "text" | "comment" => -0.5,
+                    "processing-instruction" => {
+                        if args.iter().any(|a| matches!(a, Expr::StringLiteral(_))) {
+                            0.0
+                        } else {
+                            -0.5
+                        }
+                    }
                     _ => 0.5,
                 }
             }
@@ -1129,53 +1218,40 @@ fn compute_expr_priority(expr: &Expr) -> f64 {
     }
 }
 
-/// Compute the default priority of a single step.
-fn compute_step_priority(step: &Step) -> f64 {
-    match &step.node_test {
-        // node() test: -0.25
-        NodeTest::Node => -0.25,
+/// Compute the default priority of a single step (upstream pattern.c
+/// xsltCompilePattern priority rules: QName tests (element/attribute, PI
+/// with literal) are 0; namespace wildcards (NCName:*) are -0.25;
+/// node()/text()/comment()/nameless PI and the * wildcards are -0.5).
+fn compute_step_priority(_step: &Step) -> f64 {
+    match &_step.node_test {
+        // node() test: -0.5
+        NodeTest::Node => -0.5,
 
-        // text(), comment(), processing-instruction(): 0.0
-        NodeTest::Text | NodeTest::Comment | NodeTest::ProcessingInstruction(_) => 0.0,
+        // text(), comment(): -0.5; processing-instruction('literal'): 0
+        NodeTest::Text | NodeTest::Comment => -0.5,
+        NodeTest::ProcessingInstruction(Some(_)) => 0.0,
+        NodeTest::ProcessingInstruction(None) => -0.5,
 
-        // Name test: 0.0 for a specific name on the child axis;
-        // 0.5 on the attribute axis (@QName per XSLT 1.0 §5.5).
+        // Name test: 0.0 for a specific name (any axis — @QName is also a
+        // QName test); upstream XSLT_OP_ATTR with a value keeps priority 0.
         NodeTest::NameTest(name_test) => match name_test {
-            NameTest::LocalName(_) | NameTest::QName { .. } | NameTest::QNameUri { .. } => {
-                if step.axis == Axis::Attribute {
-                    0.5
-                } else {
-                    0.0
-                }
-            }
+            NameTest::LocalName(_) | NameTest::QName { .. } | NameTest::QNameUri { .. } => 0.0,
             NameTest::Any => {
-                // * in element context: -0.5
-                // * in attribute context: +0.5
-                if step.axis == Axis::Attribute {
-                    0.5
-                } else {
-                    -0.5
-                }
+                // * in element context and @* (attribute wildcard): -0.5
+                -0.5
             }
         },
 
-        // * (Wildcard): -0.5 in element context, +0.5 in attribute context
-        NodeTest::Wildcard => {
-            if step.axis == Axis::Attribute {
-                0.5
-            } else {
-                -0.5
-            }
-        }
+        // * (Wildcard): -0.5 in element and attribute context
+        NodeTest::Wildcard => -0.5,
 
-        // prefix:* namespace wildcard: -0.5
-        NodeTest::NsWildcard(_) | NodeTest::NsWildcardUri(_) => {
-            if step.axis == Axis::Attribute {
-                0.5
-            } else {
-                -0.5
-            }
-        }
+        // prefix:* namespace wildcard: -0.25 (XSLT 1.0 §5.5 / upstream
+        // pattern.c XSLT_OP_NS and XSLT_OP_ATTR-with-value2: "If the pattern
+        // is of the form NCName:* then its default priority is -0.25" —
+        // strictly higher than node()/* (-0.5) so a specific namespace
+        // pattern beats the identity copy; gh21357_2's match="old:*" must
+        // win over match="node()|@*").
+        NodeTest::NsWildcard(_) | NodeTest::NsWildcardUri(_) => -0.25,
     }
 }
 
@@ -1296,44 +1372,51 @@ mod tests {
 
     #[test]
     fn test_default_priority_node_test() {
-        // node() test → -0.25
+        // node() test → -0.5 (upstream pattern.c XSLT_OP_NODE)
         let priority = compute_default_priority("node()");
         assert!(
-            (priority - (-0.25)).abs() < f64::EPSILON,
-            "Expected -0.25 for node(), got {}",
+            (priority - (-0.5)).abs() < f64::EPSILON,
+            "Expected -0.5 for node(), got {}",
             priority
         );
     }
 
     #[test]
     fn test_default_priority_text_test() {
-        // text() test → 0.0
+        // text() test → -0.5 (upstream pattern.c XSLT_OP_TEXT)
         let priority = compute_default_priority("text()");
         assert!(
-            (priority - 0.0).abs() < f64::EPSILON,
-            "Expected 0.0 for text(), got {}",
+            (priority - (-0.5)).abs() < f64::EPSILON,
+            "Expected -0.5 for text(), got {}",
             priority
         );
     }
 
     #[test]
     fn test_default_priority_comment_test() {
-        // comment() test → 0.0
+        // comment() test → -0.5 (upstream pattern.c XSLT_OP_COMMENT)
         let priority = compute_default_priority("comment()");
         assert!(
-            (priority - 0.0).abs() < f64::EPSILON,
-            "Expected 0.0 for comment(), got {}",
+            (priority - (-0.5)).abs() < f64::EPSILON,
+            "Expected -0.5 for comment(), got {}",
             priority
         );
     }
 
     #[test]
     fn test_default_priority_processing_instruction() {
-        // processing-instruction() test → 0.0
+        // processing-instruction() test (no literal) → -0.5; with a literal
+        // target it is a QName-like test → 0 (upstream pattern.c XSLT_OP_PI).
         let priority = compute_default_priority("processing-instruction()");
         assert!(
+            (priority - (-0.5)).abs() < f64::EPSILON,
+            "Expected -0.5 for processing-instruction(), got {}",
+            priority
+        );
+        let priority = compute_default_priority("processing-instruction('foo')");
+        assert!(
             (priority - 0.0).abs() < f64::EPSILON,
-            "Expected 0.0 for processing-instruction(), got {}",
+            "Expected 0.0 for processing-instruction('foo'), got {}",
             priority
         );
     }
@@ -1351,33 +1434,33 @@ mod tests {
 
     #[test]
     fn test_default_priority_ns_wildcard() {
-        // ns:* wildcard → -0.5
+        // ns:* wildcard → -0.25 (XSLT 1.0 §5.5 NCName:*)
         let priority = compute_default_priority("ns:*");
         assert!(
-            (priority - (-0.5)).abs() < f64::EPSILON,
-            "Expected -0.5 for ns:*, got {}",
+            (priority - (-0.25)).abs() < f64::EPSILON,
+            "Expected -0.25 for ns:*, got {}",
             priority
         );
     }
 
     #[test]
     fn test_default_priority_attribute() {
-        // @attr → +0.5
+        // @attr (QName) → 0.0 (upstream pattern.c keeps QName tests at 0)
         let priority = compute_default_priority("@attr");
         assert!(
-            (priority - 0.5).abs() < f64::EPSILON,
-            "Expected 0.5 for @attr, got {}",
+            (priority - 0.0).abs() < f64::EPSILON,
+            "Expected 0.0 for @attr, got {}",
             priority
         );
     }
 
     #[test]
     fn test_default_priority_attribute_wildcard() {
-        // @* → +0.5
+        // @* → -0.5 (upstream pattern.c XSLT_OP_ATTR without value)
         let priority = compute_default_priority("@*");
         assert!(
-            (priority - 0.5).abs() < f64::EPSILON,
-            "Expected 0.5 for @*, got {}",
+            (priority - (-0.5)).abs() < f64::EPSILON,
+            "Expected -0.5 for @*, got {}",
             priority
         );
     }
@@ -1989,16 +2072,16 @@ mod tests {
             let pattern_str = c"node()".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
-                (priority - (-0.25)).abs() < f64::EPSILON,
-                "Expected -0.25 for 'node()', got {}",
+                (priority - (-0.5)).abs() < f64::EPSILON,
+                "Expected -0.5 for 'node()', got {}",
                 priority
             );
 
             let pattern_str = c"@attr".as_ptr() as *const xmlChar;
             let priority = xsltDefaultPriority(pattern_str);
             assert!(
-                (priority - 0.5).abs() < f64::EPSILON,
-                "Expected 0.5 for '@attr', got {}",
+                (priority - 0.0).abs() < f64::EPSILON,
+                "Expected 0.0 for '@attr', got {}",
                 priority
             );
         }
