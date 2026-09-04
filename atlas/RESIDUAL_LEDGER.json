@@ -1831,7 +1831,7 @@
     {
      "status": "OPEN",
      "date": "2026-08-30",
-     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend \u2014 a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED \u2014 the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item)."
+     "note": " | 11.1-X final disposition: the iconv/ICU-only encodings (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP, Shift_JIS, EUC-JP, windows-1252) remain INTENTIONAL_SAFE_DIVERGENCE: the crate ships no iconv/ICU backend, so XML_ERR_UNSUPPORTED_ENCODING is the correct native answer. ENCODING-001 is byte-identical on the native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and on every error path. Closing this residual would require adding an iconv backend \u2014 a future work item, not a parity defect (triangulated against every upstream epoch: none provides these converters without iconv/ICU). | 11.1-Z.1 amendment: reclassified from INTENTIONAL_SAFE_DIVERGENCE to UNRESOLVED \u2014 the iconv/ICU-only encodings are an actual current Linux-x86-64 observable difference vs the Iconv+ICU-enabled 2.15.3 oracle, not a platform obligation; closing the residual requires implementing an iconv/ICU backend (future implementation work item). Phase 14.27 (2026-09-05) partial closure: Shift_JIS + EUC-JP are now served by NATIVE encoding_rs-backed converters (input and output; CP932-compatible WHATWG Shift_JIS + WHATWG EUC-JP, byte-identical to the oracle's glibc-iconv output on the shared JIS X 0208 repertoire and on the unmappable->decimal-charref error path; WHATWG/CP932 extension-range differences are the residual remainder), joining the earlier native windows-1252 converter. Still iconv/ICU-only (no converter): UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16 and ISO-2022-JP (the last is stateful \u2014 a chunked native implementation must carry escape state across flushes)."
     }
    ],
    "disposition": "11.1-Z.1 reclassification (UNRESOLVED, not INTENTIONAL_SAFE_DIVERGENCE): this is a current executed-platform difference \u2014 on the 2.15.3 system oracle (Iconv+ICU enabled) the encodings above return handlers; the candidate returns XML_ERR_UNSUPPORTED_ENCODING. The native set (UTF-8, UTF-16LE/BE, UTF-16, ISO-8859-1, US-ASCII) and all error paths stay byte-identical (ENCODING-001). Closure requires an iconv/ICU backend \u2014 tracked as UNRESOLVED so it must eventually be implemented rather than waived.",
@@ -3375,7 +3375,7 @@
   },
   {
    "id": "R-000198",
-   "status": "OPEN",
+   "status": "FIXED",
    "phase": "14",
    "title": "xmlTextWriterStartDocument does not install the output encoder on the writer's output buffer: non-UTF-8 writer output (xmlTextWriterWriteComment/String/... after startDocument(encoding:...)) is emitted unconverted as UTF-8",
    "surface": "xmlTextWriterStartDocument, xmlTextWriterSetOutputEncoding, xmlOutputBufferFlush encoder path (xmlwriter.c / xmlIO.c)",
@@ -3393,7 +3393,7 @@
     "ENCODING-001"
    ],
    "evidence": [
-    "courts/receipts/phase-14/php-14-26-zts-green-20260905/sj-toStream-probe.php"
+    "courts/receipts/phase-14/php-14-27-writer-encoder-sjis-20260905/sjis-euc-byte-parity-probe.php"
    ],
    "classification": "CANDIDATE_BUG",
    "history": [
@@ -3401,8 +3401,15 @@
      "status": "OPEN",
      "date": "2026-09-04",
      "note": "Discovered in Phase 14.25 while disposing of the shiftjis .exp case: the candidate writer emitted raw UTF-8 for the Shift_JIS comment while the oracle emitted 0x82 0x9F per U+3041 \u2014 a genuine candidate-vs-oracle output divergence hidden by the unsatisfiable .exp. Phase 14.26 (ZTS gate) re-confirmed: the ZTS oracle passes the doctored phpt with real SJIS bytes; the candidate still emits UTF-8."
+    },
+    {
+     "status": "FIXED",
+     "date": "2026-09-05",
+     "note": "Phase 14.27 closure: xmlTextWriterStartDocument now mirrors upstream xmlwriter.c \u2014 the declared encoding's handler is resolved via xmlFindCharEncodingHandler and INSTALLED on the output buffer (out->encoder + a 4000-byte conv buffer) before the declaration is written, so comment/text/attribute content is transcoded at output-buffer flush (io::output_buffer_flush converts when ob.encoder is set). An encoding the registry cannot serve returns -1 and writes nothing (upstream unsupported-encoding behavior; php XMLWriter::startDocument -> FALSE). Byte-parity probe (courts/receipts/phase-14/php-14-27-writer-encoder-sjis-20260905/sjis-euc-byte-parity-probe.php) is byte-identical to the oracle for SHIFT_JIS and EUC-JP comment/attr/text output and for the unmappable-character decimal-charref path; the writer encoder path is clean under valgrind. The php .phpt exclusion stays (its .exp demands an empty comment, unsatisfiable by any correct libxml2)."
     }
-   ]
+   ],
+   "fixed_date": "2026-09-05",
+   "fix": "xmlTextWriterStartDocument (src/xml/writer/mod.rs) now resolves the declared encoding with xmlFindCharEncodingHandler and installs it on the output buffer (out->encoder = registry handler; out->conv = io::buf_create(4000)) before writing the XML declaration, so every later write is transcoded at output-buffer flush; an unservable encoding returns -1 without writing (upstream unsupported-encoding semantics). Supported by new native Shift_JIS/EUC-JP converters (src/xml/encoding/mod.rs, encoding_rs-backed enc_rs_input/enc_rs_output with the -2 input-error convention for unmappable characters -> char_enc_out decimal charrefs)."
   },
   {
    "id": "R-000199",

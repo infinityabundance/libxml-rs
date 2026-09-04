@@ -652,6 +652,32 @@ pub unsafe extern "C" fn xmlTextWriterStartDocument(
     sum += w.write_byte(w.qchar);
 
     if !encoding.is_null() {
+        // UPSTREAM-PARITY (xmlwriter.c xmlTextWriterStartDocument, R-000198):
+        // the declared encoding's char-encoding handler is INSTALLED on the
+        // output buffer (out->encoder + a 4000-byte conv buffer) BEFORE the
+        // declaration is written, so every later write is transcoded to that
+        // encoding at output-buffer flush (the io flush machinery converts
+        // only when ob.encoder is set). An encoding the registry cannot serve
+        // is unsupported: the writer fails and writes nothing — php
+        // XMLWriter::startDocument returns FALSE on -1, matching upstream.
+        // The registry handler is process-lifetime and output_buffer_close
+        // does not free out->encoder (encoder owned by the registry here), so
+        // no owned clone is taken.
+        if w.output.is_null() {
+            return -1;
+        }
+        let handler = crate::xml::encoding::xmlFindCharEncodingHandler(encoding);
+        if handler.is_null() {
+            return -1;
+        }
+        unsafe {
+            let ob = &mut *w.output;
+            ob.encoder = handler as *mut c_void;
+            if ob.conv.is_null() {
+                ob.conv = io::buf_create(4000) as *mut c_void;
+            }
+        }
+
         sum += w.write_raw(b" encoding=" as *const u8, 10);
         sum += w.write_byte(w.qchar);
         sum += w.write_str(encoding as *const u8);

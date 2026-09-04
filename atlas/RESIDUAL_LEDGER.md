@@ -7,7 +7,7 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Current Residuals
 
-**6 open residuals:** R-000157, R-000168, R-000177, R-000179, R-000198, R-000199
+**5 open residuals:** R-000157, R-000168, R-000177, R-000179, R-000199
 
 ## Phase 0 Residuals
 
@@ -1248,18 +1248,20 @@ Markdown generated from JSON; the JSON is the only hand-maintained truth).
 
 ## Phase 14 Residuals
 
-### R-000198: xmlTextWriterStartDocument does not install the output encoder on the writer's output buffer: non-UTF-8 writer output (xmlTextWriterWriteComment/String/... after startDocument(encoding:...)) is emitted unconverted as UTF-8 (OPEN)
+### R-000198: xmlTextWriterStartDocument does not install the output encoder on the writer's output buffer: non-UTF-8 writer output (xmlTextWriterWriteComment/String/... after startDocument(encoding:...)) is emitted unconverted as UTF-8 (FIXED)
 
-- **Status:** OPEN
+- **Status:** FIXED (2026-09-05, Phase 14)
 - **Component:** src/xml/writer/mod.rs, src/xml/io/mod.rs
 - **Surface:** xmlTextWriterStartDocument, xmlTextWriterSetOutputEncoding, xmlOutputBufferFlush encoder path (xmlwriter.c / xmlIO.c)
 - **Oracle versions:** libxml2 2.15.3 (system, Iconv+ICU)
 - **Root cause:** Upstream xmlTextWriterStartDocument installs the found char-encoding handler on writer->out (out->encoder + a 4000-byte conv buffer) and flushes through it, so comment/text/attribute content written after startDocument(encoding:"SHIFT_JIS") is transcoded to the target encoding on the output-buffer flush. The candidate only sets an encoder_active byte-count flag and never installs out->encoder/conv, so the flush machinery (io::output_buffer_flush converts only when ob.encoder is set) passes UTF-8 through unchanged: XMLWriter::toStream() + startDocument(encoding:"SHIFT_JIS") emits raw UTF-8 comment bytes where the oracle emits Shift_JIS (0x82 0x9F ...) bytes. The same install is missing from the writer's SetOutputEncoding path. Sibling slice of R-000157: even for codecs the registry serves (UTF-16, ASCII, ISO-8859-1, windows-1252) the writer never activates them.
 - **Observable residual:** XMLWriter output declared with a non-UTF-8 encoding is byte-different from the oracle whenever the content contains non-ASCII characters.
+- **Fix:** xmlTextWriterStartDocument (src/xml/writer/mod.rs) now resolves the declared encoding with xmlFindCharEncodingHandler and installs it on the output buffer (out->encoder = registry handler; out->conv = io::buf_create(4000)) before writing the XML declaration, so every later write is transcoded at output-buffer flush; an unservable encoding returns -1 without writing (upstream unsupported-encoding semantics). Supported by new native Shift_JIS/EUC-JP converters (src/xml/encoding/mod.rs, encoding_rs-backed enc_rs_input/enc_rs_output with the -2 input-error convention for unmappable characters -> char_enc_out decimal charrefs).
 - **Phase 11 triangulation:** The 2.15.3 oracle (Iconv+ICU) emits the transcoded bytes; the php .exp for the only in-suite probe (xmlwriter_toStream_encoding_shiftjis) is unsatisfiable by any correct libxml2, so the gate cannot observe this — byte-parity probes vs the oracle are the court.
 - **Regression courts:** WRITER, ENCODING-001.
-- **Evidence:** ['courts/receipts/phase-14/php-14-26-zts-green-20260905/sj-toStream-probe.php']
+- **Evidence:** ['courts/receipts/phase-14/php-14-27-writer-encoder-sjis-20260905/sjis-euc-byte-parity-probe.php']
 - **Classification:** CANDIDATE_BUG
+- **History:** OPEN 2026-09-04 (Discovered in Phase 14.25 while disposing of the shiftjis .exp case: the candidate writer emitted raw UTF-8 for the Shift_JIS comment while the oracle emitted 0x82 0x9F per U+3041 — a genuine candidate-vs-oracle output divergence hidden by the unsatisfiable .exp. Phase 14.26 (ZTS gate) re-confirmed: the ZTS oracle passes the doctored phpt with real SJIS bytes; the candidate still emits UTF-8.); FIXED 2026-09-05 (Phase 14.27 closure: xmlTextWriterStartDocument now mirrors upstream xmlwriter.c — the declared encoding's handler is resolved via xmlFindCharEncodingHandler and INSTALLED on the output buffer (out->encoder + a 4000-byte conv buffer) before the declaration is written, so comment/text/attribute content is transcoded at output-buffer flush (io::output_buffer_flush converts when ob.encoder is set). An encoding the registry cannot serve returns -1 and writes nothing (upstream unsupported-encoding behavior; php XMLWriter::startDocument -> FALSE). Byte-parity probe (courts/receipts/phase-14/php-14-27-writer-encoder-sjis-20260905/sjis-euc-byte-parity-probe.php) is byte-identical to the oracle for SHIFT_JIS and EUC-JP comment/attr/text output and for the unmappable-character decimal-charref path; the writer encoder path is clean under valgrind. The php .phpt exclusion stays (its .exp demands an empty comment, unsatisfiable by any correct libxml2).)
 
 ### R-000199: Recursive-descent parse stack envelope: deeply nested documents (~4k+ levels on an 8MB stack at the -O0 dev profile) overflow where upstream xmlParseChunk's iterative xmlParseTryOrFinish state machine is unbounded (OPEN)
 

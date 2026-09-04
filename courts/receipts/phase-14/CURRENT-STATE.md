@@ -51,15 +51,21 @@ receipt trail.
   + deferred EOF finalize): 2 → 1 — last candidate-driven failure closed
 - 14.25 (5a4d68d8): parser deep-document stack-safety (bug65236; parse_element
   split) + oracle-parity exclusion wired into the gate: 1 → **0**
-- 14.26 (ZTS seal, uncommitted at this write): R-000177 cross-DSO loader
-  bridge → the six-extension gate is 0 failed under **both** NTS and ZTS
+- 14.26 (ZTS seal): R-000177 cross-DSO loader bridge → the six-extension
+  gate is 0 failed under **both** NTS and ZTS
   (receipt php-14-26-zts-green-20260905)
+- 14.27 (writer encoder + native SJIS/EUC-JP): R-000198 FIXED —
+  xmlTextWriterStartDocument installs the declared encoding's handler on
+  out->encoder + conv (upstream xmlwriter.c); new encoding_rs-backed
+  Shift_JIS/EUC-JP handlers close the R-000157 slice; the byte-parity probe
+  is byte-identical to the oracle incl. the unmappable → &#NNNN; path
+  (receipt php-14-27-writer-encoder-sjis-20260905).
 
 ## Register of residuals opened/closed by the court
 
-- R-000198 (OPEN, Phase 14): xmlTextWriterStartDocument does not install the
-  output encoder — non-UTF-8 writer output is unconverted UTF-8. Closable
-  slice of R-000157 (SJIS/EUC-JP native converters; Phase 14.27).
+- R-000198 (FIXED, Phase 14.27): writer output-encoder install — see the
+  14.27 receipt; the pristine php phpt stays excluded (its .exp demands an
+  empty comment, unsatisfiable by any correct libxml2).
 - R-000199 (OPEN, Phase 14): recursive-descent stack envelope ~3–4k nesting
   levels at the -O0 dev profile vs upstream's unbounded iterative
   xmlParseTryOrFinish.
@@ -68,13 +74,16 @@ receipt trail.
   `__xml{Parser,Output}BufferCreateFilenameValue` accessor) restoring
   upstream single-core hook visibility under php ZTS; the structural
   partition remains pinned by DSO-STATE-COHERENCE.
+- R-000157 (OPEN): narrowed to the still-iconv-only remainder
+  (UCS-4LE/BE, EBCDIC, UCS-2, ISO-8859-2..16, ISO-2022-JP) after the native
+  windows-1252 (14.20) + Shift_JIS/EUC-JP (14.27) closures.
 - Open global residuals (atlas/RESIDUAL_LEDGER.json): R-000157, R-000168,
-  R-000177, R-000179 + the two above (6 open).
+  R-000177, R-000179, R-000199 (5 open).
 
 ## Next
 
-Phase 14.27 closes the Shift_JIS/EUC-JP output-converter slice of R-000157
-(encoding_rs-backed handlers) and installs the writer output encoder
-(xmlTextWriterStartDocument/SetOutputEncoding → out->encoder + conv, R-000198).
-Debian reverse-dependency court (Phase-14 consumer 4/4) follows. See
-PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".
+R-000199 (iterative parser driver for unbounded nesting depth) and the
+R-000157 remainder (stateful ISO-2022-JP + the remaining single-byte/UTF-16
+families, or an iconv backend) are the open engine items; Debian
+reverse-dependency court (Phase-14 consumer 4/4) is the next custodian gate.
+See PROJECT_STATE.md "Phase 14" + "Immediate Next Actions".

@@ -721,6 +721,52 @@ fn register_builtin_handlers() {
         Some(utf16le_input_func as xmlCharEncodingInputFunc),
         Some(utf16le_output_func as xmlCharEncodingOutputFunc),
     );
+
+    // Shift_JIS + EUC-JP — encoding_rs-backed converters (R-000157 closure
+    // slice, Phase 14.27). Upstream serves these through iconv on the
+    // executed oracle (2.15.3, Iconv+ICU); the crate ships no iconv/ICU
+    // backend, so the converters are implemented natively over WHATWG
+    // Shift_JIS (a CP932-compatible superset) / EUC-JP, which byte-match
+    // glibc iconv on the shared JIS X 0208 repertoire the php suite and
+    // byte-parity probes exercise (the WHATWG/CP932 extension differences
+    // are residualized in R-000157). Registered under the canonical
+    // spellings + the aliases upstream's name path accepts (registry lookup
+    // is case-insensitive).
+    register_handler(
+        b"SHIFT_JIS\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        Some(shift_jis_input_func as xmlCharEncodingInputFunc),
+        Some(shift_jis_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"SJIS\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        Some(shift_jis_input_func as xmlCharEncodingInputFunc),
+        Some(shift_jis_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"CP932\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        xmlCharEncoding::XML_CHAR_ENCODING_SHIFT_JIS,
+        Some(shift_jis_input_func as xmlCharEncodingInputFunc),
+        Some(shift_jis_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"EUC-JP\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        Some(euc_jp_input_func as xmlCharEncodingInputFunc),
+        Some(euc_jp_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"EUCJP\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        xmlCharEncoding::XML_CHAR_ENCODING_EUC_JP,
+        Some(euc_jp_input_func as xmlCharEncodingInputFunc),
+        Some(euc_jp_output_func as xmlCharEncodingOutputFunc),
+    );
 }
 
 /// Helper to create and register an encoding handler.
@@ -1878,6 +1924,209 @@ unsafe extern "C" fn ascii_output_func(
 ) -> c_int {
     // For output, ASCII handler requires that input is already ASCII
     ascii_input_func(out, outlen, in_, inlen)
+}
+
+// ── Shift_JIS / EUC-JP (encoding_rs-backed; R-000157 closure slice) ────────
+
+/// Module-level input-error code: a converter reports the character at
+/// `*inlen` as unrepresentable and `char_enc_out` substitutes the upstream
+/// decimal character reference (&#NNN;) before retrying (encoding.c
+/// xmlCharEncOutput XML_ENC_ERR_INPUT path).
+const ENC_INPUT_ERROR: c_int = -2;
+
+/// Shared output conversion for the encoding_rs-backed East-Asian handlers
+/// (UTF-8 → `target`). House func contract (see cp1252): complete UTF-8
+/// characters are converted while output space lasts; the first character
+/// `target` cannot represent stops the conversion and is reported with the
+/// -2 input-error convention (so `char_enc_out` emits the decimal character
+/// reference and retries); invalid UTF-8 (or an incomplete trailing
+/// sequence) reports -1 with the bytes before the error in `*inlen`. No
+/// charref expansion happens inside the func, and Shift_JIS/EUC-JP output is
+/// at most 1:1 with the UTF-8 input on the representable repertoire, so the
+/// caller's >= 3x scratch can never overflow.
+unsafe fn enc_rs_output(
+    target: &'static encoding_rs::Encoding,
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+
+    // Convert only complete UTF-8 characters. On invalid bytes (or an
+    // incomplete trailing sequence) the valid prefix is converted and the
+    // error is reported at the first offending byte (upstream iconv EILSEQ;
+    // the xmlCharEncOutput error path decodes the UTF-8 character there).
+    let (s, error_at) = match core::str::from_utf8(in_data) {
+        Ok(s) => (s, None),
+        Err(e) => {
+            let valid = e.valid_up_to();
+            if valid == 0 {
+                *outlen = 0;
+                *inlen = 0;
+                return -1;
+            }
+            // SAFETY: `valid` is a UTF-8 boundary (from_utf8 guarantees the
+            // valid prefix ends on a character boundary).
+            (
+                unsafe { core::str::from_utf8_unchecked(&in_data[..valid]) },
+                Some(valid),
+            )
+        }
+    };
+
+    let mut encoder = target.new_encoder();
+    let mut in_pos: usize = 0;
+    let mut out_pos: usize = 0;
+    while in_pos < s.len() && out_pos < avail_out {
+        let dst = &mut out_slice[out_pos..];
+        let (res, read, written) =
+            encoder.encode_from_utf8_without_replacement(&s[in_pos..], dst, true);
+        out_pos += written;
+        in_pos += read;
+        match res {
+            encoding_rs::EncoderResult::InputEmpty => break,
+            encoding_rs::EncoderResult::OutputFull => {
+                // Output exhausted: report the partial conversion (with the
+                // caller's >= 3x scratch this is unreachable for these
+                // encodings on complete input).
+                break;
+            }
+            encoding_rs::EncoderResult::Unmappable(c) => {
+                // The encoder consumed the unrepresentable character `c`
+                // (its UTF-8 bytes are the last len_utf8() bytes of the
+                // consumed prefix), so rewind *inlen to point AT it:
+                // char_enc_out substitutes the decimal character reference
+                // for the character there and retries the remainder.
+                *outlen = out_pos as c_int;
+                *inlen = (in_pos - c.len_utf8()) as c_int;
+                return ENC_INPUT_ERROR;
+            }
+        }
+    }
+
+    if let Some(err) = error_at {
+        if in_pos == s.len() {
+            // The whole convertible prefix was converted; report the UTF-8
+            // error at the offending byte (the trailing partial is not
+            // converted).
+            *outlen = out_pos as c_int;
+            *inlen = err as c_int;
+            return -1;
+        }
+    }
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// Shared input conversion for the encoding_rs-backed East-Asian handlers
+/// (`source` → UTF-8). Converts complete characters while output space
+/// lasts; an undefined byte or an incomplete trailing sequence reports -1
+/// with the bytes before the error in `*inlen` (iconv EILSEQ semantics —
+/// deterministic and loop-free for the caller).
+unsafe fn enc_rs_input(
+    source: &'static encoding_rs::Encoding,
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+
+    let mut decoder = source.new_decoder_without_bom_handling();
+    let mut in_pos: usize = 0;
+    let mut out_pos: usize = 0;
+    while in_pos < avail_in && out_pos < avail_out {
+        let (res, read, written) = decoder.decode_to_utf8_without_replacement(
+            &in_data[in_pos..],
+            &mut out_slice[out_pos..],
+            true,
+        );
+        out_pos += written;
+        in_pos += read;
+        match res {
+            encoding_rs::DecoderResult::InputEmpty => break,
+            encoding_rs::DecoderResult::OutputFull => break,
+            encoding_rs::DecoderResult::Malformed(..) => {
+                // Undefined byte or incomplete tail: hard error after the
+                // complete prefix (iconv EILSEQ).
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+        }
+    }
+
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// Shift_JIS input function (CP932-compatible WHATWG Shift_JIS → UTF-8).
+unsafe extern "C" fn shift_jis_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    enc_rs_input(encoding_rs::SHIFT_JIS, out, outlen, in_, inlen)
+}
+
+/// Shift_JIS output function (UTF-8 → CP932-compatible WHATWG Shift_JIS).
+unsafe extern "C" fn shift_jis_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    enc_rs_output(encoding_rs::SHIFT_JIS, out, outlen, in_, inlen)
+}
+
+/// EUC-JP input function (EUC-JP → UTF-8).
+unsafe extern "C" fn euc_jp_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    enc_rs_input(encoding_rs::EUC_JP, out, outlen, in_, inlen)
+}
+
+/// EUC-JP output function (UTF-8 → EUC-JP).
+unsafe extern "C" fn euc_jp_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    enc_rs_output(encoding_rs::EUC_JP, out, outlen, in_, inlen)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3241,5 +3490,103 @@ mod tests {
 
         xmlCleanupCharEncodingHandlers();
         // After cleanup, handlers should be empty
+    }
+
+    // ── Shift_JIS / EUC-JP (encoding_rs-backed, R-000157 slice) ────────────
+
+    /// Drive a legacy func on whole buffers.
+    fn call_func(
+        func: unsafe extern "C" fn(*mut c_uchar, *mut c_int, *const c_uchar, *mut c_int) -> c_int,
+        input: &[u8],
+    ) -> (c_int, Vec<u8>, usize) {
+        let mut out = vec![0u8; input.len() * 6 + 64];
+        let mut outlen = out.len() as c_int;
+        let mut inlen = input.len() as c_int;
+        let rc = unsafe { func(out.as_mut_ptr(), &mut outlen, input.as_ptr(), &mut inlen) };
+        out.truncate(outlen.max(0) as usize);
+        (rc, out, inlen.max(0) as usize)
+    }
+
+    #[test]
+    fn test_shift_jis_output_roundtrip() {
+        // ぁ (U+3041 → 0x82 0x9F), 漢 (U+6F22 → 0x8A 0xBF), half-width ｱ
+        // (U+FF71 → 0xB1): byte-exact vs the oracle's iconv output.
+        let (rc, out, consumed) = call_func(shift_jis_output_func, "ぁ漢ｱ".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, [0x82, 0x9F, 0x8A, 0xBF, 0xB1]);
+        assert_eq!(consumed, "ぁ漢ｱ".len());
+
+        let (rc, back, _) = call_func(shift_jis_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "ぁ漢ｱ".as_bytes());
+    }
+
+    #[test]
+    fn test_shift_jis_output_unmappable_reports_input_error() {
+        // U+1F600 is outside Shift_JIS: the func stops BEFORE it with the
+        // -2 input-error convention (char_enc_out substitutes the decimal
+        // character reference, exactly like the oracle iconv EILSEQ path).
+        let (rc, out, consumed) = call_func(shift_jis_output_func, "A😀B".as_bytes());
+        assert_eq!(rc, ENC_INPUT_ERROR);
+        assert_eq!(out, b"A");
+        assert_eq!(consumed, 1); // *inlen points AT the emoji
+
+        // Whole-buffer conversion through char_enc_out emits the charref and
+        // continues: &#128512; (decimal), matching xmlSerializeDecCharRef.
+        let handler = find_encoding_handler(c"SHIFT_JIS".as_ptr() as *const xmlChar);
+        assert!(!handler.is_null());
+        let in_buf = crate::xml::io::buf_create(64);
+        let src = "A\u{1F600}B".as_bytes();
+        assert!(
+            crate::xml::io::buf_add(in_buf, src.as_ptr() as *const xmlChar, src.len() as c_int)
+                >= 0
+        );
+        let out_buf = crate::xml::io::buf_create(64);
+        let n = char_enc_out(handler, out_buf, in_buf);
+        assert!(n >= 0);
+        let bytes =
+            unsafe { core::slice::from_raw_parts((*out_buf).content, (*out_buf).use_ as usize) };
+        assert_eq!(bytes, b"A&#128512;B");
+        crate::xml::io::buf_free(in_buf);
+        crate::xml::io::buf_free(out_buf);
+    }
+
+    #[test]
+    fn test_euc_jp_output_roundtrip() {
+        // ぁ (U+3041 → 0xA4 0xA1), 漢 (U+6F22 → 0xB4 0xC1), ｱ (U+FF71 →
+        // 0x8E 0xB1) — oracle iconv byte-exact.
+        let (rc, out, consumed) = call_func(euc_jp_output_func, "ぁ漢ｱ".as_bytes());
+        assert!(rc >= 0);
+        assert_eq!(out, [0xA4, 0xA1, 0xB4, 0xC1, 0x8E, 0xB1]);
+        assert_eq!(consumed, "ぁ漢ｱ".len());
+
+        let (rc, back, _) = call_func(euc_jp_input_func, &out);
+        assert!(rc >= 0);
+        assert_eq!(back, "ぁ漢ｱ".as_bytes());
+    }
+
+    #[test]
+    fn test_east_asian_handlers_registered_and_findable() {
+        for name in [
+            c"SHIFT_JIS".as_ptr(),
+            c"Shift_JIS".as_ptr(),
+            c"SJIS".as_ptr(),
+            c"CP932".as_ptr(),
+            c"EUC-JP".as_ptr(),
+            c"euc-jp".as_ptr(),
+        ] {
+            assert!(
+                !find_encoding_handler(name as *const xmlChar).is_null(),
+                "handler not found for {name:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_shift_jis_output_invalid_utf8_errors() {
+        let (rc, out, consumed) = call_func(shift_jis_output_func, b"A\xFFB");
+        assert_eq!(rc, -1);
+        assert_eq!(out, b"A");
+        assert_eq!(consumed, 1);
     }
 }
