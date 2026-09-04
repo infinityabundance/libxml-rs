@@ -786,29 +786,90 @@ pub unsafe fn node_get_content(node: *mut _xmlNode) -> *mut xmlChar {
             }
         }
         t if t == XML_ATTRIBUTE_NODE as c_int => {
-            // Attribute: content is the value (first text child).
-            if !(*node).children.is_null() {
-                let child = (*node).children;
-                if !(*child).content.is_null() {
-                    let len = crate::abi::exports_xml2::xmlStrlen((*child).content);
-                    result.extend_from_slice(core::slice::from_raw_parts(
-                        (*child).content,
-                        len as usize,
-                    ));
+            // Attribute: the value is the concatenation of ALL children (text
+            // runs plus expanded entity references) — upstream
+            // xmlNodeGetContent(attr) walks the children via
+            // xmlBufGetChildContent. A single text child is the common case
+            // (php_libxml_attr_value fast path); values containing references
+            // keep entity-REF children (`<root a="x&ent;x"/>` reads "xfoox"
+            // while serialization round-trips `&ent;`).
+            let mut child = (*node).children;
+            while !child.is_null() {
+                let ctype = (*child).type_;
+                if ctype == XML_TEXT_NODE as c_int || ctype == XML_CDATA_SECTION_NODE as c_int {
+                    if !(*child).content.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen((*child).content);
+                        result.extend_from_slice(core::slice::from_raw_parts(
+                            (*child).content,
+                            len as usize,
+                        ));
+                    }
+                } else if ctype == XML_ENTITY_REF_NODE as c_int
+                    || ctype == XML_ELEMENT_NODE as c_int
+                {
+                    let sub = node_get_content(child);
+                    if !sub.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen(sub);
+                        result.extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
+                        allocator::xmlFreeImpl(sub as *mut c_void);
+                    }
                 }
+                child = (*child).next;
             }
         }
         t if t == XML_ENTITY_REF_NODE as c_int => {
-            // Entity reference: expand via entity content.
-            let name = (*node).name;
-            if !name.is_null() && !(*node).doc.is_null() {
-                let ent = crate::xml::tree::get_doc_entity((*node).doc, name);
-                if !ent.is_null() && !(*ent).content.is_null() {
-                    let len = crate::abi::exports_xml2::xmlStrlen((*ent).content);
-                    result.extend_from_slice(core::slice::from_raw_parts(
-                        (*ent).content,
-                        len as usize,
-                    ));
+            // Entity reference: expand via the declaration its `children`
+            // points at (xmlNewReference / the parser bind the entity decl
+            // there), falling back to the document/predefined lookup.
+            //
+            // UPSTREAM-PARITY (tree.c xmlBufGetEntityRefContent): a
+            // PREDEFINED entity contributes its `content`; any OTHER entity
+            // contributes its CHILD content (the parsed replacement tree).
+            // An internal entity declaration created from `<!ENTITY test
+            // "...">` carries only `content` and NO child tree, so a
+            // reference to it reads as "" — php delayed_freeing/
+            // entity_reference expects exactly this (and
+            // `new DOMEntityReference("amp")` reads "&").
+            let mut ent = if (*node).children.is_null() {
+                ptr::null_mut()
+            } else {
+                (*node).children as *mut _xmlEntity
+            };
+            if ent.is_null() {
+                let name = (*node).name;
+                if !name.is_null() {
+                    ent = crate::xml::tree::get_doc_entity((*node).doc, name);
+                }
+            }
+            if !ent.is_null() {
+                let is_predef = (*ent).etype
+                    == crate::abi::types::xmlEntityType::XML_INTERNAL_PREDEFINED_ENTITY as c_int;
+                if is_predef {
+                    if !(*ent).content.is_null() {
+                        let len = crate::abi::exports_xml2::xmlStrlen((*ent).content);
+                        result.extend_from_slice(core::slice::from_raw_parts(
+                            (*ent).content,
+                            len as usize,
+                        ));
+                    }
+                } else if (*ent).flags & (1 << 3) == 0 {
+                    // UPSTREAM-PARITY (tree.c xmlBufGetEntityRefContent): the
+                    // XML_ENT_EXPANDING flag (candidate bit 1 << 3, parser
+                    // convention) breaks self-referential loops while the
+                    // declaration's replacement tree is walked.
+                    (*ent).flags |= 1 << 3;
+                    let mut child = (*ent).children;
+                    while !child.is_null() {
+                        let sub = node_get_content(child);
+                        if !sub.is_null() {
+                            let len = crate::abi::exports_xml2::xmlStrlen(sub);
+                            result
+                                .extend_from_slice(core::slice::from_raw_parts(sub, len as usize));
+                            allocator::xmlFreeImpl(sub as *mut c_void);
+                        }
+                        child = (*child).next;
+                    }
+                    (*ent).flags &= !(1 << 3);
                 }
             }
         }
@@ -1525,7 +1586,16 @@ unsafe fn propagate_doc(node: *mut _xmlNode, doc: *mut _xmlDoc) {
     let mut cur = node;
     while !cur.is_null() {
         unsafe {
-            (*cur).doc = doc;
+            // UPSTREAM-PARITY (tree.c xmlSetTreeDoc/xmlNodeSetDoc): a node
+            // whose document actually changes must move its dict-owned
+            // name/content into the destination document's dictionary (or
+            // heap copies) and drop its ID-table entry, otherwise the source
+            // doc's teardown frees strings the moved subtree still points at
+            // (double free). No-op delegation when the doc pointer already
+            // matches.
+            if (*cur).doc != doc {
+                crate::abi::exports_tree::node_set_doc_impl(cur, doc);
+            }
 
             // Propagate to properties (element nodes only; other node types
             // never carry properties, and compact text nodes store inline
@@ -1533,7 +1603,9 @@ unsafe fn propagate_doc(node: *mut _xmlNode, doc: *mut _xmlDoc) {
             if (*cur).type_ == XML_ELEMENT_NODE as c_int {
                 let mut prop = (*cur).properties;
                 while !prop.is_null() {
-                    (*prop).doc = doc;
+                    if (*prop).doc != doc {
+                        crate::abi::exports_tree::node_set_doc_impl(prop as *mut _xmlNode, doc);
+                    }
                     if !(*prop).children.is_null() {
                         propagate_doc((*prop).children, doc);
                     }

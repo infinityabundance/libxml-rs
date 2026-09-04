@@ -1030,10 +1030,15 @@ pub unsafe extern "C" fn xmlGetNodePath(node: *const _xmlNode) -> *mut xmlChar {
 
 /// The five XML predefined entities, mirroring upstream entities.c static
 /// `xmlEntityLt`/`xmlEntityGt`/`xmlEntityAmp`/`xmlEntityQuot`/`xmlEntityApos`.
-struct SyncEntity(*const _xmlEntity);
-unsafe impl Sync for SyncEntity {}
-
-static PREDEFINED_LT_DATA: _xmlEntity = _xmlEntity {
+///
+/// These are WRITABLE (upstream declares them as non-const globals): PHP's
+/// libxml wrapper stores its `php_libxml_node_ptr` in `node->_private` when a
+/// DOM wrapper is created around an entity declaration (a doc-less
+/// `new DOMEntityReference("amp")` binds the predefined declaration as its
+/// child, and property reads wrap it). A plain `static` here would land in
+/// `.data.rel.ro`, which full RELRO mprotects read-only — PHP's `_private`
+/// store then faults. `static mut` keeps them in the writable `.data`.
+static mut PREDEFINED_LT_DATA: _xmlEntity = _xmlEntity {
     _private: ptr::null_mut(),
     type_: XML_ENTITY_DECL as c_int,
     name: b"lt\0" as *const u8 as *const xmlChar,
@@ -1055,7 +1060,7 @@ static PREDEFINED_LT_DATA: _xmlEntity = _xmlEntity {
     flags: 0,
     expandedSize: 0,
 };
-static PREDEFINED_GT_DATA: _xmlEntity = _xmlEntity {
+static mut PREDEFINED_GT_DATA: _xmlEntity = _xmlEntity {
     _private: ptr::null_mut(),
     type_: XML_ENTITY_DECL as c_int,
     name: b"gt\0" as *const u8 as *const xmlChar,
@@ -1077,7 +1082,7 @@ static PREDEFINED_GT_DATA: _xmlEntity = _xmlEntity {
     flags: 0,
     expandedSize: 0,
 };
-static PREDEFINED_AMP_DATA: _xmlEntity = _xmlEntity {
+static mut PREDEFINED_AMP_DATA: _xmlEntity = _xmlEntity {
     _private: ptr::null_mut(),
     type_: XML_ENTITY_DECL as c_int,
     name: b"amp\0" as *const u8 as *const xmlChar,
@@ -1099,7 +1104,7 @@ static PREDEFINED_AMP_DATA: _xmlEntity = _xmlEntity {
     flags: 0,
     expandedSize: 0,
 };
-static PREDEFINED_QUOT_DATA: _xmlEntity = _xmlEntity {
+static mut PREDEFINED_QUOT_DATA: _xmlEntity = _xmlEntity {
     _private: ptr::null_mut(),
     type_: XML_ENTITY_DECL as c_int,
     name: b"quot\0" as *const u8 as *const xmlChar,
@@ -1121,7 +1126,7 @@ static PREDEFINED_QUOT_DATA: _xmlEntity = _xmlEntity {
     flags: 0,
     expandedSize: 0,
 };
-static PREDEFINED_APOS_DATA: _xmlEntity = _xmlEntity {
+static mut PREDEFINED_APOS_DATA: _xmlEntity = _xmlEntity {
     _private: ptr::null_mut(),
     type_: XML_ENTITY_DECL as c_int,
     name: b"apos\0" as *const u8 as *const xmlChar,
@@ -1144,12 +1149,6 @@ static PREDEFINED_APOS_DATA: _xmlEntity = _xmlEntity {
     expandedSize: 0,
 };
 
-static PREDEFINED_LT: SyncEntity = SyncEntity(&PREDEFINED_LT_DATA as *const _xmlEntity);
-static PREDEFINED_GT: SyncEntity = SyncEntity(&PREDEFINED_GT_DATA as *const _xmlEntity);
-static PREDEFINED_AMP: SyncEntity = SyncEntity(&PREDEFINED_AMP_DATA as *const _xmlEntity);
-static PREDEFINED_QUOT: SyncEntity = SyncEntity(&PREDEFINED_QUOT_DATA as *const _xmlEntity);
-static PREDEFINED_APOS: SyncEntity = SyncEntity(&PREDEFINED_APOS_DATA as *const _xmlEntity);
-
 /// # UPSTREAM-PARITY
 ///
 /// ```c
@@ -1165,25 +1164,25 @@ pub unsafe extern "C" fn xmlGetPredefinedEntity(name: *const xmlChar) -> *mut _x
     unsafe {
         if crate::abi::exports_xml2::xmlStrEqual(name, b"lt\0" as *const u8 as *const xmlChar) != 0
         {
-            return PREDEFINED_LT.0 as *mut _xmlEntity;
+            return std::ptr::addr_of_mut!(PREDEFINED_LT_DATA);
         }
         if crate::abi::exports_xml2::xmlStrEqual(name, b"gt\0" as *const u8 as *const xmlChar) != 0
         {
-            return PREDEFINED_GT.0 as *mut _xmlEntity;
+            return std::ptr::addr_of_mut!(PREDEFINED_GT_DATA);
         }
         if crate::abi::exports_xml2::xmlStrEqual(name, b"amp\0" as *const u8 as *const xmlChar) != 0
         {
-            return PREDEFINED_AMP.0 as *mut _xmlEntity;
+            return std::ptr::addr_of_mut!(PREDEFINED_AMP_DATA);
         }
         if crate::abi::exports_xml2::xmlStrEqual(name, b"quot\0" as *const u8 as *const xmlChar)
             != 0
         {
-            return PREDEFINED_QUOT.0 as *mut _xmlEntity;
+            return std::ptr::addr_of_mut!(PREDEFINED_QUOT_DATA);
         }
         if crate::abi::exports_xml2::xmlStrEqual(name, b"apos\0" as *const u8 as *const xmlChar)
             != 0
         {
-            return PREDEFINED_APOS.0 as *mut _xmlEntity;
+            return std::ptr::addr_of_mut!(PREDEFINED_APOS_DATA);
         }
     }
     ptr::null_mut()

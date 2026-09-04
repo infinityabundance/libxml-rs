@@ -1850,6 +1850,17 @@ pub(crate) fn output_buffer_create_buffer(
 /// Encodes the buffered data (if an encoder is set) and writes it via the
 /// write callback. Resets the internal buffer after writing.
 ///
+/// UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): the write callback is
+/// invoked UNCONDITIONALLY whenever one is installed — even when the buffer
+/// is empty (use == 0, so the callback receives len 0). PHP's libxml
+/// wrapper relies on this: `php_libxml_write_smart_str` → `smart_str_appendl`
+/// allocates the smart_str buffer on the len-0 call, so `smart_str_extract`
+/// returns a regular heap-allocated empty string. Without the empty
+/// invocation PHP's dump helpers return the interned `zend_empty_string`,
+/// which `RETURN_NEW_STR` later "frees" (crash: `_efree` on an interned
+/// string — saveXML(XML_SAVE_NO_DECL) on an empty doc, saveXML of an empty
+/// node/fragment, bug79968).
+///
 /// Returns the number of bytes written, or -1 on error.
 ///
 /// # Safety
@@ -1874,9 +1885,6 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
     }
 
     let b = unsafe { &*buf };
-    if b.use_ == 0 {
-        return 0;
-    }
 
     // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): the encoding
     // conversion runs FIRST, independent of the I/O callback — buffer-based
@@ -1899,6 +1907,11 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
             ob.error = 1;
             return -1;
         }
+        // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): the conversion
+        // CONSUMES the source buffer (xmlCharEncOutput shrinks out->buffer by
+        // the input it converted). `char_enc_out` only reads, so the source
+        // is drained here.
+        buf_empty(buf);
     }
 
     let write_cb = match ob.writecallback {
@@ -1914,46 +1927,45 @@ pub(crate) fn output_buffer_flush(out: *mut _xmlOutputBuffer) -> c_int {
         }
     };
 
-    let total_written = if !ob.encoder.is_null() {
-        // Write converted data via callback
+    // UPSTREAM-PARITY (xmlIO.c xmlOutputBufferFlush): the write callback is
+    // invoked UNCONDITIONALLY whenever one is installed — even when the
+    // buffer is empty (the callback then receives len 0). PHP's libxml
+    // wrapper depends on this: `php_libxml_write_smart_str` →
+    // `smart_str_appendl` allocates the smart_str buffer on a len-0 call, so
+    // `smart_str_extract` returns a regular heap empty string. Without the
+    // empty invocation PHP's dump helpers return the interned
+    // `zend_empty_string`, which `RETURN_NEW_STR` later "frees" (crash:
+    // `_efree` on an interned string — saveXML(XML_SAVE_NO_DECL) on an
+    // empty doc, saveXML of an empty node/fragment, bug79968).
+    let (src, src_use) = if !ob.encoder.is_null() {
         let conv_b = unsafe { &*conv };
-        if conv_b.use_ > 0 {
-            let written = unsafe {
-                write_cb(
-                    ob.context,
-                    conv_b.content as *const c_char,
-                    conv_b.use_ as c_int,
-                )
-            };
-
-            if written < 0 {
-                ob.error = 1;
-                return -1;
-            }
-
-            ob.written = ob.written.saturating_add(written);
-            buf_empty(conv);
-            written
-        } else {
-            0
-        }
+        (conv_b.content, conv_b.use_ as c_int)
     } else {
-        // No encoder: write buffer content directly
-        let written = unsafe { write_cb(ob.context, b.content as *const c_char, b.use_ as c_int) };
-
-        if written < 0 {
-            ob.error = 1;
-            return -1;
-        }
-
-        ob.written = ob.written.saturating_add(written);
-        written
+        (b.content, b.use_ as c_int)
     };
+    let src_ptr = if src.is_null() {
+        c"".as_ptr() as *const xmlChar
+    } else {
+        src
+    };
+    let written = unsafe { write_cb(ob.context, src_ptr as *const c_char, src_use) };
 
-    // Clear the buffer after writing
-    buf_empty(buf);
+    if written < 0 {
+        ob.error = 1;
+        return -1;
+    }
 
-    total_written
+    ob.written = ob.written.saturating_add(written);
+    if written > 0 {
+        // The callback consumed the source (upstream xmlBufShrink by ret).
+        if !ob.encoder.is_null() {
+            buf_empty(conv);
+        } else {
+            buf_empty(buf);
+        }
+    }
+
+    written
 }
 
 /// Free an output buffer.

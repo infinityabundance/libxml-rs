@@ -906,10 +906,89 @@ unsafe fn remove_prop_impl(cur: *mut _xmlAttr) -> c_int {
 // xmlNodeSetDoc / xmlSetListDoc / xmlSetTreeDoc
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Upstream `xmlNodeSetDoc` (without dictionary and ID-table handling).
-unsafe fn node_set_doc_impl(node: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
-    let ret = 0;
+/// Upstream `xmlNodeSetDoc` — full libxml2 2.15 semantics.
+///
+/// When a node moves to a document with a different dictionary, names that
+/// the OLD document dictionary owns are re-interned into the NEW document
+/// dictionary (`xmlDictLookup`) or turned into free-standing heap copies
+/// (`xmlStrdup`) when the destination has no dictionary. Text/CDATA content
+/// owned by the old dictionary is duplicated to the heap. Without this a
+/// node adopted across documents keeps pointers into the source doc's
+/// dictionary and teardown double-frees once the source document dies —
+/// PHP >= 2.13 relies on this (ext/dom `php_dom_adopt_node` only runs its
+/// own fixup when `LIBXML_VERSION < 21300`; upstream libxml2 commits
+/// 4bc3ebf3eaba352fbbce2ef70ad00a3c7752478a + bc7ab5a2e61e4b36accf6803c5b0e245c11154b1).
+/// ID attributes are removed from the old document's ID table; entity
+/// references are re-resolved against the destination document and DTD nodes
+/// are detached from the old document's subsets.
+///
+/// Callers must only invoke this when `(*node).doc != doc` (the caller-side
+/// guards in `set_tree_doc_impl` / `set_list_doc_impl` / `propagate_doc`
+/// ensure that, mirroring upstream `xmlSetTreeDoc`/`xmlSetListDoc`).
+pub(crate) unsafe fn node_set_doc_impl(node: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
+    let mut ret = 0;
+    let old_doc = (*node).doc;
+    let old_dict = if old_doc.is_null() {
+        ptr::null_mut()
+    } else {
+        (*old_doc).dict
+    };
+    let new_dict = if doc.is_null() {
+        ptr::null_mut()
+    } else {
+        (*doc).dict
+    };
+
+    // UPSTREAM-PARITY (tree.c xmlNodeSetDoc): move names/content out of the
+    // old document dictionary before the old document can be freed.
+    if !old_dict.is_null() && old_dict != new_dict {
+        let t = (*node).type_;
+        let is_name_type = t == XML_ELEMENT_NODE as c_int
+            || t == XML_ATTRIBUTE_NODE as c_int
+            || t == XML_PI_NODE as c_int
+            || t == XML_ENTITY_REF_NODE as c_int;
+        if is_name_type
+            && !(*node).name.is_null()
+            && crate::abi::exports_hash::dict_owns_str(old_dict, (*node).name)
+        {
+            let new_name = if !new_dict.is_null() {
+                unsafe {
+                    crate::xml::dictionary::dict_lookup(
+                        new_dict as *mut crate::xml::dictionary::Dict,
+                        (*node).name,
+                        -1,
+                    )
+                }
+            } else {
+                unsafe { crate::xml::string::xml_strdup((*node).name) }
+            };
+            if new_name.is_null() {
+                ret = -1;
+            }
+            (*node).name = new_name;
+        }
+        let is_content_type = t == XML_TEXT_NODE as c_int || t == XML_CDATA_SECTION_NODE as c_int;
+        if is_content_type
+            && !(*node).content.is_null()
+            && crate::abi::exports_hash::dict_owns_str(old_dict, (*node).content)
+        {
+            (*node).content = unsafe { crate::xml::string::xml_strdup((*node).content) };
+            if (*node).content.is_null() {
+                ret = -1;
+            }
+        }
+    }
+
     match (*node).type_ as u32 {
+        t if t == XML_ATTRIBUTE_NODE as u32 => {
+            // UPSTREAM-PARITY (tree.c xmlNodeSetDoc): remove the attribute's
+            // ID entry from the OLD document's ID table (not re-added to the
+            // new one — upstream TODO).
+            let attr = node as *mut _xmlAttr;
+            if !(*attr).id.is_null() {
+                unsafe { crate::xml::validation::remove_id(old_doc, attr) };
+            }
+        }
         t if t == XML_ENTITY_REF_NODE as u32 => {
             (*node).children = ptr::null_mut();
             (*node).last = ptr::null_mut();
@@ -923,12 +1002,12 @@ unsafe fn node_set_doc_impl(node: *mut _xmlNode, doc: *mut _xmlDoc) -> c_int {
                 }
             }
         }
-        t if t == XML_DTD_NODE as u32 && !(*node).doc.is_null() => {
-            if (*(*node).doc).intSubset == node as *mut _xmlDtd {
-                (*(*node).doc).intSubset = ptr::null_mut();
+        t if t == XML_DTD_NODE as u32 && !old_doc.is_null() => {
+            if (*old_doc).intSubset == node as *mut _xmlDtd {
+                (*old_doc).intSubset = ptr::null_mut();
             }
-            if (*(*node).doc).extSubset == node as *mut _xmlDtd {
-                (*(*node).doc).extSubset = ptr::null_mut();
+            if (*old_doc).extSubset == node as *mut _xmlDtd {
+                (*old_doc).extSubset = ptr::null_mut();
             }
         }
         _ => {}

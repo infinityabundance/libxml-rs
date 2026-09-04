@@ -438,7 +438,16 @@ pub unsafe fn add_entity_doc(
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `name` must be a valid null-terminated string.
 pub unsafe fn get_entity(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut _xmlEntity {
-    if doc.is_null() || name.is_null() {
+    // UPSTREAM-PARITY (entities.c xmlGetDocEntity): a NULL document resolves
+    // through the PREDEFINED entities only — a doc-less
+    // `new DOMEntityReference("amp")` (xmlNewReference with doc NULL) still
+    // binds the predefined declaration as its children/last/content, and
+    // php's `dom_entity_reference_fetch_and_sync_declaration` re-syncs the
+    // same way via xmlGetDocEntity(NULL, ...).
+    if doc.is_null() {
+        return unsafe { crate::abi::exports_misc::xmlGetPredefinedEntity(name) };
+    }
+    if name.is_null() {
         return ptr::null_mut();
     }
 
@@ -463,7 +472,9 @@ pub unsafe fn get_entity(doc: *mut _xmlDoc, name: *const xmlChar) -> *mut _xmlEn
             }
         }
 
-        ptr::null_mut()
+        // UPSTREAM-PARITY (entities.c xmlGetDocEntity): an unregistered name
+        // still resolves to the predefined entity (amp/lt/gt/quot/apos).
+        unsafe { crate::abi::exports_misc::xmlGetPredefinedEntity(name) }
     }
 }
 
@@ -635,11 +646,14 @@ unsafe fn free_entity_internal(entity: *mut _xmlEntity, free_children: bool) {
             allocator::xmlFreeImpl(e.URI as *mut c_void);
         }
 
-        // Free children tree nodes if requested
+        // Free children tree nodes if requested. The materialized replacement
+        // tree (upstream xmlNodeParseAttValue fills `ent->children` from
+        // `ent->content` on first reference) is owned by the declaration and
+        // freed with it (text/cdata nodes and entity-REF nodes; the REFs' own
+        // `children` point at declarations, which free_node never descends
+        // into).
         if free_children && !e.children.is_null() {
-            // In a full implementation, we'd recursively free the node tree.
-            // For now, we simply note that children should be freed.
-            // The tree module's free functions would be called here.
+            crate::xml::tree::free_node_list(e.children);
         }
 
         allocator::xmlFreeImpl(entity as *mut c_void);

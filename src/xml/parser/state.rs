@@ -1928,8 +1928,15 @@ impl XmlParser {
                 } else {
                     base_type
                 };
-                let pub_c = pub_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
-                let sys_c = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
+                // UPSTREAM-PARITY (parser.c xmlParseExternalID): the quoted
+                // literals are stored even when EMPTY (`PUBLIC ""` keeps an
+                // allocated empty ExternalID, not NULL).
+                let pub_c = pub_id
+                    .map(Self::vec_to_cstr_keep_empty)
+                    .unwrap_or(ptr::null());
+                let sys_c = sys_id
+                    .map(Self::vec_to_cstr_keep_empty)
+                    .unwrap_or(ptr::null());
                 // Only an NDATA (unparsed) entity carries a notation name on its
                 // content (present but nameless NDATA keeps an empty string); a
                 // parsed external entity has no content of its own.
@@ -2148,7 +2155,18 @@ impl XmlParser {
         let tail = trim_ascii(&args[name_end..]);
         let name_cstr = Self::vec_to_cstr_null(name);
         unsafe {
-            let (pub_id, sys_id) = split_two_quoted(tail);
+            // UPSTREAM-PARITY (parser.c xmlParseNotationDecl): `PUBLIC "pub"
+            // "sys"` puts the public id in ExternalID and the URI in
+            // SystemID; `SYSTEM "sys"` leaves ExternalID absent and stores
+            // the URI in SystemID only (php DOMNotation::$publicId reads
+            // ExternalID and maps NULL to "").
+            let (pub_id, sys_id) = if tail.len() >= 6 && tail[..6].eq_ignore_ascii_case(b"PUBLIC") {
+                split_two_quoted(trim_ascii(&tail[6..]))
+            } else if tail.len() >= 6 && tail[..6].eq_ignore_ascii_case(b"SYSTEM") {
+                (None, read_quoted(trim_ascii(&tail[6..])))
+            } else {
+                split_two_quoted(tail)
+            };
             let pub_c = pub_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
             let sys_c = sys_id.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
             crate::xml::dtd::add_notation_decl(dtd, name_cstr, pub_c, sys_c);
@@ -5343,6 +5361,23 @@ impl XmlParser {
             return ptr::null();
         }
         // Allocate a null-terminated buffer
+        let mut buf = data.to_vec();
+        buf.push(0);
+        let ptr = buf.as_ptr();
+        // Leak the buffer so the pointer remains valid
+        core::mem::forget(buf);
+        ptr as *const xmlChar
+    }
+
+    /// Convert a byte slice to a null-terminated C string pointer, preserving
+    /// an EMPTY slice as a non-NULL single NUL byte.
+    ///
+    /// UPSTREAM-PARITY (parser.c xmlParsePubidLiteral/xmlParseSystemLiteral):
+    /// a quoted `PUBLIC ""` / `SYSTEM ""` literal yields an allocated empty
+    /// string, never NULL — DOMEntity::$publicId/$systemId distinguish the
+    /// empty literal from an absent id.
+    fn vec_to_cstr_keep_empty(data: &[u8]) -> *const xmlChar {
+        // Allocate a null-terminated buffer (empty => single NUL byte)
         let mut buf = data.to_vec();
         buf.push(0);
         let ptr = buf.as_ptr();

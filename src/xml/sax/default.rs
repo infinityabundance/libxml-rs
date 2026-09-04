@@ -384,13 +384,56 @@ pub(crate) mod default_sax_handler {
                     flush_text_run!(i);
                     // Create the ENTITY_REF node (upstream xmlNodeParseAttValue
                     // general-entity branch; the node borrows the entity's
-                    // content and links it as its only child).
+                    // content and links the declaration as its only child).
                     let name = &bytes[i + 1..j];
                     let mut name_c = name.to_vec();
                     name_c.push(0);
                     let ent = unsafe {
                         crate::xml::entities::get_entity(doc, name_c.as_ptr() as *const xmlChar)
                     };
+                    let is_predef = !ent.is_null()
+                        && (*ent).etype
+                            == crate::abi::types::xmlEntityType::XML_INTERNAL_PREDEFINED_ENTITY
+                                as c_int;
+                    // Candidate flag convention (parser/state.rs
+                    // parse_entity_content): XML_ENT_PARSED = 1 << 0,
+                    // XML_ENT_EXPANDING = 1 << 3.
+                    const XML_ENT_PARSED: c_int = 1 << 0;
+                    const XML_ENT_EXPANDING: c_int = 1 << 3;
+                    if !ent.is_null() && !is_predef && (*ent).flags & XML_ENT_EXPANDING != 0 {
+                        // Cycle guard: an entity whose replacement is being
+                        // materialized right now does not create a reference
+                        // node at all (upstream xmlNodeParseAttValue).
+                        i = j + 1;
+                        run_start = i;
+                        continue;
+                    }
+                    // UPSTREAM-PARITY (tree.c xmlNodeParseAttValue): when an
+                    // internal entity is referenced in an attribute value the
+                    // declaration's CHILD tree is materialized from its
+                    // content once (XML_ENT_PARSED), so the value reader can
+                    // expand the reference through the declaration children
+                    // (css_selectors/entities, token_list/entities — the tree
+                    // keeps `&name;` for round-trip serialization while
+                    // getAttribute reads the expanded value).
+                    if !ent.is_null()
+                        && !is_predef
+                        && (*ent).flags & XML_ENT_PARSED == 0
+                        && !(*ent).content.is_null()
+                    {
+                        (*ent).flags |= XML_ENT_EXPANDING;
+                        let c = (*ent).content;
+                        let clen = unsafe { libc::strlen(c as *const c_char) } as c_int;
+                        if clen > 0 {
+                            let ent_attr = ent as *mut _xmlAttr;
+                            // Parse the entity content into the declaration's
+                            // children (self-recursion; the EXPANDING flag
+                            // prevents cycles).
+                            parser_build_attr_children(ctxt, ent_attr, c, clen, true);
+                        }
+                        (*ent).flags &= !XML_ENT_EXPANDING;
+                        (*ent).flags |= XML_ENT_PARSED;
+                    }
                     let node = unsafe {
                         crate::abi::allocator::xmlMallocZero(core::mem::size_of::<_xmlNode>())
                             as *mut _xmlNode
