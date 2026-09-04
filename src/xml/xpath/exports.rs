@@ -3647,6 +3647,40 @@ unsafe fn node_local_name(node: *mut _xmlNode) -> String {
     }
 }
 
+/// QName of a node (upstream `xmlXPathNameFunction` first-node logic):
+/// element/attribute nodes return `prefix:local` when bound to a prefixed
+/// namespace, else the plain name; every other node type falls back to the
+/// local-name rule.
+unsafe fn node_qname(node: *mut _xmlNode) -> String {
+    use crate::abi::types::xmlElementType as ET;
+    if node.is_null() {
+        return String::new();
+    }
+    unsafe {
+        let t = (*node).type_;
+        if t == ET::XML_ELEMENT_NODE as c_int || t == ET::XML_ATTRIBUTE_NODE as c_int {
+            let name = (*node).name;
+            if name.is_null() || *name == b' ' {
+                return String::new();
+            }
+            let local = CStr::from_ptr(name as *const c_char)
+                .to_string_lossy()
+                .into_owned();
+            let ns = (*node).ns;
+            if !ns.is_null() && !(*ns).prefix.is_null() {
+                let prefix = CStr::from_ptr((*ns).prefix as *const c_char)
+                    .to_string_lossy()
+                    .into_owned();
+                format!("{prefix}:{local}")
+            } else {
+                local
+            }
+        } else {
+            node_local_name(node)
+        }
+    }
+}
+
 /// `void xmlXPathLocalNameFunction(xmlXPathParserContextPtr ctxt, int nargs)`.
 ///
 /// # SAFETY
@@ -3705,6 +3739,63 @@ pub unsafe extern "C" fn xmlXPathLocalNameFunction(ctxt: *mut c_void, nargs: c_i
             String::new()
         } else {
             node_local_name(*(*ns).nodeTab)
+        }
+    };
+    crate::abi::exports_xml2::xmlXPathFreeObject(cur);
+    let out = dup_rust_string(&name);
+    value_push(pc, xmlXPathWrapString(out));
+}
+
+/// `void xmlXPathNameFunction(xmlXPathParserContextPtr ctxt, int nargs)` —
+/// QName of the first node in document order (prefix:local for prefixed
+/// element/attribute names, else the local name).
+///
+/// # SAFETY
+///
+/// - `ctxt` must be a valid parser-context pointer (or NULL) obtained from
+///   the matching constructor/owner and not yet freed.
+#[no_mangle]
+pub unsafe extern "C" fn xmlXPathNameFunction(ctxt: *mut c_void, nargs: c_int) {
+    let pc = pc_from(ctxt);
+    if pc.is_null() {
+        return;
+    }
+    let ctx = unsafe { (*pc).context };
+    if ctx.is_null() {
+        return;
+    }
+    if nargs == 0 {
+        value_push(
+            pc,
+            crate::abi::exports_xml2::xpath_to_object_pub(XPathValue::NodeSet(NodeSet::singleton(
+                unsafe { (*ctx).node },
+            ))),
+        );
+        // fallthrough with nargs = 1
+    }
+
+    if !check_arity(pc, 1) {
+        return;
+    }
+    let cur = value_pop(pc);
+    if cur.is_null() {
+        pc_set_error(pc, crate::abi::types::XPATH_INVALID_OPERAND as c_int);
+        return;
+    }
+    let typ = unsafe { (*cur).type_ };
+    if typ != xmlXPathObjectType::XPATH_NODESET as c_int
+        && typ != xmlXPathObjectType::XPATH_XSLT_TREE as c_int
+    {
+        crate::abi::exports_xml2::xmlXPathFreeObject(cur);
+        pc_set_error(pc, crate::abi::types::XPATH_INVALID_TYPE as c_int);
+        return;
+    }
+    let name = unsafe {
+        let ns = (*cur).nodesetval as *mut _xmlNodeSet;
+        if ns.is_null() || (*ns).nodeNr == 0 {
+            String::new()
+        } else {
+            node_qname(*(*ns).nodeTab)
         }
     };
     crate::abi::exports_xml2::xmlXPathFreeObject(cur);
@@ -4531,6 +4622,7 @@ unsafe fn standard_function_pointer(
         "count" => xmlXPathCountFunction,
         "id" => xmlXPathIdFunction,
         "local-name" => xmlXPathLocalNameFunction,
+        "name" => xmlXPathNameFunction,
         "namespace-uri" => xmlXPathNamespaceURIFunction,
         "string" => xmlXPathStringFunction,
         "string-length" => xmlXPathStringLengthFunction,

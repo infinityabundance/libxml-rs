@@ -246,19 +246,33 @@ fn fn_namespace_uri(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPath
     }
 }
 
-/// name(node-set?) — QName of node.
+/// name(node-set?) — QName of the first node in document order.
+///
+/// Element/attribute nodes bound to a prefixed namespace return
+/// `prefix:local`; everything else follows the local-name rule.
 ///
 /// # Safety
 ///
 /// - The node returned by `get_first_node` must be NULL or a valid
-///   `_xmlNode` that stays alive for the call; its `name` field must be
-///   NULL or a valid NUL-terminated string.
+///   `_xmlNode` that stays alive for the call; its `name` and `ns` fields
+///   must be valid.
 fn fn_name(ctx: &mut XPathContext, args: &[XPathValue]) -> Result<XPathValue, String> {
     let node = get_first_node(ctx, args, 0);
     if let Some(node) = node {
         unsafe {
+            use crate::abi::types::xmlElementType as ET;
+            let t = (*node).type_;
             let name = crate::xml::string::xmlstr_to_string((*node).name);
-            Ok(XPathValue::String(name))
+            if (t == ET::XML_ELEMENT_NODE as i32 || t == ET::XML_ATTRIBUTE_NODE as i32)
+                && !name.is_empty()
+                && !(*node).ns.is_null()
+                && !(*(*node).ns).prefix.is_null()
+            {
+                let prefix = crate::xml::string::xmlstr_to_string((*(*node).ns).prefix);
+                Ok(XPathValue::String(format!("{prefix}:{name}")))
+            } else {
+                Ok(XPathValue::String(name))
+            }
         }
     } else {
         Ok(XPathValue::String(String::new()))
