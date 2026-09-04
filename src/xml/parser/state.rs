@@ -2240,6 +2240,24 @@ impl XmlParser {
     /// reference against the document URL's directory.
     fn resolve_dtd_path(&self, sys_id: &[u8]) -> Option<std::path::PathBuf> {
         let sys = core::str::from_utf8(sys_id).ok()?;
+        // UPSTREAM-PARITY: a file:/// system id (php rawurlencode'd absolute
+        // DTD paths, e.g. "file:///%2Fsrcb%2F...%2Fdtdexample.dtd") resolves
+        // to the percent-decoded local path; non-file URIs have no local
+        // resolution.
+        if let Some(rest) = sys.strip_prefix("file://") {
+            // "file:///abs/path": the path is the whole remainder;
+            // "file://host/abs/path": drop the authority component.
+            let path_enc = if rest.starts_with('/') {
+                rest
+            } else {
+                match rest.splitn(2, '/').nth(1) {
+                    Some(p) => p,
+                    None => rest,
+                }
+            };
+            let decoded = percent_decode_uri(path_enc);
+            return Some(std::path::PathBuf::from(decoded));
+        }
         if sys.contains("://") {
             // Non-file URI (http etc.): no local resolution.
             return None;
@@ -5781,7 +5799,10 @@ fn parse_enumeration(s: &[u8]) -> (*mut crate::abi::structs::_xmlEnumeration, us
 
 /// Parse an attribute default: `#REQUIRED | #IMPLIED | #FIXED "v" | "v"`.
 ///
-/// Returns `(def, default_value, consumed_bytes)`.
+/// Returns `(def, default_value, consumed_bytes)` where `consumed_bytes` is
+/// measured from the START of the (trimmed) input and covers the whole
+/// default construct (keyword + required whitespace + quoted literal), so a
+/// caller can continue parsing further attributes of the same `<!ATTLIST>`.
 fn parse_attr_default(s: &[u8]) -> (c_int, Option<&[u8]>, usize) {
     use crate::abi::types::xmlAttributeDefault::*;
     let s = trim_ascii(s);
@@ -5798,12 +5819,14 @@ fn parse_attr_default(s: &[u8]) -> (c_int, Option<&[u8]>, usize) {
         return (XML_ATTRIBUTE_IMPLIED as c_int, None, kw_len);
     }
     if kw.eq_ignore_ascii_case(b"#FIXED") {
-        let after = trim_ascii(&rest[kw_len..]);
+        let tail = &rest[kw_len..];
+        let ws_skip = tail.len() - tail.trim_ascii_start().len();
+        let after = &tail[ws_skip..];
         match read_quoted(after) {
             Some(v) => (
                 XML_ATTRIBUTE_FIXED as c_int,
                 Some(v),
-                kw_len + (after.len() - trim_ascii(after).len()) + after.len(),
+                kw_len + ws_skip + v.len() + 2,
             ),
             None => (XML_ATTRIBUTE_FIXED as c_int, None, kw_len),
         }
@@ -5813,7 +5836,7 @@ fn parse_attr_default(s: &[u8]) -> (c_int, Option<&[u8]>, usize) {
         // only produced by the explicit keyword). The DTD dumper prints
         // ` CDATA "default title"`, never ` #IMPLIED "default title"`.
         match read_quoted(rest) {
-            Some(v) => (XML_ATTRIBUTE_NONE as c_int, Some(v), rest.len()),
+            Some(v) => (XML_ATTRIBUTE_NONE as c_int, Some(v), v.len() + 2),
             None => (XML_ATTRIBUTE_NONE as c_int, None, kw_len),
         }
     }
@@ -5825,6 +5848,37 @@ fn vec_to_cstr_null_helper(s: &[u8]) -> *mut c_char {
     v.push(0);
     let boxed = v.into_boxed_slice();
     Box::into_raw(boxed) as *mut c_char
+}
+
+/// Percent-decode a URI path component (`%2F` -> `/`, `%20` -> space, ...);
+/// malformed escapes are kept verbatim.
+fn percent_decode_uri(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0usize;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            let h = hex_val(b[i + 1]);
+            let l = hex_val(b[i + 2]);
+            if let (Some(h), Some(l)) = (h, l) {
+                out.push((h << 4) | l);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
 }
 
 /// Snprintf a content-model expression (upstream valid.c

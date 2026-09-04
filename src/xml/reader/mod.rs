@@ -303,6 +303,12 @@ pub struct XmlTextReader {
     /// their element ancestors survive, everything else is unlinked and
     /// freed (upstream xmlTextReaderRead's NODE_IS_PRESERVED pruning).
     pattern_tab: Vec<crate::abi::exports_automata::xmlPatternPtr>,
+    /// DTD parse validity snapshot: `ctxt->valid` right after the parse,
+    /// meaningful only when the parse ran with ctxt->validate == 1
+    /// (xmlTextReaderIsValid, upstream xmlreader.c).
+    was_valid: c_int,
+    /// Whether the parse ran a DTD validation pass (ctxt->validate).
+    did_validate: c_int,
 }
 
 impl XmlTextReader {
@@ -353,6 +359,8 @@ impl XmlTextReader {
             preserve: false,
             cur_attr_is_ns: false,
             pattern_tab: Vec::new(),
+            was_valid: 0,
+            did_validate: 0,
         }
     }
 
@@ -395,6 +403,11 @@ impl XmlTextReader {
         // Get the parsed document.
         let doc = unsafe { (*self.ctxt).myDoc };
         self.doc = doc;
+
+        // UPSTREAM-PARITY (xmlTextReaderIsValid): snapshot the DTD-parse
+        // validity state before the parser context is released.
+        self.was_valid = unsafe { (*self.ctxt).valid };
+        self.did_validate = unsafe { (*self.ctxt).validate };
 
         // Free the parser context - we no longer need it.
         if !self.ctxt.is_null() {
@@ -692,6 +705,7 @@ impl XmlTextReader {
                 || etype == XML_ENTITY_REF_NODE as c_int
                 || etype == XML_ENTITY_NODE as c_int
                 || etype == XML_DOCUMENT_TYPE_NODE as c_int
+                || etype == XML_DTD_NODE as c_int
                 || etype == XML_NOTATION_NODE as c_int
             {
                 // SAFETY: node is valid.
@@ -1001,26 +1015,51 @@ impl XmlTextReader {
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn Next(&mut self) -> c_int {
         if self.state != ReadState::READING || self.cur_node.is_null() {
-            return -1;
+            // UPSTREAM-PARITY (xmlTextReaderNext): once the traversal reached
+            // its end (state END), further Next calls return 0 without moving.
+            return 0;
         }
 
-        // Find the next sibling by scanning forward through events.
-        // We need to find the next event at depth <= current_depth that is not
-        // an END_ELEMENT. This skips:
-        // - All events in the current subtree (depth > current_depth)
-        // - END_ELEMENT events (which close the current element)
+        // Attributes are not independent positions: an attribute cursor is
+        // backed by the element node (upstream keeps reader->node on the
+        // element); reset it and treat the position as the element.
+        if self.cur_attribute >= 0 {
+            self.cur_attribute = -1;
+            self.cur_attr_is_ns = false;
+        }
+
+        // UPSTREAM-PARITY (xmlTextReader.c xmlTextReaderNext): when the
+        // current node is NOT an element START (text/CDATA/comment/PI/END
+        // etc.) Next degrades to a plain xmlTextReaderRead — a single step
+        // forward in document order that may land on the parent's
+        // END_ELEMENT event. The subtree-skip applies only when the reader
+        // sits on an element start.
+        if self.node_type != ReaderNodeType::ELEMENT {
+            let nxt = self.event_index + 1;
+            if nxt < self.events.len() {
+                self.position_at(nxt);
+                return 1;
+            }
+            self.position_at(self.events.len());
+            return 0;
+        }
+
+        // Element start: skip the whole subtree (all deeper events and the
+        // element's own END event plus every ancestor END event) to the next
+        // positionable event at the same or a shallower depth. When nothing
+        // remains the traversal ends: the cursor is cleared (EOF) exactly
+        // like upstream's backtrack-to-document state.
         let current_depth = self.depth;
         let mut i = self.event_index + 1;
-
         while i < self.events.len() {
             let event = &self.events[i];
-            if event.depth <= current_depth && !event.is_end {
+            if !event.is_end && event.depth <= current_depth {
                 self.position_at(i);
                 return 1;
             }
             i += 1;
         }
-
+        self.position_at(self.events.len());
         0
     }
 
@@ -1108,6 +1147,18 @@ impl XmlTextReader {
             return -1;
         }
 
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderMoveToAttributeNo): the
+        // attribute cursor is reset to the ELEMENT on entry (reader->curnode
+        // = NULL), so a failed lookup leaves the reader on the element — the
+        // php-visible contract (003-move-errors: "node pointer moves back to
+        // the element in this case").
+        self.cur_attribute = -1;
+        self.cur_attr_is_ns = false;
+        if !self.cur_node.is_null() {
+            unsafe { self.cache_name_and_value(self.cur_node, false) };
+            self.node_type = ReaderNodeType::ELEMENT;
+        }
+
         // SAFETY: cur_node is an element.
         let target = unsafe { self.attr_at(self.cur_node, index) };
         match target {
@@ -1170,7 +1221,7 @@ impl XmlTextReader {
     /// Pointers returned by this method are valid only until the next
     /// traversal operation invalidates them, per the C API contract.
     pub unsafe fn MoveToNextAttribute(&mut self) -> c_int {
-        if self.cur_attribute < 0 || self.cur_node.is_null() {
+        if self.cur_node.is_null() {
             return -1;
         }
 
@@ -1180,8 +1231,16 @@ impl XmlTextReader {
             return -1;
         }
 
-        // Find the attribute at cur_attribute index, then move to the next.
-        let next_index = self.cur_attribute + 1;
+        // UPSTREAM-PARITY (xmlreader.c xmlTextReaderMoveToNextAttribute):
+        // "if the current node is an element, this moves to its first
+        // attribute" — a next-attribute call from an element behaves like
+        // MoveToFirstAttribute. Only when already on an attribute does it
+        // advance to the following one.
+        let next_index = if self.cur_attribute < 0 {
+            0
+        } else {
+            self.cur_attribute + 1
+        };
         let target = unsafe { self.attr_at(self.cur_node, next_index) };
         match target {
             AttrTarget::None => 0,
@@ -3486,11 +3545,11 @@ pub const unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(
 ///
 /// # UPSTREAM-PARITY
 ///
-/// Upstream `xmlTextReaderIsValid` returns 1 when the document validated
-/// successfully, 0 when no validation was performed, and -1 for a NULL
-/// reader. The candidate reader does not yet perform DTD/XSD/RNG
-/// validation (tracked in the parity ledger), so it reports 0 unless the
-/// parse was run with validation requested.
+/// Upstream `xmlTextReaderIsValid`: returns 1 when a validating parse
+/// finished with ctxt->valid == 1, 0 when no DTD validation was performed
+/// or it failed, and -1 for a NULL reader. (RelaxNG/XSD validation modes
+/// report their own error counts upstream; the candidate covers the DTD
+/// path.)
 ///
 /// ```c
 /// int xmlTextReaderIsValid(xmlTextReaderPtr reader);
@@ -3500,11 +3559,17 @@ pub const unsafe extern "C" fn xmlTextReaderGetParserColumnNumber(
 ///
 /// `reader` must be a valid pointer or NULL.
 #[no_mangle]
-pub const unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_int {
+pub unsafe extern "C" fn xmlTextReaderIsValid(reader: *mut XmlTextReader) -> c_int {
     if reader.is_null() {
         return -1;
     }
-    0
+    unsafe {
+        if (*reader).did_validate == 1 {
+            (*reader).was_valid
+        } else {
+            0
+        }
+    }
 }
 
 /// Return the normalization status of the reader.
@@ -4215,7 +4280,12 @@ mod tests {
         }
     }
 
-    /// Verifies `xmlTextReaderNext` skips to the next sibling element.
+    /// Verifies `xmlTextReaderNext` semantics against the upstream streaming
+    /// reader (xmlreader.c xmlTextReaderNext): from a NON-element node Next
+    /// degrades to a plain Read — one step forward in document order, which
+    /// may land on the parent's END_ELEMENT — and only an element START is
+    /// skipped (subtree + END events) to the next sibling. On exhaustion the
+    /// cursor is cleared (EOF).
     ///
     /// # Safety
     ///
@@ -4244,18 +4314,26 @@ mod tests {
             assert_eq!(xmlTextReaderRead(reader), 1);
             assert_eq!((*reader).NodeType(), ReaderNodeType::TEXT);
 
-            // Skip to next sibling — should skip END a and go to ELEMENT b.
+            // Next from a TEXT node is a plain Read: it lands on the END of
+            // the parent element (upstream xmlTextReaderNext, oracle-verified
+            // via XMLReader 010/next_basic).
+            assert_eq!(xmlTextReaderNext(reader), 1);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::END_ELEMENT);
+            assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "a");
+
+            // Next again from the END event — a single step to element b.
             assert_eq!(xmlTextReaderNext(reader), 1);
             assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
             assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "b");
 
-            // Next again — should go to c.
+            // Next from the b element start skips its subtree to c.
             assert_eq!(xmlTextReaderNext(reader), 1);
             assert_eq!((*reader).NodeType(), ReaderNodeType::ELEMENT);
             assert_eq!(xmlstr_to_string((*reader).name as *const xmlChar), "c");
 
-            // Next again — no more siblings.
+            // Next again — the traversal is exhausted and the cursor clears.
             assert_eq!(xmlTextReaderNext(reader), 0);
+            assert_eq!((*reader).NodeType(), ReaderNodeType::NONE);
 
             free_reader(reader);
         }
