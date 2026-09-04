@@ -105,6 +105,29 @@ if [ -n "${PHP_TESTS_LIST:-}" ]; then
   EXT_DIRS_RUN=()
   t="${TESTS_RUN%% *}"; EXT_DIRS_RUN+=("${t%%/*}")
 fi
+# Oracle-parity exclusions: when running the FULL six-extension spec (no
+# explicit PHP_TESTS_LIST), expand the directory spec to an explicit .phpt
+# file list minus the manifest entries (php-court-oracle-parity.exclude) so
+# `make test` reports the candidate-driven failure count directly. Each
+# excluded test FAILS IDENTICALLY on the oracle container (see the manifest
+# header); single-test runs never exclude.
+if [ -z "${PHP_TESTS_LIST:-}" ] && [ -f "${SCRIPT_DIR}/php-court-oracle-parity.exclude" ]; then
+  mapfile -t ORACLE_PARITY < <(grep -vE '^[[:space:]]*(#|$)' "${SCRIPT_DIR}/php-court-oracle-parity.exclude")
+  TESTS_RUN=""
+  while IFS= read -r f; do
+    skip=0
+    for ex in "${ORACLE_PARITY[@]}"; do
+      if [ "$f" = "$ex" ]; then
+        skip=1
+        break
+      fi
+    done
+    if [ "$skip" = "0" ]; then
+      TESTS_RUN="$TESTS_RUN $f"
+    fi
+  done < <(find "${PHP_EXT_DIRS[@]}" -name '*.phpt' -type f | sort)
+  TESTS_RUN="${TESTS_RUN# }"
+fi
 find "${EXT_DIRS_RUN[@]}" \( -name '*.diff' -o -name '*.out' -o -name '*.exp' \) -delete 2>/dev/null || true
 make test TESTS="$TESTS_RUN" NO_INTERACTION=1 REPORT_EXIT_STATUS=1 > "$LOG" 2>&1
 echo "rc=$(printf '%s' "$?")"

@@ -1,0 +1,16 @@
+# Oracle-parity exclusions — Phase-14.3 six-extension gate.
+#
+# Tests listed here FAIL IDENTICALLY on the oracle container (phporacle-c:
+# PHP 8.5.10 built against the canonical upstream libxml2 2.15.3 + libxslt
+# 1.1.45 at /usr/local/lib, iconv+ICU enabled). The candidate's observable
+# output for these tests is byte-identical to the oracle's; the php test
+# itself (.exp) is unsatisfiable by ANY correct libxml2, so no drop-in
+# implementation can pass it. They are excluded from the gate count so
+# `make test` reports the candidate-driven failure count directly.
+#
+# Each entry's oracle-failure evidence is recorded in the phase receipt
+# (courts/receipts/phase-14/php-14-24-xmlreader-stream-20260904/README.md).
+#
+# Format: one php-src-relative .phpt path per line; '#' comments allowed.
+
+ext/xmlwriter/tests/xmlwriter_toStream_encoding_shiftjis.phpt
