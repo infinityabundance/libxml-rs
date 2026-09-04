@@ -289,12 +289,14 @@ const fn v_path_noscheme(s: &[u8], i: &mut usize, allow_unwise: bool) -> bool {
 }
 
 /// Validate a URI reference against the upstream RFC 3986 grammar
-/// (`xmlParse3986URIReference`, uri.c).
+/// (`xmlParse3986URIReference`, uri.c) — the check behind upstream
+/// `xmlParseURISafe` used by the parser for xmlns URI validation
+/// (XML_WAR_NS_URI) and by `xmlBuildURISafe`.
 ///
 /// `allow_unwise` mirrors parsing with `XML_URI_ALLOW_UNWISE` set, which is
 /// exactly how `xmlURIEscape` parses its input. `xmlParseURISafe` and the
 /// `xmlBuildURI*` family parse without it.
-fn uri_reference_valid(s: &[u8], allow_unwise: bool) -> bool {
+pub(crate) fn uri_reference_valid(s: &[u8], allow_unwise: bool) -> bool {
     let n = s.len();
     let mut i = 0usize;
     let mut has_scheme = false;

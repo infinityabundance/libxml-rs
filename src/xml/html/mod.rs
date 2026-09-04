@@ -2401,6 +2401,14 @@ unsafe fn html_parse_buffer(
                         let entity_text = parse_entity(ctxt);
                         text.extend_from_slice(&entity_text);
                     }
+                    Some(0) => {
+                        // UPSTREAM-PARITY (bug #80268, libxml2 >= 2.9.12): NUL
+                        // bytes in HTML content are DROPPED and parsing
+                        // continues — they must neither terminate the text
+                        // node (truncating at the NUL) nor reach the tree
+                        // (content is C-string storage).
+                        ctxt.next();
+                    }
                     Some(ch) => {
                         text.push(ch);
                         ctxt.next();

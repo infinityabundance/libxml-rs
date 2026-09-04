@@ -103,6 +103,10 @@ const XML_PARSER_EOF: c_int = ParserState::XML_PARSER_EOF as c_int;
 const XML_PARSER_EPILOG: c_int = ParserState::XML_PARSER_EPILOG as c_int;
 const XML_PARSER_XML_DECL: c_int = ParserState::XML_PARSER_XML_DECL as c_int;
 
+/// XML_WAR_NS_URI (include/libxml/xmlerror.h:99) — a namespace URI that
+/// fails xmlParseURISafe ("xmlns: ... is not a valid URI").
+const XML_WAR_NS_URI: c_int = 99;
+
 /// XML_WAR_NS_URI_RELATIVE (include/libxml/xmlerror.h:100) — the namespace
 /// URI warning for relative (non-absolute) xmlns URIs.
 const XML_WAR_NS_URI_RELATIVE: c_int = 100;
@@ -1247,7 +1251,7 @@ impl XmlParser {
                         *dtd = self.ensure_entity_registry_dtd();
                     }
                     if let Some(d) = *dtd {
-                        Self::parse_entity_decl(d, args);
+                        self.parse_entity_decl(d, args);
                     }
                 }
                 // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): when a
@@ -1872,7 +1876,7 @@ impl XmlParser {
     /// - `dtd` must be a valid, non-NULL `_xmlDtd` (passed to
     ///   `entities::add_entity`); `args` is a caller-owned byte slice, live
     ///   for the call; temporary C strings are freed before returning.
-    fn parse_entity_decl(dtd: *mut _xmlDtd, args: &[u8]) {
+    fn parse_entity_decl(&mut self, dtd: *mut _xmlDtd, args: &[u8]) {
         let args = trim_ascii(args);
         if args.is_empty() {
             return;
@@ -1958,7 +1962,7 @@ impl XmlParser {
                 } else {
                     None
                 };
-                crate::xml::entities::add_entity(
+                let ent = crate::xml::entities::add_entity(
                     dtd,
                     name_cstr,
                     external_type,
@@ -1966,6 +1970,49 @@ impl XmlParser {
                     sys_c,
                     notation_c.unwrap_or(ptr::null()),
                 );
+                // UPSTREAM-PARITY (SAX2.c xmlSAX2EntityDecl): a declared
+                // external entity's `URI` is the SystemID resolved against the
+                // parser base — the newest input with a filename, else
+                // ctxt->directory (which php sets to the CWD for memory
+                // loads). xmlNodeGetBase on an ENTITY_DECL node returns
+                // ent->URI verbatim (DTDNamedNodeMap: "mypicture.gif"
+                // resolves to "<dir>/mypicture.gif").
+                if !ent.is_null() && !sys_c.is_null() && unsafe { (*ent).URI.is_null() } {
+                    unsafe {
+                        let mut base: *const c_char = ptr::null();
+                        let c = &*(*self).ctxt;
+                        if !c.inputTab.is_null() {
+                            let mut i = c.inputNr - 1;
+                            while i >= 0 {
+                                let inp = *(c.inputTab.add(i as usize));
+                                if !inp.is_null() && !(*inp).filename.is_null() {
+                                    base = (*inp).filename;
+                                    break;
+                                }
+                                if i == 0 {
+                                    break;
+                                }
+                                i -= 1;
+                            }
+                        }
+                        if base.is_null() {
+                            base = c.directory;
+                        }
+                        if !base.is_null() {
+                            let mut uri: *mut xmlChar = ptr::null_mut();
+                            let res = crate::abi::exports_uri::xmlBuildURISafe(
+                                sys_c as *const c_char,
+                                base,
+                                &mut uri,
+                            );
+                            if res == 0 && !uri.is_null() {
+                                (*ent).URI = uri;
+                            } else if !uri.is_null() {
+                                crate::abi::allocator::xmlFreeImpl(uri as *mut c_void);
+                            }
+                        }
+                    }
+                }
                 if !pub_c.is_null() {
                     crate::abi::allocator::xmlFreeImpl(pub_c as *mut c_void);
                 }
@@ -2573,7 +2620,31 @@ impl XmlParser {
                 // just past the value's closing quote.
                 if attr_name == b"xmlns" || attr_name.starts_with(b"xmlns:") {
                     if attr_name == b"xmlns" {
-                        if !attr_value.is_empty() && !has_uri_scheme(attr_value) {
+                        // UPSTREAM-PARITY (parser.c xmlParseStartTag2): a
+                        // non-empty default namespace URI is first validated
+                        // with xmlParseURISafe (a parse failure warns
+                        // XML_WAR_NS_URI); only a URI that parses but lacks a
+                        // scheme warns "not absolute" (xmlNsWarn, default
+                        // namespace only — not pedantic-gated).
+                        if !attr_value.is_empty()
+                            && !crate::abi::exports_uri::uri_reference_valid(attr_value, false)
+                        {
+                            let pos = attr_end.get(idx).copied().unwrap_or(0);
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_WAR_NS_URI,
+                                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                                format!(
+                                    "xmlns: '{}' is not a valid URI\n",
+                                    String::from_utf8_lossy(attr_value)
+                                ),
+                                Some(attr_value.clone()),
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        } else if !attr_value.is_empty() && !has_uri_scheme(attr_value) {
                             let pos = attr_end.get(idx).copied().unwrap_or(0);
                             self.raise_error_at(
                                 XML_FROM_NAMESPACE,
@@ -2590,27 +2661,51 @@ impl XmlParser {
                                 pos,
                             );
                         }
-                    } else if self.is_pedantic()
-                        && !attr_value.is_empty()
-                        && !has_uri_scheme(attr_value)
-                    {
+                    } else {
+                        // Prefixed declarations: xmlParseURISafe runs for any
+                        // non-empty value; the relative-URI warning is
+                        // pedantic-only (upstream xmlNsWarn under pedantic).
                         let prefix = &attr_name[b"xmlns:".len()..];
-                        let pos = attr_end.get(idx).copied().unwrap_or(0);
-                        self.raise_error_at(
-                            XML_FROM_NAMESPACE,
-                            XML_WAR_NS_URI_RELATIVE,
-                            xmlErrorLevel::XML_ERR_WARNING as c_int,
-                            format!(
-                                "xmlns:{}: URI {} is not absolute\n",
-                                String::from_utf8_lossy(prefix),
-                                String::from_utf8_lossy(attr_value)
-                            ),
-                            Some(attr_value.clone()),
-                            None,
-                            None,
-                            0,
-                            pos,
-                        );
+                        if !attr_value.is_empty()
+                            && !crate::abi::exports_uri::uri_reference_valid(attr_value, false)
+                        {
+                            let pos = attr_end.get(idx).copied().unwrap_or(0);
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_WAR_NS_URI,
+                                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                                format!(
+                                    "xmlns:{}: '{}' is not a valid URI\n",
+                                    String::from_utf8_lossy(prefix),
+                                    String::from_utf8_lossy(attr_value)
+                                ),
+                                Some(attr_value.clone()),
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        } else if self.is_pedantic()
+                            && !attr_value.is_empty()
+                            && !has_uri_scheme(attr_value)
+                        {
+                            let pos = attr_end.get(idx).copied().unwrap_or(0);
+                            self.raise_error_at(
+                                XML_FROM_NAMESPACE,
+                                XML_WAR_NS_URI_RELATIVE,
+                                xmlErrorLevel::XML_ERR_WARNING as c_int,
+                                format!(
+                                    "xmlns:{}: URI {} is not absolute\n",
+                                    String::from_utf8_lossy(prefix),
+                                    String::from_utf8_lossy(attr_value)
+                                ),
+                                Some(attr_value.clone()),
+                                None,
+                                None,
+                                0,
+                                pos,
+                            );
+                        }
                     }
                 }
                 // UPSTREAM-PARITY (parser.c xmlParseStartTag2): namespace

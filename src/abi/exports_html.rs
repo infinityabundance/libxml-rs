@@ -2746,6 +2746,10 @@ pub unsafe extern "C" fn htmlCreateFileParserCtxt(
         // registered php streams loader is consulted first (file:// URIs,
         // php stream contexts, percent-NUL guard); without one the built-in
         // file read runs.
+        let host = html_ctxt_alloc();
+        if host.is_null() {
+            return ptr::null_mut();
+        }
         let loaded =
             if crate::xml::globals::get_parser_input_buffer_create_filename_value().is_some() {
                 crate::abi::exports_parser::call_loader_materialize(filename).ok()
@@ -2756,13 +2760,25 @@ pub unsafe extern "C" fn htmlCreateFileParserCtxt(
                 std::fs::read(name).ok()
             };
         let Some(bytes) = loaded else {
+            // UPSTREAM-PARITY (parserInternals.c xmlCtxtErrIO via
+            // htmlCreateFileParserCtxt -> xmlCtxtNewInputFromUrl): a failed
+            // main-document load raises the I/O warning
+            // "failed to load \"%s\": %s\n" (XML_IO_ENOENT, warning
+            // level) through the parser channel BEFORE the NULL context is
+            // returned — php's error handlers format it as
+            // "loadHTMLFile(): I/O warning : ..." (DOMDocument_loadHTMLfile_error1).
+            let msg = crate::abi::exports_parser::io_load_failure_message(filename);
+            unsafe {
+                crate::abi::exports_parser::emit_io_warning(
+                    host as *mut crate::abi::structs::_xmlParserCtxt,
+                    msg,
+                );
+            }
+            crate::xml::html::free_parser_ctxt(host);
             return ptr::null_mut();
         };
         if bytes.is_empty() {
-            return ptr::null_mut();
-        }
-        let host = html_ctxt_alloc();
-        if host.is_null() {
+            crate::xml::html::free_parser_ctxt(host);
             return ptr::null_mut();
         }
         if !encoding.is_null() {

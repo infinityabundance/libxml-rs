@@ -480,20 +480,68 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
         (*new_doc).charset = d.charset;
         (*new_doc).properties = d.properties;
 
-        // UPSTREAM-PARITY: xmlCopyDoc copies the document's children, which
-        // include the DTD node (upstream keeps it as the first child); ours
-        // stores the internal subset on doc->intSubset, so copy it there to
-        // reproduce --copy output.
-        if !d.intSubset.is_null() {
-            let dtd_copy = crate::xml::dtd::copy_dtd(d.intSubset);
-            if !dtd_copy.is_null() {
-                (*new_doc).intSubset = dtd_copy;
+        // UPSTREAM-PARITY (tree.c xmlCopyDoc + xmlStaticCopyNodeList): the
+        // internal subset is copied FIRST (a plain DTD copy) and the SAME
+        // node is then linked into the children list at the DTD child's
+        // position — one shared DTD node serves both `intSubset` and the
+        // DocumentType child (the copy is NOT duplicated). The generic node
+        // copy must never be applied to a DTD child (its ExternalID/SystemID
+        // live at offsets the node copy leaves untouched — the corrupt-clone
+        // SEGV in DOMNode_isEqualNode / clone-of-doctype docs).
+        if recursive != 0 {
+            if !d.intSubset.is_null() {
+                let dtd_copy = crate::xml::dtd::copy_dtd(d.intSubset);
+                if !dtd_copy.is_null() {
+                    (*new_doc).intSubset = dtd_copy;
+                }
             }
         }
 
         if recursive != 0 && !d.children.is_null() {
-            (*new_doc).children = copy_node_list(d.children, recursive);
-            if !(*new_doc).children.is_null() {
+            // DTD-aware children walk (upstream xmlStaticCopyNodeList): a DTD
+            // child contributes the intSubset copy (created above, or a fresh
+            // DTD copy when the source child is not the recorded subset) at
+            // its original position; every other child is copied generically.
+            let mut head: *mut _xmlNode = ptr::null_mut();
+            let mut tail: *mut _xmlNode = ptr::null_mut();
+            let mut cur = d.children;
+            while !cur.is_null() {
+                let ct = unsafe { (*cur).type_ };
+                let copy: *mut _xmlNode = if ct == XML_DTD_NODE as c_int {
+                    unsafe {
+                        if (*new_doc).intSubset.is_null() {
+                            let dc = crate::xml::dtd::copy_dtd(
+                                cur as *const crate::abi::structs::_xmlDtd,
+                            );
+                            if dc.is_null() {
+                                break;
+                            }
+                            (*new_doc).intSubset = dc;
+                            dc as *mut _xmlNode
+                        } else {
+                            (*new_doc).intSubset as *mut _xmlNode
+                        }
+                    }
+                } else {
+                    copy_node(cur, recursive)
+                };
+                if copy.is_null() {
+                    break;
+                }
+                unsafe {
+                    if tail.is_null() {
+                        head = copy;
+                    } else {
+                        (*tail).next = copy;
+                        (*copy).prev = tail;
+                    }
+                    tail = copy;
+                }
+                cur = unsafe { (*cur).next };
+            }
+            (*new_doc).children = head;
+            (*new_doc).last = tail;
+            if !head.is_null() {
                 // UPSTREAM-PARITY (tree.c xmlCopyDoc): every copied top-level
                 // child keeps the new DOCUMENT node as its parent
                 // (`xmlStaticCopyNodeList(doc->children, ret,
@@ -503,16 +551,13 @@ pub unsafe fn copy_doc(doc: *const _xmlDoc, recursive: c_int) -> *mut _xmlDoc {
                 // branch) freed the whole subtree while the cloned doc still
                 // referenced it, so the doc teardown double-freed the root
                 // (Phase 14.3 Bug-3 — DOMDocument clone + navigation).
-                let mut child = (*new_doc).children;
+                let mut child = head;
                 while !child.is_null() {
                     (*child).parent = new_doc as *mut _xmlNode;
                     (*child).doc = new_doc;
-                    if (*child).next.is_null() {
-                        (*new_doc).last = child;
-                    }
                     child = (*child).next;
                 }
-                propagate_doc((*new_doc).children, new_doc);
+                propagate_doc(head, new_doc);
                 // UPSTREAM-PARITY (tree.c xmlStaticCopyNode): after a
                 // CROSS-document deep copy every element/attribute namespace
                 // pointer must reference namespace declarations owned by the

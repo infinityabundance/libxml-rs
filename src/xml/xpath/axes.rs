@@ -356,13 +356,18 @@ unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
     }
 
     // Collect in-scope declarations: the context node's own declarations
-    // first, then those inherited from its ancestors, deduplicated by prefix
-    // (the nearest declaration wins — it is collected first and later
-    // duplicates are skipped). The implicit xml namespace is NOT part of the
-    // tree declarations (upstream xmlGetNsList does not return it).
+    // first, then those inherited from its ELEMENT ancestors, deduplicated by
+    // prefix (the nearest declaration wins — it is collected first and later
+    // duplicates are skipped). The walk must never read `nsDef` on the
+    // document node: in the _xmlDoc layout that offset aliases `oldNs`, the
+    // list DOM ns-elimination (php dom_eliminate_ns) moves removed
+    // declarations onto (gh12616: after removeAttributeNS the axis surfaced a
+    // freed href/prefix decl as an extra `xmlns` node with NULL value). The
+    // implicit xml namespace is NOT part of the tree declarations (upstream
+    // xmlGetNsList does not return it).
     let mut in_scope: Vec<*mut _xmlNs> = Vec::new();
     let mut cur = node;
-    while !cur.is_null() {
+    while !cur.is_null() && unsafe { (*cur).type_ } == xmlElementType::XML_ELEMENT_NODE as c_int {
         let mut ns_def = (*cur).nsDef;
         while !ns_def.is_null() {
             let prefix_null = (*ns_def).prefix.is_null();
@@ -379,7 +384,7 @@ unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
             }
             ns_def = (*ns_def).next;
         }
-        cur = (*cur).parent;
+        cur = unsafe { (*cur).parent };
     }
 
     // Emission order: the xml namespace first, then the in-scope list in
@@ -459,6 +464,30 @@ unsafe fn namespace_axis(node: *mut _xmlNode, node_test: &NodeTest, result: &mut
             node_test,
             in_scope.len()
         );
+        for ns in &in_scope {
+            unsafe {
+                let nsr = &*(*ns);
+                let pfx = if nsr.prefix.is_null() {
+                    "(null)".to_string()
+                } else {
+                    String::from_utf8_lossy(core::slice::from_raw_parts(
+                        nsr.prefix,
+                        libc::strlen(nsr.prefix as *const libc::c_char) as usize,
+                    ))
+                    .into_owned()
+                };
+                let hr = if nsr.href.is_null() {
+                    "(null)".to_string()
+                } else {
+                    String::from_utf8_lossy(core::slice::from_raw_parts(
+                        nsr.href,
+                        libc::strlen(nsr.href as *const libc::c_char) as usize,
+                    ))
+                    .into_owned()
+                };
+                eprintln!("[nsaxis]   decl ns={:p} pfx={} href={}", ns, pfx, hr);
+            }
+        }
     }
 }
 
