@@ -101,6 +101,69 @@ pub(crate) mod default_sax_handler {
         }
     }
 
+    /// Raise a NON-fatal parser error at the current input position through
+    /// the parser's generic/streamed error channel (upstream `xmlCtxtVErr`),
+    /// used by the default tree-builder callbacks (e.g. the duplicate-ID
+    /// report from SAX2 attribute registration, which upstream raises via
+    /// `xmlAddID(&ctxt->vctxt, ...)` at the attribute's line).
+    ///
+    /// # Safety
+    ///
+    /// - `ctxt` must be a valid parser context; `msg` a valid C string.
+    #[allow(clippy::too_many_arguments)]
+    unsafe fn raise_ctxt_validity_error(
+        ctxt: *mut _xmlParserCtxt,
+        code: c_int,
+        msg: *const c_char,
+    ) {
+        unsafe {
+            let mut file_ptr: *const c_char = ptr::null();
+            let mut line: c_int = 0;
+            let mut col: c_int = 0;
+            let mut window: Option<(Vec<u8>, usize)> = None;
+            if !(*ctxt).input.is_null() {
+                let inp = &*(*ctxt).input;
+                file_ptr = inp.filename as *const c_char;
+                line = inp.line;
+                col = inp.col;
+                if !inp.base.is_null()
+                    && !inp.end.is_null()
+                    && (inp.end as usize) >= (inp.base as usize)
+                {
+                    let len = inp.end.offset_from(inp.base) as usize;
+                    let data = core::slice::from_raw_parts(inp.base, len);
+                    let byte_pos = if !inp.cur.is_null() {
+                        inp.cur.offset_from(inp.base) as usize
+                    } else {
+                        0
+                    };
+                    window = crate::xml::parser::tokenizer::window_at_data(data, byte_pos);
+                }
+            }
+            (*ctxt).nbErrors = (*ctxt).nbErrors.wrapping_add(1);
+            let delivery = crate::xml::errors::parser_delivery(ctxt);
+            let window_ref = window.as_ref().map(|(w, caret)| (w.as_slice(), *caret));
+            crate::xml::errors::raise_error_streamed(
+                ctxt as *mut c_void,
+                crate::abi::types::XML_FROM_VALID,
+                code,
+                crate::abi::types::xmlErrorLevel::XML_ERR_ERROR as c_int,
+                file_ptr,
+                line,
+                col,
+                ptr::null(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                msg,
+                window_ref,
+                None,
+                delivery,
+                None,
+            );
+        }
+    }
+
     /// Merge character data into an existing text node (upstream
     /// `xmlNodeAddContent` semantics): the bytes are appended to the node's
     /// own content buffer, keeping the tree flat (a single text node).
@@ -698,7 +761,7 @@ pub(crate) mod default_sax_handler {
         nb_namespaces: c_int,
         namespaces: *mut *const xmlChar,
         nb_attributes: c_int,
-        _nb_defaulted: c_int,
+        nb_defaulted: c_int,
         attributes: *mut *const xmlChar,
     ) {
         let ctxt = unsafe { ctxt_from_ctx(ctx) };
@@ -709,6 +772,22 @@ pub(crate) mod default_sax_handler {
         // SAFETY: The context is guaranteed valid by the caller.
         unsafe {
             let c = &mut *ctxt;
+
+            // UPSTREAM-PARITY (SAX2.c xmlSAX2StartElementNs): DTD defaulted
+            // attributes are only materialised as real attribute nodes when
+            // XML_COMPLETE_ATTRS is requested (XML_PARSE_DTDATTR / the
+            // xmlLoadExtDtdDefaultValue global); otherwise they are subtracted
+            // from the attribute count so the tree keeps only the tag's own
+            // attributes (DOM loadXML with an ATTLIST default must NOT create
+            // the default as a real attribute — php removeAttribute/toggle
+            // rely on xmlHasProp reporting the DTD declaration instead).
+            let mut effective_nb_attributes = nb_attributes;
+            if nb_defaulted != 0
+                && (c.options & crate::abi::types::XML_PARSE_DTDATTR == 0)
+                && (c.loadsubset & crate::abi::constants::XML_COMPLETE_ATTRS == 0)
+            {
+                effective_nb_attributes -= nb_defaulted;
+            }
 
             // Determine the parent node for this element.
             let parent = if c.nodeNr > 0 && !c.nodeTab.is_null() {
@@ -818,9 +897,9 @@ pub(crate) mod default_sax_handler {
             }
 
             // Process attributes.
-            if nb_attributes > 0 && !attributes.is_null() {
+            if effective_nb_attributes > 0 && !attributes.is_null() {
                 let mut i: c_int = 0;
-                while i < nb_attributes {
+                while i < effective_nb_attributes {
                     let attr_idx = (i * 5) as usize;
                     let attr_name = *attributes.add(attr_idx); // localname
                     let attr_prefix = *attributes.add(attr_idx + 1); // prefix (or NULL)
@@ -911,12 +990,31 @@ pub(crate) mod default_sax_handler {
                             if !v.is_null() {
                                 let res = crate::xml::validation::is_id(c.myDoc, node, attr);
                                 if res > 0 {
-                                    crate::xml::validation::add_id(
+                                    let reg = crate::xml::validation::add_id(
                                         ptr::null_mut(),
                                         c.myDoc,
                                         v,
                                         attr,
                                     );
+                                    // UPSTREAM-PARITY (SAX2.c
+                                    // xmlSAX2AttributeNs tail): a duplicate
+                                    // ID value is reported through the
+                                    // parser's validation context —
+                                    // "ID %s already defined" at the
+                                    // attribute's position (php surfaces it as
+                                    // a warning; Dom\XMLDocument
+                                    // createFromString bug79701 expects it).
+                                    if reg.is_null() {
+                                        let msg = format!(
+                                            "ID {} already defined\n\0",
+                                            crate::xml::string::xmlstr_to_string(v)
+                                        );
+                                        default_sax_handler::raise_ctxt_validity_error(
+                                            ctxt,
+                                            513, // XML_DTD_ID_REDEFINED
+                                            msg.as_ptr() as *const c_char,
+                                        );
+                                    }
                                 } else if crate::xml::validation::is_ref(c.myDoc, node, attr) > 0 {
                                     crate::xml::validation::add_ref(
                                         ptr::null_mut(),

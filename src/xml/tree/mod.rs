@@ -266,6 +266,14 @@ pub unsafe fn free_doc(doc: *mut _xmlDoc) {
 
     let d = unsafe { &mut *doc };
 
+    // UPSTREAM-PARITY (tree.c xmlFreeDoc): the ID/REF tables are freed
+    // BEFORE the tree walk — attribute frees must not need ID-table lookups
+    // during document teardown (xmlRemoveID on a NULL table is a no-op).
+    if !d.ids.is_null() {
+        crate::xml::validation::free_id_table(d.ids as *mut crate::xml::hash::HashTable);
+        d.ids = ptr::null_mut();
+    }
+
     // UPSTREAM-PARITY (tree.c xmlFreeDoc): the subset DTD nodes are unlinked
     // from the child list before the tree is freed (they may be part of
     // doc->children after a parse).
@@ -1172,6 +1180,13 @@ unsafe fn free_prop_list(prop: *mut _xmlAttr) {
 unsafe fn free_prop(prop: *mut _xmlAttr) {
     if prop.is_null() {
         return;
+    }
+
+    // UPSTREAM-PARITY (tree.c xmlFreeProp): freeing an ID attribute removes
+    // its entry from the document's ID table (xmlRemoveID), so xmlGetID stops
+    // reporting it. A NULL doc->ids (document teardown) is a no-op.
+    if !unsafe { (*prop).doc }.is_null() && !unsafe { (*prop).id }.is_null() {
+        crate::xml::validation::remove_id(unsafe { (*prop).doc }, prop);
     }
 
     // Free children (text nodes with value)
@@ -2245,34 +2260,155 @@ pub unsafe fn get_ns_list(_doc: *mut _xmlDoc, node: *mut _xmlNode) -> *mut *mut 
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `nameSpace` must be a valid null-terminated string or NULL.
+/// `IS_STR_XML` from upstream tree.c: the string is exactly "xml".
+fn is_str_xml(s: *const xmlChar) -> bool {
+    if s.is_null() {
+        return false;
+    }
+    let b = unsafe { core::slice::from_raw_parts(s, 3) };
+    b[0] == b'x' && b[1] == b'm' && b[2] == b'l'
+}
+
+/// UPSTREAM-PARITY (tree.c xmlNsInScope): walk from `node` up to (excluding)
+/// `ancestor`, checking that no closer declaration binds the same `prefix`
+/// (NULL prefix = the default namespace). Returns 1 when `ancestor`'s decl is
+/// still in scope, 0 when it is shadowed, -1 when the walk cannot reach
+/// `ancestor` or crosses an entity boundary.
+unsafe fn ns_in_scope(
+    node: *mut _xmlNode,
+    ancestor: *mut _xmlNode,
+    prefix: *const xmlChar,
+) -> c_int {
+    let mut cur = node;
+    while !cur.is_null() && cur != ancestor {
+        let t = unsafe { (*cur).type_ };
+        if t == XML_ENTITY_REF_NODE as c_int || t == XML_ENTITY_DECL as c_int {
+            return -1;
+        }
+        if t == XML_ELEMENT_NODE as c_int {
+            let mut tst = unsafe { (*cur).nsDef };
+            while !tst.is_null() {
+                let ns = unsafe { &*tst };
+                if ns.prefix.is_null() && prefix.is_null() {
+                    return 0;
+                }
+                if !ns.prefix.is_null()
+                    && !prefix.is_null()
+                    && unsafe { crate::abi::exports_xml2::xmlStrEqual(ns.prefix, prefix) != 0 }
+                {
+                    return 0;
+                }
+                tst = unsafe { (*tst).next };
+            }
+        }
+        cur = unsafe { (*cur).parent };
+    }
+    if cur != ancestor {
+        return -1;
+    }
+    1
+}
+
+/// Ensure `doc->oldNs` holds the implicit XML namespace declaration (upstream
+/// xmlTreeEnsureXMLDecl). The engine models `doc->oldNs` as a list whose HEAD is
+/// always the xml declaration; parked/retired declarations live after it.
+unsafe fn ensure_doc_xml_ns(doc: *mut _xmlDoc) -> *mut _xmlNs {
+    if doc.is_null() {
+        return ptr::null_mut();
+    }
+    if !(*doc).oldNs.is_null() {
+        return (*doc).oldNs;
+    }
+    let ns = allocator::xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs;
+    if ns.is_null() {
+        return ptr::null_mut();
+    }
+    unsafe {
+        (*ns).type_ = XML_LOCAL_NAMESPACE as c_int;
+        (*ns).href = crate::xml::string::xml_strdup(
+            c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+        );
+        (*ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
+        (*doc).oldNs = ns;
+    }
+    ns
+}
+
+/// UPSTREAM-PARITY (tree.c xmlSearchNsSafe): search for a namespace bound to
+/// the given PREFIX in scope of `node`. A NULL `name_space` searches the
+/// default namespace. The walk only ever reads ELEMENT nodes' `nsDef` chains
+/// (the document is NOT an element: its `oldNs` list must never be mistaken for
+/// declarations), and a declaration with a NULL href does not bind its prefix.
 pub unsafe fn search_ns(
-    _doc: *mut _xmlDoc,
+    doc: *mut _xmlDoc,
     node: *mut _xmlNode,
     name_space: *const xmlChar,
 ) -> *mut _xmlNs {
-    if node.is_null() {
+    if node.is_null() || unsafe { (*node).type_ } == XML_NAMESPACE_DECL as c_int {
         return ptr::null_mut();
     }
+    let orig = node;
 
+    // The XML-1.0 namespace is implicitly bound to the prefix "xml" on every
+    // document (xmlTreeEnsureXMLDecl keeps it on doc->oldNs).
+    if !doc.is_null() && is_str_xml(name_space) {
+        return unsafe { ensure_doc_xml_ns(doc) };
+    }
+
+    // Climb from a non-element node to its owning element, if any.
     let mut cur = node;
-    while !cur.is_null() {
-        let n = unsafe { &*cur };
-        let mut ns_def = n.nsDef;
+    while unsafe { (*cur).type_ } != XML_ELEMENT_NODE as c_int {
+        cur = unsafe { (*cur).parent };
+        if cur.is_null() {
+            return ptr::null_mut();
+        }
+    }
+    let parent = cur;
+
+    // UPSTREAM-PARITY: `while ((node != NULL) && (node->type ==
+    // XML_ELEMENT_NODE))` — a detached element (parent == NULL) terminates the
+    // walk instead of dereferencing NULL.
+    while !cur.is_null() && unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+        let mut ns_def = unsafe { (*cur).nsDef };
         while !ns_def.is_null() {
             let ns = unsafe { &*ns_def };
-            let match_prefix = if name_space.is_null() {
-                // Default namespace: prefix should be NULL
-                ns.prefix.is_null()
-            } else {
-                !ns.prefix.is_null()
-                    && unsafe { crate::abi::exports_xml2::xmlStrEqual(ns.prefix, name_space) != 0 }
-            };
-            if match_prefix {
+            if unsafe { crate::abi::exports_xml2::xmlStrEqual(ns.prefix, name_space) != 0 }
+                && !ns.href.is_null()
+            {
                 return ns_def;
             }
             ns_def = unsafe { (*ns_def).next };
         }
-        cur = n.parent;
+        if orig != cur {
+            let el_ns = unsafe { (*cur).ns };
+            if !el_ns.is_null()
+                && unsafe {
+                    crate::abi::exports_xml2::xmlStrEqual((*el_ns).prefix, name_space) != 0
+                }
+                && !(*el_ns).href.is_null()
+            {
+                return el_ns;
+            }
+        }
+        cur = unsafe { (*cur).parent };
+    }
+
+    // No document but the node belongs to a doc-less tree: exceptionally create
+    // the xml declaration on the nearest element (upstream tree.c).
+    if doc.is_null() && is_str_xml(name_space) {
+        let ns = allocator::xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs;
+        if !ns.is_null() {
+            unsafe {
+                (*ns).type_ = XML_LOCAL_NAMESPACE as c_int;
+                (*ns).href = crate::xml::string::xml_strdup(
+                    c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+                );
+                (*ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
+                (*ns).next = (*parent).nsDef;
+                (*parent).nsDef = ns;
+            }
+            return ns;
+        }
     }
 
     ptr::null_mut()
@@ -2293,78 +2429,100 @@ pub unsafe fn search_ns(
 /// - `doc` must be a valid pointer to an _xmlDoc, or NULL.
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `href` must be a valid null-terminated string or NULL.
+/// UPSTREAM-PARITY (tree.c xmlSearchNsByHrefSafe): search for a namespace
+/// declaration with the given URI in scope of `node`. Attributes are never in
+/// the default namespace, so a prefix-less declaration cannot satisfy an
+/// attribute search (`is_attr`). A declaration only counts when it is actually
+/// in scope (not shadowed between `node` and the declaring element, and never
+/// across entity boundaries). The walk only reads ELEMENT nodes.
 pub unsafe fn search_ns_by_href(
-    _doc: *mut _xmlDoc,
+    doc: *mut _xmlDoc,
     node: *mut _xmlNode,
     href: *const xmlChar,
 ) -> *mut _xmlNs {
-    if node.is_null() || href.is_null() {
+    if node.is_null() || href.is_null() || unsafe { (*node).type_ } == XML_NAMESPACE_DECL as c_int {
         return ptr::null_mut();
     }
 
-    let mut cur = node;
-    while !cur.is_null() {
-        let n = unsafe { &*cur };
-        let mut ns_def = n.nsDef;
-        while !ns_def.is_null() {
-            let ns = unsafe { &*ns_def };
-            if !ns.href.is_null()
-                && unsafe { crate::abi::exports_xml2::xmlStrEqual(ns.href, href) != 0 }
-            {
-                return ns_def;
-            }
-            ns_def = unsafe { (*ns_def).next };
-        }
-        cur = n.parent;
-    }
+    let orig = node;
 
-    // UPSTREAM-PARITY (tree.c xmlSearchNsByHrefSafe): the reserved "xml"
-    // namespace is implicitly in scope everywhere. When no declaration is
-    // found along the ancestry but the caller queries the XML namespace URI
-    // and the node belongs to a document, ensure (and return) the
-    // document-level xml namespace that the parser keeps on doc->oldNs. This
-    // is how an attribute/element created in the XML namespace correctly binds
-    // prefix "xml" even on a document with no explicit xmlns:xml declaration
-    // (php DOMDocument::createAttributeNS('http://www.w3.org/XML/1998/
-    // namespace', 'xml') must produce xml-prefixed, not "default").
+    // The XML-1.0 namespace is implicitly in scope everywhere via the prefix
+    // "xml" (xmlTreeEnsureXMLDecl keeps it on doc->oldNs).
     let is_xml_ns_uri = unsafe {
         crate::abi::exports_xml2::xmlStrEqual(
             href,
             c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
         ) != 0
     };
-    let node_doc = unsafe { (*node).doc };
-    if is_xml_ns_uri && !node_doc.is_null() {
-        // Reuse an existing document-level xml declaration if present.
-        let mut old = unsafe { (*node_doc).oldNs };
-        while !old.is_null() {
-            let os = unsafe { &*old };
-            if !os.prefix.is_null()
-                && unsafe {
-                    crate::abi::exports_xml2::xmlStrEqual(
-                        os.prefix,
-                        c"xml".as_ptr() as *const xmlChar,
-                    ) != 0
-                }
-            {
-                return old;
-            }
-            old = unsafe { (*old).next };
-        }
-        // Materialise the implicit document-level xml declaration (mirror the
-        // parser's ensure_doc_xml_ns) so the query returns a stable live ns.
-        let new_ns = crate::abi::allocator::xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs;
-        if new_ns.is_null() {
+    if is_xml_ns_uri && !doc.is_null() {
+        return unsafe { ensure_doc_xml_ns(doc) };
+    }
+
+    let is_attr = unsafe { (*node).type_ } == XML_ATTRIBUTE_NODE as c_int;
+
+    // Climb from a non-element node to its owning element, if any.
+    let mut cur = node;
+    while unsafe { (*cur).type_ } != XML_ELEMENT_NODE as c_int {
+        cur = unsafe { (*cur).parent };
+        if cur.is_null() {
             return ptr::null_mut();
         }
-        (*new_ns).type_ = crate::abi::types::XML_LOCAL_NAMESPACE as c_int;
-        (*new_ns).href = crate::xml::string::xml_strdup(
-            c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
-        );
-        (*new_ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
-        (*new_ns).next = (*node_doc).oldNs;
-        (*node_doc).oldNs = new_ns;
-        return new_ns;
+    }
+    let parent = cur;
+
+    // UPSTREAM-PARITY: `while ((node != NULL) && (node->type ==
+    // XML_ELEMENT_NODE))` — a detached element (parent == NULL) terminates the
+    // walk instead of dereferencing NULL.
+    while !cur.is_null() && unsafe { (*cur).type_ } == XML_ELEMENT_NODE as c_int {
+        let mut ns_def = unsafe { (*cur).nsDef };
+        while !ns_def.is_null() {
+            let ns = unsafe { &*ns_def };
+            if !ns.href.is_null()
+                && unsafe { crate::abi::exports_xml2::xmlStrEqual(ns.href, href) != 0 }
+            {
+                let ns_prefix = ns.prefix;
+                if ((!is_attr) || !ns_prefix.is_null())
+                    && unsafe { ns_in_scope(orig, cur, ns_prefix) } == 1
+                {
+                    return ns_def;
+                }
+            }
+            ns_def = unsafe { (*ns_def).next };
+        }
+        if orig != cur {
+            let el_ns = unsafe { (*cur).ns };
+            if !el_ns.is_null() {
+                let eh = (*el_ns).href;
+                if !eh.is_null() && unsafe { crate::abi::exports_xml2::xmlStrEqual(eh, href) != 0 }
+                {
+                    let el_prefix = (*el_ns).prefix;
+                    if ((!is_attr) || !el_prefix.is_null())
+                        && unsafe { ns_in_scope(orig, cur, el_prefix) } == 1
+                    {
+                        return el_ns;
+                    }
+                }
+            }
+        }
+        cur = unsafe { (*cur).parent };
+    }
+
+    // No document but the node belongs to a doc-less tree: exceptionally create
+    // the xml declaration on the nearest element (upstream tree.c).
+    if doc.is_null() && is_xml_ns_uri {
+        let ns = allocator::xmlMallocZero(size_of::<_xmlNs>()) as *mut _xmlNs;
+        if !ns.is_null() {
+            unsafe {
+                (*ns).type_ = XML_LOCAL_NAMESPACE as c_int;
+                (*ns).href = crate::xml::string::xml_strdup(
+                    c"http://www.w3.org/XML/1998/namespace".as_ptr() as *const xmlChar,
+                );
+                (*ns).prefix = crate::xml::string::xml_strdup(c"xml".as_ptr() as *const xmlChar);
+                (*ns).next = (*parent).nsDef;
+                (*parent).nsDef = ns;
+            }
+            return ns;
+        }
     }
 
     ptr::null_mut()
@@ -2373,6 +2531,157 @@ pub unsafe fn search_ns_by_href(
 // ═══════════════════════════════════════════════════════════════════════════════
 // Attribute Operations
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/// UPSTREAM-PARITY (tree.c xmlGetPropNodeInternal DTD arm): when an element has
+/// no matching real attribute, an ATTLIST default/#FIXED declaration whose
+/// `defaultValue` is non-NULL is reported as the attribute (returned as an
+/// `XML_ATTRIBUTE_DECL` node). `ns_name` is the namespace URI: NULL selects
+/// prefix-less declarations, the XML namespace selects the reserved "xml"
+/// prefix, anything else is matched through the in-scope prefixes bound to that
+/// URI. Returns the declaration cast to `*mut _xmlAttr`, or NULL.
+unsafe fn dtd_default_decl_lookup(
+    node: *mut _xmlNode,
+    name: *const xmlChar,
+    ns_name: *const xmlChar,
+) -> *mut _xmlAttr {
+    let n = unsafe { &*node };
+    if n.doc.is_null() {
+        return ptr::null_mut();
+    }
+    let doc = unsafe { &*(n.doc) };
+    if doc.intSubset.is_null() && doc.extSubset.is_null() {
+        return ptr::null_mut();
+    }
+
+    // We need the QName of the element for the DTD lookup.
+    let ns = n.ns;
+    let mut tmp: *mut xmlChar = ptr::null_mut();
+    let elem_qname: *const xmlChar = if !ns.is_null() && !unsafe { (*ns).prefix.is_null() } {
+        tmp = unsafe { crate::abi::exports_xml2::xmlStrdup((*ns).prefix) };
+        if !tmp.is_null() {
+            tmp = unsafe {
+                crate::abi::exports_xml2::xmlStrcat(tmp, b":\0" as *const u8 as *const xmlChar)
+            };
+        }
+        if !tmp.is_null() {
+            tmp = unsafe { crate::abi::exports_xml2::xmlStrcat(tmp, n.name) };
+        }
+        if tmp.is_null() {
+            return ptr::null_mut();
+        }
+        tmp
+    } else {
+        n.name
+    };
+
+    let mut attr_decl: *mut crate::abi::structs::_xmlAttribute = ptr::null_mut();
+    let xml_ns_uri = b"http://www.w3.org/XML/1998/namespace\0";
+    if ns_name.is_null() {
+        attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+            doc.intSubset,
+            elem_qname,
+            name,
+            ptr::null(),
+        );
+        if attr_decl.is_null() && !doc.extSubset.is_null() {
+            attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+                doc.extSubset,
+                elem_qname,
+                name,
+                ptr::null(),
+            );
+        }
+    } else if unsafe {
+        crate::abi::exports_xml2::xmlStrEqual(ns_name, xml_ns_uri.as_ptr() as *const xmlChar) != 0
+    } {
+        // The XML namespace must be bound to prefix 'xml'.
+        let xml_prefix = b"xml\0";
+        attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+            doc.intSubset,
+            elem_qname,
+            name,
+            xml_prefix.as_ptr() as *const xmlChar,
+        );
+        if attr_decl.is_null() && !doc.extSubset.is_null() {
+            attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+                doc.extSubset,
+                elem_qname,
+                name,
+                xml_prefix.as_ptr() as *const xmlChar,
+            );
+        }
+    } else {
+        // The ugly case: search using the prefixes of in-scope ns-decls
+        // corresponding to ns_name.
+        let ns_list = unsafe { get_ns_list(n.doc, node) };
+        if ns_list.is_null() {
+            if !tmp.is_null() {
+                allocator::xmlFreeImpl(tmp as *mut c_void);
+            }
+            return ptr::null_mut();
+        }
+        let mut cur = ns_list;
+        while !unsafe { *cur }.is_null() {
+            let d = unsafe { *cur };
+            if !unsafe { (*d).href }.is_null()
+                && unsafe { crate::abi::exports_xml2::xmlStrEqual((*d).href, ns_name) != 0 }
+            {
+                attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+                    doc.intSubset,
+                    elem_qname,
+                    name,
+                    (*d).prefix,
+                );
+                if attr_decl.is_null() && !doc.extSubset.is_null() {
+                    attr_decl = crate::xml::validation::get_dtd_qattr_desc(
+                        doc.extSubset,
+                        elem_qname,
+                        name,
+                        (*d).prefix,
+                    );
+                }
+                if !attr_decl.is_null() {
+                    break;
+                }
+            }
+            cur = cur.add(1);
+        }
+        allocator::xmlFreeImpl(ns_list as *mut c_void);
+    }
+    if !tmp.is_null() {
+        allocator::xmlFreeImpl(tmp as *mut c_void);
+    }
+
+    if !attr_decl.is_null() && !unsafe { (*attr_decl).defaultValue.is_null() } {
+        return attr_decl as *mut _xmlAttr;
+    }
+    ptr::null_mut()
+}
+
+/// UPSTREAM-PARITY (tree.c xmlHasProp DTD arm): plain-element-name variant of
+/// the default/#FIXED lookup (no QName prefix expansion, matching upstream
+/// xmlHasProp's xmlGetDtdAttrDesc call).
+unsafe fn dtd_default_decl_lookup_plain(
+    node: *mut _xmlNode,
+    name: *const xmlChar,
+) -> *mut _xmlAttr {
+    let n = unsafe { &*node };
+    if n.doc.is_null() {
+        return ptr::null_mut();
+    }
+    let doc = unsafe { &*(n.doc) };
+    let mut attr_decl: *mut crate::abi::structs::_xmlAttribute = ptr::null_mut();
+    if !doc.intSubset.is_null() {
+        attr_decl = crate::xml::validation::get_dtd_attr_desc(doc.intSubset, n.name, name);
+        if attr_decl.is_null() && !doc.extSubset.is_null() {
+            attr_decl = crate::xml::validation::get_dtd_attr_desc(doc.extSubset, n.name, name);
+        }
+        if !attr_decl.is_null() && !unsafe { (*attr_decl).defaultValue.is_null() } {
+            return attr_decl as *mut _xmlAttr;
+        }
+    }
+    ptr::null_mut()
+}
 
 /// Set an attribute on a node.
 ///
@@ -2393,90 +2702,41 @@ pub unsafe fn search_ns_by_href(
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `name` must be a valid null-terminated string.
 /// - `value` must be a valid null-terminated string or NULL.
+/// UPSTREAM-PARITY (tree.c xmlSetProp): set an attribute given its QName.
+/// A prefixed name resolves the prefix through the in-scope namespace
+/// declarations and delegates to `xmlSetNsProp` with the LOCAL name; when the
+/// prefix is unbound (or the name is unprefixed) the attribute is set in no
+/// namespace under its (raw) name — an unprefixed attribute is never in a
+/// namespace, and an unbound prefix keeps the raw QName (matching the SAX2
+/// tree-builder convention for undefined prefixes).
 pub unsafe fn set_prop(
     node: *mut _xmlNode,
     name: *const xmlChar,
     value: *const xmlChar,
 ) -> *mut _xmlAttr {
-    if node.is_null() || name.is_null() {
+    if node.is_null() || name.is_null() || unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
         return ptr::null_mut();
     }
 
-    let n = unsafe { &mut *node };
-
-    // Check if attribute already exists
-    let mut existing = n.properties;
-    while !existing.is_null() {
-        let attr = unsafe { &*existing };
-        if !attr.name.is_null()
-            && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
-        {
-            // Update existing attribute value
-            // Free old children (text nodes)
-            if !attr.children.is_null() {
-                free_node_list(attr.children);
-                // SAFETY: We need to mutate const fields
-                let attr_mut = existing;
-                unsafe { (*attr_mut).children = ptr::null_mut() };
-                unsafe { (*attr_mut).last = ptr::null_mut() };
-            }
-            // Set new value
-            if !value.is_null() {
-                let text = new_text(value);
-                if !text.is_null() {
-                    let attr_mut = existing;
-                    unsafe {
-                        (*attr_mut).children = text;
-                        (*attr_mut).last = text;
-                        (*text).parent = existing as *mut _xmlNode;
-                        (*text).doc = n.doc;
-                    }
-                }
-            }
-            return existing;
+    let mut prefix: *mut xmlChar = ptr::null_mut();
+    let localname = crate::xml::validation::split_qname4(name, &mut prefix);
+    if localname.is_null() {
+        if !prefix.is_null() {
+            allocator::xmlFreeImpl(prefix as *mut c_void);
         }
-        existing = unsafe { (*existing).next };
-    }
-
-    // Create new attribute
-    let attr = allocator::xmlMallocZero(size_of::<_xmlAttr>() as usize) as *mut _xmlAttr;
-    if attr.is_null() {
         return ptr::null_mut();
     }
-
-    unsafe {
-        (*attr).type_ = XML_ATTRIBUTE_NODE as c_int;
-        (*attr).name = dup_xml_str(name);
-        (*attr).parent = node;
-        (*attr).doc = n.doc;
-        // UPSTREAM-PARITY (tree.c xmlNewProp): atype stays 0 for instance
-        // attributes.
-
-        // Set value
-        if !value.is_null() {
-            let text = new_text(value);
-            if !text.is_null() {
-                (*attr).children = text;
-                (*attr).last = text;
-                (*text).parent = attr as *mut _xmlNode;
-                (*text).doc = n.doc;
-            }
+    if !prefix.is_null() {
+        let ns = unsafe { search_ns((*node).doc, node, prefix) };
+        if !ns.is_null() {
+            allocator::xmlFreeImpl(prefix as *mut c_void);
+            return unsafe { set_ns_prop(node, ns, localname, value) };
         }
-
-        // Add to node's property list
-        if n.properties.is_null() {
-            n.properties = attr;
-        } else {
-            let mut last = n.properties;
-            while !(*last).next.is_null() {
-                last = (*last).next;
-            }
-            (*last).next = attr;
-            (*attr).prev = last;
-        }
+        allocator::xmlFreeImpl(prefix as *mut c_void);
+        return unsafe { set_ns_prop(node, ptr::null_mut(), name, value) };
     }
 
-    attr
+    unsafe { set_ns_prop(node, ptr::null_mut(), name, value) }
 }
 
 /// Get an attribute value by name.
@@ -2495,7 +2755,7 @@ pub unsafe fn set_prop(
 /// - `node` must be a valid pointer to an _xmlNode, or NULL.
 /// - `name` must be a valid null-terminated string.
 pub unsafe fn get_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut xmlChar {
-    if node.is_null() || name.is_null() {
+    if node.is_null() || name.is_null() || unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
         return ptr::null_mut();
     }
 
@@ -2519,6 +2779,18 @@ pub unsafe fn get_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut xmlCha
         cur = unsafe { (*cur).next };
     }
 
+    // UPSTREAM-PARITY (tree.c xmlGetProp/xmlHasProp): when the element has no
+    // matching real attribute, an ATTLIST default/#FIXED declaration value is
+    // returned.
+    let decl = unsafe { dtd_default_decl_lookup_plain(node, name) };
+    if !decl.is_null() {
+        let a = decl as *mut crate::abi::structs::_xmlAttribute;
+        let dv = unsafe { (*a).defaultValue };
+        if !dv.is_null() {
+            return dup_xml_str(dv);
+        }
+    }
+
     ptr::null_mut()
 }
 
@@ -2540,11 +2812,54 @@ pub unsafe fn get_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut xmlCha
 pub unsafe fn get_ns_prop(
     node: *mut _xmlNode,
     name: *const xmlChar,
-    _name_space: *const xmlChar,
+    name_space: *const xmlChar,
 ) -> *mut xmlChar {
-    // Phase 1: simple attribute lookup (namespace-aware lookup will be
-    // fully implemented in Phase 2+).
-    get_prop(node, name)
+    if node.is_null() || name.is_null() || unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
+        return ptr::null_mut();
+    }
+    // UPSTREAM-PARITY (tree.c xmlGetNsProp/xmlGetPropNodeInternal): match the
+    // LOCAL name plus the namespace — a NULL nameSpace matches only
+    // UNPREFIXED attributes; a non-NULL nameSpace matches only attributes
+    // whose ns href equals it (an unprefixed attribute is NEVER in a
+    // namespace, not even the element's default one). Returns the value (""
+    // when empty) or NULL.
+    let mut cur = unsafe { (*node).properties };
+    while !cur.is_null() {
+        let attr = unsafe { &*cur };
+        if !attr.name.is_null()
+            && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
+        {
+            let matches = if name_space.is_null() {
+                attr.ns.is_null()
+            } else if !attr.ns.is_null() && !(*attr.ns).href.is_null() {
+                unsafe { crate::abi::exports_xml2::xmlStrEqual((*attr.ns).href, name_space) != 0 }
+            } else {
+                false
+            };
+            if matches {
+                if !attr.children.is_null() {
+                    let text = unsafe { &*attr.children };
+                    if text.type_ == XML_TEXT_NODE as c_int && !text.content.is_null() {
+                        return dup_xml_str(text.content);
+                    }
+                }
+                return dup_xml_str(b"\0" as *const u8 as *const xmlChar);
+            }
+        }
+        cur = unsafe { (*cur).next };
+    }
+
+    // UPSTREAM-PARITY (tree.c xmlGetPropNodeInternal useDTD arm): DTD
+    // default/#FIXED declarations are reported as present attributes.
+    let decl = unsafe { dtd_default_decl_lookup(node, name, name_space) };
+    if !decl.is_null() {
+        let a = decl as *mut crate::abi::structs::_xmlAttribute;
+        let dv = unsafe { (*a).defaultValue };
+        if !dv.is_null() {
+            return dup_xml_str(dv);
+        }
+    }
+    ptr::null_mut()
 }
 
 /// Set a namespaced attribute.
@@ -2608,8 +2923,30 @@ pub unsafe fn set_ns_prop(
             && unsafe { crate::abi::exports_xml2::xmlStrEqual(attr.name, name) != 0 }
             && same_ns
         {
-            // Update existing attribute value (mirror set_prop: free old text
-            // children and set the new text value).
+            // UPSTREAM-PARITY (tree.c xmlSetNsProp modify branch): the
+            // attribute is rebound to the NEW namespace — the passed `ns`
+            // may carry a different prefix for the same URI (the modern
+            // DOM ns-mapper allocates a fresh prefix per qualified name,
+            // so setAttributeNS("urn:a", "y:foo", ...) renames x:foo to
+            // y:foo rather than keeping the stale prefix).
+            let attr_mut = existing;
+            unsafe { (*attr_mut).ns = ns };
+            // UPSTREAM-PARITY (tree.c xmlSetNsProp modify branch): an
+            // attribute whose current value is registered as an ID drops its
+            // old entry and keeps its ID type, so the new value is
+            // re-registered below (xml:id / HTML id value changes move the
+            // doc->ids mapping — bug79701).
+            let mut was_id = false;
+            if !n.doc.is_null() && !attr.id.is_null() {
+                crate::xml::validation::remove_id(n.doc, existing);
+                was_id = true;
+                let am = existing;
+                unsafe {
+                    (*am).atype = crate::abi::types::xmlAttributeType::XML_ATTRIBUTE_ID as c_int;
+                }
+            }
+            // Update existing attribute value (mirror set_prop: free old
+            // text children and set the new text value).
             if !attr.children.is_null() {
                 free_node_list(attr.children);
                 let attr_mut = existing;
@@ -2628,6 +2965,9 @@ pub unsafe fn set_ns_prop(
                         (*text).parent = existing as *mut _xmlNode;
                         (*text).doc = n.doc;
                     }
+                }
+                if was_id {
+                    crate::xml::validation::add_id_safe(existing, value);
                 }
             }
             return existing;
@@ -2655,6 +2995,16 @@ pub unsafe fn set_ns_prop(
                 (*attr).last = text;
                 (*text).parent = attr as *mut _xmlNode;
                 (*text).doc = n.doc;
+            }
+        }
+        // UPSTREAM-PARITY (tree.c xmlNewPropInternal): a newly created
+        // attribute whose name/type makes it an ID (HTML id, xml:id, DTD ID
+        // declarations) is registered against the document's ID table
+        // immediately.
+        if !n.doc.is_null() {
+            let res = crate::xml::validation::is_id(n.doc, node, attr);
+            if res > 0 {
+                crate::xml::validation::add_id_safe(attr, value);
             }
         }
     }
@@ -2695,6 +3045,12 @@ pub unsafe fn remove_prop(attr: *mut _xmlAttr) -> c_int {
 
     let a = unsafe { &mut *attr };
 
+    // UPSTREAM-PARITY (tree.c xmlRemoveProp -> xmlFreeProp): removing an ID
+    // attribute unregisters it from the document's ID table.
+    if !a.doc.is_null() && !a.id.is_null() {
+        crate::xml::validation::remove_id(a.doc, attr);
+    }
+
     // Unlink from parent's property list
     let parent = a.parent;
     if !parent.is_null() {
@@ -2734,7 +3090,7 @@ pub unsafe fn remove_prop(attr: *mut _xmlAttr) -> c_int {
 /// - `node` must be a valid node pointer or NULL.
 /// - `name` must be a valid null-terminated string.
 pub unsafe fn has_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlAttr {
-    if node.is_null() || name.is_null() {
+    if node.is_null() || name.is_null() || unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
         return ptr::null_mut();
     }
     let mut cur = unsafe { (*node).properties };
@@ -2751,7 +3107,11 @@ pub unsafe fn has_prop(node: *mut _xmlNode, name: *const xmlChar) -> *mut _xmlAt
         }
         cur = unsafe { (*cur).next };
     }
-    ptr::null_mut()
+
+    // UPSTREAM-PARITY (tree.c xmlHasProp): report ATTLIST default/#FIXED
+    // declarations as present (php removeAttribute/toggleAttribute rely on the
+    // returned XML_ATTRIBUTE_DECL being non-removable).
+    unsafe { dtd_default_decl_lookup_plain(node, name) }
 }
 
 /// Check whether a node has a namespaced property (upstream tree.c
@@ -2768,7 +3128,7 @@ pub unsafe fn has_ns_prop(
     name: *const xmlChar,
     name_space: *const xmlChar,
 ) -> *mut _xmlAttr {
-    if node.is_null() || name.is_null() {
+    if node.is_null() || name.is_null() || unsafe { (*node).type_ } != XML_ELEMENT_NODE as c_int {
         return ptr::null_mut();
     }
     let mut cur = unsafe { (*node).properties };
@@ -2792,7 +3152,12 @@ pub unsafe fn has_ns_prop(
         }
         cur = unsafe { (*cur).next };
     }
-    ptr::null_mut()
+
+    // UPSTREAM-PARITY (tree.c xmlGetPropNodeInternal useDTD arm): report
+    // ATTLIST default/#FIXED declarations as present (php's
+    // setAttributeNode replacement lookup treats the returned
+    // XML_ATTRIBUTE_DECL as "no existing attribute").
+    unsafe { dtd_default_decl_lookup(node, name, name_space) }
 }
 
 /// Remove a property by name from a node (upstream tree.c `xmlUnsetProp`):

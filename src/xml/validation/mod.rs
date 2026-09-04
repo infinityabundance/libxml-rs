@@ -2389,7 +2389,7 @@ pub unsafe fn get_dtd_notation_desc(dtd: *mut _xmlDtd, name: *const xmlChar) -> 
 ///
 /// - `name` must be a valid null-terminated string; `prefix` a valid
 ///   out-pointer.
-unsafe fn split_qname4(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *const xmlChar {
+pub unsafe fn split_qname4(name: *const xmlChar, prefix: *mut *mut xmlChar) -> *const xmlChar {
     if prefix.is_null() {
         return name;
     }

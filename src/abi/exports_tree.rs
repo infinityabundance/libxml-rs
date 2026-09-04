@@ -642,6 +642,12 @@ unsafe fn free_prop_impl(cur: *mut _xmlAttr) {
     if cur.is_null() {
         return;
     }
+    // UPSTREAM-PARITY (tree.c xmlFreeProp): freeing an ID attribute removes
+    // its entry from the document's ID table (xmlRemoveID). A NULL doc->ids
+    // (document teardown frees the table first) is a no-op.
+    if !(*cur).doc.is_null() && !(*cur).id.is_null() {
+        crate::xml::validation::remove_id((*cur).doc, cur);
+    }
     if !(*cur).children.is_null() {
         unsafe { tree::free_node_list((*cur).children) };
     }

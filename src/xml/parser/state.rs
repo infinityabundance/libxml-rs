@@ -2089,7 +2089,19 @@ impl XmlParser {
                 // Default declaration.
                 let (def, default_val, consumed2) = parse_attr_default(rest);
                 rest = trim_ascii(&rest[consumed2..]);
-                let attr_cstr = Self::vec_to_cstr_null(attr_name);
+                // UPSTREAM-PARITY (SAX2.c xmlSAX2AttributeDecl): the
+                // declaration is keyed by the attribute's LOCAL name plus its
+                // PREFIX (valid.c xmlAddAttributeDecl: xmlHashAdd3(name, ns,
+                // elem) with ns = prefix). The raw QName is split here so
+                // `<!ATTLIST root p:A ...>` is looked up as ("A", "p",
+                // "root") — xmlGetDtdQAttrDesc / xmlHasNsProp rely on that.
+                let (local_cstr, prefix_cstr) = match attr_name.iter().position(|&b| b == b':') {
+                    Some(c) if c > 0 && c + 1 < attr_name.len() => (
+                        Self::vec_to_cstr_null(&attr_name[c + 1..]),
+                        Self::vec_to_cstr_null(&attr_name[..c]),
+                    ),
+                    _ => (Self::vec_to_cstr_null(attr_name), ptr::null()),
+                };
                 let dv = default_val
                     .as_ref()
                     .map(|s| Self::vec_to_cstr_null(s))
@@ -2097,8 +2109,8 @@ impl XmlParser {
                 crate::xml::dtd::add_attribute_decl(
                     dtd,
                     elem_decl,
-                    attr_cstr,
-                    ptr::null(),
+                    local_cstr,
+                    prefix_cstr,
                     atype,
                     def,
                     dv,
@@ -2107,7 +2119,10 @@ impl XmlParser {
                 if !dv.is_null() {
                     crate::abi::allocator::xmlFreeImpl(dv as *mut c_void);
                 }
-                crate::abi::allocator::xmlFreeImpl(attr_cstr as *mut c_void);
+                if !prefix_cstr.is_null() {
+                    crate::abi::allocator::xmlFreeImpl(prefix_cstr as *mut c_void);
+                }
+                crate::abi::allocator::xmlFreeImpl(local_cstr as *mut c_void);
             }
             crate::abi::allocator::xmlFreeImpl(elem_cstr as *mut c_void);
         }
