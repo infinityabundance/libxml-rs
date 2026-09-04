@@ -1027,3 +1027,33 @@ xmlreader 8 | xsl 16 | simplexml 1 | xmlwriter 1.
     bug79968, liveness_xinclude, gh14702; C14N pair; entity/notation
     family; html textContent/serialize ns family), xmlreader 8, xsl 16,
     simplexml 1, xmlwriter 1.
+
+Phase 14.11 — xslt literal-result-element in-scope ns + xpath char semantics
+(2026-09-04; commit b561d56c; receipt php-14-11-xsl-lre-ns-20260904/):
+full suite 57 -> 54, ZERO regressions (NEW_ONLY=0, FIXED=3). Log:
+phpbuild-c:/out/xpe-six26.log. dom 31 | xmlreader 8 | xsl 12 | simplexml 1
+| xmlwriter 1.
+  - fn_substring/fn_string_length/fn_translate sliced XPath strings by
+    BYTE with 1-based rounding; XPath indexes CHARACTERS. Cyrillic value in
+    xsl:key hit a non-char-boundary slice -> Rust panic (bug26384). All
+    three now iterate .chars().
+  - process_literal_element created result copies but never copied the
+    stylesheet in-scope namespace declarations: prefixed LREs and output
+    under XSLT-ns inheritance lost xmlns:php (bug70078,
+    xsltprocessor_transformToXML). Oracle probes pinned libxslt rules:
+    decls emitted only when the stylesheet ancestry template->LRE contains
+    no for-each/if/choose/when/otherwise (effectiveNs is compile-time); own
+    element-ns binding still materialised inside those bodies; variable
+    does not suppress; exclude-result-prefixes (LRE + stylesheet root)
+    honored; xml + XSLT ns never copied; redundant decls skipped;
+    xmlns="" undeclares default. New: copy_literal_result_ns +
+    helpers in src/xslt/transform/mod.rs.
+  - flipped: bug26384, bug70078, xsltprocessor_transformToXML (+ bug69168
+    in isolated ext/xsl gate, 14 -> 13).
+  - guards: cargo test --lib 1241/1 ignored; fmt clean; probe byte-parity
+    vs phporacle-c on all six LRE-ns cases (probes kept in consumers/).
+  - residuals next: dom 31 (memory-abort family: adoptNode,
+    insertAdjacentElement, replaceChildren, saveXML_XML_SAVE_NO_DECL,
+    bug79968, liveness_xinclude, gh14702, HTMLDocument_serialize_ns_
+    imported_05; entity/notation family; C14N pair; html textContent/
+    serialize family), xmlreader 8, xsl 12, simplexml 1, xmlwriter 1.
