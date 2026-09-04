@@ -1972,13 +1972,19 @@ impl XmlParser {
             } else {
                 // Internal: quoted value.
                 let value = read_quoted(tail);
+                // UPSTREAM-PARITY (parser.c xmlParseEntityDecl): the raw
+                // value text is kept as the entity's `orig`, so dumps print
+                // it verbatim (bug67081: a parameter-entity reference such
+                // as `%coreattrs;` inside the value stays raw instead of
+                // being %-escaped by the no-orig fallback path).
                 let v = value.map(Self::vec_to_cstr_null).unwrap_or(ptr::null());
-                crate::xml::entities::add_entity(
+                crate::xml::entities::add_entity_with_orig(
                     dtd,
                     name_cstr,
                     etype,
                     ptr::null(),
                     ptr::null(),
+                    v,
                     v,
                 );
                 if !v.is_null() {

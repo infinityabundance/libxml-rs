@@ -137,6 +137,43 @@ pub unsafe fn add_entity(
     SystemID: *const xmlChar,
     content: *const xmlChar,
 ) -> *mut _xmlEntity {
+    unsafe { add_entity_impl(dtd, name, etype, ExternalID, SystemID, content, ptr::null()) }
+}
+
+/// Like `add_entity`, but also records the ORIGINAL declaration text on the
+/// entity (`orig`). UPSTREAM-PARITY (parser.c xmlParseEntityDecl): internal
+/// entities parsed from a DTD keep the raw source text of their value in
+/// `ent->orig`, and xmlsave.c `xmlBufDumpEntityDecl` prints `orig` verbatim
+/// (only `"` escaped) when present — falling back to the content path (which
+/// additionally escapes `%` to `&#x25;`) only for entities without `orig`
+/// (php bug67081: `<!ENTITY % attrs "%coreattrs;">` must round-trip with a
+/// raw `%`).
+///
+/// # SAFETY
+///
+/// - Same as `add_entity`; `orig` may be NULL.
+pub unsafe fn add_entity_with_orig(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+    etype: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+    orig: *const xmlChar,
+) -> *mut _xmlEntity {
+    unsafe { add_entity_impl(dtd, name, etype, ExternalID, SystemID, content, orig) }
+}
+
+#[allow(clippy::too_many_arguments)]
+unsafe fn add_entity_impl(
+    dtd: *mut _xmlDtd,
+    name: *const xmlChar,
+    etype: c_int,
+    ExternalID: *const xmlChar,
+    SystemID: *const xmlChar,
+    content: *const xmlChar,
+    orig: *const xmlChar,
+) -> *mut _xmlEntity {
     if dtd.is_null() || name.is_null() {
         return ptr::null_mut();
     }
@@ -179,7 +216,11 @@ pub unsafe fn add_entity(
         (*entity).ExternalID = string::xml_strdup(ExternalID);
         (*entity).SystemID = string::xml_strdup(SystemID);
         (*entity).content = string::xml_strdup(content);
-        (*entity).orig = ptr::null_mut();
+        (*entity).orig = if orig.is_null() {
+            ptr::null_mut()
+        } else {
+            string::xml_strdup(orig)
+        };
         (*entity).length = if content.is_null() {
             0
         } else {
