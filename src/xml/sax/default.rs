@@ -758,10 +758,19 @@ pub(crate) mod default_sax_handler {
                     (*c.myDoc).version = dup as *mut xmlChar;
                 }
 
-                // Propagate encoding from context to document.
-                if !c.encoding.is_null() && (*c.myDoc).encoding.is_null() {
-                    let dup = allocator::xmlMemStrdupImpl(c.encoding as *const c_char);
-                    (*c.myDoc).encoding = dup as *mut xmlChar;
+                // Propagate encoding from context to document. UPSTREAM-PARITY
+                // (SAX2.c xmlSAX2EndDocument): the document encoding is the
+                // ACTUAL encoding (xmlGetActualEncoding — the input encoder's
+                // name when the caller installed one), never a declaration the
+                // caller asked to ignore. Under XML_PARSE_IGNORE_ENC the
+                // context copy would shadow the override (PHP Dom\XMLDocument
+                // overrideEncoding fills doc->encoding itself when NULL).
+                if c.encoding.is_null() || c.options & crate::abi::types::XML_PARSE_IGNORE_ENC == 0
+                {
+                    if !c.encoding.is_null() && (*c.myDoc).encoding.is_null() {
+                        let dup = allocator::xmlMemStrdupImpl(c.encoding as *const c_char);
+                        (*c.myDoc).encoding = dup as *mut xmlChar;
+                    }
                 }
 
                 // Mark the document as well-formed if no errors occurred

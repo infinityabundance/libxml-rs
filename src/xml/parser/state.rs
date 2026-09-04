@@ -898,10 +898,18 @@ impl XmlParser {
                     // Free old encoding
                 }
                 (*self.ctxt).encoding = enc_cstr as *mut xmlChar;
-                // UPSTREAM-PARITY (parser.c xmlParseXMLDecl): the declared
-                // encoding is also recorded on the document, so `doc->encoding`
-                // / nokogiri `Document#encoding` reflects the declaration.
-                if !(*self.ctxt).myDoc.is_null() {
+                // UPSTREAM-PARITY (parser.c xmlParseXMLDecl / SAX2.c
+                // xmlSAX2EndDocument): the declaration is only RECORDED on
+                // the document at the end of the parse via xmlGetActualEncoding
+                // — which resolves to the input encoder's name when one was
+                // installed (a caller override). Under XML_PARSE_IGNORE_ENC the
+                // declaration is ignored, so stamping it here would shadow the
+                // caller-supplied encoding (PHP Dom\XMLDocument
+                // overrideEncoding sets IGNORE_ENC and later fills
+                // doc->encoding from its own argument when it is still NULL).
+                let ignore_enc =
+                    (*self.ctxt).options & crate::abi::types::XML_PARSE_IGNORE_ENC != 0;
+                if !ignore_enc && !(*self.ctxt).myDoc.is_null() {
                     let my_doc = (*self.ctxt).myDoc;
                     if (*my_doc).encoding.is_null() {
                         (*my_doc).encoding = crate::xml::string::xml_strdup((*self.ctxt).encoding);

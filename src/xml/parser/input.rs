@@ -649,6 +649,46 @@ impl InputBuffer {
         }
     }
 
+    /// Apply a caller-supplied whole-buffer encoding override (upstream
+    /// `xmlSwitchToEncoding` on a memory parser input, PHP's
+    /// `overrideEncoding` path which switches before `xmlParseDocument`).
+    ///
+    /// Only encodings with a native whole-buffer converter are handled;
+    /// returns `false` when the override cannot be applied (name unknown or
+    /// the stream already converted, e.g. a BOM-decoded UTF-16 input where
+    /// the raw bytes are gone). The converted stream replaces `data` and the
+    /// position resets so the caller can repopulate the `_xmlParserInput`.
+    pub(crate) fn apply_name_encoding_override(&mut self, name: &[u8]) -> bool {
+        if self.converted_to_utf8 {
+            // Raw bytes already transcoded (BOM UTF-16 / declared Latin-1):
+            // re-decoding the UTF-8 stream under the override would corrupt
+            // it, and upstream's switch happened before any conversion.
+            return false;
+        }
+        let lower = String::from_utf8_lossy(name).to_ascii_lowercase();
+        let converted: Option<Vec<u8>> = match lower.as_str() {
+            "windows-1252" | "cp1252" => crate::xml::encoding::cp1252_to_utf8(&self.data).ok(),
+            "iso-8859-1" | "iso8859-1" | "latin1" | "latin-1" => {
+                Some(crate::xml::encoding::latin1_to_utf8(&self.data))
+            }
+            "us-ascii" | "ascii" => Some(self.data.clone()),
+            _ => None,
+        };
+        match converted {
+            Some(conv) => {
+                self.data = conv;
+                self.pos = 0;
+                self.col = 1;
+                self.line = 1;
+                self.bom_consumed = false;
+                self.converted_to_utf8 = true;
+                self.encoding = Encoding::Utf8;
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Try to detect encoding from an XML declaration at the start of the input.
     ///
     /// Looks for `<?xml ... encoding="..."?>` or `<?xml ... encoding='...'?>`

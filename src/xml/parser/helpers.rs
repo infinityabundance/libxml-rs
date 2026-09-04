@@ -171,6 +171,54 @@ pub(crate) fn take_stashed_input_buffer(ctxt: *mut _xmlParserCtxt) -> *mut Input
         .map_or(ptr::null_mut(), |s| s.0)
 }
 
+/// Apply a whole-buffer encoding override to the still-stashed memory input
+/// of `ctxt` (upstream `xmlSwitchToEncoding` against a memory parser
+/// context whose `input->buf` is NULL — the PHP `overrideEncoding` flow
+/// switches between `xmlCreateMemoryParserCtxt` and `xmlParseDocument`).
+///
+/// Transcodes the buffered bytes with the named converter, resets the
+/// position, and repopulates `ctxt->input` so the parse reads the new UTF-8
+/// allocation (the old Vec is dropped by the `InputBuffer` itself).
+///
+/// Returns 0 on success, -1 when no stashed memory input exists or the
+/// override cannot be applied.
+///
+/// # Safety
+///
+/// - `ctxt` must be a valid `_xmlParserCtxt` set up via `setup_parser_input`
+///   whose parse has not started; `name` must be a valid NUL-terminated
+///   string.
+pub(crate) unsafe fn apply_memory_encoding_override(
+    ctxt: *mut _xmlParserCtxt,
+    name: *const c_char,
+) -> c_int {
+    if ctxt.is_null() || name.is_null() {
+        return -1;
+    }
+    let ib_ptr = PARSER_INPUT_STASH
+        .lock()
+        .get(&(ctxt as usize))
+        .map_or(ptr::null_mut(), |s| s.0);
+    if ib_ptr.is_null() {
+        return -1;
+    }
+    let name_bytes = unsafe { CStr::from_ptr(name).to_bytes() };
+    unsafe {
+        let ib = &mut *ib_ptr;
+        if !ib.apply_name_encoding_override(name_bytes) {
+            return -1;
+        }
+        // The conversion replaced the data Vec; point ctxt->input at the new
+        // allocation from the stream start.
+        let pi = (*ctxt).input;
+        if pi.is_null() {
+            return -1;
+        }
+        ib.populate_parser_input_without_filename(&mut *pi);
+    }
+    0
+}
+
 /// Drop the stashed input buffer for `ctxt`, if any.
 pub(crate) fn free_stashed_input_buffer(ctxt: *mut _xmlParserCtxt) {
     if let Some(buf) = PARSER_INPUT_STASH.lock().remove(&(ctxt as usize)) {

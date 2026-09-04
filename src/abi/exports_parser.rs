@@ -2639,8 +2639,17 @@ pub unsafe extern "C" fn xmlSwitchToEncoding(
     }
     unsafe {
         let input = (*ctxt).input;
-        if input.is_null() || (*input).buf.is_null() {
+        if input.is_null() {
             return -1;
+        }
+        // Memory-parser inputs (xmlCreateMemoryParserCtxt) carry buf == NULL;
+        // their bytes live in the Rust-side InputBuffer (helpers.rs side
+        // table), which already transcoded any BOM/declared encoding. A
+        // caller-driven switch (PHP dom overrideEncoding) must therefore
+        // transcode the whole buffered stream there (upstream applies the
+        // input-buffer encoder before any read).
+        if (*input).buf.is_null() && !(*handler).name.is_null() {
+            return helpers::apply_memory_encoding_override(ctxt, (*handler).name);
         }
         io::input_buffer_set_encoder((*input).buf, handler);
     }

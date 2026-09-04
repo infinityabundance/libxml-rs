@@ -685,6 +685,13 @@ unsafe fn get_line_no_internal(node: *const _xmlNode, depth: c_int) -> c_long {
         || n.type_ == XML_PI_NODE as c_int
     {
         if n.line == 65535 {
+            // UPSTREAM-PARITY (tree.c xmlGetLineNoInternal): text nodes whose
+            // real line exceeded USHRT_MAX at parse time store the line in
+            // psvi (XML_PARSE_BIG_LINES / the PHP html5 lexbor bridge does
+            // XML_INT_TO_PTR(line)); read it back (XML_PTR_TO_INT).
+            if n.type_ == XML_TEXT_NODE as c_int && !n.psvi.is_null() {
+                return n.psvi as usize as c_long;
+            }
             if n.type_ == XML_ELEMENT_NODE as c_int && !n.children.is_null() {
                 let r = unsafe { get_line_no_internal(n.children, depth + 1) };
                 if r != -1 {

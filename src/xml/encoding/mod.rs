@@ -671,6 +671,26 @@ fn register_builtin_handlers() {
         Some(latin1_output_func as xmlCharEncodingOutputFunc),
     );
 
+    // Windows-1252 (CP1252): served by iconv on the oracle; native converter
+    // here (R-000157 partial closure). Registered under both the canonical
+    // spelling and the cp1252 alias; lookup is case-insensitive so
+    // "Windows-1252" (the Dom\XMLDocument overrideEncoding the PHP court
+    // passes verbatim) resolves to the same entry.
+    register_handler(
+        b"windows-1252\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+        xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+        Some(cp1252_input_func as xmlCharEncodingInputFunc),
+        Some(cp1252_output_func as xmlCharEncodingOutputFunc),
+    );
+    register_handler(
+        b"cp1252\0",
+        xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+        xmlCharEncoding::XML_CHAR_ENCODING_ERROR,
+        Some(cp1252_input_func as xmlCharEncodingInputFunc),
+        Some(cp1252_output_func as xmlCharEncodingOutputFunc),
+    );
+
     // ASCII — upstream's static default handler (defaultHandlers[22]) is named
     // "US-ASCII"; the name "ASCII" is registered as a second entry so name-based
     // lookups (xmlFindCharEncodingHandler, the saver path) accept both spellings
@@ -1561,6 +1581,236 @@ unsafe extern "C" fn latin1_output_func(
             // Skip the rest of the sequence and return error
             return -1;
         }
+    }
+
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+// ── Windows-1252 (CP1252) ────────────────────────────────────────────────
+
+/// Windows-1252 mapping for bytes 0x80..=0xFF (WHATWG windows-1252 == glibc
+/// iconv CP1252). Bytes 0x81, 0x8D, 0x8F, 0x90, 0x9D are UNDEFINED in the
+/// encoding (iconv raises EILSEQ on them). 0x00..=0x7F are ASCII and 0xA0..=
+/// 0xFF are the Latin-1 supplement, so only 0x80..=0x9F need the table below
+/// (indexed by `byte - 0x80`, U+FFFF = undefined).
+///
+/// R-000157 closure (partial): the oracle serves windows-1252 through iconv;
+/// the candidate now ships a native converter for this single-byte set.
+const CP1252_C1: [u16; 32] = [
+    0x20AC, 0xFFFF, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, // 80..87
+    0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0xFFFF, 0x017D, 0xFFFF, // 88..8F
+    0xFFFF, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014, // 90..97
+    0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0xFFFF, 0x017E, 0x0178, // 98..9F
+];
+
+/// Map a Windows-1252 byte to its Unicode codepoint; `None` for the five
+/// undefined C1 bytes.
+#[allow(dead_code)]
+pub(crate) const fn cp1252_byte_to_cp(byte: u8) -> Option<u32> {
+    match byte {
+        0x00..=0x7F => Some(byte as u32),
+        0x80..=0x9F => {
+            let cp = CP1252_C1[(byte - 0x80) as usize];
+            if cp == 0xFFFF {
+                None
+            } else {
+                Some(cp as u32)
+            }
+        }
+        _ => Some(byte as u32), // 0xA0..=0xFF = Latin-1 supplement
+    }
+}
+
+/// Map a Unicode codepoint back to its Windows-1252 byte; `None` when the
+/// codepoint is not representable in windows-1252.
+#[allow(dead_code)]
+pub(crate) const fn cp_to_cp1252_byte(cp: u32) -> Option<u8> {
+    if cp < 0x80 || (cp >= 0xA0 && cp <= 0xFF) {
+        Some(cp as u8)
+    } else if cp >= 0x80 && cp <= 0x9F {
+        // Reverse scan of the C1 table (32 entries; called per character on
+        // output conversion only).
+        let mut i = 0;
+        while i < 32 {
+            if CP1252_C1[i] == cp as u16 {
+                return Some(0x80 + i as u8);
+            }
+            i += 1;
+        }
+        None
+    } else {
+        None
+    }
+}
+
+/// Convert a single UTF-8 character starting at `data[in_pos]` to its
+/// codepoint. Returns `(cp, bytes_consumed)` or `None` on invalid UTF-8.
+fn decode_utf8_char(data: &[u8], in_pos: usize) -> Option<(u32, usize)> {
+    let b0 = *data.get(in_pos)?;
+    if b0 < 0x80 {
+        return Some((u32::from(b0), 1));
+    }
+    let (len, cp0) = match b0 {
+        0xC2..=0xDF => (2, u32::from(b0 & 0x1F)),
+        0xE0..=0xEF => (3, u32::from(b0 & 0x0F)),
+        0xF0..=0xF4 => (4, u32::from(b0 & 0x07)),
+        _ => return None,
+    };
+    if in_pos + len > data.len() {
+        return None;
+    }
+    let mut cp = cp0;
+    for k in 1..len {
+        let b = data[in_pos + k];
+        if b & 0xC0 != 0x80 {
+            return None;
+        }
+        cp = (cp << 6) | u32::from(b & 0x3F);
+    }
+    Some((cp, len))
+}
+
+/// Convert a whole CP1252 byte slice to UTF-8.
+///
+/// Returns `Err(())` when a byte has no windows-1252 mapping (the five
+/// undefined C1 bytes 0x81/0x8D/0x8F/0x90/0x9D — iconv raises EILSEQ).
+pub(crate) fn cp1252_to_utf8(data: &[u8]) -> Result<Vec<u8>, ()> {
+    let mut result = Vec::with_capacity(data.len() * 2);
+    for &byte in data {
+        let cp = match cp1252_byte_to_cp(byte) {
+            None => return Err(()),
+            Some(cp) => cp,
+        };
+        let mut buf = [0u8; 4];
+        let n = encode_codepoint_to_utf8(cp, &mut buf);
+        result.extend_from_slice(&buf[..n]);
+    }
+    Ok(result)
+}
+
+/// Convert UTF-8 bytes to CP1252 (used by whole-buffer output paths).
+///
+/// Returns `Err(())` on invalid UTF-8 or an unrepresentable codepoint.
+#[allow(dead_code)]
+pub(crate) fn utf8_to_cp1252(data: &[u8]) -> Result<Vec<u8>, ()> {
+    let mut result = Vec::with_capacity(data.len());
+    let mut pos = 0;
+    while pos < data.len() {
+        let (cp, consumed) = match decode_utf8_char(data, pos) {
+            None => return Err(()),
+            Some(v) => v,
+        };
+        let byte = match cp_to_cp1252_byte(cp) {
+            None => return Err(()),
+            Some(b) => b,
+        };
+        result.push(byte);
+        pos += consumed;
+    }
+    Ok(result)
+}
+
+/// Windows-1252 input function: convert CP1252 bytes to UTF-8.
+unsafe extern "C" fn cp1252_input_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+
+    let mut in_pos = 0;
+    let mut out_pos = 0;
+
+    while in_pos < avail_in && out_pos < avail_out {
+        let byte = in_data[in_pos];
+        let cp = match cp1252_byte_to_cp(byte) {
+            // Undefined byte (0x81/0x8D/0x8F/0x90/0x9D): EILSEQ like iconv.
+            None => {
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+            Some(cp) => cp,
+        };
+        let mut buf = [0u8; 4];
+        let n = encode_codepoint_to_utf8(cp, &mut buf);
+        if out_pos + n > avail_out {
+            break;
+        }
+        out_slice[out_pos..out_pos + n].copy_from_slice(&buf[..n]);
+        out_pos += n;
+        in_pos += 1;
+    }
+
+    *outlen = out_pos as c_int;
+    *inlen = in_pos as c_int;
+    out_pos as c_int
+}
+
+/// Windows-1252 output function: convert UTF-8 to CP1252 bytes.
+unsafe extern "C" fn cp1252_output_func(
+    out: *mut c_uchar,
+    outlen: *mut c_int,
+    in_: *const c_uchar,
+    inlen: *mut c_int,
+) -> c_int {
+    if out.is_null() || outlen.is_null() || in_.is_null() || inlen.is_null() {
+        return -1;
+    }
+
+    let avail_in = *inlen as usize;
+    let avail_out = *outlen as usize;
+
+    if avail_in == 0 || avail_out == 0 {
+        *outlen = 0;
+        *inlen = 0;
+        return 0;
+    }
+
+    let in_data = core::slice::from_raw_parts(in_, avail_in);
+    let out_slice = core::slice::from_raw_parts_mut(out, avail_out);
+
+    let mut in_pos = 0;
+    let mut out_pos = 0;
+
+    while in_pos < avail_in && out_pos < avail_out {
+        let (cp, consumed) = match decode_utf8_char(in_data, in_pos) {
+            None => {
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+            Some(v) => v,
+        };
+        let byte = match cp_to_cp1252_byte(cp) {
+            None => {
+                // Not representable in windows-1252: EILSEQ like iconv.
+                *outlen = out_pos as c_int;
+                *inlen = in_pos as c_int;
+                return -1;
+            }
+            Some(b) => b,
+        };
+        out_slice[out_pos] = byte;
+        out_pos += 1;
+        in_pos += consumed;
     }
 
     *outlen = out_pos as c_int;
