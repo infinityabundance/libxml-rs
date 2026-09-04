@@ -27,6 +27,7 @@
     clippy::cast_sign_loss,
     clippy::cast_ptr_alignment,
     clippy::missing_safety_doc,
+    clippy::too_many_arguments,
     clippy::too_many_lines,
     clippy::type_complexity
 )]
@@ -273,12 +274,43 @@ impl C14nContext {
         }
     }
 
-    /// Upstream `xmlC14NIsVisible(ctx, ns, cur)` for namespace nodes: the
-    /// callback checks node-set membership of a stack copy of the xmlNs
-    /// struct, which can never match — so with a subset, namespace nodes are
-    /// never visible (c14n.c xmlC14NIsNodeInNodeset).
-    const fn is_visible_ns(&self) -> bool {
-        self.visible_set.is_none()
+    /// Upstream `xmlC14NIsVisible(ctx, ns, cur)` with the caller's real
+    /// namespace declaration: whether the namespace is part of the visible
+    /// subset. c14n.c `xmlC14NIsNodeInNodeset` makes a stack copy of the ns,
+    /// links `next` to the owning element, and defers to
+    /// `xmlXPathNodeSetContains`, whose NAMESPACE_DECL arm matches a
+    /// node-set entry by owner element + prefix (xpath.c). The synthesized
+    /// namespace-axis nodes in the node-set carry `next` = owner element, so
+    /// the equivalent test is: some set entry is a NAMESPACE_DECL whose
+    /// `next` is `owner` with an equal (empty-tolerant) prefix.
+    ///
+    /// With the whole document visible every namespace is visible; with an
+    /// `xmlC14NExecute` visibility callback the callback is consulted with
+    /// the ns node and the owning element as parent (upstream behaviour).
+    fn ns_visible(&self, ns: *const _xmlNs, owner: *mut _xmlNode) -> bool {
+        if let Some((cb, user_data)) = self.visibility_callback {
+            return unsafe { cb(user_data, ns as *mut _xmlNode, owner) } != 0;
+        }
+        match &self.visible_set {
+            None => true,
+            Some(set) => {
+                if ns.is_null() || owner.is_null() {
+                    return false;
+                }
+                let prefix = unsafe { (*ns).prefix };
+                set.iter().any(|&e| {
+                    // Node-set namespace entries are synthesized `_xmlNs`
+                    // structs (xmlXPathNodeSetDupNs): type lives at the
+                    // xmlNs offset, not the xmlNode offset.
+                    let ns2 = e as *const _xmlNs;
+                    unsafe {
+                        (*ns2).type_ == XML_NAMESPACE_DECL as c_int
+                            && (*ns2).next as *mut _xmlNode == owner
+                            && c14n_prefix_eq((*ns2).prefix, prefix)
+                    }
+                })
+            }
+        }
     }
 
     /// Enter a new rendered-namespace scope (element open).
@@ -698,6 +730,23 @@ unsafe fn is_xml_ns_ref(ns: &_xmlNs) -> bool {
             != 0
 }
 
+/// Upstream c14n.c `xmlC14NStrEqual`: NULL and the empty string are
+/// interchangeable (missing prefixes/hrefs compare as empty).
+///
+/// # SAFETY
+///
+/// - Non-NULL arguments must be valid NUL-terminated `xmlChar` strings.
+unsafe fn c14n_prefix_eq(a: *const xmlChar, b: *const xmlChar) -> bool {
+    if a == b {
+        return true;
+    }
+    let empty = |p: *const xmlChar| p.is_null() || unsafe { *p == 0 };
+    if empty(a) || empty(b) {
+        return empty(a) && empty(b);
+    }
+    unsafe { crate::abi::exports_xml2::xmlStrEqual(a, b) != 0 }
+}
+
 /// Copy a NUL-terminated xmlChar string into a Vec (empty for NULL).
 ///
 /// # SAFETY
@@ -730,7 +779,9 @@ unsafe fn exc_push_ns(
     ns: *mut _xmlNs,
     has_empty_ns: &mut bool,
     parent_frame_only: bool,
-    visible: bool,
+    mark: bool,
+    insert: bool,
+    default_seen: bool,
 ) {
     if ns.is_null() {
         return;
@@ -739,22 +790,21 @@ unsafe fn exc_push_ns(
     if is_xml_ns_ref(ns_ref) {
         return;
     }
-    if !ctx.is_visible_ns() {
-        return;
-    }
     let prefix_bytes = unsafe { cstr_bytes(ns_ref.prefix) };
     let href_bytes = unsafe { cstr_bytes(ns_ref.href) };
-    let already = ctx.already_rendered(&prefix_bytes, &href_bytes, parent_frame_only);
-    if visible {
+    if insert {
+        let already = ctx.already_rendered(&prefix_bytes, &href_bytes, parent_frame_only);
+        if !already {
+            collected.push(CollectedNs {
+                prefix: ns_ref.prefix,
+                href: ns_ref.href,
+            });
+        }
+    }
+    if mark {
         ctx.mark_rendered_pair(&prefix_bytes, &href_bytes);
     }
-    if !already {
-        collected.push(CollectedNs {
-            prefix: ns_ref.prefix,
-            href: ns_ref.href,
-        });
-    }
-    if ns_ref.prefix.is_null() {
+    if default_seen && ns_ref.prefix.is_null() {
         *has_empty_ns = true;
     }
 }
@@ -818,6 +868,13 @@ unsafe fn c14n_collect_namespaces(
             .clone()
             .map(|s| s.into_iter().collect())
             .unwrap_or_default();
+        // Keep owned NUL-terminated copies alive across the loop (the
+        // `if`-arm temporary would dangle).
+        let prefix_cstrs: Vec<Vec<u8>> = inclusive_prefixes
+            .iter()
+            .filter(|p| !p.is_empty() && p.as_str() != "#default")
+            .map(|p| format!("{}\0", p).into_bytes())
+            .collect();
         for inc_prefix_str in &inclusive_prefixes {
             let is_default = inc_prefix_str.is_empty() || inc_prefix_str == "#default";
             if is_default {
@@ -826,17 +883,28 @@ unsafe fn c14n_collect_namespaces(
             let inc_prefix: *const xmlChar = if is_default {
                 ptr::null()
             } else {
-                let c_str = format!("{}\0", inc_prefix_str);
-                c_str.as_ptr() as *const xmlChar
+                let idx = prefix_cstrs
+                    .iter()
+                    .position(|c| {
+                        let s = String::from_utf8_lossy(&c[..c.len() - 1]);
+                        s == *inc_prefix_str
+                    })
+                    .expect("prefix cstr present");
+                prefix_cstrs[idx].as_ptr() as *const xmlChar
             };
             let ns = find_ns_declaration(node, inc_prefix);
+            // Upstream processes the prefix list only when the namespace is
+            // visible in the subset (`xmlC14NIsVisible(ctx, ns, cur)`).
+            let ns_visible = !ns.is_null() && ctx.ns_visible(ns, node);
             exc_push_ns(
                 ctx,
                 &mut collected,
                 ns,
                 &mut has_empty_ns,
-                !is_default,
+                true,
                 visible,
+                ns_visible,
+                ns_visible,
             );
         }
 
@@ -849,6 +917,11 @@ unsafe fn c14n_collect_namespaces(
         } else {
             n.ns
         };
+        let node_ns_visible = !node_ns.is_null() && ctx.ns_visible(node_ns, node);
+        // Upstream: the node namespace is inserted only for a visible element
+        // whose namespace is visible (`if(visible && xmlC14NIsVisible(...))`),
+        // while the ns_rendered stack add happens for any visible element and
+        // has_empty_ns is set whenever the binding is a default namespace.
         exc_push_ns(
             ctx,
             &mut collected,
@@ -856,19 +929,34 @@ unsafe fn c14n_collect_namespaces(
             &mut has_empty_ns,
             false,
             visible,
+            visible && node_ns_visible,
+            true,
         );
 
-        // 3. Attribute namespaces.
+        // 3. Attribute namespaces: a visible attribute's namespace is added
+        //    regardless of the namespace's own subset membership (upstream
+        //    gates on `xmlC14NIsVisible(ctx, attr, cur)`).
         let mut attr = n.properties;
         while !attr.is_null() {
             let a = unsafe { &*attr };
             if !a.ns.is_null() {
                 let ans = unsafe { &*a.ns };
-                if !is_xml_ns_ref(ans) && ctx.is_visible_ns() {
-                    exc_push_ns(ctx, &mut collected, a.ns, &mut has_empty_ns, false, visible);
+                let attr_visible = ctx.is_visible_node(attr);
+                if !is_xml_ns_ref(ans) && attr_visible {
+                    exc_push_ns(
+                        ctx,
+                        &mut collected,
+                        a.ns,
+                        &mut has_empty_ns,
+                        false,
+                        attr_visible,
+                        attr_visible,
+                        attr_visible,
+                    );
                 } else if ans.prefix.is_null() && !ans.href.is_null() && *ans.href == 0 {
                     // Upstream: an attribute bound to an empty default
-                    // namespace counts as a visibly utilized empty default.
+                    // namespace counts as a visibly utilized empty default
+                    // (checked outside the visibility gate).
                     has_visibly_utilized_empty_ns = true;
                 }
             }
@@ -901,6 +989,15 @@ unsafe fn c14n_collect_namespaces(
         let mut cur: *mut _xmlNode = node;
         while !cur.is_null() {
             let cur_node = unsafe { &*cur };
+            // Only element ancestors carry namespace declarations. In
+            // particular the document node aliases `nsDef` onto its
+            // `oldNs` list (identical struct offsets); upstream filters
+            // those out with the `xmlSearchNs(...) == ns` effective-binding
+            // test, and skipping non-element ancestors reproduces that.
+            if cur_node.type_ != XML_ELEMENT_NODE as c_int {
+                cur = cur_node.parent;
+                continue;
+            }
             let mut ns_def = cur_node.nsDef;
             while !ns_def.is_null() {
                 let ns = unsafe { &*ns_def };
@@ -920,8 +1017,9 @@ unsafe fn c14n_collect_namespaces(
                     seen_prefixes.push(ns_prefix);
                     // Skip the xml namespace (always implicitly in scope)
                     // and non-visible namespaces (upstream tmp == ns &&
-                    // !xmlC14NIsXmlNs && xmlC14NIsVisible gates).
-                    if is_xml_ns_ref(ns) || !ctx.is_visible_ns() {
+                    // !xmlC14NIsXmlNs && xmlC14NIsVisible(ctx, ns, cur)
+                    // gates, where `cur` is the axis-owning element).
+                    if is_xml_ns_ref(ns) || !ctx.ns_visible(ns_def, node) {
                         ns_def = ns.next;
                         continue;
                     }
@@ -2257,7 +2355,7 @@ pub unsafe extern "C" fn xmlC14NDocDumpMemory(
     // The inclusive_ns_prefixes parameter in the upstream API is a
     // NULL-terminated array of xmlChar* strings. We join them with commas
     // for our internal parser.
-    let joined_prefixes = if !inclusive_ns_prefixes.is_null() {
+    let joined_prefixes: Option<Vec<u8>> = if !inclusive_ns_prefixes.is_null() {
         let mut parts: Vec<*mut xmlChar> = Vec::new();
         let mut i = 0;
         loop {
@@ -2270,9 +2368,10 @@ pub unsafe extern "C" fn xmlC14NDocDumpMemory(
         }
 
         if parts.is_empty() {
-            ptr::null()
+            None
         } else {
-            // Build comma-separated string
+            // Build comma-separated string (upstream passes a NULL-terminated
+            // array; keep the Vec alive across the delegated call).
             let mut result_str = Vec::<u8>::new();
             for (idx, &part) in parts.iter().enumerate() {
                 if idx > 0 {
@@ -2283,11 +2382,15 @@ pub unsafe extern "C" fn xmlC14NDocDumpMemory(
                 result_str.extend_from_slice(part_slice);
             }
             result_str.push(0); // null-terminate
-            result_str.as_ptr() as *const xmlChar
+            Some(result_str)
         }
     } else {
-        ptr::null()
+        None
     };
+    let joined_ptr = joined_prefixes
+        .as_ref()
+        .map(|v| v.as_ptr() as *const xmlChar)
+        .unwrap_or(ptr::null());
 
     // The node-set conversion is kept alive for the duration of the call
     // and dropped afterwards (no leak).
@@ -2298,14 +2401,7 @@ pub unsafe extern "C" fn xmlC14NDocDumpMemory(
         nodes_array.as_ptr() as *mut *mut _xmlNode
     };
     let ret = unsafe {
-        c14n_doc_dump_memory(
-            doc,
-            nodes_ptr,
-            c14n_mode,
-            joined_prefixes,
-            with_comments,
-            result,
-        )
+        c14n_doc_dump_memory(doc, nodes_ptr, c14n_mode, joined_ptr, with_comments, result)
     };
     drop(nodes_array);
     ret
@@ -2434,7 +2530,7 @@ pub unsafe extern "C" fn xmlC14NExecute(
         _ => return -1,
     };
 
-    let joined_prefixes = if !inclusive_ns_prefixes.is_null() {
+    let joined_prefixes: Option<Vec<u8>> = if !inclusive_ns_prefixes.is_null() {
         let mut parts: Vec<*mut xmlChar> = Vec::new();
         let mut i = 0;
         loop {
@@ -2447,8 +2543,10 @@ pub unsafe extern "C" fn xmlC14NExecute(
         }
 
         if parts.is_empty() {
-            ptr::null()
+            None
         } else {
+            // Build comma-separated string; the Vec must stay alive across
+            // the delegated call (dangling-pointer fix).
             let mut result_str = Vec::<u8>::new();
             for (idx, &part) in parts.iter().enumerate() {
                 if idx > 0 {
@@ -2459,17 +2557,21 @@ pub unsafe extern "C" fn xmlC14NExecute(
                 result_str.extend_from_slice(part_slice);
             }
             result_str.push(0);
-            result_str.as_ptr() as *const xmlChar
+            Some(result_str)
         }
     } else {
-        ptr::null()
+        None
     };
+    let joined_ptr = joined_prefixes
+        .as_ref()
+        .map(|v| v.as_ptr() as *const xmlChar)
+        .unwrap_or(ptr::null());
 
     unsafe {
         c14n_execute_visibility(
             doc,
             c14n_mode,
-            joined_prefixes,
+            joined_ptr,
             with_comments,
             is_visible_callback,
             user_data,

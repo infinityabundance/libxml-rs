@@ -716,7 +716,12 @@ pub unsafe extern "C" fn xmlStrdup(cur: *const xmlChar) -> *mut xmlChar {
 /// - `cur` must be a valid pointer or NULL.
 #[no_mangle]
 pub unsafe extern "C" fn xmlStrndup(cur: *const xmlChar, len: c_int) -> *mut xmlChar {
-    if cur.is_null() || len <= 0 {
+    // UPSTREAM-PARITY (xmlstring.c xmlStrndup): a NEGATIVE length means
+    // strlen; length 0 still allocates a 1-byte NUL string (never NULL) —
+    // xmlNewTextLen("", 0) depends on it so an empty text node keeps its
+    // content and survives xmlAddChild (php textContent = NULL writes an
+    // empty text child; serialization then prints <e></e>, not <e/>).
+    if cur.is_null() || len < 0 {
         return ptr::null_mut();
     }
     let size = len as usize + 1;
